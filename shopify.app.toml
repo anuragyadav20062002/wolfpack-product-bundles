@@ -1,0 +1,36 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "8d39a429476fff7751938bb345ff6c61"
+name = "wolfpack-product-bundles"
+handle = "wolfpack-product-bundles"
+application_url = "https://billion-emotional-tip-winston.trycloudflare.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://billion-emotional-tip-winston.trycloudflare.com/auth/callback",
+  "https://billion-emotional-tip-winston.trycloudflare.com/auth/shopify/callback",
+  "https://billion-emotional-tip-winston.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false
