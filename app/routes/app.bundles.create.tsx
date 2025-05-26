@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Page, Layout, Card, FormLayout, TextField, Button, BlockStack } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { json, type ActionFunctionArgs } from "@remix-run/node";
@@ -20,6 +21,8 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function CreateBundlePage() {
+  const [bundleName, setBundleName] = useState("");
+  const [description, setDescription] = useState("");
 
   return (
     <Page>
@@ -34,12 +37,16 @@ export default function CreateBundlePage() {
                   label="Bundle name"
                   helpText="A clear name helps customers understand what products they can combine"
                   name="bundleName"
+                  value={bundleName}
+                  onChange={setBundleName}
                   autoComplete="off"
                 />
                 <TextField
                   label="Description"
                   helpText="Optional: Add more details about what this bundle offers"
                   name="description"
+                  value={description}
+                  onChange={setDescription}
                   multiline={4}
                   autoComplete="off"
                 />
