@@ -1,23 +1,44 @@
 import { useState } from "react";
 import { Page, Layout, Card, FormLayout, TextField, Button, BlockStack } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, redirect } from "@remix-run/node";
+import db from "../db.server";
+import { authenticate } from "../shopify.server";
 
 export async function loader() {
   return json({});
 }
 
 export async function action({ request }: ActionFunctionArgs) {
+  const { session } = await authenticate.admin(request);
+  const shop = session.shop;
+
   const formData = await request.formData();
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
 
-  // Here you would typically save the bundle to your database
-  console.log("Creating bundle:", { bundleName, description });
+  if (typeof bundleName !== 'string' || bundleName.length === 0) {
+    // TODO: Handle error: bundle name is required
+    return json({ error: 'Bundle name is required' }, { status: 400 });
+  }
 
-  // TODO: Add actual bundle creation logic using Prisma
+  try {
+    const newBundle = await db.bundle.create({
+      data: {
+        name: bundleName,
+        description: typeof description === 'string' ? description : null,
+        shopId: shop,
+      },
+    });
 
-  return json({ success: true });
+    // Redirect to the newly created bundle's builder page
+    return redirect(`/app/bundles/${newBundle.id}`);
+
+  } catch (error) {
+    console.error("Error creating bundle:", error);
+    // TODO: Handle database error more gracefully
+    return json({ error: 'Failed to create bundle' }, { status: 500 });
+  }
 }
 
 export default function CreateBundlePage() {
