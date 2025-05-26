@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher } from "@remix-run/react";
+import { useFetcher, useNavigate } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -94,6 +94,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Index() {
   const fetcher = useFetcher<typeof action>();
+  const navigate = useNavigate();
 
   const shopify = useAppBridge();
   // const isLoading =
@@ -114,7 +115,7 @@ export default function Index() {
   return (
     <Page>
       <TitleBar title="Your Bundles">
-        <Button variant="primary" onClick={() => {}}>
+        <Button variant="primary" onClick={() => navigate('/app/bundles/create')}>
           Create Bundle
         </Button>
       </TitleBar>
@@ -140,7 +141,7 @@ export default function Index() {
                     Get your bundles up and running in 2 easy steps!
                   </Text>
                 </BlockStack>
-                <Button size="large" variant="primary">Quick Setup</Button>
+                <Button size="large" variant="primary" onClick={() => navigate('/app/bundles/create')}>Quick Setup</Button>
               </BlockStack>
             </Card>
           </Layout.Section>
