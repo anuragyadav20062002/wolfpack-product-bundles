@@ -14,30 +14,30 @@ datasource db {
   url      = "file:dev.sqlite"
 }
 
-// Add enums for better type safety
-enum BundleStatus {
-  draft
-  active
-  archived
-}
+// Using String for enums as SQLite does not support them directly
+// enum BundleStatus {
+//   draft
+//   active
+//   archived
+// }
 
-enum JobStatus {
-  pending
-  processing
-  completed
-  failed
-}
+// enum JobStatus {
+//   pending
+//   processing
+//   completed
+//   failed
+// }
 
-enum JobType {
-  publish
-  unpublish
-  sync
-}
+// enum JobType {
+//   publish
+//   unpublish
+//   sync
+// }
 
-enum PricingType {
-  percentage
-  fixed
-}
+// enum PricingType {
+//   percentage
+//   fixed
+// }
 
 model Session {
   id             String    @id
@@ -66,11 +66,13 @@ model Bundle {
   name        String
   description String?
   shopId      String
-  status      BundleStatus   @default(draft)
+  // Using String for status as SQLite does not support enums
+  status      String   @default("draft")
   active      Boolean        @default(false)
   publishedAt DateTime?
-  settings    Json?
-  matching    Json?
+  // Using String for Json fields as SQLite does not support Json
+  settings    String?
+  matching    String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   steps       BundleStep[]
@@ -108,7 +110,8 @@ model StepProduct {
   productId   String     // Shopify product ID
   title       String
   imageUrl    String?
-  variants    Json?      // Store variants as JSON
+  // Using String for Json fields as SQLite does not support Json
+  variants    String?      // Store variants as JSON
   minQuantity Int        @default(1)
   maxQuantity Int        @default(1)
   position    Int        @default(0)
@@ -123,12 +126,14 @@ model BundlePricing {
   id          String      @id @default(uuid())
   bundleId    String      @unique
   bundle      Bundle      @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  type        PricingType @default(percentage)
+   // Using String for type as SQLite does not support enums
+  type        String @default("percentage")
   status      Boolean     @default(false) // Assuming this indicates if pricing is active
   rules       String?     // Store rules as JSON string
   showFooter  Boolean     @default(true)
   showBar     Boolean     @default(false)
-  messages    Json?       // Store customizable messages
+  // Using String for Json fields as SQLite does not support Json
+  messages    String?       // Store customizable messages
   published   Boolean     @default(false) // Assuming this relates to pricing visibility
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -142,7 +147,8 @@ model BundleAnalytics {
   bundle      Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   shopId      String
   event       String   // view, add_to_cart, purchase
-  metadata    Json?    // Additional event data
+  // Using String for Json fields as SQLite does not support Json
+  metadata    String?    // Additional event data
   createdAt   DateTime @default(now())
 
   @@index([bundleId])
@@ -154,8 +160,9 @@ model BundleAnalytics {
 model ShopSettings {
   id              String   @id @default(uuid())
   shopId          String   @unique
-  theme           Json?    // Store theme customization
-  defaultSettings Json?    // Store default bundle settings
+  // Using String for Json fields as SQLite does not support Json
+  theme           String?    // Store theme customization
+  defaultSettings String?    // Store default bundle settings
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -165,9 +172,12 @@ model ShopSettings {
 model QueuedJob {
   id          String    @id @default(uuid())
   shopId      String
-  type        JobType   @default(publish)
-  status      JobStatus @default(pending)
-  data        Json?
+   // Using String for type as SQLite does not support enums
+  type        String   @default("publish")
+   // Using String for status as SQLite does not support enums
+  status      String @default("pending")
+  // Using String for Json fields as SQLite does not support Json
+  data        String?
   error       String?
   startedAt   DateTime?
   completedAt DateTime?
@@ -184,7 +194,9 @@ model ComplianceRecord {
   id          String   @id @default(uuid())
   shop        String
   type        String   // customer_data_request, customer_redact, shop_redact
-  payload     Json
+  // Using String for Json fields as SQLite does not support Json
+  payload     String
+  // Using String for status as SQLite does not support enums
   status      String   @default("pending") // pending, processing, completed
   processedAt DateTime?
   createdAt   DateTime @default(now())
