@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useNavigate } from "@remix-run/react";
+import { useFetcher, useNavigate, useLoaderData } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -16,11 +16,27 @@ import {
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { EditIcon } from "@shopify/polaris-icons";
+import db from "../db.server"; // Import db
+
+// Define a type for the bundle
+interface Bundle {
+  id: string;
+  name: string;
+  // Add other bundle properties here as needed
+}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
+  const shop = session.shop;
 
-  return null;
+  // Fetch all bundles for the current shop
+  const bundles = await db.bundle.findMany({
+    where: {
+      shopId: shop,
+    },
+  });
+
+  return { bundles };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -93,6 +109,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
+  const { bundles } = useLoaderData<typeof loader>(); // Get bundles from loader data
   const fetcher = useFetcher<typeof action>();
   const navigate = useNavigate();
 
@@ -121,30 +138,55 @@ export default function Index() {
       </TitleBar>
       <BlockStack gap="500">
         <Layout>
-          {/* Setup your bundles quickly */}
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="500" inlineAlign="center" align="center">
-                <Box
-                  minHeight="6rem"
-                  minWidth="6rem"
-                  background="bg-fill-info-secondary"
-                  borderRadius="full"
-                >
-                  <EditIcon width="3rem" height="3rem" color="base" />
-                </Box>
-                <BlockStack gap="200" inlineAlign="center">
-                  <Text as="h2" variant="headingMd">
-                    Setup your bundles quickly
-                  </Text>
-                  <Text variant="bodyMd" as="p" alignment="center">
-                    Get your bundles up and running in 2 easy steps!
-                  </Text>
+          {bundles.length === 0 ? (
+            /* Show setup content if no bundles exist */
+            <Layout.Section>
+              <Card>
+                <BlockStack gap="500" inlineAlign="center" align="center">
+                  <Box
+                    minHeight="6rem"
+                    minWidth="6rem"
+                    background="bg-fill-info-secondary"
+                    borderRadius="full"
+                  >
+                    <EditIcon width="3rem" height="3rem" color="base" />
+                  </Box>
+                  <BlockStack gap="200" inlineAlign="center">
+                    <Text as="h2" variant="headingMd">
+                      Setup your bundles quickly
+                    </Text>
+                    <Text variant="bodyMd" as="p" alignment="center">
+                      Get your bundles up and running in 2 easy steps!
+                    </Text>
+                  </BlockStack>
+                  <Button size="large" variant="primary" onClick={() => navigate('/app/bundles/create')}>Quick Setup</Button>
                 </BlockStack>
-                <Button size="large" variant="primary" onClick={() => navigate('/app/bundles/create')}>Quick Setup</Button>
+              </Card>
+            </Layout.Section>
+          ) : (
+            /* Show list of bundles if bundles exist */
+            <Layout.Section>
+              <BlockStack gap="300">
+                {bundles.map((bundle: Bundle) => (
+                  <Card key={bundle.id}>
+                    <InlineStack align="space-between" blockAlign="center">
+                      <BlockStack gap="100">
+                        <Text as="h3" variant="headingMd">{bundle.name}</Text>
+                        {/* Display other bundle info if needed */}
+                      </BlockStack>
+                      <InlineStack gap="200">
+                         {/* Add status toggle or other relevant info here */}
+                          <Button variant="tertiary">Toggle status</Button>
+                           <Button variant="tertiary" onClick={() => navigate(`/app/bundles/${bundle.id}`)}>View</Button>
+                           <Button variant="tertiary">Edit</Button>
+                            <Button variant="tertiary">Delete</Button>
+                      </InlineStack>
+                    </InlineStack>
+                  </Card>
+                ))}
               </BlockStack>
-            </Card>
-          </Layout.Section>
+            </Layout.Section>
+          )}
 
           {/* Design services and Your account manager */}
           <Layout.Section>

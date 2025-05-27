@@ -2,17 +2,23 @@ import { Page, Layout, Card, Button, BlockStack, Text, InlineStack } from "@shop
 import { TitleBar } from "@shopify/app-bridge-react";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
+import db from "../db.server"; // Import db
+import { authenticate } from "../shopify.server"; // Import authenticate
 
 // This loader will fetch the bundle details based on the bundleId in the URL
 export async function loader({ request, params }: LoaderFunctionArgs) {
+  const { session } = await authenticate.admin(request); // Authenticate the request
+  const shop = session.shop;
   const bundleId = params.bundleId;
 
   // TODO: Fetch bundle data from your database using Prisma based on bundleId
-  const bundle = {
-    id: bundleId,
-    name: `Bundle ${bundleId}`,
-    // Add other bundle details here
-  };
+  // Fetch bundle data from your database using Prisma
+  const bundle = await db.bundle.findUnique({
+    where: {
+      id: bundleId,
+      shopId: shop, // Ensure the bundle belongs to the current shop
+    },
+  });
 
   if (!bundle) {
     throw new Response("Bundle not found", { status: 404 });

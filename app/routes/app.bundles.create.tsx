@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Page, Layout, Card, FormLayout, TextField, Button, BlockStack } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, redirect } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
@@ -32,8 +32,8 @@ export async function action({ request }: ActionFunctionArgs) {
       },
     });
 
-    // Return the newly created bundle's ID
-    return json({ id: newBundle.id });
+    // Redirect to the newly created bundle's builder page
+    return redirect(`/app/bundles/${newBundle.id}`);
 
   } catch (error) {
     console.error("Error creating bundle:", error);
