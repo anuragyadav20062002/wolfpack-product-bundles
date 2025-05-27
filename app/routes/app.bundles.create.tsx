@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Page, Layout, Card, FormLayout, TextField, Button, BlockStack } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { json, type ActionFunctionArgs, redirect } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@remix-run/node";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
 
@@ -32,7 +32,7 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     // Redirect to the newly created bundle's builder page
-    return redirect(`/app/bundles/${newBundle.id}`);
+    return json({ id: newBundle.id });
 
   } catch (error) {
     console.error("Error creating bundle:", error);
@@ -44,6 +44,41 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function CreateBundlePage() {
   const [bundleName, setBundleName] = useState("");
   const [description, setDescription] = useState("");
+
+  async function handleCreateBundle() {
+    const formData = new FormData();
+    formData.append("bundleName", bundleName);
+    formData.append("description", description);
+
+    try {
+      // Post the data to the action function
+      const response = await fetch("/app/bundles/create", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        // If successful, redirect to the new bundle page
+        const newBundle = await response.json(); // Assuming action returns bundle data or ID on success
+        if (newBundle && newBundle.id) {
+             window.location.href = `/app/bundles/${newBundle.id}`;
+        } else {
+            // Handle unexpected successful response format
+            console.error("Unexpected response format after bundle creation:", newBundle);
+            alert("Bundle created, but could not navigate. Check console.");
+        }
+      } else {
+        // Handle server-side errors (e.g., validation from action function)
+        const errorData = await response.json();
+        console.error("Error creating bundle:", errorData);
+        alert(`Failed to create bundle: ${errorData.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      // Handle network or client-side errors
+      console.error("Network or unexpected error:", error);
+      alert("An unexpected error occurred. Check console.");
+    }
+  }
 
   return (
     <Page>
@@ -71,7 +106,12 @@ export default function CreateBundlePage() {
                   multiline={4}
                   autoComplete="off"
                 />
-                <Button submit variant="primary">Create bundle</Button>
+                <Button
+                  variant="primary"
+                  onClick={handleCreateBundle}
+                >
+                  Create bundle
+                </Button>
               </FormLayout>
             </BlockStack>
           </Card>
