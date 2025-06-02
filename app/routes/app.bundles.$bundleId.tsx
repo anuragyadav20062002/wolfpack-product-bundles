@@ -1,9 +1,10 @@
 import { Page, Layout, Card, Button, BlockStack, Text, InlineStack } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import db from "../db.server"; // Import db
 import { authenticate } from "../shopify.server"; // Import authenticate
+import { ArrowLeftIcon } from '@shopify/polaris-icons'; // Import ArrowLeftIcon icon
 
 // This loader will fetch the bundle details based on the bundleId in the URL
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -29,12 +30,23 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 export default function BundleBuilderPage() {
   const { bundle } = useLoaderData<typeof loader>();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   return (
     <Page>
       <TitleBar title={bundle.name}>
       </TitleBar>
       <Layout>
+        <Layout.Section>
+          <Button
+            onClick={() => navigate('/app')}
+            icon={ArrowLeftIcon}
+            variant="plain"
+          >
+            Back to Bundles
+          </Button>
+        </Layout.Section>
+
         <Layout.Section>
           <Card>
             <BlockStack gap="300">

@@ -132,9 +132,9 @@ export default function Index() {
   return (
     <Page>
       <TitleBar title="Your Bundles">
-        <Button variant="primary" onClick={() => navigate('/app/bundles/create')}>
+        <button variant="primary" onClick={() => navigate('/app/bundles/create')}>
           Create Bundle
-        </Button>
+        </button>
       </TitleBar>
       <BlockStack gap="500">
         <Layout>
