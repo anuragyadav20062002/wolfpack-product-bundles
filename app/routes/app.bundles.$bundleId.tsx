@@ -57,9 +57,25 @@ interface BundleStep {
   updatedAt: string; // Changed to string
 }
 
-// Extend bundle type from loader to include steps
-interface BundleWithSteps extends Bundle {
+// Define a type for BundlePricing, matching Prisma schema and parsed JSON
+interface BundlePricing {
+  id: string;
+  bundleId: string;
+  type: string;
+  status: boolean;
+  rules: Array<{ minQuantity: string; value: string }> | null; // Parsed from JSON string
+  showFooter: boolean;
+  showBar: boolean;
+  messages: string | null;
+  published: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Extend bundle type from loader to include steps and pricing
+interface BundleWithStepsAndPricing extends Bundle {
   steps: BundleStep[];
+  pricing: BundlePricing | null; // Add pricing to the bundle type
 }
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -69,11 +85,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   const bundle = await db.bundle.findUnique({
     where: {
-      id: bundleId,
+    id: bundleId,
       shopId: shop,
     },
     include: {
       steps: true,
+      pricing: true, // Include pricing data
     },
   });
 
@@ -90,10 +107,16 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     // updatedAt: new Date(step.updatedAt), // No longer parsing to Date here for type compatibility
   }));
 
-  return json({ bundle: { ...bundle, steps: parsedSteps } });
+  // Parse pricing rules if they exist
+  const parsedPricing = bundle.pricing ? {
+    ...bundle.pricing,
+    rules: bundle.pricing.rules ? JSON.parse(bundle.pricing.rules) : null,
+  } : null;
+
+  return json({ bundle: { ...bundle, steps: parsedSteps, pricing: parsedPricing } });
 }
 
-// Action to handle adding or updating a step
+// Action to handle adding or updating a step or pricing
 export async function action({ request }: ActionFunctionArgs) {
   await authenticate.admin(request);
 
@@ -142,11 +165,56 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ error: 'Failed to save bundle step' }, { status: 500 });
     }
   }
+
+  if (intent === "savePricing") {
+    const bundleId = formData.get("bundleId") as string;
+    const enableDiscounts = formData.get("enableDiscounts") === "true";
+    const discountType = formData.get("discountType") as string;
+    const pricingRulesString = formData.get("pricingRules") as string;
+    const showDiscountBar = formData.get("showDiscountBar") === "true";
+    const showInFooter = formData.get("showInFooter") === "true";
+
+    if (typeof bundleId !== 'string' || bundleId.length === 0) {
+      return json({ error: 'Bundle ID is required' }, { status: 400 });
+    }
+
+    const parsedPricingRules = pricingRulesString ? JSON.parse(pricingRulesString) : null;
+
+    try {
+      const existingPricing = await db.bundlePricing.findUnique({
+        where: { bundleId: bundleId },
+      });
+
+      const pricingData = {
+        type: discountType,
+        status: enableDiscounts, // Assuming 'status' in schema maps to 'enableDiscounts'
+        rules: parsedPricingRules ? JSON.stringify(parsedPricingRules) : null,
+        showBar: showDiscountBar,
+        showFooter: showInFooter,
+      };
+
+      let resultPricing;
+      if (existingPricing) {
+        resultPricing = await db.bundlePricing.update({
+          where: { id: existingPricing.id },
+          data: pricingData,
+        });
+      } else {
+        resultPricing = await db.bundlePricing.create({
+          data: { bundleId: bundleId, ...pricingData },
+        });
+      }
+      return json({ success: true, pricing: resultPricing });
+    } catch (error) {
+      console.error("Error saving bundle pricing:", error);
+      return json({ error: 'Failed to save bundle pricing' }, { status: 500 });
+    }
+  }
   return null;
 }
 
 export default function BundleBuilderPage() {
-  const { bundle } = useLoaderData<{ bundle: BundleWithSteps }>();
+  const { bundle } = useLoaderData<{ bundle: BundleWithStepsAndPricing }>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -162,8 +230,16 @@ export default function BundleBuilderPage() {
   const [conditionType, setConditionType] = useState<string>("equal_to");
   const [conditionValue, setConditionValue] = useState<string>("");
 
+  // State for Bundle Pricing Modal
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [enableDiscounts, setEnableDiscounts] = useState(false);
+  const [discountType, setDiscountType] = useState("fixed_amount_off");
+  const [pricingRules, setPricingRules] = useState<Array<{ minQuantity: string; value: string }>>([{ minQuantity: "", value: "" }]);
+  const [showDiscountBar, setShowDiscountBar] = useState(false);
+  const [showInFooter, setShowInFooter] = useState(false);
+
   // handleModalClose definition moved above useEffect for proper order
-  const handleModalClose = useCallback(() => {
+  const handleAddStepModalClose = useCallback(() => {
     setIsAddStepModalOpen(false);
     setCurrentStepId(null);
     setStepName("");
@@ -175,14 +251,42 @@ export default function BundleBuilderPage() {
     setConditionValue("");
   }, []);
 
+  const handlePricingModalClose = useCallback(() => {
+    setIsPricingModalOpen(false);
+    // Reset pricing form fields here if needed
+    setEnableDiscounts(false);
+    setDiscountType("fixed_amount_off");
+    setPricingRules([{ minQuantity: "", value: "" }]);
+    setShowDiscountBar(false);
+    setShowInFooter(false);
+  }, []);
+
+
   // Effect to reset modal fields when opening for add, or populate for edit
   useEffect(() => {
     // Safely check fetcher.data for success property
     if (fetcher.data && 'success' in fetcher.data && fetcher.data.success && isAddStepModalOpen) {
-      handleModalClose();
+      handleAddStepModalClose();
       // Remix's default revalidation should handle updating the UI after a successful action
     }
-  }, [fetcher.data, isAddStepModalOpen, handleModalClose]);
+  }, [fetcher.data, isAddStepModalOpen, handleAddStepModalClose]);
+
+  // Effect to populate pricing modal state when bundle data changes
+  useEffect(() => {
+    if (bundle.pricing) {
+      setEnableDiscounts(bundle.pricing.status);
+      setDiscountType(bundle.pricing.type);
+      // Ensure rules are not null before setting
+      if (bundle.pricing.rules) {
+        setPricingRules(bundle.pricing.rules);
+      } else {
+        setPricingRules([{ minQuantity: "", value: "" }]);
+      }
+      setShowDiscountBar(bundle.pricing.showBar);
+      setShowInFooter(bundle.pricing.showFooter);
+    }
+  }, [bundle.pricing]);
+
 
   const handleAddStep = useCallback(async () => {
     const formData = new FormData();
@@ -201,6 +305,19 @@ export default function BundleBuilderPage() {
     fetcher.submit(formData, { method: "post" });
 
   }, [currentStepId, bundle.id, stepName, selectedProducts, selectedCollections, displayVariantsAsIndividual, conditionType, conditionValue, fetcher]);
+
+  const handleSavePricing = useCallback(async () => {
+    const formData = new FormData();
+    formData.append("intent", "savePricing");
+    formData.append("bundleId", bundle.id);
+    formData.append("enableDiscounts", String(enableDiscounts));
+    formData.append("discountType", discountType);
+    formData.append("pricingRules", JSON.stringify(pricingRules));
+    formData.append("showDiscountBar", String(showDiscountBar));
+    formData.append("showInFooter", String(showInFooter));
+
+    fetcher.submit(formData, { method: "post" });
+  }, [bundle.id, enableDiscounts, discountType, pricingRules, showDiscountBar, showInFooter, fetcher]);
 
 
   const handleEditStep = useCallback((step: BundleStep) => {
@@ -300,7 +417,7 @@ export default function BundleBuilderPage() {
                 <Text as="h2" variant="headingMd">Bundle Pricing</Text>
                 <InlineStack align="space-between" blockAlign="center">
                   <Text variant="bodyMd" as="p">Configure discounts and pricing rules</Text>
-                  <Button variant="secondary">Configure Pricing</Button>
+                  <Button variant="secondary" onClick={() => setIsPricingModalOpen(true)}>Configure Pricing</Button>
                 </InlineStack>
               </BlockStack>
             </Card>
@@ -320,7 +437,7 @@ export default function BundleBuilderPage() {
 
       <Modal
         open={isAddStepModalOpen}
-        onClose={handleModalClose}
+        onClose={handleAddStepModalClose}
         title={currentStepId ? "Edit Step" : "Add Step"}
         primaryAction={{
           content: currentStepId ? 'Save Changes' : 'Add Step',
@@ -329,7 +446,7 @@ export default function BundleBuilderPage() {
         secondaryActions={[
           {
             content: 'Cancel',
-            onAction: handleModalClose,
+            onAction: handleAddStepModalClose,
           },
         ]}
       >
@@ -411,6 +528,104 @@ export default function BundleBuilderPage() {
                 />
               </InlineStack>
               <Button>Add another condition</Button>
+            </BlockStack>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Bundle Pricing Modal */}
+      <Modal
+        open={isPricingModalOpen}
+        onClose={handlePricingModalClose}
+        title="Bundle Pricing & Discounts"
+        primaryAction={{
+          content: 'Save Changes',
+          onAction: handleSavePricing,
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: handlePricingModalClose,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <InlineStack align="space-between" blockAlign="center">
+              <Text as="h3" variant="headingMd">Discount Settings</Text>
+              <Checkbox
+                label="Enable discounts"
+                checked={enableDiscounts}
+                onChange={setEnableDiscounts}
+              />
+            </InlineStack>
+
+            {enableDiscounts && (
+              <BlockStack gap="200">
+                <InlineStack>
+                  <Text as="p" variant="bodyMd">Tip: Discounts are calculated based on the products in cart. Configure your rules from lowest to highest discount.</Text>
+                </InlineStack>
+                <Select
+                  label="Discount Type"
+                  options={[
+                    { label: 'Fixed Amount Off', value: 'fixed_amount_off' },
+                    { label: 'Percentage Off', value: 'percentage_off' },
+                    { label: 'Fixed Price Only', value: 'fixed_price_only' },
+                  ]}
+                  value={discountType}
+                  onChange={setDiscountType}
+                />
+                
+                {/* Pricing Rules */}
+                {pricingRules.map((rule, index) => (
+                  <Card key={index} >
+                    <BlockStack gap="200">
+                      <Text as="h4" variant="headingSm">Rule #{index + 1}</Text>
+                      <InlineStack gap="200" blockAlign="center">
+                        <TextField
+                          label="Minimum quantity"
+                          value={rule.minQuantity}
+                          onChange={(value) => {
+                            const newRules = [...pricingRules];
+                            newRules[index].minQuantity = value;
+                            setPricingRules(newRules);
+                          }}
+                          type="number"
+                          autoComplete="off"
+                        />
+                        <TextField
+                          label={discountType === 'percentage_off' ? "Percentage Off" : "Amount Off"}
+                          value={rule.value}
+                          onChange={(value) => {
+                            const newRules = [...pricingRules];
+                            newRules[index].value = value;
+                            setPricingRules(newRules);
+                          }}
+                          type="number"
+                          prefix={discountType === 'fixed_amount_off' ? "$" : undefined}
+                          suffix={discountType === 'percentage_off' ? "%" : undefined}
+                          autoComplete="off"
+                        />
+                      </InlineStack>
+                    </BlockStack>
+                  </Card>
+                ))}
+                <Button onClick={() => setPricingRules([...pricingRules, { minQuantity: "", value: "" }])}>Add new rule</Button>
+              </BlockStack>
+            )}
+
+            <BlockStack gap="200">
+              <Text as="h3" variant="headingMd">Display Settings</Text>
+              <Checkbox
+                label="Show discount bar"
+                checked={showDiscountBar}
+                onChange={setShowDiscountBar}
+              />
+              <Checkbox
+                label="Show in footer"
+                checked={showInFooter}
+                onChange={setShowInFooter}
+              />
             </BlockStack>
           </BlockStack>
         </Modal.Section>
