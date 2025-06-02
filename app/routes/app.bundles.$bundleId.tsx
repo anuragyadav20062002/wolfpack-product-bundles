@@ -1,24 +1,79 @@
-import { useState, useCallback } from "react"; // Import useState and useCallback
-import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select } from "@shopify/polaris"; // Removed ButtonGroup
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react"; // Consolidated imports
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate } from "@remix-run/react";
-import db from "../db.server"; // Import db
-import { authenticate } from "../shopify.server"; // Import authenticate
-import { ArrowLeftIcon } from '@shopify/polaris-icons'; // Import ArrowLeftIcon icon
+import { useState, useCallback, useEffect } from "react";
+import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select } from "@shopify/polaris";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
+import db from "../db.server";
+import { authenticate } from "../shopify.server";
+import { ArrowLeftIcon } from '@shopify/polaris-icons';
 
-// This loader will fetch the bundle details based on the bundleId in the URL
+// Define types for products and collections coming from ResourcePicker
+interface ResourcePickerProduct {
+  id: string;
+  title: string;
+  handle?: string;
+  variants?: Array<{ id: string; title: string; price?: string; }>;
+  images?: Array<{ originalSrc: string }>;
+}
+
+interface ResourcePickerCollection {
+  id: string;
+  title: string;
+  handle?: string;
+}
+
+// Define a type for Bundle, matching Prisma's Bundle model
+interface Bundle {
+  id: string;
+  name: string;
+  description: string | null;
+  shopId: string;
+  status: string;
+  active: boolean;
+  publishedAt: Date | null;
+  settings: string | null;
+  matching: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Define a type for BundleStep, matching Prisma schema and parsed JSON
+interface BundleStep {
+  id: string;
+  name: string;
+  products: ResourcePickerProduct[]; // Parsed from JSON string
+  collections: ResourcePickerCollection[]; // Parsed from JSON string
+  displayVariantsAsIndividual: boolean;
+  conditionType: string | null;
+  conditionValue: number | null;
+  bundleId: string;
+  icon?: string | null;
+  position?: number;
+  minQuantity?: number;
+  maxQuantity?: number;
+  enabled?: boolean;
+  productCategory?: string | null;
+  createdAt: string; // Changed to string
+  updatedAt: string; // Changed to string
+}
+
+// Extend bundle type from loader to include steps
+interface BundleWithSteps extends Bundle {
+  steps: BundleStep[];
+}
+
 export async function loader({ request, params }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request); // Authenticate the request
+  const { session } = await authenticate.admin(request);
   const shop = session.shop;
   const bundleId = params.bundleId;
 
-  // TODO: Fetch bundle data from your database using Prisma based on bundleId
-  // Fetch bundle data from your database using Prisma
   const bundle = await db.bundle.findUnique({
     where: {
       id: bundleId,
-      shopId: shop, // Ensure the bundle belongs to the current shop
+      shopId: shop,
+    },
+    include: {
+      steps: true,
     },
   });
 
@@ -26,27 +81,91 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     throw new Response("Bundle not found", { status: 404 });
   }
 
-  return json({ bundle });
+  // Parse JSON strings back to objects for products and collections, and Date strings to Date objects
+  const parsedSteps = bundle.steps.map(step => ({
+    ...step,
+    products: step.products ? JSON.parse(step.products) : [],
+    collections: step.collections ? JSON.parse(step.collections) : [],
+    // createdAt: new Date(step.createdAt), // No longer parsing to Date here for type compatibility
+    // updatedAt: new Date(step.updatedAt), // No longer parsing to Date here for type compatibility
+  }));
+
+  return json({ bundle: { ...bundle, steps: parsedSteps } });
+}
+
+// Action to handle adding or updating a step
+export async function action({ request }: ActionFunctionArgs) {
+  await authenticate.admin(request);
+
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "addStep" || intent === "editStep") {
+    const bundleId = formData.get("bundleId") as string;
+    const stepName = formData.get("stepName") as string;
+    const selectedProductsString = formData.get("selectedProducts") as string;
+    const selectedCollectionsString = formData.get("selectedCollections") as string;
+    const displayVariantsAsIndividual = formData.get("displayVariantsAsIndividual") === "true";
+    const conditionType = formData.get("conditionType") as string | null;
+    const conditionValue = formData.get("conditionValue");
+    const stepId = formData.get("stepId") as string | null;
+
+    if (typeof bundleId !== 'string' || bundleId.length === 0 || typeof stepName !== 'string' || stepName.length === 0) {
+      return json({ error: 'Bundle ID and Step Name are required' }, { status: 400 });
+    }
+
+    const parsedConditionValue = conditionValue ? parseInt(conditionValue as string, 10) : null;
+
+    try {
+      const stepData = {
+        bundleId: bundleId,
+        name: stepName,
+        products: selectedProductsString ? selectedProductsString : null,
+        collections: selectedCollectionsString ? selectedCollectionsString : null,
+        displayVariantsAsIndividual: displayVariantsAsIndividual,
+        conditionType: conditionType,
+        conditionValue: parsedConditionValue,
+      };
+
+      let resultStep;
+      if (intent === "addStep") {
+        resultStep = await db.bundleStep.create({ data: stepData });
+      } else if (intent === "editStep" && stepId) {
+        resultStep = await db.bundleStep.update({
+          where: { id: stepId },
+          data: stepData,
+        });
+      }
+      return json({ success: true, step: resultStep });
+    } catch (error) {
+      console.error("Error saving bundle step:", error);
+      return json({ error: 'Failed to save bundle step' }, { status: 500 });
+    }
+  }
+  return null;
 }
 
 export default function BundleBuilderPage() {
-  const { bundle } = useLoaderData<typeof loader>();
-  const navigate = useNavigate(); // Initialize useNavigate
-  const shopify = useAppBridge(); // Initialize useAppBridge
+  const { bundle } = useLoaderData<{ bundle: BundleWithSteps }>();
+  const navigate = useNavigate();
+  const shopify = useAppBridge();
+  const fetcher = useFetcher<typeof action>();
 
-  // State for Add Step Modal
+  // State for Add/Edit Step Modal
   const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
+  const [currentStepId, setCurrentStepId] = useState<string | null>(null);
   const [stepName, setStepName] = useState("");
-  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
-  const [selectedCollections, setSelectedCollections] = useState<any[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<ResourcePickerProduct[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<ResourcePickerCollection[]>([]);
   const [displayVariantsAsIndividual, setDisplayVariantsAsIndividual] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
-  const [conditionType, setConditionType] = useState("equal_to");
-  const [conditionValue, setConditionValue] = useState("");
+  const [conditionType, setConditionType] = useState<string>("equal_to");
+  const [conditionValue, setConditionValue] = useState<string>("");
 
+  // handleModalClose definition moved above useEffect for proper order
   const handleModalClose = useCallback(() => {
     setIsAddStepModalOpen(false);
-    // Reset form fields when modal closes
+    setCurrentStepId(null);
     setStepName("");
     setSelectedProducts([]);
     setSelectedCollections([]);
@@ -56,11 +175,52 @@ export default function BundleBuilderPage() {
     setConditionValue("");
   }, []);
 
-  const handleAddStep = async () => {
-    // TODO: Implement logic to save the step data
-    console.log("Adding step:", { stepName, selectedProducts, selectedCollections, displayVariantsAsIndividual, conditionType, conditionValue });
-    handleModalClose();
-  };
+  // Effect to reset modal fields when opening for add, or populate for edit
+  useEffect(() => {
+    // Safely check fetcher.data for success property
+    if (fetcher.data && 'success' in fetcher.data && fetcher.data.success && isAddStepModalOpen) {
+      handleModalClose();
+      // Remix's default revalidation should handle updating the UI after a successful action
+    }
+  }, [fetcher.data, isAddStepModalOpen, handleModalClose]);
+
+  const handleAddStep = useCallback(async () => {
+    const formData = new FormData();
+    formData.append("intent", currentStepId ? "editStep" : "addStep");
+    if (currentStepId) {
+      formData.append("stepId", currentStepId);
+    }
+    formData.append("bundleId", bundle.id);
+    formData.append("stepName", stepName);
+    formData.append("selectedProducts", JSON.stringify(selectedProducts));
+    formData.append("selectedCollections", JSON.stringify(selectedCollections));
+    formData.append("displayVariantsAsIndividual", String(displayVariantsAsIndividual));
+    formData.append("conditionType", conditionType);
+    formData.append("conditionValue", conditionValue);
+
+    fetcher.submit(formData, { method: "post" });
+
+  }, [currentStepId, bundle.id, stepName, selectedProducts, selectedCollections, displayVariantsAsIndividual, conditionType, conditionValue, fetcher]);
+
+
+  const handleEditStep = useCallback((step: BundleStep) => {
+    setCurrentStepId(step.id);
+    setStepName(step.name);
+    setSelectedProducts(step.products);
+    setSelectedCollections(step.collections);
+    setDisplayVariantsAsIndividual(step.displayVariantsAsIndividual);
+    if (step.products.length > 0) {
+      setSelectedTab(0);
+    } else if (step.collections.length > 0) {
+      setSelectedTab(1);
+    } else {
+      setSelectedTab(0);
+    }
+    setConditionType(step.conditionType || "equal_to");
+    setConditionValue(String(step.conditionValue || ""));
+    setIsAddStepModalOpen(true);
+  }, []);
+
 
   const tabs = [
     { id: 'products', content: 'Products' },
@@ -74,7 +234,7 @@ export default function BundleBuilderPage() {
       selectionIds: selectedProducts.map(p => ({ id: p.id }))
     });
     if (products && products.selection) {
-      setSelectedProducts(products.selection);
+      setSelectedProducts(products.selection as ResourcePickerProduct[]);
     }
   }, [shopify, selectedProducts]);
 
@@ -85,14 +245,13 @@ export default function BundleBuilderPage() {
       selectionIds: selectedCollections.map(c => ({ id: c.id }))
     });
     if (collections && collections.selection) {
-      setSelectedCollections(collections.selection);
+      setSelectedCollections(collections.selection as ResourcePickerCollection[]);
     }
   }, [shopify, selectedCollections]);
 
   return (
     <Page>
       <TitleBar title={bundle.name}>
-        {/* Open modal when Add step button is clicked */}
         <button variant="primary" onClick={() => setIsAddStepModalOpen(true)}>Add step</button>
       </TitleBar>
       <Layout>
@@ -110,7 +269,26 @@ export default function BundleBuilderPage() {
           <Card>
             <BlockStack gap="300">
               <Text as="h2" variant="headingMd">Bundle Steps</Text>
-              <Text as="p" variant="bodyMd">No steps yet. Click "Add Step" to create your first step.</Text>
+
+              {bundle.steps && bundle.steps.length > 0 ? (
+                <BlockStack gap="300">
+                  {bundle.steps.map((step) => ( /* Removed explicit cast here */
+                    <Card key={step.id}>
+                      <InlineStack align="space-between" blockAlign="center">
+                        <Text as="h3" variant="headingMd">{step.name}</Text>
+                        <InlineStack gap="200">
+                          <Button variant="tertiary" onClick={() => handleEditStep(step)}>Edit</Button>
+                          <Button variant="tertiary">Clone</Button>
+                          <Button variant="tertiary">Delete</Button> {/* Reverted to tertiary variant */}
+                        </InlineStack>
+                      </InlineStack>
+                    </Card>
+                  ))}
+                </BlockStack>
+              ) : (
+                <Text as="p" variant="bodyMd">No steps yet. Click "Add Step" to create your first step.</Text>
+              )}
+
             </BlockStack>
           </Card>
         </Layout.Section>
@@ -140,13 +318,12 @@ export default function BundleBuilderPage() {
         </Layout.Section>
       </Layout>
 
-      {/* Add Step Modal */}
       <Modal
         open={isAddStepModalOpen}
         onClose={handleModalClose}
-        title="Add Step"
+        title={currentStepId ? "Edit Step" : "Add Step"}
         primaryAction={{
-          content: 'Add Step',
+          content: currentStepId ? 'Save Changes' : 'Add Step',
           onAction: handleAddStep,
         }}
         secondaryActions={[
@@ -171,7 +348,6 @@ export default function BundleBuilderPage() {
               <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab}>
                 <BlockStack gap="300">
                   {selectedTab === 0 ? (
-                    // Products Tab Content
                     <BlockStack gap="200">
                       <Text as="p" variant="bodyMd">Products selected here will be displayed on this step</Text>
                       <Button onClick={handleProductSelection}>Add Products</Button>
@@ -191,7 +367,6 @@ export default function BundleBuilderPage() {
                       />
                     </BlockStack>
                   ) : (
-                    // Collections Tab Content
                     <BlockStack gap="200">
                       <Text as="p" variant="bodyMd">Collections selected here will have all their products available in this step</Text>
                       <Button onClick={handleCollectionSelection}>Add Collections</Button>

@@ -84,21 +84,24 @@ model Bundle {
 }
 
 model BundleStep {
-  id              String        @id @default(uuid())
-  name            String
-  icon            String?       @default("box")
-  position        Int           @default(0)
-  minQuantity     Int           @default(1)
-  maxQuantity     Int           @default(1)
-  enabled         Boolean       @default(true)
-  productCategory String?
-  collections     String?       // Store collections as JSON string or IDs
-  products        String?       // Store products as JSON string or IDs
-  bundleId        String
-  bundle          Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  StepProduct     StepProduct[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                        String        @id @default(uuid())
+  name                      String
+  icon                      String?       @default("box")
+  position                  Int           @default(0)
+  minQuantity               Int           @default(1)
+  maxQuantity               Int           @default(1)
+  enabled                   Boolean       @default(true)
+  productCategory           String?
+  collections               String?       // Store collections as JSON string or IDs
+  products                  String?       // Store products as JSON string or IDs
+  displayVariantsAsIndividual Boolean @default(false)
+  conditionType             String?
+  conditionValue            Int?
+  bundleId                  String
+  bundle                    Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  StepProduct               StepProduct[]
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
 
   @@index([bundleId])
 }
