@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
-import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select } from "@shopify/polaris";
+import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select, List } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
-import { ArrowLeftIcon } from '@shopify/polaris-icons';
+import { ArrowLeftIcon, XIcon } from '@shopify/polaris-icons';
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -238,6 +238,12 @@ export default function BundleBuilderPage() {
   const [showDiscountBar, setShowDiscountBar] = useState(false);
   const [showInFooter, setShowInFooter] = useState(false);
 
+  // State for Publish Modal
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [selectedVisibilityProducts, setSelectedVisibilityProducts] = useState<ResourcePickerProduct[]>([]);
+  const [selectedVisibilityCollections, setSelectedVisibilityCollections] = useState<ResourcePickerCollection[]>([]);
+  const [publishTab, setPublishTab] = useState(0);
+
   // handleModalClose definition moved above useEffect for proper order
   const handleAddStepModalClose = useCallback(() => {
     setIsAddStepModalOpen(false);
@@ -261,6 +267,12 @@ export default function BundleBuilderPage() {
     setShowInFooter(false);
   }, []);
 
+  const handlePublishModalClose = useCallback(() => {
+    setIsPublishModalOpen(false);
+    setSelectedVisibilityProducts([]);
+    setSelectedVisibilityCollections([]);
+    setPublishTab(0);
+  }, []);
 
   // Effect to reset modal fields when opening for add, or populate for edit
   useEffect(() => {
@@ -306,6 +318,7 @@ export default function BundleBuilderPage() {
 
   }, [currentStepId, bundle.id, stepName, selectedProducts, selectedCollections, displayVariantsAsIndividual, conditionType, conditionValue, fetcher]);
 
+
   const handleSavePricing = useCallback(async () => {
     const formData = new FormData();
     formData.append("intent", "savePricing");
@@ -318,6 +331,19 @@ export default function BundleBuilderPage() {
 
     fetcher.submit(formData, { method: "post" });
   }, [bundle.id, enableDiscounts, discountType, pricingRules, showDiscountBar, showInFooter, fetcher]);
+
+  const handlePublishBundle = useCallback(async () => {
+    // For now, just console log all relevant bundle details
+    console.log("--- Publishing Bundle Details ---");
+    console.log("Bundle:", bundle);
+    console.log("Bundle Steps:", bundle.steps);
+    console.log("Bundle Pricing:", bundle.pricing);
+    console.log("Selected Visibility Products:", selectedVisibilityProducts);
+    console.log("Selected Visibility Collections:", selectedVisibilityCollections);
+    console.log("---------------------------------");
+
+    handlePublishModalClose(); // Close modal after logging
+  }, [bundle, selectedVisibilityProducts, selectedVisibilityCollections, handlePublishModalClose]);
 
 
   const handleEditStep = useCallback((step: BundleStep) => {
@@ -396,7 +422,7 @@ export default function BundleBuilderPage() {
                         <InlineStack gap="200">
                           <Button variant="tertiary" onClick={() => handleEditStep(step)}>Edit</Button>
                           <Button variant="tertiary">Clone</Button>
-                          <Button variant="tertiary">Delete</Button> {/* Reverted to tertiary variant */}
+                          <Button variant="tertiary">Delete</Button>
                         </InlineStack>
                       </InlineStack>
                     </Card>
@@ -427,7 +453,7 @@ export default function BundleBuilderPage() {
                 <Text as="h2" variant="headingMd">Bundle Publish</Text>
                 <InlineStack align="space-between" blockAlign="center">
                   <Text variant="bodyMd" as="p">Make bundle available in your store</Text>
-                  <Button variant="primary">Publish</Button>
+                  <Button variant="primary" onClick={() => setIsPublishModalOpen(true)}>Publish</Button>
                 </InlineStack>
               </BlockStack>
             </Card>
@@ -626,6 +652,116 @@ export default function BundleBuilderPage() {
                 checked={showInFooter}
                 onChange={setShowInFooter}
               />
+            </BlockStack>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Publish Bundle Modal */}
+      <Modal
+        open={isPublishModalOpen}
+        onClose={handlePublishModalClose}
+        title="Publish Bundle"
+        primaryAction={{
+          content: 'Publish to Store',
+          onAction: handlePublishBundle,
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: handlePublishModalClose,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <Text as="h3" variant="headingMd">Bundle Visibility</Text>
+            <Tabs tabs={[
+              { id: 'products', content: 'Products' },
+              { id: 'collections', content: 'Collections' },
+            ]} selected={publishTab} onSelect={setPublishTab}>
+              <BlockStack gap="300">
+                {publishTab === 0 ? (
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodyMd">Available Products</Text>
+                    <Text as="p" variant="bodySm">{selectedVisibilityProducts.length} selected</Text>
+                    <Button onClick={async () => {
+                      const products = await shopify.resourcePicker({
+                        type: 'product',
+                        multiple: true,
+                        selectionIds: selectedVisibilityProducts.map(p => ({ id: p.id }))
+                      });
+                      if (products && products.selection) {
+                        setSelectedVisibilityProducts(products.selection as ResourcePickerProduct[]);
+                      }
+                    }}>Select products</Button>
+                    {selectedVisibilityProducts.length > 0 && (
+                      <BlockStack gap="200">
+                        <Text as="p" variant="bodyMd">Selected Products:</Text>
+                        {selectedVisibilityProducts.map((product) => (
+                          <InlineStack key={product.id} align="space-between">
+                            <Text as="p" variant="bodyMd">{product.title}</Text>
+                          </InlineStack>
+                        ))}
+                      </BlockStack>
+                    )}
+                    {selectedVisibilityProducts.length === 0 && (
+                      <BlockStack gap="200">
+                        <Text as="p" variant="bodyMd">No products selected yet</Text>
+                        <InlineStack>
+                          <Text as="p" variant="bodySm" fontWeight="medium">Please select at least one product to enable bundle matching</Text>
+                        </InlineStack>
+                      </BlockStack>
+                    )}
+                  </BlockStack>
+                ) : (
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodyMd">Collections selected here will have all their products available in this step</Text>
+                    <Button onClick={async () => {
+                      const collections = await shopify.resourcePicker({
+                        type: 'collection',
+                        multiple: true,
+                        selectionIds: selectedVisibilityCollections.map(c => ({ id: c.id }))
+                      });
+                      if (collections && collections.selection) {
+                        setSelectedVisibilityCollections(collections.selection as ResourcePickerCollection[]);
+                      }
+                    }}>Select collections</Button>
+                    {selectedVisibilityCollections.length > 0 && (
+                      <BlockStack gap="200">
+                        <Text as="p" variant="bodyMd">Selected Collections:</Text>
+                        <InlineStack gap="200" wrap={true}>
+                          {selectedVisibilityCollections.map((collection) => (
+                            <Button
+                              key={collection.id}
+                              onClick={() => setSelectedVisibilityCollections(selectedVisibilityCollections.filter(c => c.id !== collection.id))}
+                              variant="plain"
+                              icon={XIcon}
+                            >
+                              {collection.title}
+                            </Button>
+                          ))}
+                        </InlineStack>
+                      </BlockStack>
+                    )}
+                    {selectedVisibilityCollections.length === 0 && (
+                      <Text as="p" variant="bodyMd">No collections selected yet</Text>
+                    )}
+                  </BlockStack>
+                )}
+              </BlockStack>
+            </Tabs>
+
+            <BlockStack gap="200">
+              <Text as="h3" variant="headingMd">What happens next?</Text>
+              <List type="bullet">
+                <List.Item>Bundle will be published to your store</List.Item>
+                <List.Item>It will appear on products based on your selection</List.Item>
+                <List.Item>You can edit the bundle settings in the theme customizer</List.Item>
+              </List>
+              <InlineStack>
+                <Text as="p" variant="bodySm" fontWeight="medium">The bundle will appear only on the specific products you selected</Text>
+              </InlineStack>
             </BlockStack>
           </BlockStack>
         </Modal.Section>
