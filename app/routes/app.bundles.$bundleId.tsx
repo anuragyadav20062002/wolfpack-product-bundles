@@ -1,5 +1,6 @@
-import { Page, Layout, Card, Button, BlockStack, Text, InlineStack } from "@shopify/polaris";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { useState, useCallback } from "react"; // Import useState and useCallback
+import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select } from "@shopify/polaris"; // Removed ButtonGroup
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react"; // Consolidated imports
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import db from "../db.server"; // Import db
@@ -31,11 +32,68 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 export default function BundleBuilderPage() {
   const { bundle } = useLoaderData<typeof loader>();
   const navigate = useNavigate(); // Initialize useNavigate
+  const shopify = useAppBridge(); // Initialize useAppBridge
+
+  // State for Add Step Modal
+  const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
+  const [stepName, setStepName] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<any[]>([]);
+  const [displayVariantsAsIndividual, setDisplayVariantsAsIndividual] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [conditionType, setConditionType] = useState("equal_to");
+  const [conditionValue, setConditionValue] = useState("");
+
+  const handleModalClose = useCallback(() => {
+    setIsAddStepModalOpen(false);
+    // Reset form fields when modal closes
+    setStepName("");
+    setSelectedProducts([]);
+    setSelectedCollections([]);
+    setDisplayVariantsAsIndividual(false);
+    setSelectedTab(0);
+    setConditionType("equal_to");
+    setConditionValue("");
+  }, []);
+
+  const handleAddStep = async () => {
+    // TODO: Implement logic to save the step data
+    console.log("Adding step:", { stepName, selectedProducts, selectedCollections, displayVariantsAsIndividual, conditionType, conditionValue });
+    handleModalClose();
+  };
+
+  const tabs = [
+    { id: 'products', content: 'Products' },
+    { id: 'collections', content: 'Collections' },
+  ];
+
+  const handleProductSelection = useCallback(async () => {
+    const products = await shopify.resourcePicker({
+      type: 'product',
+      multiple: true,
+      selectionIds: selectedProducts.map(p => ({ id: p.id }))
+    });
+    if (products && products.selection) {
+      setSelectedProducts(products.selection);
+    }
+  }, [shopify, selectedProducts]);
+
+  const handleCollectionSelection = useCallback(async () => {
+    const collections = await shopify.resourcePicker({
+      type: 'collection',
+      multiple: true,
+      selectionIds: selectedCollections.map(c => ({ id: c.id }))
+    });
+    if (collections && collections.selection) {
+      setSelectedCollections(collections.selection);
+    }
+  }, [shopify, selectedCollections]);
 
   return (
     <Page>
       <TitleBar title={bundle.name}>
-        <button variant="primary" onClick={() => console.log('Add step clicked')}>Add step</button>
+        {/* Open modal when Add step button is clicked */}
+        <button variant="primary" onClick={() => setIsAddStepModalOpen(true)}>Add step</button>
       </TitleBar>
       <Layout>
         <Layout.Section>
@@ -52,7 +110,7 @@ export default function BundleBuilderPage() {
           <Card>
             <BlockStack gap="300">
               <Text as="h2" variant="headingMd">Bundle Steps</Text>
-              <Text variant="bodyMd" as="p">No steps yet. Click "Add Step" to create your first step.</Text>
+              <Text as="p" variant="bodyMd">No steps yet. Click "Add Step" to create your first step.</Text>
             </BlockStack>
           </Card>
         </Layout.Section>
@@ -81,6 +139,107 @@ export default function BundleBuilderPage() {
           </BlockStack>
         </Layout.Section>
       </Layout>
+
+      {/* Add Step Modal */}
+      <Modal
+        open={isAddStepModalOpen}
+        onClose={handleModalClose}
+        title="Add Step"
+        primaryAction={{
+          content: 'Add Step',
+          onAction: handleAddStep,
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: handleModalClose,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <TextField
+              label="Step Name"
+              helpText="e.g. Select Monitor"
+              value={stepName}
+              onChange={setStepName}
+              autoComplete="off"
+            />
+
+            <BlockStack gap="200">
+              <Text as="h3" variant="headingMd">Products / Collections</Text>
+              <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab}>
+                <BlockStack gap="300">
+                  {selectedTab === 0 ? (
+                    // Products Tab Content
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd">Products selected here will be displayed on this step</Text>
+                      <Button onClick={handleProductSelection}>Add Products</Button>
+                      {selectedProducts.length > 0 && (
+                        <BlockStack gap="200">
+                          {selectedProducts.map((product) => (
+                            <InlineStack key={product.id} align="space-between">
+                              <Text as="p" variant="bodyMd">{product.title}</Text>
+                            </InlineStack>
+                          ))}
+                        </BlockStack>
+                      )}
+                      <Checkbox
+                        label="Display variants as individual products"
+                        checked={displayVariantsAsIndividual}
+                        onChange={setDisplayVariantsAsIndividual}
+                      />
+                    </BlockStack>
+                  ) : (
+                    // Collections Tab Content
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd">Collections selected here will have all their products available in this step</Text>
+                      <Button onClick={handleCollectionSelection}>Add Collections</Button>
+                      {selectedCollections.length > 0 && (
+                        <BlockStack gap="200">
+                          {selectedCollections.map((collection) => (
+                            <InlineStack key={collection.id} align="space-between">
+                              <Text as="p" variant="bodyMd">{collection.title}</Text>
+                            </InlineStack>
+                          ))}
+                        </BlockStack>
+                      )}
+                    </BlockStack>
+                  )}
+                </BlockStack>
+              </Tabs>
+            </BlockStack>
+
+            <BlockStack gap="200">
+              <Text as="h3" variant="headingMd">Conditions</Text>
+              <Text as="p" variant="bodyMd">Create conditions based on amount or quantity of products added on this step.</Text>
+              <Text as="p" variant="bodySm">Note: Conditions are only valid on this step.</Text>
+
+              <InlineStack gap="200" blockAlign="center">
+                <Text as="span" variant="bodyMd">Quantity</Text>
+                <Select
+                  options={[
+                    { label: 'is equal to', value: 'equal_to' },
+                    { label: 'at most', value: 'at_most' },
+                    { label: 'at least', value: 'at_least' },
+                  ]}
+                  value={conditionType}
+                  onChange={setConditionType}
+                  label="Condition type"
+                />
+                <TextField
+                  label="Value"
+                  value={conditionValue}
+                  onChange={setConditionValue}
+                  autoComplete="off"
+                  type="number"
+                />
+              </InlineStack>
+              <Button>Add another condition</Button>
+            </BlockStack>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
     </Page>
   );
 } 
