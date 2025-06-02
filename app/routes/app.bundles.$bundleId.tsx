@@ -35,6 +35,7 @@ export default function BundleBuilderPage() {
   return (
     <Page>
       <TitleBar title={bundle.name}>
+        <button variant="primary" onClick={() => console.log('Add step clicked')}>Add step</button>
       </TitleBar>
       <Layout>
         <Layout.Section>
@@ -52,7 +53,6 @@ export default function BundleBuilderPage() {
             <BlockStack gap="300">
               <Text as="h2" variant="headingMd">Bundle Steps</Text>
               <Text variant="bodyMd" as="p">No steps yet. Click "Add Step" to create your first step.</Text>
-              <Button variant="primary">Add step</Button>
             </BlockStack>
           </Card>
         </Layout.Section>
