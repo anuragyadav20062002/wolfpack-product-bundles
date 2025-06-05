@@ -1,0 +1,19 @@
+name = "Bundle Builder Section"
+type = "theme"
+api_version = "2024-01"
+
+[[files]]
+name = "Bundle Builder"
+path = "blocks/bundle.liquid"
+type = "block"
+
+[[assets]]
+name = "bundle-widget"
+path = "assets/bundle-widget.js"
+content_type = "application/javascript"
+
+[[assets]]
+name = "bundle-widget"
+path = "assets/bundle-widget.css"
+content_type = "text/css"
+
