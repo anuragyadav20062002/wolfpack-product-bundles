@@ -109,6 +109,14 @@ const GET_SHOP_METAFIELD_QUERY = `#graphql
   }
 `;
 
+const GET_SHOP_GID_QUERY = `#graphql
+  query GetShopGid {
+    shop {
+      id
+    }
+  }
+`;
+
 // Helper function to update shop metafields
 async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: string, bundleData: any) {
   const metafieldNamespace = "custom";
@@ -177,13 +185,12 @@ async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: stri
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
-  const shop = session.shop;
   const bundleId = params.bundleId;
 
   const bundle = await db.bundle.findUnique({
     where: {
     id: bundleId,
-      shopId: shop,
+      shopId: session.shop,
     },
     include: {
       steps: true,
@@ -216,6 +223,16 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 // Action to handle adding or updating a step or pricing
 export async function action({ request }: ActionFunctionArgs) {
   const { admin } = await authenticate.admin(request);
+
+  let shopIdGid: string;
+  try {
+    const shopGidResponse = await admin.graphql(GET_SHOP_GID_QUERY);
+    const shopGidJson = await shopGidResponse.json();
+    shopIdGid = shopGidJson.data.shop.id;
+  } catch (error) {
+    console.error("Error fetching shop GID:", error);
+    return json({ error: "Failed to fetch shop ID" }, { status: 500 });
+  }
 
   const formData = await request.formData();
   const intent = formData.get("intent");
@@ -272,7 +289,7 @@ export async function action({ request }: ActionFunctionArgs) {
           ...updatedBundle.pricing,
           rules: updatedBundle.pricing.rules ? JSON.parse(updatedBundle.pricing.rules) : null,
         } : null;
-        await updateShopMetafield(admin, updatedBundle.shopId, bundleId, { ...updatedBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
+        await updateShopMetafield(admin, shopIdGid, bundleId, { ...updatedBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
       }
 
       return json({ success: true, step: resultStep, intent: intent });
@@ -336,7 +353,7 @@ export async function action({ request }: ActionFunctionArgs) {
           ...updatedBundle.pricing,
           rules: updatedBundle.pricing.rules ? JSON.parse(updatedBundle.pricing.rules) : null,
         } : null;
-        await updateShopMetafield(admin, updatedBundle.shopId, bundleId, { ...updatedBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
+        await updateShopMetafield(admin, shopIdGid, bundleId, { ...updatedBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
       }
 
       return json({ success: true, pricing: resultPricing, intent: intent });
@@ -378,7 +395,7 @@ export async function action({ request }: ActionFunctionArgs) {
           ...fullBundle.pricing,
           rules: fullBundle.pricing.rules ? JSON.parse(fullBundle.pricing.rules) : null,
         } : null;
-        await updateShopMetafield(admin, fullBundle.shopId, bundleId, { ...fullBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
+        await updateShopMetafield(admin, shopIdGid, bundleId, { ...fullBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
       }
 
       return json({ success: true, bundle: updatedBundle, intent: intent });
