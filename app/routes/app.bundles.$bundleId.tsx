@@ -78,6 +78,103 @@ interface BundleWithStepsAndPricing extends Bundle {
   pricing: BundlePricing | null; // Add pricing to the bundle type
 }
 
+// GraphQL Mutations
+const SET_SHOP_METAFIELD_MUTATION = `#graphql
+  mutation SetShopMetafield($metafields: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafields) {
+      metafields {
+        id
+        namespace
+        key
+        value
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+const GET_SHOP_METAFIELD_QUERY = `#graphql
+  query GetShopMetafield($namespace: String!, $key: String!) {
+    shop {
+      metafield(namespace: $namespace, key: $key) {
+        id
+        namespace
+        key
+        value
+      }
+    }
+  }
+`;
+
+// Helper function to update shop metafields
+async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: string, bundleData: any) {
+  const metafieldNamespace = "custom";
+  const metafieldKey = "all_bundles";
+
+  let allBundles: { [key: string]: any } = {};
+  let existingMetafieldId: string | null = null;
+
+  try {
+    const response = await admin.graphql(
+      GET_SHOP_METAFIELD_QUERY,
+      {
+        variables: {
+          namespace: metafieldNamespace,
+          key: metafieldKey,
+        },
+      }
+    );
+    const responseJson = await response.json();
+
+    if (responseJson.data?.shop?.metafield?.value) {
+      allBundles = JSON.parse(responseJson.data.shop.metafield.value);
+      existingMetafieldId = responseJson.data.shop.metafield.id;
+    }
+  } catch (error) {
+    console.error("Error fetching existing metafield:", error);
+  }
+
+  // Update the specific bundle data
+  allBundles[bundleId] = bundleData;
+
+  const metafieldInput: any = {
+    ownerId: shopIdGid,
+    namespace: metafieldNamespace,
+    key: metafieldKey,
+    value: JSON.stringify(allBundles),
+    type: "json",
+  };
+
+  if (existingMetafieldId) {
+    metafieldInput.id = existingMetafieldId;
+  }
+
+  try {
+    const setMetafieldResponse = await admin.graphql(
+      SET_SHOP_METAFIELD_MUTATION,
+      {
+        variables: {
+          metafields: [metafieldInput],
+        },
+      }
+    );
+    const setMetafieldJson = await setMetafieldResponse.json();
+
+    if (setMetafieldJson.errors) {
+      console.error("Error setting shop metafield:", setMetafieldJson.errors);
+    } else if (setMetafieldJson.data?.metafieldsSet?.userErrors.length > 0) {
+      console.error("Shopify User Errors:", setMetafieldJson.data.metafieldsSet.userErrors);
+    } else {
+      console.log("Shop metafield updated successfully for bundle:", bundleId);
+    }
+  } catch (error) {
+    console.error("Error saving metafield:", error);
+  }
+}
+
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
@@ -118,7 +215,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 // Action to handle adding or updating a step or pricing
 export async function action({ request }: ActionFunctionArgs) {
-  await authenticate.admin(request);
+  const { admin } = await authenticate.admin(request);
 
   const formData = await request.formData();
   const intent = formData.get("intent");
@@ -159,6 +256,25 @@ export async function action({ request }: ActionFunctionArgs) {
           data: stepData,
         });
       }
+
+      // After saving the step, retrieve the full bundle and update the metafield
+      const updatedBundle = await db.bundle.findUnique({
+        where: { id: bundleId },
+        include: { steps: true, pricing: true },
+      });
+      if (updatedBundle) {
+        const parsedBundleSteps = updatedBundle.steps.map(step => ({
+          ...step,
+          products: step.products ? JSON.parse(step.products) : [],
+          collections: step.collections ? JSON.parse(step.collections) : [],
+        }));
+        const parsedBundlePricing = updatedBundle.pricing ? {
+          ...updatedBundle.pricing,
+          rules: updatedBundle.pricing.rules ? JSON.parse(updatedBundle.pricing.rules) : null,
+        } : null;
+        await updateShopMetafield(admin, updatedBundle.shopId, bundleId, { ...updatedBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
+      }
+
       return json({ success: true, step: resultStep, intent: intent });
     } catch (error) {
       console.error("Error saving bundle step:", error);
@@ -204,12 +320,74 @@ export async function action({ request }: ActionFunctionArgs) {
           data: { bundleId: bundleId, ...pricingData },
         });
       }
+      
+      // After saving pricing, retrieve the full bundle and update the metafield
+      const updatedBundle = await db.bundle.findUnique({
+        where: { id: bundleId },
+        include: { steps: true, pricing: true },
+      });
+      if (updatedBundle) {
+        const parsedBundleSteps = updatedBundle.steps.map(step => ({
+          ...step,
+          products: step.products ? JSON.parse(step.products) : [],
+          collections: step.collections ? JSON.parse(step.collections) : [],
+        }));
+        const parsedBundlePricing = updatedBundle.pricing ? {
+          ...updatedBundle.pricing,
+          rules: updatedBundle.pricing.rules ? JSON.parse(updatedBundle.pricing.rules) : null,
+        } : null;
+        await updateShopMetafield(admin, updatedBundle.shopId, bundleId, { ...updatedBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
+      }
+
       return json({ success: true, pricing: resultPricing, intent: intent });
     } catch (error) {
       console.error("Error saving bundle pricing:", error);
       return json({ error: 'Failed to save bundle pricing' }, { status: 500 });
     }
   }
+
+  if (intent === "publishBundle") {
+    const bundleId = formData.get("bundleId") as string;
+
+    if (typeof bundleId !== 'string' || bundleId.length === 0) {
+      return json({ error: 'Bundle ID is required for publishing' }, { status: 400 });
+    }
+
+    try {
+      const updatedBundle = await db.bundle.update({
+        where: { id: bundleId },
+        data: {
+          publishedAt: new Date(),
+          status: "published",
+          active: true, // Assuming a published bundle should be active
+        },
+      });
+
+      // After publishing, retrieve the full bundle and update the metafield
+      const fullBundle = await db.bundle.findUnique({
+        where: { id: bundleId },
+        include: { steps: true, pricing: true },
+      });
+      if (fullBundle) {
+        const parsedBundleSteps = fullBundle.steps.map(step => ({
+          ...step,
+          products: step.products ? JSON.parse(step.products) : [],
+          collections: step.collections ? JSON.parse(step.collections) : [],
+        }));
+        const parsedBundlePricing = fullBundle.pricing ? {
+          ...fullBundle.pricing,
+          rules: fullBundle.pricing.rules ? JSON.parse(fullBundle.pricing.rules) : null,
+        } : null;
+        await updateShopMetafield(admin, fullBundle.shopId, bundleId, { ...fullBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
+      }
+
+      return json({ success: true, bundle: updatedBundle, intent: intent });
+    } catch (error) {
+      console.error("Error publishing bundle:", error);
+      return json({ error: 'Failed to publish bundle' }, { status: 500 });
+    }
+  }
+
   return null;
 }
 
@@ -290,6 +468,11 @@ export default function BundleBuilderPage() {
           handlePricingModalClose();
           shopify.toast.show('Pricing saved successfully!');
           console.log("Bundle Pricing Data:", pricingData.pricing);
+        } else if (fetcher.data.intent === "publishBundle") {
+          const publishedBundleData = fetcher.data as unknown as { success: true, bundle: Bundle, intent: string };
+          handlePublishModalClose();
+          shopify.toast.show('Bundle published successfully!');
+          console.log("Published Bundle Details:", publishedBundleData.bundle);
         }
       } else if ('error' in fetcher.data && fetcher.data.error) {
         const errorData = fetcher.data as unknown as { success: false, error: string, intent?: string };
@@ -350,22 +533,12 @@ export default function BundleBuilderPage() {
   }, [bundle.id, enableDiscounts, discountType, pricingRules, showDiscountBar, showInFooter, fetcher]);
 
   const handlePublishBundle = useCallback(async () => {
-    // For now, just console log all relevant bundle details
-    console.log("--- Publishing Bundle Details ---");
-    console.log("Bundle:", bundle);
-    console.log("Bundle Steps:", bundle.steps);
-    console.log("Bundle Pricing:", bundle.pricing);
-    console.log("Selected Visibility Products:", selectedVisibilityProducts);
-    console.log("Selected Visibility Collections:", selectedVisibilityCollections);
-    console.log("---------------------------------");
+    const formData = new FormData();
+    formData.append("intent", "publishBundle");
+    formData.append("bundleId", bundle.id);
 
-    // Show success toast
-    shopify.toast.show('Bundle published successfully!');
-    // Log the entire bundle object as it contains all related data
-    console.log("Published Bundle Details (Full Object):", bundle);
-
-    handlePublishModalClose(); // Close modal after logging
-  }, [bundle, selectedVisibilityProducts, selectedVisibilityCollections, handlePublishModalClose, shopify]);
+    fetcher.submit(formData, { method: "post" });
+  }, [bundle.id, fetcher]);
 
 
   const handleEditStep = useCallback((step: BundleStep) => {

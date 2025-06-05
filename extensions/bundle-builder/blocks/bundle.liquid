@@ -9,171 +9,174 @@
     {% assign product_type = product.type %}
     {% assign collection_ids = product.collections | map: 'id' %}
     
-    {% for bundle_entry in shop.metafields.bundles %}
-    {% assign bundle_key = bundle_entry[0] %}
-    {% assign bundle_value = bundle_entry[1] %}
-    {% assign bundle = bundle_value.value | parse_json %}
-    {% assign should_display = false %}
+    {% assign all_bundles_metafield = shop.metafields.custom.all_bundles %}
+    {% assign all_bundles = all_bundles_metafield.value | parse_json %}
     
-    {% if bundle.matching.type == 'products' %}
-    {% for rule in bundle.matching.rules %}
-      {% assign product_gid = rule.id | remove: "gid://shopify/Product/" %}
-      {% if product_gid == product_id or product_id contains product_gid or product_gid contains product_id %}
-        {% assign should_display = true %}
-        {% break %}
-      {% endif %}
-    {% endfor %}
-    {% elsif bundle.matching.type == 'collections' %}
-    {% for rule in bundle.matching.rules %}
-      {% assign collection_gid = rule.id | remove: "gid://shopify/Collection/" %}
-      {% for collection_id in collection_ids %}
-        {% if collection_id == collection_gid %}
-          {% assign should_display = true %}
-          {% break %}
-        {% endif %}
-      {% endfor %}
-      {% if should_display %}
-        {% break %}
-      {% endif %}
-    {% endfor %}
-    {% endif %}
+    {% if all_bundles %}
+      {% for bundle_id_key in all_bundles %}
+        {% assign bundle = all_bundles[bundle_id_key] %}
+        {% assign should_display = false %}
     
-    {% if should_display or bundle.publishedAt != null %}
-    <div class="bundle-builder" data-bundle-id="{{ bundle.id }}" data-bundle-name="{{ bundle.name }}" {{ block.shopify_attributes }}>
-      <div class="bundle-builder__steps">
-        {% for step in bundle.steps %}
-          <div class="bundle-builder__step" 
-               data-step-id="{{ step.id }}" 
-               data-min-quantity="{{ step.minQuantity | default: 1 }}" 
-               data-max-quantity="{{ step.maxQuantity | default: 1 }}">
-            <button type="button" class="bundle-builder__step-toggle">
-              <div class="bundle-builder__step-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </div>
-              <div class="bundle-builder__step-info">
-                <h3 class="bundle-builder__step-title">{{ step.name }}</h3>
-                <p class="bundle-builder__step-subtitle">
-                  Add Product
-                </p>
-              </div>
-            </button>
-            
-            {% if step.products.size > 0 %}
-              <div class="bundle-builder__selected-count" style="display: none;">0</div>
+        {% if bundle.matching.type == 'products' %}
+          {% for rule in bundle.matching.rules %}
+            {% assign product_gid = rule.id | remove: "gid://shopify/Product/" %}
+            {% if product_gid == product_id or product_id contains product_gid or product_gid contains product_id %}
+              {% assign should_display = true %}
+              {% break %}
             {% endif %}
+          {% endfor %}
+        {% elsif bundle.matching.type == 'collections' %}
+          {% for rule in bundle.matching.rules %}
+            {% assign collection_gid = rule.id | remove: "gid://shopify/Collection/" %}
+            {% for collection_id in collection_ids %}
+              {% if collection_id == collection_gid %}
+                {% assign should_display = true %}
+                {% break %}
+              {% endif %}
+            {% endfor %}
+            {% if should_display %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
     
-            <!-- Products for this step - hidden by default -->
-            <div class="bundle-builder__step-products" style="display: none;">
-              {% for product_data in step.products %}
-                {% assign variant_id = "" %}
-                {% if product_data.variants %}
-                  {% if product_data.variants.first %}
-                    {% assign variant_id = product_data.variants.first.id %}
-                  {% elsif product_data.variants[0] %}
-                    {% assign variant_id = product_data.variants[0].id %}
-                  {% endif %}
-                {% endif %}
-                
-                {% assign clean_product_id = product_data.id | remove: "gid://shopify/Product/" %}
-                {% assign product_image_url = '' %}
-                {% if product_data.images and product_data.images.size > 0 %}
-                  {% assign product_image_url = product_data.images[0].originalSrc %}
-                {% endif %}
-                
-                <div class="bundle-builder__product" 
-                     data-product-id="{{ product_data.id }}"
-                     data-clean-product-id="{{ clean_product_id }}"
-                     data-variant-id="{{ variant_id }}"
-                     data-variants="{{ product_data.variants | json | escape }}"
-                     data-product-title="{{ product_data.title | escape }}"
-                     data-image-url="{{ product_image_url }}">
-                  <div class="bundle-builder__product-image">
-                    <img src="{{ product_image_url | default: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png' }}" 
-                         alt="{{ product_data.title }}" 
-                         loading="lazy"
-                         data-product-id="{{ clean_product_id }}"
-                         onerror="this.onerror=null; this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png';">
-                  </div>
-                  <div class="bundle-builder__product-info">
-                    <h4 class="bundle-builder__product-title">{{ product_data.title }}</h4>
-                    {% if product_data.variants.size > 0 %}
-                      <div class="bundle-builder__product-price">
-                        {% if product_data.variants[0].compareAtPrice %}
-                          <span class="bundle-builder__product-compare-price">{{ product_data.variants[0].compareAtPrice | money }}</span>
-                        {% endif %}
-                        {{ product_data.variants[0].price | money }}
-                      </div>
-                    {% endif %}
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    
-      <!-- Modal -->
-      <div class="bundle-builder__modal">
-        <div class="bundle-builder__modal-content">
-          <button type="button" class="bundle-builder__modal-close">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-          
-          <div class="bundle-builder__step-tabs">
+        {% if should_display or bundle.publishedAt != null %}
+        <div class="bundle-builder" data-bundle-id="{{ bundle.id }}" data-bundle-name="{{ bundle.name }}" {{ block.shopify_attributes }}>
+          <div class="bundle-builder__steps">
             {% for step in bundle.steps %}
-              <button type="button" class="bundle-builder__step-tab" data-step-id="{{ step.id }}">
-                {{ step.name }}
-              </button>
+              <div class="bundle-builder__step" 
+                   data-step-id="{{ step.id }}" 
+                   data-min-quantity="{{ step.minQuantity | default: 1 }}" 
+                   data-max-quantity="{{ step.maxQuantity | default: 1 }}">
+                <button type="button" class="bundle-builder__step-toggle">
+                  <div class="bundle-builder__step-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </div>
+                  <div class="bundle-builder__step-info">
+                    <h3 class="bundle-builder__step-title">{{ step.name }}</h3>
+                    <p class="bundle-builder__step-subtitle">
+                      Add Product
+                    </p>
+                  </div>
+                </button>
+                
+                {% if step.products.size > 0 %}
+                  <div class="bundle-builder__selected-count" style="display: none;">0</div>
+                {% endif %}
+        
+                <!-- Products for this step - hidden by default -->
+                <div class="bundle-builder__step-products" style="display: none;">
+                  {% for product_data in step.products %}
+                    {% assign variant_id = "" %}
+                    {% if product_data.variants %}
+                      {% if product_data.variants.first %}
+                        {% assign variant_id = product_data.variants.first.id %}
+                      {% elsif product_data.variants[0] %}
+                        {% assign variant_id = product_data.variants[0].id %}
+                      {% endif %}
+                    {% endif %}
+                    
+                    {% assign clean_product_id = product_data.id | remove: "gid://shopify/Product/" %}
+                    {% assign product_image_url = '' %}
+                    {% if product_data.images and product_data.images.size > 0 %}
+                      {% assign product_image_url = product_data.images[0].originalSrc %}
+                    {% endif %}
+                    
+                    <div class="bundle-builder__product" 
+                         data-product-id="{{ product_data.id }}"
+                         data-clean-product-id="{{ clean_product_id }}"
+                         data-variant-id="{{ variant_id }}"
+                         data-variants="{{ product_data.variants | json | escape }}"
+                         data-product-title="{{ product_data.title | escape }}"
+                         data-image-url="{{ product_image_url }}">
+                      <div class="bundle-builder__product-image">
+                        <img src="{{ product_image_url | default: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png' }}" 
+                             alt="{{ product_data.title }}" 
+                             loading="lazy"
+                             data-product-id="{{ clean_product_id }}"
+                             onerror="this.onerror=null; this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png';">
+                      </div>
+                      <div class="bundle-builder__product-info">
+                        <h4 class="bundle-builder__product-title">{{ product_data.title }}</h4>
+                        {% if product_data.variants.size > 0 %}
+                          <div class="bundle-builder__product-price">
+                            {% if product_data.variants[0].compareAtPrice %}
+                              <span class="bundle-builder__product-compare-price">{{ product_data.variants[0].compareAtPrice | money }}</span>
+                            {% endif %}
+                            {{ product_data.variants[0].price | money }}
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
             {% endfor %}
           </div>
-          
-          <div class="bundle-builder__modal-subtitle">
-            <h3 class="bundle-builder__modal-subtitle-main"></h3>
-            <p class="bundle-builder__modal-subtitle-sub"></p>
-          </div>
-          
-          <div class="bundle-builder__modal-body">
-            <div class="bundle-builder__products-row">
-              <!-- Products will be moved here -->
-            </div>
-            
-            <div class="bundle-builder__navigation">
-              <div class="bundle-builder__selection-counter">
+        
+          <!-- Modal -->
+          <div class="bundle-builder__modal">
+            <div class="bundle-builder__modal-content">
+              <button type="button" class="bundle-builder__modal-close">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
-                <span>0</span>
+              </button>
+              
+              <div class="bundle-builder__step-tabs">
+                {% for step in bundle.steps %}
+                  <button type="button" class="bundle-builder__step-tab" data-step-id="{{ step.id }}">
+                    {{ step.name }}
+                  </button>
+                {% endfor %}
               </div>
-              <div class="bundle-builder__nav-buttons">
-                <button type="button" class="bundle-builder__nav-button bundle-builder__nav-button--prev" disabled>Prev</button>
-                <button type="button" class="bundle-builder__nav-button bundle-builder__nav-button--next">Next</button>
+              
+              <div class="bundle-builder__modal-subtitle">
+                <h3 class="bundle-builder__modal-subtitle-main"></h3>
+                <p class="bundle-builder__modal-subtitle-sub"></p>
+              </div>
+              
+              <div class="bundle-builder__modal-body">
+                <div class="bundle-builder__products-row">
+                  <!-- Products will be moved here -->
+                </div>
+                
+                <div class="bundle-builder__navigation">
+                  <div class="bundle-builder__selection-counter">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                      <line x1="3" y1="6" x2="21" y2="6"></line>
+                      <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                    <span>0</span>
+                  </div>
+                  <div class="bundle-builder__nav-buttons">
+                    <button type="button" class="bundle-builder__nav-button bundle-builder__nav-button--prev" disabled>Prev</button>
+                    <button type="button" class="bundle-builder__nav-button bundle-builder__nav-button--next">Next</button>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bundle-builder__modal-footer">
+                <button type="button" class="bundle-builder__modal-button bundle-builder__modal-button--secondary bundle-builder__modal-cancel">Cancel</button>
+                <button type="button" class="bundle-builder__modal-button bundle-builder__modal-button--primary bundle-builder__modal-confirm">Confirm Selection</button>
               </div>
             </div>
           </div>
-          
-          <div class="bundle-builder__modal-footer">
-            <button type="button" class="bundle-builder__modal-button bundle-builder__modal-button--secondary bundle-builder__modal-cancel">Cancel</button>
-            <button type="button" class="bundle-builder__modal-button bundle-builder__modal-button--primary bundle-builder__modal-confirm">Confirm Selection</button>
+        
+          <div class="bundle-builder__footer">
+            <button type="button" class="bundle-builder__add-cart" disabled>
+              Add Bundle to Cart
+            </button>
           </div>
         </div>
-      </div>
-    
-      <div class="bundle-builder__footer">
-        <button type="button" class="bundle-builder__add-cart" disabled>
-          Add Bundle to Cart
-        </button>
-      </div>
-    </div>
+        {% endif %}
+      {% endfor %}
     {% endif %}
-    {% endfor %}
 {% endif %}
     
     {% schema %}
