@@ -12,17 +12,20 @@ import {
   List,
   InlineStack,
   Image,
+  ButtonGroup,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { EditIcon } from "@shopify/polaris-icons";
 import db from "../db.server"; // Import db
 
-// Define a type for the bundle
+// Define a type for the bundle, matching Prisma's Bundle model
 interface Bundle {
   id: string;
   name: string;
-  // Add other bundle properties here as needed
+  status: string;
+  active: boolean;
+  publishedAt: string | null;
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -170,17 +173,22 @@ export default function Index() {
                 {bundles.map((bundle: Bundle) => (
                   <Card key={bundle.id}>
                     <InlineStack align="space-between" blockAlign="center">
-                      <BlockStack gap="100">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Box
+                          minWidth="15px"
+                          minHeight="15px"
+                          borderRadius="full"
+                          background={bundle.publishedAt ? "bg-fill-success" : "bg-fill-warning"}
+                        />
                         <Text as="h3" variant="headingMd">{bundle.name}</Text>
-                        {/* Display other bundle info if needed */}
-                      </BlockStack>
-                      <InlineStack gap="200">
-                         {/* Add status toggle or other relevant info here */}
-                          <Button variant="tertiary">Toggle status</Button>
-                           <Button variant="tertiary" onClick={() => navigate(`/app/bundles/${bundle.id}`)}>View</Button>
-                           <Button variant="tertiary">Edit</Button>
-                            <Button variant="tertiary">Delete</Button>
                       </InlineStack>
+                      {/* Display other bundle info if needed */}
+                      <ButtonGroup>
+                        <Button variant="tertiary" onClick={() => navigate(`/app/bundles/${bundle.id}`)}>Edit</Button>
+                        <Button variant="tertiary">Clone</Button>
+                        <Button variant="tertiary">Delete</Button>
+                        <Button variant="tertiary" onClick={() => navigate(`/app/bundles/${bundle.id}`)}>View</Button>
+                      </ButtonGroup>
                     </InlineStack>
                   </Card>
                 ))}
