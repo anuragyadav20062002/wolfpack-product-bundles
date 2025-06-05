@@ -159,7 +159,7 @@ export async function action({ request }: ActionFunctionArgs) {
           data: stepData,
         });
       }
-      return json({ success: true, step: resultStep });
+      return json({ success: true, step: resultStep, intent: intent });
     } catch (error) {
       console.error("Error saving bundle step:", error);
       return json({ error: 'Failed to save bundle step' }, { status: 500 });
@@ -204,7 +204,7 @@ export async function action({ request }: ActionFunctionArgs) {
           data: { bundleId: bundleId, ...pricingData },
         });
       }
-      return json({ success: true, pricing: resultPricing });
+      return json({ success: true, pricing: resultPricing, intent: intent });
     } catch (error) {
       console.error("Error saving bundle pricing:", error);
       return json({ error: 'Failed to save bundle pricing' }, { status: 500 });
@@ -220,6 +220,7 @@ export default function BundleBuilderPage() {
   const fetcher = useFetcher<typeof action>();
 
   // State for Add/Edit Step Modal
+  // Initialize modal state
   const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
   const [currentStepId, setCurrentStepId] = useState<string | null>(null);
   const [stepName, setStepName] = useState("");
@@ -277,11 +278,26 @@ export default function BundleBuilderPage() {
   // Effect to reset modal fields when opening for add, or populate for edit
   useEffect(() => {
     // Safely check fetcher.data for success property
-    if (fetcher.data && 'success' in fetcher.data && fetcher.data.success && isAddStepModalOpen) {
-      handleAddStepModalClose();
-      // Remix's default revalidation should handle updating the UI after a successful action
+    if (fetcher.data) {
+      if ('success' in fetcher.data && fetcher.data.success) {
+        if (fetcher.data.intent === "addStep" || fetcher.data.intent === "editStep") {
+          const stepData = fetcher.data as unknown as { success: true, step: BundleStep, intent: string };
+          handleAddStepModalClose();
+          shopify.toast.show('Step saved successfully!');
+          console.log("Bundle Step Data:", stepData.step);
+        } else if (fetcher.data.intent === "savePricing") {
+          const pricingData = fetcher.data as unknown as { success: true, pricing: BundlePricing, intent: string };
+          handlePricingModalClose();
+          shopify.toast.show('Pricing saved successfully!');
+          console.log("Bundle Pricing Data:", pricingData.pricing);
+        }
+      } else if ('error' in fetcher.data && fetcher.data.error) {
+        const errorData = fetcher.data as unknown as { success: false, error: string, intent?: string };
+        shopify.toast.show(`Error: ${errorData.error}`, { isError: true });
+        console.error("Action Error:", errorData.error);
+      }
     }
-  }, [fetcher.data, isAddStepModalOpen, handleAddStepModalClose]);
+  }, [fetcher.data, isAddStepModalOpen, handleAddStepModalClose, handlePricingModalClose, shopify]);
 
   // Effect to populate pricing modal state when bundle data changes
   useEffect(() => {
@@ -289,6 +305,7 @@ export default function BundleBuilderPage() {
       setEnableDiscounts(bundle.pricing.status);
       setDiscountType(bundle.pricing.type);
       // Ensure rules are not null before setting
+      // Check if pricing rules exist
       if (bundle.pricing.rules) {
         setPricingRules(bundle.pricing.rules);
       } else {
@@ -342,8 +359,13 @@ export default function BundleBuilderPage() {
     console.log("Selected Visibility Collections:", selectedVisibilityCollections);
     console.log("---------------------------------");
 
+    // Show success toast
+    shopify.toast.show('Bundle published successfully!');
+    // Log the entire bundle object as it contains all related data
+    console.log("Published Bundle Details (Full Object):", bundle);
+
     handlePublishModalClose(); // Close modal after logging
-  }, [bundle, selectedVisibilityProducts, selectedVisibilityCollections, handlePublishModalClose]);
+  }, [bundle, selectedVisibilityProducts, selectedVisibilityCollections, handlePublishModalClose, shopify]);
 
 
   const handleEditStep = useCallback((step: BundleStep) => {
