@@ -13,10 +13,12 @@ import {
   InlineStack,
   Image,
   ButtonGroup,
+  Divider,
+  Tooltip,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { EditIcon } from "@shopify/polaris-icons";
+import { EditIcon, DuplicateIcon, DeleteIcon, ViewIcon } from "@shopify/polaris-icons";
 import db from "../db.server"; // Import db
 
 // Define a type for the bundle, matching Prisma's Bundle model
@@ -169,30 +171,42 @@ export default function Index() {
           ) : (
             /* Show list of bundles if bundles exist */
             <Layout.Section>
-              <BlockStack gap="300">
-                {bundles.map((bundle: Bundle) => (
-                  <Card key={bundle.id}>
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Box
-                          minWidth="15px"
-                          minHeight="15px"
-                          borderRadius="full"
-                          background={bundle.publishedAt ? "bg-fill-success" : "bg-fill-warning"}
-                        />
-                        <Text as="h3" variant="headingMd">{bundle.name}</Text>
-                      </InlineStack>
-                      {/* Display other bundle info if needed */}
-                      <ButtonGroup>
-                        <Button variant="tertiary" onClick={() => navigate(`/app/bundles/${bundle.id}`)}>Edit</Button>
-                        <Button variant="tertiary">Clone</Button>
-                        <Button variant="tertiary">Delete</Button>
-                        <Button variant="tertiary" onClick={() => navigate(`/app/bundles/${bundle.id}`)}>View</Button>
-                      </ButtonGroup>
-                    </InlineStack>
-                  </Card>
-                ))}
-              </BlockStack>
+              <Card>
+                <BlockStack gap="0">
+                  {bundles.map((bundle: Bundle, index) => (
+                    <div key={bundle.id}>
+                      <Box padding="400">
+                        <InlineStack align="space-between" blockAlign="center">
+                          <InlineStack gap="200" blockAlign="center">
+                            <Box
+                              minWidth="15px"
+                              minHeight="15px"
+                              borderRadius="full"
+                              background={bundle.publishedAt ? "bg-fill-success" : "bg-fill-warning"}
+                            />
+                            <Text as="h3" variant="headingMd">{bundle.name}</Text>
+                          </InlineStack>
+                          <ButtonGroup variant="segmented">
+                            <Tooltip content="Edit">
+                              <Button icon={EditIcon} onClick={() => navigate(`/app/bundles/${bundle.id}`)} />
+                            </Tooltip>
+                            <Tooltip content="Clone">
+                              <Button icon={DuplicateIcon} />
+                            </Tooltip>
+                            <Tooltip content="Delete">
+                              <Button icon={DeleteIcon} />
+                            </Tooltip>
+                            <Tooltip content="View">
+                              <Button icon={ViewIcon} onClick={() => navigate(`/app/bundles/${bundle.id}`)} />
+                            </Tooltip>
+                          </ButtonGroup>
+                        </InlineStack>
+                      </Box>
+                      {index < bundles.length - 1 && <Divider />} 
+                    </div>
+                  ))}
+                </BlockStack>
+              </Card>
             </Layout.Section>
           )}
 
