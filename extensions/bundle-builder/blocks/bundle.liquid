@@ -10,28 +10,13 @@
     {% assign collection_ids = product.collections | map: 'id' %}
     
     {% assign all_bundles_metafield = shop.metafields.custom.all_bundles %}
-
-    <script>
-      console.log("bundle.liquid: Raw all_bundles_metafield:", {{ all_bundles_metafield | json }});
-    </script>
-
     {% assign all_bundles = all_bundles_metafield.value | parse_json %}
     
     {% if all_bundles %}
-    <script>
-        console.log("bundle.liquid: Parsed all_bundles:", {{ all_bundles | json }});
-    </script>
       {% for bundle_id_key in all_bundles %}
         {% assign bundle = all_bundles[bundle_id_key] %}
         {% assign should_display = false %}
-
-        <script>
-          console.log("bundle.liquid: Processing bundle ID:", "{{ bundle.id }}", "Name:", "{{ bundle.name }}");
-          console.log("bundle.liquid: Bundle matching type:", "{{ bundle.matching.type }}");
-          console.log("bundle.liquid: Product ID:", "{{ product_id }}");
-          console.log("bundle.liquid: Bundle PublishedAt:", {{ bundle.publishedAt | json }});
-        </script>
-
+    
         {% if bundle.matching.type == 'products' %}
           {% for rule in bundle.matching.rules %}
             {% assign product_gid = rule.id | remove: "gid://shopify/Product/" %}
@@ -54,10 +39,6 @@
             {% endif %}
           {% endfor %}
         {% endif %}
-        <script>
-          console.log("bundle.liquid: Should display for bundle '{{ bundle.name }}':", "{{ should_display }}");
-          console.log("bundle.liquid: Final display condition for '{{ bundle.name }}':", {{ should_display or bundle.publishedAt != null | json }});
-        </script>
     
         {% if should_display or bundle.publishedAt != null %}
         <div class="bundle-builder" data-bundle-id="{{ bundle.id }}" data-bundle-name="{{ bundle.name }}" {{ block.shopify_attributes }}>
@@ -201,7 +182,7 @@
     {% schema %}
     {
     "name": "Bundle Builder",
-    "target": "product",
+    "target": "section",
     "stylesheet": "bundle-widget.css",
     "javascript": "bundle-widget.js",
     "settings": []
