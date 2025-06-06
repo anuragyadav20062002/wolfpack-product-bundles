@@ -123,8 +123,7 @@ async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: stri
   const metafieldKey = "all_bundles";
 
   let allBundles: { [key: string]: any } = {};
-  let existingMetafieldId: string | null = null;
-
+  
   try {
     const response = await admin.graphql(
       GET_SHOP_METAFIELD_QUERY,
@@ -139,7 +138,6 @@ async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: stri
 
     if (responseJson.data?.shop?.metafield?.value) {
       allBundles = JSON.parse(responseJson.data.shop.metafield.value);
-      existingMetafieldId = responseJson.data.shop.metafield.id;
     }
   } catch (error) {
     console.error("Error fetching existing metafield:", error);
@@ -148,17 +146,21 @@ async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: stri
   // Update the specific bundle data
   allBundles[bundleId] = bundleData;
 
-  const metafieldInput: any = {
+  const metafieldInput: {
+    ownerId: string;
+    namespace: string;
+    key: string;
+    value: string;
+    type: string;
+  } = {
     ownerId: shopIdGid,
     namespace: metafieldNamespace,
     key: metafieldKey,
     value: JSON.stringify(allBundles),
-    type: "json",
+    type: "json_string",
   };
 
-  if (existingMetafieldId) {
-    metafieldInput.id = existingMetafieldId;
-  }
+  console.log("Metafield Input being sent:", metafieldInput);
 
   try {
     const setMetafieldResponse = await admin.graphql(
