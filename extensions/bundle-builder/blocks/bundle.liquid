@@ -12,6 +12,10 @@
     {% assign all_bundles_metafield = shop.metafields.custom.all_bundles %}
     {% assign all_bundles = all_bundles_metafield.value | parse_json %}
     
+    <script>
+      console.log('All Bundles Metafield Data:', {{ all_bundles | json }});
+    </script>
+    
     {% if all_bundles %}
       {% for bundle_id_key in all_bundles %}
         {% assign bundle = all_bundles[bundle_id_key] %}
