@@ -13,7 +13,9 @@
     {% assign all_bundles = all_bundles_metafield.value | parse_json %}
     
     <script>
-      console.log('All Bundles Metafield Data:', {{ all_bundles | json }});
+      console.log('Raw All Bundles Metafield:', {{ all_bundles_metafield | json }});
+      console.log('Raw All Bundles Metafield Value:', {{ all_bundles_metafield.value | json }});
+      console.log('Parsed All Bundles Metafield Data:', {{ all_bundles | json }});
     </script>
     
     {% if all_bundles %}
