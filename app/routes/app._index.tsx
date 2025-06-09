@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useNavigate, useLoaderData } from "@remix-run/react";
 import {
   Page,
@@ -29,6 +29,7 @@ interface Bundle {
   status: string;
   active: boolean;
   publishedAt: string | null;
+  matching: string | null; // Add matching property to Bundle type
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -47,6 +48,86 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "cloneBundle") {
+    const bundleIdToClone = formData.get("bundleId") as string;
+
+    if (typeof bundleIdToClone !== 'string' || bundleIdToClone.length === 0) {
+      return json({ error: 'Bundle ID is required for cloning' }, { status: 400 });
+    }
+
+    try {
+      const originalBundle = await db.bundle.findUnique({
+        where: { id: bundleIdToClone },
+        include: { steps: true, pricing: true },
+      });
+
+      if (!originalBundle) {
+        return json({ error: 'Original bundle not found' }, { status: 404 });
+      }
+
+      // Create new bundle with copied data
+      const newBundle = await db.bundle.create({
+        data: {
+          name: `${originalBundle.name} (Clone)`,
+          description: originalBundle.description,
+          shopId: originalBundle.shopId,
+          status: "draft", // Cloned bundle starts as draft
+          active: false,
+          publishedAt: null,
+          settings: originalBundle.settings,
+          matching: originalBundle.matching, // Copy matching data as is
+        },
+      });
+
+      // Clone steps
+      for (const step of originalBundle.steps) {
+        await db.bundleStep.create({
+          data: {
+            bundleId: newBundle.id,
+            name: step.name,
+            products: step.products,
+            collections: step.collections,
+            displayVariantsAsIndividual: step.displayVariantsAsIndividual,
+            conditionType: step.conditionType,
+            conditionValue: step.conditionValue,
+            icon: step.icon,
+            position: step.position,
+            minQuantity: step.minQuantity,
+            maxQuantity: step.maxQuantity,
+            enabled: step.enabled,
+            productCategory: step.productCategory,
+          },
+        });
+      }
+
+      // Clone pricing if it exists
+      if (originalBundle.pricing) {
+        await db.bundlePricing.create({
+          data: {
+            bundleId: newBundle.id,
+            type: originalBundle.pricing.type,
+            status: originalBundle.pricing.status,
+            rules: originalBundle.pricing.rules,
+            showFooter: originalBundle.pricing.showFooter,
+            showBar: originalBundle.pricing.showBar,
+            messages: originalBundle.pricing.messages,
+            published: false, // Cloned pricing starts as unpublished
+          },
+        });
+      }
+      
+      // No need to update shop metafield for cloned bundle immediately,
+      // as it's a draft. It will be updated when published.
+
+      return json({ success: true, bundle: newBundle, intent: intent });
+    } catch (error) {
+      console.error("Error cloning bundle:", error);
+      return json({ error: 'Failed to clone bundle' }, { status: 500 });
+    }
+  }
   const color = ["Red", "Orange", "Yellow", "Green"][
     Math.floor(Math.random() * 4)
   ];
@@ -127,15 +208,11 @@ export default function Index() {
   // const isLoading =
   //   ["loading", "submitting"].includes(fetcher.state) &&
   //   fetcher.formMethod === "POST";
-  const productId = fetcher.data?.product?.id.replace(
-    "gid://shopify/Product/",
-    "",
-  );
 
   useEffect(() => {
-    if (productId) {
-      shopify.toast.show("Product created");
-    }
+    // if (productId) {
+    //   shopify.toast.show("Product created");
+    // }
     // Handle success/error messages from deleteFetcher and clearMetafieldFetcher
     if (deleteFetcher.data) {
       // Use type assertion to tell TypeScript the expected structure
@@ -167,7 +244,25 @@ export default function Index() {
       }
     }
 
-  }, [productId, shopify, deleteFetcher.data, clearMetafieldFetcher.data]);
+    // Handle success/error messages from cloneFetcher and product creation
+    if (fetcher.data) {
+      const data = fetcher.data as { success?: boolean; error?: string; intent?: string; bundle?: Bundle; product?: any; };
+      if (data.intent === "cloneBundle") {
+        if (data.success) {
+          shopify.toast.show('Bundle cloned successfully!');
+          // navigate to refresh the list if needed, or rely on Remix revalidation
+        } else if (data.error) {
+          shopify.toast.show(`Error cloning bundle: ${data.error}`, { isError: true });
+        }
+      } else if (data.product) { // Check if it's the product creation action
+        const prodId = data.product.id.replace("gid://shopify/Product/", "");
+        if (prodId) {
+          shopify.toast.show("Product created");
+        }
+      }
+    }
+
+  }, [shopify, deleteFetcher.data, clearMetafieldFetcher.data, fetcher.data]);
   // const generateProduct = () => fetcher.submit({}, { method: "POST" });
 
   const handleDeleteBundle = (bundleId: string) => {
@@ -177,6 +272,35 @@ export default function Index() {
       formData.append("bundleId", bundleId);
       deleteFetcher.submit(formData, { method: "post", action: `/app/bundles/${bundleId}` });
     }
+  };
+
+  const handleCloneBundle = (bundle: Bundle) => {
+    if (confirm(`Are you sure you want to clone the bundle "${bundle.name}"?`)) {
+      const formData = new FormData();
+      formData.append("intent", "cloneBundle");
+      formData.append("bundleId", bundle.id);
+      fetcher.submit(formData, { method: "post" }); // Use fetcher to submit to current route's action
+    }
+  };
+
+  const handleViewBundle = (bundle: Bundle) => {
+    if (bundle.matching) {
+      try {
+        const parsedMatching = JSON.parse(bundle.matching);
+        const selectedProducts = parsedMatching.selectedVisibilityProducts as Array<{id: string, handle: string}>;
+        if (selectedProducts && selectedProducts.length > 0) {
+          const firstProductHandle = selectedProducts[0].handle;
+          if (firstProductHandle) {
+            // Construct the URL to the product page
+            window.open(`/products/${firstProductHandle}`, '_blank');
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing bundle matching data:", e);
+      }
+    }
+    shopify.toast.show('No product found to view for this bundle or matching data is incomplete.', { isError: true });
   };
 
   const handleClearAllBundlesMetafield = () => {
@@ -245,13 +369,13 @@ export default function Index() {
                               <Button icon={EditIcon} onClick={() => navigate(`/app/bundles/${bundle.id}`)} />
                             </Tooltip>
                             <Tooltip content="Clone">
-                              <Button icon={DuplicateIcon} />
+                              <Button icon={DuplicateIcon} onClick={() => handleCloneBundle(bundle)} />
                             </Tooltip>
                             <Tooltip content="Delete">
                               <Button icon={DeleteIcon} onClick={() => handleDeleteBundle(bundle.id)} />
                             </Tooltip>
                             <Tooltip content="View">
-                              <Button icon={ViewIcon} onClick={() => navigate(`/app/bundles/${bundle.id}`)} />
+                              <Button icon={ViewIcon} onClick={() => handleViewBundle(bundle)} />
                             </Tooltip>
                           </ButtonGroup>
                         </InlineStack>
