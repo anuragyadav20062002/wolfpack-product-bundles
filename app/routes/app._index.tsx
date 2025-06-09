@@ -20,6 +20,7 @@ import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { EditIcon, DuplicateIcon, DeleteIcon, ViewIcon } from "@shopify/polaris-icons";
 import db from "../db.server"; // Import db
+import type { action as bundlesAction } from './app.bundles.$bundleId'; // Import the action from bundleId route
 
 // Define a type for the bundle, matching Prisma's Bundle model
 interface Bundle {
@@ -116,6 +117,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Index() {
   const { bundles } = useLoaderData<typeof loader>(); // Get bundles from loader data
   const fetcher = useFetcher<typeof action>();
+  // Explicitly type the fetchers for actions from app.bundles.$bundleId.tsx
+  const deleteFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for deletion
+  const clearMetafieldFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for clearing all metafields
+
   const navigate = useNavigate();
 
   const shopify = useAppBridge();
@@ -131,8 +136,57 @@ export default function Index() {
     if (productId) {
       shopify.toast.show("Product created");
     }
-  }, [productId, shopify]);
+    // Handle success/error messages from deleteFetcher and clearMetafieldFetcher
+    if (deleteFetcher.data) {
+      // Use type assertion to tell TypeScript the expected structure
+      const data = deleteFetcher.data as {
+        success?: boolean; // Optional property
+        error?: string;
+        intent?: string;
+      };
+
+      if (data.success) {
+        shopify.toast.show('Bundle deleted successfully!');
+      } else if (data.error) {
+        shopify.toast.show(`Error deleting bundle: ${data.error}`, { isError: true });
+      }
+    }
+
+    if (clearMetafieldFetcher.data) {
+      // Use type assertion to tell TypeScript the expected structure
+      const data = clearMetafieldFetcher.data as {
+        success?: boolean; // Optional property
+        error?: string;
+        intent?: string;
+      };
+
+      if (data.success) {
+        shopify.toast.show('All bundles metafield cleared successfully!');
+      } else if (data.error) {
+        shopify.toast.show(`Error clearing metafield: ${data.error}`, { isError: true });
+      }
+    }
+
+  }, [productId, shopify, deleteFetcher.data, clearMetafieldFetcher.data]);
   // const generateProduct = () => fetcher.submit({}, { method: "POST" });
+
+  const handleDeleteBundle = (bundleId: string) => {
+    if (confirm("Are you sure you want to delete this bundle? This action cannot be undone.")) {
+      const formData = new FormData();
+      formData.append("intent", "deleteBundle");
+      formData.append("bundleId", bundleId);
+      deleteFetcher.submit(formData, { method: "post", action: `/app/bundles/${bundleId}` });
+    }
+  };
+
+  const handleClearAllBundlesMetafield = () => {
+    if (confirm("Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.")) {
+      const formData = new FormData();
+      formData.append("intent", "clearAllBundlesMetafield");
+      // A dummy bundleId is needed for the action route, though it's not used by the intent itself
+      clearMetafieldFetcher.submit(formData, { method: "post", action: `/app/bundles/dummy-id` });
+    }
+  };
 
   return (
     <Page>
@@ -194,7 +248,7 @@ export default function Index() {
                               <Button icon={DuplicateIcon} />
                             </Tooltip>
                             <Tooltip content="Delete">
-                              <Button icon={DeleteIcon} />
+                              <Button icon={DeleteIcon} onClick={() => handleDeleteBundle(bundle.id)} />
                             </Tooltip>
                             <Tooltip content="View">
                               <Button icon={ViewIcon} onClick={() => navigate(`/app/bundles/${bundle.id}`)} />
@@ -237,7 +291,10 @@ export default function Index() {
                       </List.Item>
                     </List>
                   </BlockStack>
-                  <Button>Get a quote</Button>
+                  <ButtonGroup>
+                    <Button>Get a quote</Button>
+                    <Button tone="critical" onClick={handleClearAllBundlesMetafield}>Clear All Bundles Metafield</Button>
+                  </ButtonGroup>
                 </Card>
               </Layout.Section>
 

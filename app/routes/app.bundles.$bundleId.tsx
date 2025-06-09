@@ -72,10 +72,25 @@ interface BundlePricing {
   updatedAt: Date;
 }
 
-// Extend bundle type from loader to include steps and pricing
-interface BundleWithStepsAndPricing extends Bundle {
+// Extend bundle type from loader to include steps and pricing, and parsed matching
+interface BundleWithStepsAndPricing {
+  id: string;
+  name: string;
+  description: string | null;
+  shopId: string;
+  status: string;
+  active: boolean;
+  publishedAt: Date | null;
+  settings: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+
   steps: BundleStep[];
-  pricing: BundlePricing | null; // Add pricing to the bundle type
+  pricing: BundlePricing | null;
+  parsedMatching: {
+    selectedVisibilityProducts: ResourcePickerProduct[];
+    selectedVisibilityCollections: ResourcePickerCollection[];
+  } | null; // This will be the parsed object from `matching`
 }
 
 // GraphQL Mutations
@@ -123,7 +138,7 @@ async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: stri
   const metafieldKey = "all_bundles";
 
   let allBundles: { [key: string]: any } = {};
-  
+
   try {
     const response = await admin.graphql(
       GET_SHOP_METAFIELD_QUERY,
@@ -157,7 +172,7 @@ async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: stri
     namespace: metafieldNamespace,
     key: metafieldKey,
     value: JSON.stringify(allBundles),
-    type: "json_string",
+    type: "json",
   };
 
   console.log("Metafield Input being sent:", metafieldInput);
@@ -171,7 +186,7 @@ async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: stri
         },
       }
     );
-    const setMetafieldJson = await setMetafieldResponse.json();
+    const setMetafieldJson: any = await setMetafieldResponse.json();
 
     if (setMetafieldJson.errors) {
       console.error("Error setting shop metafield:", setMetafieldJson.errors);
@@ -219,7 +234,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     rules: bundle.pricing.rules ? JSON.parse(bundle.pricing.rules) : null,
   } : null;
 
-  return json({ bundle: { ...bundle, steps: parsedSteps, pricing: parsedPricing } });
+  // Parse matching rules if they exist
+  const parsedMatching = bundle.matching ? JSON.parse(bundle.matching) : null;
+
+  return json({ bundle: { ...bundle, steps: parsedSteps, pricing: parsedPricing, parsedMatching: parsedMatching } });
 }
 
 // Action to handle adding or updating a step or pricing
@@ -367,10 +385,15 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (intent === "publishBundle") {
     const bundleId = formData.get("bundleId") as string;
+    const selectedVisibilityProductsString = formData.get("selectedVisibilityProducts") as string;
+    const selectedVisibilityCollectionsString = formData.get("selectedVisibilityCollections") as string;
 
-    if (typeof bundleId !== 'string' || bundleId.length === 0) {
-      return json({ error: 'Bundle ID is required for publishing' }, { status: 400 });
+    if (typeof bundleId !== 'string' || bundleId.length === 0 || !selectedVisibilityProductsString || !selectedVisibilityCollectionsString) {
+      return json({ error: 'Bundle ID and selected visibility products/collections are required for publishing' }, { status: 400 });
     }
+
+    const selectedVisibilityProducts = JSON.parse(selectedVisibilityProductsString) as ResourcePickerProduct[];
+    const selectedVisibilityCollections = JSON.parse(selectedVisibilityCollectionsString) as ResourcePickerCollection[];
 
     try {
       const updatedBundle = await db.bundle.update({
@@ -379,6 +402,10 @@ export async function action({ request }: ActionFunctionArgs) {
           publishedAt: new Date(),
           status: "published",
           active: true, // Assuming a published bundle should be active
+          matching: JSON.stringify({
+            selectedVisibilityProducts: selectedVisibilityProducts,
+            selectedVisibilityCollections: selectedVisibilityCollections,
+          }),
         },
       });
 
@@ -404,6 +431,74 @@ export async function action({ request }: ActionFunctionArgs) {
     } catch (error) {
       console.error("Error publishing bundle:", error);
       return json({ error: 'Failed to publish bundle' }, { status: 500 });
+    }
+  }
+
+  if (intent === "deleteBundle") {
+    const bundleId = formData.get("bundleId") as string;
+
+    if (typeof bundleId !== 'string' || bundleId.length === 0) {
+      return json({ error: 'Bundle ID is required for deletion' }, { status: 400 });
+    }
+
+    try {
+      // Delete associated steps and pricing first due to foreign key constraints
+      await db.bundleStep.deleteMany({ where: { bundleId: bundleId } });
+      await db.bundlePricing.deleteMany({ where: { bundleId: bundleId } });
+      await db.bundle.delete({ where: { id: bundleId } });
+
+      // After deleting the bundle, remove it from the shop metafield using the helper
+      await updateShopMetafield(admin, shopIdGid, bundleId, null);
+
+      return json({ success: true, intent: intent });
+    } catch (error) {
+      console.error("Error deleting bundle:", error);
+      return json({ error: 'Failed to delete bundle' }, { status: 500 });
+    }
+  }
+
+  if (intent === "clearAllBundlesMetafield") {
+    try {
+      const metafieldNamespace = "custom";
+      const metafieldKey = "all_bundles";
+
+      const metafieldInput: {
+        ownerId: string;
+        namespace: string;
+        key: string;
+        value: string;
+        type: string;
+      } = {
+        ownerId: shopIdGid,
+        namespace: metafieldNamespace,
+        key: metafieldKey,
+        value: JSON.stringify({}), // Set to an empty object to clear all bundles
+        type: "json",
+      };
+
+      const setMetafieldResponse = await admin.graphql(
+        SET_SHOP_METAFIELD_MUTATION,
+        {
+          variables: {
+            metafields: [metafieldInput],
+          },
+        }
+      );
+      const setMetafieldJson: any = await setMetafieldResponse.json();
+
+      if (setMetafieldJson.errors) {
+        console.error("Error clearing all bundles from shop metafield:", setMetafieldJson.errors);
+        return json({ error: 'Failed to clear all bundles metafield' }, { status: 500 });
+      } else if (setMetafieldJson.data?.metafieldsSet?.userErrors.length > 0) {
+        console.error("Shopify User Errors clearing all bundles from metafield:", setMetafieldJson.data.metafieldsSet.userErrors);
+        return json({ error: 'Failed to clear all bundles metafield due to Shopify errors' }, { status: 500 });
+      } else {
+        console.log("All bundles metafield cleared successfully.");
+        return json({ success: true, intent: intent, message: "All bundle metafields cleared." });
+      }
+    } catch (error) {
+      console.error("Error in clearAllBundlesMetafield intent:", error);
+      return json({ error: 'An unexpected error occurred while clearing metafields' }, { status: 500 });
     }
   }
 
@@ -555,9 +650,11 @@ export default function BundleBuilderPage() {
     const formData = new FormData();
     formData.append("intent", "publishBundle");
     formData.append("bundleId", bundle.id);
+    formData.append("selectedVisibilityProducts", JSON.stringify(selectedVisibilityProducts));
+    formData.append("selectedVisibilityCollections", JSON.stringify(selectedVisibilityCollections));
 
     fetcher.submit(formData, { method: "post" });
-  }, [bundle.id, fetcher]);
+  }, [bundle.id, fetcher, selectedVisibilityProducts, selectedVisibilityCollections]);
 
 
   const handleEditStep = useCallback((step: BundleStep) => {
@@ -625,7 +722,17 @@ export default function BundleBuilderPage() {
         <Layout.Section>
           <Card>
             <BlockStack gap="300">
-              <Text as="h2" variant="headingMd">Bundle Steps</Text>
+              <InlineStack align="space-between" blockAlign="center">
+                <Text as="h2" variant="headingMd">Bundle Steps</Text>
+                <Button variant="secondary" onClick={() => {
+                  if (confirm("Are you sure you want to delete this bundle? This action cannot be undone.")) {
+                    const formData = new FormData();
+                    formData.append("intent", "deleteBundle");
+                    formData.append("bundleId", bundle.id);
+                    fetcher.submit(formData, { method: "post" });
+                  }
+                }}>Delete Bundle</Button>
+              </InlineStack>
 
               {bundle.steps && bundle.steps.length > 0 ? (
                 <BlockStack gap="300">

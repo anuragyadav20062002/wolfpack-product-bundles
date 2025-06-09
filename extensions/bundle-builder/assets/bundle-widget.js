@@ -1,1076 +1,709 @@
-class BundleBuilder {
-  constructor(container) {
-    this.container = container
-    this.bundleId = container.dataset.bundleId || this.generateBundleId()
-    this.steps = container.querySelectorAll(".bundle-builder__step")
-    this.modal = container.querySelector(".bundle-builder__modal")
-    this.modalContent = this.modal?.querySelector(".bundle-builder__modal-content")
-    this.modalSubtitle = this.modal?.querySelector(".bundle-builder__modal-subtitle-main")
-    this.modalSubtitleSub = this.modal?.querySelector(".bundle-builder__modal-subtitle-sub")
-    this.modalProductsContainer = this.modal?.querySelector(".bundle-builder__products-row")
-    this.selectedProducts = new Map()
-    this.bundleName = container.dataset.bundleName || "Custom Bundle"
-    this.currentStep = null
-    this.currentStepIndex = 0
-    this.shopifyMoneyFormat = window.Shopify?.money_format || "Rs. {{amount}}"
-    this.defaultImageUrl = "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"
-    this.productImages = new Map() // Cache for product images
-    this.totalPrice = 0
-    this.selectionCounter = this.modal?.querySelector(".bundle-builder__selection-counter span")
-    this.prevButton = this.modal?.querySelector(".bundle-builder__nav-button--prev")
-    this.nextButton = this.modal?.querySelector(".bundle-builder__nav-button--next")
-
-    console.log("Bundle Builder initialized with bundle ID:", this.bundleId)
-    this.init()
-  }
-
-  // Generate a unique bundle ID if none provided
-  generateBundleId() {
-    return "bundle_" + Math.random().toString(36).substring(2, 10)
-  }
-
-  init() {
-    // Step toggle buttons open modal
-    this.steps.forEach((step, index) => {
-      const toggle = step.querySelector(".bundle-builder__step-toggle")
-      toggle?.addEventListener("click", () => {
-        this.currentStepIndex = index
-        this.openModal(step)
-      })
-    })
-
-    // Modal close button
-    const closeBtn = this.modal?.querySelector(".bundle-builder__modal-close")
-    closeBtn?.addEventListener("click", () => this.closeModal())
-
-    // Modal cancel button
-    const cancelBtn = this.modal?.querySelector(".bundle-builder__modal-cancel")
-    cancelBtn?.addEventListener("click", () => this.closeModal())
-
-    // Modal confirm button
-    const confirmBtn = this.modal?.querySelector(".bundle-builder__modal-confirm")
-    confirmBtn?.addEventListener("click", () => this.confirmSelection())
-
-    // Close modal on outside click
-    this.modal?.addEventListener("click", (e) => {
-      if (e.target === this.modal) {
-        this.closeModal()
-      }
-    })
-
-    // Add cart button listener
-    const addToCartBtn = this.container.querySelector(".bundle-builder__add-cart")
-    if (addToCartBtn) {
-      addToCartBtn.addEventListener("click", () => this.addToCart())
-    }
-
-    // Step tabs in modal
-    const stepTabs = this.modal?.querySelectorAll(".bundle-builder__step-tab")
-    if (stepTabs) {
-      stepTabs.forEach((tab, index) => {
-        tab.addEventListener("click", () => {
-          const stepId = tab.dataset.stepId
-          const step = this.getStepByID(stepId)
-          if (step) {
-            // Update current step index
-            this.currentStepIndex = index
-
-            // Update active tab
-            stepTabs.forEach((t) => t.classList.remove("active"))
-            tab.classList.add("active")
-
-            // Open the selected step in the modal
-            this.openModal(step)
-          }
-        })
-      })
-    }
-
-    // Navigation buttons
-    if (this.prevButton) {
-      this.prevButton.addEventListener("click", () => this.navigateStep(-1))
-    }
-
-    if (this.nextButton) {
-      this.nextButton.addEventListener("click", () => this.navigateStep(1))
-    }
-  }
-
-  // Navigate between steps
-  navigateStep(direction) {
-    const newIndex = this.currentStepIndex + direction
-
-    // Check if the new index is valid
-    if (newIndex >= 0 && newIndex < this.steps.length) {
-      this.currentStepIndex = newIndex
-      const step = this.steps[this.currentStepIndex]
-      this.openModal(step)
-    }
-  }
-
-  // Update the openModal method to include step tabs and navigation
-  openModal(step) {
-    if (!this.modal || !this.modalProductsContainer) return
-
-    this.currentStep = step
-    const stepId = step.dataset.stepId
-    const stepTitle = step.querySelector(".bundle-builder__step-title")?.textContent
-    const stepProducts = step.querySelector(".bundle-builder__step-products")
-    const minQuantity = Number.parseInt(step.dataset.minQuantity || "1", 10)
-    const maxQuantity = Number.parseInt(step.dataset.maxQuantity || "1", 10)
-
-    console.log("Opening modal for step:", stepId, "with", stepProducts?.children.length || 0, "products")
-
-    // Update active tab
-    const stepTabs = this.modal?.querySelectorAll(".bundle-builder__step-tab")
-    if (stepTabs) {
-      stepTabs.forEach((tab, index) => {
-        if (tab.dataset.stepId === stepId) {
-          tab.classList.add("active")
-        } else {
-          tab.classList.remove("active")
-        }
-      })
-    }
-
-    // Set modal subtitle
-    if (this.modalSubtitle) {
-      const stepName = stepTitle || "Products"
-      this.modalSubtitle.textContent = `Select ${stepName}`
-    }
-
-    if (this.modalSubtitleSub) {
-      if (minQuantity === maxQuantity) {
-        this.modalSubtitleSub.textContent = `Add ${minQuantity} product(s) to get the bundle`
-      } else {
-        this.modalSubtitleSub.textContent = `Add ${minQuantity}-${maxQuantity} product(s) to get the bundle`
-      }
-    }
-
-    // Store current step ID
-    this.modal.dataset.currentStepId = stepId
-
-    // Clear previous products
-    this.modalProductsContainer.innerHTML = ""
-
-    // Move products to modal
-    if (stepProducts) {
-      const products = stepProducts.querySelectorAll(".bundle-builder__product")
-      console.log(`Found ${products.length} products in step ${stepId}`)
-
-      products.forEach((product, index) => {
-        const productId = product.dataset.productId
-        console.log(`Processing product ${index + 1}:`, productId)
-
-        // Log the full HTML to debug
-        console.log("Product HTML:", product.outerHTML)
-
-        const clone = this.createProductCard(product, minQuantity, maxQuantity)
-        this.modalProductsContainer.appendChild(clone)
-      })
-    }
-
-    // Update navigation buttons
-    this.updateNavigationButtons()
-
-    // Update selection counter
-    this.updateSelectionCounter()
-
-    // Initialize "Add to Cart" buttons state
-    this.updateAddButtonsState()
-
-    // Show modal
-    this.modal.classList.add("is-open")
-    document.body.style.overflow = "hidden"
-  }
-
-  // Update navigation buttons based on current step
-  updateNavigationButtons() {
-    if (this.prevButton && this.nextButton) {
-      // Disable prev button if we're on the first step
-      this.prevButton.disabled = this.currentStepIndex === 0
-
-      // Disable next button if we're on the last step
-      this.nextButton.disabled = this.currentStepIndex === this.steps.length - 1
-    }
-  }
-
-  // Update the selection counter
-  updateSelectionCounter() {
-    if (this.selectionCounter && this.currentStep) {
-      const stepId = this.currentStep.dataset.stepId
-      const step = this.getStepByID(stepId)
-
-      if (step) {
-        const selectedProducts = this.modalProductsContainer?.querySelectorAll(".bundle-builder__product.is-selected")
-
-        // Calculate total quantity across all selected products
-        let totalQuantity = 0
-        selectedProducts?.forEach((product) => {
-          const quantity = Number.parseInt(product.dataset.quantity || "1", 10)
-          totalQuantity += quantity
-        })
-
-        this.selectionCounter.textContent = totalQuantity.toString()
-      }
-    }
-  }
-
-  // Format money according to Shopify's format
-  formatMoney(cents, format) {
-    if (typeof cents === "string") {
-      cents = cents.replace(".", "")
-    }
-
-    let value = ""
-    const placeholderRegex = /\{\{\s*(\w+)\s*\}\}/
-    const formatString = format || this.shopifyMoneyFormat
-
-    function formatWithDelimiters(number, precision, thousands, decimal) {
-      thousands = thousands || ","
-      decimal = decimal || "."
-
-      if (isNaN(number) || number === null) {
-        return 0
-      }
-
-      number = (number / 100.0).toFixed(precision)
-
-      const parts = number.split(".")
-      const dollarsAmount = parts[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1" + thousands)
-      const centsAmount = parts[1] ? decimal + parts[1] : ""
-
-      return dollarsAmount + centsAmount
-    }
-
-    switch (formatString.match(placeholderRegex)[1]) {
-      case "amount":
-        value = formatWithDelimiters(cents, 2)
-        break
-      case "amount_no_decimals":
-        value = formatWithDelimiters(cents, 0)
-        break
-      case "amount_with_comma_separator":
-        value = formatWithDelimiters(cents, 2, ".", ",")
-        break
-      case "amount_no_decimals_with_comma_separator":
-        value = formatWithDelimiters(cents, 0, ".", ",")
-        break
-      case "amount_with_space_separator":
-        value = formatWithDelimiters(cents, 2, " ", ".")
-        break
-    }
-
-    return formatString.replace(placeholderRegex, value)
-  }
-
-  // Update the createProductCard method for a cleaner design
-  createProductCard(product, minQuantity, maxQuantity) {
-    // Create a new product card element
-    const clone = document.createElement("div")
-    clone.className = "bundle-builder__product"
-
-    // Copy all data attributes
-    for (const attr of product.attributes) {
-      if (attr.name.startsWith("data-")) {
-        clone.setAttribute(attr.name, attr.value)
-      }
-    }
-
-    const productId = product.dataset.productId
-    const productTitle = product.querySelector(".bundle-builder__product-title")?.textContent || "Product"
-    const cleanProductId = product.dataset.cleanProductId || this.cleanProductId(productId)
-
-    // Get image URL from data attribute
-    let imageUrl = product.dataset.imageUrl
-
-    // If no image URL is found, use default placeholder
-    if (!imageUrl || imageUrl.trim() === "") {
-      imageUrl = this.defaultImageUrl
-      console.log(`No image URL for product ${cleanProductId}, using default placeholder`)
-    } else {
-      console.log(`Using image URL for product ${cleanProductId}: ${imageUrl}`)
-
-      // Store in cache for future use
-      this.productImages.set(cleanProductId, imageUrl)
-    }
-
-    console.log("Creating product card for:", productId, productTitle)
-
-    // Get variants data
-    let variantsData = []
-    try {
-      const variantsAttr = product.dataset.variants
-      if (variantsAttr) {
-        variantsData = JSON.parse(variantsAttr)
-        console.log("Parsed variants data:", variantsData)
-      }
-    } catch (error) {
-      console.error("Error parsing variants data:", error)
-    }
-
-    // Determine if product has multiple variants
-    const hasMultipleVariants = Array.isArray(variantsData) && variantsData.length > 1
-
-    // Get the default variant
-    let defaultVariant = null
-    const defaultVariantId = product.dataset.variantId
-
-    if (variantsData.length > 0) {
-      defaultVariant =
-        variantsData.find((v) => this.cleanVariantId(v.id) === this.cleanVariantId(defaultVariantId)) || variantsData[0]
-    }
-
-    // Get price display
-    let priceDisplay = ""
-    if (defaultVariant) {
-      console.log("Default variant price:", defaultVariant.price)
-      // Multiply by 100 to convert dollars to cents for the formatMoney function
-      const priceInCents = Number.parseFloat(defaultVariant.price) * 100
-      priceDisplay = this.formatMoney(priceInCents)
-
-      // Add compare at price if available
-      if (defaultVariant.compareAtPrice) {
-        const compareAtPriceInCents = Number.parseFloat(defaultVariant.compareAtPrice) * 100
-        priceDisplay = `<span class="bundle-builder__product-compare-price">${this.formatMoney(compareAtPriceInCents)}</span> ${priceDisplay}`
-      }
-    }
-
-    // Create variant selector options if needed
-    let variantOptions = ""
-    if (hasMultipleVariants) {
-      variantsData.forEach((variant) => {
-        const variantId = this.cleanVariantId(variant.id)
-        const isSelected = variantId === this.cleanVariantId(defaultVariantId)
-        const priceInCents = Number.parseFloat(variant.price) * 100
-        variantOptions += `<option value="${variantId}" ${isSelected ? "selected" : ""}>${variant.title}</option>`
-      })
-    }
-
-    // Build variant selector HTML if needed
-    const variantSelectorHtml = hasMultipleVariants
-      ? `<div class="bundle-builder__variant-selector">
-      <select class="bundle-builder__variant-select">
-        ${variantOptions}
-      </select>
-    </div>`
-      : ""
-
-    // Build the HTML structure - cleaner, more compact design
-    clone.innerHTML = `
-  <div class="bundle-builder__product-image-container">
-    <div class="bundle-builder__product-image">
-      <img src="${imageUrl}" 
-           alt="${productTitle}" 
-           loading="lazy"
-           data-product-id="${cleanProductId}"
-           onerror="this.onerror=null; this.src='${this.defaultImageUrl}';">
-    </div>
-  </div>
-  <div class="bundle-builder__product-info">
-    <h4 class="bundle-builder__product-title">${productTitle}</h4>
-    <div class="bundle-builder__product-price">${priceDisplay}</div>
-    ${variantSelectorHtml}
-    <div class="bundle-builder__product-actions">
-      <button type="button" class="bundle-builder__product-add">Add to Cart</button>
-      <div class="bundle-builder__quantity-selector" style="display: none;">
-        <button type="button" class="bundle-builder__quantity-btn bundle-builder__quantity-decrease">-</button>
-        <input type="number" class="bundle-builder__quantity-value" value="1" min="1" max="${maxQuantity}" readonly>
-        <button type="button" class="bundle-builder__quantity-btn bundle-builder__quantity-increase">+</button>
-      </div>
-    </div>
-  </div>
-`
-
-    // Store the current variant ID
-    if (defaultVariant) {
-      clone.dataset.currentVariantId = this.cleanVariantId(defaultVariant.id)
-    }
-
-    // Add event listeners
-    const addButton = clone.querySelector(".bundle-builder__product-add")
-    if (addButton) {
-      addButton.addEventListener("click", (e) => {
-        e.stopPropagation() // Prevent event bubbling
-        this.selectProduct(clone)
-      })
-    }
-
-    // Add variant selector event listener
-    const variantSelect = clone.querySelector(".bundle-builder__variant-select")
-    if (variantSelect) {
-      variantSelect.addEventListener("change", (e) => {
-        e.stopPropagation() // Prevent event bubbling
-        this.updateVariant(clone, e.target.value, variantsData)
-      })
-    }
-
-    // Make the product image and container clickable for selection/deselection
-    const productImageContainer = clone.querySelector(".bundle-builder__product-image-container")
-    if (productImageContainer) {
-      productImageContainer.addEventListener("click", (e) => {
-        e.stopPropagation() // Prevent event bubbling
-        if (clone.classList.contains("is-selected")) {
-          this.deselectProduct(clone)
-        } else {
-          this.selectProduct(clone)
-        }
-      })
-    }
-
-    const productTitleEl = clone.querySelector(".bundle-builder__product-title")
-    if (productTitleEl) {
-      productTitleEl.addEventListener("click", (e) => {
-        e.stopPropagation() // Prevent event bubbling
-        if (clone.classList.contains("is-selected")) {
-          this.deselectProduct(clone)
-        } else {
-          this.selectProduct(clone)
-        }
-      })
-    }
-
-    const decreaseBtn = clone.querySelector(".bundle-builder__quantity-decrease")
-    if (decreaseBtn) {
-      decreaseBtn.addEventListener("click", (e) => {
-        e.stopPropagation() // Prevent event bubbling
-        this.changeQuantity(clone, -1)
-      })
-    }
-
-    const increaseBtn = clone.querySelector(".bundle-builder__quantity-increase")
-    if (increaseBtn) {
-      increaseBtn.addEventListener("click", (e) => {
-        e.stopPropagation() // Prevent event bubbling
-        this.changeQuantity(clone, 1)
-      })
-    }
-
-    // Restore selected state if product was previously selected
-    if (product.classList.contains("is-selected")) {
-      clone.classList.add("is-selected")
-      const quantity = Number.parseInt(product.dataset.quantity || "1", 10)
-      const quantityInput = clone.querySelector(".bundle-builder__quantity-value")
-      if (quantityInput) {
-        quantityInput.value = quantity
-      }
-
-      // Show quantity selector and hide add button for selected products
-      const quantitySelector = clone.querySelector(".bundle-builder__quantity-selector")
-      if (quantitySelector) {
-        quantitySelector.style.display = "flex"
-      }
-      if (addButton) {
-        addButton.style.display = "none"
-      }
-
-      this.updateQuantityButtons(clone)
-    }
-
-    return clone
-  }
-
-  // Clean product ID from various formats
-  cleanProductId(productId) {
-    if (!productId) return null
-
-    // Convert to string if it's not already
-    productId = String(productId)
-
-    // Handle different ID formats
-    if (productId.includes("gid://shopify/Product/")) {
-      // GraphQL ID format: gid://shopify/Product/12345
-      return productId.split("/").pop()
-    } else if (productId.includes("/")) {
-      // Another possible GraphQL format
-      return productId.split("/").pop()
-    } else if (productId.includes(":")) {
-      // Another possible format: shopify:product:12345
-      return productId.split(":").pop()
-    }
-
-    return productId
-  }
-
-  // Add method to update variant
-  updateVariant(product, variantId, variantsData) {
-    // Find the variant in the data
-    const variant = variantsData.find((v) => this.cleanVariantId(v.id) === variantId)
-    if (!variant) return
-
-    console.log("Updating variant to:", variant)
-
-    // Update the current variant ID
-    product.dataset.currentVariantId = variantId
-
-    // Update price display
-    const priceElement = product.querySelector(".bundle-builder__product-price")
-    if (priceElement) {
-      let priceHtml = ""
-
-      // Add compare at price if available
-      if (variant.compareAtPrice) {
-        const compareAtPriceInCents = Number.parseFloat(variant.compareAtPrice) * 100
-        priceHtml += `<span class="bundle-builder__product-compare-price">${this.formatMoney(compareAtPriceInCents)}</span> `
-      }
-
-      const priceInCents = Number.parseFloat(variant.price) * 100
-      priceHtml += this.formatMoney(priceInCents)
-      priceElement.innerHTML = priceHtml
-    }
-
-    // Update the original product's variant ID
-    const stepId = this.modal?.dataset.currentStepId
-    if (stepId) {
-      const step = this.getStepByID(stepId)
-      const productId = product.dataset.productId
-      const originalProduct = step?.querySelector(
-        `.bundle-builder__step-products .bundle-builder__product[data-product-id="${productId}"]`,
-      )
-      if (originalProduct) {
-        originalProduct.dataset.variantId = variant.id
-        originalProduct.dataset.currentVariantId = variantId
-      }
-    }
-  }
-
-  // Update the selectProduct method to enforce selection limits
-  selectProduct(product) {
-    const stepId = this.modal?.dataset.currentStepId
-    if (!stepId) return
-
-    const step = this.getStepByID(stepId)
-    if (!step) return
-
-    const minQuantity = Number.parseInt(step.dataset.minQuantity || "1", 10)
-    const maxQuantity = Number.parseInt(step.dataset.maxQuantity || "1", 10)
-
-    // Check if this product is already selected
-    if (product.classList.contains("is-selected")) {
-      // If already selected, deselect it
-      this.deselectProduct(product)
-      return
-    }
-
-    // Calculate current total quantity across all selected products
-    const selectedProducts = this.modalProductsContainer?.querySelectorAll(".bundle-builder__product.is-selected")
-    let currentTotalQuantity = 0
-    selectedProducts?.forEach((selectedProduct) => {
-      const quantity = Number.parseInt(selectedProduct.dataset.quantity || "1", 10)
-      currentTotalQuantity += quantity
-    })
-
-    // STRICT ENFORCEMENT: Check if we've reached the maximum allowed total quantity
-    if (currentTotalQuantity >= maxQuantity) {
-      alert(`You can only select a total of ${maxQuantity} product(s) for this step.`)
-      return
-    }
-
-    // Add selected class
-    product.classList.add("is-selected")
-    product.dataset.quantity = "1"
-
-    // Show quantity selector and hide add button
-    const addButton = product.querySelector(".bundle-builder__product-add")
-    const quantitySelector = product.querySelector(".bundle-builder__quantity-selector")
-
-    if (addButton) {
-      addButton.style.display = "none"
-    }
-
-    if (quantitySelector) {
-      quantitySelector.style.display = "flex"
-    }
-
-    // Update quantity buttons
-    this.updateQuantityButtons(product)
-
-    // Update the original product's selected state
-    const productId = product.dataset.productId
-    const currentVariantId = product.dataset.currentVariantId || product.dataset.variantId
-    const originalProduct = step.querySelector(
-      `.bundle-builder__step-products .bundle-builder__product[data-product-id="${productId}"]`,
-    )
-    if (originalProduct) {
-      originalProduct.classList.add("is-selected")
-      originalProduct.dataset.quantity = "1"
-      if (currentVariantId) {
-        originalProduct.dataset.currentVariantId = currentVariantId
-      }
-    }
-
-    // Update selection counter
-    this.updateSelectionCounter()
-
-    // Update "Add to Cart" buttons state after selection
-    this.updateAddButtonsState()
-
-    console.log(`Selected product: ${productId} with variant: ${currentVariantId}`)
-  }
-
-  // Add a new method to update the state of all "Add to Cart" buttons based on selection limit
-  updateAddButtonsState() {
-    if (!this.currentStep || !this.modalProductsContainer) return
-
-    const maxQuantity = Number.parseInt(this.currentStep.dataset.maxQuantity || "1", 10)
-
-    // Calculate current total quantity across all selected products
-    const selectedProducts = this.modalProductsContainer.querySelectorAll(".bundle-builder__product.is-selected")
-    let currentTotalQuantity = 0
-    selectedProducts.forEach((product) => {
-      const quantity = Number.parseInt(product.dataset.quantity || "1", 10)
-      currentTotalQuantity += quantity
-    })
-
-    // If we've reached the maximum total quantity, disable all non-selected product "Add to Cart" buttons
-    if (currentTotalQuantity >= maxQuantity) {
-      const nonSelectedProducts = this.modalProductsContainer.querySelectorAll(
-        ".bundle-builder__product:not(.is-selected)",
-      )
-      nonSelectedProducts.forEach((product) => {
-        const addButton = product.querySelector(".bundle-builder__product-add")
-        if (addButton) {
-          addButton.disabled = true
-          addButton.textContent = "Maximum reached"
-        }
-      })
-    } else {
-      // Otherwise, enable all "Add to Cart" buttons
-      const allProducts = this.modalProductsContainer.querySelectorAll(".bundle-builder__product:not(.is-selected)")
-      allProducts.forEach((product) => {
-        const addButton = product.querySelector(".bundle-builder__product-add")
-        if (addButton) {
-          addButton.disabled = false
-          addButton.textContent = "Add to Cart"
-        }
-      })
-    }
-
-    // Also update quantity increase buttons for selected products
-    selectedProducts.forEach((product) => {
-      const quantityInput = product.querySelector(".bundle-builder__quantity-value")
-      const increaseBtn = product.querySelector(".bundle-builder__quantity-increase")
-
-      if (quantityInput && increaseBtn) {
-        const currentQuantity = Number.parseInt(quantityInput.value, 10)
-        // Disable increase button if adding one more would exceed the maximum
-        increaseBtn.disabled = currentTotalQuantity - currentQuantity + (currentQuantity + 1) > maxQuantity
-      }
-    })
-  }
-
-  // Update the deselectProduct method to re-enable "Add to Cart" buttons when a product is deselected
-  deselectProduct(product) {
-    const stepId = this.modal?.dataset.currentStepId
-    if (!stepId) return
-
-    const step = this.getStepByID(stepId)
-    if (!step) return
-
-    product.classList.remove("is-selected")
-    delete product.dataset.quantity
-
-    // Hide quantity selector and show add button
-    const addButton = product.querySelector(".bundle-builder__product-add")
-    const quantitySelector = product.querySelector(".bundle-builder__quantity-selector")
-
-    if (addButton) {
-      addButton.style.display = "block"
-    }
-
-    if (quantitySelector) {
-      quantitySelector.style.display = "none"
-    }
-
-    // Update the original product's selected state
-    const productId = product.dataset.productId
-    const originalProduct = step.querySelector(
-      `.bundle-builder__step-products .bundle-builder__product[data-product-id="${productId}"]`,
-    )
-    if (originalProduct) {
-      originalProduct.classList.remove("is-selected")
-      delete originalProduct.dataset.quantity
-    }
-
-    // Update selection counter
-    this.updateSelectionCounter()
-
-    // Update "Add to Cart" buttons state after deselection
-    this.updateAddButtonsState()
-  }
-
-  // Update the changeQuantity method to handle deselection when quantity is 0
-  changeQuantity(product, change) {
-    const quantityInput = product.querySelector(".bundle-builder__quantity-value")
-    if (!quantityInput) return
-
-    const currentQuantity = Number.parseInt(quantityInput.value, 10)
-    const minQuantity = Number.parseInt(quantityInput.min, 10) || 1
-
-    // If decreasing to 0, deselect the product
-    if (currentQuantity + change < 1) {
-      this.deselectProduct(product)
-      return
-    }
-
-    // Get the maximum allowed from the step
-    const stepId = this.modal?.dataset.currentStepId
-    const step = this.getStepByID(stepId)
-    const maxStepQuantity = Number.parseInt(step?.dataset.maxQuantity || "1", 10)
-
-    // Calculate current total quantity across all selected products
-    const selectedProducts = this.modalProductsContainer?.querySelectorAll(".bundle-builder__product.is-selected")
-    let totalQuantity = 0
-    selectedProducts?.forEach((selectedProduct) => {
-      if (selectedProduct !== product) {
-        // Don't count the current product
-        const qty = Number.parseInt(selectedProduct.dataset.quantity || "1", 10)
-        totalQuantity += qty
-      }
-    })
-
-    // Check if new quantity would exceed the maximum for the step
-    const newQuantity = currentQuantity + change
-    if (totalQuantity + newQuantity > maxStepQuantity) {
-      alert(`You can only select a total of ${maxStepQuantity} product(s) for this step.`)
-      return
-    }
-
-    // Enforce min constraint
-    const finalQuantity = Math.max(minQuantity, newQuantity)
-
-    // Update quantity
-    quantityInput.value = finalQuantity
-    product.dataset.quantity = finalQuantity.toString()
-
-    // Update the original product
-    if (stepId) {
-      const productId = product.dataset.productId
-      const originalProduct = step?.querySelector(
-        `.bundle-builder__step-products .bundle-builder__product[data-product-id="${productId}"]`,
-      )
-      if (originalProduct) {
-        originalProduct.dataset.quantity = finalQuantity.toString()
-      }
-    }
-
-    this.updateQuantityButtons(product)
-
-    // Update selection counter and add button states
-    this.updateSelectionCounter()
-    this.updateAddButtonsState()
-  }
-
-  updateQuantityButtons(product) {
-    const quantityInput = product.querySelector(".bundle-builder__quantity-value")
-    const decreaseBtn = product.querySelector(".bundle-builder__quantity-decrease")
-    const increaseBtn = product.querySelector(".bundle-builder__quantity-increase")
-
-    if (!quantityInput || !decreaseBtn || !increaseBtn) return
-
-    const currentQuantity = Number.parseInt(quantityInput.value, 10)
-    const minQuantity = Number.parseInt(quantityInput.min, 10) || 1
-    const maxQuantity = Number.parseInt(quantityInput.max, 10) || 99
-
-    decreaseBtn.disabled = currentQuantity <= minQuantity
-    increaseBtn.disabled = currentQuantity >= maxQuantity
-  }
-
-  // Also update the confirmSelection method to enforce minimum selection
-  confirmSelection() {
-    const stepId = this.modal?.dataset.currentStepId
-    if (!stepId) return
-
-    const step = this.getStepByID(stepId)
-    if (!step) return
-
-    const selectedProducts = this.modalProductsContainer?.querySelectorAll(".bundle-builder__product.is-selected")
-    const countBadge = step.querySelector(".bundle-builder__selected-count")
-    const stepToggle = step.querySelector(".bundle-builder__step-toggle")
-    const stepIcon = step.querySelector(".bundle-builder__step-icon")
-
-    // Calculate total quantity across all selected products
-    let totalQuantity = 0
-    selectedProducts?.forEach((product) => {
-      const quantity = Number.parseInt(product.dataset.quantity || "1", 10)
-      totalQuantity += quantity
-    })
-
-    // Check if we have the minimum required selections
-    const minQuantity = Number.parseInt(step.dataset.minQuantity || "1", 10)
-    const maxQuantity = Number.parseInt(step.dataset.maxQuantity || "1", 10)
-
-    if (totalQuantity < minQuantity) {
-      alert(`Please select a total of at least ${minQuantity} product(s) for this step.`)
-      return
-    }
-
-    if (totalQuantity > maxQuantity) {
-      alert(`You can only select a total of ${maxQuantity} product(s) for this step.`)
-      return
-    }
-
-    if (countBadge) {
-      countBadge.textContent = totalQuantity.toString()
-      countBadge.style.display = totalQuantity > 0 ? "block" : "none"
-    }
-
-    // Update the step icon to show the selected product image
-    if (stepIcon && selectedProducts && selectedProducts.length > 0) {
-      const firstSelectedProduct = selectedProducts[0]
-      const productImage =
-        firstSelectedProduct.querySelector(".bundle-builder__product-image img")?.src || this.defaultImageUrl
-      const productTitle = firstSelectedProduct.querySelector(".bundle-builder__product-title")?.textContent || ""
-
-      // Replace the plus icon with the product image
-      stepIcon.innerHTML = `<img src="${productImage}" alt="${productTitle}" class="bundle-builder__step-selected-image">`
-
-      // Add a selected class to the step
-      step.classList.add("has-selection")
-    } else if (stepIcon) {
-      // Restore the original plus icon if no products are selected
-      stepIcon.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      `
-      step.classList.remove("has-selection")
-    }
-
-    this.updateSelection()
-
-    // If there are more steps, navigate to the next one
-    if (this.currentStepIndex < this.steps.length - 1) {
-      this.navigateStep(1)
-    } else {
-      this.closeModal()
-    }
-  }
-
-  getStepByID(stepId) {
-    return this.container.querySelector(`.bundle-builder__step[data-step-id="${stepId}"]`)
-  }
-
-  updateSelection() {
-    const addToCartBtn = this.container.querySelector(".bundle-builder__add-cart")
-    const allStepsValid = Array.from(this.steps).every((step) => {
-      const minQuantity = Number.parseInt(step.dataset.minQuantity || "1", 10)
-
-      // Get all selected products in this step
-      const selectedProducts = step.querySelectorAll(
-        ".bundle-builder__step-products .bundle-builder__product.is-selected",
-      )
-
-      // Calculate total quantity
-      let totalQuantity = 0
-      selectedProducts.forEach((product) => {
-        const quantity = Number.parseInt(product.dataset.quantity || "1", 10)
-        totalQuantity += quantity
-      })
-
-      // Show total quantity in the badge
-      const countBadge = step.querySelector(".bundle-builder__selected-count")
-      if (countBadge) {
-        countBadge.textContent = totalQuantity.toString()
-      }
-
-      return totalQuantity >= minQuantity
-    })
-
-    if (addToCartBtn) {
-      addToCartBtn.disabled = !allStepsValid
-
-      // Calculate total price
-      this.calculateTotalPrice()
-
-      // Update the button text to include the price
-      if (this.totalPrice > 0) {
-        addToCartBtn.textContent = `Add Bundle to Cart • ${this.formatMoney(this.totalPrice)}`
-      } else {
-        addToCartBtn.textContent = "Add Bundle to Cart"
-      }
-    }
-  }
-
-  // Update the calculateTotalPrice method to account for quantity
-  calculateTotalPrice() {
-    this.totalPrice = 0
-
-    // Loop through all steps and add up the prices of selected products
-    this.steps.forEach((step) => {
-      const selectedProducts = step.querySelectorAll(
-        ".bundle-builder__step-products .bundle-builder__product.is-selected",
-      )
-
-      selectedProducts.forEach((product) => {
-        try {
-          // Get variant data
-          const variantsAttr = product.dataset.variants
-          if (variantsAttr) {
-            const variantsData = JSON.parse(variantsAttr)
-            const currentVariantId = product.dataset.currentVariantId || product.dataset.variantId
-            const variant = variantsData.find(
-              (v) => this.cleanVariantId(v.id) === this.cleanVariantId(currentVariantId),
-            )
-
-            if (variant && variant.price) {
-              const quantity = Number.parseInt(product.dataset.quantity || "1", 10)
-              const price = Number.parseFloat(variant.price) * 100 * quantity
-              this.totalPrice += price
-            }
-          }
-        } catch (error) {
-          console.error("Error calculating price:", error)
-        }
-      })
-    })
-  }
-
-  closeModal() {
-    if (!this.modal) return
-
-    this.modal.classList.remove("is-open")
-    document.body.style.overflow = ""
-    delete this.modal.dataset.currentStepId
-    this.currentStep = null
-  }
-
-  // Add a new method to handle cart display
-  async addToCart() {
-    console.log("=== Adding bundle to cart ===")
-
-    // Create items array for cart API
-    const items = []
-    let hasValidItems = false
-
-    // Collect all selected products from each step
-    this.steps.forEach((step) => {
-      const stepId = step.dataset.stepId
-      const selectedProducts = step.querySelectorAll(
-        ".bundle-builder__step-products .bundle-builder__product.is-selected",
-      )
-
-      selectedProducts.forEach((product) => {
-        try {
-          const productId = product.dataset.productId
-          console.log("Processing product:", productId)
-
-          // Get variant ID - use currentVariantId if available, otherwise fall back to variantId
-          let variantId = product.dataset.currentVariantId || product.dataset.variantId
-          if (variantId) {
-            variantId = this.cleanVariantId(variantId)
-            console.log("Using variant ID:", variantId)
-
-            // Get quantity
-            const quantity = Number.parseInt(product.dataset.quantity || "1", 10)
-
-            // Add to cart with minimal properties - no bundle information
-            items.push({
-              id: variantId,
-              quantity: quantity,
-            })
-
-            hasValidItems = true
-          } else {
-            console.error("No variant ID found for product:", productId)
-          }
-        } catch (error) {
-          console.error("Error processing product:", error, product)
-        }
-      })
-    })
-
-    if (!hasValidItems || items.length === 0) {
-      console.error("No valid items to add to cart")
-      alert("Please select products for all steps before adding to cart.")
-      return
-    }
-
-    try {
-      // Show loading state
-      const addToCartBtn = this.container.querySelector(".bundle-builder__add-cart")
-      if (addToCartBtn) {
-        addToCartBtn.textContent = "Adding to cart..."
-        addToCartBtn.disabled = true
-      }
-
-      console.log("Final items to add to cart:", items)
-
-      // Add all items directly without parent/child relationship
-      const response = await fetch("/cart/add.js", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ items }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error("Cart error response:", errorData)
-        throw new Error(errorData.description || "Failed to add items to cart")
-      }
-
-      const result = await response.json()
-      console.log("Cart response:", result)
-
-      // Redirect to cart page
-      window.location.href = "/cart"
-    } catch (error) {
-      console.error("Error adding to cart:", error)
-
-      // Reset button state
-      const addToCartBtn = this.container.querySelector(".bundle-builder__add-cart")
-      if (addToCartBtn) {
-        this.calculateTotalPrice()
-        if (this.totalPrice > 0) {
-          addToCartBtn.textContent = `Add Bundle to Cart • ${this.formatMoney(this.totalPrice)}`
-        } else {
-          addToCartBtn.textContent = "Add Bundle to Cart"
-        }
-        addToCartBtn.disabled = false
-      }
-
-      // Show error message to user
-      alert(`Failed to add items to cart: ${error.message}`)
-    }
-  }
-
-  // Helper method to clean variant IDs
-  cleanVariantId(variantId) {
-    if (!variantId) return null
-
-    // Convert to string if it's not already
-    variantId = String(variantId)
-
-    // Handle different ID formats
-    if (variantId.includes("gid://shopify/ProductVariant/")) {
-      // GraphQL ID format: gid://shopify/ProductVariant/12345
-      return variantId.split("/").pop()
-    } else if (variantId.includes("/")) {
-      // Another possible GraphQL format
-      return variantId.split("/").pop()
-    } else if (variantId.includes(":")) {
-      // Another possible format: shopify:variant:12345
-      return variantId.split(":").pop()
-    }
-
-    return variantId
+// Function to render bundle steps dynamically
+function renderBundleSteps(numberOfSteps) {
+  const bundleStepsContainer = document.querySelector('.bundle-steps');
+  bundleStepsContainer.innerHTML = ''; // Clear existing steps
+
+  for (let i = 0; i < numberOfSteps; i++) {
+    const stepBox = document.createElement('div');
+    stepBox.classList.add('step-box');
+
+    const plusIcon = document.createElement('span');
+    plusIcon.classList.add('plus-icon');
+    plusIcon.textContent = '+';
+
+    const stepName = document.createElement('p');
+    stepName.classList.add('step-name');
+    stepName.textContent = `Select ${i === 0 ? 'First' : i === 1 ? 'Second' : 'Third'} Shade`; // Hardcoded for 3 steps
+
+    stepBox.appendChild(plusIcon);
+    stepBox.appendChild(stepName);
+    bundleStepsContainer.appendChild(stepBox);
   }
 }
 
-// Initialize on DOM load
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("Bundle Builder script loaded")
+document.addEventListener('DOMContentLoaded', () => {
+  const allBundlesDataRaw = window.allBundlesData;
+  const currentProductId = window.currentProductId;
+  const currentProductHandle = window.currentProductHandle;
+  const currentProductCollections = window.currentProductCollections; // Access the new variable
 
-  // Create a global object to store product data
-  window.bundleBuilderData = window.bundleBuilderData || {}
-  window.bundleBuilderData.products = window.bundleBuilderData.products || {}
+  if (!allBundlesDataRaw || !currentProductId) {
+    console.warn('Bundle data or current product ID not available. Make sure bundles are published and the product context is available.');
+    return;
+  }
 
-  // Initialize bundle builders
-  const containers = document.querySelectorAll(".bundle-builder")
-  containers.forEach((container) => new BundleBuilder(container))
-})
+  let bundles = allBundlesDataRaw; // allBundlesDataRaw is already a JS object
+  
+  let selectedBundle = null;
 
+  // Convert bundles object to an array for easier iteration
+  const bundlesArray = Object.values(bundles);
+
+  // Helper function to calculate discounted price
+  function calculateDiscountedPrice(originalPrice, pricing) {
+    if (!pricing || !pricing.status || !pricing.rules || pricing.rules.length === 0) {
+      return {
+        price: originalPrice,
+        compareAtPrice: null
+      }; // No discount enabled or no rules
+    }
+
+    const rule = pricing.rules[0]; // Assuming only one rule for simplicity based on current UI
+    const value = parseFloat(rule.value);
+    const currentPrice = parseFloat(originalPrice);
+
+    let discountedPrice = currentPrice;
+    let compareAtPrice = originalPrice;
+
+    if (isNaN(currentPrice) || isNaN(value)) {
+      return {
+        price: originalPrice,
+        compareAtPrice: null
+      }; // Invalid numbers
+    }
+
+    switch (pricing.type) {
+      case 'fixed_amount_off':
+        discountedPrice = currentPrice - value;
+        break;
+      case 'percentage_off':
+        discountedPrice = currentPrice * (1 - (value / 100));
+        break;
+      case 'fixed_price_only':
+        discountedPrice = value;
+        compareAtPrice = originalPrice; // Original price becomes compare-at price
+        break;
+      default:
+        return {
+          price: originalPrice,
+          compareAtPrice: null
+        };
+    }
+
+    // Ensure price doesn't go below zero
+    discountedPrice = Math.max(0, discountedPrice);
+
+    return {
+      price: discountedPrice.toFixed(2),
+      compareAtPrice: (compareAtPrice && discountedPrice !== currentPrice) ? currentPrice.toFixed(2) : null
+    };
+  }
+
+  for (const bundle of bundlesArray) {
+    if (bundle.status === 'published') {
+      let parsedMatching = null;
+      if (bundle.matching && typeof bundle.matching === 'string') {
+        try {
+          parsedMatching = JSON.parse(bundle.matching);
+        } catch (e) {
+          console.error('Failed to parse bundle.matching for bundle ID:', bundle.id, e);
+          continue; // Skip this bundle if matching data is corrupt
+        }
+      }
+      console.log('Current Bundle ID:', bundle.id);
+      console.log('Parsed Matching for Bundle:', parsedMatching);
+      console.log('Liquid currentProductCollections:', currentProductCollections);
+
+      const productMatches = parsedMatching &&
+                             parsedMatching.selectedVisibilityProducts &&
+                             Array.isArray(parsedMatching.selectedVisibilityProducts) &&
+                             parsedMatching.selectedVisibilityProducts.some(p => {
+                               // Extract numerical ID from GID for comparison
+                               const productIdFromGid = p.id.split('/').pop();
+                               console.log('Comparing Product:', productIdFromGid, '(' + typeof productIdFromGid + ') with currentProductId:', currentProductId, '(' + typeof currentProductId + ')');
+                               return productIdFromGid === currentProductId.toString();
+                             });
+      console.log('Product Matches:', productMatches);
+
+      const collectionMatches = parsedMatching &&
+                                parsedMatching.selectedVisibilityCollections &&
+                                Array.isArray(parsedMatching.selectedVisibilityCollections) &&
+                                currentProductCollections &&
+                                Array.isArray(currentProductCollections) &&
+                                parsedMatching.selectedVisibilityCollections.some(bundleCollection => {
+                                  // Extract numerical ID from GID for comparison
+                                  const bundleCollectionIdFromGid = bundleCollection.id.split('/').pop();
+                                  console.log('Comparing Bundle Collection:', bundleCollectionIdFromGid, '(' + typeof bundleCollectionIdFromGid + ') with currentProductCollection.id:', currentProductCollections.map(c => c.id.toString()), '(' + typeof currentProductCollections[0]?.id.toString() + ')');
+                                  return currentProductCollections.some(productCollection => productCollection.id.toString() === bundleCollectionIdFromGid);
+                                });
+      console.log('Collection Matches:', collectionMatches);
+
+      if (productMatches || collectionMatches) { // Modified condition
+        selectedBundle = bundle; // We'll use the raw bundle object, which contains `steps` etc. directly.
+        selectedBundle.parsedMatching = parsedMatching; // Attach parsed matching for future use
+        break; // Found a matching bundle, take the first one
+      }
+    }
+  }
+
+  const appContainer = document.getElementById('bundle-builder-app');
+  if (!appContainer) {
+    console.error('Bundle builder app container not found.');
+    return;
+  }
+
+  // Get references to existing bundle display elements
+  const bundleHeader = appContainer.querySelector('.bundle-header');
+  const bundleStepsContainer = appContainer.querySelector('.bundle-steps');
+  const bundleIncludesContainer = appContainer.querySelector('.bundle-includes');
+  const addBundleToCartButton = appContainer.querySelector('.add-bundle-to-cart');
+
+  // Get references to modal elements
+  const bundleBuilderModal = document.getElementById('bundle-builder-modal');
+  const modalOverlay = bundleBuilderModal.querySelector('.modal-overlay');
+  const closeButton = bundleBuilderModal.querySelector('.close-button');
+  const modalTabsContainer = bundleBuilderModal.querySelector('.modal-tabs');
+  const productGridContainer = bundleBuilderModal.querySelector('.product-grid');
+  const prevButton = bundleBuilderModal.querySelector('.prev-button');
+  const nextButton = bundleBuilderModal.querySelector('.next-button');
+
+  let currentActiveStepIndex = 0;
+  // Store selected product IDs and their quantities per step
+  // Example: selectedProductsQuantities[stepIndex] = { 'product1_id': 2, 'product2_id': 1 }
+  let selectedProductsQuantities = selectedBundle ? selectedBundle.steps.map(() => ({})) : [];
+
+  // Cache for product data per step to avoid re-fetching/re-parsing
+  // This will store the actual product objects with imageUrls etc. including variant IDs and prices.
+  let stepProductDataCache = selectedBundle ? selectedBundle.steps.map(() => ([])) : [];
+
+  // Function to calculate total bundle price from selected products
+  function calculateBundleTotalPrice() {
+    let totalRawPrice = 0;
+    selectedProductsQuantities.forEach((stepSelections, stepIndex) => {
+      const productsInStep = stepProductDataCache[stepIndex];
+      for (const variantId in stepSelections) {
+        const quantity = stepSelections[variantId];
+        const product = productsInStep.find(p => p.variantId === variantId); // Find by variantId
+        if (product && typeof product.price === 'number') {
+          totalRawPrice += product.price * quantity;
+        }
+      }
+    });
+
+    // Apply bundle-level discount if enabled
+    if (selectedBundle && selectedBundle.pricing && selectedBundle.pricing.status) {
+      const discounted = calculateDiscountedPrice(totalRawPrice, selectedBundle.pricing);
+      return parseFloat(discounted.price);
+    }
+    return totalRawPrice;
+  }
+
+  // Function to update the Add to Cart button text with calculated price
+  function updateAddToCartButton() {
+    if (addBundleToCartButton) {
+      const totalBundlePrice = calculateBundleTotalPrice();
+      const formattedPrice = `$${totalBundlePrice.toFixed(2)}`;
+      addBundleToCartButton.textContent = `Add Bundle to Cart • ${formattedPrice}`;
+    }
+  }
+
+  // Function to open the modal
+  function openBundleModal(stepIndex) {
+    currentActiveStepIndex = stepIndex;
+    bundleBuilderModal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling of background content
+    renderModalContent();
+  }
+
+  // Function to close the modal
+  function closeBundleModal() {
+    bundleBuilderModal.classList.remove('active');
+    document.body.style.overflow = ''; // Restore scrolling
+    updateMainBundleStepsDisplay(); // Update the main display on close
+    updateAddToCartButton(); // Update the button price after modal closes
+  }
+
+  // Function to render modal content (tabs and product grid for current step)
+  async function renderModalContent() {
+    renderModalTabs();
+    renderCurrentStepInfo();
+    // Render the products for the current step
+    await renderProductGrid(currentActiveStepIndex);
+    updateNavigationButtons();
+  }
+
+  // Function to render tabs in the modal header
+  function renderModalTabs() {
+    modalTabsContainer.innerHTML = '';
+    if (!selectedBundle || !selectedBundle.steps) return;
+
+    selectedBundle.steps.forEach((step, index) => {
+      const tab = document.createElement('div');
+      tab.classList.add('modal-tab');
+      // Add a checkmark if this step has valid selections (optional, for visual feedback)
+      const stepTotalQuantity = Object.values(selectedProductsQuantities[index]).reduce((sum, qty) => sum + qty, 0);
+      const currentStep = selectedBundle.steps[index];
+      let isStepCompleted = false;
+      if (currentStep.conditionType && currentStep.conditionValue !== null) {
+        const requiredQuantity = currentStep.conditionValue;
+        switch (currentStep.conditionType) {
+          case 'equal_to':
+            isStepCompleted = stepTotalQuantity === requiredQuantity;
+            break;
+          case 'at_most':
+            isStepCompleted = stepTotalQuantity <= requiredQuantity;
+            break;
+          case 'at_least':
+            isStepCompleted = stepTotalQuantity >= requiredQuantity;
+            break;
+        }
+      }
+      // If no condition, consider it completed if at least one product is selected
+      else if (Object.keys(selectedProductsQuantities[index]).length > 0) {
+        isStepCompleted = true;
+      }
+
+      if (isStepCompleted && currentActiveStepIndex !== index) { // Don't show checkmark on active tab
+        tab.innerHTML = `${step.name || `Step ${index + 1}`} &#10003;`; // Unicode checkmark
+        tab.style.color = 'green'; // Optional: highlight completed tabs
+      } else {
+        tab.textContent = step.name || `Step ${index + 1}`;
+      }
+
+      if (index === currentActiveStepIndex) {
+        tab.classList.add('active');
+      }
+      tab.dataset.stepIndex = index.toString();
+      tab.addEventListener('click', () => {
+        // Only allow switching tabs if current step is valid or it's the current tab
+        if (validateCurrentStep() || index === currentActiveStepIndex) {
+          currentActiveStepIndex = index;
+          renderModalContent();
+        } else {
+          alert('Please meet the quantity conditions for the current step before moving to another tab.');
+        }
+      });
+      modalTabsContainer.appendChild(tab);
+    });
+  }
+
+  // Function to render current step name and quantity info
+  function renderCurrentStepInfo() {
+    const modalHeader = bundleBuilderModal.querySelector('.modal-header');
+    let currentStepInfoContainer = modalHeader.querySelector('.modal-current-step-info');
+
+    if (!currentStepInfoContainer) {
+      currentStepInfoContainer = document.createElement('div');
+      currentStepInfoContainer.classList.add('modal-current-step-info');
+      // Insert after tabs, but before the rest of the modal-body
+      const modalTabs = modalHeader.querySelector('.modal-tabs');
+      modalHeader.insertBefore(currentStepInfoContainer, modalTabs.nextSibling);
+    }
+
+    const currentStep = selectedBundle.steps[currentActiveStepIndex];
+    if (!currentStep) {
+      currentStepInfoContainer.innerHTML = '';
+      return;
+    }
+
+    let quantityText = '';
+    if (currentStep.conditionType && currentStep.conditionValue !== null) {
+      const requiredQuantity = currentStep.conditionValue;
+      switch (currentStep.conditionType) {
+        case 'equal_to':
+          quantityText = `Add ${requiredQuantity} product(s)`;
+          break;
+        case 'at_most':
+          quantityText = `Add at most ${requiredQuantity} product(s)`;
+          break;
+        case 'at_least':
+          quantityText = `Add at least ${requiredQuantity} product(s)`;
+          break;
+      }
+    } else {
+      // Default message if no specific condition is set
+      quantityText = 'Select product(s)';
+    }
+
+    // Combine with bundle price (assuming bundle.price is the base price)
+    const priceInfo = selectedBundle.price ? ` to get the bundle at $${selectedBundle.price}` : '';
+
+    currentStepInfoContainer.innerHTML = `
+      <!-- <h3>${currentStep.name || `Select ${currentActiveStepIndex + 1} Shade`}</h3> -->
+      <p>${quantityText}${priceInfo}</p>
+    `;
+  }
+
+  // Helper to fetch product details (if not already in cache) - This is a placeholder
+  // In a real Shopify setup, you'd use a Storefront API call or similar.
+  async function fetchProductDetails(productId) {
+    // Placeholder: In a real scenario, you'd make an AJAX request to /products/product-handle.js
+    // or use Shopify's Storefront API to get full product data including images.
+    // For now, we'll return a dummy object if not found in current data.
+    console.warn(`Attempted to fetch product details for ${productId}. This is a placeholder function.`);
+    return {
+      id: productId,
+      title: `Product ${productId}`,
+      imageUrl: 'https://via.placeholder.com/150' // Default image
+    };
+  }
+
+  // Function to render product grid for the current step
+  async function renderProductGrid(stepIndex) {
+    productGridContainer.innerHTML = '';
+    const currentStep = selectedBundle.steps[stepIndex];
+    if (!currentStep) return;
+
+    let productsToDisplay = stepProductDataCache[stepIndex];
+
+    if (productsToDisplay.length === 0) {
+      if (currentStep.products && Array.isArray(currentStep.products) && currentStep.products.length > 0) {
+        productsToDisplay = currentStep.products.flatMap(p => {
+          // If displayVariantsAsIndividual is true, expand into multiple cards for each variant
+          if (currentStep.displayVariantsAsIndividual && p.variants && p.variants.length > 0) {
+            return p.variants.map(variant => ({
+              id: variant.id.split('/').pop(), // Use variant ID for selection/quantity tracking
+              title: `${p.title} - ${variant.title}`,
+              imageUrl: p.images && p.images.length > 0 ? p.images[0].originalSrc : 'https://via.placeholder.com/150',
+              price: parseFloat(variant.price || '0'), // Store variant price
+              variantId: variant.id.split('/').pop() // Explicitly store variantId for cart addition
+            }));
+          } else {
+            // Otherwise, just use the first variant's details or product details
+            const defaultVariant = p.variants && p.variants.length > 0 ? p.variants[0] : null;
+            return [{
+              id: defaultVariant ? defaultVariant.id.split('/').pop() : p.id.split('/').pop(), // Use variant ID if available, else product ID
+              title: p.title,
+              imageUrl: p.images && p.images.length > 0 ? p.images[0].originalSrc : 'https://via.placeholder.com/150',
+              price: defaultVariant ? parseFloat(defaultVariant.price || '0') : 0, // Store price
+              variantId: defaultVariant ? defaultVariant.id.split('/').pop() : null // Store variantId
+            }];
+          }
+        });
+      } else if (currentStep.collections && Array.isArray(currentStep.collections) && currentStep.collections.length > 0) {
+        // This part would ideally fetch products belonging to the selected collections.
+        // For now, we will not fetch prices for collections directly, assuming they are mostly for visibility.
+        // If collection products need prices, a more complex fetch would be required.
+        console.warn('Dynamic product fetching from collections for modal display is not implemented with price/variant info.');
+        productsToDisplay = [];
+      }
+      stepProductDataCache[stepIndex] = productsToDisplay; // Cache for future use
+    }
+
+    // Display a message if no products are configured for the step
+    if (productsToDisplay.length === 0) {
+      productGridContainer.innerHTML = '<p style="text-align: center; padding: 20px;">No products configured for this step.</p>';
+      return;
+    }
+
+    productsToDisplay.forEach(product => {
+      const productCard = document.createElement('div');
+      productCard.classList.add('product-card');
+      // Use actual product ID for data-attribute, not GID
+      productCard.dataset.productId = product.id;
+
+      const currentQuantity = selectedProductsQuantities[stepIndex][product.id] || 0;
+
+      if (currentQuantity > 0) {
+        productCard.classList.add('selected');
+      }
+
+      productCard.innerHTML = `
+        <div class="image-wrapper">
+          <img src="${product.imageUrl}" alt="${product.title}">
+        </div>
+        <p class="product-title">${product.title}</p>
+        ${currentQuantity > 0 ? `<div class="selected-overlay">${currentQuantity}</div>` : ''}
+        <div class="quantity-controls">
+          <button class="quantity-control-button decrease-quantity" data-product-id="${product.id}">-</button>
+          <span class="quantity-display">${currentQuantity}</span>
+          <button class="quantity-control-button increase-quantity" data-product-id="${product.id}">+</button>
+        </div>
+      `;
+
+      // Event listener for toggling selection (clicking anywhere on card except buttons)
+      productCard.addEventListener('click', (event) => {
+        if (!event.target.closest('.quantity-control-button')) {
+          const productId = product.id;
+          const currentQty = selectedProductsQuantities[stepIndex][productId] || 0;
+          // If clicked and not selected, select with quantity 1. If selected, deselect (quantity 0).
+          updateProductSelection(stepIndex, productId, currentQty > 0 ? 0 : 1);
+        }
+      });
+
+      // Event listeners for quantity buttons
+      const increaseButton = productCard.querySelector('.increase-quantity');
+      const decreaseButton = productCard.querySelector('.decrease-quantity');
+
+      increaseButton.addEventListener('click', () => {
+        const productId = product.id;
+        const currentQty = selectedProductsQuantities[stepIndex][productId] || 0;
+        updateProductSelection(stepIndex, productId, currentQty + 1);
+      });
+
+      decreaseButton.addEventListener('click', () => {
+        const productId = product.id;
+        const currentQty = selectedProductsQuantities[stepIndex][productId] || 0;
+        if (currentQty > 0) {
+          updateProductSelection(stepIndex, productId, currentQty - 1);
+        }
+      });
+
+      productGridContainer.appendChild(productCard);
+    });
+  }
+
+  // Function to update selected product quantities
+  function updateProductSelection(stepIndex, productId, newQuantity) {
+    if (!selectedProductsQuantities[stepIndex]) {
+      selectedProductsQuantities[stepIndex] = {};
+    }
+
+    // Ensure quantities don't go below 0
+    const quantity = Math.max(0, newQuantity);
+
+    selectedProductsQuantities[stepIndex][productId] = quantity;
+
+    if (quantity === 0) {
+      delete selectedProductsQuantities[stepIndex][productId];
+    }
+
+    // Re-render the specific product card or the entire grid for simplicity
+    renderProductGrid(stepIndex); // Re-render to update UI (selected class, quantity display)
+    updateNavigationButtons(); // Update button state based on new selections
+    renderModalTabs(); // Re-render tabs to update checkmarks
+  }
+
+  // Function to validate current step based on quantity rules
+  function validateCurrentStep() {
+    const currentStep = selectedBundle.steps[currentActiveStepIndex];
+    const selectedProductsInCurrentStep = selectedProductsQuantities[currentActiveStepIndex];
+
+    let totalQuantitySelected = 0;
+    for (const prodId in selectedProductsInCurrentStep) {
+      totalQuantitySelected += selectedProductsInCurrentStep[prodId];
+    }
+
+    if (currentStep.conditionType && currentStep.conditionValue !== null) {
+      const requiredQuantity = currentStep.conditionValue;
+      switch (currentStep.conditionType) {
+        case 'equal_to':
+          return totalQuantitySelected === requiredQuantity;
+        case 'at_most':
+          return totalQuantitySelected <= requiredQuantity;
+        case 'at_least':
+          return totalQuantitySelected >= requiredQuantity;
+        default:
+          return false; // Unknown condition type
+      }
+    }
+    // If no explicit condition, consider it valid if at least one product is selected
+    return totalQuantitySelected > 0;
+  }
+
+  // Function to update navigation button states (Prev/Next/Done) and check quantity rules
+  function updateNavigationButtons() {
+    const totalSteps = selectedBundle.steps.length;
+    prevButton.disabled = currentActiveStepIndex === 0;
+
+    const isCurrentStepValid = validateCurrentStep();
+
+    if (currentActiveStepIndex === totalSteps - 1) {
+      nextButton.textContent = 'Done';
+      nextButton.disabled = !isCurrentStepValid; // 'Done' button is disabled if last step is not valid
+    } else {
+      nextButton.textContent = 'Next';
+      nextButton.disabled = !isCurrentStepValid; // 'Next' button is disabled if current step is not valid
+    }
+  }
+
+  // Function to update the main bundle steps display after modal is closed
+  function updateMainBundleStepsDisplay() {
+    // Ensure these elements exist before trying to manipulate them
+    const bundleStepsContainer = document.querySelector('.bundle-steps');
+    if (!bundleStepsContainer) return; // Defensive check, should not be null now
+
+    bundleStepsContainer.innerHTML = ''; // Clear existing steps
+
+    if (!selectedBundle || !selectedBundle.steps) return;
+
+    selectedBundle.steps.forEach((step, index) => {
+        const stepBox = document.createElement('div');
+        stepBox.classList.add('step-box');
+      stepBox.dataset.stepIndex = index.toString();
+
+      const selectedProductsInStep = selectedProductsQuantities[index];
+      const selectedProductIds = Object.keys(selectedProductsInStep);
+
+      // Display image of *any* one selected product, or the first one if multiple
+      if (selectedProductIds.length > 0) {
+        // Find the product image from cache or initial data using the first selected product ID
+        const firstSelectedProductId = selectedProductIds[0];
+        // The ID in selectedProductsQuantities is now the variant ID
+        const product = stepProductDataCache[index].find(p => p.variantId === firstSelectedProductId);
+        if (product && product.imageUrl) {
+          const img = document.createElement('img');
+          img.src = product.imageUrl;
+          img.alt = product.title || '';
+          img.classList.add('bundle-step-product-image');
+          stepBox.appendChild(img);
+        } else {
+          // Fallback if image not found in cache (shouldn't happen if cached correctly)
+          const plusIcon = document.createElement('span');
+          plusIcon.classList.add('plus-icon');
+          plusIcon.textContent = '+';
+          stepBox.appendChild(plusIcon);
+        }
+      } else {
+        // If no product is selected for this step, show plus icon
+        const plusIcon = document.createElement('span');
+        plusIcon.classList.add('plus-icon');
+        plusIcon.textContent = '+';
+        stepBox.appendChild(plusIcon);
+      }
+
+      // Attach click listener to open modal for this step
+      stepBox.addEventListener('click', () => openBundleModal(index));
+        bundleStepsContainer.appendChild(stepBox);
+      });
+    }
+
+  // Initial rendering of bundle content based on selectedBundle (if any)
+  if (selectedBundle) {
+    // Render bundle header
+    let displayPrice = selectedBundle.price || 'N/A';
+    let displayComparePrice = selectedBundle.compareAtPrice || 'N/A';
+
+    // Apply discount logic if enabled
+    if (selectedBundle.pricing && selectedBundle.pricing.status) {
+      const prices = calculateDiscountedPrice(selectedBundle.price, selectedBundle.pricing);
+      displayPrice = prices.price;
+      displayComparePrice = prices.compareAtPrice || selectedBundle.compareAtPrice;
+    }
+
+    bundleHeader.innerHTML = `
+      <h2 class="bundle-title">${selectedBundle.name || ''}</h2>
+      <div class="bundle-price">
+        <span class="current-price">$${displayPrice}</span>
+        ${displayComparePrice && displayComparePrice !== displayPrice ? `<span class="compare-price">$${displayComparePrice}</span>` : ''}
+      </div>
+    `;
+
+    // Render bundle includes (if any and data exists)
+    if (selectedBundle.includes && Array.isArray(selectedBundle.includes) && selectedBundle.includes.length > 0) {
+      bundleIncludesContainer.innerHTML = ''; // Clear existing content
+      selectedBundle.includes.forEach(item => {
+        const includeItem = document.createElement('div');
+        includeItem.classList.add('include-item');
+
+        const img = document.createElement('img');
+        img.src = item.imageUrl || '';
+        img.alt = item.name || '';
+
+        const p = document.createElement('p');
+        p.textContent = item.name || '';
+
+        includeItem.appendChild(img);
+        includeItem.appendChild(p);
+        bundleIncludesContainer.appendChild(includeItem);
+      });
+    } else {
+      bundleIncludesContainer.innerHTML = ''; // Ensure it's empty if no includes
+    }
+    
+    // Initial rendering of main bundle steps
+    updateMainBundleStepsDisplay();
+    updateAddToCartButton(); // Initial update of the add to cart button
+
+  } else {
+    // No bundle found for this product, hide the entire app container
+    appContainer.style.display = 'none';
+    console.log('No published bundle found for this product.');
+  }
+
+  // Event Listeners for the modal controls
+  closeButton.addEventListener('click', closeBundleModal);
+  modalOverlay.addEventListener('click', closeBundleModal);
+
+  prevButton.addEventListener('click', () => {
+    if (currentActiveStepIndex > 0 && validateCurrentStep()) {
+      currentActiveStepIndex--;
+      renderModalContent();
+    } else if (currentActiveStepIndex > 0 && !validateCurrentStep()) {
+      alert('Please meet the quantity conditions for the current step before going back.');
+    }
+  });
+
+  nextButton.addEventListener('click', () => {
+    if (validateCurrentStep()) {
+      if (currentActiveStepIndex < selectedBundle.steps.length - 1) {
+        currentActiveStepIndex++;
+        renderModalContent();
+      } else {
+        // Last step and valid, close the modal
+        closeBundleModal();
+      }
+    } else {
+      alert('Please meet the quantity conditions for the current step before proceeding.');
+    }
+  });
+
+  // Add to Cart Button Logic
+  addBundleToCartButton.addEventListener('click', async () => {
+    const itemsToAdd = [];
+    selectedProductsQuantities.forEach((stepSelections, stepIndex) => {
+      const productsInStep = stepProductDataCache[stepIndex];
+      for (const variantId in stepSelections) {
+        const quantity = stepSelections[variantId];
+        if (quantity > 0) {
+          // Ensure the variantId is a number for Shopify's /cart/add.js endpoint
+          itemsToAdd.push({
+            id: parseInt(variantId), 
+            quantity: quantity
+          });
+        }
+      }
+    });
+
+    if (itemsToAdd.length === 0) {
+      alert('Please select products for your bundle before adding to cart.');
+      return;
+    }
+
+    // Validate all steps are completed before adding to cart
+    const allStepsValid = selectedBundle.steps.every((_, index) => {
+        // Temporarily set active step to validate it
+        currentActiveStepIndex = index;
+        return validateCurrentStep();
+    });
+    // Reset to original active step if needed, though closing modal might reset it anyway
+    // For this context, it's fine as we are about to redirect.
+
+    if (!allStepsValid) {
+        alert('Please complete all bundle steps before adding to cart.');
+        return;
+    }
+
+    try {
+      // Show a loading state or disable button to prevent multiple clicks
+      addBundleToCartButton.disabled = true;
+      addBundleToCartButton.textContent = 'Adding to Cart...';
+
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ items: itemsToAdd })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('Products added to cart:', data);
+        window.location.href = '/cart'; // Redirect to cart page
+      } else {
+        console.error('Error adding products to cart:', data);
+        alert(`Failed to add bundle to cart: ${data.message || 'Unknown error'}`);
+        addBundleToCartButton.disabled = false; // Re-enable button on error
+        updateAddToCartButton(); // Restore original button text
+      }
+    } catch (error) {
+      console.error('Network or unexpected error adding to cart:', error);
+      alert('An error occurred while adding the bundle to your cart. Please try again.');
+      addBundleToCartButton.disabled = false; // Re-enable button on error
+      updateAddToCartButton(); // Restore original button text
+    }
+  });
+
+}); 

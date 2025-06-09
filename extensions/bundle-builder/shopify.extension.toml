@@ -1,19 +1,15 @@
-name = "Bundle Builder Section"
+name = "bundle-builder"
+
+[build]
+asset_dir = "assets"
+
+[[extensions]]
+name = "bundle-builder"
 type = "theme"
-api_version = "2024-01"
+handle = "bundle-builder"
+api_version = "2025-04" # Or the latest stable API version you intend to use.
 
-[[files]]
-name = "Bundle Builder"
-path = "blocks/bundle.liquid"
-type = "block"
-
-[[assets]]
-name = "bundle-widget"
-path = "assets/bundle-widget.js"
-content_type = "application/javascript"
-
-[[assets]]
-name = "bundle-widget"
-path = "assets/bundle-widget.css"
-content_type = "text/css"
+[[extensions.blocks]]
+target = "all"
+liquid_path = "blocks/bundle.liquid"
 
