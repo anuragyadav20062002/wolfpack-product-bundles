@@ -514,17 +514,26 @@ export default function Index() {
                           </List.Item>
                         </List>
                       </BlockStack>
-                      <Box paddingBlockStart="400">
-                        <ButtonGroup>
-                          <Button>Get a quote</Button>
-                          <Button
-                            tone="critical"
-                            onClick={handleClearAllBundlesMetafield}
-                          >
-                            Clear All Bundles Metafield
-                          </Button>
-                        </ButtonGroup>
-                      </Box>
+                      <div
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <Box paddingBlockStart="400">
+                          <ButtonGroup>
+                            <Button>Get a quote</Button>
+                            <Button
+                              tone="critical"
+                              onClick={handleClearAllBundlesMetafield}
+                            >
+                              Clear All Bundles Metafield
+                            </Button>
+                          </ButtonGroup>
+                        </Box>
+                      </div>
                     </BlockStack>
                   </div>
                 </Card>
@@ -586,18 +595,27 @@ export default function Index() {
                           </BlockStack>
                         </InlineStack>
                       </BlockStack>
-                      <Box paddingBlockStart="400">
-                        <Button
-                          onClick={() =>
-                            window.open(
-                              "https://tidycal.com/yashwolfpack/15-minute-meeting",
-                              "_blank",
-                            )
-                          }
-                        >
-                          Schedule Meeting
-                        </Button>
-                      </Box>
+                      <div
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <Box paddingBlockStart="400">
+                          <Button
+                            onClick={() =>
+                              window.open(
+                                "https://tidycal.com/yashwolfpack/15-minute-meeting",
+                                "_blank",
+                              )
+                            }
+                          >
+                            Schedule Meeting
+                          </Button>
+                        </Box>
+                      </div>
                     </BlockStack>
                   </div>
                 </Card>
