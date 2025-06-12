@@ -487,7 +487,7 @@ export default function Index() {
                     style={{
                       display: "flex",
                       flexDirection: "column",
-                      minHeight: "380px", // Set minimum height to ensure equal card heights
+                      minHeight: "266px", // Set minimum height to ensure equal card heights
                     }}
                   >
                     <div style={{ flex: 1 }}>
@@ -543,7 +543,7 @@ export default function Index() {
                     style={{
                       display: "flex",
                       flexDirection: "column",
-                      minHeight: "380px", // Set minimum height to ensure equal card heights
+                      minHeight: "266px", // Set minimum height to ensure equal card heights
                     }}
                   >
                     <div style={{ flex: 1 }}>
