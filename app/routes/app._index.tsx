@@ -471,10 +471,16 @@ export default function Index() {
                 display: "flex",
                 gap: "var(--p-space-500)",
                 alignItems: "stretch",
+                minHeight: "100%",
               }}
             >
               <div
-                style={{ flex: 1, display: "flex", flexDirection: "column" }}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                }}
               >
                 {/* Design services */}
                 <Card>
@@ -484,6 +490,7 @@ export default function Index() {
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "space-between",
+                      minHeight: "100%",
                     }}
                   >
                     <BlockStack gap="200" inlineAlign="start">
@@ -525,7 +532,12 @@ export default function Index() {
               </div>
 
               <div
-                style={{ flex: 1, display: "flex", flexDirection: "column" }}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                }}
               >
                 {/* Your account manager */}
                 <Card>
@@ -535,6 +547,7 @@ export default function Index() {
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "space-between",
+                      minHeight: "100%",
                     }}
                   >
                     <BlockStack gap="200" inlineAlign="start">
@@ -558,7 +571,10 @@ export default function Index() {
                           </Box>
                           <BlockStack gap="100">
                             <Text as="h3" variant="headingSm">
-                              Yash
+                              Yash{" "}
+                              <Text as="span" variant="bodyMd" tone="subdued">
+                                founder
+                              </Text>
                             </Text>
                             <Text variant="bodyMd" as="p">
                               Stuck? Reach out to your Account Manager!
@@ -573,7 +589,13 @@ export default function Index() {
                         </InlineStack>
                       </BlockStack>
                       <Box paddingBlockStart="400">
-                        <Button>Schedule Meeting</Button>
+                        <Button
+                          onClick={() =>
+                            window.open("https://tidycal.com", "_blank")
+                          }
+                        >
+                          Schedule Meeting
+                        </Button>
                       </Box>
                     </BlockStack>
                   </div>
