@@ -1,5 +1,9 @@
 import { useEffect } from "react";
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import {
+  json,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "@remix-run/node";
 import { useFetcher, useNavigate, useLoaderData } from "@remix-run/react";
 import {
   Page,
@@ -18,9 +22,14 @@ import {
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { EditIcon, DuplicateIcon, DeleteIcon, ViewIcon } from "@shopify/polaris-icons";
+import {
+  EditIcon,
+  DuplicateIcon,
+  DeleteIcon,
+  ViewIcon,
+} from "@shopify/polaris-icons";
 import db from "../db.server"; // Import db
-import type { action as bundlesAction } from './app.bundles.$bundleId'; // Import the action from bundleId route
+import type { action as bundlesAction } from "./app.bundles.$bundleId"; // Import the action from bundleId route
 
 // Define a type for the bundle, matching Prisma's Bundle model
 interface Bundle {
@@ -54,8 +63,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (intent === "cloneBundle") {
     const bundleIdToClone = formData.get("bundleId") as string;
 
-    if (typeof bundleIdToClone !== 'string' || bundleIdToClone.length === 0) {
-      return json({ error: 'Bundle ID is required for cloning' }, { status: 400 });
+    if (typeof bundleIdToClone !== "string" || bundleIdToClone.length === 0) {
+      return json(
+        { error: "Bundle ID is required for cloning" },
+        { status: 400 },
+      );
     }
 
     try {
@@ -65,7 +77,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
 
       if (!originalBundle) {
-        return json({ error: 'Original bundle not found' }, { status: 404 });
+        return json({ error: "Original bundle not found" }, { status: 404 });
       }
 
       // Create new bundle with copied data
@@ -118,14 +130,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           },
         });
       }
-      
+
       // No need to update shop metafield for cloned bundle immediately,
       // as it's a draft. It will be updated when published.
 
       return json({ success: true, bundle: newBundle, intent: intent });
     } catch (error) {
       console.error("Error cloning bundle:", error);
-      return json({ error: 'Failed to clone bundle' }, { status: 500 });
+      return json({ error: "Failed to clone bundle" }, { status: 500 });
     }
   }
   const color = ["Red", "Orange", "Yellow", "Green"][
@@ -223,9 +235,11 @@ export default function Index() {
       };
 
       if (data.success) {
-        shopify.toast.show('Bundle deleted successfully!');
+        shopify.toast.show("Bundle deleted successfully!");
       } else if (data.error) {
-        shopify.toast.show(`Error deleting bundle: ${data.error}`, { isError: true });
+        shopify.toast.show(`Error deleting bundle: ${data.error}`, {
+          isError: true,
+        });
       }
     }
 
@@ -238,44 +252,63 @@ export default function Index() {
       };
 
       if (data.success) {
-        shopify.toast.show('All bundles metafield cleared successfully!');
+        shopify.toast.show("All bundles metafield cleared successfully!");
       } else if (data.error) {
-        shopify.toast.show(`Error clearing metafield: ${data.error}`, { isError: true });
+        shopify.toast.show(`Error clearing metafield: ${data.error}`, {
+          isError: true,
+        });
       }
     }
 
     // Handle success/error messages from cloneFetcher and product creation
     if (fetcher.data) {
-      const data = fetcher.data as { success?: boolean; error?: string; intent?: string; bundle?: Bundle; product?: any; };
+      const data = fetcher.data as {
+        success?: boolean;
+        error?: string;
+        intent?: string;
+        bundle?: Bundle;
+        product?: any;
+      };
       if (data.intent === "cloneBundle") {
         if (data.success) {
-          shopify.toast.show('Bundle cloned successfully!');
+          shopify.toast.show("Bundle cloned successfully!");
           // navigate to refresh the list if needed, or rely on Remix revalidation
         } else if (data.error) {
-          shopify.toast.show(`Error cloning bundle: ${data.error}`, { isError: true });
+          shopify.toast.show(`Error cloning bundle: ${data.error}`, {
+            isError: true,
+          });
         }
-      } else if (data.product) { // Check if it's the product creation action
+      } else if (data.product) {
+        // Check if it's the product creation action
         const prodId = data.product.id.replace("gid://shopify/Product/", "");
         if (prodId) {
           shopify.toast.show("Product created");
         }
       }
     }
-
   }, [shopify, deleteFetcher.data, clearMetafieldFetcher.data, fetcher.data]);
   // const generateProduct = () => fetcher.submit({}, { method: "POST" });
 
   const handleDeleteBundle = (bundleId: string) => {
-    if (confirm("Are you sure you want to delete this bundle? This action cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to delete this bundle? This action cannot be undone.",
+      )
+    ) {
       const formData = new FormData();
       formData.append("intent", "deleteBundle");
       formData.append("bundleId", bundleId);
-      deleteFetcher.submit(formData, { method: "post", action: `/app/bundles/${bundleId}` });
+      deleteFetcher.submit(formData, {
+        method: "post",
+        action: `/app/bundles/${bundleId}`,
+      });
     }
   };
 
   const handleCloneBundle = (bundle: Bundle) => {
-    if (confirm(`Are you sure you want to clone the bundle "${bundle.name}"?`)) {
+    if (
+      confirm(`Are you sure you want to clone the bundle "${bundle.name}"?`)
+    ) {
       const formData = new FormData();
       formData.append("intent", "cloneBundle");
       formData.append("bundleId", bundle.id);
@@ -287,12 +320,16 @@ export default function Index() {
     if (bundle.matching) {
       try {
         const parsedMatching = JSON.parse(bundle.matching);
-        const selectedProducts = parsedMatching.selectedVisibilityProducts as Array<{id: string, handle: string}>;
+        const selectedProducts =
+          parsedMatching.selectedVisibilityProducts as Array<{
+            id: string;
+            handle: string;
+          }>;
         if (selectedProducts && selectedProducts.length > 0) {
           const firstProductHandle = selectedProducts[0].handle;
           if (firstProductHandle) {
             // Construct the URL to the product page
-            window.open(`/products/${firstProductHandle}`, '_blank');
+            window.open(`/products/${firstProductHandle}`, "_blank");
             return;
           }
         }
@@ -300,22 +337,35 @@ export default function Index() {
         console.error("Error parsing bundle matching data:", e);
       }
     }
-    shopify.toast.show('No product found to view for this bundle or matching data is incomplete.', { isError: true });
+    shopify.toast.show(
+      "No product found to view for this bundle or matching data is incomplete.",
+      { isError: true },
+    );
   };
 
   const handleClearAllBundlesMetafield = () => {
-    if (confirm("Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.",
+      )
+    ) {
       const formData = new FormData();
       formData.append("intent", "clearAllBundlesMetafield");
       // A dummy bundleId is needed for the action route, though it's not used by the intent itself
-      clearMetafieldFetcher.submit(formData, { method: "post", action: `/app/bundles/dummy-id` });
+      clearMetafieldFetcher.submit(formData, {
+        method: "post",
+        action: `/app/bundles/dummy-id`,
+      });
     }
   };
 
   return (
     <Page>
       <TitleBar title="Your Bundles">
-        <button variant="primary" onClick={() => navigate('/app/bundles/create')}>
+        <button
+          variant="primary"
+          onClick={() => navigate("/app/bundles/create")}
+        >
           Create Bundle
         </button>
       </TitleBar>
@@ -342,7 +392,13 @@ export default function Index() {
                       Get your bundles up and running in 2 easy steps!
                     </Text>
                   </BlockStack>
-                  <Button size="large" variant="primary" onClick={() => navigate('/app/bundles/create')}>Quick Setup</Button>
+                  <Button
+                    size="large"
+                    variant="primary"
+                    onClick={() => navigate("/app/bundles/create")}
+                  >
+                    Quick Setup
+                  </Button>
                 </BlockStack>
               </Card>
             </Layout.Section>
@@ -360,27 +416,47 @@ export default function Index() {
                               minWidth="15px"
                               minHeight="15px"
                               borderRadius="full"
-                              background={bundle.publishedAt ? "bg-fill-success" : "bg-fill-warning"}
+                              background={
+                                bundle.publishedAt
+                                  ? "bg-fill-success"
+                                  : "bg-fill-warning"
+                              }
                             />
-                            <Text as="h3" variant="headingMd">{bundle.name}</Text>
+                            <Text as="h3" variant="headingMd">
+                              {bundle.name}
+                            </Text>
                           </InlineStack>
                           <ButtonGroup variant="segmented">
                             <Tooltip content="Edit">
-                              <Button icon={EditIcon} onClick={() => navigate(`/app/bundles/${bundle.id}`)} />
+                              <Button
+                                icon={EditIcon}
+                                onClick={() =>
+                                  navigate(`/app/bundles/${bundle.id}`)
+                                }
+                              />
                             </Tooltip>
                             <Tooltip content="Clone">
-                              <Button icon={DuplicateIcon} onClick={() => handleCloneBundle(bundle)} />
+                              <Button
+                                icon={DuplicateIcon}
+                                onClick={() => handleCloneBundle(bundle)}
+                              />
                             </Tooltip>
                             <Tooltip content="Delete">
-                              <Button icon={DeleteIcon} onClick={() => handleDeleteBundle(bundle.id)} />
+                              <Button
+                                icon={DeleteIcon}
+                                onClick={() => handleDeleteBundle(bundle.id)}
+                              />
                             </Tooltip>
                             <Tooltip content="View">
-                              <Button icon={ViewIcon} onClick={() => handleViewBundle(bundle)} />
+                              <Button
+                                icon={ViewIcon}
+                                onClick={() => handleViewBundle(bundle)}
+                              />
                             </Tooltip>
                           </ButtonGroup>
                         </InlineStack>
                       </Box>
-                      {index < bundles.length - 1 && <Divider />} 
+                      {index < bundles.length - 1 && <Divider />}
                     </div>
                   ))}
                 </BlockStack>
@@ -394,66 +470,86 @@ export default function Index() {
               <Layout.Section variant="oneHalf">
                 {/* Design services */}
                 <Card>
-                  <BlockStack gap="200">
-                    <Text as="h2" variant="headingMd">
-                      Design services
-                    </Text>
-                    <Text variant="bodyMd" as="p">
-                      Transform the bundle builder for your store using our
-                      expert bundle design services
-                    </Text>
-                    <List>
-                      <List.Item>
-                        A fixed price of $100 (one-time cost) for any advanced
-                        CSS customization.
-                      </List.Item>
-                      <List.Item>
-                        No hidden charges, ensuring transparency.
-                      </List.Item>
-                      <List.Item>
-                        Professional bundle design services available.
-                      </List.Item>
-                    </List>
+                  <BlockStack gap="200" inlineAlign="start">
+                    <BlockStack gap="200">
+                      <Text as="h2" variant="headingMd">
+                        Design services
+                      </Text>
+                      <Text variant="bodyMd" as="p">
+                        Transform the bundle builder for your store using our
+                        expert bundle design services
+                      </Text>
+                      <List>
+                        <List.Item>
+                          A fixed price of $100 (one-time cost) for any advanced
+                          CSS customization.
+                        </List.Item>
+                        <List.Item>
+                          No hidden charges, ensuring transparency.
+                        </List.Item>
+                        <List.Item>
+                          Professional bundle design services available.
+                        </List.Item>
+                      </List>
+                    </BlockStack>
+                    <Box paddingBlockStart="400">
+                      <ButtonGroup>
+                        <Button>Get a quote</Button>
+                        <Button
+                          tone="critical"
+                          onClick={handleClearAllBundlesMetafield}
+                        >
+                          Clear All Bundles Metafield
+                        </Button>
+                      </ButtonGroup>
+                    </Box>
                   </BlockStack>
-                  <ButtonGroup>
-                    <Button>Get a quote</Button>
-                    <Button tone="critical" onClick={handleClearAllBundlesMetafield}>Clear All Bundles Metafield</Button>
-                  </ButtonGroup>
                 </Card>
               </Layout.Section>
 
               <Layout.Section variant="oneHalf">
                 {/* Your account manager */}
                 <Card>
-                  <BlockStack gap="200">
-                    <Text as="h2" variant="headingMd">
-                      Your account manager
-                    </Text>
-                    <InlineStack gap="200" blockAlign="center">
-                      <Box
-                        minHeight="6rem"
-                        minWidth="6rem"
-                        borderRadius="full"
-                      >
-                        <Image
-                          source="/yash-logo.png"
-                          alt="Account manager profile picture"
-                          width={96}
-                          height={96}
-                          key="yash-profile-image"
-                        />
-                      </Box>
-                      <BlockStack gap="100">
-                        <Text as="h3" variant="headingSm">
-                          Yash
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          Stuck? Reach out to your Account Manager!
-                        </Text>
-                      </BlockStack>
-                    </InlineStack>
+                  <BlockStack gap="200" inlineAlign="start">
+                    <BlockStack gap="200">
+                      <Text as="h2" variant="headingMd">
+                        Your account manager
+                      </Text>
+                      <InlineStack gap="200" blockAlign="center">
+                        <Box
+                          minHeight="6rem"
+                          minWidth="6rem"
+                          borderRadius="full"
+                        >
+                          <Image
+                            source="/yash-logo.png"
+                            alt="Account manager profile picture"
+                            width={96}
+                            height={96}
+                            key="yash-profile-image"
+                          />
+                        </Box>
+                        <BlockStack gap="100">
+                          <Text as="h3" variant="headingSm">
+                            Yash
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            Stuck? Reach out to your Account Manager!
+                          </Text>
+                          {/* Add spacing to match the height of the design services card */}
+                          <Box paddingBlockStart="400">
+                            <Text variant="bodyMd" as="p" tone="subdued">
+                              Get personalized help with your bundle setup and
+                              optimization.
+                            </Text>
+                          </Box>
+                        </BlockStack>
+                      </InlineStack>
+                    </BlockStack>
+                    <Box paddingBlockStart="400">
+                      <Button>Schedule Meeting</Button>
+                    </Box>
                   </BlockStack>
-                  <Button>Schedule Meeting</Button>
                 </Card>
               </Layout.Section>
             </Layout>
