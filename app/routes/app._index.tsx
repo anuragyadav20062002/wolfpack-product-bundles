@@ -471,14 +471,14 @@ export default function Index() {
                 display: "flex",
                 gap: "var(--p-space-500)",
                 alignItems: "stretch",
-                height: "100%",
                 width: "100%",
               }}
             >
               {/* Design services */}
               <div
                 style={{
-                  height: "100%",
+                  flex: 1,
+                  minHeight: 0,
                   display: "flex",
                   flexDirection: "column",
                 }}
@@ -490,7 +490,6 @@ export default function Index() {
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "space-between",
-                      height: "100%",
                     }}
                   >
                     <BlockStack gap="200" inlineAlign="start">
@@ -534,7 +533,8 @@ export default function Index() {
               {/* Your account manager */}
               <div
                 style={{
-                  height: "100%",
+                  flex: 1,
+                  minHeight: 0,
                   display: "flex",
                   flexDirection: "column",
                 }}
@@ -546,7 +546,6 @@ export default function Index() {
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "space-between",
-                      height: "100%",
                     }}
                   >
                     <BlockStack gap="200" inlineAlign="start">
