@@ -471,7 +471,7 @@ export default function Index() {
                 display: "flex",
                 gap: "var(--p-space-500)",
                 alignItems: "stretch",
-                minHeight: "1px", // allow stretching
+                height: "100%",
                 width: "100%",
               }}
             >
