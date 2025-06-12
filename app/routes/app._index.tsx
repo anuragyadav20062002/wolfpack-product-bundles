@@ -475,150 +475,133 @@ export default function Index() {
                 width: "100%",
               }}
             >
+              {/* Design services */}
               <div
                 style={{
-                  flex: 1,
+                  height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  height: "100%",
-                  minHeight: 0,
                 }}
               >
-                {/* Design services */}
-                <div
-                  style={{
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Card>
-                    <div
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        height: "100%",
-                      }}
-                    >
-                      <BlockStack gap="200" inlineAlign="start">
-                        <BlockStack gap="200">
-                          <Text as="h2" variant="headingMd">
-                            Design services
-                          </Text>
-                          <Text variant="bodyMd" as="p">
-                            Transform the bundle builder for your store using
-                            our expert bundle design services
-                          </Text>
-                          <List>
-                            <List.Item>
-                              A fixed price of $100 (one-time cost) for any
-                              advanced CSS customization.
-                            </List.Item>
-                            <List.Item>
-                              No hidden charges, ensuring transparency.
-                            </List.Item>
-                            <List.Item>
-                              Professional bundle design services available.
-                            </List.Item>
-                          </List>
-                        </BlockStack>
-                        <Box paddingBlockStart="400">
-                          <ButtonGroup>
-                            <Button>Get a quote</Button>
-                            <Button
-                              tone="critical"
-                              onClick={handleClearAllBundlesMetafield}
-                            >
-                              Clear All Bundles Metafield
-                            </Button>
-                          </ButtonGroup>
-                        </Box>
+                <Card>
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      height: "100%",
+                    }}
+                  >
+                    <BlockStack gap="200" inlineAlign="start">
+                      <BlockStack gap="200">
+                        <Text as="h2" variant="headingMd">
+                          Design services
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          Transform the bundle builder for your store using our
+                          expert bundle design services
+                        </Text>
+                        <List>
+                          <List.Item>
+                            A fixed price of $100 (one-time cost) for any
+                            advanced CSS customization.
+                          </List.Item>
+                          <List.Item>
+                            No hidden charges, ensuring transparency.
+                          </List.Item>
+                          <List.Item>
+                            Professional bundle design services available.
+                          </List.Item>
+                        </List>
                       </BlockStack>
-                    </div>
-                  </Card>
-                </div>
+                      <Box paddingBlockStart="400">
+                        <ButtonGroup>
+                          <Button>Get a quote</Button>
+                          <Button
+                            tone="critical"
+                            onClick={handleClearAllBundlesMetafield}
+                          >
+                            Clear All Bundles Metafield
+                          </Button>
+                        </ButtonGroup>
+                      </Box>
+                    </BlockStack>
+                  </div>
+                </Card>
               </div>
 
+              {/* Your account manager */}
               <div
                 style={{
-                  flex: 1,
+                  height: "100%",
                   display: "flex",
                   flexDirection: "column",
-                  height: "100%",
-                  minHeight: 0,
                 }}
               >
-                {/* Your account manager */}
-                <div
-                  style={{
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Card>
-                    <div
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        height: "100%",
-                      }}
-                    >
-                      <BlockStack gap="200" inlineAlign="start">
-                        <BlockStack gap="200">
-                          <Text as="h2" variant="headingMd">
-                            Your account manager
-                          </Text>
-                          <InlineStack gap="200" blockAlign="center">
-                            <Box
-                              minHeight="6rem"
-                              minWidth="6rem"
-                              borderRadius="full"
-                            >
-                              <Image
-                                source="/yash-logo.png"
-                                alt="Account manager profile picture"
-                                width={96}
-                                height={96}
-                                key="yash-profile-image"
-                              />
-                            </Box>
-                            <BlockStack gap="100">
-                              <Text as="h3" variant="headingSm">
-                                Yash{" "}
-                                <Text as="span" variant="bodySm" tone="subdued">
-                                  founder
-                                </Text>
-                              </Text>
-                              <Text variant="bodyMd" as="p">
-                                Stuck? Reach out to your Account Manager!
-                              </Text>
-                              <Box paddingBlockStart="400">
-                                <Text variant="bodyMd" as="p" tone="subdued">
-                                  Get personalized help with your bundle setup
-                                  and optimization.
-                                </Text>
-                              </Box>
-                            </BlockStack>
-                          </InlineStack>
-                        </BlockStack>
-                        <Box paddingBlockStart="400">
-                          <Button
-                            onClick={() =>
-                              window.open("https://tidycal.com", "_blank")
-                            }
+                <Card>
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      height: "100%",
+                    }}
+                  >
+                    <BlockStack gap="200" inlineAlign="start">
+                      <BlockStack gap="200">
+                        <Text as="h2" variant="headingMd">
+                          Your account manager
+                        </Text>
+                        <InlineStack gap="200" blockAlign="center">
+                          <Box
+                            minHeight="6rem"
+                            minWidth="6rem"
+                            borderRadius="full"
                           >
-                            Schedule Meeting
-                          </Button>
-                        </Box>
+                            <Image
+                              source="/yash-logo.png"
+                              alt="Account manager profile picture"
+                              width={96}
+                              height={96}
+                              key="yash-profile-image"
+                            />
+                          </Box>
+                          <BlockStack gap="100">
+                            <Text as="h3" variant="headingSm">
+                              Yash{" "}
+                              <Text as="span" variant="bodySm" tone="subdued">
+                                founder
+                              </Text>
+                            </Text>
+                            <Text variant="bodyMd" as="p">
+                              Stuck? Reach out to your Account Manager!
+                            </Text>
+                            <Box paddingBlockStart="100">
+                              <Text variant="bodyMd" as="p" tone="subdued">
+                                Get personalized help with your bundle setup and
+                                optimization.
+                              </Text>
+                            </Box>
+                          </BlockStack>
+                        </InlineStack>
                       </BlockStack>
-                    </div>
-                  </Card>
-                </div>
+                      <Box paddingBlockStart="400">
+                        <Button
+                          onClick={() =>
+                            window.open(
+                              "https://tidycal.com/yashwolfpack/15-minute-meeting",
+                              "_blank",
+                            )
+                          }
+                        >
+                          Schedule Meeting
+                        </Button>
+                      </Box>
+                    </BlockStack>
+                  </div>
+                </Card>
               </div>
             </div>
           </Layout.Section>
