@@ -489,52 +489,51 @@ export default function Index() {
                       flex: 1,
                       display: "flex",
                       flexDirection: "column",
-                      justifyContent: "space-between",
+                      height: "100%",
                     }}
                   >
-                    <BlockStack gap="200" inlineAlign="start">
-                      <BlockStack gap="200">
-                        <Text as="h2" variant="headingMd">
-                          Design services
-                        </Text>
-                        <Text variant="bodyMd" as="p">
-                          Transform the bundle builder for your store using our
-                          expert bundle design services
-                        </Text>
-                        <List>
-                          <List.Item>
-                            A fixed price of $100 (one-time cost) for any
-                            advanced CSS customization.
-                          </List.Item>
-                          <List.Item>
-                            No hidden charges, ensuring transparency.
-                          </List.Item>
-                          <List.Item>
-                            Professional bundle design services available.
-                          </List.Item>
-                        </List>
+                    <div
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <BlockStack gap="200" inlineAlign="start">
+                        <BlockStack gap="200">
+                          <Text as="h2" variant="headingMd">
+                            Design services
+                          </Text>
+                          <Text variant="bodyMd" as="p">
+                            Transform the bundle builder for your store using
+                            our expert bundle design services
+                          </Text>
+                          <List>
+                            <List.Item>
+                              A fixed price of $100 (one-time cost) for any
+                              advanced CSS customization.
+                            </List.Item>
+                            <List.Item>
+                              No hidden charges, ensuring transparency.
+                            </List.Item>
+                            <List.Item>
+                              Professional bundle design services available.
+                            </List.Item>
+                          </List>
+                        </BlockStack>
                       </BlockStack>
-                      <div
-                        style={{
-                          flex: 1,
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "flex-end",
-                        }}
-                      >
-                        <Box paddingBlockStart="400">
-                          <ButtonGroup>
-                            <Button>Get a quote</Button>
-                            <Button
-                              tone="critical"
-                              onClick={handleClearAllBundlesMetafield}
-                            >
-                              Clear All Bundles Metafield
-                            </Button>
-                          </ButtonGroup>
-                        </Box>
-                      </div>
-                    </BlockStack>
+                    </div>
+                    <Box paddingBlockStart="400">
+                      <ButtonGroup>
+                        <Button>Get a quote</Button>
+                        <Button
+                          tone="critical"
+                          onClick={handleClearAllBundlesMetafield}
+                        >
+                          Clear All Bundles Metafield
+                        </Button>
+                      </ButtonGroup>
+                    </Box>
                   </div>
                 </Card>
               </div>
@@ -554,69 +553,73 @@ export default function Index() {
                       flex: 1,
                       display: "flex",
                       flexDirection: "column",
-                      justifyContent: "space-between",
+                      height: "100%",
                     }}
                   >
-                    <BlockStack gap="200" inlineAlign="start">
-                      <BlockStack gap="200">
-                        <Text as="h2" variant="headingMd">
-                          Your account manager
-                        </Text>
-                        <InlineStack gap="200" blockAlign="center">
-                          <Box
-                            minHeight="6rem"
-                            minWidth="6rem"
-                            borderRadius="full"
-                          >
-                            <Image
-                              source="/yash-logo.png"
-                              alt="Account manager profile picture"
-                              width={96}
-                              height={96}
-                              key="yash-profile-image"
-                            />
-                          </Box>
-                          <BlockStack gap="100">
-                            <Text as="h3" variant="headingSm">
-                              Yash{" "}
-                              <Text as="span" variant="bodySm" tone="subdued">
-                                founder
-                              </Text>
-                            </Text>
-                            <Text variant="bodyMd" as="p">
-                              Stuck? Reach out to your Account Manager!
-                            </Text>
-                            <Box paddingBlockStart="100">
-                              <Text variant="bodyMd" as="p" tone="subdued">
-                                Get personalized help with your bundle setup and
-                                optimization.
-                              </Text>
+                    <div
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <BlockStack gap="200" inlineAlign="start">
+                        <BlockStack gap="200">
+                          <Text as="h2" variant="headingMd">
+                            Your account manager
+                          </Text>
+                          <InlineStack gap="200" blockAlign="center">
+                            <Box
+                              minHeight="6rem"
+                              minWidth="6rem"
+                              borderRadius="full"
+                            >
+                              <Image
+                                source="/yash-logo.png"
+                                alt="Account manager profile picture"
+                                width={96}
+                                height={96}
+                                key="yash-profile-image"
+                              />
                             </Box>
-                          </BlockStack>
-                        </InlineStack>
+                            <BlockStack gap="100">
+                              <Text as="h3" variant="headingSm">
+                                Yash{" "}
+                                <Text
+                                  as="span"
+                                  variant="bodyXs"
+                                  tone="subdued"
+                                  fontWeight="regular"
+                                >
+                                  founder
+                                </Text>
+                              </Text>
+                              <Text variant="bodyMd" as="p">
+                                Stuck? Reach out to your Account Manager!
+                              </Text>
+                              <Box paddingBlockStart="100">
+                                <Text variant="bodyMd" as="p" tone="subdued">
+                                  Get personalized help with your bundle setup
+                                  and optimization.
+                                </Text>
+                              </Box>
+                            </BlockStack>
+                          </InlineStack>
+                        </BlockStack>
                       </BlockStack>
-                      <div
-                        style={{
-                          flex: 1,
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "flex-end",
-                        }}
+                    </div>
+                    <Box paddingBlockStart="400">
+                      <Button
+                        onClick={() =>
+                          window.open(
+                            "https://tidycal.com/yashwolfpack/15-minute-meeting",
+                            "_blank",
+                          )
+                        }
                       >
-                        <Box paddingBlockStart="400">
-                          <Button
-                            onClick={() =>
-                              window.open(
-                                "https://tidycal.com/yashwolfpack/15-minute-meeting",
-                                "_blank",
-                              )
-                            }
-                          >
-                            Schedule Meeting
-                          </Button>
-                        </Box>
-                      </div>
-                    </BlockStack>
+                        Schedule Meeting
+                      </Button>
+                    </Box>
                   </div>
                 </Card>
               </div>
