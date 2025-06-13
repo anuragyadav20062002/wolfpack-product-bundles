@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Page, Layout, Card, FormLayout, TextField, Button, BlockStack } from "@shopify/polaris";
+import {
+  Page,
+  Layout,
+  Card,
+  FormLayout,
+  TextField,
+  Button,
+  BlockStack,
+} from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { json, type ActionFunctionArgs, redirect } from "@remix-run/node";
 import { Form } from "@remix-run/react";
@@ -18,27 +26,26 @@ export async function action({ request }: ActionFunctionArgs) {
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
 
-  if (typeof bundleName !== 'string' || bundleName.length === 0) {
+  if (typeof bundleName !== "string" || bundleName.length === 0) {
     // TODO: Handle error: bundle name is required
-    return json({ error: 'Bundle name is required' }, { status: 400 });
+    return json({ error: "Bundle name is required" }, { status: 400 });
   }
 
   try {
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
-        description: typeof description === 'string' ? description : null,
+        description: typeof description === "string" ? description : null,
         shopId: shop,
       },
     });
 
     // Redirect to the newly created bundle's builder page
-    return redirect(`/app/bundles/${newBundle.id}`);
-
+    return redirect(`/app/bundles/${newBundle.id}/design`);
   } catch (error) {
     console.error("Error creating bundle:", error);
     // TODO: Handle database error more gracefully
-    return json({ error: 'Failed to create bundle' }, { status: 500 });
+    return json({ error: "Failed to create bundle" }, { status: 500 });
   }
 }
 
@@ -53,7 +60,10 @@ export default function CreateBundlePage() {
         <Layout.Section>
           <Card>
             <BlockStack gap="300">
-              <p>Give your bundle a name and description that helps identify its purpose.</p>
+              <p>
+                Give your bundle a name and description that helps identify its
+                purpose.
+              </p>
               <Form method="post">
                 <FormLayout>
                   <TextField
@@ -99,4 +109,4 @@ export default function CreateBundlePage() {
       </Layout>
     </Page>
   );
-} 
+}
