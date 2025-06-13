@@ -74,6 +74,7 @@ const designOptions: DesignOption[] = [
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+  console.log("🎨 DESIGN PAGE LOADER CALLED - URL:", request.url);
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
 
