@@ -196,11 +196,11 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       },
     });
 
-    console.log("Bundle updated successfully:", {
-      bundleId: updatedBundle.id,
-      selectedDesign: updatedBundle.settings.designType,
-      shop: session.shop,
-    });
+    // console.log("Bundle updated successfully:", {
+    //   bundleId: updatedBundle.id,
+    //   selectedDesign: updatedBundle.settings.designType,
+    //   shop: session.shop,
+    // });
 
     return redirect(`/app/bundles/${bundleId}`);
   } catch (error) {
