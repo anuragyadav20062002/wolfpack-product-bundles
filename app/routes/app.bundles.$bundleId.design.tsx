@@ -77,85 +77,139 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
 
-  if (!bundleId) {
-    throw new Response("Bundle ID is required", { status: 400 });
+  // Validate bundleId parameter
+  if (
+    !bundleId ||
+    typeof bundleId !== "string" ||
+    bundleId.trim().length === 0
+  ) {
+    throw new Response("Invalid Bundle ID", { status: 400 });
   }
 
-  // Get bundle details to show bundle name
-  const bundle = await db.bundle.findUnique({
-    where: {
-      id: bundleId,
-      shopId: session.shop,
-    },
-  });
-
-  if (!bundle) {
-    throw new Response("Bundle not found", { status: 404 });
+  // Validate session and shop
+  if (!session || !session.shop) {
+    throw new Response("Unauthorized - Invalid session", { status: 401 });
   }
 
-  // Check if design is already selected
-  let existingDesign = null;
-  if (bundle.settings) {
-    try {
-      const settings = JSON.parse(bundle.settings);
-      existingDesign = settings.designType;
-    } catch (e) {
-      console.error("Error parsing bundle settings:", e);
+  try {
+    // Get bundle details with strict shop ownership check
+    const bundle = await db.bundle.findFirst({
+      where: {
+        id: bundleId,
+        shopId: session.shop, // Ensures the bundle belongs to the authenticated shop
+      },
+    });
+
+    if (!bundle) {
+      throw new Response("Bundle not found or access denied", { status: 404 });
     }
-  }
 
-  return json({ bundle, existingDesign });
+    // Check if design is already selected
+    let existingDesign = null;
+    if (bundle.settings) {
+      try {
+        const settings = JSON.parse(bundle.settings);
+        existingDesign = settings.designType;
+      } catch (e) {
+        console.error("Error parsing bundle settings:", e);
+        // Don't throw here, just log the error and continue
+      }
+    }
+
+    return json({ bundle, existingDesign });
+  } catch (error) {
+    // Log the error for debugging but don't expose internal details
+    console.error("Error in design page loader:", error);
+
+    if (error instanceof Response) {
+      throw error; // Re-throw HTTP errors
+    }
+
+    throw new Response("Internal server error", { status: 500 });
+  }
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
 
-  if (!bundleId) {
-    return json({ error: "Bundle ID is required" }, { status: 400 });
+  // Validate session and shop
+  if (!session || !session.shop) {
+    return json({ error: "Unauthorized - Invalid session" }, { status: 401 });
+  }
+
+  // Validate bundleId parameter
+  if (
+    !bundleId ||
+    typeof bundleId !== "string" ||
+    bundleId.trim().length === 0
+  ) {
+    return json({ error: "Invalid Bundle ID" }, { status: 400 });
   }
 
   const formData = await request.formData();
   const selectedDesign = formData.get("selectedDesign");
 
-  console.log("Design selection action:", { bundleId, selectedDesign });
+  console.log("Design selection action:", {
+    bundleId,
+    selectedDesign,
+    shop: session.shop,
+  });
 
-  if (typeof selectedDesign !== "string" || selectedDesign.length === 0) {
+  // Validate selectedDesign input
+  if (
+    typeof selectedDesign !== "string" ||
+    selectedDesign.trim().length === 0
+  ) {
     return json({ error: "Design selection is required" }, { status: 400 });
   }
 
+  // Validate that the selectedDesign is one of the allowed options
+  const validDesignIds = designOptions.map((option) => option.id);
+  if (!validDesignIds.includes(selectedDesign)) {
+    return json({ error: "Invalid design selection" }, { status: 400 });
+  }
+
   try {
-    // Verify bundle exists
-    const existingBundle = await db.bundle.findUnique({
+    // Verify bundle exists and belongs to the authenticated shop
+    const existingBundle = await db.bundle.findFirst({
       where: {
         id: bundleId,
-        shopId: session.shop,
+        shopId: session.shop, // Critical: ensures shop ownership
       },
     });
 
     if (!existingBundle) {
-      return json({ error: "Bundle not found" }, { status: 404 });
+      return json(
+        { error: "Bundle not found or access denied" },
+        { status: 404 },
+      );
     }
 
     // Update the bundle with the selected design
-    await db.bundle.update({
+    const updatedBundle = await db.bundle.update({
       where: {
         id: bundleId,
-        shopId: session.shop,
       },
       data: {
         settings: JSON.stringify({ designType: selectedDesign }),
       },
     });
 
-    console.log("Bundle updated successfully, redirecting to builder");
+    console.log("Bundle updated successfully:", {
+      bundleId: updatedBundle.id,
+      selectedDesign: updatedBundle.settings.designType,
+      shop: session.shop,
+    });
+
     return redirect(`/app/bundles/${bundleId}`);
   } catch (error) {
     console.error("Error updating bundle design:", error);
+
+    // Don't expose internal database errors to the client
     return json(
       {
-        error: "Failed to update bundle design",
-        details: error instanceof Error ? error.message : "Unknown error",
+        error: "Failed to update bundle design. Please try again.",
       },
       { status: 500 },
     );
