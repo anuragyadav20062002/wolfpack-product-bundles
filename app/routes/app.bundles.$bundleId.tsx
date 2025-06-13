@@ -19,6 +19,7 @@ import {
   json,
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
+  redirect,
 } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import db from "../db.server";
@@ -224,6 +225,7 @@ async function updateShopMetafield(
 }
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
+  console.log("Bundle builder loader called for bundle:", params.bundleId);
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
 
@@ -242,13 +244,26 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     throw new Response("Bundle not found", { status: 404 });
   }
 
+  // Check if bundle has a design selected - if not, redirect to design page
+  let bundleSettings = null;
+  if (bundle.settings) {
+    try {
+      bundleSettings = JSON.parse(bundle.settings);
+    } catch (e) {
+      console.error("Error parsing bundle settings:", e);
+    }
+  }
+
+  // If no design is selected, redirect to design page
+  if (!bundleSettings || !bundleSettings.designType) {
+    throw redirect(`/app/bundles/${bundleId}/design`);
+  }
+
   // Parse JSON strings back to objects for products and collections, and Date strings to Date objects
   const parsedSteps = bundle.steps.map((step) => ({
     ...step,
     products: step.products ? JSON.parse(step.products) : [],
     collections: step.collections ? JSON.parse(step.collections) : [],
-    // createdAt: new Date(step.createdAt), // No longer parsing to Date here for type compatibility
-    // updatedAt: new Date(step.updatedAt), // No longer parsing to Date here for type compatibility
   }));
 
   // Parse pricing rules if they exist

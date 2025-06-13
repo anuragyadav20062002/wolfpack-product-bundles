@@ -68,6 +68,7 @@ const designOptions: DesignOption[] = [
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+  console.log("Design page loader called for bundle:", params.bundleId);
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
 
@@ -87,10 +88,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
+  console.log("Design page action called for bundle:", params.bundleId);
+
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
   const formData = await request.formData();
   const selectedDesign = formData.get("selectedDesign");
+  const intent = formData.get("intent");
+
+  // Only proceed if this is actually a design selection submission
+  if (intent !== "selectDesign") {
+    return json({ error: "Invalid action intent" }, { status: 400 });
+  }
 
   if (typeof selectedDesign !== "string" || selectedDesign.length === 0) {
     return json({ error: "Design selection is required" }, { status: 400 });
@@ -135,6 +144,7 @@ export default function BundleDesignSelectionPage() {
   const handleSelectDesign = () => {
     if (selectedDesign) {
       const formData = new FormData();
+      formData.append("intent", "selectDesign"); // Add intent to identify the action
       formData.append("selectedDesign", selectedDesign);
       fetcher.submit(formData, { method: "post" });
       setIsModalOpen(false);
