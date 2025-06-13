@@ -93,7 +93,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     throw new Response("Bundle not found", { status: 404 });
   }
 
-  return json({ bundle });
+  // Check if design is already selected
+  let existingDesign = null;
+  if (bundle.settings) {
+    try {
+      const settings = JSON.parse(bundle.settings);
+      existingDesign = settings.designType;
+    } catch (e) {
+      console.error("Error parsing bundle settings:", e);
+    }
+  }
+
+  return json({ bundle, existingDesign });
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -152,13 +163,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function BundleDesignSelectionPage() {
-  const { bundle } = useLoaderData<typeof loader>();
+  const { bundle, existingDesign } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const navigate = useNavigate();
   const shopify = useAppBridge();
 
-  const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
+  const [selectedDesign, setSelectedDesign] = useState<string | null>(
+    existingDesign || null,
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalDesign, setModalDesign] = useState<DesignOption | null>(null);
 
@@ -181,6 +194,11 @@ export default function BundleDesignSelectionPage() {
 
   const handleRequestDesign = () => {
     window.open("https://tidycal.com/yashwolfpack/15-minute-meeting", "_blank");
+  };
+
+  // If design is already selected, show continue button
+  const handleContinueToBuilder = () => {
+    navigate(`/app/bundles/${bundle.id}`);
   };
 
   return (
@@ -207,6 +225,18 @@ export default function BundleDesignSelectionPage() {
                 <Text as="h3" variant="bodyMd" tone="subdued">
                   Choose a design template for "{bundle.name}" bundle
                 </Text>
+                {existingDesign && (
+                  <InlineStack gap="200" blockAlign="center">
+                    <Text variant="bodyMd" tone="success">
+                      Current design:{" "}
+                      {designOptions.find((d) => d.id === existingDesign)
+                        ?.title || existingDesign}
+                    </Text>
+                    <Button variant="primary" onClick={handleContinueToBuilder}>
+                      Continue to Bundle Builder
+                    </Button>
+                  </InlineStack>
+                )}
               </BlockStack>
 
               <div

@@ -243,21 +243,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     throw new Response("Bundle not found", { status: 404 });
   }
 
-  // Check if bundle has a design selected - if not, redirect to design page
-  let bundleSettings = null;
-  if (bundle.settings) {
-    try {
-      bundleSettings = JSON.parse(bundle.settings);
-    } catch (e) {
-      console.error("Error parsing bundle settings:", e);
-    }
-  }
-
-  // If no design is selected, redirect to design page
-  if (!bundleSettings || !bundleSettings.designType) {
-    throw redirect(`/app/bundles/${bundleId}/design`);
-  }
-
   // Parse JSON strings back to objects for products and collections
   const parsedSteps = bundle.steps.map((step) => ({
     ...step,
