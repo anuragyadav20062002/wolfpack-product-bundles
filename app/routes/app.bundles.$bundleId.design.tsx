@@ -118,7 +118,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     });
 
     // Redirect to the bundle builder page
-    return redirect(`/app/bundles/${bundleId}`);
+    return redirect(`/app/bundles/${bundleId}`, {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     console.error("Error updating bundle design:", error);
     return json({ error: "Failed to update bundle design" }, { status: 500 });

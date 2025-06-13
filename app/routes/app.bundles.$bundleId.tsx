@@ -256,7 +256,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   // If no design is selected, redirect to design page
   if (!bundleSettings || !bundleSettings.designType) {
-    throw redirect(`/app/bundles/${bundleId}/design`);
+    throw redirect(`/app/bundles/${bundleId}/design`, {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   }
 
   // Parse JSON strings back to objects for products and collections, and Date strings to Date objects
