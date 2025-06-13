@@ -19,7 +19,6 @@ import {
   json,
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
-  redirect,
 } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import db from "../db.server";

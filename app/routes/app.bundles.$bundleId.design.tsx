@@ -227,7 +227,7 @@ export default function BundleDesignSelectionPage() {
                 </Text>
                 {existingDesign && (
                   <InlineStack gap="200" blockAlign="center">
-                    <Text variant="bodyMd" tone="success">
+                    <Text as="h3" variant="bodyMd" tone="success">
                       Current design:{" "}
                       {designOptions.find((d) => d.id === existingDesign)
                         ?.title || existingDesign}
