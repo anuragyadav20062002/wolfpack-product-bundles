@@ -224,6 +224,7 @@ async function updateShopMetafield(
 }
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
+  console.log("🏗️ BUNDLE BUILDER LOADER CALLED - URL:", request.url);
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
 
