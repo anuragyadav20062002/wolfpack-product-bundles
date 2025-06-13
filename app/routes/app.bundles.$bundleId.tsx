@@ -225,7 +225,6 @@ async function updateShopMetafield(
 }
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
-  console.log("Bundle builder loader called for bundle:", params.bundleId);
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
 
@@ -236,7 +235,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     },
     include: {
       steps: true,
-      pricing: true, // Include pricing data
+      pricing: true,
     },
   });
 
@@ -256,16 +255,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   // If no design is selected, redirect to design page
   if (!bundleSettings || !bundleSettings.designType) {
-    throw redirect(`/app/bundles/${bundleId}/design`, {
-      headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    });
+    throw redirect(`/app/bundles/${bundleId}/design`);
   }
 
-  // Parse JSON strings back to objects for products and collections, and Date strings to Date objects
+  // Parse JSON strings back to objects for products and collections
   const parsedSteps = bundle.steps.map((step) => ({
     ...step,
     products: step.products ? JSON.parse(step.products) : [],

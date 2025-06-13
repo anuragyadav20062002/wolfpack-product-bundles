@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Page,
   Layout,
@@ -10,14 +10,20 @@ import {
   Modal,
   Badge,
 } from "@shopify/polaris";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import {
   json,
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
   redirect,
 } from "@remix-run/node";
-import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
+import {
+  useLoaderData,
+  useNavigate,
+  Form,
+  useActionData,
+  useNavigation,
+} from "@remix-run/react";
 import { ArrowLeftIcon } from "@shopify/polaris-icons";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
@@ -68,9 +74,12 @@ const designOptions: DesignOption[] = [
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  console.log("Design page loader called for bundle:", params.bundleId);
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
+
+  if (!bundleId) {
+    throw new Response("Bundle ID is required", { status: 400 });
+  }
 
   // Get bundle details to show bundle name
   const bundle = await db.bundle.findUnique({
@@ -88,24 +97,35 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
-  console.log("Design page action called for bundle:", params.bundleId);
-
   const { session } = await authenticate.admin(request);
   const bundleId = params.bundleId;
+
+  if (!bundleId) {
+    return json({ error: "Bundle ID is required" }, { status: 400 });
+  }
+
   const formData = await request.formData();
   const selectedDesign = formData.get("selectedDesign");
-  const intent = formData.get("intent");
 
-  // Only proceed if this is actually a design selection submission
-  if (intent !== "selectDesign") {
-    return json({ error: "Invalid action intent" }, { status: 400 });
-  }
+  console.log("Design selection action:", { bundleId, selectedDesign });
 
   if (typeof selectedDesign !== "string" || selectedDesign.length === 0) {
     return json({ error: "Design selection is required" }, { status: 400 });
   }
 
   try {
+    // Verify bundle exists
+    const existingBundle = await db.bundle.findUnique({
+      where: {
+        id: bundleId,
+        shopId: session.shop,
+      },
+    });
+
+    if (!existingBundle) {
+      return json({ error: "Bundle not found" }, { status: 404 });
+    }
+
     // Update the bundle with the selected design
     await db.bundle.update({
       where: {
@@ -117,27 +137,39 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       },
     });
 
-    // Redirect to the bundle builder page
-    return redirect(`/app/bundles/${bundleId}`, {
-      headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    });
+    console.log("Bundle updated successfully, redirecting to builder");
+    return redirect(`/app/bundles/${bundleId}`);
   } catch (error) {
     console.error("Error updating bundle design:", error);
-    return json({ error: "Failed to update bundle design" }, { status: 500 });
+    return json(
+      {
+        error: "Failed to update bundle design",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
   }
 };
 
 export default function BundleDesignSelectionPage() {
   const { bundle } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
   const navigate = useNavigate();
-  const fetcher = useFetcher();
+  const shopify = useAppBridge();
+
   const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalDesign, setModalDesign] = useState<DesignOption | null>(null);
+
+  const isSubmitting = navigation.state === "submitting";
+
+  // Show error toast if action returned an error
+  useEffect(() => {
+    if (actionData && "error" in actionData) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
+  }, [actionData, shopify]);
 
   const handleDesignClick = (design: DesignOption) => {
     if (design.isActive) {
@@ -147,18 +179,7 @@ export default function BundleDesignSelectionPage() {
     }
   };
 
-  const handleSelectDesign = () => {
-    if (selectedDesign) {
-      const formData = new FormData();
-      formData.append("intent", "selectDesign"); // Add intent to identify the action
-      formData.append("selectedDesign", selectedDesign);
-      fetcher.submit(formData, { method: "post" });
-      setIsModalOpen(false);
-    }
-  };
-
   const handleRequestDesign = () => {
-    // Open the meeting scheduler in a new window
     window.open("https://tidycal.com/yashwolfpack/15-minute-meeting", "_blank");
   };
 
@@ -327,14 +348,23 @@ export default function BundleDesignSelectionPage() {
         </Layout.Section>
       </Layout>
 
-      {/* Design Details Modal */}
+      {/* Design Details Modal with Form */}
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={modalDesign?.title || ""}
         primaryAction={{
-          content: "Select Design",
-          onAction: handleSelectDesign,
+          content: isSubmitting ? "Selecting..." : "Select Design",
+          onAction: () => {
+            // Find the form and submit it
+            const form = document.getElementById(
+              "design-selection-form",
+            ) as HTMLFormElement;
+            if (form) {
+              form.requestSubmit();
+            }
+          },
+          loading: isSubmitting,
         }}
         secondaryActions={[
           {
@@ -345,6 +375,19 @@ export default function BundleDesignSelectionPage() {
       >
         <Modal.Section>
           <BlockStack gap="400">
+            {/* Hidden form for design selection */}
+            <Form
+              method="post"
+              id="design-selection-form"
+              style={{ display: "none" }}
+            >
+              <input
+                type="hidden"
+                name="selectedDesign"
+                value={selectedDesign || ""}
+              />
+            </Form>
+
             {/* Design Preview Area */}
             <div
               style={{
