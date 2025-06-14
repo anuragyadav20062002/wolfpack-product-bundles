@@ -15,7 +15,8 @@ import {
   List,
   Box,
   Badge,
-  Tooltip,
+  Icon,
+  Divider,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import {
@@ -30,10 +31,12 @@ import {
   ArrowLeftIcon,
   XIcon,
   EditIcon,
-  DuplicateIcon,
   DeleteIcon,
   SettingsIcon,
   PlusIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  DragHandleIcon,
 } from "@shopify/polaris-icons";
 
 // Define types for products and collections coming from ResourcePicker
@@ -454,7 +457,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const pricingData = {
         type: discountType,
-        status: enableDiscounts, // Assuming 'status' in schema maps to 'enableDiscounts'
+        status: enableDiscounts,
         rules: parsedPricingRules ? JSON.stringify(parsedPricingRules) : null,
         showBar: showDiscountBar,
         showFooter: showInFooter,
@@ -542,7 +545,7 @@ export async function action({ request }: ActionFunctionArgs) {
         data: {
           publishedAt: new Date(),
           status: "published",
-          active: true, // Assuming a published bundle should be active
+          active: true,
           matching: JSON.stringify({
             selectedVisibilityProducts: selectedVisibilityProducts,
             selectedVisibilityCollections: selectedVisibilityCollections,
@@ -624,7 +627,7 @@ export async function action({ request }: ActionFunctionArgs) {
         ownerId: shopIdGid,
         namespace: metafieldNamespace,
         key: metafieldKey,
-        value: JSON.stringify({}), // Set to an empty object to clear all bundles
+        value: JSON.stringify({}),
         type: "json",
       };
 
@@ -685,6 +688,11 @@ export default function BundleBuilderPage() {
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
 
+  // State for expanded steps
+  const [expandedSteps, setExpandedSteps] = useState<{
+    [key: string]: boolean;
+  }>({});
+
   // State for Add/Edit Step Modal
   const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
   const [currentStepId, setCurrentStepId] = useState<string | null>(null);
@@ -720,6 +728,28 @@ export default function BundleBuilderPage() {
     useState<ResourcePickerCollection[]>([]);
   const [publishTab, setPublishTab] = useState(0);
 
+  // State for selected products modal
+  const [selectedProductsModal, setSelectedProductsModal] = useState(false);
+
+  // State for step editing
+  const [editingSteps, setEditingSteps] = useState<{
+    [key: string]: { name: string; pageTitle: string };
+  }>({});
+
+  // Initialize editing states for existing steps
+  useEffect(() => {
+    const initialEditingStates: {
+      [key: string]: { name: string; pageTitle: string };
+    } = {};
+    bundle.steps.forEach((step) => {
+      initialEditingStates[step.id] = {
+        name: step.name,
+        pageTitle: step.name, // Using same value for page title
+      };
+    });
+    setEditingSteps(initialEditingStates);
+  }, [bundle.steps]);
+
   // handleModalClose definition moved above useEffect for proper order
   const handleAddStepModalClose = useCallback(() => {
     setIsAddStepModalOpen(false);
@@ -749,69 +779,26 @@ export default function BundleBuilderPage() {
     setPublishTab(0);
   }, []);
 
-  // Effect to reset modal fields when opening for add, or populate for edit
-  useEffect(() => {
-    if (fetcher.data) {
-      if ("success" in fetcher.data && fetcher.data.success) {
-        if (
-          fetcher.data.intent === "addStep" ||
-          fetcher.data.intent === "editStep"
-        ) {
-          const stepData = fetcher.data as unknown as {
-            success: true;
-            step: BundleStep;
-            intent: string;
-          };
-          handleAddStepModalClose();
-          shopify.toast.show("Step saved successfully!");
-          console.log("Bundle Step Data:", stepData.step);
-        } else if (fetcher.data.intent === "deleteStep") {
-          shopify.toast.show("Step deleted successfully!");
-        } else if (fetcher.data.intent === "savePricing") {
-          const pricingData = fetcher.data as unknown as {
-            success: true;
-            pricing: BundlePricing;
-            intent: string;
-          };
-          handlePricingModalClose();
-          shopify.toast.show("Pricing saved successfully!");
-          console.log("Bundle Pricing Data:", pricingData.pricing);
-        } else if (fetcher.data.intent === "publishBundle") {
-          const publishedBundleData = fetcher.data as unknown as {
-            success: true;
-            bundle: Bundle;
-            intent: string;
-          };
-          handlePublishModalClose();
-          shopify.toast.show("Bundle published successfully!");
-          console.log("Published Bundle Details:", publishedBundleData.bundle);
-        }
-      } else if ("error" in fetcher.data && fetcher.data.error) {
-        const errorData = fetcher.data as unknown as {
-          success: false;
-          error: string;
-          intent?: string;
-        };
-        shopify.toast.show(`Error: ${errorData.error}`, { isError: true });
-        console.error("Action Error:", errorData.error);
-      }
-    }
-  }, [fetcher.data, handleAddStepModalClose, handlePricingModalClose, shopify]);
+  const toggleStepExpansion = (stepId: string) => {
+    setExpandedSteps((prev) => ({
+      ...prev,
+      [stepId]: !prev[stepId],
+    }));
+  };
 
-  // Effect to populate pricing modal state when bundle data changes
-  useEffect(() => {
-    if (bundle.pricing) {
-      setEnableDiscounts(bundle.pricing.status);
-      setDiscountType(bundle.pricing.type);
-      if (bundle.pricing.rules) {
-        setPricingRules(bundle.pricing.rules);
-      } else {
-        setPricingRules([{ minQuantity: "", value: "" }]);
-      }
-      setShowDiscountBar(bundle.pricing.showBar);
-      setShowInFooter(bundle.pricing.showFooter);
-    }
-  }, [bundle.pricing]);
+  const handleStepNameChange = (
+    stepId: string,
+    field: "name" | "pageTitle",
+    value: string,
+  ) => {
+    setEditingSteps((prev) => ({
+      ...prev,
+      [stepId]: {
+        ...prev[stepId],
+        [field]: value,
+      },
+    }));
+  };
 
   const handleAddStep = useCallback(async () => {
     const formData = new FormData();
@@ -949,12 +936,80 @@ export default function BundleBuilderPage() {
     }
   }, [shopify, selectedCollections]);
 
+  // Effect to reset modal fields when opening for add, or populate for edit
+  useEffect(() => {
+    if (fetcher.data) {
+      if ("success" in fetcher.data && fetcher.data.success) {
+        if (
+          fetcher.data.intent === "addStep" ||
+          fetcher.data.intent === "editStep"
+        ) {
+          const stepData = fetcher.data as unknown as {
+            success: true;
+            step: BundleStep;
+            intent: string;
+          };
+          handleAddStepModalClose();
+          shopify.toast.show("Step saved successfully!");
+          console.log("Bundle Step Data:", stepData.step);
+        } else if (fetcher.data.intent === "deleteStep") {
+          shopify.toast.show("Step deleted successfully!");
+        } else if (fetcher.data.intent === "savePricing") {
+          const pricingData = fetcher.data as unknown as {
+            success: true;
+            pricing: BundlePricing;
+            intent: string;
+          };
+          handlePricingModalClose();
+          shopify.toast.show("Pricing saved successfully!");
+          console.log("Bundle Pricing Data:", pricingData.pricing);
+        } else if (fetcher.data.intent === "publishBundle") {
+          const publishedBundleData = fetcher.data as unknown as {
+            success: true;
+            bundle: Bundle;
+            intent: string;
+          };
+          handlePublishModalClose();
+          shopify.toast.show("Bundle published successfully!");
+          console.log("Published Bundle Details:", publishedBundleData.bundle);
+        }
+      } else if ("error" in fetcher.data && fetcher.data.error) {
+        const errorData = fetcher.data as unknown as {
+          success: false;
+          error: string;
+          intent?: string;
+        };
+        shopify.toast.show(`Error: ${errorData.error}`, { isError: true });
+        console.error("Action Error:", errorData.error);
+      }
+    }
+  }, [
+    fetcher.data,
+    handleAddStepModalClose,
+    handlePricingModalClose,
+    handlePublishModalClose,
+    shopify,
+  ]);
+
+  // Effect to populate pricing modal state when bundle data changes
+  useEffect(() => {
+    if (bundle.pricing) {
+      setEnableDiscounts(bundle.pricing.status);
+      setDiscountType(bundle.pricing.type);
+      if (bundle.pricing.rules) {
+        setPricingRules(bundle.pricing.rules);
+      } else {
+        setPricingRules([{ minQuantity: "", value: "" }]);
+      }
+      setShowDiscountBar(bundle.pricing.showBar);
+      setShowInFooter(bundle.pricing.showFooter);
+    }
+  }, [bundle.pricing]);
+
   return (
     <Page>
       <TitleBar title="Configure Bundle Flow">
-        <button variant="primary" onClick={() => navigate("/app")}>
-          Preview Bundle
-        </button>
+        <button variant="primary">Preview Bundle</button>
       </TitleBar>
 
       <Layout>
@@ -964,12 +1019,12 @@ export default function BundleBuilderPage() {
             icon={ArrowLeftIcon}
             variant="plain"
           >
-            Back to Bundles
+            Back
           </Button>
         </Layout.Section>
 
-        {/* Bundle Setup Section */}
-        <Layout.Section>
+        <Layout.Section variant="oneHalf">
+          {/* Bundle Setup Section */}
           <Card>
             <BlockStack gap="400">
               <Text as="h2" variant="headingLg">
@@ -982,288 +1037,381 @@ export default function BundleBuilderPage() {
 
               {/* Step Setup */}
               <Box>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Box>
-                      <Text as="h3" variant="headingMd">
-                        Step Setup
-                      </Text>
-                    </Box>
-                    <Button
-                      variant="primary"
-                      icon={PlusIcon}
-                      onClick={() => setIsAddStepModalOpen(true)}
-                    >
+                <InlineStack align="space-between" blockAlign="center">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={SettingsIcon} tone="base" />
+                    <Text as="h3" variant="headingMd">
                       Step Setup
-                    </Button>
+                    </Text>
                   </InlineStack>
-
-                  {bundle.steps && bundle.steps.length > 0 ? (
-                    <BlockStack gap="200">
-                      {bundle.steps.map((step, index) => (
-                        <Card key={step.id} padding="300">
-                          <InlineStack
-                            align="space-between"
-                            blockAlign="center"
-                          >
-                            <BlockStack gap="100">
-                              <InlineStack gap="200" blockAlign="center">
-                                <Badge tone="info">{`Step ${index + 1}`}</Badge>
-                                <Text
-                                  as="span"
-                                  variant="bodyMd"
-                                  fontWeight="semibold"
-                                >
-                                  {step.name}
-                                </Text>
-                              </InlineStack>
-
-                              <InlineStack gap="300">
-                                <Text as="span" variant="bodySm" tone="subdued">
-                                  Products selected here will be displayed on
-                                  this step
-                                </Text>
-                              </InlineStack>
-
-                              <InlineStack gap="200">
-                                <Text as="span" variant="bodySm">
-                                  {step.products.length} Products
-                                </Text>
-                                <Text as="span" variant="bodySm">
-                                  {step.collections.length} Collections
-                                </Text>
-                              </InlineStack>
-                            </BlockStack>
-
-                            <InlineStack gap="200">
-                              <Tooltip content="Edit step">
-                                <Button
-                                  icon={EditIcon}
-                                  variant="tertiary"
-                                  onClick={() => handleEditStep(step)}
-                                />
-                              </Tooltip>
-                              <Tooltip content="Duplicate step">
-                                <Button
-                                  icon={DuplicateIcon}
-                                  variant="tertiary"
-                                />
-                              </Tooltip>
-                              <Tooltip content="Delete step">
-                                <Button
-                                  icon={DeleteIcon}
-                                  variant="tertiary"
-                                  tone="critical"
-                                  onClick={() => handleDeleteStep(step.id)}
-                                />
-                              </Tooltip>
-                            </InlineStack>
-                          </InlineStack>
-                        </Card>
-                      ))}
-                    </BlockStack>
-                  ) : (
-                    <Card padding="400">
-                      <BlockStack gap="200" inlineAlign="center">
-                        <Text
-                          as="p"
-                          variant="bodyMd"
-                          tone="subdued"
-                          alignment="center"
-                        >
-                          No steps configured yet
-                        </Text>
-                        <Button
-                          variant="primary"
-                          onClick={() => setIsAddStepModalOpen(true)}
-                        >
-                          Add Your First Step
-                        </Button>
-                      </BlockStack>
-                    </Card>
-                  )}
-                </BlockStack>
+                </InlineStack>
               </Box>
 
               {/* Discount & Pricing */}
               <Box>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Box>
+                <div
+                  onClick={() => setIsPricingModalOpen(true)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Box>
+                    <InlineStack gap="200" blockAlign="center">
+                      <div
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "50%",
+                          backgroundColor: "#e3e3e3",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                        }}
+                      >
+                        %
+                      </div>
                       <Text as="h3" variant="headingMd">
                         Discount & Pricing
                       </Text>
-                    </Box>
-                    <Button
-                      variant="secondary"
-                      icon={SettingsIcon}
-                      onClick={() => setIsPricingModalOpen(true)}
-                    >
-                      Discount & Pricing
-                    </Button>
-                  </InlineStack>
-
-                  <Card padding="300">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <Text as="span" variant="bodyMd">
-                        Create conditions based on amount or quantity of
-                        products added on this step.
-                      </Text>
-                      <Badge tone={bundle.pricing?.status ? "success" : "info"}>
-                        {bundle.pricing?.status ? "Enabled" : "Not configured"}
-                      </Badge>
                     </InlineStack>
-                  </Card>
-                </BlockStack>
+                  </Box>
+                </div>
               </Box>
 
               {/* Bundle Upsell */}
               <Box>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Box>
-                      <Text as="h3" variant="headingMd">
-                        Bundle Upsell
-                      </Text>
-                    </Box>
-                    <Button variant="secondary" icon={SettingsIcon}>
+                <InlineStack align="space-between" blockAlign="center">
+                  <InlineStack gap="200" blockAlign="center">
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        backgroundColor: "#e3e3e3",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "12px",
+                      }}
+                    >
+                      ↗
+                    </div>
+                    <Text as="h3" variant="headingMd">
                       Bundle Upsell
-                    </Button>
+                    </Text>
                   </InlineStack>
-
-                  <Card padding="300">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <Text as="span" variant="bodyMd">
-                        Note: Conditions are only valid on this step.
-                      </Text>
-                      <Badge tone="info">Not configured</Badge>
-                    </InlineStack>
-                  </Card>
-                </BlockStack>
+                </InlineStack>
               </Box>
 
               {/* Bundle Settings */}
               <Box>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Box>
-                      <Text as="h3" variant="headingMd">
-                        Bundle Settings
-                      </Text>
-                    </Box>
-                    <Button variant="secondary" icon={SettingsIcon}>
+                <InlineStack align="space-between" blockAlign="center">
+                  <InlineStack gap="200" blockAlign="center">
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        backgroundColor: "#e3e3e3",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "12px",
+                      }}
+                    >
+                      #
+                    </div>
+                    <Text as="h3" variant="headingMd">
                       Bundle Settings
-                    </Button>
-                  </InlineStack>
-
-                  <Card padding="300">
-                    <Text as="span" variant="bodyMd">
-                      Configure your bundle settings and behavior.
                     </Text>
-                  </Card>
-                </BlockStack>
+                  </InlineStack>
+                </InlineStack>
               </Box>
+            </BlockStack>
+          </Card>
+
+          {/* Bundle Product */}
+          <Card>
+            <BlockStack gap="300">
+              <InlineStack align="space-between" blockAlign="center">
+                <Text as="h3" variant="headingMd">
+                  Bundle Product
+                </Text>
+                <Button variant="plain" tone="critical">
+                  Sync Product
+                </Button>
+              </InlineStack>
+
+              <InlineStack gap="300" blockAlign="center">
+                <div
+                  style={{
+                    width: "60px",
+                    height: "60px",
+                    backgroundColor: "#6B46C1",
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: "24px",
+                  }}
+                >
+                  📦
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="semibold">
+                    New pdp builder
+                  </Text>
+                  <Button variant="plain" size="slim">
+                    ↗
+                  </Button>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+
+          {/* Bundle Status */}
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h3" variant="headingMd">
+                Bundle Status
+              </Text>
+              <Select
+                label="Status"
+                options={[
+                  { label: "Active", value: "active" },
+                  { label: "Draft", value: "draft" },
+                  { label: "Archived", value: "archived" },
+                ]}
+                value="active"
+                onChange={() => {}}
+              />
+            </BlockStack>
+          </Card>
+
+          {/* Take your bundle live */}
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h3" variant="headingMd">
+                Take your bundle live
+              </Text>
+              <InlineStack gap="200">
+                <Button onClick={() => setIsPublishModalOpen(true)}>
+                  Place on theme
+                </Button>
+                <Button variant="plain">Place Widget ↗</Button>
+              </InlineStack>
             </BlockStack>
           </Card>
         </Layout.Section>
 
         {/* Bundle Steps Section */}
-        <Layout.Section>
+        <Layout.Section variant="oneHalf">
           <Card>
             <BlockStack gap="400">
-              <InlineStack align="space-between" blockAlign="center">
+              <BlockStack gap="200">
                 <Text as="h2" variant="headingLg">
                   Bundle Steps
                 </Text>
-                <Text as="span" variant="bodyMd" tone="subdued">
+                <Text as="p" variant="bodyMd" tone="subdued">
                   Create steps for your multi-step bundle here. Select product
                   options for each step below
                 </Text>
-              </InlineStack>
+              </BlockStack>
 
-              {bundle.steps && bundle.steps.length > 0 && (
+              {bundle.steps && bundle.steps.length > 0 ? (
                 <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text as="h3" variant="headingMd">
-                      Step 1
-                    </Text>
-                    <InlineStack gap="200">
-                      <Button icon={EditIcon} variant="tertiary" />
-                      <Button icon={DeleteIcon} variant="tertiary" />
-                    </InlineStack>
-                  </InlineStack>
+                  {bundle.steps.map((step, index) => (
+                    <Card key={step.id} padding="0">
+                      <Box padding="400">
+                        <InlineStack align="space-between" blockAlign="center">
+                          <InlineStack gap="200" blockAlign="center">
+                            <Icon source={DragHandleIcon} tone="subdued" />
+                            <Text as="h3" variant="headingMd">
+                              Step {index + 1}
+                            </Text>
+                          </InlineStack>
+                          <InlineStack gap="200">
+                            <Button
+                              icon={EditIcon}
+                              variant="tertiary"
+                              size="slim"
+                              onClick={() => handleEditStep(step)}
+                            />
+                            <Button
+                              icon={DeleteIcon}
+                              variant="tertiary"
+                              size="slim"
+                              tone="critical"
+                              onClick={() => handleDeleteStep(step.id)}
+                            />
+                            <Button
+                              icon={
+                                expandedSteps[step.id]
+                                  ? ChevronUpIcon
+                                  : ChevronDownIcon
+                              }
+                              variant="tertiary"
+                              size="slim"
+                              onClick={() => toggleStepExpansion(step.id)}
+                            />
+                          </InlineStack>
+                        </InlineStack>
+                      </Box>
 
-                  <Box>
-                    <Text as="h4" variant="headingSm" fontWeight="medium">
-                      Step Name
-                    </Text>
-                    <TextField
-                      label="Step Name"
-                      value="Step 1"
-                      onChange={() => {}}
-                      autoComplete="off"
-                      placeholder="Step 1"
-                    />
-                  </Box>
+                      {expandedSteps[step.id] && (
+                        <>
+                          <Divider />
+                          <Box padding="400">
+                            <BlockStack gap="400">
+                              {/* Step Name */}
+                              <Box>
+                                <TextField
+                                  label="Step Name"
+                                  value={
+                                    editingSteps[step.id]?.name || step.name
+                                  }
+                                  onChange={(value) =>
+                                    handleStepNameChange(step.id, "name", value)
+                                  }
+                                  autoComplete="off"
+                                  placeholder="Step 1"
+                                />
+                              </Box>
 
-                  <Box>
-                    <Text as="h4" variant="headingSm" fontWeight="medium">
-                      Step Page Title
-                    </Text>
-                    <TextField
-                      label="Step Page Title"
-                      value="Step 1"
-                      onChange={() => {}}
-                      autoComplete="off"
-                      placeholder="Step 1"
-                    />
-                  </Box>
+                              {/* Step Page Title */}
+                              <Box>
+                                <TextField
+                                  label="Step Page Title"
+                                  value={
+                                    editingSteps[step.id]?.pageTitle ||
+                                    step.name
+                                  }
+                                  onChange={(value) =>
+                                    handleStepNameChange(
+                                      step.id,
+                                      "pageTitle",
+                                      value,
+                                    )
+                                  }
+                                  autoComplete="off"
+                                  placeholder="Step 1"
+                                />
+                              </Box>
 
-                  <Tabs
-                    tabs={[
-                      { id: "products", content: "Products" },
-                      { id: "collections", content: "Collections" },
-                    ]}
-                    selected={0}
-                    onSelect={() => {}}
+                              {/* Products/Collections Tabs */}
+                              <Box>
+                                <Tabs
+                                  tabs={[
+                                    {
+                                      id: "products",
+                                      content: "Products",
+                                      badge:
+                                        step.products.length > 0
+                                          ? step.products.length.toString()
+                                          : undefined,
+                                    },
+                                    {
+                                      id: "collections",
+                                      content: "Collections",
+                                    },
+                                  ]}
+                                  selected={0}
+                                  onSelect={() => {}}
+                                >
+                                  <Box paddingBlockStart="400">
+                                    <BlockStack gap="300">
+                                      <Text
+                                        as="p"
+                                        variant="bodyMd"
+                                        tone="subdued"
+                                      >
+                                        Products selected here will be displayed
+                                        on this step
+                                      </Text>
+
+                                      <InlineStack
+                                        gap="200"
+                                        blockAlign="center"
+                                      >
+                                        <Button
+                                          onClick={() => {
+                                            setSelectedProducts(step.products);
+                                            setSelectedProductsModal(true);
+                                          }}
+                                        >
+                                          Add Products
+                                        </Button>
+                                        {step.products.length > 0 && (
+                                          <Text
+                                            as="span"
+                                            variant="bodyMd"
+                                            fontWeight="semibold"
+                                          >
+                                            {step.products.length.toString()}{" "}
+                                            Selected
+                                          </Text>
+                                        )}
+                                      </InlineStack>
+
+                                      <Checkbox
+                                        label="Display variants as individual products"
+                                        checked={
+                                          step.displayVariantsAsIndividual
+                                        }
+                                        onChange={() => {}}
+                                      />
+                                    </BlockStack>
+                                  </Box>
+                                </Tabs>
+                              </Box>
+
+                              {/* Conditions */}
+                              <Box>
+                                <BlockStack gap="300">
+                                  <Text
+                                    as="h4"
+                                    variant="headingSm"
+                                    fontWeight="medium"
+                                  >
+                                    Conditions
+                                  </Text>
+                                  <Text as="p" variant="bodyMd" tone="subdued">
+                                    Create Conditions based on amount or
+                                    quantity of products added on this step.
+                                  </Text>
+                                  <Text as="p" variant="bodySm" tone="subdued">
+                                    Note: Conditions are only valid on this step
+                                  </Text>
+
+                                  <Button icon={PlusIcon} variant="plain">
+                                    Add Rule
+                                  </Button>
+                                </BlockStack>
+                              </Box>
+                            </BlockStack>
+                          </Box>
+                        </>
+                      )}
+                    </Card>
+                  ))}
+
+                  <Button
+                    icon={PlusIcon}
+                    variant="plain"
+                    onClick={() => setIsAddStepModalOpen(true)}
                   >
-                    <Box padding="400">
-                      <Text as="p" variant="bodyMd">
-                        Products selected here will be displayed on this step
-                      </Text>
-                      <Box paddingBlockStart="200">
-                        <Button>Add Products</Button>
-                      </Box>
-                      <Box paddingBlockStart="200">
-                        <Text as="p" variant="bodySm" tone="subdued">
-                          2 Selected
-                        </Text>
-                      </Box>
-                    </Box>
-                  </Tabs>
-
-                  <Box>
-                    <Text as="h4" variant="headingSm" fontWeight="medium">
-                      Conditions
-                    </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Create conditions based on amount or quantity of products
-                      added on this step.
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Note: Conditions are only valid on this step.
-                    </Text>
-
-                    <Box paddingBlockStart="300">
-                      <Button>Add Rule</Button>
-                    </Box>
-                  </Box>
+                    Add Step
+                  </Button>
                 </BlockStack>
+              ) : (
+                <Button
+                  icon={PlusIcon}
+                  variant="primary"
+                  onClick={() => setIsAddStepModalOpen(true)}
+                >
+                  Add Step
+                </Button>
               )}
-
-              <Box paddingBlockStart="300">
-                <Button>Add Step</Button>
-              </Box>
             </BlockStack>
           </Card>
         </Layout.Section>
@@ -1564,7 +1712,7 @@ export default function BundleBuilderPage() {
                       Available Products
                     </Text>
                     <Text as="p" variant="bodySm">
-                      {selectedVisibilityProducts.length} selected
+                      {selectedVisibilityProducts.length.toString()} selected
                     </Text>
                     <Button
                       onClick={async () => {
@@ -1691,6 +1839,60 @@ export default function BundleBuilderPage() {
                 </Text>
               </InlineStack>
             </BlockStack>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Selected Products Modal */}
+      <Modal
+        open={selectedProductsModal}
+        onClose={() => setSelectedProductsModal(false)}
+        title="Selected Products"
+        primaryAction={{
+          content: "Add Products",
+          onAction: () => setSelectedProductsModal(false),
+        }}
+        secondaryActions={[
+          {
+            content: "Close",
+            onAction: () => setSelectedProductsModal(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            {selectedProducts.map((product) => (
+              <InlineStack
+                key={product.id}
+                align="space-between"
+                blockAlign="center"
+              >
+                <InlineStack gap="300" blockAlign="center">
+                  <Icon source={DragHandleIcon} tone="subdued" />
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      backgroundColor: "#8B5CF6",
+                      borderRadius: "50%",
+                    }}
+                  />
+                  <Text as="p" variant="bodyMd">
+                    {product.title}
+                  </Text>
+                </InlineStack>
+                <Button
+                  icon={DeleteIcon}
+                  variant="tertiary"
+                  tone="critical"
+                  onClick={() => {
+                    setSelectedProducts((prev) =>
+                      prev.filter((p) => p.id !== product.id),
+                    );
+                  }}
+                />
+              </InlineStack>
+            ))}
           </BlockStack>
         </Modal.Section>
       </Modal>
