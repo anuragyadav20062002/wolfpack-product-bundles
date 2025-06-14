@@ -14,7 +14,6 @@ import {
   Select,
   List,
   Box,
-  Badge,
   Icon,
   Divider,
 } from "@shopify/polaris";
@@ -258,7 +257,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   // Parse JSON strings back to objects for products and collections
-  const parsedSteps = bundle.steps.map((step) => ({
+  const parsedSteps = bundle.steps.map((step: any) => ({
     ...step,
     products: step.products ? JSON.parse(step.products) : [],
     collections: step.collections ? JSON.parse(step.collections) : [],
@@ -360,7 +359,7 @@ export async function action({ request }: ActionFunctionArgs) {
         include: { steps: true, pricing: true },
       });
       if (updatedBundle) {
-        const parsedBundleSteps = updatedBundle.steps.map((step) => ({
+        const parsedBundleSteps = updatedBundle.steps.map((step: any) => ({
           ...step,
           products: step.products ? JSON.parse(step.products) : [],
           collections: step.collections ? JSON.parse(step.collections) : [],
@@ -407,7 +406,7 @@ export async function action({ request }: ActionFunctionArgs) {
         include: { steps: true, pricing: true },
       });
       if (updatedBundle) {
-        const parsedBundleSteps = updatedBundle.steps.map((step) => ({
+        const parsedBundleSteps = updatedBundle.steps.map((step: any) => ({
           ...step,
           products: step.products ? JSON.parse(step.products) : [],
           collections: step.collections ? JSON.parse(step.collections) : [],
@@ -481,7 +480,7 @@ export async function action({ request }: ActionFunctionArgs) {
         include: { steps: true, pricing: true },
       });
       if (updatedBundle) {
-        const parsedBundleSteps = updatedBundle.steps.map((step) => ({
+        const parsedBundleSteps = updatedBundle.steps.map((step: any) => ({
           ...step,
           products: step.products ? JSON.parse(step.products) : [],
           collections: step.collections ? JSON.parse(step.collections) : [],
@@ -559,7 +558,7 @@ export async function action({ request }: ActionFunctionArgs) {
         include: { steps: true, pricing: true },
       });
       if (fullBundle) {
-        const parsedBundleSteps = fullBundle.steps.map((step) => ({
+        const parsedBundleSteps = fullBundle.steps.map((step: any) => ({
           ...step,
           products: step.products ? JSON.parse(step.products) : [],
           collections: step.collections ? JSON.parse(step.collections) : [],
@@ -728,6 +727,11 @@ export default function BundleBuilderPage() {
     useState<ResourcePickerCollection[]>([]);
   const [publishTab, setPublishTab] = useState(0);
 
+  // State for Bundle Product Modal
+  const [isBundleProductModalOpen, setIsBundleProductModalOpen] =
+    useState(false);
+  const [bundleProductSearch, setBundleProductSearch] = useState("");
+
   // State for selected products modal
   const [selectedProductsModal, setSelectedProductsModal] = useState(false);
 
@@ -771,6 +775,22 @@ export default function BundleBuilderPage() {
     setShowDiscountBar(false);
     setShowInFooter(false);
   }, []);
+
+  const handleBundleProductModalClose = useCallback(() => {
+    setIsBundleProductModalOpen(false);
+    setBundleProductSearch("");
+  }, []);
+
+  const handleBundleProductSelection = useCallback(async () => {
+    const products = await shopify.resourcePicker({
+      type: "product",
+      multiple: false,
+    });
+    if (products && products.selection && products.selection.length > 0) {
+      setSelectedProducts(products.selection as ResourcePickerProduct[]);
+      setIsBundleProductModalOpen(true);
+    }
+  }, [shopify]);
 
   const handlePublishModalClose = useCallback(() => {
     setIsPublishModalOpen(false);
@@ -1037,13 +1057,11 @@ export default function BundleBuilderPage() {
 
               {/* Step Setup */}
               <Box>
-                <InlineStack align="space-between" blockAlign="center">
-                  <InlineStack gap="200" blockAlign="center">
-                    <Icon source={SettingsIcon} tone="base" />
-                    <Text as="h3" variant="headingMd">
-                      Step Setup
-                    </Text>
-                  </InlineStack>
+                <InlineStack gap="200" blockAlign="center">
+                  <Icon source={SettingsIcon} tone="base" />
+                  <Text as="h3" variant="headingMd">
+                    Step Setup
+                  </Text>
                 </InlineStack>
               </Box>
 
@@ -1053,77 +1071,71 @@ export default function BundleBuilderPage() {
                   onClick={() => setIsPricingModalOpen(true)}
                   style={{ cursor: "pointer" }}
                 >
-                  <Box>
-                    <InlineStack gap="200" blockAlign="center">
-                      <div
-                        style={{
-                          width: "20px",
-                          height: "20px",
-                          borderRadius: "50%",
-                          backgroundColor: "#e3e3e3",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "12px",
-                        }}
-                      >
-                        %
-                      </div>
-                      <Text as="h3" variant="headingMd">
-                        Discount & Pricing
-                      </Text>
-                    </InlineStack>
-                  </Box>
+                  <InlineStack gap="200" blockAlign="center">
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        backgroundColor: "#e3e3e3",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "12px",
+                      }}
+                    >
+                      %
+                    </div>
+                    <Text as="h3" variant="headingMd">
+                      Discount & Pricing
+                    </Text>
+                  </InlineStack>
                 </div>
               </Box>
 
               {/* Bundle Upsell */}
               <Box>
-                <InlineStack align="space-between" blockAlign="center">
-                  <InlineStack gap="200" blockAlign="center">
-                    <div
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        backgroundColor: "#e3e3e3",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "12px",
-                      }}
-                    >
-                      ↗
-                    </div>
-                    <Text as="h3" variant="headingMd">
-                      Bundle Upsell
-                    </Text>
-                  </InlineStack>
+                <InlineStack gap="200" blockAlign="center">
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: "#e3e3e3",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px",
+                    }}
+                  >
+                    ↗
+                  </div>
+                  <Text as="h3" variant="headingMd">
+                    Bundle Upsell
+                  </Text>
                 </InlineStack>
               </Box>
 
               {/* Bundle Settings */}
               <Box>
-                <InlineStack align="space-between" blockAlign="center">
-                  <InlineStack gap="200" blockAlign="center">
-                    <div
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        backgroundColor: "#e3e3e3",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "12px",
-                      }}
-                    >
-                      #
-                    </div>
-                    <Text as="h3" variant="headingMd">
-                      Bundle Settings
-                    </Text>
-                  </InlineStack>
+                <InlineStack gap="200" blockAlign="center">
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: "#e3e3e3",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px",
+                    }}
+                  >
+                    #
+                  </div>
+                  <Text as="h3" variant="headingMd">
+                    Bundle Settings
+                  </Text>
                 </InlineStack>
               </Box>
             </BlockStack>
@@ -1161,8 +1173,12 @@ export default function BundleBuilderPage() {
                   <Text as="p" variant="bodyMd" fontWeight="semibold">
                     New pdp builder
                   </Text>
-                  <Button variant="plain" size="slim">
-                    ↗
+                  <Button
+                    variant="plain"
+                    size="slim"
+                    onClick={handleBundleProductSelection}
+                  >
+                    Replace Product
                   </Button>
                 </BlockStack>
               </InlineStack>
@@ -1177,6 +1193,7 @@ export default function BundleBuilderPage() {
               </Text>
               <Select
                 label="Status"
+                labelHidden
                 options={[
                   { label: "Active", value: "active" },
                   { label: "Draft", value: "draft" },
@@ -1893,6 +1910,110 @@ export default function BundleBuilderPage() {
                 />
               </InlineStack>
             ))}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Bundle Product Selection Modal */}
+      <Modal
+        open={isBundleProductModalOpen}
+        onClose={handleBundleProductModalClose}
+        title="Select product"
+        primaryAction={{
+          content: "Select",
+          onAction: handleBundleProductModalClose,
+        }}
+        secondaryActions={[
+          {
+            content: "Cancel",
+            onAction: handleBundleProductModalClose,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <InlineStack gap="200">
+              <TextField
+                label="Search products"
+                value={bundleProductSearch}
+                onChange={setBundleProductSearch}
+                placeholder="Search products"
+                autoComplete="off"
+                prefix={<Icon source={SettingsIcon} />}
+              />
+              <Select
+                label="Search by"
+                labelHidden
+                options={[
+                  { label: "All", value: "all" },
+                  { label: "Title", value: "title" },
+                  { label: "SKU", value: "sku" },
+                ]}
+                value="all"
+                onChange={() => {}}
+              />
+            </InlineStack>
+
+            <Button variant="plain" size="slim">
+              Add filter +
+            </Button>
+
+            <BlockStack gap="200">
+              {/* Sample products - in real implementation, these would come from API */}
+              <InlineStack gap="300" blockAlign="center">
+                <Checkbox
+                  label="Select bundle 2"
+                  checked={false}
+                  onChange={() => {}}
+                />
+                <div
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    backgroundColor: "#f0f0f0",
+                    borderRadius: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px dashed #ccc",
+                  }}
+                >
+                  📦
+                </div>
+                <Text as="p" variant="bodyMd">
+                  bundle 2
+                </Text>
+              </InlineStack>
+
+              <InlineStack gap="300" blockAlign="center">
+                <Checkbox
+                  label="Select Bundle Campaign"
+                  checked={false}
+                  onChange={() => {}}
+                />
+                <div
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    backgroundColor: "#f0f0f0",
+                    borderRadius: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px dashed #ccc",
+                  }}
+                >
+                  📦
+                </div>
+                <Text as="p" variant="bodyMd">
+                  Bundle Campaign
+                </Text>
+              </InlineStack>
+            </BlockStack>
+
+            <Text as="p" variant="bodySm" tone="subdued">
+              0/1 products selected
+            </Text>
           </BlockStack>
         </Modal.Section>
       </Modal>
