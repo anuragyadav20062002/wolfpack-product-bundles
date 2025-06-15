@@ -11,10 +11,12 @@ import {
   Box,
   List,
   InlineStack,
-  Image,
   ButtonGroup,
   Divider,
   Tooltip,
+  Avatar,
+  Image,
+  // Modal,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -203,6 +205,8 @@ export default function Index() {
   const clearMetafieldFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for clearing all metafields
 
   const navigate = useNavigate();
+  // const [showClearAllModal, setShowClearAllModal] = useState(false);
+  // const clearAllModalRef = useRef<HTMLElement>(null);
 
   const shopify = useAppBridge();
   // const isLoading =
@@ -303,14 +307,16 @@ export default function Index() {
     shopify.toast.show('No product found to view for this bundle or matching data is incomplete.', { isError: true });
   };
 
-  const handleClearAllBundlesMetafield = () => {
-    if (confirm("Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.")) {
-      const formData = new FormData();
-      formData.append("intent", "clearAllBundlesMetafield");
-      // A dummy bundleId is needed for the action route, though it's not used by the intent itself
-      clearMetafieldFetcher.submit(formData, { method: "post", action: `/app/bundles/dummy-id` });
-    }
-  };
+  // const handleClearAllBundlesMetafield = () => {
+  //   setShowClearAllModal(true);
+  // };
+
+  // const handleConfirmClearAllBundlesMetafield = () => {
+  //   const formData = new FormData();
+  //   formData.append("intent", "clearAllBundlesMetafield");
+  //   clearMetafieldFetcher.submit(formData, { method: "post", action: `/app/bundles/dummy-id` });
+  //   setShowClearAllModal(false); // Close the modal after submission
+  // };
 
   return (
     <Page>
@@ -327,12 +333,22 @@ export default function Index() {
               <Card>
                 <BlockStack gap="500" inlineAlign="center" align="center">
                   <Box
-                    minHeight="6rem"
-                    minWidth="6rem"
+                    minHeight="3rem"
+                    minWidth="3rem"
                     background="bg-fill-info-secondary"
                     borderRadius="full"
                   >
-                    <EditIcon width="3rem" height="3rem" color="base" />
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        width: '100%',
+                        height: '100%',
+                      }}
+                    >
+                      <Image source="/bundle2.png" alt="Bundle Icon" width="100%" height="100%" />
+                    </div>
                   </Box>
                   <BlockStack gap="200" inlineAlign="center">
                     <Text as="h2" variant="headingMd">
@@ -417,7 +433,7 @@ export default function Index() {
                   </BlockStack>
                   <ButtonGroup>
                     <Button>Get a quote</Button>
-                    <Button tone="critical" onClick={handleClearAllBundlesMetafield}>Clear All Bundles Metafield</Button>
+                    {/* <Button tone="critical" onClick={handleClearAllBundlesMetafield}>Clear All Bundles Metafield</Button> */}
                   </ButtonGroup>
                 </Card>
               </Layout.Section>
@@ -429,37 +445,66 @@ export default function Index() {
                     <Text as="h2" variant="headingMd">
                       Your account manager
                     </Text>
-                    <InlineStack gap="200" blockAlign="center">
-                      <Box
-                        minHeight="6rem"
-                        minWidth="6rem"
-                        borderRadius="full"
-                      >
-                        <Image
-                          source="/yash-logo.png"
-                          alt="Account manager profile picture"
-                          width={96}
-                          height={96}
-                          key="yash-profile-image"
-                        />
-                      </Box>
+                    <InlineStack gap="200" blockAlign="start">
+                      <Avatar
+                        source="/yash-logo.png"
+                        name="Yash (Founder)"
+                        size="xl"
+                        initials="YF"
+                      />
                       <BlockStack gap="100">
-                        <Text as="h3" variant="headingSm">
-                          Yash
-                        </Text>
+                        <InlineStack gap="100" blockAlign="center">
+                            <Box
+                              minWidth="10px"
+                              minHeight="10px"
+                              borderRadius="full"
+                              background="bg-fill-success"
+                            />
+                            <Text as="h3" variant="headingMd">
+                              Yash (Founder)
+                            </Text>
+                        </InlineStack>
                         <Text variant="bodyMd" as="p">
                           Stuck? Reach out to your Account Manager!
                         </Text>
+                        <Button variant="primary"
+                          onClick={() => window.open('https://tidycal.com/yashwolfpack/15-minute-meeting', '_blank')}
+                        >
+                          Schedule Meeting
+                        </Button>
                       </BlockStack>
                     </InlineStack>
                   </BlockStack>
-                  <Button>Schedule Meeting</Button>
                 </Card>
               </Layout.Section>
             </Layout>
           </Layout.Section>
         </Layout>
       </BlockStack>
+      {/*
+      <Modal
+        open={showClearAllModal}
+        onClose={() => setShowClearAllModal(false)}
+        title="Confirm Action"
+        primaryAction={{
+          content: 'Clear All Bundles',
+          onAction: handleConfirmClearAllBundlesMetafield,
+          tone: 'critical',
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: () => setShowClearAllModal(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <Text variant="bodyMd" as="p">
+            Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.
+          </Text>
+        </Modal.Section>
+      </Modal>
+      */}
     </Page>
   );
 }
