@@ -592,6 +592,7 @@ export default function BundleBuilderPage() {
         const errorData = fetcher.data as unknown as { success: false, error: string, intent?: string };
         shopify.toast.show(`Error: ${errorData.error}`, { isError: true });
         console.error("Action Error:", errorData.error);
+        //hello
       }
     }
   }, [fetcher.data, isAddStepModalOpen, handleAddStepModalClose, handlePricingModalClose, shopify]);
