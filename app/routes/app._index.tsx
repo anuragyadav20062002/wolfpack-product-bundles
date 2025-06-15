@@ -205,8 +205,7 @@ export default function Index() {
   const clearMetafieldFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for clearing all metafields
 
   const navigate = useNavigate();
-  // const [showClearAllModal, setShowClearAllModal] = useState(false);
-  // const clearAllModalRef = useRef<HTMLElement>(null);
+ 
 
   const shopify = useAppBridge();
   // const isLoading =
@@ -307,16 +306,14 @@ export default function Index() {
     shopify.toast.show('No product found to view for this bundle or matching data is incomplete.', { isError: true });
   };
 
-  // const handleClearAllBundlesMetafield = () => {
-  //   setShowClearAllModal(true);
-  // };
-
-  // const handleConfirmClearAllBundlesMetafield = () => {
-  //   const formData = new FormData();
-  //   formData.append("intent", "clearAllBundlesMetafield");
-  //   clearMetafieldFetcher.submit(formData, { method: "post", action: `/app/bundles/dummy-id` });
-  //   setShowClearAllModal(false); // Close the modal after submission
-  // };
+  const handleClearAllBundlesMetafield = () => {
+    if (confirm("Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.")) {
+      const formData = new FormData();
+      formData.append("intent", "clearAllBundlesMetafield");
+      // A dummy bundleId is needed for the action route, though it's not used by the intent itself
+      clearMetafieldFetcher.submit(formData, { method: "post", action: `/app/bundles/dummy-id` });
+    }
+  };
 
   return (
     <Page>
@@ -433,7 +430,7 @@ export default function Index() {
                   </BlockStack>
                   <ButtonGroup>
                     <Button>Get a quote</Button>
-                    {/* <Button tone="critical" onClick={handleClearAllBundlesMetafield}>Clear All Bundles Metafield</Button> */}
+                    <Button tone="critical" onClick={handleClearAllBundlesMetafield}>Clear All Bundles Metafield</Button>
                   </ButtonGroup>
                 </Card>
               </Layout.Section>

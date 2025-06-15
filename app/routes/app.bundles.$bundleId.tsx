@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
-import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select, List } from "@shopify/polaris";
+import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select, List, Divider } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
-import { ArrowLeftIcon, XIcon } from '@shopify/polaris-icons';
+import { ArrowLeftIcon } from '@shopify/polaris-icons';
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -595,7 +595,7 @@ export default function BundleBuilderPage() {
         //hello
       }
     }
-  }, [fetcher.data, isAddStepModalOpen, handleAddStepModalClose, handlePricingModalClose, shopify]);
+  }, [fetcher.data, /* isAddStepModalOpen, */ handleAddStepModalClose, handlePricingModalClose, shopify]);
 
   // Effect to populate pricing modal state when bundle data changes
   useEffect(() => {
@@ -807,6 +807,7 @@ export default function BundleBuilderPage() {
               onChange={setStepName}
               autoComplete="off"
             />
+            <Divider />
 
             <BlockStack gap="200">
               <Text as="h3" variant="headingMd">Products / Collections</Text>
@@ -815,15 +816,11 @@ export default function BundleBuilderPage() {
                   {selectedTab === 0 ? (
                     <BlockStack gap="200">
                       <Text as="p" variant="bodyMd">Products selected here will be displayed on this step</Text>
-                      <Button onClick={handleProductSelection}>Add Products</Button>
+                      <Button onClick={handleProductSelection} variant="primary">Add Products</Button>
                       {selectedProducts.length > 0 && (
-                        <BlockStack gap="200">
-                          {selectedProducts.map((product) => (
-                            <InlineStack key={product.id} align="space-between">
-                              <Text as="p" variant="bodyMd">{product.title}</Text>
-                            </InlineStack>
-                          ))}
-                        </BlockStack>
+                        <Text as="p" variant="bodyMd" fontWeight="bold">
+                          {selectedProducts.length} product{selectedProducts.length === 1 ? '' : 's'} selected
+                        </Text>
                       )}
                       <Checkbox
                         label="Display variants as individual products"
@@ -834,15 +831,11 @@ export default function BundleBuilderPage() {
                   ) : (
                     <BlockStack gap="200">
                       <Text as="p" variant="bodyMd">Collections selected here will have all their products available in this step</Text>
-                      <Button onClick={handleCollectionSelection}>Add Collections</Button>
+                      <Button onClick={handleCollectionSelection} variant="primary">Add Collections</Button>
                       {selectedCollections.length > 0 && (
-                        <BlockStack gap="200">
-                          {selectedCollections.map((collection) => (
-                            <InlineStack key={collection.id} align="space-between">
-                              <Text as="p" variant="bodyMd">{collection.title}</Text>
-                            </InlineStack>
-                          ))}
-                        </BlockStack>
+                        <Text as="p" variant="bodyMd" fontWeight="bold">
+                          {selectedCollections.length} collection{selectedCollections.length === 1 ? '' : 's'} selected
+                        </Text>
                       )}
                     </BlockStack>
                   )}
@@ -850,33 +843,38 @@ export default function BundleBuilderPage() {
               </Tabs>
             </BlockStack>
 
+            <Divider />
+
             <BlockStack gap="200">
               <Text as="h3" variant="headingMd">Conditions</Text>
-              <Text as="p" variant="bodyMd">Create conditions based on amount or quantity of products added on this step.</Text>
+              <Text as="p" variant="bodyLg">Create conditions based on amount or quantity of products added on this step.</Text>
               <Text as="p" variant="bodySm">Note: Conditions are only valid on this step.</Text>
 
-              <InlineStack gap="200" blockAlign="center">
-                <Text as="span" variant="bodyMd">Quantity</Text>
-                <Select
-                  options={[
-                    { label: 'is equal to', value: 'equal_to' },
-                    { label: 'at most', value: 'at_most' },
-                    { label: 'at least', value: 'at_least' },
-                  ]}
-                  value={conditionType}
-                  onChange={setConditionType}
-                  label="Condition type"
-                />
-                <TextField
-                  label="Value"
-                  value={conditionValue}
-                  onChange={setConditionValue}
-                  autoComplete="off"
-                  type="number"
-                />
-              </InlineStack>
-              <Button>Add another condition</Button>
+              <Card>
+                <InlineStack gap="200" blockAlign="center">
+                  <Text as="span" variant="bodyMd">Quantity</Text>
+                  <Select
+                    options={[
+                      { label: 'is equal to', value: 'equal_to' },
+                      { label: 'at most', value: 'at_most' },
+                      { label: 'at least', value: 'at_least' },
+                    ]}
+                    value={conditionType}
+                    onChange={setConditionType}
+                    label="Condition type"
+                  />
+                  <TextField
+                    label="Value"
+                    value={conditionValue}
+                    onChange={setConditionValue}
+                    autoComplete="off"
+                    type="number"
+                  />
+                </InlineStack>
+              </Card>
+              <Button variant="primary">Add another condition</Button>
             </BlockStack>
+            <Divider />
           </BlockStack>
         </Modal.Section>
       </Modal>
@@ -958,7 +956,7 @@ export default function BundleBuilderPage() {
                     </BlockStack>
                   </Card>
                 ))}
-                <Button onClick={() => setPricingRules([...pricingRules, { minQuantity: "", value: "" }])}>Add new rule</Button>
+                <Button onClick={() => setPricingRules([...pricingRules, { minQuantity: "", value: "" }])} variant="primary">Add new rule</Button>
               </BlockStack>
             )}
 
@@ -1018,14 +1016,9 @@ export default function BundleBuilderPage() {
                       }
                     }}>Select products</Button>
                     {selectedVisibilityProducts.length > 0 && (
-                      <BlockStack gap="200">
-                        <Text as="p" variant="bodyMd">Selected Products:</Text>
-                        {selectedVisibilityProducts.map((product) => (
-                          <InlineStack key={product.id} align="space-between">
-                            <Text as="p" variant="bodyMd">{product.title}</Text>
-                          </InlineStack>
-                        ))}
-                      </BlockStack>
+                      <Text as="p" variant="bodyMd" fontWeight="bold">
+                        {selectedVisibilityProducts.length} product{selectedVisibilityProducts.length === 1 ? '' : 's'} selected
+                      </Text>
                     )}
                     {selectedVisibilityProducts.length === 0 && (
                       <BlockStack gap="200">
@@ -1050,21 +1043,9 @@ export default function BundleBuilderPage() {
                       }
                     }}>Select collections</Button>
                     {selectedVisibilityCollections.length > 0 && (
-                      <BlockStack gap="200">
-                        <Text as="p" variant="bodyMd">Selected Collections:</Text>
-                        <InlineStack gap="200" wrap={true}>
-                          {selectedVisibilityCollections.map((collection) => (
-                            <Button
-                              key={collection.id}
-                              onClick={() => setSelectedVisibilityCollections(selectedVisibilityCollections.filter(c => c.id !== collection.id))}
-                              variant="plain"
-                              icon={XIcon}
-                            >
-                              {collection.title}
-                            </Button>
-                          ))}
-                        </InlineStack>
-                      </BlockStack>
+                      <Text as="p" variant="bodyMd" fontWeight="bold">
+                        {selectedVisibilityCollections.length} collection{selectedVisibilityCollections.length === 1 ? '' : 's'} selected
+                      </Text>
                     )}
                     {selectedVisibilityCollections.length === 0 && (
                       <Text as="p" variant="bodyMd">No collections selected yet</Text>

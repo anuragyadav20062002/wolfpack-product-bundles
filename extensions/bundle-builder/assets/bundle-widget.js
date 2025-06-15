@@ -36,8 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   let selectedBundle = null;
 
-  // Convert bundles object to an array for easier iteration
-  const bundlesArray = Object.values(bundles);
+  // Convert bundles object to an array for easier iteration and filter out null/undefined entries
+  const bundlesArray = Object.values(bundles).filter(bundle => bundle !== null && bundle !== undefined);
 
   // Helper function to calculate discounted price
   function calculateDiscountedPrice(originalPrice, pricing) {
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   for (const bundle of bundlesArray) {
-    if (bundle.status === 'published') {
+    if (bundle && bundle.status === 'published') {
       let parsedMatching = null;
       if (bundle.matching && typeof bundle.matching === 'string') {
         try {
