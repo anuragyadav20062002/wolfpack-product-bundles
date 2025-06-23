@@ -1,4 +1,3 @@
-// Function to render bundle steps dynamically
 function renderBundleSteps(numberOfSteps) {
   const bundleStepsContainer = document.querySelector('.bundle-steps');
   bundleStepsContainer.innerHTML = ''; // Clear existing steps
@@ -26,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentProductId = window.currentProductId;
   const currentProductHandle = window.currentProductHandle;
   const currentProductCollections = window.currentProductCollections; // Access the new variable
+  const shopCurrency = window.shopCurrency || 'USD';
 
   if (!allBundlesDataRaw || !currentProductId) {
     console.warn('Bundle data or current product ID not available. Make sure bundles are published and the product context is available.');
@@ -39,67 +39,42 @@ document.addEventListener('DOMContentLoaded', () => {
   // Convert bundles object to an array for easier iteration and filter out null/undefined entries
   const bundlesArray = Object.values(bundles).filter(bundle => bundle !== null && bundle !== undefined);
 
-  // Helper function to calculate discounted price
-  function calculateDiscountedPrice(originalPrice, pricing) {
-    if (!pricing || !pricing.status || !pricing.rules || pricing.rules.length === 0) {
-      return {
-        price: originalPrice,
-        compareAtPrice: null
-      }; // No discount enabled or no rules
+  // Currency formatter helper
+  function formatCurrency(amount) {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: shopCurrency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch (e) {
+      // Fallback if currency code is invalid
+      return `${amount.toFixed(2)} ${shopCurrency}`;
     }
-
-    const rule = pricing.rules[0]; // Assuming only one rule for simplicity based on current UI
-    const value = parseFloat(rule.value);
-    const currentPrice = parseFloat(originalPrice);
-
-    let discountedPrice = currentPrice;
-    let compareAtPrice = originalPrice;
-
-    if (isNaN(currentPrice) || isNaN(value)) {
-      return {
-        price: originalPrice,
-        compareAtPrice: null
-      }; // Invalid numbers
-    }
-
-    switch (pricing.type) {
-      case 'fixed_amount_off':
-        discountedPrice = currentPrice - value;
-        break;
-      case 'percentage_off':
-        discountedPrice = currentPrice * (1 - (value / 100));
-        break;
-      case 'fixed_price_only':
-        discountedPrice = value;
-        compareAtPrice = originalPrice; // Original price becomes compare-at price
-        break;
-      default:
-        return {
-          price: originalPrice,
-          compareAtPrice: null
-        };
-    }
-
-    // Ensure price doesn't go below zero
-    discountedPrice = Math.max(0, discountedPrice);
-
-    return {
-      price: discountedPrice.toFixed(2),
-      compareAtPrice: (compareAtPrice && discountedPrice !== currentPrice) ? currentPrice.toFixed(2) : null
-    };
   }
 
   for (const bundle of bundlesArray) {
     if (bundle && bundle.status === 'published') {
       let parsedMatching = null;
-      if (bundle.matching && typeof bundle.matching === 'string') {
-        try {
-          parsedMatching = JSON.parse(bundle.matching);
-        } catch (e) {
-          console.error('Failed to parse bundle.matching for bundle ID:', bundle.id, e);
-          continue; // Skip this bundle if matching data is corrupt
+      if (bundle.matching) {
+        if (typeof bundle.matching === 'string') {
+          try {
+            parsedMatching = JSON.parse(bundle.matching);
+          } catch (e) {
+            console.error('Failed to parse bundle.matching for bundle ID:', bundle.id, e);
+            continue; // Skip this bundle if matching data is corrupt
+          }
+        } else if (typeof bundle.matching === 'object') {
+          parsedMatching = bundle.matching; // It's already an object
         }
       }
+
+      if (!parsedMatching) {
+        console.log('No valid matching data for bundle ID:', bundle.id);
+        continue;
+      }
+      
       console.log('Current Bundle ID:', bundle.id);
       console.log('Parsed Matching for Bundle:', parsedMatching);
       console.log('Liquid currentProductCollections:', currentProductCollections);
@@ -180,11 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Apply bundle-level discount if enabled
-    if (selectedBundle && selectedBundle.pricing && selectedBundle.pricing.status) {
-      const discounted = calculateDiscountedPrice(totalRawPrice, selectedBundle.pricing);
-      return parseFloat(discounted.price);
-    }
     return totalRawPrice;
   }
 
@@ -192,9 +162,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateAddToCartButton() {
     if (addBundleToCartButton) {
       const totalBundlePrice = calculateBundleTotalPrice();
-      const formattedPrice = `$${totalBundlePrice.toFixed(2)}`;
+      const formattedPrice = formatCurrency(totalBundlePrice);
       addBundleToCartButton.textContent = `Add Bundle to Cart • ${formattedPrice}`;
     }
+  }
+
+  // Helper: total selected quantity across steps
+  function getTotalSelectedQuantity() {
+    return selectedProductsQuantities.reduce((sum, stepSelections) => {
+      for (const q of Object.values(stepSelections)) {
+        sum += q;
+      }
+      return sum;
+    }, 0);
   }
 
   // Function to open the modal
@@ -277,51 +257,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Function to render current step name and quantity info
+  // Render current step info
   function renderCurrentStepInfo() {
-    const modalHeader = bundleBuilderModal.querySelector('.modal-header');
-    let currentStepInfoContainer = modalHeader.querySelector('.modal-current-step-info');
+    const currentStepInfoContainer = bundleBuilderModal.querySelector('.modal-current-step-info');
+    if (currentStepInfoContainer && selectedBundle) {
+      const step = selectedBundle.steps[currentActiveStepIndex];
+      const selectedCount = Object.values(selectedProductsQuantities[currentActiveStepIndex]).reduce((a, b) => a + b, 0);
 
-    if (!currentStepInfoContainer) {
-      currentStepInfoContainer = document.createElement('div');
-      currentStepInfoContainer.classList.add('modal-current-step-info');
-      // Insert after tabs, but before the rest of the modal-body
-      const modalTabs = modalHeader.querySelector('.modal-tabs');
-      modalHeader.insertBefore(currentStepInfoContainer, modalTabs.nextSibling);
-    }
-
-    const currentStep = selectedBundle.steps[currentActiveStepIndex];
-    if (!currentStep) {
-      currentStepInfoContainer.innerHTML = '';
-      return;
-    }
-
-    let quantityText = '';
-    if (currentStep.conditionType && currentStep.conditionValue !== null) {
-      const requiredQuantity = currentStep.conditionValue;
-      switch (currentStep.conditionType) {
-        case 'equal_to':
-          quantityText = `Add ${requiredQuantity} product(s)`;
-          break;
-        case 'at_most':
-          quantityText = `Add at most ${requiredQuantity} product(s)`;
-          break;
-        case 'at_least':
-          quantityText = `Add at least ${requiredQuantity} product(s)`;
-          break;
+      let quantityText = '';
+      if (step.conditionType && step.conditionValue) {
+        const value = step.conditionValue;
+        switch (step.conditionType) {
+          case 'equal_to':
+            quantityText = `Add ${value} product${value > 1 ? 's' : ''} only`;
+            break;
+          case 'at_least':
+            quantityText = `Add at least ${value} product${value > 1 ? 's' : ''}`;
+            break;
+          case 'at_most':
+            quantityText = `Add at most ${value} product${value > 1 ? 's' : ''}`;
+            break;
+        }
       }
-    } else {
-      // Default message if no specific condition is set
-      quantityText = 'Select product(s)';
+
+      currentStepInfoContainer.innerHTML = `
+        <div class="step-info">
+          <h2>Step ${currentActiveStepIndex + 1} of ${selectedBundle.steps.length}</h2>
+          <h1>${step.name}</h1>
+          <p>${selectedCount} products selected</p>
+          ${quantityText ? `<p><strong>${quantityText}</strong></p>` : ''}
+        </div>
+      `;
     }
-
-    // Combine with bundle price (assuming bundle.price is the base price)
-    const priceInfo = selectedBundle.price ? ` to get the bundle at $${selectedBundle.price}` : '';
-
-    currentStepInfoContainer.innerHTML = `
-      <!-- <h3>${currentStep.name || `Select ${currentActiveStepIndex + 1} Shade`}</h3> -->
-      <p>${quantityText}${priceInfo}</p>
-    `;
   }
 
   // Helper to fetch product details (if not already in cache) - This is a placeholder
@@ -347,36 +314,83 @@ document.addEventListener('DOMContentLoaded', () => {
     let productsToDisplay = stepProductDataCache[stepIndex];
 
     if (productsToDisplay.length === 0) {
+      let explicitProducts = [];
+      let collectionProducts = [];
+
+      // 1. Process explicitly selected products
       if (currentStep.products && Array.isArray(currentStep.products) && currentStep.products.length > 0) {
-        productsToDisplay = currentStep.products.flatMap(p => {
-          // If displayVariantsAsIndividual is true, expand into multiple cards for each variant
+        explicitProducts = currentStep.products.flatMap(p => {
           if (currentStep.displayVariantsAsIndividual && p.variants && p.variants.length > 0) {
             return p.variants.map(variant => ({
-              id: variant.id.split('/').pop(), // Use variant ID for selection/quantity tracking
+              id: variant.id.split('/').pop(),
               title: `${p.title} - ${variant.title}`,
               imageUrl: p.images && p.images.length > 0 ? p.images[0].originalSrc : 'https://via.placeholder.com/150',
-              price: parseFloat(variant.price || '0'), // Store variant price
-              variantId: variant.id.split('/').pop() // Explicitly store variantId for cart addition
+              price: parseFloat(variant.price || '0'),
+              variantId: variant.id.split('/').pop()
             }));
           } else {
-            // Otherwise, just use the first variant's details or product details
             const defaultVariant = p.variants && p.variants.length > 0 ? p.variants[0] : null;
             return [{
-              id: defaultVariant ? defaultVariant.id.split('/').pop() : p.id.split('/').pop(), // Use variant ID if available, else product ID
+              id: defaultVariant ? defaultVariant.id.split('/').pop() : p.id.split('/').pop(),
               title: p.title,
               imageUrl: p.images && p.images.length > 0 ? p.images[0].originalSrc : 'https://via.placeholder.com/150',
-              price: defaultVariant ? parseFloat(defaultVariant.price || '0') : 0, // Store price
-              variantId: defaultVariant ? defaultVariant.id.split('/').pop() : null // Store variantId
+              price: defaultVariant ? parseFloat(defaultVariant.price || '0') : 0,
+              variantId: defaultVariant ? defaultVariant.id.split('/').pop() : (p.variants && p.variants.length > 0 ? p.variants[0].id.split('/').pop() : null),
+              variants: (p.variants || []).map(v => ({ id: v.id.split('/').pop(), title: v.title, price: parseFloat(v.price || '0') }))
             }];
           }
         });
-      } else if (currentStep.collections && Array.isArray(currentStep.collections) && currentStep.collections.length > 0) {
-        // This part would ideally fetch products belonging to the selected collections.
-        // For now, we will not fetch prices for collections directly, assuming they are mostly for visibility.
-        // If collection products need prices, a more complex fetch would be required.
-        console.warn('Dynamic product fetching from collections for modal display is not implemented with price/variant info.');
-        productsToDisplay = [];
       }
+
+      // 2. Fetch products from collections
+      if (currentStep.collections && Array.isArray(currentStep.collections) && currentStep.collections.length > 0) {
+        const collectionPromises = currentStep.collections.map(async (c) => {
+          if (!c.handle) return [];
+          try {
+            const res = await fetch(`/collections/${c.handle}/products.json?limit=250`);
+            if (!res.ok) return [];
+            const data = await res.json();
+            if (!data.products || !Array.isArray(data.products)) return [];
+
+            return data.products.flatMap((p) => {
+              if (currentStep.displayVariantsAsIndividual && p.variants && p.variants.length > 0) {
+                return p.variants.map((variant) => ({
+                  id: variant.id.toString().split('/').pop(),
+                  title: `${p.title} - ${variant.title}`,
+                  imageUrl: p.images && p.images.length > 0 ? p.images[0].src : 'https://via.placeholder.com/150',
+                  price: parseFloat(variant.price),
+                  variantId: variant.id.toString().split('/').pop(),
+                }));
+              } else {
+                const defaultVariant = p.variants && p.variants.length > 0 ? p.variants[0] : null;
+                return [{
+                  id: defaultVariant ? defaultVariant.id.toString().split('/').pop() : p.id.toString().split('/').pop(),
+                  title: p.title,
+                  imageUrl: p.images && p.images.length > 0 ? p.images[0].src : 'https://via.placeholder.com/150',
+                  price: defaultVariant ? parseFloat(defaultVariant.price) : 0,
+                  variantId: defaultVariant ? defaultVariant.id.toString().split('/').pop() : (p.variants && p.variants.length > 0 ? p.variants[0].id.toString().split('/').pop() : null),
+                  variants: (p.variants || []).map(v => ({ id: v.id.toString().split('/').pop(), title: v.title, price: parseFloat(v.price || '0') }))
+                }];
+              }
+            });
+          } catch (err) {
+            console.warn('Failed to fetch products for collection', c.handle, err);
+            return [];
+          }
+        });
+        collectionProducts = (await Promise.all(collectionPromises)).flat();
+      }
+
+      // 3. Combine and de-duplicate
+      const combinedProducts = [...explicitProducts, ...collectionProducts];
+      const seen = new Set();
+      productsToDisplay = combinedProducts.filter((p) => {
+        const key = p.variantId || p.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      
       stepProductDataCache[stepIndex] = productsToDisplay; // Cache for future use
     }
 
@@ -390,31 +404,41 @@ document.addEventListener('DOMContentLoaded', () => {
       const productCard = document.createElement('div');
       productCard.classList.add('product-card');
       // Use actual product ID for data-attribute, not GID
-      productCard.dataset.productId = product.id;
+      const selectionKey = product.variantId || product.id;
+      productCard.dataset.productId = selectionKey;
 
-      const currentQuantity = selectedProductsQuantities[stepIndex][product.id] || 0;
+      const currentQuantity = selectedProductsQuantities[stepIndex][selectionKey] || 0;
 
       if (currentQuantity > 0) {
         productCard.classList.add('selected');
       }
+
+      const priceMarkup = `<p class="product-price">${formatCurrency(product.price)}</p>`;
+      const variantSelectorMarkup = (!currentStep.displayVariantsAsIndividual && product.variants && product.variants.length > 1) ? `
+        <select class="variant-selector" data-base-product-id="${product.id}">
+          ${product.variants.map(v => `<option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>`).join('')}
+        </select>
+      ` : '';
 
       productCard.innerHTML = `
         <div class="image-wrapper">
           <img src="${product.imageUrl}" alt="${product.title}">
         </div>
         <p class="product-title">${product.title}</p>
+        ${priceMarkup}
+        ${variantSelectorMarkup}
         ${currentQuantity > 0 ? `<div class="selected-overlay">${currentQuantity}</div>` : ''}
         <div class="quantity-controls">
-          <button class="quantity-control-button decrease-quantity" data-product-id="${product.id}">-</button>
+          <button class="quantity-control-button decrease-quantity" data-product-id="${selectionKey}">-</button>
           <span class="quantity-display">${currentQuantity}</span>
-          <button class="quantity-control-button increase-quantity" data-product-id="${product.id}">+</button>
+          <button class="quantity-control-button increase-quantity" data-product-id="${selectionKey}">+</button>
         </div>
       `;
 
       // Event listener for toggling selection (clicking anywhere on card except buttons)
       productCard.addEventListener('click', (event) => {
         if (!event.target.closest('.quantity-control-button')) {
-          const productId = product.id;
+          const productId = selectionKey;
           const currentQty = selectedProductsQuantities[stepIndex][productId] || 0;
           // If clicked and not selected, select with quantity 1. If selected, deselect (quantity 0).
           updateProductSelection(stepIndex, productId, currentQty > 0 ? 0 : 1);
@@ -426,18 +450,46 @@ document.addEventListener('DOMContentLoaded', () => {
       const decreaseButton = productCard.querySelector('.decrease-quantity');
 
       increaseButton.addEventListener('click', () => {
-        const productId = product.id;
+        const productId = selectionKey;
         const currentQty = selectedProductsQuantities[stepIndex][productId] || 0;
         updateProductSelection(stepIndex, productId, currentQty + 1);
       });
 
       decreaseButton.addEventListener('click', () => {
-        const productId = product.id;
+        const productId = selectionKey;
         const currentQty = selectedProductsQuantities[stepIndex][productId] || 0;
         if (currentQty > 0) {
           updateProductSelection(stepIndex, productId, currentQty - 1);
         }
       });
+
+      // Variant selector change handler
+      const variantSelector = productCard.querySelector('.variant-selector');
+      if (variantSelector) {
+        variantSelector.addEventListener('change', (e) => {
+          const newVariantId = e.target.value;
+          if (newVariantId === product.variantId) return; // no change
+
+          // Update product object in cache
+          const variantData = product.variants.find(v => v.id === newVariantId);
+          if (!variantData) return;
+
+          // Move any selected quantity from old variantId to newVariantId
+          const oldQty = selectedProductsQuantities[stepIndex][product.variantId] || 0;
+          if (oldQty > 0) {
+            delete selectedProductsQuantities[stepIndex][product.variantId];
+            selectedProductsQuantities[stepIndex][newVariantId] = oldQty;
+          }
+
+          // Update product properties
+          product.variantId = newVariantId;
+          product.price = variantData.price;
+          product.id = newVariantId; // align id for selection map
+
+          // Re-render grid to reflect changes (price, dataset ids, overlays)
+          renderProductGrid(stepIndex);
+        });
+      }
 
       productGridContainer.appendChild(productCard);
     });
@@ -523,22 +575,42 @@ document.addEventListener('DOMContentLoaded', () => {
       stepBox.dataset.stepIndex = index.toString();
 
       const selectedProductsInStep = selectedProductsQuantities[index];
-      const selectedProductIds = Object.keys(selectedProductsInStep);
+      const hasSelections = Object.keys(selectedProductsInStep).length > 0;
 
-      // Display image of *any* one selected product, or the first one if multiple
-      if (selectedProductIds.length > 0) {
-        // Find the product image from cache or initial data using the first selected product ID
-        const firstSelectedProductId = selectedProductIds[0];
-        // The ID in selectedProductsQuantities is now the variant ID
-        const product = stepProductDataCache[index].find(p => p.variantId === firstSelectedProductId);
-        if (product && product.imageUrl) {
-          const img = document.createElement('img');
-          img.src = product.imageUrl;
-          img.alt = product.title || '';
-          img.classList.add('bundle-step-product-image');
-          stepBox.appendChild(img);
+      if (hasSelections) {
+        const imagesContainer = document.createElement('div');
+        imagesContainer.classList.add('step-images-container');
+
+        for (const variantId in selectedProductsInStep) {
+          const quantity = selectedProductsInStep[variantId];
+          const product = stepProductDataCache[index].find((p) => (p.variantId || p.id) === variantId);
+
+          if (product && product.imageUrl) {
+            for (let i = 0; i < quantity; i++) {
+              const img = document.createElement('img');
+              img.src = product.imageUrl;
+              img.alt = product.title || '';
+              img.classList.add('bundle-step-product-image');
+              imagesContainer.appendChild(img);
+            }
+          }
+        }
+        
+        if (imagesContainer.children.length > 0) {
+          stepBox.appendChild(imagesContainer);
+
+          // Adjust image sizes to fit in a grid
+          const totalImages = imagesContainer.children.length;
+          const columns = Math.ceil(Math.sqrt(totalImages));
+          const sizePercent = 100 / columns;
+          
+          for (const img of imagesContainer.children) {
+            img.style.width = `${sizePercent}%`;
+            img.style.height = `${sizePercent}%`;
+          }
+
         } else {
-          // Fallback if image not found in cache (shouldn't happen if cached correctly)
+          // Fallback to plus icon if no images could be created
           const plusIcon = document.createElement('span');
           plusIcon.classList.add('plus-icon');
           plusIcon.textContent = '+';
@@ -564,19 +636,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let displayPrice = selectedBundle.price || 'N/A';
     let displayComparePrice = selectedBundle.compareAtPrice || 'N/A';
 
-    // Apply discount logic if enabled
-    if (selectedBundle.pricing && selectedBundle.pricing.status) {
-      const prices = calculateDiscountedPrice(selectedBundle.price, selectedBundle.pricing);
-      displayPrice = prices.price;
-      displayComparePrice = prices.compareAtPrice || selectedBundle.compareAtPrice;
-    }
-
     bundleHeader.innerHTML = `
       <h2 class="bundle-title">${selectedBundle.name || ''}</h2>
-      <div class="bundle-price">
-        <span class="current-price">$${displayPrice}</span>
-        ${displayComparePrice && displayComparePrice !== displayPrice ? `<span class="compare-price">$${displayComparePrice}</span>` : ''}
-      </div>
     `;
 
     // Render bundle includes (if any and data exists)
@@ -643,17 +704,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const itemsToAdd = [];
     selectedProductsQuantities.forEach((stepSelections, stepIndex) => {
       const productsInStep = stepProductDataCache[stepIndex];
-      for (const variantId in stepSelections) {
-        const quantity = stepSelections[variantId];
-        if (quantity > 0) {
-          // Ensure the variantId is a number for Shopify's /cart/add.js endpoint
+      for (const key in stepSelections) {
+        const quantity = stepSelections[key];
+        if (quantity <= 0) continue;
+
+        // Look up product object by matching key against variantId or id
+        const productObj = productsInStep.find(p => (p.variantId || p.id) === key);
+
+        let variantIdForCart = key; // default
+        if (productObj) {
+          variantIdForCart = productObj.variantId || productObj.id;
+        }
+
+        // Ensure numeric
+        const variantIdStr = (variantIdForCart || '').toString().split('/').pop();
+        const variantIdNum = Number(variantIdStr);
+        if (!isNaN(variantIdNum)) {
           itemsToAdd.push({
-            id: parseInt(variantId), 
-            quantity: quantity
+            id: variantIdNum,
+            quantity,
+            properties: {
+              _wolfpack_bundle_id: selectedBundle ? selectedBundle.id : 'unknown'
+            }
           });
         }
       }
     });
+
+    console.log('itemsToAdd', itemsToAdd);
 
     if (itemsToAdd.length === 0) {
       alert('Please select products for your bundle before adding to cart.');
@@ -706,4 +784,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  function initializeBundleBuilder() {
+    if (!selectedBundle) {
+      appContainer.innerHTML = '<p>This bundle is not available for this product.</p>';
+      return;
+    }
+    appContainer.style.display = 'block';
+
+    // Initial setup
+    updateMainBundleStepsDisplay();
+    updateAddToCartButton();
+    updateNavigationButtons();
+  }
+
+  // Final check and initialization
+  if (selectedBundle) {
+    initializeBundleBuilder();
+  }
 }); 

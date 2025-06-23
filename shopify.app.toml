@@ -1,9 +1,9 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "8d39a429476fff7751938bb345ff6c61"
-name = "wolfpack-product-bundles"
-handle = "wolfpack-product-bundles"
-application_url = "https://tactics-dialog-cholesterol-wing.trycloudflare.com"
+client_id = "a383172f42c2ab283901a663d485a03d"
+name = "Wolfpack: Product Bundles"
+handle = "wolfpack-product-bundles-4"
+application_url = "https://davis-administrators-deeper-viewpicture.trycloudflare.com"
 embedded = true
 
 [build]
@@ -13,23 +13,15 @@ automatically_update_urls_on_dev = true
 [webhooks]
 api_version = "2025-04"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
-
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "read_products,write_products"
 
 [auth]
 redirect_urls = [
-  "https://tactics-dialog-cholesterol-wing.trycloudflare.com/auth/callback",
-  "https://tactics-dialog-cholesterol-wing.trycloudflare.com/auth/shopify/callback",
-  "https://tactics-dialog-cholesterol-wing.trycloudflare.com/api/auth/callback"
+  "https://davis-administrators-deeper-viewpicture.trycloudflare.com/auth/callback",
+  "https://davis-administrators-deeper-viewpicture.trycloudflare.com/auth/shopify/callback",
+  "https://davis-administrators-deeper-viewpicture.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

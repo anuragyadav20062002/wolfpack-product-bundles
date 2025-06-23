@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
-import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select, List, Divider } from "@shopify/polaris";
+import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select, List, Divider, Badge } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
-import { ArrowLeftIcon } from '@shopify/polaris-icons';
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -57,23 +56,8 @@ interface BundleStep {
   updatedAt: string; // Changed to string
 }
 
-// Define a type for BundlePricing, matching Prisma schema and parsed JSON
-interface BundlePricing {
-  id: string;
-  bundleId: string;
-  type: string;
-  status: boolean;
-  rules: Array<{ minQuantity: string; value: string }> | null; // Parsed from JSON string
-  showFooter: boolean;
-  showBar: boolean;
-  messages: string | null;
-  published: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 // Extend bundle type from loader to include steps and pricing, and parsed matching
-interface BundleWithStepsAndPricing {
+interface BundleWithSteps {
   id: string;
   name: string;
   description: string | null;
@@ -86,118 +70,10 @@ interface BundleWithStepsAndPricing {
   updatedAt: Date;
 
   steps: BundleStep[];
-  pricing: BundlePricing | null;
   parsedMatching: {
     selectedVisibilityProducts: ResourcePickerProduct[];
     selectedVisibilityCollections: ResourcePickerCollection[];
   } | null; // This will be the parsed object from `matching`
-}
-
-// GraphQL Mutations
-const SET_SHOP_METAFIELD_MUTATION = `#graphql
-  mutation SetShopMetafield($metafields: [MetafieldsSetInput!]!) {
-    metafieldsSet(metafields: $metafields) {
-      metafields {
-        id
-        namespace
-        key
-        value
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
-const GET_SHOP_METAFIELD_QUERY = `#graphql
-  query GetShopMetafield($namespace: String!, $key: String!) {
-    shop {
-      metafield(namespace: $namespace, key: $key) {
-        id
-        namespace
-        key
-        value
-      }
-    }
-  }
-`;
-
-const GET_SHOP_GID_QUERY = `#graphql
-  query GetShopGid {
-    shop {
-      id
-    }
-  }
-`;
-
-// Helper function to update shop metafields
-async function updateShopMetafield(admin: any, shopIdGid: string, bundleId: string, bundleData: any) {
-  const metafieldNamespace = "custom";
-  const metafieldKey = "all_bundles";
-
-  let allBundles: { [key: string]: any } = {};
-
-  try {
-    const response = await admin.graphql(
-      GET_SHOP_METAFIELD_QUERY,
-      {
-        variables: {
-          namespace: metafieldNamespace,
-          key: metafieldKey,
-        },
-      }
-    );
-    const responseJson = await response.json();
-
-    if (responseJson.data?.shop?.metafield?.value) {
-      allBundles = JSON.parse(responseJson.data.shop.metafield.value);
-    }
-  } catch (error) {
-    console.error("Error fetching existing metafield:", error);
-  }
-
-  // Update the specific bundle data
-  allBundles[bundleId] = bundleData;
-
-  const metafieldInput: {
-    ownerId: string;
-    namespace: string;
-    key: string;
-    value: string;
-    type: string;
-  } = {
-    ownerId: shopIdGid,
-    namespace: metafieldNamespace,
-    key: metafieldKey,
-    value: JSON.stringify(allBundles),
-    type: "json",
-  };
-
-  console.log("Metafield Input being sent:", metafieldInput);
-
-  try {
-    const setMetafieldResponse = await admin.graphql(
-      SET_SHOP_METAFIELD_MUTATION,
-      {
-        variables: {
-          metafields: [metafieldInput],
-        },
-      }
-    );
-    const setMetafieldJson: any = await setMetafieldResponse.json();
-
-    if (setMetafieldJson.errors) {
-      console.error("Error setting shop metafield:", setMetafieldJson.errors);
-    } else if (setMetafieldJson.data?.metafieldsSet?.userErrors.length > 0) {
-      console.error("Shopify User Errors:", setMetafieldJson.data.metafieldsSet.userErrors);
-    } else {
-      console.log("Shop metafield updated successfully for bundle:", bundleId);
-    }
-  } catch (error) {
-    console.error("Error saving metafield:", error);
-  }
 }
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -211,7 +87,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     },
     include: {
       steps: true,
-      pricing: true, // Include pricing data
     },
   });
 
@@ -224,176 +99,65 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     ...step,
     products: step.products ? JSON.parse(step.products) : [],
     collections: step.collections ? JSON.parse(step.collections) : [],
-    // createdAt: new Date(step.createdAt), // No longer parsing to Date here for type compatibility
-    // updatedAt: new Date(step.updatedAt), // No longer parsing to Date here for type compatibility
   }));
-
-  // Parse pricing rules if they exist
-  const parsedPricing = bundle.pricing ? {
-    ...bundle.pricing,
-    rules: bundle.pricing.rules ? JSON.parse(bundle.pricing.rules) : null,
-  } : null;
 
   // Parse matching rules if they exist
   const parsedMatching = bundle.matching ? JSON.parse(bundle.matching) : null;
 
-  return json({ bundle: { ...bundle, steps: parsedSteps, pricing: parsedPricing, parsedMatching: parsedMatching } });
+  return json({ bundle: { ...bundle, steps: parsedSteps, parsedMatching: parsedMatching } });
 }
 
 // Action to handle adding or updating a step or pricing
 export async function action({ request }: ActionFunctionArgs) {
-  const { admin } = await authenticate.admin(request);
-
-  let shopIdGid: string;
-  try {
-    const shopGidResponse = await admin.graphql(GET_SHOP_GID_QUERY);
-    const shopGidJson = await shopGidResponse.json();
-    shopIdGid = shopGidJson.data.shop.id;
-  } catch (error) {
-    console.error("Error fetching shop GID:", error);
-    return json({ error: "Failed to fetch shop ID" }, { status: 500 });
-  }
-
+  const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "addStep" || intent === "editStep") {
     const bundleId = formData.get("bundleId") as string;
     const stepName = formData.get("stepName") as string;
-    const selectedProductsString = formData.get("selectedProducts") as string;
-    const selectedCollectionsString = formData.get("selectedCollections") as string;
+    const selectedProducts = formData.get("selectedProducts") as string;
+    const selectedCollections = formData.get("selectedCollections") as string;
     const displayVariantsAsIndividual = formData.get("displayVariantsAsIndividual") === "true";
-    const conditionType = formData.get("conditionType") as string | null;
-    const conditionValue = formData.get("conditionValue");
+    const enabled = formData.get("enabled") === "true";
+    const conditionType = formData.get("conditionType") as string;
+    const conditionValue = formData.get("conditionValue") as string;
     const stepId = formData.get("stepId") as string | null;
 
     if (typeof bundleId !== 'string' || bundleId.length === 0 || typeof stepName !== 'string' || stepName.length === 0) {
       return json({ error: 'Bundle ID and Step Name are required' }, { status: 400 });
     }
 
-    const parsedConditionValue = conditionValue ? parseInt(conditionValue as string, 10) : null;
-
-    try {
-      const stepData = {
-        bundleId: bundleId,
+    const data = {
+      bundleId,
         name: stepName,
-        products: selectedProductsString ? selectedProductsString : null,
-        collections: selectedCollectionsString ? selectedCollectionsString : null,
-        displayVariantsAsIndividual: displayVariantsAsIndividual,
-        conditionType: conditionType,
-        conditionValue: parsedConditionValue,
-      };
-
-      let resultStep;
-      if (intent === "addStep") {
-        resultStep = await db.bundleStep.create({ data: stepData });
-      } else if (intent === "editStep" && stepId) {
-        resultStep = await db.bundleStep.update({
-          where: { id: stepId },
-          data: stepData,
-        });
-      }
-
-      // After saving the step, retrieve the full bundle and update the metafield
-      const updatedBundle = await db.bundle.findUnique({
-        where: { id: bundleId },
-        include: { steps: true, pricing: true },
-      });
-      if (updatedBundle) {
-        const parsedBundleSteps = updatedBundle.steps.map(step => ({
-          ...step,
-          products: step.products ? JSON.parse(step.products) : [],
-          collections: step.collections ? JSON.parse(step.collections) : [],
-        }));
-        const parsedBundlePricing = updatedBundle.pricing ? {
-          ...updatedBundle.pricing,
-          rules: updatedBundle.pricing.rules ? JSON.parse(updatedBundle.pricing.rules) : null,
-        } : null;
-        await updateShopMetafield(admin, shopIdGid, bundleId, { ...updatedBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
-      }
-
-      return json({ success: true, step: resultStep, intent: intent });
-    } catch (error) {
-      console.error("Error saving bundle step:", error);
-      return json({ error: 'Failed to save bundle step' }, { status: 500 });
-    }
-  }
-
-  if (intent === "savePricing") {
-    const bundleId = formData.get("bundleId") as string;
-    const enableDiscounts = formData.get("enableDiscounts") === "true";
-    const discountType = formData.get("discountType") as string;
-    const pricingRulesString = formData.get("pricingRules") as string;
-    const showDiscountBar = formData.get("showDiscountBar") === "true";
-    const showInFooter = formData.get("showInFooter") === "true";
-
-    if (typeof bundleId !== 'string' || bundleId.length === 0) {
-      return json({ error: 'Bundle ID is required' }, { status: 400 });
-    }
-
-    const parsedPricingRules = pricingRulesString ? JSON.parse(pricingRulesString) : null;
+      products: selectedProducts,
+      collections: selectedCollections,
+      displayVariantsAsIndividual,
+      enabled,
+      conditionType,
+      conditionValue: parseInt(conditionValue, 10) || null,
+    };
 
     try {
-      const existingPricing = await db.bundlePricing.findUnique({
-        where: { bundleId: bundleId },
-      });
-
-      const pricingData = {
-        type: discountType,
-        status: enableDiscounts, // Assuming 'status' in schema maps to 'enableDiscounts'
-        rules: parsedPricingRules ? JSON.stringify(parsedPricingRules) : null,
-        showBar: showDiscountBar,
-        showFooter: showInFooter,
-      };
-
-      let resultPricing;
-      if (existingPricing) {
-        resultPricing = await db.bundlePricing.update({
-          where: { id: existingPricing.id },
-          data: pricingData,
-        });
-      } else {
-        resultPricing = await db.bundlePricing.create({
-          data: { bundleId: bundleId, ...pricingData },
-        });
-      }
-      
-      // After saving pricing, retrieve the full bundle and update the metafield
-      const updatedBundle = await db.bundle.findUnique({
-        where: { id: bundleId },
-        include: { steps: true, pricing: true },
-      });
-      if (updatedBundle) {
-        const parsedBundleSteps = updatedBundle.steps.map(step => ({
-          ...step,
-          products: step.products ? JSON.parse(step.products) : [],
-          collections: step.collections ? JSON.parse(step.collections) : [],
-        }));
-        const parsedBundlePricing = updatedBundle.pricing ? {
-          ...updatedBundle.pricing,
-          rules: updatedBundle.pricing.rules ? JSON.parse(updatedBundle.pricing.rules) : null,
-        } : null;
-        await updateShopMetafield(admin, shopIdGid, bundleId, { ...updatedBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
-      }
-
-      return json({ success: true, pricing: resultPricing, intent: intent });
+      const step = stepId
+        ? await db.bundleStep.update({ where: { id: stepId }, data })
+        : await db.bundleStep.create({ data });
+      return json({ success: true, step: step, intent: intent });
     } catch (error) {
-      console.error("Error saving bundle pricing:", error);
-      return json({ error: 'Failed to save bundle pricing' }, { status: 500 });
+      console.error("Error saving step:", error);
+      return json({ error: 'Failed to save step' }, { status: 500 });
     }
   }
 
   if (intent === "publishBundle") {
     const bundleId = formData.get("bundleId") as string;
-    const selectedVisibilityProductsString = formData.get("selectedVisibilityProducts") as string;
-    const selectedVisibilityCollectionsString = formData.get("selectedVisibilityCollections") as string;
+    const selectedVisibilityProducts = JSON.parse(formData.get("selectedVisibilityProducts") as string || "[]");
+    const selectedVisibilityCollections = JSON.parse(formData.get("selectedVisibilityCollections") as string || "[]");
 
-    if (typeof bundleId !== 'string' || bundleId.length === 0 || !selectedVisibilityProductsString || !selectedVisibilityCollectionsString) {
-      return json({ error: 'Bundle ID and selected visibility products/collections are required for publishing' }, { status: 400 });
+    if (typeof bundleId !== 'string' || bundleId.length === 0 || (selectedVisibilityProducts.length === 0 && selectedVisibilityCollections.length === 0)) {
+      return json({ error: 'At least one product or collection must be selected for visibility to publish the bundle.' }, { status: 400 });
     }
-
-    const selectedVisibilityProducts = JSON.parse(selectedVisibilityProductsString) as ResourcePickerProduct[];
-    const selectedVisibilityCollections = JSON.parse(selectedVisibilityCollectionsString) as ResourcePickerCollection[];
 
     try {
       const updatedBundle = await db.bundle.update({
@@ -401,31 +165,75 @@ export async function action({ request }: ActionFunctionArgs) {
         data: {
           publishedAt: new Date(),
           status: "published",
-          active: true, // Assuming a published bundle should be active
+          active: true,
           matching: JSON.stringify({
-            selectedVisibilityProducts: selectedVisibilityProducts,
-            selectedVisibilityCollections: selectedVisibilityCollections,
+            selectedVisibilityProducts,
+            selectedVisibilityCollections,
           }),
         },
       });
+      console.log(`[LOG] Publishing bundle ${bundleId}...`);
 
-      // After publishing, retrieve the full bundle and update the metafield
-      const fullBundle = await db.bundle.findUnique({
-        where: { id: bundleId },
-        include: { steps: true, pricing: true },
+      // Get the shop's GID to use as the ownerId for the metafield
+      const shopIdResponse = await admin.graphql(
+        `#graphql
+        query shopId {
+          shop {
+            id
+          }
+        }`
+      );
+      const shopIdData = await shopIdResponse.json();
+      const shopGid = shopIdData.data.shop.id;
+
+      // Update shop metafield with all bundles
+      const allPublishedBundles = await db.bundle.findMany({
+        where: { status: "published", shopId: session.shop },
+        include: { steps: true },
       });
-      if (fullBundle) {
-        const parsedBundleSteps = fullBundle.steps.map(step => ({
-          ...step,
-          products: step.products ? JSON.parse(step.products) : [],
-          collections: step.collections ? JSON.parse(step.collections) : [],
-        }));
-        const parsedBundlePricing = fullBundle.pricing ? {
-          ...fullBundle.pricing,
-          rules: fullBundle.pricing.rules ? JSON.parse(fullBundle.pricing.rules) : null,
-        } : null;
-        await updateShopMetafield(admin, shopIdGid, bundleId, { ...fullBundle, steps: parsedBundleSteps, pricing: parsedBundlePricing });
-      }
+
+      const metafieldValue = allPublishedBundles.map(b => {
+        const steps = b.steps.map(s => ({ ...s, products: s.products ? JSON.parse(s.products) : [], collections: s.collections ? JSON.parse(s.collections) : [] }));
+        return {
+          id: b.id,
+          name: b.name,
+          description: b.description,
+          status: b.status,
+          matching: b.matching ? JSON.parse(b.matching) : {},
+          steps: steps
+        };
+      });
+
+      await admin.graphql(
+        `#graphql
+          mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+            metafieldsSet(metafields: $metafields) {
+              metafields {
+                id
+                key
+                namespace
+                value
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }`,
+        {
+          variables: {
+            metafields: [
+              {
+                ownerId: shopGid,
+                namespace: "custom",
+                key: "all_bundles",
+                type: "json",
+                value: JSON.stringify(metafieldValue),
+              },
+            ],
+          },
+        }
+      );
 
       return json({ success: true, bundle: updatedBundle, intent: intent });
     } catch (error) {
@@ -442,13 +250,8 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     try {
-      // Delete associated steps and pricing first due to foreign key constraints
       await db.bundleStep.deleteMany({ where: { bundleId: bundleId } });
-      await db.bundlePricing.deleteMany({ where: { bundleId: bundleId } });
       await db.bundle.delete({ where: { id: bundleId } });
-
-      // After deleting the bundle, remove it from the shop metafield using the helper
-      await updateShopMetafield(admin, shopIdGid, bundleId, null);
 
       return json({ success: true, intent: intent });
     } catch (error) {
@@ -457,57 +260,11 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   }
 
-  if (intent === "clearAllBundlesMetafield") {
-    try {
-      const metafieldNamespace = "custom";
-      const metafieldKey = "all_bundles";
-
-      const metafieldInput: {
-        ownerId: string;
-        namespace: string;
-        key: string;
-        value: string;
-        type: string;
-      } = {
-        ownerId: shopIdGid,
-        namespace: metafieldNamespace,
-        key: metafieldKey,
-        value: JSON.stringify({}), // Set to an empty object to clear all bundles
-        type: "json",
-      };
-
-      const setMetafieldResponse = await admin.graphql(
-        SET_SHOP_METAFIELD_MUTATION,
-        {
-          variables: {
-            metafields: [metafieldInput],
-          },
-        }
-      );
-      const setMetafieldJson: any = await setMetafieldResponse.json();
-
-      if (setMetafieldJson.errors) {
-        console.error("Error clearing all bundles from shop metafield:", setMetafieldJson.errors);
-        return json({ error: 'Failed to clear all bundles metafield' }, { status: 500 });
-      } else if (setMetafieldJson.data?.metafieldsSet?.userErrors.length > 0) {
-        console.error("Shopify User Errors clearing all bundles from metafield:", setMetafieldJson.data.metafieldsSet.userErrors);
-        return json({ error: 'Failed to clear all bundles metafield due to Shopify errors' }, { status: 500 });
-      } else {
-        console.log("All bundles metafield cleared successfully.");
-        return json({ success: true, intent: intent, message: "All bundle metafields cleared." });
-      }
-    } catch (error) {
-      console.error("Error in clearAllBundlesMetafield intent:", error);
-      return json({ error: 'An unexpected error occurred while clearing metafields' }, { status: 500 });
-    }
-  }
-
   return null;
 }
 
 export default function BundleBuilderPage() {
-  const { bundle } = useLoaderData<{ bundle: BundleWithStepsAndPricing }>();
-  const navigate = useNavigate();
+  const { bundle } = useLoaderData<{ bundle: BundleWithSteps }>();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
 
@@ -516,20 +273,13 @@ export default function BundleBuilderPage() {
   const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
   const [currentStepId, setCurrentStepId] = useState<string | null>(null);
   const [stepName, setStepName] = useState("");
+  const [stepEnabled, setStepEnabled] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState<ResourcePickerProduct[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<ResourcePickerCollection[]>([]);
   const [displayVariantsAsIndividual, setDisplayVariantsAsIndividual] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
   const [conditionType, setConditionType] = useState<string>("equal_to");
   const [conditionValue, setConditionValue] = useState<string>("");
-
-  // State for Bundle Pricing Modal
-  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
-  const [enableDiscounts, setEnableDiscounts] = useState(false);
-  const [discountType, setDiscountType] = useState("fixed_amount_off");
-  const [pricingRules, setPricingRules] = useState<Array<{ minQuantity: string; value: string }>>([{ minQuantity: "", value: "" }]);
-  const [showDiscountBar, setShowDiscountBar] = useState(false);
-  const [showInFooter, setShowInFooter] = useState(false);
 
   // State for Publish Modal
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
@@ -542,22 +292,13 @@ export default function BundleBuilderPage() {
     setIsAddStepModalOpen(false);
     setCurrentStepId(null);
     setStepName("");
+    setStepEnabled(true);
     setSelectedProducts([]);
     setSelectedCollections([]);
     setDisplayVariantsAsIndividual(false);
     setSelectedTab(0);
     setConditionType("equal_to");
     setConditionValue("");
-  }, []);
-
-  const handlePricingModalClose = useCallback(() => {
-    setIsPricingModalOpen(false);
-    // Reset pricing form fields here if needed
-    setEnableDiscounts(false);
-    setDiscountType("fixed_amount_off");
-    setPricingRules([{ minQuantity: "", value: "" }]);
-    setShowDiscountBar(false);
-    setShowInFooter(false);
   }, []);
 
   const handlePublishModalClose = useCallback(() => {
@@ -577,11 +318,6 @@ export default function BundleBuilderPage() {
           handleAddStepModalClose();
           shopify.toast.show('Step saved successfully!');
           console.log("Bundle Step Data:", stepData.step);
-        } else if (fetcher.data.intent === "savePricing") {
-          const pricingData = fetcher.data as unknown as { success: true, pricing: BundlePricing, intent: string };
-          handlePricingModalClose();
-          shopify.toast.show('Pricing saved successfully!');
-          console.log("Bundle Pricing Data:", pricingData.pricing);
         } else if (fetcher.data.intent === "publishBundle") {
           const publishedBundleData = fetcher.data as unknown as { success: true, bundle: Bundle, intent: string };
           handlePublishModalClose();
@@ -595,25 +331,7 @@ export default function BundleBuilderPage() {
         //hello
       }
     }
-  }, [fetcher.data, /* isAddStepModalOpen, */ handleAddStepModalClose, handlePricingModalClose, shopify]);
-
-  // Effect to populate pricing modal state when bundle data changes
-  useEffect(() => {
-    if (bundle.pricing) {
-      setEnableDiscounts(bundle.pricing.status);
-      setDiscountType(bundle.pricing.type);
-      // Ensure rules are not null before setting
-      // Check if pricing rules exist
-      if (bundle.pricing.rules) {
-        setPricingRules(bundle.pricing.rules);
-      } else {
-        setPricingRules([{ minQuantity: "", value: "" }]);
-      }
-      setShowDiscountBar(bundle.pricing.showBar);
-      setShowInFooter(bundle.pricing.showFooter);
-    }
-  }, [bundle.pricing]);
-
+  }, [fetcher.data, /* isAddStepModalOpen, */ handleAddStepModalClose, handlePublishModalClose, shopify]);
 
   const handleAddStep = useCallback(async () => {
     const formData = new FormData();
@@ -623,6 +341,7 @@ export default function BundleBuilderPage() {
     }
     formData.append("bundleId", bundle.id);
     formData.append("stepName", stepName);
+    formData.append("enabled", String(stepEnabled));
     formData.append("selectedProducts", JSON.stringify(selectedProducts));
     formData.append("selectedCollections", JSON.stringify(selectedCollections));
     formData.append("displayVariantsAsIndividual", String(displayVariantsAsIndividual));
@@ -631,21 +350,7 @@ export default function BundleBuilderPage() {
 
     fetcher.submit(formData, { method: "post" });
 
-  }, [currentStepId, bundle.id, stepName, selectedProducts, selectedCollections, displayVariantsAsIndividual, conditionType, conditionValue, fetcher]);
-
-
-  const handleSavePricing = useCallback(async () => {
-    const formData = new FormData();
-    formData.append("intent", "savePricing");
-    formData.append("bundleId", bundle.id);
-    formData.append("enableDiscounts", String(enableDiscounts));
-    formData.append("discountType", discountType);
-    formData.append("pricingRules", JSON.stringify(pricingRules));
-    formData.append("showDiscountBar", String(showDiscountBar));
-    formData.append("showInFooter", String(showInFooter));
-
-    fetcher.submit(formData, { method: "post" });
-  }, [bundle.id, enableDiscounts, discountType, pricingRules, showDiscountBar, showInFooter, fetcher]);
+  }, [currentStepId, bundle.id, stepName, stepEnabled, selectedProducts, selectedCollections, displayVariantsAsIndividual, conditionType, conditionValue, fetcher]);
 
   const handlePublishBundle = useCallback(async () => {
     const formData = new FormData();
@@ -657,10 +362,10 @@ export default function BundleBuilderPage() {
     fetcher.submit(formData, { method: "post" });
   }, [bundle.id, fetcher, selectedVisibilityProducts, selectedVisibilityCollections]);
 
-
   const handleEditStep = useCallback((step: BundleStep) => {
     setCurrentStepId(step.id);
     setStepName(step.name);
+    setStepEnabled(step.enabled ?? true);
     setSelectedProducts(step.products);
     setSelectedCollections(step.collections);
     setDisplayVariantsAsIndividual(step.displayVariantsAsIndividual);
@@ -676,10 +381,17 @@ export default function BundleBuilderPage() {
     setIsAddStepModalOpen(true);
   }, []);
 
-
   const tabs = [
-    { id: 'products', content: 'Products' },
-    { id: 'collections', content: 'Collections' },
+    {
+      id: 'products',
+      content: 'Products',
+      badge: selectedProducts.length > 0 ? selectedProducts.length.toString() : undefined,
+    },
+    {
+      id: 'collections',
+      content: 'Collections',
+      badge: selectedCollections.length > 0 ? selectedCollections.length.toString() : undefined,
+    },
   ];
 
   const handleProductSelection = useCallback(async () => {
@@ -707,47 +419,36 @@ export default function BundleBuilderPage() {
   return (
     <Page>
       <TitleBar title={bundle.name}>
-        <button variant="primary" onClick={() => setIsAddStepModalOpen(true)}>Add step</button>
       </TitleBar>
       <Layout>
-        <Layout.Section>
-          <Button
-            onClick={() => navigate('/app')}
-            icon={ArrowLeftIcon}
-            variant="plain"
-          >
-            Back to Bundles
-          </Button>
-        </Layout.Section>
-
         <Layout.Section>
           <Card>
             <BlockStack gap="300">
               <InlineStack align="space-between" blockAlign="center">
                 <Text as="h2" variant="headingMd">Bundle Steps</Text>
-                <Button variant="secondary" onClick={() => {
-                  if (confirm("Are you sure you want to delete this bundle? This action cannot be undone.")) {
-                    const formData = new FormData();
-                    formData.append("intent", "deleteBundle");
-                    formData.append("bundleId", bundle.id);
-                    fetcher.submit(formData, { method: "post" });
-                  }
-                }}>Delete Bundle</Button>
+                <Button variant="primary" onClick={() => setIsAddStepModalOpen(true)}>Add step</Button>
               </InlineStack>
 
               {bundle.steps && bundle.steps.length > 0 ? (
-                <BlockStack gap="300">
-                  {bundle.steps.map((step) => ( /* Removed explicit cast here */
-                    <Card key={step.id}>
-                      <InlineStack align="space-between" blockAlign="center">
-                        <Text as="h3" variant="headingMd">{step.name}</Text>
-                        <InlineStack gap="200">
-                          <Button variant="tertiary" onClick={() => handleEditStep(step)}>Edit</Button>
-                          <Button variant="tertiary">Clone</Button>
-                          <Button variant="tertiary">Delete</Button>
+                <BlockStack>
+                  {bundle.steps.map((step, index) => (
+                    <div key={step.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--p-space-200) 0' }}>
+                        <InlineStack gap="400" blockAlign="center">
+                          <Text as="p" variant="bodyMd" fontWeight="semibold">{index + 1}.</Text>
+                          <Text as="p" variant="bodyMd">{step.name}</Text>
+                          <Badge tone={step.enabled ?? true ? "success" : "warning"}>
+                            {step.enabled ?? true ? "Enabled" : "Disabled"}
+                          </Badge>
                         </InlineStack>
-                      </InlineStack>
-                    </Card>
+                        <InlineStack gap="200">
+                          <Button onClick={() => handleEditStep(step)}>Edit</Button>
+                          <Button>Clone</Button>
+                          <Button>Delete</Button>
+                        </InlineStack>
+                      </div>
+                      {index < bundle.steps.length - 1 && <Divider />}
+                    </div>
                   ))}
                 </BlockStack>
               ) : (
@@ -758,18 +459,8 @@ export default function BundleBuilderPage() {
           </Card>
         </Layout.Section>
 
-        <Layout.Section variant="oneHalf">
+        <Layout.Section variant="oneThird">
           <BlockStack gap="500">
-            <Card>
-              <BlockStack gap="300">
-                <Text as="h2" variant="headingMd">Bundle Pricing</Text>
-                <InlineStack align="space-between" blockAlign="center">
-                  <Text variant="bodyMd" as="p">Configure discounts and pricing rules</Text>
-                  <Button variant="secondary" onClick={() => setIsPricingModalOpen(true)}>Configure Pricing</Button>
-                </InlineStack>
-              </BlockStack>
-            </Card>
-
             <Card>
               <BlockStack gap="300">
                 <Text as="h2" variant="headingMd">Bundle Publish</Text>
@@ -807,41 +498,49 @@ export default function BundleBuilderPage() {
               onChange={setStepName}
               autoComplete="off"
             />
+            <Checkbox
+              label="Enabled"
+              helpText="If disabled, this step will not appear in the bundle."
+              checked={stepEnabled}
+              onChange={setStepEnabled}
+            />
             <Divider />
 
-            <BlockStack gap="200">
-              <Text as="h3" variant="headingMd">Products / Collections</Text>
-              <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab}>
-                <BlockStack gap="300">
-                  {selectedTab === 0 ? (
-                    <BlockStack gap="200">
-                      <Text as="p" variant="bodyMd">Products selected here will be displayed on this step</Text>
-                      <Button onClick={handleProductSelection} variant="primary">Add Products</Button>
+            <Card padding="400">
+              <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab} />
+              <BlockStack gap="300">
+                {selectedTab === 0 ? (
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodyMd">Products selected here will be displayed on this step</Text>
+                    <InlineStack gap="200" blockAlign="center">
+                      <Button onClick={handleProductSelection}>Add Products</Button>
                       {selectedProducts.length > 0 && (
                         <Text as="p" variant="bodyMd" fontWeight="bold">
-                          {selectedProducts.length} product{selectedProducts.length === 1 ? '' : 's'} selected
+                          {selectedProducts.length} Selected
                         </Text>
                       )}
-                      <Checkbox
-                        label="Display variants as individual products"
-                        checked={displayVariantsAsIndividual}
-                        onChange={setDisplayVariantsAsIndividual}
-                      />
-                    </BlockStack>
-                  ) : (
-                    <BlockStack gap="200">
-                      <Text as="p" variant="bodyMd">Collections selected here will have all their products available in this step</Text>
-                      <Button onClick={handleCollectionSelection} variant="primary">Add Collections</Button>
+                    </InlineStack>
+                    <Checkbox
+                      label="Display variants as individual products"
+                      checked={displayVariantsAsIndividual}
+                      onChange={setDisplayVariantsAsIndividual}
+                    />
+                  </BlockStack>
+                ) : (
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodyMd">Collections selected here will have all their products available in this step</Text>
+                    <InlineStack gap="200" blockAlign="center">
+                      <Button onClick={handleCollectionSelection}>Add Collections</Button>
                       {selectedCollections.length > 0 && (
                         <Text as="p" variant="bodyMd" fontWeight="bold">
-                          {selectedCollections.length} collection{selectedCollections.length === 1 ? '' : 's'} selected
+                          {selectedCollections.length} Selected
                         </Text>
                       )}
-                    </BlockStack>
-                  )}
-                </BlockStack>
-              </Tabs>
-            </BlockStack>
+                    </InlineStack>
+                  </BlockStack>
+                )}
+              </BlockStack>
+            </Card>
 
             <Divider />
 
@@ -851,128 +550,30 @@ export default function BundleBuilderPage() {
               <Text as="p" variant="bodySm">Note: Conditions are only valid on this step.</Text>
 
               <Card>
-                <InlineStack gap="200" blockAlign="center">
-                  <Text as="span" variant="bodyMd">Quantity</Text>
-                  <Select
-                    options={[
-                      { label: 'is equal to', value: 'equal_to' },
-                      { label: 'at most', value: 'at_most' },
-                      { label: 'at least', value: 'at_least' },
-                    ]}
-                    value={conditionType}
-                    onChange={setConditionType}
-                    label="Condition type"
-                  />
-                  <TextField
-                    label="Value"
-                    value={conditionValue}
-                    onChange={setConditionValue}
-                    autoComplete="off"
-                    type="number"
-                  />
-                </InlineStack>
+              <InlineStack gap="200" blockAlign="center">
+                <Text as="span" variant="bodyMd">Quantity</Text>
+                <Select
+                  options={[
+                    { label: 'Equal to', value: 'equal_to' },
+                    { label: 'More than or equal to', value: 'at_least' },
+                    { label: 'Less than or equal to', value: 'at_most' },
+                  ]}
+                  value={conditionType}
+                  onChange={setConditionType}
+                  label="Condition type"
+                />
+                <TextField
+                  label="Value"
+                  value={conditionValue}
+                  onChange={setConditionValue}
+                  autoComplete="off"
+                  type="number"
+                />
+              </InlineStack>
               </Card>
               <Button variant="primary">Add another condition</Button>
             </BlockStack>
             <Divider />
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
-
-      {/* Bundle Pricing Modal */}
-      <Modal
-        open={isPricingModalOpen}
-        onClose={handlePricingModalClose}
-        title="Bundle Pricing & Discounts"
-        primaryAction={{
-          content: 'Save Changes',
-          onAction: handleSavePricing,
-        }}
-        secondaryActions={[
-          {
-            content: 'Cancel',
-            onAction: handlePricingModalClose,
-          },
-        ]}
-      >
-        <Modal.Section>
-          <BlockStack gap="300">
-            <InlineStack align="space-between" blockAlign="center">
-              <Text as="h3" variant="headingMd">Discount Settings</Text>
-              <Checkbox
-                label="Enable discounts"
-                checked={enableDiscounts}
-                onChange={setEnableDiscounts}
-              />
-            </InlineStack>
-
-            {enableDiscounts && (
-              <BlockStack gap="200">
-                <InlineStack>
-                  <Text as="p" variant="bodyMd">Tip: Discounts are calculated based on the products in cart. Configure your rules from lowest to highest discount.</Text>
-                </InlineStack>
-                <Select
-                  label="Discount Type"
-                  options={[
-                    { label: 'Fixed Amount Off', value: 'fixed_amount_off' },
-                    { label: 'Percentage Off', value: 'percentage_off' },
-                    { label: 'Fixed Price Only', value: 'fixed_price_only' },
-                  ]}
-                  value={discountType}
-                  onChange={setDiscountType}
-                />
-                
-                {/* Pricing Rules */}
-                {pricingRules.map((rule, index) => (
-                  <Card key={index} >
-                    <BlockStack gap="200">
-                      <Text as="h4" variant="headingSm">Rule #{index + 1}</Text>
-                      <InlineStack gap="200" blockAlign="center">
-                        <TextField
-                          label="Minimum quantity"
-                          value={rule.minQuantity}
-                          onChange={(value) => {
-                            const newRules = [...pricingRules];
-                            newRules[index].minQuantity = value;
-                            setPricingRules(newRules);
-                          }}
-                          type="number"
-                          autoComplete="off"
-                        />
-                        <TextField
-                          label={discountType === 'percentage_off' ? "Percentage Off" : "Amount Off"}
-                          value={rule.value}
-                          onChange={(value) => {
-                            const newRules = [...pricingRules];
-                            newRules[index].value = value;
-                            setPricingRules(newRules);
-                          }}
-                          type="number"
-                          prefix={discountType === 'fixed_amount_off' ? "$" : undefined}
-                          suffix={discountType === 'percentage_off' ? "%" : undefined}
-                          autoComplete="off"
-                        />
-                      </InlineStack>
-                    </BlockStack>
-                  </Card>
-                ))}
-                <Button onClick={() => setPricingRules([...pricingRules, { minQuantity: "", value: "" }])} variant="primary">Add new rule</Button>
-              </BlockStack>
-            )}
-
-            <BlockStack gap="200">
-              <Text as="h3" variant="headingMd">Display Settings</Text>
-              <Checkbox
-                label="Show discount bar"
-                checked={showDiscountBar}
-                onChange={setShowDiscountBar}
-              />
-              <Checkbox
-                label="Show in footer"
-                checked={showInFooter}
-                onChange={setShowInFooter}
-              />
-            </BlockStack>
           </BlockStack>
         </Modal.Section>
       </Modal>

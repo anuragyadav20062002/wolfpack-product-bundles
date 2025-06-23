@@ -5,7 +5,7 @@
   "settings": []
 }
 {% endschema %}
-<div id="bundle-builder-app">
+<div id="bundle-builder-app" data-bundle-id="{{ block.settings.bundle_id }}">
   <div class="bundle-header">
     <h2 class="bundle-title"></h2>
   </div>
@@ -37,6 +37,19 @@
       </div>
     </div>
   </div>
+
+  <!-- Product Grid -->
+  <div class="bundle-product-grid"></div>
+
+  <!-- Bundle Progress Bar (placeholder) -->
+  <div class="bundle-progress-bar" style="display:none;"></div>
+
+  <!-- Total Price Display -->
+  <div class="bundle-total-price" style="display:none;"></div>
+
+  <div class="bundle-add-to-cart-container" style="display:none;">
+    <button class="bundle-add-to-cart-button" type="button">Add Bundle to Cart</button>
+  </div>
 </div>
 
 <script>
@@ -46,10 +59,16 @@
   const currentProductHandle = {{ product.handle | json }};
   const currentProductCollections = {{ product.collections | json }};
 
+  // Expose shop currency and money format for JS price formatting
+  const shopCurrency = {{ shop.currency | json }};
+  const shopMoneyFormat = {{ shop.money_format | json }};
+
   window.allBundlesData = allBundlesData;
   window.currentProductId = currentProductId;
   window.currentProductHandle = currentProductHandle;
   window.currentProductCollections = currentProductCollections;
+  window.shopCurrency = shopCurrency;
+  window.shopMoneyFormat = shopMoneyFormat;
 
   console.log('Liquid allBundlesData:', allBundlesData);
   console.log('Liquid currentProductId:', currentProductId);

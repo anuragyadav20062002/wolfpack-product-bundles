@@ -18,7 +18,7 @@ import {
   Image,
   // Modal,
 } from "@shopify/polaris";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { EditIcon, DuplicateIcon, DeleteIcon, ViewIcon } from "@shopify/polaris-icons";
 import db from "../db.server"; // Import db
@@ -32,10 +32,11 @@ interface Bundle {
   active: boolean;
   publishedAt: string | null;
   matching: string | null; // Add matching property to Bundle type
+  viewUrl?: string; // Add optional viewUrl property
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
   // Fetch all bundles for the current shop
@@ -45,7 +46,54 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
   });
 
-  return { bundles };
+  const bundlesWithUrls = await Promise.all(
+    bundles.map(async (bundle) => {
+      let viewUrl: string | undefined = undefined;
+      if (bundle.status === 'published' && bundle.matching) {
+        try {
+          const matchingData = JSON.parse(bundle.matching);
+          const firstProduct = matchingData.selectedVisibilityProducts?.[0];
+          const firstCollection = matchingData.selectedVisibilityCollections?.[0];
+
+          if (firstProduct?.handle) {
+            viewUrl = `https://${shop}/products/${firstProduct.handle}`;
+          } else if (firstCollection?.id) {
+            const response = await admin.graphql(
+              `#graphql
+              query getCollectionProducts($id: ID!) {
+                collection(id: $id) {
+                  products(first: 1) {
+                    edges {
+                      node {
+                        handle
+                      }
+                    }
+                  }
+                }
+              }`,
+              {
+                variables: {
+                  id: firstCollection.id,
+                },
+              },
+            );
+            const responseJson = await response.json();
+            const firstProductInCollection =
+              responseJson.data?.collection?.products?.edges?.[0]?.node;
+
+            if (firstProductInCollection?.handle) {
+              viewUrl = `https://${shop}/products/${firstProductInCollection.handle}`;
+            }
+          }
+        } catch (e) {
+          console.error(`Failed to process matching for bundle ${bundle.id}`, e);
+        }
+      }
+      return { ...bundle, viewUrl };
+    }),
+  );
+
+  return json({ bundles: bundlesWithUrls });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -248,80 +296,91 @@ export default function Index() {
     }
 
     // Handle success/error messages from cloneFetcher and product creation
-    if (fetcher.data) {
-      const data = fetcher.data as { success?: boolean; error?: string; intent?: string; bundle?: Bundle; product?: any; };
-      if (data.intent === "cloneBundle") {
-        if (data.success) {
-          shopify.toast.show('Bundle cloned successfully!');
-          // navigate to refresh the list if needed, or rely on Remix revalidation
-        } else if (data.error) {
-          shopify.toast.show(`Error cloning bundle: ${data.error}`, { isError: true });
-        }
-      } else if (data.product) { // Check if it's the product creation action
-        const prodId = data.product.id.replace("gid://shopify/Product/", "");
-        if (prodId) {
-          shopify.toast.show("Product created");
-        }
+    if (fetcher.data && fetcher.state === 'idle') {
+      const data = fetcher.data as {
+        success?: boolean; // Optional property
+        error?: string;
+        intent?: string;
+        bundle?: Bundle; // Optional property
+      };
+
+      if (data.success && data.intent === 'cloneBundle' && data.bundle) {
+        shopify.toast.show('Bundle cloned successfully!');
+        // Optionally navigate to the new bundle's page
+        navigate(`/app/bundles/${data.bundle.id}`);
+      } else if (data.error) {
+        shopify.toast.show(`Error: ${data.error}`, { isError: true });
       }
     }
 
-  }, [shopify, deleteFetcher.data, clearMetafieldFetcher.data, fetcher.data]);
+  }, [
+    fetcher.data,
+    fetcher.state,
+    deleteFetcher.data,
+    clearMetafieldFetcher.data,
+    shopify,
+    navigate,
+  ]);
   // const generateProduct = () => fetcher.submit({}, { method: "POST" });
 
   const handleDeleteBundle = (bundleId: string) => {
-    if (confirm("Are you sure you want to delete this bundle? This action cannot be undone.")) {
+    const confirmation = window.confirm("Are you sure you want to delete this bundle?");
+    if (confirmation) {
       const formData = new FormData();
       formData.append("intent", "deleteBundle");
       formData.append("bundleId", bundleId);
+      // Use the appropriate fetcher for the request
       deleteFetcher.submit(formData, { method: "post", action: `/app/bundles/${bundleId}` });
     }
   };
 
   const handleCloneBundle = (bundle: Bundle) => {
-    if (confirm(`Are you sure you want to clone the bundle "${bundle.name}"?`)) {
-      const formData = new FormData();
-      formData.append("intent", "cloneBundle");
-      formData.append("bundleId", bundle.id);
-      fetcher.submit(formData, { method: "post" }); // Use fetcher to submit to current route's action
-    }
+    const formData = new FormData();
+    formData.append("intent", "cloneBundle");
+    formData.append("bundleId", bundle.id);
+    fetcher.submit(formData, { method: "post" });
   };
 
   const handleViewBundle = (bundle: Bundle) => {
-    if (bundle.matching) {
-      try {
-        const parsedMatching = JSON.parse(bundle.matching);
-        const selectedProducts = parsedMatching.selectedVisibilityProducts as Array<{id: string, handle: string}>;
-        if (selectedProducts && selectedProducts.length > 0) {
-          const firstProductHandle = selectedProducts[0].handle;
-          if (firstProductHandle) {
-            // Construct the URL to the product page
-            window.open(`/products/${firstProductHandle}`, '_blank');
-            return;
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing bundle matching data:", e);
-      }
+    if (bundle.viewUrl) {
+      window.open(bundle.viewUrl, "_blank");
+    } else {
+      shopify.toast.show("This bundle has no visible products to view.", { isError: true });
     }
-    shopify.toast.show('No product found to view for this bundle or matching data is incomplete.', { isError: true });
+  };
+
+  // Function to create a new bundle
+  const handleCreateNewBundle = async () => {
+    // You can call your API to create a new bundle here
+    // For now, let's just navigate to the bundle creation page with a 'new' ID
+    navigate('/app/bundles/create');
   };
 
   const handleClearAllBundlesMetafield = () => {
-    if (confirm("Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.")) {
+    const confirmation = window.confirm("Are you sure you want to clear all bundle metafields? This can't be undone.");
+    if (confirmation) {
       const formData = new FormData();
       formData.append("intent", "clearAllBundlesMetafield");
-      // A dummy bundleId is needed for the action route, though it's not used by the intent itself
-      clearMetafieldFetcher.submit(formData, { method: "post", action: `/app/bundles/dummy-id` });
+      clearMetafieldFetcher.submit(formData, { method: "post", action: '/app/clear-metafield' });
     }
   };
 
   return (
-    <Page>
-      <TitleBar title="Your Bundles">
-        <button variant="primary" onClick={() => navigate('/app/bundles/create')}>
-          Create Bundle
-        </button>
-      </TitleBar>
+    <Page
+      title="Your Bundles"
+      primaryAction={{
+        content: "Create New Bundle",
+        onAction: handleCreateNewBundle,
+      }}
+      secondaryActions={[
+        {
+          content: "Clear Rogue Bundles",
+          onAction: handleClearAllBundlesMetafield,
+          destructive: true,
+          helpText: "Use this if you have deleted a bundle from the app but it still appears on your storefront. This cleans up any leftover bundle data."
+        },
+      ]}
+    >
       <BlockStack gap="500">
         <Layout>
           {bundles.length === 0 ? (
@@ -430,7 +489,6 @@ export default function Index() {
                   </BlockStack>
                   <ButtonGroup>
                     <Button>Get a quote</Button>
-                    <Button tone="critical" onClick={handleClearAllBundlesMetafield}>Clear All Bundles Metafield</Button>
                   </ButtonGroup>
                 </Card>
               </Layout.Section>
