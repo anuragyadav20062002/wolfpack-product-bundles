@@ -3,7 +3,7 @@
 client_id = "a383172f42c2ab283901a663d485a03d"
 name = "Wolfpack: Product Bundles"
 handle = "wolfpack-product-bundles-4"
-application_url = "https://said-mozilla-operate-dover.trycloudflare.com"
+application_url = "https://wolfpack-product-bundles-1.onrender.com"
 embedded = true
 
 [build]
@@ -23,9 +23,9 @@ scopes = "read_products,write_products"
 
 [auth]
 redirect_urls = [
-  "https://said-mozilla-operate-dover.trycloudflare.com/auth/callback",
-  "https://said-mozilla-operate-dover.trycloudflare.com/auth/shopify/callback",
-  "https://said-mozilla-operate-dover.trycloudflare.com/api/auth/callback"
+  "https://wolfpack-product-bundles-1.onrender.com/auth/callback",
+  "https://wolfpack-product-bundles-1.onrender.com/auth/shopify/callback",
+  "https://wolfpack-product-bundles-1.onrender.com/api/auth/callback"
 ]
 
 [pos]
