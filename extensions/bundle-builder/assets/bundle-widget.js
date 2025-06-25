@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   for (const bundle of bundlesArray) {
-    if (bundle && bundle.status === 'published') {
+    if (bundle && bundle.status === 'active') {
       let parsedMatching = null;
       if (bundle.matching) {
         if (typeof bundle.matching === 'string') {

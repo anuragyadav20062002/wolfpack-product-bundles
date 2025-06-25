@@ -49,7 +49,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const bundlesWithUrls = await Promise.all(
     bundles.map(async (bundle) => {
       let viewUrl: string | undefined = undefined;
-      if (bundle.status === 'published' && bundle.matching) {
+      if (bundle.status === 'active' && bundle.matching) {
         try {
           const matchingData = JSON.parse(bundle.matching);
           const firstProduct = matchingData.selectedVisibilityProducts?.[0];

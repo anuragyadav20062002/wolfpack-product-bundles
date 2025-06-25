@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
 import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select, List, Divider, Badge } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type LoaderFunctionArgs, type ActionFunctionArgs, type LinksFunction } from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
+import bundlePreviewStyles from "../styles/bundle-preview.css?url";
+import bundlePreviewGif from "../bundleprev.gif";
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -75,6 +77,10 @@ interface BundleWithSteps {
     selectedVisibilityCollections: ResourcePickerCollection[];
   } | null; // This will be the parsed object from `matching`
 }
+
+export const links: LinksFunction = () => {
+  return [{ rel: "stylesheet", href: bundlePreviewStyles }];
+};
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -164,7 +170,7 @@ export async function action({ request }: ActionFunctionArgs) {
         where: { id: bundleId },
         data: {
           publishedAt: new Date(),
-          status: "published",
+          status: "active",
           active: true,
           matching: JSON.stringify({
             selectedVisibilityProducts,
@@ -188,7 +194,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
       // Update shop metafield with all bundles
       const allPublishedBundles = await db.bundle.findMany({
-        where: { status: "published", shopId: session.shop },
+        where: { status: "active", shopId: session.shop },
         include: { steps: true },
       });
 
@@ -656,17 +662,24 @@ export default function BundleBuilderPage() {
               </BlockStack>
             </Tabs>
 
-            <BlockStack gap="200">
-              <Text as="h3" variant="headingMd">What happens next?</Text>
-              <List type="bullet">
-                <List.Item>Bundle will be published to your store</List.Item>
-                <List.Item>It will appear on products based on your selection</List.Item>
-                <List.Item>You can edit the bundle settings in the theme customizer</List.Item>
-              </List>
-              <InlineStack>
-                <Text as="p" variant="bodySm" fontWeight="medium">The bundle will appear only on the specific products you selected</Text>
-              </InlineStack>
-            </BlockStack>
+            <InlineStack blockAlign="start" gap="400" align="space-between" wrap={false}>
+              <BlockStack gap="200">
+                <Text as="h3" variant="headingMd">What happens next?</Text>
+                <List type="bullet">
+                  <List.Item>Bundle product cards will appear only on products and collections selected here</List.Item>
+                  <List.Item>Bundles will be LIVE directly once you click on publish</List.Item>
+                  <List.Item>This is how a Bundle would look on your product pages selected</List.Item>
+                </List>
+                <InlineStack>
+                  <Text as="p" variant="bodySm" fontWeight="medium">The bundle will appear only on the specific products you selected</Text>
+                </InlineStack>
+              </BlockStack>
+              <div style={{ flexShrink: 0 }}>
+                <div className="bundle-preview-container">
+                  <img src={bundlePreviewGif} alt="Bundle Preview" className="bundle-preview-image" />
+                </div>
+              </div>
+            </InlineStack>
           </BlockStack>
         </Modal.Section>
       </Modal>

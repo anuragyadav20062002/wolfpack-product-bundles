@@ -3,7 +3,7 @@
 client_id = "a383172f42c2ab283901a663d485a03d"
 name = "Wolfpack: Product Bundles"
 handle = "wolfpack-product-bundles-4"
-application_url = "https://davis-administrators-deeper-viewpicture.trycloudflare.com"
+application_url = "https://spent-inf-progress-fantasy.trycloudflare.com"
 embedded = true
 
 [build]
@@ -13,15 +13,19 @@ automatically_update_urls_on_dev = true
 [webhooks]
 api_version = "2025-04"
 
+  [[webhooks.subscriptions]]
+  uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_products,write_products"
 
 [auth]
 redirect_urls = [
-  "https://davis-administrators-deeper-viewpicture.trycloudflare.com/auth/callback",
-  "https://davis-administrators-deeper-viewpicture.trycloudflare.com/auth/shopify/callback",
-  "https://davis-administrators-deeper-viewpicture.trycloudflare.com/api/auth/callback"
+  "https://spent-inf-progress-fantasy.trycloudflare.com/auth/callback",
+  "https://spent-inf-progress-fantasy.trycloudflare.com/auth/shopify/callback",
+  "https://spent-inf-progress-fantasy.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

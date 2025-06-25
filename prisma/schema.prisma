@@ -2,42 +2,40 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 // Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
 // enough when changing adapters.
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// Using String for enums as SQLite does not support them directly
-// enum BundleStatus {
-//   draft
-//   active
-//   archived
-// }
+enum BundleStatus {
+  draft
+  active
+  archived
+}
 
-// enum JobStatus {
-//   pending
-//   processing
-//   completed
-//   failed
-// }
+enum JobStatus {
+  pending
+  processing
+  completed
+  failed
+}
 
-// enum JobType {
-//   publish
-//   unpublish
-//   sync
-// }
+enum JobType {
+  publish
+  unpublish
+  sync
+}
 
-// enum PricingType {
-//   percentage
-//   fixed
-// }
+enum PricingType {
+  percentage
+  fixed
+}
 
 model Session {
   id             String    @id
@@ -66,13 +64,11 @@ model Bundle {
   name        String
   description String?
   shopId      String
-  // Using String for status as SQLite does not support enums
-  status      String   @default("draft")
+  status      BundleStatus   @default(draft)
   active      Boolean        @default(false)
   publishedAt DateTime?
-  // Using String for Json fields as SQLite does not support Json
-  settings    String?
-  matching    String?
+  settings    Json?
+  matching    Json?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   steps       BundleStep[]
@@ -92,8 +88,8 @@ model BundleStep {
   maxQuantity               Int           @default(1)
   enabled                   Boolean       @default(true)
   productCategory           String?
-  collections               String?       // Store collections as JSON string or IDs
-  products                  String?       // Store products as JSON string or IDs
+  collections               Json?
+  products                  Json?
   displayVariantsAsIndividual Boolean @default(false)
   conditionType             String?
   conditionValue            Int?
@@ -113,8 +109,7 @@ model StepProduct {
   productId   String     // Shopify product ID
   title       String
   imageUrl    String?
-  // Using String for Json fields as SQLite does not support Json
-  variants    String?      // Store variants as JSON
+  variants    Json?
   minQuantity Int        @default(1)
   maxQuantity Int        @default(1)
   position    Int        @default(0)
@@ -129,15 +124,13 @@ model BundlePricing {
   id          String      @id @default(uuid())
   bundleId    String      @unique
   bundle      Bundle      @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-   // Using String for type as SQLite does not support enums
-  type        String @default("percentage")
-  status      Boolean     @default(false) // Assuming this indicates if pricing is active
-  rules       String?     // Store rules as JSON string
+  type        PricingType @default(percentage)
+  status      Boolean     @default(false)
+  rules       Json?
   showFooter  Boolean     @default(true)
   showBar     Boolean     @default(false)
-  // Using String for Json fields as SQLite does not support Json
-  messages    String?       // Store customizable messages
-  published   Boolean     @default(false) // Assuming this relates to pricing visibility
+  messages    Json?
+  published   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -150,8 +143,7 @@ model BundleAnalytics {
   bundle      Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   shopId      String
   event       String   // view, add_to_cart, purchase
-  // Using String for Json fields as SQLite does not support Json
-  metadata    String?    // Additional event data
+  metadata    Json?
   createdAt   DateTime @default(now())
 
   @@index([bundleId])
@@ -163,9 +155,8 @@ model BundleAnalytics {
 model ShopSettings {
   id              String   @id @default(uuid())
   shopId          String   @unique
-  // Using String for Json fields as SQLite does not support Json
-  theme           String?    // Store theme customization
-  defaultSettings String?    // Store default bundle settings
+  theme           Json?
+  defaultSettings Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -175,12 +166,9 @@ model ShopSettings {
 model QueuedJob {
   id          String    @id @default(uuid())
   shopId      String
-   // Using String for type as SQLite does not support enums
-  type        String   @default("publish")
-   // Using String for status as SQLite does not support enums
-  status      String @default("pending")
-  // Using String for Json fields as SQLite does not support Json
-  data        String?
+  type        JobType   @default(publish)
+  status      JobStatus @default(pending)
+  data        Json?
   error       String?
   startedAt   DateTime?
   completedAt DateTime?
@@ -197,9 +185,7 @@ model ComplianceRecord {
   id          String   @id @default(uuid())
   shop        String
   type        String   // customer_data_request, customer_redact, shop_redact
-  // Using String for Json fields as SQLite does not support Json
-  payload     String
-  // Using String for status as SQLite does not support enums
+  payload     Json
   status      String   @default("pending") // pending, processing, completed
   processedAt DateTime?
   createdAt   DateTime @default(now())
