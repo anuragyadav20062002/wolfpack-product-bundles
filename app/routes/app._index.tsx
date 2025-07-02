@@ -356,14 +356,14 @@ export default function Index() {
     navigate('/app/bundles/create');
   };
 
-  const handleClearAllBundlesMetafield = () => {
-    const confirmation = window.confirm("Are you sure you want to clear all bundle metafields? This can't be undone.");
-    if (confirmation) {
-      const formData = new FormData();
-      formData.append("intent", "clearAllBundlesMetafield");
-      clearMetafieldFetcher.submit(formData, { method: "post", action: '/app/clear-metafield' });
-    }
-  };
+  // const handleClearAllBundlesMetafield = () => {
+  //   const confirmation = window.confirm("Are you sure you want to clear all bundle metafields? This can't be undone.");
+  //   if (confirmation) {
+  //     const formData = new FormData();
+  //     formData.append("intent", "clearAllBundlesMetafield");
+  //     clearMetafieldFetcher.submit(formData, { method: "post", action: '/app/clear-metafield' });
+  //   }
+  // };
 
   return (
     <Page
@@ -372,14 +372,6 @@ export default function Index() {
         content: "Create New Bundle",
         onAction: handleCreateNewBundle,
       }}
-      secondaryActions={[
-        {
-          content: "Clear Rogue Bundles",
-          onAction: handleClearAllBundlesMetafield,
-          destructive: true,
-          helpText: "Use this if you have deleted a bundle from the app but it still appears on your storefront. This cleans up any leftover bundle data."
-        },
-      ]}
     >
       <BlockStack gap="500">
         <Layout>
