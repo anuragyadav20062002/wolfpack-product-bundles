@@ -103,12 +103,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   // Parse JSON strings back to objects for products and collections, and Date strings to Date objects
   const parsedSteps = bundle.steps.map(step => ({
     ...step,
-    products: step.products ? JSON.parse(step.products) : [],
-    collections: step.collections ? JSON.parse(step.collections) : [],
+    products: typeof step.products === 'string' ? JSON.parse(step.products) : [],
+    collections: typeof step.collections === 'string' ? JSON.parse(step.collections) : [],
   }));
 
   // Parse matching rules if they exist
-  const parsedMatching = bundle.matching ? JSON.parse(bundle.matching) : null;
+  const parsedMatching = typeof bundle.matching === 'string' ? JSON.parse(bundle.matching) : null;
 
   return json({ bundle: { ...bundle, steps: parsedSteps, parsedMatching: parsedMatching } });
 }
@@ -199,13 +199,13 @@ export async function action({ request }: ActionFunctionArgs) {
       });
 
       const metafieldValue = allPublishedBundles.map(b => {
-        const steps = b.steps.map(s => ({ ...s, products: s.products ? JSON.parse(s.products) : [], collections: s.collections ? JSON.parse(s.collections) : [] }));
+        const steps = b.steps.map(s => ({ ...s, products: typeof s.products === 'string' ? JSON.parse(s.products) : [], collections: typeof s.collections === 'string' ? JSON.parse(s.collections) : [] }));
         return {
           id: b.id,
           name: b.name,
           description: b.description,
           status: b.status,
-          matching: b.matching ? JSON.parse(b.matching) : {},
+          matching: typeof b.matching === 'string' ? JSON.parse(b.matching) : {},
           steps: steps
         };
       });
@@ -422,6 +422,27 @@ export default function BundleBuilderPage() {
     }
   }, [shopify, selectedCollections]);
 
+  // Add this function to preview the bundle
+  const handlePreviewBundle = () => {
+    // Try to get the first product handle from parsedMatching
+    const shop = bundle.shopId?.replace(/^https?:\/\//, ""); // shopId is the shop domain
+    let viewUrl = undefined;
+    if (bundle.status === 'active' && bundle.parsedMatching) {
+      const firstProduct = bundle.parsedMatching.selectedVisibilityProducts?.[0];
+      const firstCollection = bundle.parsedMatching.selectedVisibilityCollections?.[0];
+      if (firstProduct?.handle) {
+        viewUrl = `https://${shop}/products/${firstProduct.handle}`;
+      } else if (firstCollection?.handle) {
+        viewUrl = `https://${shop}/collections/${firstCollection.handle}`;
+      }
+    }
+    if (viewUrl) {
+      window.open(viewUrl, "_blank");
+    } else {
+      shopify.toast.show("This bundle has no visible products to view.", { isError: true });
+    }
+  };
+
   return (
     <Page>
       <TitleBar title={bundle.name}>
@@ -432,7 +453,10 @@ export default function BundleBuilderPage() {
             <BlockStack gap="300">
               <InlineStack align="space-between" blockAlign="center">
                 <Text as="h2" variant="headingMd">Bundle Steps</Text>
-                <Button variant="primary" onClick={() => setIsAddStepModalOpen(true)}>Add step</Button>
+                <InlineStack gap="200">
+                  <Button variant="primary" onClick={handlePreviewBundle}>Preview Bundle</Button>
+                  <Button variant="primary" onClick={() => setIsAddStepModalOpen(true)}>Add step</Button>
+                </InlineStack>
               </InlineStack>
 
               {bundle.steps && bundle.steps.length > 0 ? (
