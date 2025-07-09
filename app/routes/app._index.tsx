@@ -31,7 +31,8 @@ interface Bundle {
   status: string;
   active: boolean;
   publishedAt: string | null;
-  matching: any; // Changed from string | null to any due to JSON parsing
+  matching: any; // Change type to any
+  settings: any; // Change type to any
   viewUrl?: string; // Add optional viewUrl property
 }
 
@@ -51,9 +52,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       let viewUrl: string | undefined = undefined;
       if (bundle.status === 'active' && bundle.matching) {
         try {
-          const matchingData = JSON.parse(bundle.matching);
-          const firstProduct = matchingData.selectedVisibilityProducts?.[0];
-          const firstCollection = matchingData.selectedVisibilityCollections?.[0];
+          const matchingData = bundle.matching; // Use bundle.matching directly as it's already JsonValue
+          const firstProduct = (matchingData as any).selectedVisibilityProducts?.[0];
+          const firstCollection = (matchingData as any).selectedVisibilityCollections?.[0];
 
           if (firstProduct?.handle) {
             viewUrl = `https://${shop}/products/${firstProduct.handle}`;
@@ -127,8 +128,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           status: "draft", // Cloned bundle starts as draft
           active: false,
           publishedAt: null,
-          settings: originalBundle.settings,
-          matching: originalBundle.matching, // Copy matching data as is
+          settings: originalBundle.settings as any,
+          matching: originalBundle.matching as any, // Copy matching data as is
         },
       });
 
@@ -138,8 +139,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           data: {
             bundleId: newBundle.id,
             name: step.name,
-            products: step.products,
-            collections: step.collections,
+            products: step.products as any,
+            collections: step.collections as any,
             displayVariantsAsIndividual: step.displayVariantsAsIndividual,
             conditionType: step.conditionType,
             conditionValue: step.conditionValue,
@@ -160,10 +161,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             bundleId: newBundle.id,
             type: originalBundle.pricing.type,
             status: originalBundle.pricing.status,
-            rules: originalBundle.pricing.rules,
+            rules: originalBundle.pricing.rules as any,
             showFooter: originalBundle.pricing.showFooter,
             showBar: originalBundle.pricing.showBar,
-            messages: originalBundle.pricing.messages,
+            messages: originalBundle.pricing.messages as any,
             published: false, // Cloned pricing starts as unpublished
           },
         });
@@ -246,7 +247,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
-  const { bundles } = useLoaderData<typeof loader>(); // Get bundles from loader data
+  const { bundles } = useLoaderData<typeof loader>() as { bundles: Bundle[] }; // Get bundles from loader data and cast to Bundle[]
   const fetcher = useFetcher<typeof action>();
   // Explicitly type the fetchers for actions from app.bundles.$bundleId.tsx
   const deleteFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for deletion
@@ -400,21 +401,13 @@ export default function Index() {
                   </Box>
                   <BlockStack gap="200" inlineAlign="center">
                     <Text as="h2" variant="headingMd">
-                      Bundle Setup Instructions
+                      Setup your bundles quickly
                     </Text>
                     <Text variant="bodyMd" as="p" alignment="center">
-                      Follow these steps to set up the best bundle experience for your users
+                      Get your bundles up and running in 2 easy steps!
                     </Text>
-                    <List type="bullet">
-                      <List.Item>Click on Create New Bundle</List.Item>
-                      <List.Item>Enter Bundle Name and Description</List.Item>
-                      <List.Item>Click on Create Bundle</List.Item>
-                      <List.Item>Click on Add Step</List.Item>
-                      <List.Item>Add the Products or Collection you want to display in that step</List.Item>
-                      <List.Item>Click Publish</List.Item>
-                      <List.Item>Preview the bundle</List.Item>
-                    </List>
                   </BlockStack>
+                  <Button size="large" variant="primary" onClick={() => navigate('/app/bundles/create')}>Quick Setup</Button>
                 </BlockStack>
               </Card>
             </Layout.Section>
@@ -468,28 +461,35 @@ export default function Index() {
                 <Card>
                   <BlockStack gap="200">
                     <Text as="h2" variant="headingMd">
-                      Design services
+                      Bundle Setup Instructions
                     </Text>
                     <Text variant="bodyMd" as="p">
-                      Transform the bundle builder for your store using our
-                      expert bundle design services
+                      Follow these steps to set up the best bundle experience for your users
                     </Text>
                     <List>
                       <List.Item>
-                        A fixed price of $100 (one-time cost) for any advanced
-                        CSS customization.
+                        Click on Create New Bundle
                       </List.Item>
                       <List.Item>
-                        No hidden charges, ensuring transparency.
+                        Name and Description
                       </List.Item>
                       <List.Item>
-                        Professional bundle design services available.
+                        Click on Create Bundle
+                      </List.Item>
+                      <List.Item>
+                        Click on Add Step
+                      </List.Item>
+                      <List.Item>
+                        Add the Products or Collection you want to display in that step
+                      </List.Item>
+                      <List.Item>
+                        Click Publish
+                      </List.Item>
+                      <List.Item>
+                        Preview the bundle
                       </List.Item>
                     </List>
                   </BlockStack>
-                  <ButtonGroup>
-                    <Button>Get a quote</Button>
-                  </ButtonGroup>
                 </Card>
               </Layout.Section>
 
@@ -507,29 +507,18 @@ export default function Index() {
                         size="xl"
                         initials="YF"
                       />
-                      <BlockStack gap="100">
-                        <InlineStack gap="100" blockAlign="center">
-                            <Box
-                              minWidth="10px"
-                              minHeight="10px"
-                              borderRadius="full"
-                              background="bg-fill-success"
-                            />
-                            <Text as="h3" variant="headingMd">
-                              Yash (Founder)
-                            </Text>
-                        </InlineStack>
-                        <Text variant="bodyMd" as="p">
-                          For setting up and publishing bundle
+                      <BlockStack gap="0">
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          Yash (Founder)
                         </Text>
-                        <Text variant="bodyMd" as="p">
-                          For customizing the design of the bundle
-                        </Text>
-                        <Button variant="primary"
-                          onClick={() => window.open('https://tidycal.com/yashwolfpack/15-minute-meeting', '_blank')}
-                        >
-                          Schedule Meeting
-                        </Button>
+                        <List>
+                          <List.Item>
+                            For setting up and publishing bundle
+                          </List.Item>
+                          <List.Item>
+                            For customizing the design of the bundle
+                          </List.Item>
+                        </List>
                       </BlockStack>
                     </InlineStack>
                   </BlockStack>
