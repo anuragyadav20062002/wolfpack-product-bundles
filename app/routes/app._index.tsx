@@ -519,6 +519,11 @@ export default function Index() {
                             For customizing the design of the bundle
                           </List.Item>
                         </List>
+                        <Button variant="primary"
+                          onClick={() => window.open('https://tidycal.com/yashwolfpack/15-minute-meeting', '_blank')}
+                        >
+                          Schedule Meeting
+                        </Button>
                       </BlockStack>
                     </InlineStack>
                   </BlockStack>
