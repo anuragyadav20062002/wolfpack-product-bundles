@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select, List, Divider, Badge } from "@shopify/polaris";
+import { Page, Layout, Card, Button, BlockStack, Text, InlineStack, Modal, TextField, Tabs, Checkbox, Select, List, Divider, Badge, Tooltip } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs, type LinksFunction } from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
@@ -454,7 +454,9 @@ export default function BundleBuilderPage() {
               <InlineStack align="space-between" blockAlign="center">
                 <Text as="h2" variant="headingMd">Bundle Steps</Text>
                 <InlineStack gap="200">
-                  <Button variant="primary" onClick={handlePreviewBundle}>Preview Bundle</Button>
+                  <Tooltip content="Please refresh the page after publishing to view the bundle. Sometimes it takes a moment for the system to sync.">
+                    <Button variant="primary" onClick={handlePreviewBundle}>Preview Bundle</Button>
+                  </Tooltip>
                   <Button variant="primary" onClick={() => setIsAddStepModalOpen(true)}>Add step</Button>
                 </InlineStack>
               </InlineStack>

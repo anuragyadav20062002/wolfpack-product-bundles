@@ -439,7 +439,7 @@ export default function Index() {
                             <Tooltip content="Delete">
                               <Button icon={DeleteIcon} onClick={() => handleDeleteBundle(bundle.id)} />
                             </Tooltip>
-                            <Tooltip content="View">
+                            <Tooltip content="Please refresh the page after publishing to view the bundle. Sometimes it takes a moment for the system to sync.">
                               <Button icon={ViewIcon} onClick={() => handleViewBundle(bundle)} />
                             </Tooltip>
                           </ButtonGroup>
