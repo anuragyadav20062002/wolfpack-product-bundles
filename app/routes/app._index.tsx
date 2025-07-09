@@ -31,7 +31,7 @@ interface Bundle {
   status: string;
   active: boolean;
   publishedAt: string | null;
-  matching: string | null; // Add matching property to Bundle type
+  matching: any; // Changed from string | null to any due to JSON parsing
   viewUrl?: string; // Add optional viewUrl property
 }
 
@@ -400,13 +400,21 @@ export default function Index() {
                   </Box>
                   <BlockStack gap="200" inlineAlign="center">
                     <Text as="h2" variant="headingMd">
-                      Setup your bundles quickly
+                      Bundle Setup Instructions
                     </Text>
                     <Text variant="bodyMd" as="p" alignment="center">
-                      Get your bundles up and running in 2 easy steps!
+                      Follow these steps to set up the best bundle experience for your users
                     </Text>
+                    <List type="bullet">
+                      <List.Item>Click on Create New Bundle</List.Item>
+                      <List.Item>Enter Bundle Name and Description</List.Item>
+                      <List.Item>Click on Create Bundle</List.Item>
+                      <List.Item>Click on Add Step</List.Item>
+                      <List.Item>Add the Products or Collection you want to display in that step</List.Item>
+                      <List.Item>Click Publish</List.Item>
+                      <List.Item>Preview the bundle</List.Item>
+                    </List>
                   </BlockStack>
-                  <Button size="large" variant="primary" onClick={() => navigate('/app/bundles/create')}>Quick Setup</Button>
                 </BlockStack>
               </Card>
             </Layout.Section>
@@ -512,7 +520,10 @@ export default function Index() {
                             </Text>
                         </InlineStack>
                         <Text variant="bodyMd" as="p">
-                          Stuck? Reach out to your Account Manager!
+                          For setting up and publishing bundle
+                        </Text>
+                        <Text variant="bodyMd" as="p">
+                          For customizing the design of the bundle
                         </Text>
                         <Button variant="primary"
                           onClick={() => window.open('https://tidycal.com/yashwolfpack/15-minute-meeting', '_blank')}
