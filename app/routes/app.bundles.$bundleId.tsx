@@ -6,6 +6,7 @@ import { useLoaderData, useFetcher } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
 import bundlePreviewStyles from "../styles/bundle-preview.css?url";
+import bundlePreviewGif from "../bundleprev.gif";
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -662,59 +663,72 @@ export default function BundleBuilderPage() {
               { id: 'products', content: 'Products' },
               { id: 'collections', content: 'Collections' },
             ]} selected={publishTab} onSelect={setPublishTab}>
-              <BlockStack gap="300">
-                {publishTab === 0 ? (
-                  <BlockStack gap="200">
-                    <Text as="p" variant="bodyMd">Available Products</Text>
-                    <Text as="p" variant="bodySm">{selectedVisibilityProducts.length} selected</Text>
-                    <Button onClick={async () => {
-                      const products = await shopify.resourcePicker({
-                        type: 'product',
-                        multiple: true,
-                        selectionIds: selectedVisibilityProducts.map(p => ({ id: p.id }))
-                      });
-                      if (products && products.selection) {
-                        setSelectedVisibilityProducts(products.selection as ResourcePickerProduct[]);
-                      }
-                    }}>Select products</Button>
-                    {selectedVisibilityProducts.length > 0 && (
-                      <Text as="p" variant="bodyMd" fontWeight="bold">
-                        {selectedVisibilityProducts.length} product{selectedVisibilityProducts.length === 1 ? '' : 's'} selected
-                      </Text>
-                    )}
-                    {selectedVisibilityProducts.length === 0 && (
-                      <BlockStack gap="200">
-                        <Text as="p" variant="bodyMd">No products selected yet</Text>
-                        <InlineStack>
-                          <Text as="p" variant="bodySm" fontWeight="medium">Please select at least one product to enable bundle matching</Text>
-                        </InlineStack>
-                      </BlockStack>
-                    )}
-                  </BlockStack>
-                ) : (
-                  <BlockStack gap="200">
-                    <Text as="p" variant="bodyMd">Collections selected here will have all their products available in this step</Text>
-                    <Button onClick={async () => {
-                      const collections = await shopify.resourcePicker({
-                        type: 'collection',
-                        multiple: true,
-                        selectionIds: selectedVisibilityCollections.map(c => ({ id: c.id }))
-                      });
-                      if (collections && collections.selection) {
-                        setSelectedVisibilityCollections(collections.selection as ResourcePickerCollection[]);
-                      }
-                    }}>Select collections</Button>
-                    {selectedVisibilityCollections.length > 0 && (
-                      <Text as="p" variant="bodyMd" fontWeight="bold">
-                        {selectedVisibilityCollections.length} collection{selectedVisibilityCollections.length === 1 ? '' : 's'} selected
-                      </Text>
-                    )}
-                    {selectedVisibilityCollections.length === 0 && (
-                      <Text as="p" variant="bodyMd">No collections selected yet</Text>
-                    )}
-                  </BlockStack>
-                )}
-              </BlockStack>
+              <InlineStack gap="400" align="start" wrap={false}>
+                <BlockStack gap="300" >
+                  {publishTab === 0 ? (
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd">Available Products</Text>
+                      <Text as="p" variant="bodySm">{selectedVisibilityProducts.length} selected</Text>
+                      <Button onClick={async () => {
+                        const products = await shopify.resourcePicker({
+                          type: 'product',
+                          multiple: true,
+                          selectionIds: selectedVisibilityProducts.map(p => ({ id: p.id }))
+                        });
+                        if (products && products.selection) {
+                          setSelectedVisibilityProducts(products.selection as ResourcePickerProduct[]);
+                        }
+                      }}>Select products</Button>
+                      {selectedVisibilityProducts.length > 0 && (
+                        <Text as="p" variant="bodyMd" fontWeight="bold">
+                          {selectedVisibilityProducts.length} product{selectedVisibilityProducts.length === 1 ? '' : 's'} selected
+                        </Text>
+                      )}
+                      {selectedVisibilityProducts.length === 0 && (
+                        <BlockStack gap="200">
+                          <Text as="p" variant="bodyMd">No products selected yet</Text>
+                          <InlineStack>
+                            <Text as="p" variant="bodySm" fontWeight="medium">Please select at least one product to enable bundle matching</Text>
+                          </InlineStack>
+                        </BlockStack>
+                      )}
+                    </BlockStack>
+                  ) : (
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd">Collections selected here will have all their products available in this step</Text>
+                      <Button onClick={async () => {
+                        const collections = await shopify.resourcePicker({
+                          type: 'collection',
+                          multiple: true,
+                          selectionIds: selectedVisibilityCollections.map(c => ({ id: c.id }))
+                        });
+                        if (collections && collections.selection) {
+                          setSelectedVisibilityCollections(collections.selection as ResourcePickerCollection[]);
+                        }
+                      }}>Select collections</Button>
+                      {selectedVisibilityCollections.length > 0 && (
+                        <Text as="p" variant="bodyMd" fontWeight="bold">
+                          {selectedVisibilityCollections.length} collection{selectedVisibilityCollections.length === 1 ? '' : 's'} selected
+                        </Text>
+                      )}
+                      {selectedVisibilityCollections.length === 0 && (
+                        <Text as="p" variant="bodyMd">No collections selected yet</Text>
+                      )}
+                    </BlockStack>
+                  )}
+                </BlockStack>
+                {/* New YouTube Video Placeholder */}
+                <div style={{ flexShrink: 0, width: '300px', height: '200px', backgroundColor: '#f0f0f0', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #ccc' }}>
+                  <iframe
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ" // Placeholder YouTube video
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ width: '100%', height: '100%' }}
+                  ></iframe>
+                </div>
+              </InlineStack>
             </Tabs>
 
             <InlineStack blockAlign="start" gap="400" align="space-between" wrap={false}>
@@ -731,7 +745,7 @@ export default function BundleBuilderPage() {
               </BlockStack>
               <div style={{ flexShrink: 0 }}>
                 <div className="bundle-preview-container">
-                  <img src="https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg" alt="Bundle Preview" className="bundle-preview-image" />
+                  <img src={bundlePreviewGif} alt="Bundle Preview" className="bundle-preview-image" />
                 </div>
               </div>
             </InlineStack>
