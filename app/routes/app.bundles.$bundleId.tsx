@@ -521,13 +521,14 @@ export default function BundleBuilderPage() {
               <BlockStack gap="300">
                 <Text as="h2" variant="headingMd">How to turn on your app block</Text>
                 <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', height: 0 }}>
-                  <a href="https://youtu.be/RA39wPaek0M" target="_blank" rel="noopener noreferrer">
-                    <img
-                      src="/add block.png"
-                      alt="How to turn on your app block video thumbnail"
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </a>
+                  <iframe
+                    src="https://www.youtube.com/embed/RA39wPaek0M"
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  ></iframe>
                 </div>
               </BlockStack>
             </Card>
@@ -660,13 +661,14 @@ export default function BundleBuilderPage() {
             <Text as="h3" variant="headingMd">Bundle Visibility</Text>
             {/* Right side: YouTube Video Placeholder */}
             <div style={{ flexShrink: 0, width: '200px', height: '112px', border: '1px solid #ccc' }}>
-              <a href="https://youtu.be/RA39wPaek0M" target="_blank" rel="noopener noreferrer">
-                <img
-                  src="/add block.png"
-                  alt="How to turn on your app block video thumbnail"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </a>
+              <iframe
+                src="https://www.youtube.com/embed/RA39wPaek0M"
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ width: '100%', height: '100%' }}
+              ></iframe>
             </div>
           </div>
 
