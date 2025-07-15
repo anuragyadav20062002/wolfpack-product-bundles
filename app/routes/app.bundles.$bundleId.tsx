@@ -6,7 +6,6 @@ import { useLoaderData, useFetcher } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
 import bundlePreviewStyles from "../styles/bundle-preview.css?url";
-import bundlePreviewGif from "../bundleprev.gif";
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -329,6 +328,12 @@ export default function BundleBuilderPage() {
           handlePublishModalClose();
           shopify.toast.show('Bundle published successfully!');
           console.log("Published Bundle Details:", publishedBundleData.bundle);
+          // Update the state for selected visibility products and collections after publishing
+          if (publishedBundleData.bundle.matching) {
+            const parsedMatchingAfterPublish = JSON.parse(publishedBundleData.bundle.matching);
+            setSelectedVisibilityProducts(parsedMatchingAfterPublish.selectedVisibilityProducts || []);
+            setSelectedVisibilityCollections(parsedMatchingAfterPublish.selectedVisibilityCollections || []);
+          }
         }
       } else if ('error' in fetcher.data && fetcher.data.error) {
         const errorData = fetcher.data as unknown as { success: false, error: string, intent?: string };
@@ -338,6 +343,14 @@ export default function BundleBuilderPage() {
       }
     }
   }, [fetcher.data, /* isAddStepModalOpen, */ handleAddStepModalClose, handlePublishModalClose, shopify]);
+
+  // Effect to populate publish modal with existing data when opened
+  useEffect(() => {
+    if (isPublishModalOpen && bundle.parsedMatching) {
+      setSelectedVisibilityProducts(bundle.parsedMatching.selectedVisibilityProducts || []);
+      setSelectedVisibilityCollections(bundle.parsedMatching.selectedVisibilityCollections || []);
+    }
+  }, [isPublishModalOpen, bundle.parsedMatching]);
 
   const handleAddStep = useCallback(async () => {
     const formData = new FormData();
@@ -500,6 +513,22 @@ export default function BundleBuilderPage() {
                   <Text variant="bodyMd" as="p">Make bundle available in your store</Text>
                   <Button variant="primary" onClick={() => setIsPublishModalOpen(true)}>Publish</Button>
                 </InlineStack>
+              </BlockStack>
+            </Card>
+            {/* New YouTube Video Banner */}
+            <Card>
+              <BlockStack gap="300">
+                <Text as="h2" variant="headingMd">How to turn on your app block</Text>
+                <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', height: 0 }}>
+                  <iframe
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ" // Placeholder YouTube video
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  ></iframe>
+                </div>
               </BlockStack>
             </Card>
           </BlockStack>
@@ -702,7 +731,7 @@ export default function BundleBuilderPage() {
               </BlockStack>
               <div style={{ flexShrink: 0 }}>
                 <div className="bundle-preview-container">
-                  <img src={bundlePreviewGif} alt="Bundle Preview" className="bundle-preview-image" />
+                  <img src="https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg" alt="Bundle Preview" className="bundle-preview-image" />
                 </div>
               </div>
             </InlineStack>
