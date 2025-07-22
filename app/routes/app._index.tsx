@@ -1,9 +1,5 @@
 import { useEffect } from "react";
-import {
-  json,
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
-} from "@remix-run/node";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useNavigate, useLoaderData } from "@remix-run/react";
 import {
   Page,
@@ -15,21 +11,18 @@ import {
   Box,
   List,
   InlineStack,
-  Image,
   ButtonGroup,
   Divider,
   Tooltip,
+  Avatar,
+  Image,
+  // Modal,
 } from "@shopify/polaris";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import {
-  EditIcon,
-  DuplicateIcon,
-  DeleteIcon,
-  ViewIcon,
-} from "@shopify/polaris-icons";
+import { EditIcon, DuplicateIcon, DeleteIcon, ViewIcon } from "@shopify/polaris-icons";
 import db from "../db.server"; // Import db
-import type { action as bundlesAction } from "./app.bundles.$bundleId"; // Import the action from bundleId route
+import type { action as bundlesAction } from './app.bundles.$bundleId'; // Import the action from bundleId route
 
 // Define a type for the bundle, matching Prisma's Bundle model
 interface Bundle {
@@ -38,11 +31,13 @@ interface Bundle {
   status: string;
   active: boolean;
   publishedAt: string | null;
-  matching: string | null; // Add matching property to Bundle type
+  matching: any; // Change type to any
+  settings: any; // Change type to any
+  viewUrl?: string; // Add optional viewUrl property
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
   // Fetch all bundles for the current shop
@@ -52,7 +47,54 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
   });
 
-  return { bundles };
+  const bundlesWithUrls = await Promise.all(
+    bundles.map(async (bundle) => {
+      let viewUrl: string | undefined = undefined;
+      if (bundle.status === 'active' && bundle.matching) {
+        try {
+          const matchingData = bundle.matching; // Use bundle.matching directly as it's already JsonValue
+          const firstProduct = (matchingData as any).selectedVisibilityProducts?.[0];
+          const firstCollection = (matchingData as any).selectedVisibilityCollections?.[0];
+
+          if (firstProduct?.handle) {
+            viewUrl = `https://${shop}/products/${firstProduct.handle}`;
+          } else if (firstCollection?.id) {
+            const response = await admin.graphql(
+              `#graphql
+              query getCollectionProducts($id: ID!) {
+                collection(id: $id) {
+                  products(first: 1) {
+                    edges {
+                      node {
+                        handle
+                      }
+                    }
+                  }
+                }
+              }`,
+              {
+                variables: {
+                  id: firstCollection.id,
+                },
+              },
+            );
+            const responseJson = await response.json();
+            const firstProductInCollection =
+              responseJson.data?.collection?.products?.edges?.[0]?.node;
+
+            if (firstProductInCollection?.handle) {
+              viewUrl = `https://${shop}/products/${firstProductInCollection.handle}`;
+            }
+          }
+        } catch (e) {
+          console.error(`Failed to process matching for bundle ${bundle.id}`, e);
+        }
+      }
+      return { ...bundle, viewUrl };
+    }),
+  );
+
+  return json({ bundles: bundlesWithUrls });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -63,11 +105,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (intent === "cloneBundle") {
     const bundleIdToClone = formData.get("bundleId") as string;
 
-    if (typeof bundleIdToClone !== "string" || bundleIdToClone.length === 0) {
-      return json(
-        { error: "Bundle ID is required for cloning" },
-        { status: 400 },
-      );
+    if (typeof bundleIdToClone !== 'string' || bundleIdToClone.length === 0) {
+      return json({ error: 'Bundle ID is required for cloning' }, { status: 400 });
     }
 
     try {
@@ -77,7 +116,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
 
       if (!originalBundle) {
-        return json({ error: "Original bundle not found" }, { status: 404 });
+        return json({ error: 'Original bundle not found' }, { status: 404 });
       }
 
       // Create new bundle with copied data
@@ -89,8 +128,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           status: "draft", // Cloned bundle starts as draft
           active: false,
           publishedAt: null,
-          settings: originalBundle.settings,
-          matching: originalBundle.matching, // Copy matching data as is
+          settings: originalBundle.settings as any,
+          matching: originalBundle.matching as any, // Copy matching data as is
         },
       });
 
@@ -100,8 +139,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           data: {
             bundleId: newBundle.id,
             name: step.name,
-            products: step.products,
-            collections: step.collections,
+            products: step.products as any,
+            collections: step.collections as any,
             displayVariantsAsIndividual: step.displayVariantsAsIndividual,
             conditionType: step.conditionType,
             conditionValue: step.conditionValue,
@@ -122,22 +161,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             bundleId: newBundle.id,
             type: originalBundle.pricing.type,
             status: originalBundle.pricing.status,
-            rules: originalBundle.pricing.rules,
+            rules: originalBundle.pricing.rules as any,
             showFooter: originalBundle.pricing.showFooter,
             showBar: originalBundle.pricing.showBar,
-            messages: originalBundle.pricing.messages,
+            messages: originalBundle.pricing.messages as any,
             published: false, // Cloned pricing starts as unpublished
           },
         });
       }
-
+      
       // No need to update shop metafield for cloned bundle immediately,
       // as it's a draft. It will be updated when published.
 
       return json({ success: true, bundle: newBundle, intent: intent });
     } catch (error) {
       console.error("Error cloning bundle:", error);
-      return json({ error: "Failed to clone bundle" }, { status: 500 });
+      return json({ error: 'Failed to clone bundle' }, { status: 500 });
     }
   }
   const color = ["Red", "Orange", "Yellow", "Green"][
@@ -208,13 +247,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
-  const { bundles } = useLoaderData<typeof loader>(); // Get bundles from loader data
+  const { bundles } = useLoaderData<typeof loader>() as { bundles: Bundle[] }; // Get bundles from loader data and cast to Bundle[]
   const fetcher = useFetcher<typeof action>();
   // Explicitly type the fetchers for actions from app.bundles.$bundleId.tsx
   const deleteFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for deletion
   const clearMetafieldFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for clearing all metafields
 
   const navigate = useNavigate();
+ 
 
   const shopify = useAppBridge();
   // const isLoading =
@@ -235,11 +275,9 @@ export default function Index() {
       };
 
       if (data.success) {
-        shopify.toast.show("Bundle deleted successfully!");
+        shopify.toast.show('Bundle deleted successfully!');
       } else if (data.error) {
-        shopify.toast.show(`Error deleting bundle: ${data.error}`, {
-          isError: true,
-        });
+        shopify.toast.show(`Error deleting bundle: ${data.error}`, { isError: true });
       }
     }
 
@@ -252,123 +290,90 @@ export default function Index() {
       };
 
       if (data.success) {
-        shopify.toast.show("All bundles metafield cleared successfully!");
+        shopify.toast.show('All bundles metafield cleared successfully!');
       } else if (data.error) {
-        shopify.toast.show(`Error clearing metafield: ${data.error}`, {
-          isError: true,
-        });
+        shopify.toast.show(`Error clearing metafield: ${data.error}`, { isError: true });
       }
     }
 
     // Handle success/error messages from cloneFetcher and product creation
-    if (fetcher.data) {
+    if (fetcher.data && fetcher.state === 'idle') {
       const data = fetcher.data as {
-        success?: boolean;
+        success?: boolean; // Optional property
         error?: string;
         intent?: string;
-        bundle?: Bundle;
-        product?: any;
+        bundle?: Bundle; // Optional property
       };
-      if (data.intent === "cloneBundle") {
-        if (data.success) {
-          shopify.toast.show("Bundle cloned successfully!");
-          // navigate to refresh the list if needed, or rely on Remix revalidation
-        } else if (data.error) {
-          shopify.toast.show(`Error cloning bundle: ${data.error}`, {
-            isError: true,
-          });
-        }
-      } else if (data.product) {
-        // Check if it's the product creation action
-        const prodId = data.product.id.replace("gid://shopify/Product/", "");
-        if (prodId) {
-          shopify.toast.show("Product created");
-        }
+
+      if (data.success && data.intent === 'cloneBundle' && data.bundle) {
+        shopify.toast.show('Bundle cloned successfully!');
+        // Optionally navigate to the new bundle's page
+        navigate(`/app/bundles/${data.bundle.id}`);
+      } else if (data.error) {
+        shopify.toast.show(`Error: ${data.error}`, { isError: true });
       }
     }
-  }, [shopify, deleteFetcher.data, clearMetafieldFetcher.data, fetcher.data]);
+
+  }, [
+    fetcher.data,
+    fetcher.state,
+    deleteFetcher.data,
+    clearMetafieldFetcher.data,
+    shopify,
+    navigate,
+  ]);
   // const generateProduct = () => fetcher.submit({}, { method: "POST" });
 
   const handleDeleteBundle = (bundleId: string) => {
-    if (
-      confirm(
-        "Are you sure you want to delete this bundle? This action cannot be undone.",
-      )
-    ) {
+    const confirmation = window.confirm("Are you sure you want to delete this bundle?");
+    if (confirmation) {
       const formData = new FormData();
       formData.append("intent", "deleteBundle");
       formData.append("bundleId", bundleId);
-      deleteFetcher.submit(formData, {
-        method: "post",
-        action: `/app/bundles/${bundleId}`,
-      });
+      // Use the appropriate fetcher for the request
+      deleteFetcher.submit(formData, { method: "post", action: `/app/bundles/${bundleId}` });
     }
   };
 
   const handleCloneBundle = (bundle: Bundle) => {
-    if (
-      confirm(`Are you sure you want to clone the bundle "${bundle.name}"?`)
-    ) {
-      const formData = new FormData();
-      formData.append("intent", "cloneBundle");
-      formData.append("bundleId", bundle.id);
-      fetcher.submit(formData, { method: "post" }); // Use fetcher to submit to current route's action
-    }
+    const formData = new FormData();
+    formData.append("intent", "cloneBundle");
+    formData.append("bundleId", bundle.id);
+    fetcher.submit(formData, { method: "post" });
   };
 
   const handleViewBundle = (bundle: Bundle) => {
-    if (bundle.matching) {
-      try {
-        const parsedMatching = JSON.parse(bundle.matching);
-        const selectedProducts =
-          parsedMatching.selectedVisibilityProducts as Array<{
-            id: string;
-            handle: string;
-          }>;
-        if (selectedProducts && selectedProducts.length > 0) {
-          const firstProductHandle = selectedProducts[0].handle;
-          if (firstProductHandle) {
-            // Construct the URL to the product page
-            window.open(`/products/${firstProductHandle}`, "_blank");
-            return;
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing bundle matching data:", e);
-      }
+    if (bundle.viewUrl) {
+      window.open(bundle.viewUrl, "_blank");
+    } else {
+      shopify.toast.show("This bundle has no visible products to view.", { isError: true });
     }
-    shopify.toast.show(
-      "No product found to view for this bundle or matching data is incomplete.",
-      { isError: true },
-    );
   };
 
-  const handleClearAllBundlesMetafield = () => {
-    if (
-      confirm(
-        "Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.",
-      )
-    ) {
-      const formData = new FormData();
-      formData.append("intent", "clearAllBundlesMetafield");
-      // A dummy bundleId is needed for the action route, though it's not used by the intent itself
-      clearMetafieldFetcher.submit(formData, {
-        method: "post",
-        action: `/app/bundles/dummy-id`,
-      });
-    }
+  // Function to create a new bundle
+  const handleCreateNewBundle = async () => {
+    // You can call your API to create a new bundle here
+    // For now, let's just navigate to the bundle creation page with a 'new' ID
+    navigate('/app/bundles/create');
   };
+
+  // const handleClearAllBundlesMetafield = () => {
+  //   const confirmation = window.confirm("Are you sure you want to clear all bundle metafields? This can't be undone.");
+  //   if (confirmation) {
+  //     const formData = new FormData();
+  //     formData.append("intent", "clearAllBundlesMetafield");
+  //     clearMetafieldFetcher.submit(formData, { method: "post", action: '/app/clear-metafield' });
+  //   }
+  // };
 
   return (
-    <Page>
-      <TitleBar title="Your Bundles">
-        <button
-          variant="primary"
-          onClick={() => navigate("/app/bundles/create")}
-        >
-          Create Bundle
-        </button>
-      </TitleBar>
+    <Page
+      title="Your Bundles"
+      primaryAction={{
+        content: "Create New Bundle",
+        onAction: handleCreateNewBundle,
+      }}
+    >
       <BlockStack gap="500">
         <Layout>
           {bundles.length === 0 ? (
@@ -377,12 +382,22 @@ export default function Index() {
               <Card>
                 <BlockStack gap="500" inlineAlign="center" align="center">
                   <Box
-                    minHeight="6rem"
-                    minWidth="6rem"
+                    minHeight="3rem"
+                    minWidth="3rem"
                     background="bg-fill-info-secondary"
                     borderRadius="full"
                   >
-                    <EditIcon width="3rem" height="3rem" color="base" />
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        width: '100%',
+                        height: '100%',
+                      }}
+                    >
+                      <Image source="/bundle2.png" alt="Bundle Icon" width="100%" height="100%" />
+                    </div>
                   </Box>
                   <BlockStack gap="200" inlineAlign="center">
                     <Text as="h2" variant="headingMd">
@@ -392,13 +407,7 @@ export default function Index() {
                       Get your bundles up and running in 2 easy steps!
                     </Text>
                   </BlockStack>
-                  <Button
-                    size="large"
-                    variant="primary"
-                    onClick={() => navigate("/app/bundles/create")}
-                  >
-                    Quick Setup
-                  </Button>
+                  <Button size="large" variant="primary" onClick={() => navigate('/app/bundles/create')}>Quick Setup</Button>
                 </BlockStack>
               </Card>
             </Layout.Section>
@@ -416,47 +425,27 @@ export default function Index() {
                               minWidth="15px"
                               minHeight="15px"
                               borderRadius="full"
-                              background={
-                                bundle.publishedAt
-                                  ? "bg-fill-success"
-                                  : "bg-fill-warning"
-                              }
+                              background={bundle.publishedAt ? "bg-fill-success" : "bg-fill-warning"}
                             />
-                            <Text as="h3" variant="headingMd">
-                              {bundle.name}
-                            </Text>
+                            <Text as="h3" variant="headingMd">{bundle.name}</Text>
                           </InlineStack>
                           <ButtonGroup variant="segmented">
                             <Tooltip content="Edit">
-                              <Button
-                                icon={EditIcon}
-                                onClick={() =>
-                                  navigate(`/app/bundles/${bundle.id}`)
-                                }
-                              />
+                              <Button icon={EditIcon} onClick={() => navigate(`/app/bundles/${bundle.id}`)} />
                             </Tooltip>
                             <Tooltip content="Clone">
-                              <Button
-                                icon={DuplicateIcon}
-                                onClick={() => handleCloneBundle(bundle)}
-                              />
+                              <Button icon={DuplicateIcon} onClick={() => handleCloneBundle(bundle)} />
                             </Tooltip>
                             <Tooltip content="Delete">
-                              <Button
-                                icon={DeleteIcon}
-                                onClick={() => handleDeleteBundle(bundle.id)}
-                              />
+                              <Button icon={DeleteIcon} onClick={() => handleDeleteBundle(bundle.id)} />
                             </Tooltip>
-                            <Tooltip content="View">
-                              <Button
-                                icon={ViewIcon}
-                                onClick={() => handleViewBundle(bundle)}
-                              />
+                            <Tooltip content="Please refresh the page after publishing to view the bundle. Sometimes it takes a moment for the system to sync.">
+                              <Button icon={ViewIcon} onClick={() => handleViewBundle(bundle)} />
                             </Tooltip>
                           </ButtonGroup>
                         </InlineStack>
                       </Box>
-                      {index < bundles.length - 1 && <Divider />}
+                      {index < bundles.length - 1 && <Divider />} 
                     </div>
                   ))}
                 </BlockStack>
@@ -466,151 +455,108 @@ export default function Index() {
 
           {/* Design services and Your account manager */}
           <Layout.Section>
-            <div
-              style={{
-                display: "flex",
-                gap: "var(--p-space-500)",
-                alignItems: "stretch",
-                width: "100%",
-              }}
-            >
-              {/* Design services */}
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
+            <Layout>
+              <Layout.Section variant="oneHalf">
+                {/* Design services */}
                 <Card>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      minHeight: "266px", // Set minimum height to ensure equal card heights
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <BlockStack gap="200" inlineAlign="start">
-                        <BlockStack gap="200">
-                          <Text as="h2" variant="headingMd">
-                            Design services
-                          </Text>
-                          <Text variant="bodyMd" as="p">
-                            Transform the bundle builder for your store using
-                            our expert bundle design services
-                          </Text>
-                          <List>
-                            <List.Item>
-                              A fixed price of $100 (one-time cost) for any
-                              advanced CSS customization.
-                            </List.Item>
-                            <List.Item>
-                              No hidden charges, ensuring transparency.
-                            </List.Item>
-                            <List.Item>
-                              Professional bundle design services available.
-                            </List.Item>
-                          </List>
-                        </BlockStack>
-                      </BlockStack>
-                    </div>
-                    <Box paddingBlockStart="400">
-                      <ButtonGroup>
-                        <Button>Get a quote</Button>
-                        <Button
-                          tone="critical"
-                          onClick={handleClearAllBundlesMetafield}
-                        >
-                          Clear All Bundles Metafield
-                        </Button>
-                      </ButtonGroup>
-                    </Box>
-                  </div>
+                  <BlockStack gap="200">
+                    <Text as="h2" variant="headingMd">
+                      Bundle Setup Instructions
+                    </Text>
+                    <Text variant="bodyMd" as="p">
+                      Follow these steps to set up the best bundle experience for your users
+                    </Text>
+                    <List>
+                      <List.Item>
+                        Click on Create New Bundle
+                      </List.Item>
+                      <List.Item>
+                        Name and Description
+                      </List.Item>
+                      <List.Item>
+                        Click on Create Bundle
+                      </List.Item>
+                      <List.Item>
+                        Click on Add Step
+                      </List.Item>
+                      <List.Item>
+                        Add the Products or Collection you want to display in that step
+                      </List.Item>
+                      <List.Item>
+                        Click Publish
+                      </List.Item>
+                      <List.Item>
+                        Preview the bundle
+                      </List.Item>
+                    </List>
+                  </BlockStack>
                 </Card>
-              </div>
+              </Layout.Section>
 
-              {/* Your account manager */}
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
+              <Layout.Section variant="oneHalf">
+                {/* Your account manager */}
                 <Card>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      minHeight: "266px", // Set minimum height to ensure equal card heights
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <BlockStack gap="200" inlineAlign="start">
-                        <BlockStack gap="200">
-                          <Text as="h2" variant="headingMd">
-                            Your account manager
-                          </Text>
-                          <InlineStack gap="200" blockAlign="center">
-                            <Box
-                              minHeight="6rem"
-                              minWidth="6rem"
-                              borderRadius="full"
-                            >
-                              <Image
-                                source="/yash-logo.png"
-                                alt="Account manager profile picture"
-                                width={96}
-                                height={96}
-                                key="yash-profile-image"
-                              />
-                            </Box>
-                            <BlockStack gap="100">
-                              <Text as="h3" variant="headingMd">
-                                Yash{" "}
-                                <Text
-                                  as="span"
-                                  variant="bodyXs"
-                                  tone="subdued"
-                                  fontWeight="regular"
-                                >
-                                  founder
-                                </Text>
-                              </Text>
-                              <Text variant="bodyMd" as="p">
-                                Stuck? Reach out to your Account Manager!
-                              </Text>
-                              <Box paddingBlockStart="100">
-                                <Text variant="bodyMd" as="p" tone="subdued">
-                                  Get personalized help with your bundle setup
-                                  and optimization.
-                                </Text>
-                              </Box>
-                            </BlockStack>
-                          </InlineStack>
-                        </BlockStack>
+                  <BlockStack gap="200">
+                    <Text as="h2" variant="headingMd">
+                      Your account manager
+                    </Text>
+                    <InlineStack gap="200" blockAlign="start">
+                      <Avatar
+                        source="/yash-logo.png"
+                        name="Yash (Founder)"
+                        size="xl"
+                        initials="YF"
+                      />
+                      <BlockStack gap="0">
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          Yash (Founder)
+                        </Text>
+                        <List>
+                          <List.Item>
+                            For setting up and publishing bundle
+                          </List.Item>
+                          <List.Item>
+                            For customizing the design of the bundle
+                          </List.Item>
+                        </List>
+                        <Button variant="primary"
+                          onClick={() => window.open('https://tidycal.com/yashwolfpack/15-minute-meeting', '_blank')}
+                        >
+                          Schedule Meeting
+                        </Button>
                       </BlockStack>
-                    </div>
-                    <Box paddingBlockStart="400">
-                      <Button
-                        onClick={() =>
-                          window.open(
-                            "https://tidycal.com/yashwolfpack/15-minute-meeting",
-                            "_blank",
-                          )
-                        }
-                      >
-                        Schedule Meeting
-                      </Button>
-                    </Box>
-                  </div>
+                    </InlineStack>
+                  </BlockStack>
                 </Card>
-              </div>
-            </div>
+              </Layout.Section>
+            </Layout>
           </Layout.Section>
         </Layout>
       </BlockStack>
+      {/*
+      <Modal
+        open={showClearAllModal}
+        onClose={() => setShowClearAllModal(false)}
+        title="Confirm Action"
+        primaryAction={{
+          content: 'Clear All Bundles',
+          onAction: handleConfirmClearAllBundlesMetafield,
+          tone: 'critical',
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: () => setShowClearAllModal(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <Text variant="bodyMd" as="p">
+            Are you sure you want to clear ALL bundle data from your store? This action cannot be undone.
+          </Text>
+        </Modal.Section>
+      </Modal>
+      */}
     </Page>
   );
 }
