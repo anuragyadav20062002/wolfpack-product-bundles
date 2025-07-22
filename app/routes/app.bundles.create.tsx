@@ -68,7 +68,7 @@ export default function CreateBundlePage() {
                 <FormLayout>
                   <TextField
                     label="Bundle name"
-                    helpText="A clear name helps customers understand what products they can combine"
+                    helpText=""
                     name="bundleName"
                     value={bundleName}
                     onChange={setBundleName}

@@ -11,14 +11,13 @@
 }
 
 .bundle-title {
-  font-size: 2em;
-  margin-bottom: 5px;
+  font-size: 1.5em; /* Reduced size */
+  margin-bottom: 10px;
 }
 
+/* Hide price display; price now only appears on button */
 .bundle-price {
-  font-size: 1.5em;
-  color: #333;
-  margin-bottom: 10px;
+  display: none;
 }
 
 .bundle-price .current-price {
@@ -95,21 +94,24 @@
   color: #555;
 }
 
+/* Match Shopify "Buy it now" button aesthetics */
 .add-bundle-to-cart {
-  background-color: #666;
-  color: white;
-  padding: 15px 30px;
+  background-color: #000;
+  color: #fff;
+  padding: 16px 0;
   border: none;
-  border-radius: 5px;
-  font-size: 1.2em;
+  border-radius: 4px;
+  font-size: 1em;
+  font-weight: 600;
   cursor: pointer;
+  width: 100%;
   display: block;
-  margin: 0 auto;
-  transition: background-color 0.3s ease;
+  margin: 20px 0;
+  transition: background-color 0.25s ease;
 }
 
 .add-bundle-to-cart:hover {
-  background-color: #555;
+  background-color: #111;
 }
 
 /* Bundle Builder Modal Styles */
@@ -274,7 +276,7 @@
   width: 100%;
   text-align: center;
   margin-top: 0;
-  margin-bottom: 25px; /* Increased space below info */
+  margin-bottom: 15px; /* reduced space below */
   padding: 0 30px;
   box-sizing: border-box;
 }
@@ -287,9 +289,9 @@
 }
 
 .modal-current-step-info p {
-  font-size: 0.95em; /* Refined size */
-  color: #777; /* Softer color */
-  line-height: 1.5;
+  font-weight: 700;
+  margin: 6px 0 12px 0; /* reduced vertical spacing */
+  color: #333;
 }
 
 .modal-body {
@@ -301,8 +303,8 @@
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Force 4 columns, each taking equal fraction of space */
-  gap: 20px; /* Consistent gap between items */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px; /* slightly smaller gap */
   padding: 10px 0;
 }
 
@@ -326,8 +328,8 @@
 }
 
 .product-card {
-  border: 1px solid #e0e0e0; /* Lighter border for cards */
-  padding: 15px; /* Adjusted padding */
+  border: 1px solid #e0e0e0;
+  padding: 4px; /* slightly reduced */
   text-align: center;
   position: relative;
   cursor: pointer;
@@ -355,33 +357,29 @@
 }
 
 .product-card .image-wrapper {
-  position: relative;
   width: 100%;
-  padding-bottom: 100%; /* Keeps image square within wrapper */
-  margin-bottom: 10px; /* Reduced margin below image */
-  overflow: hidden;
-  border-radius: 4px;
+  height: auto;
+  padding-bottom: 70%; /* reduced height (30% smaller) */
+  max-height: 98px; /* 30% reduction from 140px */
+  margin: 0 auto 6px auto;
+  position: relative;
 }
 
-.product-card img {
+.product-card .image-wrapper img {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 4px;
 }
 
 .product-card .product-title {
-  font-size: 0.95em; /* Slightly smaller font for more space */
+  font-size: 0.85em;
   font-weight: 600;
-  margin-bottom: 10px; /* Reduced margin below title */
+  margin-bottom: 4px;
   color: #333;
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
 }
 
 /* Quantity Controls Styling */
@@ -393,19 +391,20 @@
   margin-top: auto; /* Push to bottom */
   background-color: #000; /* Black background for the bar */
   border-radius: 0 0 8px 8px; /* Rounded bottom corners to match card */
-  padding: 10px 0; /* Vertical padding, no horizontal padding as buttons handle it */
+  padding: 0; /* remove extra padding */
   position: absolute; /* Position absolutely within the card */
   bottom: 0;
   left: 0;
   right: 0;
   box-sizing: border-box; /* Include padding in width calculation */
+  height: 40px;
 }
 
 .quantity-control-button {
   background-color: transparent;
   color: white;
   border: none;
-  padding: 10px 15px; /* Adjusted padding for buttons */
+  padding: 0 12px; /* adjust to fit new height */
   cursor: pointer;
   font-size: 1.3em; /* Larger font for +/- */
   font-weight: bold;
@@ -425,7 +424,7 @@
   padding: 0;
   font-weight: bold;
   color: white;
-  font-size: 1.2em; /* Larger font for quantity number */
+  font-size: 1.1em;
 }
 
 /* Selected overlay for checkmark */
@@ -491,7 +490,42 @@
 }
 
 .bundle-step-product-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Section divider (hr) styling */
+.section-divider {
+  border: none;
+  border-top: 1px solid #e5e5e5;
+  margin: 16px 0;
+}
+
+/* Container for multiple selected product images inside a step box */
+.step-images-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  overflow: hidden;
+}
+
+/* Added product price */
+.product-price {
+  font-size: 0.8em;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #111;
+  text-align: center;
+}
+
+/* Variant selector */
+.variant-selector {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 0.8em;
+  margin-bottom: 6px;
 } 
