@@ -14,6 +14,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body>
         {children}
         <CrispChat />
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-DY73B9RHM4"
+        ></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+
+              gtag('config', 'G-DY73B9RHM4');
+            `,
+          }}
+        />
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
