@@ -1,0 +1,23 @@
+query CartLinesDiscountsGenerateRun {
+  cart {
+    lines {
+      id
+      merchandise {
+        ... on ProductVariant {
+          id
+          product {
+            id
+            metafield(namespace: "bundle_discounts", key: "discount_settings") {
+              value
+            }
+          }
+        }
+      }
+      cost {
+        subtotalAmount {
+          amount
+        }
+      }
+    }
+  }
+}

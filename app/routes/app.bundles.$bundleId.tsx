@@ -7,6 +7,7 @@ import db from "../db.server";
 import { authenticate } from "../shopify.server";
 import bundlePreviewStyles from "../styles/bundle-preview.css?url";
 import bundlePreviewGif from "../bundleprev.gif";
+import type { Prisma, DiscountMethodType, BundlePricing } from "@prisma/client"; // Import Prisma types
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -23,7 +24,7 @@ interface ResourcePickerCollection {
   handle?: string;
 }
 
-// Define a type for Bundle, matching Prisma's Bundle model
+// Define a type for Bundle, matching Prisma's Bundle model (used only for `publishBundle` data in action)
 interface Bundle {
   id: string;
   name: string;
@@ -32,18 +33,19 @@ interface Bundle {
   status: string;
   active: boolean;
   publishedAt: Date | null;
-  settings: string | null;
-  matching: string | null;
+  settings: Prisma.JsonValue | null; // Use Prisma.JsonValue for raw JSON
+  matching: Prisma.JsonValue | null; // Use Prisma.JsonValue for raw JSON
   createdAt: Date;
   updatedAt: Date;
+  shopifyProductId: string | null;
 }
 
-// Define a type for BundleStep, matching Prisma schema and parsed JSON
-interface BundleStep {
+// Define a type for BundleStep, matching Prisma schema for raw data
+interface BundleStepRaw {
   id: string;
   name: string;
-  products: ResourcePickerProduct[]; // Parsed from JSON string
-  collections: ResourcePickerCollection[]; // Parsed from JSON string
+  products: Prisma.JsonValue; // Raw JSON from DB
+  collections: Prisma.JsonValue; // Raw JSON from DB
   displayVariantsAsIndividual: boolean;
   conditionType: string | null;
   conditionValue: number | null;
@@ -54,8 +56,28 @@ interface BundleStep {
   maxQuantity?: number;
   enabled?: boolean;
   productCategory?: string | null;
-  createdAt: string; // Changed to string
-  updatedAt: string; // Changed to string
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Define a type for BundleStep as passed to the UI component (after parsing)
+interface BundleStep {
+  id: string;
+  name: string;
+  products: ResourcePickerProduct[];
+  collections: ResourcePickerCollection[];
+  displayVariantsAsIndividual: boolean;
+  conditionType: string | null;
+  conditionValue: number | null;
+  bundleId: string;
+  icon?: string | null;
+  position?: number;
+  minQuantity?: number;
+  maxQuantity?: number;
+  enabled?: boolean;
+  productCategory?: string | null;
+  createdAt: string; // Converted to string for client-side
+  updatedAt: string; // Converted to string for client-side
 }
 
 // Extend bundle type from loader to include steps and pricing, and parsed matching
@@ -67,15 +89,31 @@ interface BundleWithSteps {
   status: string;
   active: boolean;
   publishedAt: Date | null;
-  settings: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  settings: Prisma.JsonValue | null;
+  createdAt: string; // Converted to string for client-side
+  updatedAt: string; // Converted to string for client-side
+  shopifyProductId: string | null;
 
-  steps: BundleStep[];
+  steps: BundleStep[]; // These steps have 'products' and 'collections' already parsed
+  matching: Prisma.JsonValue | null; // Keep original matching string as it comes from Prisma directly
   parsedMatching: {
     selectedVisibilityProducts: ResourcePickerProduct[];
     selectedVisibilityCollections: ResourcePickerCollection[];
   } | null; // This will be the parsed object from `matching`
+  pricing: {
+    enableDiscount: boolean;
+    discountMethod: DiscountMethodType;
+    rules: DiscountRule[] | null; // These rules are already parsed
+    discountId: string | null;
+  } | null;
+}
+
+// Define DiscountRule interface here as it's used by BundleWithSteps and functions
+interface DiscountRule {
+  discountOn: string;
+  minimumQuantity: number;
+  fixedAmountOff: number;
+  percentageOff: number;
 }
 
 export const links: LinksFunction = () => {
@@ -93,6 +131,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     },
     include: {
       steps: true,
+      pricing: true, // Include pricing data
     },
   });
 
@@ -100,17 +139,30 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     throw new Response("Bundle not found", { status: 404 });
   }
 
-  // Parse JSON strings back to objects for products and collections, and Date strings to Date objects
-  const parsedSteps = bundle.steps.map(step => ({
+  // Parse JSON strings back to objects for products and collections
+  const parsedSteps: BundleStep[] = bundle.steps.map((step: BundleStepRaw) => {
+    console.log("Raw step.products before parse:", step.products);
+    console.log("Raw step.collections before parse:", step.collections);
+    return {
     ...step,
-    products: step.products ? JSON.parse(step.products) : [],
-    collections: step.collections ? JSON.parse(step.collections) : [],
-  }));
+    products: step.products ? JSON.parse(step.products as string) as ResourcePickerProduct[] : [],
+    collections: step.collections ? JSON.parse(step.collections as string) as ResourcePickerCollection[] : [],
+    createdAt: new Date(step.createdAt).toISOString(), // Convert Date to string for client-side
+    updatedAt: new Date(step.updatedAt).toISOString(), // Convert Date to string for client-side
+  }});
 
   // Parse matching rules if they exist
-  const parsedMatching = bundle.matching ? JSON.parse(bundle.matching) : null;
+  console.log("Raw bundle.matching before parse:", bundle.matching);
+  const parsedMatching = bundle.matching ? JSON.parse(bundle.matching as string) as BundleWithSteps['parsedMatching'] : null;
 
-  return json({ bundle: { ...bundle, steps: parsedSteps, parsedMatching: parsedMatching } });
+  // Parse pricing rules if they exist
+  console.log("Raw bundle.pricing.rules before parse:", bundle.pricing?.rules);
+  const parsedPricing = bundle.pricing ? {
+    ...bundle.pricing,
+    rules: bundle.pricing.rules ? JSON.parse(bundle.pricing.rules as string) as DiscountRule[] : null,
+  } : null;
+
+  return json({ bundle: { ...bundle, steps: parsedSteps, parsedMatching: parsedMatching, pricing: parsedPricing, createdAt: bundle.createdAt.toISOString(), updatedAt: bundle.updatedAt.toISOString() } });
 }
 
 // Action to handle adding or updating a step or pricing
@@ -178,7 +230,6 @@ export async function action({ request }: ActionFunctionArgs) {
           }),
         },
       });
-      console.log(`[LOG] Publishing bundle ${bundleId}...`);
 
       // Get the shop's GID to use as the ownerId for the metafield
       const shopIdResponse = await admin.graphql(
@@ -195,18 +246,26 @@ export async function action({ request }: ActionFunctionArgs) {
       // Update shop metafield with all bundles
       const allPublishedBundles = await db.bundle.findMany({
         where: { status: "active", shopId: session.shop },
-        include: { steps: true },
+        include: { steps: true, pricing: true }, // Removed matching here since it's a string field
       });
 
-      const metafieldValue = allPublishedBundles.map(b => {
-        const steps = b.steps.map(s => ({ ...s, products: s.products ? JSON.parse(s.products) : [], collections: s.collections ? JSON.parse(s.collections) : [] }));
+      const metafieldValue = allPublishedBundles.map((b) => {
+        const steps = b.steps.map((s: BundleStepRaw) => ({
+          ...s,
+          products: s.products ? JSON.parse(s.products as string) : [],
+          collections: s.collections ? JSON.parse(s.collections as string) : [],
+        }));
         return {
           id: b.id,
           name: b.name,
           description: b.description,
           status: b.status,
-          matching: b.matching ? JSON.parse(b.matching) : {},
-          steps: steps
+          matching: b.matching ? JSON.parse(b.matching as string) : {}, // Parse raw matching string
+          steps: steps,
+          pricing: b.pricing ? {
+            ...b.pricing,
+            rules: b.pricing.rules ? JSON.parse(b.pricing.rules as string) : null,
+          } : null,
         };
       });
 
@@ -241,6 +300,9 @@ export async function action({ request }: ActionFunctionArgs) {
         }
       );
 
+      // Remove all Shopify Admin GraphQL API discount creation logic
+      // Prepare for future Shopify Functions-based discount logic
+      // (No discount creation logic here for now)
       return json({ success: true, bundle: updatedBundle, intent: intent });
     } catch (error) {
       console.error("Error publishing bundle:", error);
@@ -263,6 +325,166 @@ export async function action({ request }: ActionFunctionArgs) {
     } catch (error) {
       console.error("Error deleting bundle:", error);
       return json({ error: 'Failed to delete bundle' }, { status: 500 });
+    }
+  }
+
+  if (intent === "updateDiscount") {
+    const bundleId = formData.get("bundleId") as string;
+    const enableDiscount = formData.get("enableDiscount") === "true";
+    const discountMethod = formData.get("discountMethod") as DiscountMethodType; // Cast to Prisma enum type
+    const discountOn = formData.get("discountOn") as string;
+    const minimumQuantity = formData.get("minimumQuantity") as string;
+    const fixedAmountOff = formData.get("fixedAmountOff") as string;
+    const percentageOff = formData.get("percentageOff") as string;
+
+    if (typeof bundleId !== 'string' || bundleId.length === 0) {
+      return json({ error: 'Bundle ID is required to update discount' }, { status: 400 });
+    }
+
+    let rules: DiscountRule[] | null = null;
+    if (enableDiscount) {
+      rules = [
+        {
+          discountOn,
+          minimumQuantity: parseInt(minimumQuantity, 10),
+          fixedAmountOff: parseFloat(fixedAmountOff),
+          percentageOff: parseFloat(percentageOff),
+        }
+      ];
+    }
+
+    try {
+      const existingPricing = await db.bundlePricing.findUnique({
+        where: { bundleId: bundleId }
+      });
+
+      let updatedPricing;
+      if (existingPricing) {
+        updatedPricing = await db.bundlePricing.update({
+          where: { bundleId: bundleId },
+          data: {
+            enableDiscount,
+            discountMethod,
+            rules: rules as any, // Temporary cast to any to bypass linter
+          },
+        });
+      } else {
+        updatedPricing = await db.bundlePricing.create({
+          data: {
+            bundleId,
+            enableDiscount,
+            discountMethod,
+            rules: rules as any, // Temporary cast to any to bypass linter
+          },
+        });
+      }
+
+      // Get bundle details to check for shopifyProductId
+      const currentBundle = await db.bundle.findUnique({
+        where: { id: bundleId },
+        select: { shopifyProductId: true, name: true, description: true },
+      });
+
+      let shopifyProductId = currentBundle?.shopifyProductId;
+
+      // Create Shopify Product if it doesn't exist
+      if (!shopifyProductId) {
+        const productCreateMutation = `#graphql
+          mutation productCreate($input: ProductInput!) {
+            productCreate(input: $input) {
+              product {
+                id
+                title
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }`;
+
+        const productTitle = currentBundle?.name || `Bundle ${bundleId.substring(0, 8)}`;
+        const productDescription = currentBundle?.description || `Product for bundle ${bundleId.substring(0, 8)}`;
+
+        const productVariables = {
+          input: {
+            title: productTitle,
+            bodyHtml: productDescription,
+            status: "DRAFT", // We don't want to publish this product to storefront
+          },
+        };
+
+        console.log("Product Create Mutation:", productCreateMutation);
+        console.log("Product Create Variables:", JSON.stringify(productVariables, null, 2));
+
+        const { data, errors: productErrors } = await (admin.graphql as any)(
+          productCreateMutation,
+          { variables: productVariables },
+        );
+
+        if (productErrors && productErrors.length > 0) {
+          console.error("Product Creation GraphQL Errors:", productErrors);
+          throw new Error(`Failed to create Shopify product: ${productErrors.map((e: any) => e.message).join(", ")}`);
+        }
+
+        shopifyProductId = data.productCreate.product.id;
+
+        // Update the Bundle record with the new Shopify Product ID
+        await db.bundle.update({
+          where: { id: bundleId },
+          data: { shopifyProductId: shopifyProductId },
+        });
+      }
+
+      // Now, save discount settings as a metafield on the Shopify Product
+      const metafieldValue = {
+        enableDiscount,
+        discountMethod,
+        rules: rules,
+      };
+
+      const metafieldsSetMutation = `#graphql
+        mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              key
+              namespace
+              value
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }`;
+
+      const metafieldVariables = {
+        metafields: [
+          {
+            ownerId: shopifyProductId,
+            namespace: "bundle_discounts", // Custom namespace for your app
+            key: "discount_settings",
+            type: "json",
+            value: JSON.stringify(metafieldValue),
+          },
+        ],
+      };
+
+      const { errors: metafieldErrors } = await (admin.graphql as any)(
+        metafieldsSetMutation,
+        { variables: metafieldVariables },
+      );
+
+      if (metafieldErrors && metafieldErrors.length > 0) {
+        console.error("Metafield Set GraphQL Errors:", metafieldErrors);
+        throw new Error(`Failed to save discount metafield: ${metafieldErrors.map((e: any) => e.message).join(", ")}`);
+      }
+
+      return json({ success: true, pricing: updatedPricing, intent: intent });
+    } catch (error: any) {
+      console.error("Error saving discount settings:", error.message);
+      return json({ error: `Failed to save discount settings: ${error.message}` }, { status: 500 });
     }
   }
 
@@ -293,6 +515,28 @@ export default function BundleBuilderPage() {
   const [selectedVisibilityCollections, setSelectedVisibilityCollections] = useState<ResourcePickerCollection[]>([]);
   const [publishTab, setPublishTab] = useState(0);
 
+  // State for Discount & Pricing
+  const [enableDiscount, setEnableDiscount] = useState(false);
+  const [discountType, setDiscountType] = useState('fixed_amount_off'); // Default to Fixed Amount Off
+  const [discountOn, setDiscountOn] = useState('quantity');
+  const [minimumQuantity, setMinimumQuantity] = useState('0');
+  const [fixedAmountOff, setFixedAmountOff] = useState('0'); // New state for Fixed Amount Off
+  const [percentageOff, setPercentageOff] = useState('0'); // New state for Percentage Off
+
+  // Initialize discount states from loader data
+  useEffect(() => {
+    if (bundle.pricing) {
+      setEnableDiscount(bundle.pricing.enableDiscount);
+      setDiscountType(bundle.pricing.discountMethod);
+      if (bundle.pricing.rules && bundle.pricing.rules.length > 0) {
+        setDiscountOn(bundle.pricing.rules[0].discountOn || 'quantity');
+        setMinimumQuantity(String(bundle.pricing.rules[0].minimumQuantity || '0'));
+        setFixedAmountOff(String(bundle.pricing.rules[0].fixedAmountOff || '0'));
+        setPercentageOff(String(bundle.pricing.rules[0].percentageOff || '0'));
+      }
+    }
+  }, [bundle.pricing]);
+
   // handleModalClose definition moved above useEffect for proper order
   const handleAddStepModalClose = useCallback(() => {
     setIsAddStepModalOpen(false);
@@ -320,18 +564,22 @@ export default function BundleBuilderPage() {
     if (fetcher.data) {
       if ('success' in fetcher.data && fetcher.data.success) {
         if (fetcher.data.intent === "addStep" || fetcher.data.intent === "editStep") {
-          const stepData = fetcher.data as unknown as { success: true, step: BundleStep, intent: string };
+          const stepData = fetcher.data as { success: true, step: BundleStep, intent: string };
           handleAddStepModalClose();
           shopify.toast.show('Step saved successfully!');
           console.log("Bundle Step Data:", stepData.step);
         } else if (fetcher.data.intent === "publishBundle") {
-          const publishedBundleData = fetcher.data as unknown as { success: true, bundle: Bundle, intent: string };
+          const publishedBundleData = fetcher.data as { success: true, bundle: Bundle, intent: string };
           handlePublishModalClose();
           shopify.toast.show('Bundle published successfully!');
           console.log("Published Bundle Details:", publishedBundleData.bundle);
+        } else if (fetcher.data.intent === "updateDiscount") {
+          const updatedPricingData = fetcher.data as { success: true, pricing: BundlePricing, intent: string };
+          shopify.toast.show('Discount settings saved successfully!');
+          console.log("Updated Pricing Data:", updatedPricingData.pricing);
         }
       } else if ('error' in fetcher.data && fetcher.data.error) {
-        const errorData = fetcher.data as unknown as { success: false, error: string, intent?: string };
+        const errorData = fetcher.data as { success: false, error: string, intent?: string };
         shopify.toast.show(`Error: ${errorData.error}`, { isError: true });
         console.error("Action Error:", errorData.error);
         //hello
@@ -348,8 +596,8 @@ export default function BundleBuilderPage() {
     formData.append("bundleId", bundle.id);
     formData.append("stepName", stepName);
     formData.append("enabled", String(stepEnabled));
-    formData.append("selectedProducts", JSON.stringify(selectedProducts));
-    formData.append("selectedCollections", JSON.stringify(selectedCollections));
+    formData.append("selectedProducts", JSON.stringify(selectedProducts)); // Stringify for FormData
+    formData.append("selectedCollections", JSON.stringify(selectedCollections)); // Stringify for FormData
     formData.append("displayVariantsAsIndividual", String(displayVariantsAsIndividual));
     formData.append("conditionType", conditionType);
     formData.append("conditionValue", conditionValue);
@@ -422,6 +670,19 @@ export default function BundleBuilderPage() {
     }
   }, [shopify, selectedCollections]);
 
+  const handleSaveDiscount = useCallback(() => {
+    const formData = new FormData();
+    formData.append("intent", "updateDiscount");
+    formData.append("bundleId", bundle.id);
+    formData.append("enableDiscount", String(enableDiscount));
+    formData.append("discountMethod", discountType);
+    formData.append("discountOn", discountOn);
+    formData.append("minimumQuantity", minimumQuantity);
+    formData.append("fixedAmountOff", fixedAmountOff);
+    formData.append("percentageOff", percentageOff);
+    fetcher.submit(formData, { method: "post" });
+  }, [bundle.id, enableDiscount, discountType, discountOn, minimumQuantity, fixedAmountOff, percentageOff, fetcher]);
+
   return (
     <Page>
       <TitleBar title={bundle.name}>
@@ -465,6 +726,99 @@ export default function BundleBuilderPage() {
           </Card>
         </Layout.Section>
 
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <InlineStack align="space-between" blockAlign="center">
+                <Text as="h2" variant="headingMd">Discount & Pricing</Text>
+                <Checkbox label="Enable discount" checked={enableDiscount} onChange={setEnableDiscount} />
+              </InlineStack>
+
+              {enableDiscount && (
+                <BlockStack gap="400">
+                  <Text as="p" variant="bodyMd">
+                    Set up to 4 discount rules, applied from lowest to highest.
+                  </Text>
+                  <InlineStack>
+                    <Text as="span" variant="bodySm">
+                      <Badge tone="info">Tip:</Badge> Discounts are calculated based on the products in cart, make sure to add the "Default Product" quantity or amount while configuring discounts.
+                    </Text>
+                    </InlineStack>
+
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingMd">Discount Type</Text>
+                    <Select
+                      label="Discount Type"
+                      labelHidden
+                      options={[
+                        { label: 'Fixed Amount Off', value: 'fixed_amount_off' },
+                        { label: 'Percentage Off', value: 'percentage_off' },
+                        { label: 'Free Shipping', value: 'free_shipping' },
+                      ]}
+                      value={discountType}
+                      onChange={setDiscountType}
+                    />
+                  </BlockStack>
+
+                  <Card>
+                    <BlockStack gap="300">
+                      <InlineStack align="space-between" blockAlign="center">
+                        <Text as="h3" variant="headingMd">Rule #1</Text>
+                        <Button variant="plain" tone="critical">Remove</Button>
+                      </InlineStack>
+                      <InlineStack gap="200">
+                          <Select
+                          label="Discount on"
+                          options={[
+                            { label: 'Quantity', value: 'quantity' },
+                            { label: 'Amount', value: 'amount' },
+                          ]}
+                          value={discountOn}
+                          onChange={setDiscountOn}
+                        />
+                          <TextField
+                          label="Minimum quantity"
+                          value={minimumQuantity}
+                          onChange={setMinimumQuantity}
+                            autoComplete="off"
+                            type="number"
+                          />
+                        {discountType === 'fixed_amount_off' && (
+                          <TextField
+                            label="Fixed Amount Off"
+                            value={fixedAmountOff}
+                            onChange={setFixedAmountOff}
+                            autoComplete="off"
+                            type="number"
+                            prefix="$"
+                          />
+                        )}
+                        {discountType === 'percentage_off' && (
+                          <TextField
+                            label="Percentage Off"
+                            value={percentageOff}
+                            onChange={setPercentageOff}
+                            autoComplete="off"
+                            type="number"
+                            suffix="%"
+                          />
+                        )}
+                        {discountType === 'free_shipping' && (
+                          // No additional fields needed for Free Shipping based on the image, 
+                          // but we keep the structure for consistency if future fields are added.
+                          <></>
+                        )}
+                      </InlineStack>
+                    </BlockStack>
+                  </Card>
+
+                  <Button fullWidth icon="CirclePlusIcon">Add rule</Button>
+                </BlockStack>
+              )}
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+
         <Layout.Section variant="oneThird">
           <BlockStack gap="500">
             <Card>
@@ -475,6 +829,11 @@ export default function BundleBuilderPage() {
                   <Button variant="primary" onClick={() => setIsPublishModalOpen(true)}>Publish</Button>
                 </InlineStack>
               </BlockStack>
+            </Card>
+            <Card>
+              <Button fullWidth variant="primary" onClick={handleSaveDiscount}>
+                Save Discount Settings
+              </Button>
             </Card>
           </BlockStack>
         </Layout.Section>

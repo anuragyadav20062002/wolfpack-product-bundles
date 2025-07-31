@@ -1,31 +1,27 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "a383172f42c2ab283901a663d485a03d"
-name = "Wolfpack: Product Bundles"
-handle = "wolfpack-product-bundles-4"
-application_url = "https://wolfpack-product-bundles-1.onrender.com"
+client_id = "bfda5624970c7ada838998eb951e9e85"
+name = "bundle-discount-functions"
+handle = "bundle-discount-functions-1"
+application_url = "https://wolfpack-product-bundles-2.onrender.com"
 embedded = true
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true
+include_config_on_deploy = true
 
 [webhooks]
-api_version = "2025-04"
-
-  [[webhooks.subscriptions]]
-  uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
-  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+api_version = "2025-07"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_products"
+scopes = "write_discounts"
 
 [auth]
 redirect_urls = [
-  "https://wolfpack-product-bundles-1.onrender.com/auth/callback",
-  "https://wolfpack-product-bundles-1.onrender.com/auth/shopify/callback",
-  "https://wolfpack-product-bundles-1.onrender.com/api/auth/callback"
+  "https://wolfpack-product-bundles-2.onrender.com/auth/callback",
+  "https://wolfpack-product-bundles-2.onrender.com/auth/shopify/callback",
+  "https://wolfpack-product-bundles-2.onrender.com/api/auth/callback"
 ]
 
 [pos]

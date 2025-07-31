@@ -34,9 +34,10 @@ enum JobType {
   sync
 }
 
-enum PricingType {
-  percentage
-  fixed
+enum DiscountMethodType {
+  fixed_amount_off
+  percentage_off
+  free_shipping
 }
 
 model Session {
@@ -62,20 +63,21 @@ model Session {
 }
 
 model Bundle {
-  id          String         @id @default(cuid())
-  name        String
-  description String?
-  shopId      String
-  status      BundleStatus   @default(draft)
-  active      Boolean        @default(false)
-  publishedAt DateTime?
-  settings    Json?
-  matching    Json?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  steps       BundleStep[]
-  pricing     BundlePricing?
-  analytics   BundleAnalytics[]
+  id              String         @id @default(cuid())
+  name            String
+  description     String?
+  shopId          String
+  shopifyProductId String? // New field to store the Shopify Product ID (GID)
+  status          BundleStatus   @default(draft)
+  active          Boolean        @default(false)
+  publishedAt     DateTime?
+  settings        Json?
+  matching        Json?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  steps           BundleStep[]
+  pricing         BundlePricing?
+  analytics       BundleAnalytics[]
 
   @@index([shopId])
   @@index([status])
@@ -123,18 +125,19 @@ model StepProduct {
 }
 
 model BundlePricing {
-  id          String      @id @default(uuid())
-  bundleId    String      @unique
-  bundle      Bundle      @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  type        PricingType @default(percentage)
-  status      Boolean     @default(false)
-  rules       Json?
-  showFooter  Boolean     @default(true)
-  showBar     Boolean     @default(false)
-  messages    Json?
-  published   Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id              String             @id @default(uuid())
+  bundleId        String             @unique
+  bundle          Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  enableDiscount  Boolean            @default(false)
+  discountMethod  DiscountMethodType @default(fixed_amount_off)
+  rules           Json? // Stores an array of discount rule objects
+  discountId      String? // Shopify discount ID
+  showFooter      Boolean            @default(true)
+  showBar         Boolean            @default(false)
+  messages        Json?
+  published       Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@index([bundleId])
 }
