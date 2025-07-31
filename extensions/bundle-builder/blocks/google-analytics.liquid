@@ -1,0 +1,18 @@
+{% comment %}
+  This will inject your gtag snippet into the storefront when enabled.
+{% endcomment %}
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DY73B9RHM4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-DY73B9RHM4');
+</script>
+{% schema %}
+{
+  "name": "Google Analytics",
+  "target": "head",
+  "settings": []
+}
+{% endschema %}
