@@ -23,6 +23,7 @@
     "node": "^18.20 || ^20.10 || >=21.0.0"
   },
   "dependencies": {
+    "@heymantle/client": "^1.1.59",
     "@prisma/adapter-pg": "^6.10.1",
     "@prisma/client": "^6.10.1",
     "@prisma/extension-accelerate": "^2.0.1",

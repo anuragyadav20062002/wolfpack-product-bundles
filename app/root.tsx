@@ -16,7 +16,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <CrispChat />
         <script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-DY73B9RHM4"
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS_GTAG_ID}`}
         ></script>
         <script
           dangerouslySetInnerHTML={{
@@ -25,7 +25,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
 
-              gtag('config', 'G-DY73B9RHM4');
+              gtag('config', '${process.env.GOOGLE_ANALYTICS_GTAG_ID}');
             `,
           }}
         />

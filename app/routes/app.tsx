@@ -6,11 +6,26 @@ import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 
 import { authenticate } from "../shopify.server";
+import { identifyMerchant } from "../mantle.server"; // Import identifyMerchant
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
+
+  console.log("Shopify Session Object:", session); // Add this line to inspect the session object
+
+  // Identify merchant with Mantle
+  if (session?.shop && session?.accessToken) {
+    const customerApiToken = await identifyMerchant(
+      session.shop,
+      session.shop,
+      session.accessToken,
+      // session.user?.name, // Temporarily comment out to resolve immediate errors
+      // session.user?.email // Temporarily comment out to resolve immediate errors
+    );
+    console.log("Mantle Customer API Token:", customerApiToken);
+  }
 
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
 };
