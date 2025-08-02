@@ -2,11 +2,13 @@ query CartLinesDiscountsGenerateRun {
   cart {
     lines {
       id
+      quantity
       merchandise {
         ... on ProductVariant {
           id
           product {
             id
+            title
             metafield(namespace: "bundle_discounts", key: "discount_settings") {
               value
             }
@@ -19,5 +21,11 @@ query CartLinesDiscountsGenerateRun {
         }
       }
     }
+    deliveryGroups {
+      id
+    }
+  }
+  discount {
+    discountClasses
   }
 }

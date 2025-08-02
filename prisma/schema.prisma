@@ -2,8 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 // Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
@@ -41,67 +40,67 @@ enum DiscountMethodType {
 }
 
 model Session {
-  id             String    @id
-  shop           String
-  state          String
-  isOnline       Boolean   @default(false)
-  scope          String?
-  expires        DateTime?
-  accessToken    String
-  userId         BigInt?
-  firstName      String?
-  lastName       String?
-  email          String?
-  accountOwner   Boolean   @default(false)
-  locale         String?
-  collaborator   Boolean?  @default(false)
-  emailVerified  Boolean?  @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([shop])
 }
 
 model Bundle {
-  id              String         @id @default(cuid())
-  name            String
-  description     String?
-  shopId          String
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  shopId           String
   shopifyProductId String? // New field to store the Shopify Product ID (GID)
-  status          BundleStatus   @default(draft)
-  active          Boolean        @default(false)
-  publishedAt     DateTime?
-  settings        Json?
-  matching        Json?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  steps           BundleStep[]
-  pricing         BundlePricing?
-  analytics       BundleAnalytics[]
+  status           BundleStatus      @default(draft)
+  active           Boolean           @default(false)
+  publishedAt      DateTime?
+  settings         Json?
+  matching         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  steps            BundleStep[]
+  pricing          BundlePricing?
+  analytics        BundleAnalytics[]
 
   @@index([shopId])
   @@index([status])
 }
 
 model BundleStep {
-  id                        String        @id @default(uuid())
-  name                      String
-  icon                      String?       @default("box")
-  position                  Int           @default(0)
-  minQuantity               Int           @default(1)
-  maxQuantity               Int           @default(1)
-  enabled                   Boolean       @default(true)
-  productCategory           String?
-  collections               Json?
-  products                  Json?
-  displayVariantsAsIndividual Boolean @default(false)
-  conditionType             String?
-  conditionValue            Int?
-  bundleId                  String
-  bundle                    Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  StepProduct               StepProduct[]
-  createdAt                 DateTime      @default(now())
-  updatedAt                 DateTime      @updatedAt
+  id                          String        @id @default(uuid())
+  name                        String
+  icon                        String?       @default("box")
+  position                    Int           @default(0)
+  minQuantity                 Int           @default(1)
+  maxQuantity                 Int           @default(1)
+  enabled                     Boolean       @default(true)
+  productCategory             String?
+  collections                 Json?
+  products                    Json?
+  displayVariantsAsIndividual Boolean       @default(false)
+  conditionType               String?
+  conditionValue              Int?
+  bundleId                    String
+  bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  StepProduct                 StepProduct[]
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
 
   @@index([bundleId])
 }
@@ -110,7 +109,7 @@ model StepProduct {
   id          String     @id @default(uuid())
   stepId      String
   step        BundleStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
-  productId   String     // Shopify product ID
+  productId   String // Shopify product ID
   title       String
   imageUrl    String?
   variants    Json?
@@ -125,31 +124,31 @@ model StepProduct {
 }
 
 model BundlePricing {
-  id              String             @id @default(uuid())
-  bundleId        String             @unique
-  bundle          Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  enableDiscount  Boolean            @default(false)
-  discountMethod  DiscountMethodType @default(fixed_amount_off)
-  rules           Json? // Stores an array of discount rule objects
-  discountId      String? // Shopify discount ID
-  showFooter      Boolean            @default(true)
-  showBar         Boolean            @default(false)
-  messages        Json?
-  published       Boolean            @default(false)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id             String             @id @default(uuid())
+  bundleId       String             @unique
+  bundle         Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  enableDiscount Boolean            @default(false)
+  discountMethod DiscountMethodType @default(fixed_amount_off)
+  rules          Json? // Stores an array of discount rule objects
+  discountId     String? // Shopify discount ID
+  showFooter     Boolean            @default(true)
+  showBar        Boolean            @default(false)
+  messages       Json?
+  published      Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   @@index([bundleId])
 }
 
 model BundleAnalytics {
-  id          String   @id @default(uuid())
-  bundleId    String
-  bundle      Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  shopId      String
-  event       String   // view, add_to_cart, purchase
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  bundleId  String
+  bundle    Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  shopId    String
+  event     String // view, add_to_cart, purchase
+  metadata  Json?
+  createdAt DateTime @default(now())
 
   @@index([bundleId])
   @@index([shopId])
@@ -187,13 +186,13 @@ model QueuedJob {
 
 // Add a model for storing GDPR compliance records
 model ComplianceRecord {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   shop        String
-  type        String   // customer_data_request, customer_redact, shop_redact
+  type        String // customer_data_request, customer_redact, shop_redact
   payload     Json
-  status      String   @default("pending") // pending, processing, completed
+  status      String    @default("pending") // pending, processing, completed
   processedAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([shop])
   @@index([type])

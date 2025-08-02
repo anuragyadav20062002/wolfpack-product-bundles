@@ -3,12 +3,12 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://wolfpack-product-bundles-2.onrender.com"
+application_url = "https://gorgeous-speaks-metropolitan-tomorrow.trycloudflare.com"
 embedded = true
 
 [build]
-automatically_update_urls_on_dev = true
 include_config_on_deploy = true
+automatically_update_urls_on_dev = true
 
 [webhooks]
 api_version = "2025-07"
@@ -19,9 +19,9 @@ scopes = "write_discounts, write_products"
 
 [auth]
 redirect_urls = [
-  "https://wolfpack-product-bundles-2.onrender.com/auth/callback",
-  "https://wolfpack-product-bundles-2.onrender.com/auth/shopify/callback",
-  "https://wolfpack-product-bundles-2.onrender.com/api/auth/callback"
+  "https://gorgeous-speaks-metropolitan-tomorrow.trycloudflare.com/auth/callback",
+  "https://gorgeous-speaks-metropolitan-tomorrow.trycloudflare.com/auth/shopify/callback",
+  "https://gorgeous-speaks-metropolitan-tomorrow.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

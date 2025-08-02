@@ -1,50 +1,32 @@
 import {
   DeliveryDiscountSelectionStrategy,
   DiscountClass,
-  DeliveryInput,
   CartDeliveryOptionsDiscountsGenerateRunResult,
   Input_CartLinesDiscountsGenerateRun as Input,
 } from "../generated/api";
-
-interface DiscountRule {
-  discountOn: string;
-  minimumQuantity: number;
-  fixedAmountOff: number;
-  percentageOff: number;
-}
-
-interface DiscountSettings {
-  enableDiscount: boolean;
-  discountMethod: string;
-  rules: DiscountRule[];
-}
+import {
+  getBundleDataFromCart,
+  checkCartMeetsBundleConditions,
+} from "./bundle-utils";
 
 export function cartDeliveryOptionsDiscountsGenerateRun(
   input: Input,
 ): CartDeliveryOptionsDiscountsGenerateRunResult {
   const operations = [];
 
-  // Find a product with discount settings metafield (assuming the bundle product is in the cart)
-  const productWithDiscountSettings = input.cart.lines.find(line =>
-    line.merchandise.__typename === "ProductVariant" &&
-    line.merchandise.product &&
-    line.merchandise.product.metafield?.value
-  );
-
-  if (!productWithDiscountSettings) {
-    return { operations: [] }; // No discount settings found on any product
+  // Get bundle data from cart
+  const bundleData = getBundleDataFromCart(input.cart);
+  if (!bundleData) {
+    return { operations: [] };
   }
 
-  let discountSettings: DiscountSettings;
-  try {
-    discountSettings = JSON.parse(productWithDiscountSettings.merchandise.product.metafield.value);
-  } catch (error) {
-    console.error("Error parsing discount settings metafield:", error);
-    return { operations: [] }; // Invalid JSON in metafield
-  }
-
-  if (!discountSettings.enableDiscount || discountSettings.discountMethod !== 'free_shipping' || !discountSettings.rules || discountSettings.rules.length === 0) {
-    return { operations: [] }; // Discount not enabled, not free shipping, or no rules defined
+  if (
+    !bundleData.pricing?.enableDiscount ||
+    bundleData.pricing.discountMethod !== "free_shipping" ||
+    !bundleData.pricing.rules ||
+    bundleData.pricing.rules.length === 0
+  ) {
+    return { operations: [] };
   }
 
   const hasShippingDiscountClass = input.discount.discountClasses.includes(
@@ -55,20 +37,21 @@ export function cartDeliveryOptionsDiscountsGenerateRun(
     return { operations: [] };
   }
 
-  const rule = discountSettings.rules[0]; // Assuming one rule for free shipping for now
-
-  // Check if minimum quantity is met (if applicable for free shipping)
-  const totalQuantity = input.cart.lines.reduce((sum, line) => sum + line.quantity, 0);
-
-  if (rule.discountOn === 'quantity' && totalQuantity < rule.minimumQuantity) {
-    return { operations: [] }; // Minimum quantity not met
+  // Check if cart meets bundle conditions for free shipping
+  const cartMeetsConditions = checkCartMeetsBundleConditions(
+    input.cart,
+    bundleData,
+  );
+  if (!cartMeetsConditions) {
+    return { operations: [] };
   }
 
+  // Apply free shipping discount
   operations.push({
     deliveryDiscountsAdd: {
       candidates: [
         {
-          message: "FREE SHIPPING",
+          message: "Bundle Free Shipping",
           targets: [
             {
               deliveryGroup: {
