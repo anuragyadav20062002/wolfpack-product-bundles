@@ -57,7 +57,11 @@ export async function action({ request }: ActionFunctionArgs) {
     // For now, we'll just create the discount
 
     // Create new discount
-    const functionId = "8b585225-7750-405c-bfc3-7b1c463ca679";
+    const functionId = process.env.SHOPIFY_BUNDLE_DISCOUNT_FUNCTION_TS_ID;
+    if (!functionId) {
+      throw new Error("SHOPIFY_BUNDLE_DISCOUNT_FUNCTION_TS_ID environment variable not found");
+    }
+    
     const now = new Date();
     const startsAt = now.toISOString();
     const endsAt = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
@@ -68,13 +72,13 @@ export async function action({ request }: ActionFunctionArgs) {
           automaticAppDiscount: {
             title: "${discountTitle}"
             functionId: "${functionId}"
-            discountClasses: [PRODUCT]
+            discountClasses: [ORDER, PRODUCT, SHIPPING]
             startsAt: "${startsAt}"
             endsAt: "${endsAt}"
             combinesWith: {
-              orderDiscounts: false
-              productDiscounts: false
-              shippingDiscounts: false
+              orderDiscounts: true
+              productDiscounts: true
+              shippingDiscounts: true
             }
           }
         ) {

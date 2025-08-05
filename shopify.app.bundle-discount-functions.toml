@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://gorgeous-speaks-metropolitan-tomorrow.trycloudflare.com"
+application_url = "https://francis-requesting-olympics-maintained.trycloudflare.com"
 embedded = true
 
 [build]
@@ -19,9 +19,9 @@ scopes = "write_discounts, write_products"
 
 [auth]
 redirect_urls = [
-  "https://gorgeous-speaks-metropolitan-tomorrow.trycloudflare.com/auth/callback",
-  "https://gorgeous-speaks-metropolitan-tomorrow.trycloudflare.com/auth/shopify/callback",
-  "https://gorgeous-speaks-metropolitan-tomorrow.trycloudflare.com/api/auth/callback"
+  "https://francis-requesting-olympics-maintained.trycloudflare.com/auth/callback",
+  "https://francis-requesting-olympics-maintained.trycloudflare.com/auth/shopify/callback",
+  "https://francis-requesting-olympics-maintained.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

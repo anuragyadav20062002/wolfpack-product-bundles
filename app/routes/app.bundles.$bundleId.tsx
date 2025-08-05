@@ -355,10 +355,10 @@ export async function action({ request }: ActionFunctionArgs) {
       const shopIdData = await shopIdResponse.json();
       const shopGid = shopIdData.data.shop.id;
 
-      // Update shop metafield with all bundles
+      // Store bundle discount settings on individual products
       const allPublishedBundles = await db.bundle.findMany({
         where: { status: "active", shopId: session.shop },
-        include: { steps: true, pricing: true }, // Removed matching here since it's a string field
+        include: { steps: true, pricing: true },
       });
 
       // Helper function to safely parse JSON (same as in loader)
@@ -376,27 +376,81 @@ export async function action({ request }: ActionFunctionArgs) {
         return defaultValue;
       };
 
-      const metafieldValue = allPublishedBundles.map((b) => {
-        const steps = b.steps.map((s: BundleStepRaw) => ({
+      // Collect all product IDs that need bundle data
+      const productMetafields: Array<{ ownerId: string; bundleData: any }> = [];
+
+      for (const bundle of allPublishedBundles) {
+        const steps = bundle.steps.map((s: BundleStepRaw) => ({
           ...s,
           products: safeJsonParse(s.products, []),
           collections: safeJsonParse(s.collections, []),
         }));
-        return {
-          id: b.id,
-          name: b.name,
-          description: b.description,
-          status: b.status,
-          matching: safeJsonParse(b.matching, {}),
+        
+        const bundleData = {
+          id: bundle.id,
+          name: bundle.name,
+          description: bundle.description,
+          status: bundle.status,
+          matching: safeJsonParse(bundle.matching, {}),
           steps: steps,
-          pricing: b.pricing
+          pricing: bundle.pricing
             ? {
-                ...b.pricing,
-                rules: safeJsonParse(b.pricing.rules, null),
+                ...bundle.pricing,
+                rules: safeJsonParse(bundle.pricing.rules, null),
               }
             : null,
         };
-      });
+
+        // Add metafield for each product in each step
+        for (const step of steps) {
+          for (const product of step.products) {
+            productMetafields.push({
+              ownerId: product.id,
+              bundleData: bundleData,
+            });
+          }
+        }
+      }
+
+      // Store bundle data on products and also keep shop metafield for backwards compatibility
+      const metafieldInputs = [
+        // Shop metafield for backwards compatibility
+        {
+          ownerId: shopGid,
+          namespace: "custom",
+          key: "all_bundles",
+          type: "json",
+          value: JSON.stringify(allPublishedBundles.map((b) => {
+            const steps = b.steps.map((s: BundleStepRaw) => ({
+              ...s,
+              products: safeJsonParse(s.products, []),
+              collections: safeJsonParse(s.collections, []),
+            }));
+            return {
+              id: b.id,
+              name: b.name,
+              description: b.description,
+              status: b.status,
+              matching: safeJsonParse(b.matching, {}),
+              steps: steps,
+              pricing: b.pricing
+                ? {
+                    ...b.pricing,
+                    rules: safeJsonParse(b.pricing.rules, null),
+                  }
+                : null,
+            };
+          })),
+        },
+        // Product metafields for discount functions
+        ...productMetafields.map((pm) => ({
+          ownerId: pm.ownerId,
+          namespace: "bundle_discounts",
+          key: "discount_settings",
+          type: "json",
+          value: JSON.stringify(pm.bundleData),
+        })),
+      ];
 
       const metafieldResponse = await admin.graphql(
         `#graphql
@@ -416,15 +470,7 @@ export async function action({ request }: ActionFunctionArgs) {
           }`,
         {
           variables: {
-            metafields: [
-              {
-                ownerId: shopGid,
-                namespace: "custom",
-                key: "all_bundles",
-                type: "json",
-                value: JSON.stringify(metafieldValue),
-              },
-            ],
+            metafields: metafieldInputs,
           },
         },
       );
