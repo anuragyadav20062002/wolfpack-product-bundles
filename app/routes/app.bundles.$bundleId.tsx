@@ -278,12 +278,41 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (intent === "publishBundle") {
     const bundleId = formData.get("bundleId") as string;
-    const selectedVisibilityProducts = JSON.parse(
-      (formData.get("selectedVisibilityProducts") as string) || "[]",
-    );
-    const selectedVisibilityCollections = JSON.parse(
-      (formData.get("selectedVisibilityCollections") as string) || "[]",
-    );
+
+    // Safely parse the visibility data
+    let selectedVisibilityProducts: ResourcePickerProduct[] = [];
+    let selectedVisibilityCollections: ResourcePickerCollection[] = [];
+
+    try {
+      const productsData = formData.get("selectedVisibilityProducts");
+      console.log("Products data type:", typeof productsData);
+      console.log("Products data:", productsData);
+
+      if (productsData) {
+        if (typeof productsData === "string") {
+          selectedVisibilityProducts = JSON.parse(productsData);
+        } else {
+          // If it's already an object, use it directly
+          selectedVisibilityProducts = productsData as any;
+        }
+      }
+
+      const collectionsData = formData.get("selectedVisibilityCollections");
+      console.log("Collections data type:", typeof collectionsData);
+      console.log("Collections data:", collectionsData);
+
+      if (collectionsData) {
+        if (typeof collectionsData === "string") {
+          selectedVisibilityCollections = JSON.parse(collectionsData);
+        } else {
+          // If it's already an object, use it directly
+          selectedVisibilityCollections = collectionsData as any;
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing visibility data:", error);
+      return json({ error: "Invalid visibility data format" }, { status: 400 });
+    }
 
     if (
       typeof bundleId !== "string" ||
@@ -332,31 +361,44 @@ export async function action({ request }: ActionFunctionArgs) {
         include: { steps: true, pricing: true }, // Removed matching here since it's a string field
       });
 
+      // Helper function to safely parse JSON (same as in loader)
+      const safeJsonParse = (value: any, defaultValue: any = []) => {
+        if (!value) return defaultValue;
+        if (typeof value === "object") return value;
+        if (typeof value === "string") {
+          try {
+            return JSON.parse(value);
+          } catch (error) {
+            console.error("JSON parse error:", error);
+            return defaultValue;
+          }
+        }
+        return defaultValue;
+      };
+
       const metafieldValue = allPublishedBundles.map((b) => {
         const steps = b.steps.map((s: BundleStepRaw) => ({
           ...s,
-          products: s.products ? JSON.parse(s.products as string) : [],
-          collections: s.collections ? JSON.parse(s.collections as string) : [],
+          products: safeJsonParse(s.products, []),
+          collections: safeJsonParse(s.collections, []),
         }));
         return {
           id: b.id,
           name: b.name,
           description: b.description,
           status: b.status,
-          matching: b.matching ? JSON.parse(b.matching as string) : {}, // Parse raw matching string
+          matching: safeJsonParse(b.matching, {}),
           steps: steps,
           pricing: b.pricing
             ? {
                 ...b.pricing,
-                rules: b.pricing.rules
-                  ? JSON.parse(b.pricing.rules as string)
-                  : null,
+                rules: safeJsonParse(b.pricing.rules, null),
               }
             : null,
         };
       });
 
-      await admin.graphql(
+      const metafieldResponse = await admin.graphql(
         `#graphql
           mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
             metafieldsSet(metafields: $metafields) {
@@ -387,13 +429,37 @@ export async function action({ request }: ActionFunctionArgs) {
         },
       );
 
+      const metafieldData = (await metafieldResponse.json()) as any;
+
+      if (metafieldData.errors && metafieldData.errors.length > 0) {
+        console.error("Metafield Set GraphQL Errors:", metafieldData.errors);
+        throw new Error(
+          `Failed to save bundle metafield: ${metafieldData.errors.map((e: any) => e.message).join(", ")}`,
+        );
+      }
+
+      if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
+        console.error(
+          "Metafield Set User Errors:",
+          metafieldData.data.metafieldsSet.userErrors,
+        );
+        throw new Error(
+          `Failed to save bundle metafield: ${metafieldData.data.metafieldsSet.userErrors.map((e: any) => e.message).join(", ")}`,
+        );
+      }
+
       // Remove all Shopify Admin GraphQL API discount creation logic
       // Prepare for future Shopify Functions-based discount logic
       // (No discount creation logic here for now)
       return json({ success: true, bundle: updatedBundle, intent: intent });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error publishing bundle:", error);
-      return json({ error: "Failed to publish bundle" }, { status: 500 });
+      return json(
+        {
+          error: error.message || "Failed to publish bundle",
+        },
+        { status: 500 },
+      );
     }
   }
 
@@ -472,113 +538,9 @@ export async function action({ request }: ActionFunctionArgs) {
         });
       }
 
-      // Get bundle details to check for shopifyProductId
-      const currentBundle = await db.bundle.findUnique({
-        where: { id: bundleId },
-        select: { shopifyProductId: true, name: true, description: true },
-      });
-
-      let shopifyProductId = currentBundle?.shopifyProductId;
-
-      // Create Shopify Product if it doesn't exist
-      if (!shopifyProductId) {
-        const productCreateMutation = `#graphql
-          mutation productCreate($input: ProductInput!) {
-            productCreate(input: $input) {
-              product {
-                id
-                title
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }`;
-
-        const productTitle =
-          currentBundle?.name || `Bundle ${bundleId.substring(0, 8)}`;
-
-        const productVariables = {
-          input: {
-            title: productTitle,
-            status: "DRAFT", // We don't want to publish this product to storefront
-          },
-        };
-
-        console.log("Product Create Mutation:", productCreateMutation);
-        console.log(
-          "Product Create Variables:",
-          JSON.stringify(productVariables, null, 2),
-        );
-
-        const { data, errors: productErrors } = await (admin.graphql as any)(
-          productCreateMutation,
-          { variables: productVariables },
-        );
-
-        if (productErrors && productErrors.length > 0) {
-          console.error("Product Creation GraphQL Errors:", productErrors);
-          throw new Error(
-            `Failed to create Shopify product: ${productErrors.map((e: any) => e.message).join(", ")}`,
-          );
-        }
-
-        shopifyProductId = data.productCreate.product.id;
-
-        // Update the Bundle record with the new Shopify Product ID
-        await db.bundle.update({
-          where: { id: bundleId },
-          data: { shopifyProductId: shopifyProductId },
-        });
-      }
-
-      // Now, save discount settings as a metafield on the Shopify Product
-      const metafieldValue = {
-        enableDiscount,
-        discountMethod,
-        rules: rules,
-      };
-
-      const metafieldsSetMutation = `#graphql
-        mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-          metafieldsSet(metafields: $metafields) {
-            metafields {
-              id
-              key
-              namespace
-              value
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }`;
-
-      const metafieldVariables = {
-        metafields: [
-          {
-            ownerId: shopifyProductId,
-            namespace: "bundle_discounts", // Custom namespace for your app
-            key: "discount_settings",
-            type: "json",
-            value: JSON.stringify(metafieldValue),
-          },
-        ],
-      };
-
-      const { errors: metafieldErrors } = await (admin.graphql as any)(
-        metafieldsSetMutation,
-        { variables: metafieldVariables },
-      );
-
-      if (metafieldErrors && metafieldErrors.length > 0) {
-        console.error("Metafield Set GraphQL Errors:", metafieldErrors);
-        throw new Error(
-          `Failed to save discount metafield: ${metafieldErrors.map((e: any) => e.message).join(", ")}`,
-        );
-      }
+      // Discount settings are now stored in the database via BundlePricing
+      // No need to create Shopify products or metafields for discount settings
+      // The discount settings will be included in the bundle data when published
 
       return json({ success: true, pricing: updatedPricing, intent: intent });
     } catch (error: any) {
@@ -651,6 +613,18 @@ export default function BundleBuilderPage() {
     }
   }, [bundle.pricing]);
 
+  // Initialize publish modal with existing bundle matching data
+  useEffect(() => {
+    if (bundle.parsedMatching) {
+      setSelectedVisibilityProducts(
+        bundle.parsedMatching.selectedVisibilityProducts || [],
+      );
+      setSelectedVisibilityCollections(
+        bundle.parsedMatching.selectedVisibilityCollections || [],
+      );
+    }
+  }, [bundle.parsedMatching]);
+
   // handleModalClose definition moved above useEffect for proper order
   const handleAddStepModalClose = useCallback(() => {
     setIsAddStepModalOpen(false);
@@ -667,8 +641,6 @@ export default function BundleBuilderPage() {
 
   const handlePublishModalClose = useCallback(() => {
     setIsPublishModalOpen(false);
-    setSelectedVisibilityProducts([]);
-    setSelectedVisibilityCollections([]);
     setPublishTab(0);
   }, []);
 
