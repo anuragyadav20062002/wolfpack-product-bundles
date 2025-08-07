@@ -4,12 +4,13 @@ query CartLinesDiscountsGenerateRun {
       id
       quantity
       merchandise {
+        __typename
         ... on ProductVariant {
           id
           product {
             id
             title
-            metafield(namespace: "bundle_discounts", key: "discount_settings") {
+            metafield(namespace: "custom", key: "bundle_discount_data") {
               value
             }
           }

@@ -9,6 +9,8 @@ import {
 } from "../generated/api";
 import {
   getAllBundleDataFromCart,
+  getAllBundleDataFromShop,
+  getBundleDataFromDiscountConfig,
   checkCartMeetsBundleConditions,
   getApplicableDiscountRule,
   BundleMatchResult,
@@ -38,8 +40,47 @@ export function cartLinesDiscountsGenerateRun(
 
   const operations = [];
 
-  // Get all bundle data from cart
-  const bundles = getAllBundleDataFromCart(input.cart);
+  // Temporary hardcoded bundle for testing - will be replaced with dynamic config
+  const bundles = [{
+    id: "test-bundle",
+    name: "Test Bundle", 
+    steps: [
+      {
+        id: "step1",
+        name: "Perfume 1",
+        products: [
+          { id: "gid://shopify/Product/10203665334566", title: "Citrus Breeze" },
+          { id: "gid://shopify/Product/10203665105190", title: "Crystal Lagoon" },
+          { id: "gid://shopify/Product/10203665203494", title: "Warm Desert" }
+        ],
+        collections: [],
+        minQuantity: 1,
+        maxQuantity: 0
+      },
+      {
+        id: "step2", 
+        name: "Perfume 2",
+        products: [
+          { id: "gid://shopify/Product/10203665006886", title: "Enchanted Dawn" },
+          { id: "gid://shopify/Product/10203664843046", title: "Lush Blossom" },
+          { id: "gid://shopify/Product/10203664908582", title: "Mystic Amber" }
+        ],
+        collections: [],
+        minQuantity: 1,
+        maxQuantity: 0
+      }
+    ],
+    pricing: {
+      enableDiscount: true,
+      discountMethod: "percentage_off",
+      rules: [{
+        discountOn: "quantity",
+        minimumQuantity: 2,
+        fixedAmountOff: 0,
+        percentageOff: 20
+      }]
+    }
+  }];
   console.log("📦 Found bundles:", bundles.length);
   
   if (bundles.length === 0) {
@@ -76,10 +117,24 @@ export function cartLinesDiscountsGenerateRun(
 
     // Check if cart meets bundle conditions
     const matchResult = checkCartMeetsBundleConditions(input.cart, bundleData);
-    console.log("Bundle match result:", {
+    console.log("🔍 DETAILED Bundle match result:", {
       meetsConditions: matchResult.meetsConditions,
       totalQuantity: matchResult.totalBundleQuantity,
-      matchingLines: matchResult.matchingLines.length
+      matchingLinesCount: matchResult.matchingLines.length,
+      cartLinesDetails: input.cart.lines.map((line: any, index: number) => ({
+        index: index + 1,
+        id: line.id,
+        quantity: line.quantity,
+        productId: line.merchandise?.product?.id,
+        productTitle: line.merchandise?.product?.title,
+        merchandiseType: line.merchandise?.__typename
+      })),
+      bundleSteps: bundleData.steps.map(step => ({
+        id: step.id,
+        name: step.name,
+        productIds: step.products.map(p => p.id),
+        minQuantity: step.minQuantity
+      }))
     });
 
     if (!matchResult.meetsConditions) {

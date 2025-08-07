@@ -144,65 +144,140 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     try {
       const FUNCTION_ID = "1a554c48-0d1c-4c77-8971-12152d1613d3";
 
-      // Create automatic discount for cart lines (ORDER/PRODUCT discounts)
-      const cartLinesDiscountResponse = await admin.graphql(
+      // First check if discounts already exist
+      const existingDiscountsResponse = await admin.graphql(
         `#graphql
-        mutation automaticDiscountCreate($discount: DiscountAutomaticAppInput!) {
-          discountAutomaticAppCreate(automaticAppDiscount: $discount) {
-            automaticAppDiscount {
-              discountId
-              title
-              status
-              createdAt
-            }
-            userErrors {
-              field
-              message
+        query {
+          automaticDiscountNodes(first: 50) {
+            edges {
+              node {
+                id
+                automaticDiscount {
+                  ... on DiscountAutomaticApp {
+                    title
+                    status
+                  }
+                }
+              }
             }
           }
-        }`,
-        {
-          variables: {
-            discount: {
-              title: "Bundle Discounts - Cart Lines",
-              functionId: FUNCTION_ID,
-              startsAt: new Date().toISOString(),
-            },
-          },
-        }
+        }`
       );
 
-      const cartLinesData = await cartLinesDiscountResponse.json();
+      const existingData = await existingDiscountsResponse.json();
+      console.log("🔥 Full existing discounts response:", JSON.stringify(existingData, null, 2));
+      
+      const existingTitles = existingData.data?.automaticDiscountNodes?.edges
+        ?.map((edge: any) => edge.node?.automaticDiscount?.title)
+        ?.filter(Boolean) || [];
 
-      // Create automatic discount for delivery options (SHIPPING discounts)
-      const deliveryDiscountResponse = await admin.graphql(
-        `#graphql
-        mutation automaticDiscountCreate($discount: DiscountAutomaticAppInput!) {
-          discountAutomaticAppCreate(automaticAppDiscount: $discount) {
-            automaticAppDiscount {
-              discountId
-              title
-              status
-              createdAt
+      console.log("🔥 Existing discount titles:", existingTitles);
+
+      // Skip creation if discounts already exist
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/T/, ' ').replace(/:/g, '-');
+      const cartLinesTitle = "Bundle Discounts - Cart Lines";
+      const shippingTitle = "Bundle Discounts - Free Shipping";
+      
+      // If we need to create new ones, use unique titles
+      const uniqueCartLinesTitle = `Bundle Discounts - Cart Lines ${timestamp}`;
+      const uniqueShippingTitle = `Bundle Discounts - Free Shipping ${timestamp}`;
+      
+      console.log("🔥 Checking for cart lines title:", cartLinesTitle, "exists:", existingTitles.includes(cartLinesTitle));
+      console.log("🔥 Checking for shipping title:", shippingTitle, "exists:", existingTitles.includes(shippingTitle));
+      
+      if (existingTitles.includes(cartLinesTitle) && existingTitles.includes(shippingTitle)) {
+        console.log("🔥 Both discounts already exist, returning early");
+        return json({
+          success: true,
+          message: "Bundle discounts already exist",
+          skipped: true
+        });
+      }
+
+      let cartLinesData = null;
+      let deliveryData = null;
+
+      // Create automatic discount for cart lines (ORDER/PRODUCT discounts) only if it doesn't exist
+      if (!existingTitles.includes(cartLinesTitle)) {
+        console.log("🔥 Creating cart lines discount:", cartLinesTitle);
+        const cartLinesDiscountResponse = await admin.graphql(
+          `#graphql
+          mutation automaticDiscountCreate($discount: DiscountAutomaticAppInput!) {
+            discountAutomaticAppCreate(automaticAppDiscount: $discount) {
+              automaticAppDiscount {
+                discountId
+                title
+                status
+                createdAt
+              }
+              userErrors {
+                field
+                message
+              }
             }
-            userErrors {
-              field
-              message
-            }
+          }`,
+          {
+            variables: {
+              discount: {
+                title: uniqueCartLinesTitle,
+                functionId: FUNCTION_ID,
+                startsAt: new Date().toISOString(),
+                discountClasses: ["ORDER", "PRODUCT"],
+                combinesWith: {
+                  orderDiscounts: false,
+                  productDiscounts: false,
+                  shippingDiscounts: true
+                },
+              },
+            },
           }
-        }`,
-        {
-          variables: {
-            discount: {
-              title: "Bundle Discounts - Free Shipping",
-              functionId: FUNCTION_ID,
-              startsAt: new Date().toISOString(),
-            },
-          },
-        }
-      );
+        );
+        cartLinesData = await cartLinesDiscountResponse.json();
+      } else {
+        console.log("🔥 Cart Lines discount already exists, skipping...");
+        cartLinesData = { data: { discountAutomaticAppCreate: { userErrors: [] } } };
+      }
 
-      const deliveryData = await deliveryDiscountResponse.json();
+      // Create automatic discount for delivery options (SHIPPING discounts) only if it doesn't exist
+      if (!existingTitles.includes(shippingTitle)) {
+        console.log("🔥 Creating shipping discount:", shippingTitle);
+        const deliveryDiscountResponse = await admin.graphql(
+          `#graphql
+          mutation automaticDiscountCreate($discount: DiscountAutomaticAppInput!) {
+            discountAutomaticAppCreate(automaticAppDiscount: $discount) {
+              automaticAppDiscount {
+                discountId
+                title
+                status
+                createdAt
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }`,
+          {
+            variables: {
+              discount: {
+                title: uniqueShippingTitle,
+                functionId: FUNCTION_ID,
+                startsAt: new Date().toISOString(),
+                discountClasses: ["SHIPPING"],
+                combinesWith: {
+                  orderDiscounts: true,
+                  productDiscounts: true,
+                  shippingDiscounts: false
+                },
+              },
+            },
+          }
+        );
+        deliveryData = await deliveryDiscountResponse.json();
+      } else {
+        console.log("🔥 Shipping discount already exists, skipping...");
+        deliveryData = { data: { discountAutomaticAppCreate: { userErrors: [] } } };
+      }
 
       // Check for errors
       const cartLinesErrors = cartLinesData.data?.discountAutomaticAppCreate?.userErrors || [];

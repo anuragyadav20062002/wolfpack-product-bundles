@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://francis-requesting-olympics-maintained.trycloudflare.com"
+application_url = "https://ships-average-toolbox-charter.trycloudflare.com"
 embedded = true
 
 [build]
@@ -11,7 +11,7 @@ include_config_on_deploy = true
 automatically_update_urls_on_dev = true
 
 [webhooks]
-api_version = "2025-07"
+api_version = "2025-04"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -19,9 +19,9 @@ scopes = "write_discounts, write_products"
 
 [auth]
 redirect_urls = [
-  "https://francis-requesting-olympics-maintained.trycloudflare.com/auth/callback",
-  "https://francis-requesting-olympics-maintained.trycloudflare.com/auth/shopify/callback",
-  "https://francis-requesting-olympics-maintained.trycloudflare.com/api/auth/callback"
+  "https://ships-average-toolbox-charter.trycloudflare.com/auth/callback",
+  "https://ships-average-toolbox-charter.trycloudflare.com/auth/shopify/callback",
+  "https://ships-average-toolbox-charter.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

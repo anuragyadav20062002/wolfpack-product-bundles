@@ -486,8 +486,8 @@ export async function action({ request }: ActionFunctionArgs) {
         // Product metafields for discount functions
         ...productMetafields.map((pm) => ({
           ownerId: pm.ownerId,
-          namespace: "bundle_discounts",
-          key: "discount_settings",
+          namespace: "custom",
+          key: "bundle_discount_data",
           type: "json",
           value: JSON.stringify(pm.bundleData),
         })),
