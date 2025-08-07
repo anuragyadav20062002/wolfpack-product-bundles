@@ -18,7 +18,14 @@ query CartLinesDiscountsGenerateRun {
       cost {
         subtotalAmount {
           amount
+          currencyCode
         }
+      }
+    }
+    cost {
+      subtotalAmount {
+        amount
+        currencyCode
       }
     }
     deliveryGroups {

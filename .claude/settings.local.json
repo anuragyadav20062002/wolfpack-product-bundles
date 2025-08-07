@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:shopify.dev)",
+      "WebFetch(domain:shopify.dev)",
+      "WebFetch(domain:shopify.dev)"
+    ],
+    "deny": []
+  }
+}

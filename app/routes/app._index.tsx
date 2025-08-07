@@ -16,6 +16,7 @@ import {
   Tooltip,
   Avatar,
   Image,
+  Banner,
   // Modal,
 } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
@@ -93,13 +94,155 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }),
   );
 
-  return json({ bundles: bundlesWithUrls });
+  // Check existing automatic discounts for bundle functions
+  const FUNCTION_ID = "1a554c48-0d1c-4c77-8971-12152d1613d3";
+  let automaticDiscounts = [];
+  try {
+    const discountResponse = await admin.graphql(
+      `#graphql
+      query {
+        automaticDiscountNodes(first: 50) {
+          edges {
+            node {
+              id
+              automaticDiscount {
+                ... on DiscountAutomaticApp {
+                  title
+                  status
+                  createdAt
+                  functionId
+                  discountId
+                }
+              }
+            }
+          }
+        }
+      }`
+    );
+    const discountData = await discountResponse.json();
+    automaticDiscounts = discountData.data?.automaticDiscountNodes?.edges?.filter((edge: any) =>
+      edge.node?.automaticDiscount?.functionId === FUNCTION_ID
+    ) || [];
+  } catch (error) {
+    console.error("Error fetching automatic discounts:", error);
+  }
+
+  return json({ 
+    bundles: bundlesWithUrls, 
+    automaticDiscounts,
+    functionId: FUNCTION_ID,
+    needsDiscounts: automaticDiscounts.length === 0
+  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  if (intent === "createAutomaticDiscounts") {
+    try {
+      const FUNCTION_ID = "1a554c48-0d1c-4c77-8971-12152d1613d3";
+
+      // Create automatic discount for cart lines (ORDER/PRODUCT discounts)
+      const cartLinesDiscountResponse = await admin.graphql(
+        `#graphql
+        mutation automaticDiscountCreate($discount: DiscountAutomaticAppInput!) {
+          discountAutomaticAppCreate(automaticAppDiscount: $discount) {
+            automaticAppDiscount {
+              discountId
+              title
+              status
+              createdAt
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }`,
+        {
+          variables: {
+            discount: {
+              title: "Bundle Discounts - Cart Lines",
+              functionId: FUNCTION_ID,
+              startsAt: new Date().toISOString(),
+            },
+          },
+        }
+      );
+
+      const cartLinesData = await cartLinesDiscountResponse.json();
+
+      // Create automatic discount for delivery options (SHIPPING discounts)
+      const deliveryDiscountResponse = await admin.graphql(
+        `#graphql
+        mutation automaticDiscountCreate($discount: DiscountAutomaticAppInput!) {
+          discountAutomaticAppCreate(automaticAppDiscount: $discount) {
+            automaticAppDiscount {
+              discountId
+              title
+              status
+              createdAt
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }`,
+        {
+          variables: {
+            discount: {
+              title: "Bundle Discounts - Free Shipping",
+              functionId: FUNCTION_ID,
+              startsAt: new Date().toISOString(),
+            },
+          },
+        }
+      );
+
+      const deliveryData = await deliveryDiscountResponse.json();
+
+      // Check for errors
+      const cartLinesErrors = cartLinesData.data?.discountAutomaticAppCreate?.userErrors || [];
+      const deliveryErrors = deliveryData.data?.discountAutomaticAppCreate?.userErrors || [];
+      const graphqlErrors = [...(cartLinesData.errors || []), ...(deliveryData.errors || [])];
+
+      console.log("🔥 Cart Lines Response:", JSON.stringify(cartLinesData, null, 2));
+      console.log("🔥 Delivery Response:", JSON.stringify(deliveryData, null, 2));
+
+      if (cartLinesErrors.length > 0 || deliveryErrors.length > 0 || graphqlErrors.length > 0) {
+        const allErrors = [...cartLinesErrors, ...deliveryErrors, ...graphqlErrors];
+        console.log("🔥 All Errors:", allErrors);
+        
+        return json({
+          success: false,
+          error: `Failed to create automatic discounts: ${allErrors.map((e: any) => e.message || e).join(", ")}`,
+          errors: allErrors,
+          cartLinesData,
+          deliveryData,
+        });
+      }
+
+      return json({
+        success: true,
+        message: "Automatic discounts created successfully!",
+        cartLinesDiscount: cartLinesData.data?.discountAutomaticAppCreate?.automaticAppDiscount,
+        deliveryDiscount: deliveryData.data?.discountAutomaticAppCreate?.automaticAppDiscount,
+      });
+
+    } catch (error: any) {
+      console.error("Error creating automatic discounts:", error);
+      return json(
+        {
+          success: false,
+          error: error.message || "Failed to create automatic discounts",
+        },
+        { status: 500 }
+      );
+    }
+  }
 
   if (intent === "cloneBundle") {
     const bundleIdToClone = formData.get("bundleId") as string;
@@ -246,8 +389,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
-  const { bundles } = useLoaderData<typeof loader>(); // Get bundles from loader data
+  const { bundles, automaticDiscounts, functionId, needsDiscounts } = useLoaderData<typeof loader>(); // Get bundles from loader data
   const fetcher = useFetcher<typeof action>();
+  const discountFetcher = useFetcher<typeof action>();
   // Explicitly type the fetchers for actions from app.bundles.$bundleId.tsx
   const deleteFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for deletion
   const clearMetafieldFetcher = useFetcher<typeof bundlesAction>(); // New fetcher for clearing all metafields
@@ -382,6 +526,51 @@ export default function Index() {
       ]}
     >
       <BlockStack gap="500">
+        {/* Automatic Discount Banner */}
+        {needsDiscounts && (
+          <Banner
+            title="Bundle Discounts Not Active"
+            status="warning"
+            action={{
+              content: "Activate Discounts",
+              onAction: () => {
+                const formData = new FormData();
+                formData.append("intent", "createAutomaticDiscounts");
+                discountFetcher.submit(formData, { method: "post" });
+              },
+              loading: discountFetcher.state === "submitting",
+            }}
+          >
+            <Text>
+              Your bundle discounts won't work until you activate the automatic discounts. 
+              This is required for Shopify Functions to run.
+            </Text>
+          </Banner>
+        )}
+
+        {!needsDiscounts && automaticDiscounts.length > 0 && (
+          <Banner title="Bundle Discounts Active" status="success">
+            <Text>
+              ✅ {automaticDiscounts.length} automatic discount(s) are active. 
+              Your bundle discounts should now work in the cart/checkout!
+            </Text>
+          </Banner>
+        )}
+
+        {discountFetcher.data && (
+          <Banner 
+            title={discountFetcher.data.success ? "Success!" : "Error"} 
+            status={discountFetcher.data.success ? "success" : "critical"}
+          >
+            <Text>
+              {discountFetcher.data.success 
+                ? discountFetcher.data.message 
+                : discountFetcher.data.error
+              }
+            </Text>
+          </Banner>
+        )}
+
         <Layout>
           {bundles.length === 0 ? (
             /* Show setup content if no bundles exist */

@@ -1,4 +1,4 @@
 {
-  "name": "bundle-discount-function-ts",
-  "description": "bundle-discount-function-ts"
+  "name": "Bundle Discount Functions",
+  "description": "Automatically applies bundle discounts based on cart contents and bundle configurations"
 }

@@ -412,6 +412,47 @@ export async function action({ request }: ActionFunctionArgs) {
         }
       }
 
+      // Debug: Log what we're about to create
+      console.log("🔥🔥🔥 BUNDLE DEBUG START 🔥🔥🔥");
+      console.log("🔍 Active bundles found:", allPublishedBundles.length);
+      console.log("📝 Product metafields to create:", productMetafields.length);
+      
+      // Log each bundle's details
+      allPublishedBundles.forEach((bundle, bundleIndex) => {
+        const bundleSteps = bundle.steps.map((s: BundleStepRaw) => ({
+          ...s,
+          products: safeJsonParse(s.products, []),
+          collections: safeJsonParse(s.collections, []),
+        }));
+        
+        console.log(`🔥 Bundle: "${bundle.name}" (${bundle.status})`);
+        console.log(`🔥   Steps: ${bundleSteps.length}, Pricing: ${bundle.pricing?.enableDiscount ? 'ENABLED' : 'DISABLED'}`);
+        
+        bundleSteps.forEach((step, stepIndex) => {
+          console.log(`🔥   Step ${stepIndex + 1}: "${step.name}" (${step.products.length} products)`);
+          if (step.products.length === 0) {
+            console.log(`🔥     ❌ NO PRODUCTS IN THIS STEP!`);
+          } else {
+            step.products.forEach((product: any, productIndex) => {
+              const hasValidGid = product.id && product.id.startsWith('gid://shopify/Product/');
+              console.log(`🔥     Product ${productIndex + 1}: ${product.title || 'No title'}`);
+              console.log(`🔥       ID: ${product.id || 'No ID'} ${hasValidGid ? '✅' : '❌ INVALID GID'}`);
+            });
+          }
+        });
+      });
+      
+      if (productMetafields.length === 0) {
+        console.log("🔥🔥🔥 ❌ NO METAFIELDS WILL BE CREATED! 🔥🔥🔥");
+        console.log("🔥 This means your bundles have no valid products in their steps");
+      } else {
+        console.log(`🔥🔥🔥 ✅ WILL CREATE ${productMetafields.length} METAFIELDS 🔥🔥🔥`);
+        productMetafields.forEach((pm, index) => {
+          console.log(`🔥 Metafield ${index + 1}: ${pm.ownerId} → ${pm.bundleData.name}`);
+        });
+      }
+      console.log("🔥🔥🔥 BUNDLE DEBUG END 🔥🔥🔥");
+
       // Store bundle data on products and also keep shop metafield for backwards compatibility
       const metafieldInputs = [
         // Shop metafield for backwards compatibility
@@ -452,46 +493,58 @@ export async function action({ request }: ActionFunctionArgs) {
         })),
       ];
 
-      const metafieldResponse = await admin.graphql(
-        `#graphql
-          mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-            metafieldsSet(metafields: $metafields) {
-              metafields {
-                id
-                key
-                namespace
-                value
+      // Only proceed with metafield creation if we have inputs
+      let metafieldData = null;
+      if (metafieldInputs.length === 0) {
+        console.warn("⚠️  No metafields to create - skipping GraphQL mutation");
+        metafieldData = { data: { metafieldsSet: { metafields: [], userErrors: [] } } };
+      } else {
+        console.log(`📝 Creating ${metafieldInputs.length} metafields...`);
+        
+        const metafieldResponse = await admin.graphql(
+          `#graphql
+            mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+              metafieldsSet(metafields: $metafields) {
+                metafields {
+                  id
+                  key
+                  namespace
+                  value
+                }
+                userErrors {
+                  field
+                  message
+                }
               }
-              userErrors {
-                field
-                message
-              }
-            }
-          }`,
-        {
-          variables: {
-            metafields: metafieldInputs,
+            }`,
+          {
+            variables: {
+              metafields: metafieldInputs,
+            },
           },
-        },
-      );
+        );
 
-      const metafieldData = (await metafieldResponse.json()) as any;
+        metafieldData = (await metafieldResponse.json()) as any;
+      }
+
+      // Debug: Log metafield creation response
+      if (metafieldData.data?.metafieldsSet?.metafields?.length > 0) {
+        console.log("🔥🔥🔥 ✅ METAFIELDS CREATED SUCCESSFULLY! 🔥🔥🔥");
+        console.log(`🔥 Created ${metafieldData.data.metafieldsSet.metafields.length} metafields`);
+      } else {
+        console.log("🔥🔥🔥 ❌ NO METAFIELDS WERE CREATED! 🔥🔥🔥");
+      }
 
       if (metafieldData.errors && metafieldData.errors.length > 0) {
-        console.error("Metafield Set GraphQL Errors:", metafieldData.errors);
-        throw new Error(
-          `Failed to save bundle metafield: ${metafieldData.errors.map((e: any) => e.message).join(", ")}`,
-        );
+        console.log("🔥🔥🔥 ❌ GRAPHQL ERRORS 🔥🔥🔥");
+        metafieldData.errors.forEach((error: any) => console.log("🔥 Error:", error.message));
+        throw new Error(`Failed to save bundle metafield: ${metafieldData.errors.map((e: any) => e.message).join(", ")}`);
       }
 
       if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
-        console.error(
-          "Metafield Set User Errors:",
-          metafieldData.data.metafieldsSet.userErrors,
-        );
-        throw new Error(
-          `Failed to save bundle metafield: ${metafieldData.data.metafieldsSet.userErrors.map((e: any) => e.message).join(", ")}`,
-        );
+        console.log("🔥🔥🔥 ❌ USER ERRORS 🔥🔥🔥");
+        metafieldData.data.metafieldsSet.userErrors.forEach((error: any) => console.log("🔥 Error:", error.message));
+        throw new Error(`Failed to save bundle metafield: ${metafieldData.data.metafieldsSet.userErrors.map((e: any) => e.message).join(", ")}`);
       }
 
       // Remove all Shopify Admin GraphQL API discount creation logic
