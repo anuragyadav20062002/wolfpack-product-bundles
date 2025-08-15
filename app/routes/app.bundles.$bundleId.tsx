@@ -177,8 +177,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   // Parse JSON strings back to objects for products and collections
   const parsedSteps: BundleStep[] = bundle.steps.map((step: BundleStepRaw) => {
-    console.log("Raw step.products before parse:", step.products);
-    console.log("Raw step.collections before parse:", step.collections);
 
     return {
       ...step,
@@ -193,7 +191,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   });
 
   // Parse matching rules if they exist
-  console.log("Raw bundle.matching before parse:", bundle.matching);
   const parsedMatching = bundle.matching
     ? (safeJsonParse(
         bundle.matching,
@@ -202,7 +199,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     : null;
 
   // Parse pricing rules if they exist
-  console.log("Raw bundle.pricing.rules before parse:", bundle.pricing?.rules);
   const parsedPricing = bundle.pricing
     ? {
         ...bundle.pricing,
@@ -285,8 +281,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
     try {
       const productsData = formData.get("selectedVisibilityProducts");
-      console.log("Products data type:", typeof productsData);
-      console.log("Products data:", productsData);
 
       if (productsData) {
         if (typeof productsData === "string") {
@@ -298,8 +292,6 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       const collectionsData = formData.get("selectedVisibilityCollections");
-      console.log("Collections data type:", typeof collectionsData);
-      console.log("Collections data:", collectionsData);
 
       if (collectionsData) {
         if (typeof collectionsData === "string") {
@@ -386,79 +378,110 @@ export async function action({ request }: ActionFunctionArgs) {
           collections: safeJsonParse(s.collections, []),
         }));
         
-        const bundleData = {
+        // Create minimal metafield data - only essential info for discount function
+        const minimalBundleData = {
           id: bundle.id,
           name: bundle.name,
-          description: bundle.description,
-          status: bundle.status,
-          matching: safeJsonParse(bundle.matching, {}),
-          steps: steps,
-          pricing: bundle.pricing
+          pricing: bundle.pricing && bundle.pricing.enableDiscount
             ? {
-                ...bundle.pricing,
-                rules: safeJsonParse(bundle.pricing.rules, null),
+                enableDiscount: bundle.pricing.enableDiscount,
+                discountMethod: bundle.pricing.discountMethod,
+                rules: safeJsonParse(bundle.pricing.rules, [])
               }
             : null,
+          // Only include product IDs from all steps for bundle matching
+          allBundleProductIds: []
         };
+
+        // Collect all unique product IDs from all steps for bundle matching
+        const allProductIds = new Set();
+        steps.forEach(step => {
+          step.products.forEach(product => {
+            if (product.id && product.id.startsWith('gid://shopify/Product/')) {
+              allProductIds.add(product.id);
+            }
+          });
+        });
+        minimalBundleData.allBundleProductIds = Array.from(allProductIds);
 
         // Add metafield for each product in each step
         for (const step of steps) {
           for (const product of step.products) {
             productMetafields.push({
               ownerId: product.id,
-              bundleData: bundleData,
+              bundleData: minimalBundleData,
             });
           }
         }
       }
 
-      // Debug: Log what we're about to create
-      console.log("🔥🔥🔥 BUNDLE DEBUG START 🔥🔥🔥");
-      console.log("🔍 Active bundles found:", allPublishedBundles.length);
-      console.log("📝 Product metafields to create:", productMetafields.length);
-      
-      // Log each bundle's details
-      allPublishedBundles.forEach((bundle, bundleIndex) => {
-        const bundleSteps = bundle.steps.map((s: BundleStepRaw) => ({
-          ...s,
-          products: safeJsonParse(s.products, []),
-          collections: safeJsonParse(s.collections, []),
-        }));
-        
-        console.log(`🔥 Bundle: "${bundle.name}" (${bundle.status})`);
-        console.log(`🔥   Steps: ${bundleSteps.length}, Pricing: ${bundle.pricing?.enableDiscount ? 'ENABLED' : 'DISABLED'}`);
-        
-        bundleSteps.forEach((step, stepIndex) => {
-          console.log(`🔥   Step ${stepIndex + 1}: "${step.name}" (${step.products.length} products)`);
-          if (step.products.length === 0) {
-            console.log(`🔥     ❌ NO PRODUCTS IN THIS STEP!`);
-          } else {
-            step.products.forEach((product: any, productIndex) => {
-              const hasValidGid = product.id && product.id.startsWith('gid://shopify/Product/');
-              console.log(`🔥     Product ${productIndex + 1}: ${product.title || 'No title'}`);
-              console.log(`🔥       ID: ${product.id || 'No ID'} ${hasValidGid ? '✅' : '❌ INVALID GID'}`);
-            });
+
+      // First, create metafield definition if it doesn't exist
+      try {
+        const metafieldDefinitionResponse = await admin.graphql(
+          `#graphql
+          mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
+            metafieldDefinitionCreate(definition: $definition) {
+              createdDefinition {
+                id
+                name
+                namespace
+                key
+                type {
+                  name
+                }
+              }
+              userErrors {
+                field
+                message
+                code
+              }
+            }
+          }`,
+          {
+            variables: {
+              definition: {
+                name: "Bundle Discount Data",
+                namespace: "$app:bundle_discount",
+                key: "bundle_discount_data",
+                type: "json",
+                description: "Bundle discount configuration data for Shopify Functions",
+                ownerType: "PRODUCT",
+                access: {
+                  admin: "MERCHANT_READ_WRITE",
+                  storefront: "PUBLIC_READ"
+                }
+              }
+            },
           }
-        });
-      });
-      
-      if (productMetafields.length === 0) {
-        console.log("🔥🔥🔥 ❌ NO METAFIELDS WILL BE CREATED! 🔥🔥🔥");
-        console.log("🔥 This means your bundles have no valid products in their steps");
-      } else {
-        console.log(`🔥🔥🔥 ✅ WILL CREATE ${productMetafields.length} METAFIELDS 🔥🔥🔥`);
-        productMetafields.forEach((pm, index) => {
-          console.log(`🔥 Metafield ${index + 1}: ${pm.ownerId} → ${pm.bundleData.name}`);
-        });
+        );
+
+        const metafieldDefData = await metafieldDefinitionResponse.json();
+        
+        if (metafieldDefData.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
+          const errors = metafieldDefData.data.metafieldDefinitionCreate.userErrors;
+          
+          // Check if it's just because it already exists
+          const alreadyExistsError = errors.find(e => e.message?.includes("already exists") || e.code === "TAKEN");
+          if (alreadyExistsError) {
+          } else {
+          }
+        } else {
+          console.log("📋 ✅ Metafield definition created successfully:", 
+            metafieldDefData.data?.metafieldDefinitionCreate?.createdDefinition);
+        }
+      } catch (error) {
+        // Continue anyway - definition might already exist
       }
-      console.log("🔥🔥🔥 BUNDLE DEBUG END 🔥🔥🔥");
+
+      // Note: MetafieldStorefrontVisibility is handled automatically with public_read_write access
 
       // Store bundle data on products and also keep shop metafield for backwards compatibility
       const metafieldInputs = [
         // Shop metafield for backwards compatibility
         {
           ownerId: shopGid,
-          namespace: "custom",
+          namespace: "$app:bundle_discount",
           key: "all_bundles",
           type: "json",
           value: JSON.stringify(allPublishedBundles.map((b) => {
@@ -483,10 +506,10 @@ export async function action({ request }: ActionFunctionArgs) {
             };
           })),
         },
-        // Product metafields for discount functions
+        // Product metafields for discount functions (using app reserved namespace)
         ...productMetafields.map((pm) => ({
           ownerId: pm.ownerId,
-          namespace: "custom",
+          namespace: "$app:bundle_discount",
           key: "bundle_discount_data",
           type: "json",
           value: JSON.stringify(pm.bundleData),
@@ -496,10 +519,8 @@ export async function action({ request }: ActionFunctionArgs) {
       // Only proceed with metafield creation if we have inputs
       let metafieldData = null;
       if (metafieldInputs.length === 0) {
-        console.warn("⚠️  No metafields to create - skipping GraphQL mutation");
         metafieldData = { data: { metafieldsSet: { metafields: [], userErrors: [] } } };
       } else {
-        console.log(`📝 Creating ${metafieldInputs.length} metafields...`);
         
         const metafieldResponse = await admin.graphql(
           `#graphql
@@ -529,21 +550,14 @@ export async function action({ request }: ActionFunctionArgs) {
 
       // Debug: Log metafield creation response
       if (metafieldData.data?.metafieldsSet?.metafields?.length > 0) {
-        console.log("🔥🔥🔥 ✅ METAFIELDS CREATED SUCCESSFULLY! 🔥🔥🔥");
-        console.log(`🔥 Created ${metafieldData.data.metafieldsSet.metafields.length} metafields`);
       } else {
-        console.log("🔥🔥🔥 ❌ NO METAFIELDS WERE CREATED! 🔥🔥🔥");
       }
 
       if (metafieldData.errors && metafieldData.errors.length > 0) {
-        console.log("🔥🔥🔥 ❌ GRAPHQL ERRORS 🔥🔥🔥");
-        metafieldData.errors.forEach((error: any) => console.log("🔥 Error:", error.message));
         throw new Error(`Failed to save bundle metafield: ${metafieldData.errors.map((e: any) => e.message).join(", ")}`);
       }
 
       if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
-        console.log("🔥🔥🔥 ❌ USER ERRORS 🔥🔥🔥");
-        metafieldData.data.metafieldsSet.userErrors.forEach((error: any) => console.log("🔥 Error:", error.message));
         throw new Error(`Failed to save bundle metafield: ${metafieldData.data.metafieldsSet.userErrors.map((e: any) => e.message).join(", ")}`);
       }
 

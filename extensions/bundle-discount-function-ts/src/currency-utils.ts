@@ -63,11 +63,3 @@ export function formatDiscountMessage(
 /**
  * Debug logging for currency conversions
  */
-export function logCurrencyConversion(
-  originalAmount: number,
-  convertedAmount: number,
-  fromCurrency: string,
-  toCurrency: string
-): void {
-  console.log(`Currency conversion: ${originalAmount} ${fromCurrency} → ${convertedAmount} ${toCurrency}`);
-}
