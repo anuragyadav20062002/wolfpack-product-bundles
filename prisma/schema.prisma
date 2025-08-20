@@ -39,6 +39,16 @@ enum DiscountMethodType {
   free_shipping
 }
 
+enum DiscountImplementationType {
+  discount_function
+  cart_transformation
+}
+
+enum BundleType {
+  cart_transform
+  discount_function
+}
+
 model Session {
   id            String    @id
   shop          String
@@ -67,6 +77,7 @@ model Bundle {
   description      String?
   shopId           String
   shopifyProductId String? // New field to store the Shopify Product ID (GID)
+  bundleType       BundleType        @default(discount_function)
   status           BundleStatus      @default(draft)
   active           Boolean           @default(false)
   publishedAt      DateTime?
@@ -80,6 +91,7 @@ model Bundle {
 
   @@index([shopId])
   @@index([status])
+  @@index([bundleType])
 }
 
 model BundleStep {
@@ -157,12 +169,13 @@ model BundleAnalytics {
 }
 
 model ShopSettings {
-  id              String   @id @default(uuid())
-  shopId          String   @unique
-  theme           Json?
-  defaultSettings Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                      String                     @id @default(uuid())
+  shopId                  String                     @unique
+  theme                   Json?
+  defaultSettings         Json?
+  discountImplementation  DiscountImplementationType @default(discount_function)
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
 
   @@index([shopId])
 }

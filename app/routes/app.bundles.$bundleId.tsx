@@ -347,6 +347,17 @@ export async function action({ request }: ActionFunctionArgs) {
       const shopIdData = await shopIdResponse.json();
       const shopGid = shopIdData.data.shop.id;
 
+      // Get shop settings to determine discount implementation type
+      const shopSettings = await db.shopSettings.findUnique({
+        where: { shopId: session.shop },
+      });
+      
+      const discountImplementation = shopSettings?.discountImplementation || "discount_function";
+      console.log(`🔍 [BUNDLE PUBLISH DEBUG] Shop ID: ${session.shop}`);
+      console.log(`🔍 [BUNDLE PUBLISH DEBUG] Shop Settings:`, shopSettings);
+      console.log(`🔍 [BUNDLE PUBLISH DEBUG] Discount implementation type: ${discountImplementation}`);
+      console.log(`🔍 [BUNDLE PUBLISH DEBUG] Should skip Shopify discount creation: ${discountImplementation === "cart_transformation"}`);
+
       // Store bundle discount settings on individual products
       const allPublishedBundles = await db.bundle.findMany({
         where: { status: "active", shopId: session.shop },
