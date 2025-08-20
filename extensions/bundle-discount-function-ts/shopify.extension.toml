@@ -9,12 +9,12 @@ description = "t:description"
 
   [[extensions.targeting]]
   target = "cart.lines.discounts.generate.run"
-  input_query = "src/input.graphql"
+  input_query = "src/discount-function-input.graphql"
   export = "cart-lines-discounts-generate-run"
 
   [[extensions.targeting]]
   target = "cart.delivery-options.discounts.generate.run"
-  input_query = "src/input.graphql"
+  input_query = "src/discount-function-input.graphql"
   export = "cart-delivery-options-discounts-generate-run"
 
   [extensions.build]

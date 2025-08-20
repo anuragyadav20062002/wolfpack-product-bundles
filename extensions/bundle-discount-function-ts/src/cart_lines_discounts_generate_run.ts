@@ -10,12 +10,12 @@ import {
   getAllBundleDataFromCart,
   checkCartMeetsBundleConditions,
   getApplicableDiscountRule,
-} from "./bundle-utils";
+} from "./discount-function-bundle-utils";
 import {
   convertDiscountAmount,
   formatDiscountMessage,
   logCurrencyConversion,
-} from "./currency-utils";
+} from "./discount-function-currency-utils";
 
 export function cartLinesDiscountsGenerateRun(
   input: Input_CartLinesDiscountsGenerateRun,

@@ -8,7 +8,7 @@ import {
   getAllBundleDataFromCart,
   checkCartMeetsBundleConditions,
   getApplicableDiscountRule,
-} from "./bundle-utils";
+} from "./discount-function-bundle-utils";
 
 export function cartDeliveryOptionsDiscountsGenerateRun(
   input: Input,

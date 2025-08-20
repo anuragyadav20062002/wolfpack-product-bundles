@@ -107,10 +107,52 @@ export function parseBundleDataFromMetafield(
   metafieldValue: string,
 ): BundleData | null {
   try {
-    return JSON.parse(metafieldValue);
+    const parsedData = JSON.parse(metafieldValue);
+    
+    // Handle the new discount function config format
+    if (parsedData.type === "discount_function" && parsedData.bundleId) {
+      // Transform the new format to the expected BundleData format
+      const bundleData: BundleData = {
+        id: parsedData.bundleId,
+        name: parsedData.name,
+        allBundleProductIds: extractProductIdsFromSteps(parsedData.steps || []),
+        pricing: parsedData.pricing ? {
+          enableDiscount: parsedData.pricing.enabled,
+          discountMethod: parsedData.pricing.method,
+          rules: parsedData.pricing.rules || []
+        } : null
+      };
+      
+      return bundleData;
+    }
+    
+    // Handle legacy format (direct BundleData)
+    if (parsedData.id && parsedData.name) {
+      return parsedData;
+    }
+    
+    return null;
   } catch (error) {
+    console.error("Failed to parse bundle metafield:", error);
     return null;
   }
+}
+
+// Helper function to extract product IDs from bundle steps
+function extractProductIdsFromSteps(steps: any[]): string[] {
+  const productIds: string[] = [];
+  
+  for (const step of steps) {
+    if (step.products && Array.isArray(step.products)) {
+      for (const product of step.products) {
+        if (product.id && !productIds.includes(product.id)) {
+          productIds.push(product.id);
+        }
+      }
+    }
+  }
+  
+  return productIds;
 }
 
 export function getBundleDataFromDiscountConfig(input: any): BundleData[] {

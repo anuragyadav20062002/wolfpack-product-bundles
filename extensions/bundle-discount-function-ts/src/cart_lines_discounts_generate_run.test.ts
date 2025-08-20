@@ -6,6 +6,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
   const mockBundleData = {
     id: "bundle-1",
     name: "Test Bundle",
+    allBundleProductIds: ["gid://shopify/Product/123"],
     steps: [
       {
         id: "step-1",
@@ -249,12 +250,17 @@ describe("cartLinesDiscountsGenerateRun", () => {
   it("should return empty operations when cart does not meet bundle conditions", () => {
     const bundleDataWithHigherQuantity = {
       ...mockBundleData,
-      steps: [
-        {
-          ...mockBundleData.steps[0],
-          minQuantity: 5, // Require 5 items, but cart only has 2
-        },
-      ],
+      pricing: {
+        ...mockBundleData.pricing,
+        rules: [
+          {
+            discountOn: "quantity",
+            minimumQuantity: 5, // Require 5 items, but cart only has 2
+            fixedAmountOff: 10,
+            percentageOff: 0,
+          },
+        ],
+      },
     };
 
     const cartWithInsufficientQuantity = {
@@ -333,6 +339,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
   it("should handle disabled steps", () => {
     const bundleDataWithDisabledStep = {
       ...mockBundleData,
+      allBundleProductIds: ["gid://shopify/Product/999"], // Different product ID so no match
       steps: [
         {
           ...mockBundleData.steps[0],

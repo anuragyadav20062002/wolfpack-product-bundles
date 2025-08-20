@@ -1,4 +1,4 @@
-query CartLinesDiscountsGenerateRun {
+query BundleDiscountFunctionInput {
   cart {
     lines {
       id
@@ -10,7 +10,7 @@ query CartLinesDiscountsGenerateRun {
           product {
             id
             title
-            metafield(namespace: "$app:bundle_discount", key: "bundle_discount_data") {
+            metafield(namespace: "bundle_discounts", key: "discount_function_config") {
               value
             }
           }

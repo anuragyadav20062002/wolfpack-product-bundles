@@ -6,6 +6,7 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
   const mockBundleData = {
     id: "bundle-1",
     name: "Test Bundle",
+    allBundleProductIds: ["gid://shopify/Product/123"],
     steps: [
       {
         id: "step-1",
@@ -202,12 +203,17 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
   it("should return empty operations when cart does not meet bundle conditions", () => {
     const bundleDataWithHigherQuantity = {
       ...mockBundleData,
-      steps: [
-        {
-          ...mockBundleData.steps[0],
-          minQuantity: 5, // Require 5 items, but cart only has 2
-        },
-      ],
+      pricing: {
+        ...mockBundleData.pricing,
+        rules: [
+          {
+            discountOn: "quantity",
+            minimumQuantity: 5, // Require 5 items, but cart only has 2
+            fixedAmountOff: 0,
+            percentageOff: 0,
+          },
+        ],
+      },
     };
 
     const cartWithInsufficientQuantity = {
