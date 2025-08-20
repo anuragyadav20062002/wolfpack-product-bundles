@@ -1,0 +1,17 @@
+api_version = "2025-04"
+
+[[extensions]]
+name = "Bundle Cart Transform"
+handle = "bundle-cart-transform-ts"
+type = "function"
+
+description = "Transform cart lines to display bundles as single items with discount pricing"
+
+  [[extensions.targeting]]
+  target = "purchase.cart-transform.run"
+  input_query = "src/cart-transform-input.graphql"
+  export = "cart-transform-run"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"

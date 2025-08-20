@@ -1,0 +1,29 @@
+query BundleCartTransformInput {
+  cart {
+    lines {
+      id
+      quantity
+      merchandise {
+        ... on ProductVariant {
+          id
+          product {
+            id
+            metafield(namespace: "bundle_discounts", key: "cart_transform_config") {
+              value
+            }
+          }
+        }
+      }
+      cost {
+        amountPerQuantity {
+          amount
+          currencyCode
+        }
+        totalAmount {
+          amount
+          currencyCode
+        }
+      }
+    }
+  }
+}
