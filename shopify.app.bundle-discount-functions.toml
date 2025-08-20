@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://ships-average-toolbox-charter.trycloudflare.com"
+application_url = "https://internationally-vaccine-cart-finite.trycloudflare.com"
 embedded = true
 
 [build]
@@ -15,13 +15,13 @@ api_version = "2025-04"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_discounts, write_products"
+scopes = "write_discounts, write_products, read_content"
 
 [auth]
 redirect_urls = [
-  "https://ships-average-toolbox-charter.trycloudflare.com/auth/callback",
-  "https://ships-average-toolbox-charter.trycloudflare.com/auth/shopify/callback",
-  "https://ships-average-toolbox-charter.trycloudflare.com/api/auth/callback"
+  "https://internationally-vaccine-cart-finite.trycloudflare.com/auth/callback",
+  "https://internationally-vaccine-cart-finite.trycloudflare.com/auth/shopify/callback",
+  "https://internationally-vaccine-cart-finite.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

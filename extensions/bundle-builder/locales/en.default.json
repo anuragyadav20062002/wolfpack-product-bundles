@@ -1,10 +1,35 @@
 {
+  "bundle_widget": {
+    "settings": {
+      "enabled_label": "Enable bundle widget",
+      "position_label": "Widget position",
+      "show_on_collection_label": "Show on collection pages",
+      "show_on_homepage_label": "Show on homepage",
+      "bundle_id_label": "Bundle ID (optional)",
+      "bundle_id_info": "Specify a specific bundle ID to display. Leave empty to auto-detect bundles.",
+      "container_width_label": "Container width",
+      "show_bundle_title_label": "Show bundle title",
+      "show_step_numbers_label": "Show step numbers",
+      "position_before_title": "Before product title",
+      "position_after_title": "After product title",
+      "position_after_description": "After product description",
+      "position_after_form": "After add to cart form"
+    },
+    "ui": {
+      "add_to_cart": "Add Bundle to Cart",
+      "select_products": "Select Products",
+      "bundle_title": "Complete Your Bundle",
+      "step_prefix": "Step",
+      "savings_text": "Save {amount}",
+      "total_text": "Total: {amount}"
+    }
+  },
   "ratings": {
     "stars": {
-      "label": "Ratings"
+      "label": "Rating"
     },
     "home": {
-      "recommendationText": "Recommended Product!"
+      "recommendationText": "Recommended by customers"
     }
   }
 }

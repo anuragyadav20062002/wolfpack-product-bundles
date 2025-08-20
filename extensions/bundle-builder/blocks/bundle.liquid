@@ -2,23 +2,198 @@
 {
   "name": "Bundle Builder",
   "target": "section",
-  "settings": []
+  "enabled_on": {
+    "templates": ["product", "index", "collection"]
+  },
+  "stylesheet": "bundle-widget.css",
+  "javascript": "bundle-widget.js",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable bundle widget",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Widget position",
+      "default": "after_description",
+      "options": [
+        {
+          "value": "before_title",
+          "label": "Before product title"
+        },
+        {
+          "value": "after_title",
+          "label": "After product title"
+        },
+        {
+          "value": "after_description",
+          "label": "After product description"
+        },
+        {
+          "value": "after_form",
+          "label": "After add to cart form"
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_on_collection",
+      "label": "Show on collection pages",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_on_homepage",
+      "label": "Show on homepage",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "bundle_id",
+      "label": "Bundle ID (optional)",
+      "info": "Specify a specific bundle ID to display. Leave empty to auto-detect bundles."
+    },
+    {
+      "type": "range",
+      "id": "container_width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "label": "Container width",
+      "default": 100
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bundle_title",
+      "label": "Show bundle title",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_step_numbers",
+      "label": "Show step numbers",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Footer Discount Messaging"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_footer_messaging",
+      "label": "Show footer discount messaging",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "footer_background_color",
+      "label": "Footer messaging background",
+      "default": "#f8f9fa"
+    },
+    {
+      "type": "color",
+      "id": "footer_border_color",
+      "label": "Footer messaging border",
+      "default": "#dee2e6"
+    },
+    {
+      "type": "color",
+      "id": "footer_text_color",
+      "label": "Footer messaging text",
+      "default": "#2e7d32"
+    },
+    {
+      "type": "color",
+      "id": "progress_bar_color",
+      "label": "Progress bar color",
+      "default": "#28a745"
+    },
+    {
+      "type": "color",
+      "id": "progress_bar_background",
+      "label": "Progress bar background",
+      "default": "#e9ecef"
+    },
+    {
+      "type": "color",
+      "id": "savings_badge_color",
+      "label": "Savings badge color",
+      "default": "#28a745"
+    }
+  ]
 }
 {% endschema %}
-<div id="bundle-builder-app" data-bundle-id="{{ block.settings.bundle_id }}">
-  <div class="bundle-header">
-    <h2 class="bundle-title"></h2>
-  </div>
+{% comment %} Only render if bundle widget is enabled {% endcomment %}
+{% if block.settings.enabled %}
+  {% comment %} Check template-specific visibility rules {% endcomment %}
+  {% assign should_show = false %}
+  {% if template.name == "product" %}
+    {% assign should_show = true %}
+  {% elsif template.name == "collection" and block.settings.show_on_collection %}
+    {% assign should_show = true %}
+  {% elsif template.name == "index" and block.settings.show_on_homepage %}
+    {% assign should_show = true %}
+  {% endif %}
 
-  <div class="bundle-steps">
-    <!-- Dynamic steps will be rendered here by JavaScript -->
-  </div>
+  {% if should_show %}
+    <div 
+      id="bundle-builder-app" 
+      data-bundle-id="{{ block.settings.bundle_id }}"
+      data-position="{{ block.settings.position }}"
+      data-show-title="{{ block.settings.show_bundle_title }}"
+      data-show-step-numbers="{{ block.settings.show_step_numbers }}"
+      data-show-footer-messaging="{{ block.settings.show_footer_messaging }}"
+      style="
+        width: {{ block.settings.container_width }}%; 
+        max-width: 100%;
+        --footer-bg-color: {{ block.settings.footer_background_color }};
+        --footer-border-color: {{ block.settings.footer_border_color }};
+        --footer-text-color: {{ block.settings.footer_text_color }};
+        --progress-bar-color: {{ block.settings.progress_bar_color }};
+        --progress-bar-bg: {{ block.settings.progress_bar_background }};
+        --savings-badge-color: {{ block.settings.savings_badge_color }};
+      "
+      class="bundle-widget-container"
+    >
+      {% if block.settings.show_bundle_title %}
+        <div class="bundle-header">
+          <h2 class="bundle-title"></h2>
+        </div>
+      {% endif %}
 
-  <div class="bundle-includes">
-    <!-- Dynamic included products will be rendered here by JavaScript -->
-  </div>
+      <div class="bundle-steps">
+        <!-- Dynamic steps will be rendered here by JavaScript -->
+      </div>
 
-  <button class="add-bundle-to-cart">Add Bundle to Cart</button>
+      <div class="bundle-includes">
+        <!-- Dynamic included products will be rendered here by JavaScript -->
+      </div>
+
+      <button class="add-bundle-to-cart">Add Bundle to Cart</button>
+
+      <!-- Footer discount messaging with progress bar -->
+      <div class="bundle-footer-messaging" style="display: none;">
+        <div class="footer-progress-container">
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar">
+              <div class="progress-fill"></div>
+            </div>
+            <div class="progress-text">
+              <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
+            </div>
+          </div>
+          <div class="footer-discount-text"></div>
+          <div class="footer-savings-display" style="display: none;">
+            <span class="savings-badge">You save: <span class="savings-amount"></span></span>
+          </div>
+        </div>
+      </div>
+  {% endif %}
+{% endif %}
 
   <!-- Bundle Builder Modal -->
   <div id="bundle-builder-modal" class="bundle-builder-modal">
@@ -50,7 +225,6 @@
   <div class="bundle-add-to-cart-container" style="display:none;">
     <button class="bundle-add-to-cart-button" type="button">Add Bundle to Cart</button>
   </div>
-</div>
 
 <script>
   const allBundlesData = {{ shop.metafields.custom.all_bundles.value | json }};
