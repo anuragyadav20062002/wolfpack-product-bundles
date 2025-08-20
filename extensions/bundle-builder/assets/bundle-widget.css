@@ -528,4 +528,298 @@
   padding: 4px 6px;
   font-size: 0.8em;
   margin-bottom: 6px;
+}
+
+/* Bundle discount messaging */
+.bundle-discount-messaging {
+  background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.bundle-discount-messaging .discount-text {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #2e7d32;
+  margin-bottom: 8px;
+}
+
+.bundle-discount-messaging .success-message {
+  font-size: 0.95em;
+  color: #1b5e20;
+  font-style: italic;
+}
+
+/* Bundle total and savings display */
+.bundle-total-display {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.bundle-total-display > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bundle-total-display > div:last-child {
+  margin-bottom: 0;
+}
+
+.original-price {
+  font-size: 0.9em;
+  color: #6c757d;
+}
+
+.original-price-amount {
+  text-decoration: line-through;
+  font-weight: normal;
+}
+
+.bundle-price {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #212529;
+}
+
+.savings-amount {
+  font-size: 1em;
+  font-weight: 600;
+  color: #28a745;
+  border-top: 1px solid #e9ecef;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.savings-value {
+  background-color: #28a745;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* Bundle footer messaging with progress bars */
+.bundle-footer-messaging {
+  background: linear-gradient(135deg, var(--footer-bg-color, #f8f9fa) 0%, var(--footer-border-color, #e9ecef) 100%);
+  border: 2px solid var(--footer-border-color, #dee2e6);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.bundle-footer-messaging.active {
+  border-color: var(--progress-bar-color, #28a745);
+  background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(40, 167, 69, 0.15);
+}
+
+.footer-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progress-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 12px;
+  background-color: var(--progress-bar-bg, #e9ecef);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--progress-bar-color, #28a745) 0%, #20c997 50%, #17a2b8 100%);
+  border-radius: 6px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: progressShimmer 2s infinite;
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-text {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #495057;
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: center;
+}
+
+.footer-discount-text {
+  font-size: 1.05em;
+  font-weight: 600;
+  color: var(--footer-text-color, #2e7d32);
+  text-align: center;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+.footer-savings-display {
+  text-align: center;
+  margin-top: 8px;
+}
+
+.savings-badge {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--savings-badge-color, #28a745) 0%, #20c997 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+  animation: savingsPulse 2s infinite;
+}
+
+@keyframes savingsPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.savings-badge .savings-amount {
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+/* Progress bar completion effects */
+.progress-fill.completed {
+  background: linear-gradient(90deg, var(--progress-bar-color, #28a745) 0%, #20c997 100%);
+  animation: progressComplete 0.6s ease-out;
+}
+
+@keyframes progressComplete {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Milestone indicators on progress bar */
+.progress-bar::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 16px;
+  background-color: #6c757d;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  z-index: 1;
+  opacity: 0.7;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .bundle-discount-messaging {
+    margin: 12px 0;
+    padding: 12px;
+  }
+  
+  .bundle-discount-messaging .discount-text {
+    font-size: 1em;
+  }
+  
+  .bundle-total-display {
+    margin: 12px 0;
+    padding: 12px;
+  }
+  
+  .bundle-total-display > div {
+    font-size: 0.9em;
+  }
+
+  .bundle-footer-messaging {
+    margin: 16px 0;
+    padding: 16px;
+  }
+
+  .progress-bar-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .progress-text {
+    order: -1;
+    min-width: auto;
+  }
+
+  .footer-discount-text {
+    font-size: 0.95em;
+  }
+
+  .savings-badge {
+    padding: 6px 12px;
+    font-size: 0.85em;
+  }
+}
+
+/* Enhanced visual feedback for different discount states */
+.bundle-footer-messaging.nearly-qualified {
+  border-color: #ffc107;
+  background: linear-gradient(135deg, #fff3cd 0%, #fef7e0 100%);
+}
+
+.bundle-footer-messaging.nearly-qualified .progress-fill {
+  background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%);
+}
+
+.bundle-footer-messaging.qualified {
+  border-color: var(--progress-bar-color, #28a745);
+  background: linear-gradient(135deg, #d4edda 0%, #e8f5e8 100%);
+}
+
+.bundle-footer-messaging.qualified .footer-discount-text {
+  color: #155724;
+}
+
+/* Animated encouragement messages */
+.encouragement-message {
+  font-size: 0.9em;
+  color: #6c757d;
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+  opacity: 0.8;
 } 

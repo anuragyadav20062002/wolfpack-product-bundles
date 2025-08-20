@@ -26,6 +26,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentProductHandle = window.currentProductHandle;
   const currentProductCollections = window.currentProductCollections; // Access the new variable
   const shopCurrency = window.shopCurrency || 'USD';
+  
+  // Get widget configuration from data attributes
+  const appContainer = document.getElementById('bundle-builder-app');
+  if (!appContainer) {
+    console.error('Bundle builder app container not found.');
+    return;
+  }
+  
+  const widgetConfig = {
+    bundleId: appContainer.dataset.bundleId || null,
+    position: appContainer.dataset.position || 'after_description',
+    showTitle: appContainer.dataset.showTitle === 'true',
+    showStepNumbers: appContainer.dataset.showStepNumbers === 'true',
+    showFooterMessaging: appContainer.dataset.showFooterMessaging === 'true'
+  };
 
   if (!allBundlesDataRaw || !currentProductId) {
     console.warn('Bundle data or current product ID not available. Make sure bundles are published and the product context is available.');
@@ -56,6 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   for (const bundle of bundlesArray) {
     if (bundle && bundle.status === 'active') {
+      // If a specific bundle ID is configured, only use that bundle
+      if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
+        continue;
+      }
+      
       let parsedMatching = null;
       if (bundle.matching) {
         if (typeof bundle.matching === 'string') {
@@ -68,6 +88,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (typeof bundle.matching === 'object') {
           parsedMatching = bundle.matching; // It's already an object
         }
+      }
+
+      // If a specific bundle ID is configured, skip matching validation
+      if (widgetConfig.bundleId) {
+        selectedBundle = bundle;
+        selectedBundle.parsedMatching = parsedMatching;
+        break;
       }
 
       if (!parsedMatching) {
@@ -158,12 +185,223 @@ document.addEventListener('DOMContentLoaded', () => {
     return totalRawPrice;
   }
 
+  // Function to calculate discount amount based on bundle pricing rules
+  function calculateBundleDiscount(totalPrice, selectedQuantity) {
+    if (!selectedBundle || !selectedBundle.pricing || !selectedBundle.pricing.enableDiscount) {
+      return { discountAmount: 0, discountType: null, applicableRule: null };
+    }
+
+    const pricing = selectedBundle.pricing;
+    const rules = pricing.rules || [];
+
+    // Find the best applicable rule based on quantity
+    let bestRule = null;
+    for (const rule of rules) {
+      if (selectedQuantity >= (rule.numberOfProducts || 0)) {
+        if (!bestRule || (rule.numberOfProducts || 0) > (bestRule.numberOfProducts || 0)) {
+          bestRule = rule;
+        }
+      }
+    }
+
+    if (!bestRule) {
+      return { discountAmount: 0, discountType: null, applicableRule: null };
+    }
+
+    let discountAmount = 0;
+    let discountType = pricing.discountMethod || 'fixed_amount_off';
+
+    switch (discountType) {
+      case 'fixed_amount_off':
+        discountAmount = parseFloat(bestRule.value || bestRule.discountValue || 0);
+        break;
+      case 'percentage_off':
+        const percentage = parseFloat(bestRule.value || bestRule.discountValue || 0);
+        discountAmount = (totalPrice * percentage) / 100;
+        break;
+      case 'fixed_bundle_price':
+        const bundlePrice = parseFloat(bestRule.price || 0);
+        discountAmount = Math.max(0, totalPrice - bundlePrice);
+        break;
+      default:
+        discountAmount = 0;
+    }
+
+    return { 
+      discountAmount: Math.max(0, discountAmount), 
+      discountType, 
+      applicableRule: bestRule 
+    };
+  }
+
+  // Function to replace variables in discount messages
+  function replaceDiscountVariables(message, variables) {
+    if (!message) return '';
+    
+    let processedMessage = message;
+    
+    // Replace all supported variables
+    processedMessage = processedMessage.replace(/\{bundle_name\}/g, variables.bundleName || '');
+    processedMessage = processedMessage.replace(/\{original_price\}/g, variables.originalPrice || '');
+    processedMessage = processedMessage.replace(/\{bundle_price\}/g, variables.bundlePrice || '');
+    processedMessage = processedMessage.replace(/\{savings_amount\}/g, variables.savingsAmount || '');
+    processedMessage = processedMessage.replace(/\{savings_percentage\}/g, variables.savingsPercentage || '');
+    processedMessage = processedMessage.replace(/\{selected_quantity\}/g, variables.selectedQuantity || '');
+    processedMessage = processedMessage.replace(/\{minimum_quantity\}/g, variables.minimumQuantity || '');
+    
+    return processedMessage;
+  }
+
+  // Function to update footer discount messaging with progress bars
+  function updateFooterDiscountMessaging() {
+    if (!selectedBundle || !selectedBundle.pricing || !widgetConfig.showFooterMessaging) {
+      // Hide footer messaging if not configured to show or no bundle/pricing
+      const footerMessagingContainer = document.querySelector('.bundle-footer-messaging');
+      if (footerMessagingContainer) {
+        footerMessagingContainer.style.display = 'none';
+      }
+      return;
+    }
+
+    const pricing = selectedBundle.pricing;
+    const totalPrice = calculateBundleTotalPrice();
+    const selectedQuantity = getTotalSelectedQuantity();
+    
+    // Get discount calculation
+    const discountInfo = calculateBundleDiscount(totalPrice, selectedQuantity);
+    const discountedPrice = totalPrice - discountInfo.discountAmount;
+    
+    // Find the next best discount rule for progress calculation
+    const rules = pricing.rules || [];
+    const sortedRules = rules.sort((a, b) => (a.numberOfProducts || 0) - (b.numberOfProducts || 0));
+    const nextRule = sortedRules.find(rule => selectedQuantity < (rule.numberOfProducts || 0));
+    const targetQuantity = nextRule ? (nextRule.numberOfProducts || 0) : (sortedRules[sortedRules.length - 1]?.numberOfProducts || 0);
+    
+    // Prepare variables for message replacement
+    const variables = {
+      bundleName: selectedBundle.name || 'Bundle',
+      originalPrice: formatCurrency(totalPrice),
+      bundlePrice: formatCurrency(discountedPrice),
+      savingsAmount: formatCurrency(discountInfo.discountAmount),
+      savingsPercentage: totalPrice > 0 ? Math.round((discountInfo.discountAmount / totalPrice) * 100) + '%' : '0%',
+      selectedQuantity: selectedQuantity.toString(),
+      minimumQuantity: discountInfo.applicableRule ? (discountInfo.applicableRule.numberOfProducts || 0).toString() : '0',
+      targetQuantity: targetQuantity.toString(),
+      itemsNeeded: Math.max(0, targetQuantity - selectedQuantity).toString()
+    };
+
+    // Update footer messaging elements
+    const footerMessagingContainer = document.querySelector('.bundle-footer-messaging');
+    const progressBar = document.querySelector('.progress-fill');
+    const currentQuantityElement = document.querySelector('.current-quantity');
+    const targetQuantityElement = document.querySelector('.target-quantity');
+    const footerDiscountText = document.querySelector('.footer-discount-text');
+    const footerSavingsDisplay = document.querySelector('.footer-savings-display');
+    const savingsAmountElement = document.querySelector('.footer-savings-display .savings-amount');
+
+    if (!footerMessagingContainer) return;
+
+    // Show footer messaging if there are discount rules
+    if (pricing.enableDiscount && rules.length > 0) {
+      footerMessagingContainer.style.display = 'block';
+      
+      // Update progress bar
+      const progressPercentage = targetQuantity > 0 ? Math.min(100, (selectedQuantity / targetQuantity) * 100) : 0;
+      if (progressBar) {
+        progressBar.style.width = `${progressPercentage}%`;
+        
+        // Add completion effect if qualified
+        if (discountInfo.discountAmount > 0) {
+          progressBar.classList.add('completed');
+        } else {
+          progressBar.classList.remove('completed');
+        }
+      }
+      
+      // Update quantity display
+      if (currentQuantityElement) currentQuantityElement.textContent = selectedQuantity;
+      if (targetQuantityElement) targetQuantityElement.textContent = targetQuantity;
+      
+      // Determine messaging state and content
+      let messageState = 'default';
+      let discountMessage = '';
+      
+      if (discountInfo.discountAmount > 0 && discountInfo.applicableRule) {
+        // Already qualified for discount
+        messageState = 'qualified';
+        const ruleMessages = pricing.messages || {};
+        const ruleId = discountInfo.applicableRule.id;
+        discountMessage = ruleMessages[ruleId]?.successMessage || 
+                         `🎉 Congratulations! You're saving ${variables.savingsAmount} with this bundle!`;
+        
+        // Show savings display
+        if (footerSavingsDisplay && savingsAmountElement) {
+          savingsAmountElement.textContent = variables.savingsAmount;
+          footerSavingsDisplay.style.display = 'block';
+        }
+      } else if (nextRule && selectedQuantity > 0) {
+        // Getting close to next discount
+        const itemsNeeded = targetQuantity - selectedQuantity;
+        if (itemsNeeded <= 2) {
+          messageState = 'nearly-qualified';
+          discountMessage = `Almost there! Add ${itemsNeeded} more item${itemsNeeded === 1 ? '' : 's'} to unlock savings!`;
+        } else {
+          discountMessage = `Add ${itemsNeeded} more items to unlock bundle savings of ${formatCurrency(parseFloat(nextRule.value || nextRule.discountValue || 0))}!`;
+        }
+        
+        if (footerSavingsDisplay) {
+          footerSavingsDisplay.style.display = 'none';
+        }
+      } else if (selectedQuantity === 0) {
+        // No items selected yet
+        const minRule = sortedRules[0];
+        if (minRule) {
+          discountMessage = `Start building your bundle! Select ${minRule.numberOfProducts || 1} items to unlock savings.`;
+        } else {
+          discountMessage = 'Build your perfect bundle and save!';
+        }
+        
+        if (footerSavingsDisplay) {
+          footerSavingsDisplay.style.display = 'none';
+        }
+      }
+      
+      // Apply message state classes
+      footerMessagingContainer.className = `bundle-footer-messaging ${messageState}`;
+      
+      // Update discount text with variable replacement
+      if (footerDiscountText) {
+        footerDiscountText.textContent = replaceDiscountVariables(discountMessage, variables);
+      }
+      
+    } else {
+      // Hide footer messaging if no discount rules
+      footerMessagingContainer.style.display = 'none';
+    }
+  }
+
   // Function to update the Add to Cart button text with calculated price
   function updateAddToCartButton() {
     if (addBundleToCartButton) {
       const totalBundlePrice = calculateBundleTotalPrice();
-      const formattedPrice = formatCurrency(totalBundlePrice);
-      addBundleToCartButton.textContent = `Add Bundle to Cart • ${formattedPrice}`;
+      const selectedQuantity = getTotalSelectedQuantity();
+      const discountInfo = calculateBundleDiscount(totalBundlePrice, selectedQuantity);
+      const discountedPrice = totalBundlePrice - discountInfo.discountAmount;
+      
+      // Show discounted price if applicable
+      if (discountInfo.discountAmount > 0) {
+        const originalPriceFormatted = formatCurrency(totalBundlePrice);
+        const discountedPriceFormatted = formatCurrency(discountedPrice);
+        addBundleToCartButton.innerHTML = `
+          <span style="display: flex; flex-direction: column; align-items: center;">
+            <span style="text-decoration: line-through; font-size: 0.8em; opacity: 0.7;">${originalPriceFormatted}</span>
+            <span>Add Bundle to Cart • ${discountedPriceFormatted}</span>
+          </span>
+        `;
+      } else {
+        const formattedPrice = formatCurrency(totalBundlePrice);
+        addBundleToCartButton.textContent = `Add Bundle to Cart • ${formattedPrice}`;
+      }
     }
   }
 
@@ -191,6 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.overflow = ''; // Restore scrolling
     updateMainBundleStepsDisplay(); // Update the main display on close
     updateAddToCartButton(); // Update the button price after modal closes
+    updateFooterDiscountMessaging(); // Update footer discount messaging after modal closes
   }
 
   // Function to render modal content (tabs and product grid for current step)
@@ -514,6 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderProductGrid(stepIndex); // Re-render to update UI (selected class, quantity display)
     updateNavigationButtons(); // Update button state based on new selections
     renderModalTabs(); // Re-render tabs to update checkmarks
+    updateFooterDiscountMessaging(); // Update footer discount messaging
   }
 
   // Function to validate current step based on quantity rules
@@ -665,6 +905,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial rendering of main bundle steps
     updateMainBundleStepsDisplay();
     updateAddToCartButton(); // Initial update of the add to cart button
+    updateFooterDiscountMessaging(); // Initial update of footer discount messaging
 
   } else {
     // No bundle found for this product, hide the entire app container
@@ -795,6 +1036,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateMainBundleStepsDisplay();
     updateAddToCartButton();
     updateNavigationButtons();
+    updateFooterDiscountMessaging();
   }
 
   // Final check and initialization
