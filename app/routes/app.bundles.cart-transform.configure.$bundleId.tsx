@@ -20,6 +20,7 @@ import {
   Checkbox,
   Modal,
   Thumbnail,
+  List,
 } from "@shopify/polaris";
 import {
   ArrowLeftIcon,
@@ -636,6 +637,11 @@ export default function ConfigureBundleFlow() {
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
   const [selectedPage, setSelectedPage] = useState<any>(null);
+
+  // State for products/collections view modals
+  const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
+  const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
+  const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
   
   // State for bundle product - initialize with loaded data
   const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct);
@@ -1074,6 +1080,27 @@ export default function ConfigureBundleFlow() {
     
     setActiveSection(section);
   }, [hasUnsavedChanges, activeSection, shopify]);
+
+  // Modal handlers for products and collections view
+  const handleShowProducts = useCallback((stepId: string) => {
+    setCurrentModalStepId(stepId);
+    setIsProductsModalOpen(true);
+  }, []);
+
+  const handleShowCollections = useCallback((stepId: string) => {
+    setCurrentModalStepId(stepId);
+    setIsCollectionsModalOpen(true);
+  }, []);
+
+  const handleCloseProductsModal = useCallback(() => {
+    setIsProductsModalOpen(false);
+    setCurrentModalStepId('');
+  }, []);
+
+  const handleCloseCollectionsModal = useCallback(() => {
+    setIsCollectionsModalOpen(false);
+    setCurrentModalStepId('');
+  }, []);
 
   // Step management functions
   const addNewStep = useCallback(() => {
@@ -1981,12 +2008,7 @@ export default function ConfigureBundleFlow() {
                                       <Button
                                         variant="plain"
                                         size="micro"
-                                        onClick={() => {
-                                          // Show selected products in a modal or expand section
-                                          const selectedProducts = step.StepProduct || [];
-                                          const productList = selectedProducts.map(p => p.title || p.name || 'Unnamed Product').join(', ');
-                                          alert(`Selected Products (${selectedProducts.length}):\n\n${productList}`);
-                                        }}
+                                        onClick={() => handleShowProducts(step.id)}
                                       >
                                         {step.StepProduct.length} Selected
                                       </Button>
@@ -2020,12 +2042,7 @@ export default function ConfigureBundleFlow() {
                                       <Button
                                         variant="plain"
                                         size="micro"
-                                        onClick={() => {
-                                          // Show selected collections in a modal or expand section
-                                          const collections = selectedCollections[step.id] || [];
-                                          const collectionList = collections.map(c => c.title || 'Unnamed Collection').join(', ');
-                                          alert(`Selected Collections (${collections.length}):\n\n${collectionList}`);
-                                        }}
+                                        onClick={() => handleShowCollections(step.id)}
                                       >
                                         {selectedCollections[step.id].length} Selected
                                       </Button>
@@ -2514,6 +2531,115 @@ export default function ConfigureBundleFlow() {
                 </BlockStack>
               </Card>
             )}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Selected Products Modal */}
+      <Modal
+        open={isProductsModalOpen}
+        onClose={handleCloseProductsModal}
+        title="Selected Products"
+        primaryAction={{
+          content: "Close",
+          onAction: handleCloseProductsModal,
+        }}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            {(() => {
+              const currentStep = steps.find(step => step.id === currentModalStepId);
+              const selectedProducts = currentStep?.StepProduct || [];
+              
+              return selectedProducts.length > 0 ? (
+                <BlockStack gap="300">
+                  <Text variant="bodyMd" fontWeight="medium">
+                    {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected for this step:
+                  </Text>
+                  <Card>
+                    <List type="bullet">
+                      {selectedProducts.map((product: any, index: number) => (
+                        <List.Item key={product.id || index}>
+                          <InlineStack gap="200" align="space-between">
+                            <BlockStack gap="050">
+                              <Text variant="bodyMd" fontWeight="medium">
+                                {product.title || product.name || 'Unnamed Product'}
+                              </Text>
+                              {product.variants && product.variants.length > 0 && (
+                                <Text variant="bodySm" tone="subdued">
+                                  {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                                </Text>
+                              )}
+                            </BlockStack>
+                            <Badge tone="info">Product</Badge>
+                          </InlineStack>
+                        </List.Item>
+                      ))}
+                    </List>
+                  </Card>
+                </BlockStack>
+              ) : (
+                <BlockStack gap="200" inlineAlign="center">
+                  <Text variant="bodyMd" tone="subdued">
+                    No products selected for this step yet.
+                  </Text>
+                </BlockStack>
+              );
+            })()}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Selected Collections Modal */}
+      <Modal
+        open={isCollectionsModalOpen}
+        onClose={handleCloseCollectionsModal}
+        title="Selected Collections"
+        primaryAction={{
+          content: "Close",
+          onAction: handleCloseCollectionsModal,
+        }}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            {(() => {
+              const collections = selectedCollections[currentModalStepId] || [];
+              
+              return collections.length > 0 ? (
+                <BlockStack gap="300">
+                  <Text variant="bodyMd" fontWeight="medium">
+                    {collections.length} collection{collections.length !== 1 ? 's' : ''} selected for this step:
+                  </Text>
+                  <Card>
+                    <List type="bullet">
+                      {collections.map((collection: any, index: number) => (
+                        <List.Item key={collection.id || index}>
+                          <InlineStack gap="200" align="space-between">
+                            <BlockStack gap="050">
+                              <Text variant="bodyMd" fontWeight="medium">
+                                {collection.title || 'Unnamed Collection'}
+                              </Text>
+                              {collection.handle && (
+                                <Text variant="bodySm" tone="subdued">
+                                  Handle: {collection.handle}
+                                </Text>
+                              )}
+                            </BlockStack>
+                            <Badge tone="success">Collection</Badge>
+                          </InlineStack>
+                        </List.Item>
+                      ))}
+                    </List>
+                  </Card>
+                </BlockStack>
+              ) : (
+                <BlockStack gap="200" inlineAlign="center">
+                  <Text variant="bodyMd" tone="subdued">
+                    No collections selected for this step yet.
+                  </Text>
+                </BlockStack>
+              );
+            })()}
           </BlockStack>
         </Modal.Section>
       </Modal>
