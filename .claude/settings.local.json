@@ -10,7 +10,9 @@
       "mcp__shopify-dev-mcp__introspect_graphql_schema",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "mcp__shopify-dev-mcp__learn_shopify_api"
+      "mcp__shopify-dev-mcp__learn_shopify_api",
+      "Bash(git push:*)",
+      "mcp__shopify-dev-mcp__fetch_full_docs"
     ],
     "deny": []
   }
