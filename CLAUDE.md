@@ -285,7 +285,7 @@ mutation cartTransformCreate($functionId: String!) {
 - Type: JSON with bundle configuration
 
 **Required Scopes:**
-`write_discounts,write_cart_transforms,write_products,read_products,write_metafields,read_metafields`
+`read_content,write_discounts,write_cart_transforms,write_products,read_products,write_metafields,read_metafields,read_themes,write_themes`
 
 ## Function Limitations
 
@@ -462,6 +462,81 @@ npm run test:watch
 - `data-save-bar` form integration
 - App Bridge 3.0 navigation blocking
 - Hidden inputs for state tracking
+
+---
+
+## Place Widget Functionality ✅
+
+**Dynamic Theme Editor Integration:**
+- Real-time theme template discovery via GraphQL and REST APIs
+- Professional theme editor deep linking with auto-activation
+- Template-specific widget placement (product, collection, homepage, etc.)
+- One-click theme editor access with Bundle Builder pre-loaded
+
+**Implementation Details:**
+
+**GraphQL Theme Discovery:**
+```graphql
+query getPublishedTheme {
+  themes(first: 1, roles: [MAIN]) {
+    nodes {
+      id
+      name
+      role
+    }
+  }
+}
+```
+
+**REST API Theme Assets Integration:**
+```typescript
+// Extract numeric theme ID from GraphQL GID format
+const themeId = publishedTheme.id.replace('gid://shopify/OnlineStoreTheme/', '');
+
+// Fetch theme assets via REST API
+const assetsUrl = `https://${shop}/admin/api/2025-01/themes/${themeId}/assets.json`;
+```
+
+**Deep Link Generation:**
+```typescript
+// Correct app block ID format: {client_id}/{block_handle}
+const appBlockId = 'bfda5624970c7ada838998eb951e9e85/bundle';
+
+// Theme editor deep link with auto-activation
+const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
+```
+
+**Key Features:**
+- **Template Classification**: Automatic categorization of templates (product, collection, homepage, cart, etc.)
+- **Professional UI**: Modal-based template selection with visual preview
+- **Error Handling**: Comprehensive validation and user-friendly error messages
+- **Debug Logging**: Console logging for development troubleshooting
+- **Access Scopes**: Updated with `read_themes` and `write_themes` permissions
+
+**Technical Architecture:**
+- **File**: `app/routes/app.bundles.cart-transform.configure.$bundleId.tsx`
+- **Functions**: `handleGetThemeTemplates()`, `handlePageSelection()`, `handlePlaceWidget()`
+- **API Integration**: GraphQL Admin API + REST API for comprehensive theme access
+- **Authentication**: Proper Shopify session token handling for embedded app context
+
+**User Experience:**
+1. Click "Place Widget" button in bundle configuration
+2. System automatically discovers all available theme templates
+3. Professional modal displays templates with descriptions and recommendations  
+4. Select desired template (product page, collection page, homepage, etc.)
+5. Theme editor opens with Bundle Builder app block pre-activated
+6. Drag and drop block to desired location in theme
+
+**Access Scope Requirements:**
+```toml
+scopes = "read_content,write_discounts,write_products,read_themes,write_themes"
+```
+
+**Troubleshooting:**
+- **"App block not found" errors**: Ensure app is deployed and block handle matches filename (`bundle.liquid` → `bundle`)
+- **Theme ID extraction issues**: Verify GID format conversion from GraphQL to numeric ID for REST API
+- **Deep link failures**: Check app block ID format and theme editor URL parameters
+- **Access denied errors**: Confirm proper theme-related access scopes are configured
 
 ---
 
