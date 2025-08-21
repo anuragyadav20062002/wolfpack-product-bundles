@@ -162,6 +162,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleSyncProduct(admin, session, bundleId, formData);
       case "getPages":
         return await handleGetPages(admin, session);
+      case "getThemeTemplates":
+        return await handleGetThemeTemplates(admin, session);
       case "getCurrentTheme":
         return await handleGetCurrentTheme(admin, session);
       default:
@@ -574,6 +576,153 @@ async function handleGetPages(admin: any, session: any) {
   }
 }
 
+// Handle getting theme templates
+async function handleGetThemeTemplates(admin: any, session: any) {
+  try {
+    // Get the published theme directly
+    const GET_PUBLISHED_THEME = `
+      query getPublishedTheme {
+        themes(first: 1, roles: [MAIN]) {
+          nodes {
+            id
+            name
+            role
+          }
+        }
+      }
+    `;
+
+    const themesResponse = await admin.graphql(GET_PUBLISHED_THEME);
+
+    const themesData = await themesResponse.json();
+    
+    if (!themesData.data?.themes?.nodes) {
+      return json({ 
+        success: false, 
+        error: "Failed to fetch themes" 
+      });
+    }
+
+    // Get the published theme (should be the first and only one)
+    const publishedTheme = themesData.data.themes.nodes[0];
+    
+    if (!publishedTheme) {
+      console.error("No themes returned from GraphQL:", themesData);
+      return json({ 
+        success: false, 
+        error: "No published theme found" 
+      });
+    }
+
+    console.log("Found published theme:", publishedTheme);
+
+    // Extract theme ID (remove gid prefix if present)
+    const themeId = publishedTheme.id.replace('gid://shopify/OnlineStoreTheme/', '');
+    console.log("Theme ID extracted:", themeId);
+
+    // Now fetch theme assets using REST API (since GraphQL doesn't expose theme assets)
+    const shop = session.shop;
+    const accessToken = session.accessToken;
+    
+    const assetsUrl = `https://${shop}/admin/api/2025-01/themes/${themeId}/assets.json`;
+    console.log("Assets URL:", assetsUrl);
+    
+    const assetsResponse = await fetch(assetsUrl, {
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!assetsResponse.ok) {
+      const errorText = await assetsResponse.text();
+      console.error("Assets response error:", {
+        status: assetsResponse.status,
+        statusText: assetsResponse.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch theme assets: ${assetsResponse.status} ${assetsResponse.statusText}`);
+    }
+
+    const assetsData = await assetsResponse.json();
+    console.log("Assets fetched successfully, count:", assetsData.assets?.length || 0);
+    
+    // Filter for template files and organize them
+    const templates = assetsData.assets
+      .filter((asset: any) => asset.key.startsWith('templates/') && 
+                               (asset.key.endsWith('.liquid') || asset.key.endsWith('.json')))
+      .map((asset: any) => {
+        const templateName = asset.key.replace('templates/', '').replace(/\.(liquid|json)$/, '');
+        const isJson = asset.key.endsWith('.json');
+        
+        // Determine template type and description
+        let title = templateName;
+        let description = '';
+        let recommended = false;
+
+        if (templateName === 'index') {
+          title = 'Homepage';
+          description = 'Main landing page of your store';
+          recommended = true;
+        } else if (templateName.startsWith('product')) {
+          title = templateName === 'product' ? 'Product Pages' : `Product - ${templateName.replace('product.', '')}`;
+          description = 'Individual product detail pages';
+          recommended = templateName === 'product';
+        } else if (templateName.startsWith('collection')) {
+          title = templateName === 'collection' ? 'Collection Pages' : `Collection - ${templateName.replace('collection.', '')}`;
+          description = 'Product collection listing pages';
+          recommended = templateName === 'collection';
+        } else if (templateName === 'page') {
+          title = 'Static Pages';
+          description = 'Custom content pages (About, Contact, etc.)';
+          recommended = true;
+        } else if (templateName === 'cart') {
+          title = 'Cart Page';
+          description = 'Shopping cart page';
+          recommended = false;
+        } else if (templateName === 'search') {
+          title = 'Search Results';
+          description = 'Search results page';
+          recommended = false;
+        } else {
+          title = templateName.charAt(0).toUpperCase() + templateName.slice(1);
+          description = `${title} template`;
+          recommended = false;
+        }
+
+        return {
+          id: templateName,
+          title,
+          handle: templateName,
+          description,
+          recommended,
+          fileType: isJson ? 'JSON' : 'Liquid',
+          fullKey: asset.key
+        };
+      })
+      .sort((a: any, b: any) => {
+        // Sort by recommended first, then alphabetically
+        if (a.recommended && !b.recommended) return -1;
+        if (!a.recommended && b.recommended) return 1;
+        return a.title.localeCompare(b.title);
+      });
+
+    return json({ 
+      success: true, 
+      templates,
+      themeId,
+      themeName: publishedTheme.name
+    });
+
+  } catch (error) {
+    console.error("Error fetching theme templates:", error);
+    return json({ 
+      success: false, 
+      error: "Failed to fetch theme templates" 
+    });
+  }
+}
+
 // Handle getting current theme for deep linking
 async function handleGetCurrentTheme(admin: any, session: any) {
   const GET_CURRENT_THEME = `
@@ -931,6 +1080,14 @@ export default function ConfigureBundleFlow() {
           // This is a sync product response
           shopify.toast.show(result.message || "Product synced successfully", { isError: false });
           // Optionally refetch bundle product data here
+        } else if (result.templates) {
+          // This is a get theme templates response
+          setAvailablePages(result.templates || []);
+          setIsLoadingPages(false);
+          console.log("Theme templates loaded successfully:", result.templates.length, "from theme:", result.themeName);
+        } else if (result.themeId) {
+          // This is a get current theme response - handled by individual callbacks
+          console.log("Theme ID fetched:", result.themeId);
         } else {
           // Generic success response
           shopify.toast.show(result.message || "Operation completed successfully", { isError: false });
@@ -939,6 +1096,11 @@ export default function ConfigureBundleFlow() {
         // Handle errors based on action type
         const errorMessage = result.error || "Operation failed";
         shopify.toast.show(errorMessage, { isError: true });
+        
+        // Handle specific error cases
+        if (errorMessage.includes("pages") || errorMessage.includes("templates")) {
+          setIsLoadingPages(false);
+        }
       }
     }
   }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify]);
@@ -1567,78 +1729,65 @@ export default function ConfigureBundleFlow() {
     triggerSaveBar();
   }, [triggerSaveBar]);
 
-  // Function to load available pages
-  const loadAvailablePages = useCallback(async () => {
+  // Function to load available theme templates
+  const loadAvailablePages = useCallback(() => {
     setIsLoadingPages(true);
     try {
       const formData = new FormData();
-      formData.append("intent", "getPages");
+      formData.append("intent", "getThemeTemplates");
 
-      const response = await fetch(window.location.pathname, {
-        method: "POST",
-        body: formData
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setAvailablePages(result.pages || []);
-      } else {
-        throw new Error(result.error || "Failed to load pages");
-      }
+      fetcher.submit(formData, { method: "post" });
+      // Response will be handled by the existing useEffect
     } catch (error) {
-      console.error("Failed to load pages:", error);
-      shopify.toast.show("Failed to load pages", { isError: true });
-    } finally {
+      console.error("Failed to load theme templates:", error);
+      shopify.toast.show("Failed to load theme templates", { isError: true });
       setIsLoadingPages(false);
     }
-  }, [shopify]);
+  }, [fetcher, shopify]);
 
   // Place widget handlers with page selection modal
-  const handlePlaceWidget = useCallback(async () => {
+  const handlePlaceWidget = useCallback(() => {
     try {
       console.log('Opening page selection modal');
       setIsPageSelectionModalOpen(true);
-      await loadAvailablePages();
+      loadAvailablePages();
     } catch (error) {
       console.error('Error opening page selection:', error);
       shopify.toast.show("Failed to open page selection", { isError: true });
     }
   }, [loadAvailablePages, shopify]);
 
-  const handlePageSelection = useCallback(async (page: any) => {
+  const handlePageSelection = useCallback((template: any) => {
     try {
+      console.log('Template selected:', template);
+      
+      if (!template || !template.handle) {
+        console.error('Invalid template object:', template);
+        shopify.toast.show("Template data is invalid", { isError: true });
+        return;
+      }
+
       const shopDomain = shop.includes('.myshopify.com') 
         ? shop.replace('.myshopify.com', '') 
         : shop;
 
-      // Get current theme ID for deep linking
-      const formData = new FormData();
-      formData.append("intent", "getCurrentTheme");
+      // Use correct app block ID format: {client_id}/{block_handle}
+      // The block handle is the filename without .liquid (bundle.liquid -> bundle)
+      const appBlockId = 'bfda5624970c7ada838998eb951e9e85/bundle';
+      
+      // Generate theme editor deep link for template with app block
+      // Format based on Shopify documentation: https://{shop}.myshopify.com/admin/themes/current/editor?template={template}&addAppBlockId={appBlockId}
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
 
-      const response = await fetch(window.location.pathname, {
-        method: "POST",
-        body: formData
-      });
+      console.log('Generated theme editor URL:', themeEditorUrl);
 
-      const result = await response.json();
-      let themeEditorUrl;
-
-      if (result.success && result.themeId) {
-        // Use specific theme and page context
-        themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/${result.themeId}/editor?context=templates%2Fpage&template=${page.handle}&addAppBlockId=bundle-builder`;
-      } else {
-        // Fallback to general theme editor
-        themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=templates%2Fpage&template=${page.handle}`;
-      }
-
-      setSelectedPage(page);
+      setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
       // Open theme editor in new tab
       window.open(themeEditorUrl, '_blank', 'noopener,noreferrer');
       
-      shopify.toast.show(`Theme editor opened for "${page.title}" page. Add the Bundle Builder widget from the Apps section.`, { isError: false });
+      shopify.toast.show(`Theme editor opened for "${template.title}". Look for "Bundle Builder" in the Apps section and drag it to your desired location.`, { isError: false, duration: 6000 });
       
     } catch (error) {
       console.error('Error opening theme editor:', error);
@@ -2477,7 +2626,7 @@ export default function ConfigureBundleFlow() {
       <Modal
         open={isPageSelectionModalOpen}
         onClose={() => setIsPageSelectionModalOpen(false)}
-        title="Select Page for Widget Placement"
+        title="Select Template for Widget Placement"
         primaryAction={{
           content: "Cancel",
           onAction: () => setIsPageSelectionModalOpen(false),
@@ -2486,31 +2635,43 @@ export default function ConfigureBundleFlow() {
         <Modal.Section>
           <BlockStack gap="400">
             <Text variant="bodyMd">
-              Choose a page where you want to place the Bundle Builder widget. The theme editor will open with the selected page ready for widget configuration.
+              Choose a page template where you want to place the Bundle Builder widget. The theme editor will open with the selected template ready for widget configuration. Look for the "Bundle Builder" app block in the Apps section and drag it to your desired location.
             </Text>
             
             {isLoadingPages ? (
               <BlockStack gap="200" inlineAlign="center">
-                <Text variant="bodyMd" tone="subdued">Loading pages...</Text>
+                <Text variant="bodyMd" tone="subdued">Loading templates...</Text>
               </BlockStack>
             ) : availablePages.length > 0 ? (
               <BlockStack gap="200">
-                {availablePages.map((page) => (
-                  <Card key={page.id} sectioned>
+                {availablePages.map((template) => (
+                  <Card key={template.id} sectioned>
                     <InlineStack wrap={false} gap="300" align="space-between">
                       <BlockStack gap="100">
-                        <Text variant="bodyMd" fontWeight="medium">
-                          {page.title}
-                        </Text>
+                        <InlineStack gap="200" blockAlign="center">
+                          <Text variant="bodyMd" fontWeight="medium">
+                            {template.title}
+                          </Text>
+                          {template.recommended && (
+                            <Badge tone="success">Recommended</Badge>
+                          )}
+                          {template.fileType && (
+                            <Badge tone="info">{template.fileType}</Badge>
+                          )}
+                        </InlineStack>
                         <Text variant="bodySm" tone="subdued">
-                          Handle: {page.handle}
+                          {template.description}
+                        </Text>
+                        <Text variant="bodyXs" tone="subdued">
+                          Template: {template.handle}
                         </Text>
                       </BlockStack>
                       <Button
-                        onClick={() => handlePageSelection(page)}
+                        onClick={() => handlePageSelection(template)}
                         primary
+                        icon={ExternalIcon}
                       >
-                        Select Page
+                        Select Template
                       </Button>
                     </InlineStack>
                   </Card>
