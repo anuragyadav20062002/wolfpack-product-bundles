@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useNavigate, useLoaderData } from "@remix-run/react";
 import {
@@ -13,11 +12,7 @@ import {
   Badge,
   DataTable,
   EmptyState,
-  Avatar,
   Thumbnail,
-  ProgressBar,
-  Checkbox,
-  Icon,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { EditIcon, PlusIcon, ProductIcon } from "@shopify/polaris-icons";
@@ -40,58 +35,6 @@ interface Bundle {
   pricing?: any;
 }
 
-// Bundle setup steps for progress tracking
-interface SetupStep {
-  id: string;
-  title: string;
-  description: string;
-  completed: boolean;
-}
-
-const BUNDLE_SETUP_STEPS: SetupStep[] = [
-  {
-    id: "create_bundle",
-    title: "Click on Create New Bundle",
-    description: "Start by creating your first bundle",
-    completed: false,
-  },
-  {
-    id: "name_description",
-    title: "Name and Description",
-    description: "Give your bundle a name and description",
-    completed: false,
-  },
-  {
-    id: "create_bundle_config",
-    title: "Click on Create Bundle",
-    description: "Configure your bundle settings",
-    completed: false,
-  },
-  {
-    id: "add_step",
-    title: "Click on Add Step",
-    description: "Add steps to your bundle",
-    completed: false,
-  },
-  {
-    id: "add_products",
-    title: "Add the Products or Collection you want to display in that step",
-    description: "Select products or collections for your bundle",
-    completed: false,
-  },
-  {
-    id: "publish",
-    title: "Click Publish",
-    description: "Publish your bundle to make it live",
-    completed: false,
-  },
-  {
-    id: "preview",
-    title: "Preview the bundle",
-    description: "Test your bundle before going live",
-    completed: false,
-  },
-];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -141,36 +84,6 @@ export default function Dashboard() {
   const { bundles } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
-  const [setupSteps, setSetupSteps] = useState<SetupStep[]>(BUNDLE_SETUP_STEPS);
-
-  // Calculate progress based on completed steps
-  const completedSteps = setupSteps.filter(step => step.completed).length;
-  const progressPercentage = (completedSteps / setupSteps.length) * 100;
-
-  // Update setup progress based on existing bundles
-  useEffect(() => {
-    if (bundles.length > 0) {
-      const updatedSteps = setupSteps.map(step => {
-        switch (step.id) {
-          case "create_bundle":
-          case "name_description":
-          case "create_bundle_config":
-            return { ...step, completed: true };
-          case "add_step":
-            return { ...step, completed: bundles.some(b => b.steps && b.steps.length > 0) };
-          case "add_products":
-            return { ...step, completed: bundles.some(b => b.steps && b.steps.some((s: any) => s.products && s.products.length > 0)) };
-          case "publish":
-            return { ...step, completed: bundles.some(b => b.status === "active") };
-          case "preview":
-            return { ...step, completed: bundles.some(b => b.status === "active") };
-          default:
-            return step;
-        }
-      });
-      setSetupSteps(updatedSteps);
-    }
-  }, [bundles]);
 
   const handleCreateBundle = () => {
     navigate("/app/bundle-type-selection");
@@ -188,8 +101,21 @@ export default function Dashboard() {
   const handleEditBundle = (bundle: Bundle) => {
     if (bundle.bundleType === "cart_transform") {
       navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
+    } else if (bundle.bundleType === "discount_function") {
+      navigate(`/app/bundles/discount-functions/configure/${bundle.id}`);
     } else {
       navigate(`/app/bundles/${bundle.id}`);
+    }
+  };
+
+  const handleBundleRowClick = (bundle: Bundle) => {
+    // Navigate to the bundle type's main page where they can see all bundles of that type
+    if (bundle.bundleType === "cart_transform") {
+      navigate("/app/bundles/cart-transform");
+    } else if (bundle.bundleType === "discount_function") {
+      navigate("/app/bundles/discount-functions");
+    } else {
+      navigate("/app/bundle-type-selection");
     }
   };
 
@@ -234,13 +160,19 @@ export default function Dashboard() {
     bundle.pricing?.enableDiscount ? "Enabled" : "Disabled",
     bundle.createdAt ? new Date(bundle.createdAt).toLocaleDateString() : "",
     <ButtonGroup key={bundle.id}>
-      <Button size="micro" onClick={() => handleEditBundle(bundle)}>
+      <Button size="micro" onClick={(e) => {
+        e.stopPropagation();
+        handleEditBundle(bundle);
+      }}>
         Edit
       </Button>
       <Button 
         size="micro" 
         tone="critical" 
-        onClick={() => handleDeleteBundle(bundle.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDeleteBundle(bundle.id);
+        }}
       >
         Delete
       </Button>
@@ -287,150 +219,212 @@ export default function Dashboard() {
                   </BlockStack>
                 </Card>
               ) : (
-                <DataTable
-                  columnContentTypes={["text", "text", "text", "numeric", "text", "text", "text"]}
-                  headings={["Bundle Name", "Type", "Status", "Steps", "Discount", "Created", "Actions"]}
-                  rows={bundleRows}
-                />
+                <div style={{ cursor: 'default' }}>
+                  <DataTable
+                    columnContentTypes={["text", "text", "text", "numeric", "text", "text", "text"]}
+                    headings={["Bundle Name", "Type", "Status", "Steps", "Discount", "Created", "Actions"]}
+                    rows={bundleRows.map((row, index) => 
+                      row.map((cell, cellIndex) => {
+                        if (cellIndex === row.length - 1) {
+                          // Actions column - keep as is
+                          return cell;
+                        }
+                        return (
+                          <div
+                            key={`${index}-${cellIndex}`}
+                            style={{ 
+                              cursor: 'pointer',
+                              width: '100%',
+                              padding: '8px 0'
+                            }}
+                            onClick={() => handleBundleRowClick(bundles[index])}
+                          >
+                            {cell}
+                          </div>
+                        );
+                      })
+                    )}
+                  />
+                </div>
               )}
             </BlockStack>
           </Card>
         </Layout.Section>
 
-        {/* Bundle Setup Instructions and Account Manager cards - Always visible */}
+        {/* Information Cards - Two card layout */}
         <Layout.Section>
-          <InlineStack gap="400" align="start" blockAlign="start">
-            {/* Bundle Setup Instructions Card - Equal width, natural height */}
-            <div style={{ flex: '1' }}>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'stretch', minHeight: '200px' }}>
+            {/* Bundle Analytics Card */}
+            <div style={{ flex: '1', minWidth: 0 }}>
               <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">
-                    Bundle Setup Instructions
-                  </Text>
-                  <Text variant="bodySm" tone="subdued">
-                    Follow these steps to set up the best bundle experience for your users
-                  </Text>
-                  
-                  {/* Progress Bar */}
-                  <BlockStack gap="150">
-                    <InlineStack gap="200" align="space-between">
-                      <Text variant="bodyXs" tone="subdued">
-                        Progress: {completedSteps}/{setupSteps.length} completed
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: '320px' }}>
+                  {/* Header with gradient background */}
+                  <div style={{ 
+                    padding: '1rem 1.5rem', 
+                    background: 'linear-gradient(135deg, #00A047 0%, #006B35 100%)',
+                    borderRadius: '8px 8px 0 0',
+                    marginBottom: '1.5rem'
+                  }}>
+                    <InlineStack gap="300" align="space-between">
+                      <Text variant="headingSm" as="h4" tone="text-inverse">
+                        Bundle Overview
                       </Text>
-                      <Text variant="bodyXs" tone="subdued">
-                        {Math.round(progressPercentage)}%
+                      <Text variant="bodyLg" fontWeight="semibold" tone="text-inverse">
+                        {bundles.length} Total
                       </Text>
                     </InlineStack>
-                    <ProgressBar progress={progressPercentage} />
-                  </BlockStack>
-
-                  {/* Setup Steps with Checkboxes */}
-                  <BlockStack gap="200">
-                    {setupSteps.map((step) => (
-                      <InlineStack key={step.id} gap="200" align="start">
-                        <Checkbox
-                          label=""
-                          checked={step.completed}
-                          disabled
-                        />
-                        <BlockStack gap="050">
-                          <Text variant="bodySm" fontWeight={step.completed ? "regular" : "medium"}>
-                            {step.title}
+                  </div>
+                  
+                  {/* Content area */}
+                  <div style={{ padding: '0 1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <BlockStack gap="400">
+                      {/* Statistics Grid */}
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: '1fr 1fr', 
+                        gap: '1.5rem',
+                        padding: '1.5rem',
+                        backgroundColor: '#F6F6F7',
+                        borderRadius: '12px'
+                      }}>
+                        <div style={{ textAlign: 'center', padding: '0.5rem' }}>
+                          <Text variant="headingLg" as="p" fontWeight="bold">
+                            {bundles.filter(b => b.status === 'active').length}
                           </Text>
-                          <Text variant="bodyXs" tone="subdued">
-                            {step.description}
+                          <Text variant="bodyMd" tone="subdued">Active Bundles</Text>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '0.5rem' }}>
+                          <Text variant="headingLg" as="p" fontWeight="bold">
+                            {bundles.filter(b => b.status === 'draft').length}
+                          </Text>
+                          <Text variant="bodyMd" tone="subdued">Draft Bundles</Text>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '0.5rem' }}>
+                          <Text variant="headingLg" as="p" fontWeight="bold">
+                            {bundles.filter(b => b.bundleType === 'cart_transform').length}
+                          </Text>
+                          <Text variant="bodyMd" tone="subdued">Cart Transform</Text>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '0.5rem' }}>
+                          <Text variant="headingLg" as="p" fontWeight="bold">
+                            {bundles.filter(b => b.bundleType === 'discount_function').length}
+                          </Text>
+                          <Text variant="bodyMd" tone="subdued">Discount Function</Text>
+                        </div>
+                      </div>
+                      
+                      {bundles.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                          <Text variant="bodyLg" tone="subdued">
+                            No bundles created yet
+                          </Text>
+                        </div>
+                      )}
+                    </BlockStack>
+                  </div>
+                  
+                  {/* Bottom spacing */}
+                  <div style={{ padding: '1.5rem' }}></div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Your Account Manager Card */}
+            <div style={{ flex: '1', minWidth: 0 }}>
+              <Card>
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: '320px', position: 'relative' }}>
+                  {/* Header with gradient background */}
+                  <div style={{ 
+                    padding: '1rem 1.5rem', 
+                    background: 'linear-gradient(135deg, #006fbb 0%, #004d87 100%)',
+                    borderRadius: '8px 8px 0 0',
+                    marginBottom: '1rem'
+                  }}>
+                    <Text variant="headingSm" as="h4" tone="text-inverse">
+                      Your Account Manager
+                    </Text>
+                  </div>
+                  
+                  {/* Content area */}
+                  <div style={{ padding: '0 1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <InlineStack gap="400" align="start" blockAlignment="start">
+                      <div style={{ position: 'relative', minWidth: '120px' }}>
+                        <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+                          <img 
+                            src="/Yash.jpg"
+                            alt="Yash (Founder)"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                        {/* Online status indicator - positioned outside the image container */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '-3px',
+                          right: '-3px',
+                          width: '18px',
+                          height: '18px',
+                          backgroundColor: '#00A047',
+                          borderRadius: '50%',
+                          border: '3px solid white',
+                          zIndex: 10
+                        }} />
+                      </div>
+                      
+                      <BlockStack gap="200" align="start">
+                        <BlockStack gap="100">
+                          <Text variant="bodyLg" fontWeight="semibold">
+                            Yash Chaudhari
+                          </Text>
+                          <Text variant="bodySm" tone="subdued">
+                            Founder
                           </Text>
                         </BlockStack>
-                      </InlineStack>
-                    ))}
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-            </div>
-
-            {/* Your Account Manager Card - Equal width, natural height */}
-            <div style={{ flex: '1' }}>
-              <Card>
-                <BlockStack gap="400">
-                  <Text variant="headingMd" as="h3">
-                    Your account manager
-                  </Text>
-                  
-                  <InlineStack gap="300" align="start">
-                    <Thumbnail 
-                      size="large"
-                      source="/Yash.jpg"
-                      alt="Yash (Founder)"
-                    />
-                    <BlockStack gap="200">
-                      <Text variant="bodyMd" fontWeight="medium">
-                        Yash (Founder)
-                      </Text>
-                      <BlockStack gap="100">
-                        <Text variant="bodySm" tone="subdued">
-                          • For setting up and publishing bundle
-                        </Text>
-                        <Text variant="bodySm" tone="subdued">
-                          • For customizing the design of the bundle
-                        </Text>
+                        
+                        {/* Services offered with icons */}
+                        <BlockStack gap="150">
+                          <InlineStack gap="200" align="start">
+                            <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
+                            <Text variant="bodySm">
+                              Bundle setup & publishing
+                            </Text>
+                          </InlineStack>
+                          <InlineStack gap="200" align="start">
+                            <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
+                            <Text variant="bodySm">
+                              Custom design & styling
+                            </Text>
+                          </InlineStack>
+                          <InlineStack gap="200" align="start">
+                            <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
+                            <Text variant="bodySm">
+                              Technical support
+                            </Text>
+                          </InlineStack>
+                        </BlockStack>
                       </BlockStack>
-                    </BlockStack>
-                  </InlineStack>
+                    </InlineStack>
+                  </div>
 
-                  <Button variant="primary" fullWidth onClick={handleScheduleMeeting}>
-                    Schedule Meeting
-                  </Button>
-                </BlockStack>
+                  {/* CTA Section */}
+                  <div style={{ padding: '1.5rem', marginTop: 'auto' }}>
+                    <InlineStack gap="300" align="center">
+                      <div style={{ flex: 1 }}>
+                        <Text variant="bodySm" tone="subdued">
+                          Available Mon-Fri • Responds within 1hr
+                        </Text>
+                      </div>
+                    </InlineStack>
+                    <div style={{ marginTop: '12px' }}>
+                      <Button variant="primary" fullWidth onClick={handleScheduleMeeting}>
+                        Schedule Call
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </Card>
             </div>
-          </InlineStack>
+          </div>
         </Layout.Section>
-        
-        {bundles.length > 0 && (
-          <Layout.Section>
-            <InlineStack gap="400" align="start">
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h4">
-                    Bundle Types
-                  </Text>
-                  <BlockStack gap="200">
-                    <InlineStack gap="200" align="start">
-                      <Badge tone="info">Cart Transform</Badge>
-                      <Text variant="bodyMd">Real-time cart updates (Shopify Plus)</Text>
-                    </InlineStack>
-                    <InlineStack gap="200" align="start">
-                      <Badge tone="success">Discount Function</Badge>
-                      <Text variant="bodyMd">Automatic discounts (All plans)</Text>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-              
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h4">
-                    Bundle Status
-                  </Text>
-                  <BlockStack gap="200">
-                    <InlineStack gap="200" align="start">
-                      <Badge tone="success">Active</Badge>
-                      <Text variant="bodyMd">Published and live</Text>
-                    </InlineStack>
-                    <InlineStack gap="200" align="start">
-                      <Badge tone="subdued">Draft</Badge>
-                      <Text variant="bodyMd">Not yet published</Text>
-                    </InlineStack>
-                    <InlineStack gap="200" align="start">
-                      <Badge tone="critical">Archived</Badge>
-                      <Text variant="bodyMd">Disabled bundle</Text>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-            </InlineStack>
-          </Layout.Section>
-        )}
       </Layout>
     </Page>
   );
