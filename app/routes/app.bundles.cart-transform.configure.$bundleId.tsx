@@ -891,34 +891,48 @@ export default function ConfigureBundleFlow() {
   useEffect(() => {
     if (fetcher.data && fetcher.state === 'idle') {
       const result = fetcher.data;
+      
+      // Handle different action types based on the response or form data
       if (result.success) {
-        // Update original values after successful save
-        setOriginalValues({
-          status: bundleStatus,
-          name: bundleName,
-          description: bundleDescription,
-          steps: JSON.stringify(steps),
-          discountEnabled: discountEnabled,
-          discountType: discountType,
-          discountRules: JSON.stringify(discountRules),
-          discountDisplayEnabled: discountDisplayEnabled,
-          discountMessagingEnabled: discountMessagingEnabled,
-          selectedCollections: JSON.stringify(selectedCollections),
-          ruleMessages: JSON.stringify(ruleMessages),
-          stepConditions: JSON.stringify(stepConditions),
-          bundleProduct: bundleProduct,
-          productStatus: productStatus,
-        });
-        
-        // Reset section changes after successful save
-        setSectionChanges({
-          step_setup: false,
-          discount_pricing: false
-        });
-        
-        shopify.toast.show(result.message || "Changes saved successfully", { isError: false });
+        // Check if this was a save bundle action by looking for bundle data in response
+        if (result.bundle) {
+          // This is a save bundle response
+          setOriginalValues({
+            status: bundleStatus,
+            name: bundleName,
+            description: bundleDescription,
+            steps: JSON.stringify(steps),
+            discountEnabled: discountEnabled,
+            discountType: discountType,
+            discountRules: JSON.stringify(discountRules),
+            discountDisplayEnabled: discountDisplayEnabled,
+            discountMessagingEnabled: discountMessagingEnabled,
+            selectedCollections: JSON.stringify(selectedCollections),
+            ruleMessages: JSON.stringify(ruleMessages),
+            stepConditions: JSON.stringify(stepConditions),
+            bundleProduct: bundleProduct,
+            productStatus: productStatus,
+          });
+          
+          // Reset section changes after successful save
+          setSectionChanges({
+            step_setup: false,
+            discount_pricing: false
+          });
+          
+          shopify.toast.show(result.message || "Changes saved successfully", { isError: false });
+        } else if (result.productId) {
+          // This is a sync product response
+          shopify.toast.show(result.message || "Product synced successfully", { isError: false });
+          // Optionally refetch bundle product data here
+        } else {
+          // Generic success response
+          shopify.toast.show(result.message || "Operation completed successfully", { isError: false });
+        }
       } else {
-        shopify.toast.show(result.error || "Failed to save changes", { isError: true });
+        // Handle errors based on action type
+        const errorMessage = result.error || "Operation failed";
+        shopify.toast.show(errorMessage, { isError: true });
       }
     }
   }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify]);
@@ -1192,7 +1206,7 @@ export default function ConfigureBundleFlow() {
     }
   }, [steps, shopify, triggerSaveBar]);
 
-  const handleSyncProduct = useCallback(async () => {
+  const handleSyncProduct = useCallback(() => {
     try {
       console.log("Syncing bundle product...");
       
@@ -1200,29 +1214,15 @@ export default function ConfigureBundleFlow() {
       const formData = new FormData();
       formData.append("intent", "syncProduct");
 
-      // Submit to server action
-      const response = await fetch(window.location.pathname, {
-        method: "POST",
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Update bundle product info if productId was returned
-        if (result.productId) {
-          // You might want to refetch the bundle product data here
-          // For now, just show success message
-        }
-        shopify.toast.show(result.message || "Product synced successfully", { isError: false });
-      } else {
-        throw new Error(result.error || "Failed to sync product");
-      }
+      // Submit to server action using fetcher
+      fetcher.submit(formData, { method: "post" });
+      
+      // Response will be handled by the existing useEffect
     } catch (error) {
       console.error("Product sync failed:", error);
       shopify.toast.show(error.message || "Failed to sync product", { isError: true });
     }
-  }, [shopify]);
+  }, [fetcher, shopify]);
 
   const handleBundleProductSelect = useCallback(async () => {
     try {
