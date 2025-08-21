@@ -822,6 +822,161 @@ This dual bundle system implementation provides a solid foundation for supportin
 
 ---
 
+## Cart Transform Bundle Configuration Enhancements (January 2025) ✅
+
+### Authentication and Schema Compatibility Fixes - Production Ready
+
+**Overview:**
+Resolved critical authentication and database schema issues in the cart transform bundle configuration flow, ensuring reliable save and sync operations with proper Shopify session handling.
+
+**Issues Resolved:**
+
+**1. Bundle Save Authentication Errors**
+- **Problem**: Raw `fetch()` calls causing "Unexpected token '<'" JSON parsing errors
+- **Root Cause**: Missing Shopify session tokens in embedded app requests
+- **Solution**: Replaced `fetch()` with Remix `useFetcher()` for proper authentication flow
+
+**2. Prisma Schema Validation Errors**
+- **Problem**: Frontend sending `pageTitle` and `stepNumber` fields not in database schema
+- **Solution**: Added field mapping: `pageTitle` → `name`, `stepNumber` → `position`
+- **Enhancement**: Added `mapDiscountMethod()` to convert `fixed_bundle_price` to `fixed_amount_off`
+
+**3. Sync Product Functionality**
+- **Problem**: Sync product action using raw fetch causing same authentication issues
+- **Solution**: Unified all form submissions to use `useFetcher()` pattern
+- **Enhancement**: Smart response detection for different action types in single handler
+
+**Technical Implementation:**
+
+**Authentication Pattern:**
+```typescript
+// Before (Problematic)
+const response = await fetch(window.location.pathname, {
+  method: "POST", 
+  body: formData
+});
+const result = await response.json(); // HTML parsing error
+
+// After (Fixed)  
+const fetcher = useFetcher<typeof action>();
+fetcher.submit(formData, { method: "post" }); // Properly authenticated
+
+// Smart response handling
+useEffect(() => {
+  if (fetcher.data && fetcher.state === 'idle') {
+    if (result.bundle) {
+      // Handle save bundle response
+    } else if (result.productId) {
+      // Handle sync product response
+    }
+  }
+}, [fetcher.data, fetcher.state]);
+```
+
+**Schema Field Mapping:**
+```typescript
+// Fixed Prisma field mappings
+data: stepsData.map((step: any, index: number) => ({
+  name: step.pageTitle || step.name, // Map pageTitle to name
+  position: index + 1, // Map stepNumber to position
+  displayVariantsAsIndividual: step.displayVariantsAsIndividualProducts,
+  minQuantity: step.minQuantity || 1,
+  maxQuantity: step.maxQuantity || 1,
+  enabled: step.enabled !== false
+}))
+
+// Discount method mapping
+function mapDiscountMethod(discountType: string): string {
+  switch (discountType) {
+    case 'fixed_bundle_price': return 'fixed_amount_off';
+    case 'percentage_off': return 'percentage_off';
+    case 'free_shipping': return 'free_shipping';
+    default: return 'fixed_amount_off';
+  }
+}
+```
+
+### Professional UI Modal Implementation - UX Enhancement
+
+**Overview:**
+Replaced jarring browser alerts with professional Shopify Polaris modals for viewing selected products and collections in bundle steps.
+
+**UI Improvements:**
+
+**1. Products/Collections View Modals**
+- **Before**: Basic `alert()` with comma-separated text
+- **After**: Professional Polaris Modal with structured lists and badges
+
+**2. Modal Features**
+- **Products Modal**: Shows selected products with variant counts and blue badges
+- **Collections Modal**: Displays collections with handles and green badges  
+- **Polaris List Components**: Organized bullet-point presentation
+- **Empty States**: Graceful handling of no selections
+- **Responsive Design**: Follows Shopify admin interface patterns
+
+**Implementation:**
+```typescript
+// Modal state management
+const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
+const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
+const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
+
+// Handler functions
+const handleShowProducts = useCallback((stepId: string) => {
+  setCurrentModalStepId(stepId);
+  setIsProductsModalOpen(true);
+}, []);
+
+// Modal implementation
+<Modal open={isProductsModalOpen} title="Selected Products">
+  <Modal.Section>
+    <Card>
+      <List type="bullet">
+        {selectedProducts.map((product: any) => (
+          <List.Item key={product.id}>
+            <InlineStack gap="200" align="space-between">
+              <BlockStack gap="050">
+                <Text variant="bodyMd" fontWeight="medium">
+                  {product.title || 'Unnamed Product'}
+                </Text>
+                <Text variant="bodySm" tone="subdued">
+                  {product.variants?.length} variants available
+                </Text>
+              </BlockStack>
+              <Badge tone="info">Product</Badge>
+            </InlineStack>
+          </List.Item>
+        ))}
+      </List>
+    </Card>
+  </Modal.Section>
+</Modal>
+```
+
+**Results Achieved:**
+
+**Reliability Improvements:**
+- ✅ Eliminated all authentication failures (`shop: null` errors)
+- ✅ Fixed JSON parsing errors from HTML responses  
+- ✅ Resolved Prisma validation errors on save operations
+- ✅ Unified authentication flow across all form actions
+
+**User Experience Enhancements:**
+- ✅ Professional modal dialogs replace browser alerts
+- ✅ Structured data presentation with proper badges and typography
+- ✅ Consistent design system alignment with Shopify standards
+- ✅ Enhanced accessibility and mobile responsiveness
+
+**Code Quality:**
+- ✅ Proper TypeScript types and error handling
+- ✅ Remix pattern compliance for embedded Shopify apps
+- ✅ Database schema compatibility and field mapping
+- ✅ Modular, maintainable component architecture
+
+This implementation ensures the cart transform bundle configuration is now production-ready with robust authentication, proper error handling, and professional UI components that align with Shopify's design standards.
+
+---
+
 ## Future Development TODOs & Placeholders
 
 ### Implementation Priorities for Next Development Sessions
