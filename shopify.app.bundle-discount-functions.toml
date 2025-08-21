@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://trees-shares-twiki-armenia.trycloudflare.com"
+application_url = "https://palestinian-optional-translation-mills.trycloudflare.com"
 embedded = true
 
 [build]
@@ -19,9 +19,9 @@ scopes = "write_discounts, write_products, read_content"
 
 [auth]
 redirect_urls = [
-  "https://trees-shares-twiki-armenia.trycloudflare.com/auth/callback",
-  "https://trees-shares-twiki-armenia.trycloudflare.com/auth/shopify/callback",
-  "https://trees-shares-twiki-armenia.trycloudflare.com/api/auth/callback"
+  "https://palestinian-optional-translation-mills.trycloudflare.com/auth/callback",
+  "https://palestinian-optional-translation-mills.trycloudflare.com/auth/shopify/callback",
+  "https://palestinian-optional-translation-mills.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

@@ -1609,7 +1609,16 @@ export default function ConfigureBundleFlow() {
   ];
 
   return (
-    <Page>
+    <Page
+      title={`Configure: ${bundleName}`}
+      subtitle="Set up your cart transform bundle configuration"
+      secondaryActions={[
+        {
+          content: "Back to Cart Transform Bundles",
+          onAction: () => navigate("/app/bundles/cart-transform"),
+        },
+      ]}
+    >
       {/* Modern App Bridge contextual save bar using form with data-save-bar */}
       <form 
         data-save-bar

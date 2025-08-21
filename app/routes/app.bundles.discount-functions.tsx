@@ -20,6 +20,7 @@ import {
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
+import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -426,31 +427,85 @@ export default function DiscountFunctionBundles() {
         </Layout.Section>
         
         <Layout.Section>
-          <Card>
-            <BlockStack gap="300">
-              <Text variant="headingSm" as="h4">
-                Discount Function Bundle Features
-              </Text>
-              <BlockStack gap="200">
-                <Text variant="bodyMd" as="p">
-                  <strong>Automatic Discounts:</strong> Discounts are applied automatically 
-                  when customers meet bundle requirements.
-                </Text>
-                <Text variant="bodyMd" as="p">
-                  <strong>Multiple Discount Types:</strong> Support for fixed amount discounts, 
-                  percentage discounts, and free shipping offers.
-                </Text>
-                <Text variant="bodyMd" as="p">
-                  <strong>Universal Compatibility:</strong> Works on all Shopify plans 
-                  without requiring Shopify Plus.
-                </Text>
-                <Text variant="bodyMd" as="p">
-                  <strong>Flexible Conditions:</strong> Set minimum quantities and 
-                  customize discount rules for different bundle scenarios.
-                </Text>
-              </BlockStack>
-            </BlockStack>
-          </Card>
+          <InlineStack gap="400" align="start" blockAlign="start">
+            {/* Discount Function Bundle Setup Instructions */}
+            <div style={{ flex: '1' }}>
+              <BundleSetupInstructions
+                title="Discount Function Bundle Setup"
+                subtitle="Follow these steps to create your discount function bundle"
+                bundlesExist={bundles.length > 0}
+                steps={[
+                  {
+                    id: "create_bundle",
+                    title: 'Click "Create Discount Function Bundle"',
+                    description: "Start by clicking the create button above",
+                    isClickable: true,
+                    onClick: handleCreateBundle,
+                  },
+                  {
+                    id: "name_description",
+                    title: "Enter bundle name and description",
+                    description: "Give your bundle a descriptive name and optional description",
+                  },
+                  {
+                    id: "create_bundle_modal",
+                    title: 'Click "Create Bundle" in modal',
+                    description: "This will create the bundle and navigate to configuration",
+                  },
+                  {
+                    id: "select_scope",
+                    title: "Select bundle scope and add products",
+                    description: "Choose products/collections that qualify for the bundle discount",
+                    isClickable: bundles.length > 0,
+                    onClick: () => bundles.length > 0 && navigate(`/app/bundles/discount-functions/configure/${bundles[0].id}`),
+                  },
+                  {
+                    id: "setup_pricing",
+                    title: "Configure discount rules and pricing",
+                    description: "Set up automatic discount conditions and amounts",
+                    isClickable: bundles.length > 0,
+                    onClick: () => bundles.length > 0 && navigate(`/app/bundles/discount-functions/configure/${bundles[0].id}`),
+                  },
+                  {
+                    id: "publish",
+                    title: "Save and publish your bundle",
+                    description: "Save your changes and publish to activate discount function",
+                    isClickable: bundles.length > 0,
+                    onClick: () => bundles.length > 0 && navigate(`/app/bundles/discount-functions/configure/${bundles[0].id}`),
+                  },
+                ]}
+              />
+            </div>
+
+            {/* Discount Function Bundle Features */}
+            <div style={{ flex: '1' }}>
+              <Card>
+                <BlockStack gap="300">
+                  <Text variant="headingSm" as="h4">
+                    Discount Function Features
+                  </Text>
+                  <BlockStack gap="200">
+                    <Text variant="bodyMd" as="p">
+                      <strong>Automatic Discounts:</strong> Discounts are applied automatically 
+                      when customers meet bundle requirements.
+                    </Text>
+                    <Text variant="bodyMd" as="p">
+                      <strong>Multiple Discount Types:</strong> Support for fixed amount discounts, 
+                      percentage discounts, and free shipping offers.
+                    </Text>
+                    <Text variant="bodyMd" as="p">
+                      <strong>Universal Compatibility:</strong> Works on all Shopify plans 
+                      without requiring Shopify Plus.
+                    </Text>
+                    <Text variant="bodyMd" as="p">
+                      <strong>Flexible Conditions:</strong> Set minimum quantities and 
+                      customize discount rules for different bundle scenarios.
+                    </Text>
+                  </BlockStack>
+                </BlockStack>
+              </Card>
+            </div>
+          </InlineStack>
         </Layout.Section>
       </Layout>
     </Page>
