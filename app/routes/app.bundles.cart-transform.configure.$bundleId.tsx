@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate } from "@remix-run/react";
+import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -134,16 +134,24 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
-  const { bundleId } = params;
-  const formData = await request.formData();
-  const intent = formData.get("intent");
-
-  if (!bundleId) {
-    return json({ success: false, error: "Bundle ID is required" }, { status: 400 });
-  }
-
   try {
+    const { session, admin } = await authenticate.admin(request);
+    const { bundleId } = params;
+    
+    console.log("Authentication successful:", { shop: session?.shop, bundleId });
+    
+    if (!session?.shop) {
+      console.error("No session shop found");
+      return json({ success: false, error: "Authentication required" }, { status: 401 });
+    }
+    
+    const formData = await request.formData();
+    const intent = formData.get("intent");
+
+    if (!bundleId) {
+      return json({ success: false, error: "Bundle ID is required" }, { status: 400 });
+    }
+
     switch (intent) {
       case "saveBundle":
         return await handleSaveBundle(admin, session, bundleId, formData);
@@ -280,6 +288,21 @@ async function updateBundleProductMetafields(admin: any, bundleProductId: string
   return data.data?.metafieldsSet?.metafields?.[0];
 }
 
+// Map frontend discount method values to schema enum values
+function mapDiscountMethod(discountType: string): string {
+  switch (discountType) {
+    case 'fixed_bundle_price':
+    case 'fixed_amount_off':
+      return 'fixed_amount_off';
+    case 'percentage_off':
+      return 'percentage_off';
+    case 'free_shipping':
+      return 'free_shipping';
+    default:
+      return 'fixed_amount_off'; // Default fallback
+  }
+}
+
 // Handle saving bundle configuration
 async function handleSaveBundle(admin: any, session: any, bundleId: string, formData: FormData) {
   // Parse form data
@@ -305,13 +328,14 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
           deleteMany: {},
           createMany: {
             data: stepsData.map((step: any, index: number) => ({
-              name: step.name,
-              pageTitle: step.pageTitle || step.name,
-              stepNumber: index + 1,
+              name: step.pageTitle || step.name, // Use pageTitle as name if available
+              position: index + 1, // Map stepNumber to position field
               products: step.products || [],
               collections: step.collections || [],
-              conditions: step.conditions || [],
-              displayVariantsAsIndividualProducts: step.displayVariantsAsIndividualProducts || false
+              displayVariantsAsIndividual: step.displayVariantsAsIndividualProducts || false,
+              minQuantity: step.minQuantity || 1,
+              maxQuantity: step.maxQuantity || 1,
+              enabled: step.enabled !== false // Default to true unless explicitly false
             }))
           }
         }
@@ -322,9 +346,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
           upsert: {
             create: {
               enableDiscount: discountData.discountEnabled,
-              discountMethod: discountData.discountType,
+              discountMethod: mapDiscountMethod(discountData.discountType),
               rules: discountData.discountRules || [],
-              displaySettings: {
+              messages: {
                 showDiscountDisplay: discountData.discountDisplayEnabled || false,
                 showDiscountMessaging: discountData.discountMessagingEnabled || false,
                 ruleMessages: discountData.ruleMessages || {}
@@ -332,9 +356,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
             },
             update: {
               enableDiscount: discountData.discountEnabled,
-              discountMethod: discountData.discountType,
+              discountMethod: mapDiscountMethod(discountData.discountType),
               rules: discountData.discountRules || [],
-              displaySettings: {
+              messages: {
                 showDiscountDisplay: discountData.discountDisplayEnabled || false,
                 showDiscountMessaging: discountData.discountMessagingEnabled || false,
                 ruleMessages: discountData.ruleMessages || {}
@@ -585,6 +609,7 @@ export default function ConfigureBundleFlow() {
   const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
+  const fetcher = useFetcher<typeof action>();
   
   // State for form controls
   const [bundleStatus, setBundleStatus] = useState(bundle.status);
@@ -847,14 +872,25 @@ export default function ConfigureBundleFlow() {
         ruleMessages
       }));
 
-      // Submit to server action
-      const response = await fetch(window.location.pathname, {
-        method: "POST",
-        body: formData
-      });
+      // Submit to server action using fetcher
+      console.log("Submitting save request with fetcher");
+      console.log("FormData intent:", formData.get("intent"));
+      
+      fetcher.submit(formData, { method: "post" });
+      
+      // Note: With useFetcher, we need to handle the response via useEffect
+      // The immediate return here will be handled by the fetcher response
+      return;
+    } catch (error) {
+      console.error("Save failed:", error);
+      shopify.toast.show(error.message || "Failed to save changes", { isError: true });
+    }
+  }, [bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
 
-      const result = await response.json();
-
+  // Handle fetcher response
+  useEffect(() => {
+    if (fetcher.data && fetcher.state === 'idle') {
+      const result = fetcher.data;
       if (result.success) {
         // Update original values after successful save
         setOriginalValues({
@@ -882,13 +918,10 @@ export default function ConfigureBundleFlow() {
         
         shopify.toast.show(result.message || "Changes saved successfully", { isError: false });
       } else {
-        throw new Error(result.error || "Failed to save changes");
+        shopify.toast.show(result.error || "Failed to save changes", { isError: true });
       }
-    } catch (error) {
-      console.error("Save failed:", error);
-      shopify.toast.show(error.message || "Failed to save changes", { isError: true });
     }
-  }, [bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
+  }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify]);
 
   // Discard handler
   const handleDiscard = useCallback(() => {
