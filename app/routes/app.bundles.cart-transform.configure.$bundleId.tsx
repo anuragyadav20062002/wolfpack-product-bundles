@@ -294,6 +294,26 @@ async function updateBundleProductMetafields(admin: any, bundleProductId: string
 // Helper function to update shop-level all_bundles metafield for Liquid extension
 async function updateShopBundlesMetafield(admin: any, shopId: string) {
   try {
+    // First get the shop's global ID
+    const GET_SHOP_ID = `
+      query getShopId {
+        shop {
+          id
+        }
+      }
+    `;
+
+    const shopResponse = await admin.graphql(GET_SHOP_ID);
+    const shopData = await shopResponse.json();
+    
+    if (!shopData.data?.shop?.id) {
+      console.error('Failed to get shop global ID');
+      return null;
+    }
+
+    const shopGlobalId = shopData.data.shop.id;
+    console.log('Shop global ID:', shopGlobalId);
+
     // Get all published cart transform bundles from database
     // Force refresh by including even draft bundles with steps for debugging
     const allBundles = await db.bundle.findMany({
@@ -371,7 +391,7 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
       variables: {
         metafields: [
           {
-            ownerId: `gid://shopify/Shop/${shopId.replace('.myshopify.com', '')}`,
+            ownerId: shopGlobalId,
             namespace: "custom",
             key: "all_bundles", 
             type: "json",
