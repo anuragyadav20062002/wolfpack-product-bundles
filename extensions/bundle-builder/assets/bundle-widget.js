@@ -20,27 +20,30 @@ function renderBundleSteps(numberOfSteps) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize bundle widgets (supports multiple instances on same page)
+function initializeBundleWidget(containerElement) {
   const allBundlesDataRaw = window.allBundlesData;
   const currentProductId = window.currentProductId;
   const currentProductHandle = window.currentProductHandle;
-  const currentProductCollections = window.currentProductCollections; // Access the new variable
+  const currentProductCollections = window.currentProductCollections;
   const shopCurrency = window.shopCurrency || 'USD';
   
-  // Get widget configuration from data attributes
-  const appContainer = document.getElementById('bundle-builder-app');
-  if (!appContainer) {
-    console.error('Bundle builder app container not found.');
+  if (!containerElement) {
+    console.error('Bundle widget container element not provided.');
     return;
   }
   
+  console.log('DEBUG: Initializing bundle widget for container:', containerElement.id);
+  
   const widgetConfig = {
-    bundleId: appContainer.dataset.bundleId || null,
-    position: appContainer.dataset.position || 'after_description',
-    showTitle: appContainer.dataset.showTitle === 'true',
-    showStepNumbers: appContainer.dataset.showStepNumbers === 'true',
-    showFooterMessaging: appContainer.dataset.showFooterMessaging === 'true'
+    bundleId: containerElement.dataset.bundleId || window.autoDetectedBundleId || null,
+    position: containerElement.dataset.position || 'after_description',
+    showTitle: containerElement.dataset.showTitle === 'true',
+    showStepNumbers: containerElement.dataset.showStepNumbers === 'true',
+    showFooterMessaging: containerElement.dataset.showFooterMessaging === 'true'
   };
+  
+  console.log('DEBUG: Widget config with auto-detection:', widgetConfig);
 
   if (!allBundlesDataRaw || !currentProductId) {
     console.warn('Bundle data or current product ID not available. Make sure bundles are published and the product context is available.');
@@ -1077,5 +1080,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // Final check and initialization
   if (selectedBundle) {
     initializeBundleBuilder();
+  }
+}
+
+// Initialize all bundle widgets on page load
+document.addEventListener('DOMContentLoaded', () => {
+  // Support multiple bundle widget instances on same page
+  const allBundleContainers = document.querySelectorAll('[id^="bundle-builder-app"]');
+  
+  console.log('DEBUG: Found bundle widget containers:', allBundleContainers.length);
+  
+  if (allBundleContainers.length === 0) {
+    // Fallback for single container with exact ID
+    const singleContainer = document.getElementById('bundle-builder-app');
+    if (singleContainer) {
+      initializeBundleWidget(singleContainer);
+    }
+  } else {
+    // Initialize each container separately
+    allBundleContainers.forEach((container, index) => {
+      console.log(`DEBUG: Initializing bundle widget ${index + 1} of ${allBundleContainers.length}`);
+      initializeBundleWidget(container);
+    });
   }
 }); 

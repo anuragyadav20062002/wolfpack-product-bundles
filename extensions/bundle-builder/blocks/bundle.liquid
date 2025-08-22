@@ -53,8 +53,9 @@
     {
       "type": "text",
       "id": "bundle_id",
-      "label": "Cart Transform Bundle ID (required for cart transform bundles)",
-      "info": "For cart transform bundles: Enter the specific bundle ID to display. For discount function bundles: Leave empty to auto-detect."
+      "label": "Bundle ID",
+      "info": "Bundle ID is automatically filled when placing widget from cart transform bundle admin. You can also manually specify a bundle ID here.",
+      "default": ""
     },
     {
       "type": "range",
@@ -246,6 +247,30 @@
 
   console.log('Liquid allBundlesData:', allBundlesData);
   console.log('Liquid currentProductId:', currentProductId);
+  
+  // Auto-extract bundle ID from URL for seamless widget placement
+  function extractBundleIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bundleIdFromUrl = urlParams.get('bundleId');
+    
+    if (bundleIdFromUrl && window.location.pathname.includes('/editor')) {
+      console.log('DEBUG: Bundle ID detected from theme editor URL:', bundleIdFromUrl);
+      // Store for the widget to use
+      window.autoDetectedBundleId = bundleIdFromUrl;
+      
+      // Try to auto-populate the bundle_id setting if we're in theme editor
+      setTimeout(() => {
+        const bundleIdInput = document.querySelector('input[name*="bundle_id"]');
+        if (bundleIdInput && !bundleIdInput.value) {
+          bundleIdInput.value = bundleIdFromUrl;
+          console.log('Auto-populated bundle ID input:', bundleIdFromUrl);
+        }
+      }, 1000);
+    }
+  }
+  
+  // Run on page load
+  extractBundleIdFromUrl();
 </script>
 <link rel="stylesheet" href="{{ 'bundle-widget.css' | asset_url }}">
 <script src="{{ 'bundle-widget.js' | asset_url }}" defer></script> 

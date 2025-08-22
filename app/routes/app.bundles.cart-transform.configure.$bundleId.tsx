@@ -1930,9 +1930,9 @@ export default function ConfigureBundleFlow() {
       // The block handle is the filename without .liquid (bundle.liquid -> bundle)
       const appBlockId = 'bfda5624970c7ada838998eb951e9e85/bundle';
       
-      // Generate theme editor deep link for template with app block
-      // Format based on Shopify documentation: https://{shop}.myshopify.com/admin/themes/current/editor?template={template}&addAppBlockId={appBlockId}
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
+      // Generate theme editor deep link for template with app block and bundle ID
+      // Include bundle ID so the placed widget automatically loads this specific cart transform bundle
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
 
       console.log('Generated theme editor URL:', themeEditorUrl);
 
