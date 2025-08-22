@@ -316,6 +316,8 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
       id: bundle.id,
       name: bundle.name,
       description: bundle.description,
+      status: bundle.status, // Include status for JavaScript filtering
+      bundleType: bundle.bundleType, // Include bundle type for debugging
       steps: bundle.steps.map(step => ({
         id: step.id,
         name: step.name,
@@ -337,7 +339,13 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
         rules: bundle.pricing.rules || [],
         showFooter: bundle.pricing.showFooter,
         messages: bundle.pricing.messages || {}
-      } : null
+      } : null,
+      // Add matching data for JavaScript bundle selection
+      matching: {
+        // For cart transform bundles, we can match based on step products/collections
+        products: bundle.steps.flatMap(step => step.StepProduct?.map(p => ({ id: p.productId })) || []),
+        collections: bundle.steps.flatMap(step => (step.collections as any[]) || [])
+      }
     }));
 
     const SET_SHOP_METAFIELD = `
@@ -381,7 +389,7 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
       return null;
     }
 
-    console.log(`Updated shop metafield with ${formattedBundles.length} bundles`);
+    console.log(`Updated shop metafield with ${formattedBundles.length} bundles:`, formattedBundles.map(b => ({ id: b.id, name: b.name, bundleType: 'cart_transform', stepsCount: b.steps.length })));
     return data.data?.metafieldsSet?.metafields?.[0];
 
   } catch (error) {

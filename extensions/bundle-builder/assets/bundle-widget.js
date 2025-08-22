@@ -69,10 +69,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  console.log('DEBUG: Starting bundle matching process');
+  console.log('DEBUG: Total bundles to check:', bundlesArray.length);
+  console.log('DEBUG: Widget config bundleId:', widgetConfig.bundleId);
+
   for (const bundle of bundlesArray) {
+    console.log('DEBUG: Checking bundle:', bundle?.name || 'Unnamed', 'Status:', bundle?.status, 'Steps:', bundle?.steps?.length || 0);
     if (bundle && bundle.status === 'active') {
       // If a specific bundle ID is configured, only use that bundle
       if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
+        console.log('DEBUG: Skipping bundle (ID mismatch):', bundle.name);
         continue;
       }
       
@@ -133,14 +139,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (productMatches || collectionMatches) { // Modified condition
         selectedBundle = bundle; // We'll use the raw bundle object, which contains `steps` etc. directly.
         selectedBundle.parsedMatching = parsedMatching; // Attach parsed matching for future use
+        console.log('DEBUG: Selected bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
         break; // Found a matching bundle, take the first one
+      } else {
+        console.log('DEBUG: No match for bundle:', bundle.name, 'Product match:', productMatches, 'Collection match:', collectionMatches);
       }
     }
   }
 
-  const appContainer = document.getElementById('bundle-builder-app');
+  // Use the already declared appContainer from earlier in the code
   if (!appContainer) {
-    console.error('Bundle builder app container not found.');
+    console.error('Bundle builder app container not found after bundle selection.');
     return;
   }
 
