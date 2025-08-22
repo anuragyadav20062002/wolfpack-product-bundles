@@ -2192,7 +2192,8 @@ export default function ConfigureBundleFlow() {
                                         variant="plain"
                                         size="micro"
                                         onClick={() => handleShowCollections(step.id)}
-                                      >
+
+>
                                         {selectedCollections[step.id].length} Selected
                                       </Button>
                                     </Badge>
