@@ -291,6 +291,105 @@ async function updateBundleProductMetafields(admin: any, bundleProductId: string
   return data.data?.metafieldsSet?.metafields?.[0];
 }
 
+// Helper function to update shop-level all_bundles metafield for Liquid extension
+async function updateShopBundlesMetafield(admin: any, shopId: string) {
+  try {
+    // Get all published cart transform bundles from database
+    const allBundles = await db.bundle.findMany({
+      where: {
+        shopId: shopId,
+        bundleType: 'cart_transform',
+        status: 'active'
+      },
+      include: {
+        steps: {
+          include: {
+            StepProduct: true
+          }
+        },
+        pricing: true
+      }
+    });
+
+    // Format bundles for Liquid extension
+    const formattedBundles = allBundles.map(bundle => ({
+      id: bundle.id,
+      name: bundle.name,
+      description: bundle.description,
+      steps: bundle.steps.map(step => ({
+        id: step.id,
+        name: step.name,
+        position: step.position,
+        minQuantity: step.minQuantity,
+        maxQuantity: step.maxQuantity,
+        enabled: step.enabled,
+        displayVariantsAsIndividual: step.displayVariantsAsIndividual,
+        products: step.products || [],
+        collections: step.collections || [],
+        StepProduct: step.StepProduct || [],
+        // Add condition data if needed
+        conditionType: step.conditionType,
+        conditionValue: step.conditionValue
+      })),
+      pricing: bundle.pricing ? {
+        enabled: bundle.pricing.enableDiscount,
+        method: bundle.pricing.discountMethod,
+        rules: bundle.pricing.rules || [],
+        showFooter: bundle.pricing.showFooter,
+        messages: bundle.pricing.messages || {}
+      } : null
+    }));
+
+    const SET_SHOP_METAFIELD = `
+      mutation SetShopBundlesMetafield($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          metafields {
+            id
+            key
+            namespace
+            value
+          }
+          userErrors {
+            field
+            message
+            code
+          }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(SET_SHOP_METAFIELD, {
+      variables: {
+        metafields: [
+          {
+            ownerId: `gid://shopify/Shop/${shopId.replace('.myshopify.com', '')}`,
+            namespace: "custom",
+            key: "all_bundles", 
+            type: "json",
+            value: JSON.stringify(formattedBundles)
+          }
+        ]
+      }
+    });
+
+    const data = await response.json();
+
+    if (data.data?.metafieldsSet?.userErrors?.length > 0) {
+      const error = data.data.metafieldsSet.userErrors[0];
+      console.error("Shop metafield set error:", error);
+      // Don't throw error as this is not critical for bundle functionality
+      return null;
+    }
+
+    console.log(`Updated shop metafield with ${formattedBundles.length} bundles`);
+    return data.data?.metafieldsSet?.metafields?.[0];
+
+  } catch (error) {
+    console.error("Error updating shop bundles metafield:", error);
+    return null;
+  }
+}
+
 // Map frontend discount method values to schema enum values
 function mapDiscountMethod(discountType: string): string {
   switch (discountType) {
@@ -329,18 +428,28 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       ...(stepsData && {
         steps: {
           deleteMany: {},
-          createMany: {
-            data: stepsData.map((step: any, index: number) => ({
-              name: step.pageTitle || step.name, // Use pageTitle as name if available
-              position: index + 1, // Map stepNumber to position field
-              products: step.products || [],
-              collections: step.collections || [],
-              displayVariantsAsIndividual: step.displayVariantsAsIndividualProducts || false,
-              minQuantity: step.minQuantity || 1,
-              maxQuantity: step.maxQuantity || 1,
-              enabled: step.enabled !== false // Default to true unless explicitly false
-            }))
-          }
+          create: stepsData.map((step: any, index: number) => ({
+            name: step.pageTitle || step.name, // Use pageTitle as name if available
+            position: index + 1, // Map stepNumber to position field
+            products: step.products || [],
+            collections: step.collections || [],
+            displayVariantsAsIndividual: step.displayVariantsAsIndividualProducts || false,
+            minQuantity: step.minQuantity || 1,
+            maxQuantity: step.maxQuantity || 1,
+            enabled: step.enabled !== false, // Default to true unless explicitly false
+            // Create StepProduct records for selected products
+            StepProduct: {
+              create: (step.StepProduct || []).map((product: any, productIndex: number) => ({
+                productId: product.id,
+                title: product.title || product.name || 'Unnamed Product',
+                imageUrl: product.image?.url || product.imageUrl || null,
+                variants: product.variants || null,
+                minQuantity: product.minQuantity || 1,
+                maxQuantity: product.maxQuantity || 10,
+                position: productIndex + 1
+              }))
+            }
+          }))
         }
       }),
       // Update pricing if provided
@@ -410,6 +519,14 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       console.error("Failed to update bundle product metafields:", error);
       // Don't fail the entire operation - just log the error
     }
+  }
+
+  // Update shop-level all_bundles metafield for Liquid extension
+  try {
+    await updateShopBundlesMetafield(admin, session.shop);
+  } catch (error) {
+    console.error("Failed to update shop bundles metafield:", error);
+    // Don't fail the entire operation - just log the error
   }
 
   return json({ 
@@ -797,8 +914,16 @@ export default function ConfigureBundleFlow() {
   const [isBundleProductPickerOpen, setIsBundleProductPickerOpen] = useState(false);
   const [productStatus, setProductStatus] = useState(loadedBundleProduct?.status || "ACTIVE");
   
-  // State for collections
-  const [selectedCollections, setSelectedCollections] = useState<Record<string, any[]>>({});
+  // State for collections - initialize with data from loaded bundle steps
+  const [selectedCollections, setSelectedCollections] = useState<Record<string, any[]>>(() => {
+    const collections: Record<string, any[]> = {};
+    bundle.steps?.forEach(step => {
+      if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
+        collections[step.id] = step.collections;
+      }
+    });
+    return collections;
+  });
   const [isCollectionPickerOpen, setIsCollectionPickerOpen] = useState(false);
   const [currentStepIdForCollection, setCurrentStepIdForCollection] = useState<string | null>(null);
   
@@ -1017,7 +1142,13 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleName", bundleName);
       formData.append("bundleDescription", bundleDescription);
       formData.append("bundleStatus", bundleStatus);
-      formData.append("stepsData", JSON.stringify(steps));
+      // Merge collections data into steps before saving
+      const stepsWithCollections = steps.map(step => ({
+        ...step,
+        collections: selectedCollections[step.id] || step.collections || []
+      }));
+      
+      formData.append("stepsData", JSON.stringify(stepsWithCollections));
       formData.append("discountData", JSON.stringify({
         discountEnabled,
         discountType,

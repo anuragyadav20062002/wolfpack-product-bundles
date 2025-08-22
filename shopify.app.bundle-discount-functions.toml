@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://applicable-sized-secretariat-planned.trycloudflare.com"
+application_url = "https://preparing-ourselves-halo-arizona.trycloudflare.com"
 embedded = true
 
 [build]
@@ -18,7 +18,7 @@ api_version = "2025-04"
 scopes = "read_content,write_discounts,write_products,read_themes,write_themes"
 
 [auth]
-redirect_urls = ["https://applicable-sized-secretariat-planned.trycloudflare.com/auth/callback", "https://applicable-sized-secretariat-planned.trycloudflare.com/auth/shopify/callback", "https://applicable-sized-secretariat-planned.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://preparing-ourselves-halo-arizona.trycloudflare.com/auth/callback", "https://preparing-ourselves-halo-arizona.trycloudflare.com/auth/shopify/callback", "https://preparing-ourselves-halo-arizona.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
