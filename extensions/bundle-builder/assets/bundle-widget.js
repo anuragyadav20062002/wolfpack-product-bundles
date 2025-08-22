@@ -176,17 +176,17 @@ function initializeBundleWidget(containerElement) {
     } // End bundle type check
   } // End bundle loop
 
-  // Use the already declared appContainer from earlier in the code
-  if (!appContainer) {
-    console.error('Bundle builder app container not found after bundle selection.');
+  // Use the containerElement that was passed to this function
+  if (!containerElement) {
+    console.error('Bundle builder container element not found after bundle selection.');
     return;
   }
 
   // Get references to existing bundle display elements
-  const bundleHeader = appContainer.querySelector('.bundle-header');
-  const bundleStepsContainer = appContainer.querySelector('.bundle-steps');
-  const bundleIncludesContainer = appContainer.querySelector('.bundle-includes');
-  const addBundleToCartButton = appContainer.querySelector('.add-bundle-to-cart');
+  const bundleHeader = containerElement.querySelector('.bundle-header');
+  const bundleStepsContainer = containerElement.querySelector('.bundle-steps');
+  const bundleIncludesContainer = containerElement.querySelector('.bundle-includes');
+  const addBundleToCartButton = containerElement.querySelector('.add-bundle-to-cart');
 
   // Get references to modal elements
   const bundleBuilderModal = document.getElementById('bundle-builder-modal');
@@ -839,13 +839,20 @@ function initializeBundleWidget(containerElement) {
 
   // Function to update the main bundle steps display after modal is closed
   function updateMainBundleStepsDisplay() {
-    // Ensure these elements exist before trying to manipulate them
-    const bundleStepsContainer = document.querySelector('.bundle-steps');
-    if (!bundleStepsContainer) return; // Defensive check, should not be null now
+    // Use container-specific bundle steps container (not global querySelector)
+    if (!bundleStepsContainer) {
+      console.error('Bundle steps container not found in this widget instance');
+      return;
+    }
 
     bundleStepsContainer.innerHTML = ''; // Clear existing steps
 
-    if (!selectedBundle || !selectedBundle.steps) return;
+    if (!selectedBundle || !selectedBundle.steps) {
+      console.log('DEBUG: No selected bundle or steps to render');
+      return;
+    }
+
+    console.log('DEBUG: Rendering steps for bundle:', selectedBundle.name, 'Steps count:', selectedBundle.steps.length);
 
     selectedBundle.steps.forEach((step, index) => {
         const stepBox = document.createElement('div');
@@ -946,8 +953,8 @@ function initializeBundleWidget(containerElement) {
     updateFooterDiscountMessaging(); // Initial update of footer discount messaging
 
   } else {
-    // No bundle found for this product, hide the entire app container
-    appContainer.style.display = 'none';
+    // No bundle found for this product, hide the entire container
+    containerElement.style.display = 'none';
     console.log('No published bundle found for this product.');
   }
 
@@ -1065,10 +1072,10 @@ function initializeBundleWidget(containerElement) {
 
   function initializeBundleBuilder() {
     if (!selectedBundle) {
-      appContainer.innerHTML = '<p>This bundle is not available for this product.</p>';
+      containerElement.innerHTML = '<p>This bundle is not available for this product.</p>';
       return;
     }
-    appContainer.style.display = 'block';
+    containerElement.style.display = 'block';
 
     // Initial setup
     updateMainBundleStepsDisplay();

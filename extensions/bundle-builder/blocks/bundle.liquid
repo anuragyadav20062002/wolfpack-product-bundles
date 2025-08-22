@@ -227,25 +227,18 @@
   </div>
 
 <script>
-  const allBundlesData = {{ shop.metafields.custom.all_bundles.value | json }};
-  const currentProductId = {{ product.id | json }};
-  // Assuming product.handle might also be useful for collection matching
-  const currentProductHandle = {{ product.handle | json }};
-  const currentProductCollections = {{ product.collections | json }};
+  // Avoid duplicate variable declarations for multiple widget instances
+  if (!window.allBundlesData) {
+    window.allBundlesData = {{ shop.metafields.custom.all_bundles.value | json }};
+    window.currentProductId = {{ product.id | json }};
+    window.currentProductHandle = {{ product.handle | json }};
+    window.currentProductCollections = {{ product.collections | json }};
+    window.shopCurrency = {{ shop.currency | json }};
+    window.shopMoneyFormat = {{ shop.money_format | json }};
 
-  // Expose shop currency and money format for JS price formatting
-  const shopCurrency = {{ shop.currency | json }};
-  const shopMoneyFormat = {{ shop.money_format | json }};
-
-  window.allBundlesData = allBundlesData;
-  window.currentProductId = currentProductId;
-  window.currentProductHandle = currentProductHandle;
-  window.currentProductCollections = currentProductCollections;
-  window.shopCurrency = shopCurrency;
-  window.shopMoneyFormat = shopMoneyFormat;
-
-  console.log('Liquid allBundlesData:', allBundlesData);
-  console.log('Liquid currentProductId:', currentProductId);
+    console.log('Liquid allBundlesData:', window.allBundlesData);
+    console.log('Liquid currentProductId:', window.currentProductId);
+  }
   
   // Auto-extract bundle ID from URL for seamless widget placement
   function extractBundleIdFromUrl() {
