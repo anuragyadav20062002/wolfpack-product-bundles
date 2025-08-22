@@ -64,10 +64,16 @@ export function cartLinesDiscountsGenerateRun(
       continue;
     }
 
-    // Get the applicable discount rule based on total bundle quantity
+    // Calculate total amount for bundle products
+    const totalBundleAmount = matchResult.matchingLines.reduce((sum, line) => {
+      return sum + (parseFloat(line.cost?.subtotalAmount?.amount || '0') || 0);
+    }, 0);
+
+    // Get the applicable discount rule based on total bundle quantity and amount
     const applicableRule = getApplicableDiscountRule(
       bundleData,
       matchResult.totalBundleQuantity,
+      totalBundleAmount,
     );
     
     

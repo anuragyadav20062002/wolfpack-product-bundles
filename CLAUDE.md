@@ -1,8 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## 🚨 CRITICAL DEVELOPMENT RULE: MCP Server Usage
+## 🚨 MCP Server Usage
 
 **MANDATORY**: Always use the Shopify dev MCP server as the **single source of truth** for all Shopify-related development work.
 
@@ -20,17 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `mcp__shopify-dev-mcp__learn_shopify_api` - Initialize API context
 - `mcp__shopify-dev-mcp__search_docs_chunks` - Search documentation
 - `mcp__shopify-dev-mcp__validate_graphql_codeblocks` - Validate GraphQL
-- `mcp__shopify-dev-mcp__introspect_graphql_schema` - Explore GraphQL schema
-- `mcp__shopify-dev-mcp__fetch_full_docs` - Get complete documentation
-
-**This rule applies to:**
-- Polaris component usage and props
-- GraphQL API queries and mutations  
-- Shopify Functions implementation
-- Admin API integration
-- App Bridge functionality
-- Extension development
-- Best practices and patterns
+- `mcp__shopify-dev-mcp__introspect_graphql_schema` - Explore schema
 
 ---
 

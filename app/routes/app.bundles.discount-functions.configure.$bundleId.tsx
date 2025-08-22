@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -20,7 +20,6 @@ import {
   Checkbox,
   Modal,
   Thumbnail,
-  List,
 } from "@shopify/polaris";
 import {
   ArrowLeftIcon,
@@ -50,7 +49,7 @@ interface Bundle {
   name: string;
   description?: string;
   status: 'draft' | 'active' | 'archived';
-  bundleType: 'cart_transform';
+  bundleType: 'discount_function';
   steps: any[];
   pricing?: any;
 }
@@ -68,7 +67,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     where: { 
       id: bundleId, 
       shopId: session.shop,
-      bundleType: 'cart_transform'
+      bundleType: 'discount_function'
     },
     include: { 
       steps: {
@@ -135,24 +134,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
+  const { session, admin } = await authenticate.admin(request);
+  const { bundleId } = params;
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (!bundleId) {
+    return json({ success: false, error: "Bundle ID is required" }, { status: 400 });
+  }
+
   try {
-    const { session, admin } = await authenticate.admin(request);
-    const { bundleId } = params;
-    
-    console.log("Authentication successful:", { shop: session?.shop, bundleId });
-    
-    if (!session?.shop) {
-      console.error("No session shop found");
-      return json({ success: false, error: "Authentication required" }, { status: 401 });
-    }
-    
-    const formData = await request.formData();
-    const intent = formData.get("intent");
-
-    if (!bundleId) {
-      return json({ success: false, error: "Bundle ID is required" }, { status: 400 });
-    }
-
     switch (intent) {
       case "saveBundle":
         return await handleSaveBundle(admin, session, bundleId, formData);
@@ -162,10 +153,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleSyncProduct(admin, session, bundleId, formData);
       case "getPages":
         return await handleGetPages(admin, session);
-      case "getThemeTemplates":
-        return await handleGetThemeTemplates(admin, session);
       case "getCurrentTheme":
         return await handleGetCurrentTheme(admin, session);
+      case "createDiscountCode":
+        return await handleCreateDiscountCode(admin, session, bundleId, formData);
       default:
         return json({ success: false, error: "Unknown action" }, { status: 400 });
     }
@@ -241,7 +232,7 @@ async function ensureBundleMetafieldDefinitions(admin: any) {
 }
 
 // Helper function to update bundle product metafields
-async function updateBundleProductMetafields(admin: any, bundleProductId: string, bundleConfiguration: any, bundleType: 'cart_transform' | 'discount_function' = 'cart_transform') {
+async function updateBundleProductMetafields(admin: any, bundleProductId: string, bundleConfiguration: any, bundleType: 'cart_transform' | 'discount_function' = 'discount_function') {
   await ensureBundleMetafieldDefinitions(admin);
 
   const SET_METAFIELDS = `
@@ -291,21 +282,6 @@ async function updateBundleProductMetafields(admin: any, bundleProductId: string
   return data.data?.metafieldsSet?.metafields?.[0];
 }
 
-// Map frontend discount method values to schema enum values
-function mapDiscountMethod(discountType: string): string {
-  switch (discountType) {
-    case 'fixed_bundle_price':
-    case 'fixed_amount_off':
-      return 'fixed_amount_off';
-    case 'percentage_off':
-      return 'percentage_off';
-    case 'free_shipping':
-      return 'free_shipping';
-    default:
-      return 'fixed_amount_off'; // Default fallback
-  }
-}
-
 // Handle saving bundle configuration
 async function handleSaveBundle(admin: any, session: any, bundleId: string, formData: FormData) {
   // Parse form data
@@ -331,14 +307,13 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
           deleteMany: {},
           createMany: {
             data: stepsData.map((step: any, index: number) => ({
-              name: step.pageTitle || step.name, // Use pageTitle as name if available
-              position: index + 1, // Map stepNumber to position field
+              name: step.name,
+              pageTitle: step.pageTitle || step.name,
+              stepNumber: index + 1,
               products: step.products || [],
               collections: step.collections || [],
-              displayVariantsAsIndividual: step.displayVariantsAsIndividualProducts || false,
-              minQuantity: step.minQuantity || 1,
-              maxQuantity: step.maxQuantity || 1,
-              enabled: step.enabled !== false // Default to true unless explicitly false
+              conditions: step.conditions || [],
+              displayVariantsAsIndividualProducts: step.displayVariantsAsIndividualProducts || false
             }))
           }
         }
@@ -349,9 +324,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
           upsert: {
             create: {
               enableDiscount: discountData.discountEnabled,
-              discountMethod: mapDiscountMethod(discountData.discountType),
+              discountMethod: discountData.discountType,
               rules: discountData.discountRules || [],
-              messages: {
+              displaySettings: {
                 showDiscountDisplay: discountData.discountDisplayEnabled || false,
                 showDiscountMessaging: discountData.discountMessagingEnabled || false,
                 ruleMessages: discountData.ruleMessages || {}
@@ -359,9 +334,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
             },
             update: {
               enableDiscount: discountData.discountEnabled,
-              discountMethod: mapDiscountMethod(discountData.discountType),
+              discountMethod: discountData.discountType,
               rules: discountData.discountRules || [],
-              messages: {
+              displaySettings: {
                 showDiscountDisplay: discountData.discountDisplayEnabled || false,
                 showDiscountMessaging: discountData.discountMessagingEnabled || false,
                 ruleMessages: discountData.ruleMessages || {}
@@ -392,13 +367,6 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     };
 
     try {
-      // Save cart transform configuration
-      const cartTransformConfig = {
-        ...baseConfiguration,
-        type: "cart_transform"
-      };
-      await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, cartTransformConfig, 'cart_transform');
-
       // Save discount function configuration
       const discountFunctionConfig = {
         ...baseConfiguration,
@@ -521,7 +489,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
     const bundleConfiguration = {
       bundleId: bundle.id,
       name: bundle.name,
-      type: "cart_transform",
+      type: "discount_function",
       steps: bundle.steps || [],
       pricing: {
         enabled: bundle.pricing.enableDiscount,
@@ -531,7 +499,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
       updatedAt: new Date().toISOString()
     };
 
-    await updateBundleProductMetafields(admin, productId, bundleConfiguration);
+    await updateBundleProductMetafields(admin, productId, bundleConfiguration, 'discount_function');
   }
 
   return json({ 
@@ -576,153 +544,6 @@ async function handleGetPages(admin: any, session: any) {
   }
 }
 
-// Handle getting theme templates
-async function handleGetThemeTemplates(admin: any, session: any) {
-  try {
-    // Get the published theme directly
-    const GET_PUBLISHED_THEME = `
-      query getPublishedTheme {
-        themes(first: 1, roles: [MAIN]) {
-          nodes {
-            id
-            name
-            role
-          }
-        }
-      }
-    `;
-
-    const themesResponse = await admin.graphql(GET_PUBLISHED_THEME);
-
-    const themesData = await themesResponse.json();
-    
-    if (!themesData.data?.themes?.nodes) {
-      return json({ 
-        success: false, 
-        error: "Failed to fetch themes" 
-      });
-    }
-
-    // Get the published theme (should be the first and only one)
-    const publishedTheme = themesData.data.themes.nodes[0];
-    
-    if (!publishedTheme) {
-      console.error("No themes returned from GraphQL:", themesData);
-      return json({ 
-        success: false, 
-        error: "No published theme found" 
-      });
-    }
-
-    console.log("Found published theme:", publishedTheme);
-
-    // Extract theme ID (remove gid prefix if present)
-    const themeId = publishedTheme.id.replace('gid://shopify/OnlineStoreTheme/', '');
-    console.log("Theme ID extracted:", themeId);
-
-    // Now fetch theme assets using REST API (since GraphQL doesn't expose theme assets)
-    const shop = session.shop;
-    const accessToken = session.accessToken;
-    
-    const assetsUrl = `https://${shop}/admin/api/2025-01/themes/${themeId}/assets.json`;
-    console.log("Assets URL:", assetsUrl);
-    
-    const assetsResponse = await fetch(assetsUrl, {
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!assetsResponse.ok) {
-      const errorText = await assetsResponse.text();
-      console.error("Assets response error:", {
-        status: assetsResponse.status,
-        statusText: assetsResponse.statusText,
-        body: errorText
-      });
-      throw new Error(`Failed to fetch theme assets: ${assetsResponse.status} ${assetsResponse.statusText}`);
-    }
-
-    const assetsData = await assetsResponse.json();
-    console.log("Assets fetched successfully, count:", assetsData.assets?.length || 0);
-    
-    // Filter for template files and organize them
-    const templates = assetsData.assets
-      .filter((asset: any) => asset.key.startsWith('templates/') && 
-                               (asset.key.endsWith('.liquid') || asset.key.endsWith('.json')))
-      .map((asset: any) => {
-        const templateName = asset.key.replace('templates/', '').replace(/\.(liquid|json)$/, '');
-        const isJson = asset.key.endsWith('.json');
-        
-        // Determine template type and description
-        let title = templateName;
-        let description = '';
-        let recommended = false;
-
-        if (templateName === 'index') {
-          title = 'Homepage';
-          description = 'Main landing page of your store';
-          recommended = true;
-        } else if (templateName.startsWith('product')) {
-          title = templateName === 'product' ? 'Product Pages' : `Product - ${templateName.replace('product.', '')}`;
-          description = 'Individual product detail pages';
-          recommended = templateName === 'product';
-        } else if (templateName.startsWith('collection')) {
-          title = templateName === 'collection' ? 'Collection Pages' : `Collection - ${templateName.replace('collection.', '')}`;
-          description = 'Product collection listing pages';
-          recommended = templateName === 'collection';
-        } else if (templateName === 'page') {
-          title = 'Static Pages';
-          description = 'Custom content pages (About, Contact, etc.)';
-          recommended = true;
-        } else if (templateName === 'cart') {
-          title = 'Cart Page';
-          description = 'Shopping cart page';
-          recommended = false;
-        } else if (templateName === 'search') {
-          title = 'Search Results';
-          description = 'Search results page';
-          recommended = false;
-        } else {
-          title = templateName.charAt(0).toUpperCase() + templateName.slice(1);
-          description = `${title} template`;
-          recommended = false;
-        }
-
-        return {
-          id: templateName,
-          title,
-          handle: templateName,
-          description,
-          recommended,
-          fileType: isJson ? 'JSON' : 'Liquid',
-          fullKey: asset.key
-        };
-      })
-      .sort((a: any, b: any) => {
-        // Sort by recommended first, then alphabetically
-        if (a.recommended && !b.recommended) return -1;
-        if (!a.recommended && b.recommended) return 1;
-        return a.title.localeCompare(b.title);
-      });
-
-    return json({ 
-      success: true, 
-      templates,
-      themeId,
-      themeName: publishedTheme.name
-    });
-
-  } catch (error) {
-    console.error("Error fetching theme templates:", error);
-    return json({ 
-      success: false, 
-      error: "Failed to fetch theme templates" 
-    });
-  }
-}
-
 // Handle getting current theme for deep linking
 async function handleGetCurrentTheme(admin: any, session: any) {
   const GET_CURRENT_THEME = `
@@ -755,11 +576,68 @@ async function handleGetCurrentTheme(admin: any, session: any) {
   }
 }
 
-export default function ConfigureBundleFlow() {
+// Handle creating discount codes for discount function bundles
+async function handleCreateDiscountCode(admin: any, session: any, bundleId: string, formData: FormData) {
+  const codePrefix = formData.get("codePrefix") as string;
+  const ruleId = formData.get("ruleId") as string;
+  
+  // Generate a unique discount code with timestamp
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+  const discountCode = `${codePrefix}${timestamp}`;
+  
+  const CREATE_DISCOUNT_CODE = `
+    mutation CreateDiscountCode($codeAppDiscount: DiscountCodeAppInput!) {
+      discountCodeAppCreate(codeAppDiscount: $codeAppDiscount) {
+        codeAppDiscount {
+          discountId
+          codes(first: 1) {
+            nodes {
+              id
+              code
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(CREATE_DISCOUNT_CODE, {
+    variables: {
+      codeAppDiscount: {
+        code: discountCode,
+        title: `Bundle Discount - ${codePrefix}`,
+        functionId: process.env.SHOPIFY_DISCOUNT_FUNCTION_ID || "", // You'll need to set this
+        startsAt: new Date().toISOString(),
+        endsAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes from now
+        usageLimit: 1,
+        appliesOncePerCustomer: true
+      }
+    }
+  });
+
+  const data = await response.json();
+
+  if (data.data?.discountCodeAppCreate?.userErrors?.length > 0) {
+    const error = data.data.discountCodeAppCreate.userErrors[0];
+    throw new Error(`Failed to create discount code: ${error.message}`);
+  }
+
+  return json({
+    success: true,
+    discountCode,
+    discountId: data.data?.discountCodeAppCreate?.codeAppDiscount?.discountId,
+    message: "Discount code created successfully"
+  });
+}
+
+export default function ConfigureDiscountFunctionBundle() {
   const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
-  const fetcher = useFetcher<typeof action>();
   
   // State for form controls
   const [bundleStatus, setBundleStatus] = useState(bundle.status);
@@ -786,16 +664,21 @@ export default function ConfigureBundleFlow() {
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
   const [selectedPage, setSelectedPage] = useState<any>(null);
-
-  // State for products/collections view modals
-  const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
-  const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
-  const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
   
-  // State for bundle product - initialize with loaded data
-  const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct);
-  const [isBundleProductPickerOpen, setIsBundleProductPickerOpen] = useState(false);
-  const [productStatus, setProductStatus] = useState(loadedBundleProduct?.status || "ACTIVE");
+  // State for product/collection selection for discount function bundles
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [selectedBundleCollections, setSelectedBundleCollections] = useState<any[]>([]);
+  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
+  const [isCollectionPickerOpenForBundle, setIsCollectionPickerOpenForBundle] = useState(false);
+  
+  // State for product/collection management modals
+  const [isProductManagementModalOpen, setIsProductManagementModalOpen] = useState(false);
+  const [isCollectionManagementModalOpen, setIsCollectionManagementModalOpen] = useState(false);
+  
+  // State for step-specific product/collection management modals
+  const [isStepProductModalOpen, setIsStepProductModalOpen] = useState(false);
+  const [isStepCollectionModalOpen, setIsStepCollectionModalOpen] = useState(false);
+  const [currentStepId, setCurrentStepId] = useState<string | null>(null);
   
   // State for collections
   const [selectedCollections, setSelectedCollections] = useState<Record<string, any[]>>({});
@@ -804,7 +687,7 @@ export default function ConfigureBundleFlow() {
   
   // State for discount & pricing
   const [discountEnabled, setDiscountEnabled] = useState(bundle.pricing?.enableDiscount || false);
-  const [discountType, setDiscountType] = useState(bundle.pricing?.discountMethod || 'fixed_bundle_price');
+  const [discountType, setDiscountType] = useState(bundle.pricing?.discountMethod || 'fixed_amount_off');
   const [discountRules, setDiscountRules] = useState(bundle.pricing?.rules || []);
   const [discountDisplayEnabled, setDiscountDisplayEnabled] = useState(true);
   const [discountMessagingEnabled, setDiscountMessagingEnabled] = useState(true);
@@ -826,15 +709,15 @@ export default function ConfigureBundleFlow() {
     description: bundle.description || "",
     steps: JSON.stringify(bundle.steps || []),
     discountEnabled: bundle.pricing?.enableDiscount || false,
-    discountType: bundle.pricing?.discountMethod || 'fixed_bundle_price',
+    discountType: bundle.pricing?.discountMethod || 'fixed_amount_off',
     discountRules: JSON.stringify(bundle.pricing?.rules || []),
     discountDisplayEnabled: true,
     discountMessagingEnabled: true,
     selectedCollections: JSON.stringify({}),
     ruleMessages: JSON.stringify({}),
     stepConditions: JSON.stringify({}),
-    bundleProduct: loadedBundleProduct, // Initialize with loaded data to prevent false changes
-    productStatus: loadedBundleProduct?.status || "ACTIVE",
+    selectedProducts: JSON.stringify([]),
+    selectedBundleCollections: JSON.stringify([]),
   });
   
   // Track if there are unsaved changes
@@ -947,14 +830,14 @@ export default function ConfigureBundleFlow() {
         return JSON.stringify(selectedCollections);
       case 'stepConditions':
         return JSON.stringify(stepConditions);
-      case 'bundleProduct':
-        return JSON.stringify(bundleProduct);
-      case 'productStatus':
-        return productStatus;
+      case 'selectedProducts':
+        return JSON.stringify(selectedProducts);
+      case 'selectedBundleCollections':
+        return JSON.stringify(selectedBundleCollections);
       default:
         return '';
     }
-  }, [bundleName, bundleDescription, bundleStatus, steps, discountEnabled, discountType, discountRules, selectedCollections, stepConditions, bundleProduct, productStatus]);
+  }, [bundleName, bundleDescription, bundleStatus, steps, discountEnabled, discountType, discountRules, selectedCollections, stepConditions, selectedProducts, selectedBundleCollections]);
 
   // Check for changes whenever form values change
   useEffect(() => {
@@ -964,8 +847,8 @@ export default function ConfigureBundleFlow() {
       JSON.stringify(steps) !== originalValues.steps ||
       JSON.stringify(selectedCollections) !== originalValues.selectedCollections ||
       JSON.stringify(stepConditions) !== originalValues.stepConditions ||
-      JSON.stringify(bundleProduct) !== JSON.stringify(originalValues.bundleProduct) ||
-      productStatus !== originalValues.productStatus
+      JSON.stringify(selectedProducts) !== originalValues.selectedProducts ||
+      JSON.stringify(selectedBundleCollections) !== originalValues.selectedBundleCollections
     );
     
     const discountPricingChanges = (
@@ -1004,7 +887,7 @@ export default function ConfigureBundleFlow() {
     bundleStatus, bundleName, bundleDescription, steps, 
     discountEnabled, discountType, discountRules, 
     discountDisplayEnabled, discountMessagingEnabled, ruleMessages,
-    selectedCollections, stepConditions, bundleProduct, productStatus,
+    selectedCollections, stepConditions, selectedProducts, selectedBundleCollections,
     originalValues, triggerSaveBar, dismissSaveBar
   ]);
 
@@ -1027,83 +910,48 @@ export default function ConfigureBundleFlow() {
         ruleMessages
       }));
 
-      // Submit to server action using fetcher
-      console.log("Submitting save request with fetcher");
-      console.log("FormData intent:", formData.get("intent"));
-      
-      fetcher.submit(formData, { method: "post" });
-      
-      // Note: With useFetcher, we need to handle the response via useEffect
-      // The immediate return here will be handled by the fetcher response
-      return;
+      // Submit to server action
+      const response = await fetch(window.location.pathname, {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update original values after successful save
+        setOriginalValues({
+          status: bundleStatus,
+          name: bundleName,
+          description: bundleDescription,
+          steps: JSON.stringify(steps),
+          discountEnabled: discountEnabled,
+          discountType: discountType,
+          discountRules: JSON.stringify(discountRules),
+          discountDisplayEnabled: discountDisplayEnabled,
+          discountMessagingEnabled: discountMessagingEnabled,
+          selectedCollections: JSON.stringify(selectedCollections),
+          ruleMessages: JSON.stringify(ruleMessages),
+          stepConditions: JSON.stringify(stepConditions),
+          selectedProducts: JSON.stringify(selectedProducts),
+          selectedBundleCollections: JSON.stringify(selectedBundleCollections),
+        });
+        
+        // Reset section changes after successful save
+        setSectionChanges({
+          step_setup: false,
+          discount_pricing: false
+        });
+        
+        shopify.toast.show(result.message || "Changes saved successfully", { isError: false });
+      } else {
+        throw new Error(result.error || "Failed to save changes");
+      }
     } catch (error) {
       console.error("Save failed:", error);
       shopify.toast.show(error.message || "Failed to save changes", { isError: true });
     }
-  }, [bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
-
-  // Handle fetcher response
-  useEffect(() => {
-    if (fetcher.data && fetcher.state === 'idle') {
-      const result = fetcher.data;
-      
-      // Handle different action types based on the response or form data
-      if (result.success) {
-        // Check if this was a save bundle action by looking for bundle data in response
-        if (result.bundle) {
-          // This is a save bundle response
-          setOriginalValues({
-            status: bundleStatus,
-            name: bundleName,
-            description: bundleDescription,
-            steps: JSON.stringify(steps),
-            discountEnabled: discountEnabled,
-            discountType: discountType,
-            discountRules: JSON.stringify(discountRules),
-            discountDisplayEnabled: discountDisplayEnabled,
-            discountMessagingEnabled: discountMessagingEnabled,
-            selectedCollections: JSON.stringify(selectedCollections),
-            ruleMessages: JSON.stringify(ruleMessages),
-            stepConditions: JSON.stringify(stepConditions),
-            bundleProduct: bundleProduct,
-            productStatus: productStatus,
-          });
-          
-          // Reset section changes after successful save
-          setSectionChanges({
-            step_setup: false,
-            discount_pricing: false
-          });
-          
-          shopify.toast.show(result.message || "Changes saved successfully", { isError: false });
-        } else if (result.productId) {
-          // This is a sync product response
-          shopify.toast.show(result.message || "Product synced successfully", { isError: false });
-          // Optionally refetch bundle product data here
-        } else if (result.templates) {
-          // This is a get theme templates response
-          setAvailablePages(result.templates || []);
-          setIsLoadingPages(false);
-          console.log("Theme templates loaded successfully:", result.templates.length, "from theme:", result.themeName);
-        } else if (result.themeId) {
-          // This is a get current theme response - handled by individual callbacks
-          console.log("Theme ID fetched:", result.themeId);
-        } else {
-          // Generic success response
-          shopify.toast.show(result.message || "Operation completed successfully", { isError: false });
-        }
-      } else {
-        // Handle errors based on action type
-        const errorMessage = result.error || "Operation failed";
-        shopify.toast.show(errorMessage, { isError: true });
-        
-        // Handle specific error cases
-        if (errorMessage.includes("pages") || errorMessage.includes("templates")) {
-          setIsLoadingPages(false);
-        }
-      }
-    }
-  }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify]);
+  }, [bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, selectedProducts, selectedBundleCollections, shopify]);
 
   // Discard handler
   const handleDiscard = useCallback(() => {
@@ -1121,9 +969,8 @@ export default function ConfigureBundleFlow() {
       setSelectedCollections(JSON.parse(originalValues.selectedCollections));
       setRuleMessages(JSON.parse(originalValues.ruleMessages));
       setStepConditions(JSON.parse(originalValues.stepConditions));
-      // Keep the loaded bundle product instead of resetting to null
-      setBundleProduct(originalValues.bundleProduct || loadedBundleProduct);
-      setProductStatus(originalValues.productStatus);
+      setSelectedProducts(JSON.parse(originalValues.selectedProducts));
+      setSelectedBundleCollections(JSON.parse(originalValues.selectedBundleCollections));
       
       // Reset section changes after discard
       setSectionChanges({
@@ -1136,7 +983,7 @@ export default function ConfigureBundleFlow() {
       console.error("Error discarding changes:", error);
       shopify.toast.show("Error discarding changes", { isError: true });
     }
-  }, [originalValues, loadedBundleProduct, shopify]);
+  }, [originalValues, shopify]);
 
   // Emergency force navigation state for escape hatch
   const [forceNavigation, setForceNavigation] = useState(false);
@@ -1154,7 +1001,7 @@ export default function ConfigureBundleFlow() {
       if (proceed) {
         setForceNavigation(true);
         // Force navigation even with unsaved changes
-        navigate("/app/bundles/cart-transform");
+        navigate("/app/bundles/discount-functions");
       } else {
         shopify.toast.show("Save or discard your changes to continue", { 
           isError: true,
@@ -1163,7 +1010,7 @@ export default function ConfigureBundleFlow() {
       }
       return;
     }
-    navigate("/app/bundles/cart-transform");
+    navigate("/app/bundles/discount-functions");
   }, [hasUnsavedChanges, forceNavigation, navigate, shopify]);
 
   const handlePreviewBundle = useCallback(() => {
@@ -1176,52 +1023,12 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    // Check if bundle product exists
-    if (!bundleProduct) {
-      shopify.toast.show("Bundle product not found. Please select a bundle product first.", { 
-        isError: true,
-        duration: 4000 
-      });
-      return;
-    }
-
-    // Extract shop domain properly
-    const shopDomain = shop.includes('.myshopify.com') 
-      ? shop.replace('.myshopify.com', '') 
-      : shop;
-
-    // Try different URL construction methods
-    let productUrl = null;
-
-    // Method 1: Use onlineStoreUrl if available
-    if (bundleProduct.onlineStoreUrl) {
-      productUrl = bundleProduct.onlineStoreUrl;
-    }
-    // Method 2: Use handle to construct URL
-    else if (bundleProduct.handle) {
-      productUrl = `https://${shopDomain}.myshopify.com/products/${bundleProduct.handle}`;
-    }
-    // Method 3: Extract ID from GraphQL ID and construct URL
-    else if (bundleProduct.id) {
-      const productId = bundleProduct.id.includes('gid://shopify/Product/') 
-        ? bundleProduct.id.split('/').pop() 
-        : bundleProduct.id;
-      // Use Shopify admin preview URL as fallback
-      productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
-    }
-
-    if (productUrl) {
-      console.log('Opening bundle product URL:', productUrl);
-      window.open(productUrl, '_blank');
-      shopify.toast.show("Bundle product opened in new tab", { isError: false });
-    } else {
-      console.error('Bundle product data:', bundleProduct);
-      shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", { 
-        isError: true,
-        duration: 5000 
-      });
-    }
-  }, [hasUnsavedChanges, bundleProduct, shop, shopify]);
+    // For discount function bundles, show a different message since they don't have bundle products
+    shopify.toast.show("Discount function bundles apply automatic discounts when conditions are met at checkout.", { 
+      isError: false,
+      duration: 4000 
+    });
+  }, [hasUnsavedChanges, shopify]);
 
   const handleSectionChange = useCallback((section: string) => {
     if (hasUnsavedChanges) {
@@ -1242,27 +1049,6 @@ export default function ConfigureBundleFlow() {
     
     setActiveSection(section);
   }, [hasUnsavedChanges, activeSection, shopify]);
-
-  // Modal handlers for products and collections view
-  const handleShowProducts = useCallback((stepId: string) => {
-    setCurrentModalStepId(stepId);
-    setIsProductsModalOpen(true);
-  }, []);
-
-  const handleShowCollections = useCallback((stepId: string) => {
-    setCurrentModalStepId(stepId);
-    setIsCollectionsModalOpen(true);
-  }, []);
-
-  const handleCloseProductsModal = useCallback(() => {
-    setIsProductsModalOpen(false);
-    setCurrentModalStepId('');
-  }, []);
-
-  const handleCloseCollectionsModal = useCallback(() => {
-    setIsCollectionsModalOpen(false);
-    setCurrentModalStepId('');
-  }, []);
 
   // Step management functions
   const addNewStep = useCallback(() => {
@@ -1395,7 +1181,7 @@ export default function ConfigureBundleFlow() {
     }
   }, [steps, shopify, triggerSaveBar]);
 
-  const handleSyncProduct = useCallback(() => {
+  const handleSyncProduct = useCallback(async () => {
     try {
       console.log("Syncing bundle product...");
       
@@ -1403,32 +1189,47 @@ export default function ConfigureBundleFlow() {
       const formData = new FormData();
       formData.append("intent", "syncProduct");
 
-      // Submit to server action using fetcher
-      fetcher.submit(formData, { method: "post" });
-      
-      // Response will be handled by the existing useEffect
+      // Submit to server action
+      const response = await fetch(window.location.pathname, {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update bundle product info if productId was returned
+        if (result.productId) {
+          // You might want to refetch the bundle product data here
+          // For now, just show success message
+        }
+        shopify.toast.show(result.message || "Product synced successfully", { isError: false });
+      } else {
+        throw new Error(result.error || "Failed to sync product");
+      }
     } catch (error) {
       console.error("Product sync failed:", error);
       shopify.toast.show(error.message || "Failed to sync product", { isError: true });
     }
-  }, [fetcher, shopify]);
+  }, [shopify]);
 
-  const handleBundleProductSelect = useCallback(async () => {
+  // Product selection for bundle scope
+  const handleBundleProductSelection = useCallback(async () => {
     try {
       const products = await shopify.resourcePicker({
         type: "product",
-        multiple: false,
+        multiple: true,
       });
       
-      if (products.length > 0) {
-        const selectedProduct = products[0];
-        setBundleProduct(selectedProduct);
-        console.log("Bundle product selected:", selectedProduct);
-        shopify.toast.show("Bundle product updated successfully", { isError: false });
+      if (products && products.length > 0) {
+        setSelectedProducts(products);
+        // Trigger save bar for product selection changes
+        triggerSaveBar();
+        shopify.toast.show("Products updated successfully", { isError: false });
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
-      console.log("Bundle product selection cancelled or failed:", error);
+      console.log("Product selection cancelled or failed:", error);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error : 
                           (error && typeof error === 'object' && 'message' in error) ? error.message : '';
@@ -1441,22 +1242,218 @@ export default function ConfigureBundleFlow() {
       
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select bundle product", { isError: true });
+        shopify.toast.show("Failed to select products", { isError: true });
       }
     }
-  }, [shopify]);
+  }, [shopify, triggerSaveBar]);
 
-  const handleProductStatusChange = useCallback(async (newStatus: string) => {
+  // Collection selection for bundle scope
+  const handleBundleCollectionSelection = useCallback(async () => {
     try {
-      setProductStatus(newStatus);
-      // TODO: Implement actual product status update via GraphQL
-      console.log("Product status changed to:", newStatus);
-      shopify.toast.show("Product status updated successfully", { isError: false });
+      const collections = await shopify.resourcePicker({
+        type: "collection",
+        multiple: true,
+      });
+      
+      if (collections && collections.length > 0) {
+        setSelectedBundleCollections(collections);
+        // Trigger save bar for collection selection changes
+        triggerSaveBar();
+        shopify.toast.show("Collections updated successfully", { isError: false });
+      }
     } catch (error) {
-      console.error("Product status update failed:", error);
-      shopify.toast.show("Failed to update product status", { isError: true });
+      // Resource picker throws an error when user cancels - this is expected behavior
+      console.log("Collection selection cancelled or failed:", error);
+      // Enhanced error detection to catch more cancellation patterns
+      const errorMessage = typeof error === 'string' ? error : 
+                          (error && typeof error === 'object' && 'message' in error) ? error.message : '';
+      
+      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
+                            errorMessage?.toLowerCase().includes('abort') ||
+                            errorMessage?.toLowerCase().includes('dismiss') ||
+                            errorMessage?.toLowerCase().includes('close') ||
+                            error === null || error === undefined;
+      
+      // Only show error toast for actual errors, not user cancellations
+      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
+        shopify.toast.show("Failed to select collections", { isError: true });
+      }
     }
-  }, [shopify]);
+  }, [shopify, triggerSaveBar]);
+
+  // Product management modal handlers
+  const handleOpenProductManagementModal = useCallback(() => {
+    setIsProductManagementModalOpen(true);
+  }, []);
+
+  const handleCloseProductManagementModal = useCallback(() => {
+    setIsProductManagementModalOpen(false);
+  }, []);
+
+  const handleRemoveProduct = useCallback((productId: string) => {
+    setSelectedProducts(prev => prev.filter(product => product.id !== productId));
+    triggerSaveBar();
+  }, [triggerSaveBar]);
+
+  const handleAddMoreProducts = useCallback(async () => {
+    try {
+      const products = await shopify.resourcePicker({
+        type: "product",
+        multiple: true,
+      });
+      
+      if (products && products.length > 0) {
+        // Add new products to existing selection, avoiding duplicates
+        setSelectedProducts(prev => {
+          const existingIds = prev.map(p => p.id);
+          const newProducts = products.filter(p => !existingIds.includes(p.id));
+          return [...prev, ...newProducts];
+        });
+        triggerSaveBar();
+        shopify.toast.show("Products added successfully", { isError: false });
+      }
+    } catch (error) {
+      console.log("Product selection cancelled or failed:", error);
+    }
+  }, [shopify, triggerSaveBar]);
+
+  // Collection management modal handlers
+  const handleOpenCollectionManagementModal = useCallback(() => {
+    setIsCollectionManagementModalOpen(true);
+  }, []);
+
+  const handleCloseCollectionManagementModal = useCallback(() => {
+    setIsCollectionManagementModalOpen(false);
+  }, []);
+
+  const handleRemoveCollection = useCallback((collectionId: string) => {
+    setSelectedBundleCollections(prev => prev.filter(collection => collection.id !== collectionId));
+    triggerSaveBar();
+  }, [triggerSaveBar]);
+
+  const handleAddMoreCollections = useCallback(async () => {
+    try {
+      const collections = await shopify.resourcePicker({
+        type: "collection",
+        multiple: true,
+      });
+      
+      if (collections && collections.length > 0) {
+        // Add new collections to existing selection, avoiding duplicates
+        setSelectedBundleCollections(prev => {
+          const existingIds = prev.map(c => c.id);
+          const newCollections = collections.filter(c => !existingIds.includes(c.id));
+          return [...prev, ...newCollections];
+        });
+        triggerSaveBar();
+        shopify.toast.show("Collections added successfully", { isError: false });
+      }
+    } catch (error) {
+      console.log("Collection selection cancelled or failed:", error);
+    }
+  }, [shopify, triggerSaveBar]);
+
+  // Step-specific product management modal handlers
+  const handleOpenStepProductModal = useCallback((stepId: string) => {
+    setCurrentStepId(stepId);
+    setIsStepProductModalOpen(true);
+  }, []);
+
+  const handleCloseStepProductModal = useCallback(() => {
+    setIsStepProductModalOpen(false);
+    setCurrentStepId(null);
+  }, []);
+
+  const handleRemoveStepProduct = useCallback((productId: string) => {
+    if (!currentStepId) return;
+    
+    setSteps(prevSteps => 
+      prevSteps.map(step => 
+        step.id === currentStepId 
+          ? { ...step, StepProduct: step.StepProduct?.filter(p => p.id !== productId) || [] }
+          : step
+      )
+    );
+    triggerSaveBar();
+  }, [currentStepId, triggerSaveBar]);
+
+  const handleAddMoreStepProducts = useCallback(async () => {
+    if (!currentStepId) return;
+    
+    try {
+      const products = await shopify.resourcePicker({
+        type: "product",
+        multiple: true,
+      });
+      
+      if (products && products.length > 0) {
+        setSteps(prevSteps => 
+          prevSteps.map(step => {
+            if (step.id === currentStepId) {
+              const existingIds = step.StepProduct?.map(p => p.id) || [];
+              const newProducts = products.filter(p => !existingIds.includes(p.id));
+              return { 
+                ...step, 
+                StepProduct: [...(step.StepProduct || []), ...newProducts]
+              };
+            }
+            return step;
+          })
+        );
+        triggerSaveBar();
+        shopify.toast.show("Products added successfully", { isError: false });
+      }
+    } catch (error) {
+      console.log("Product selection cancelled or failed:", error);
+    }
+  }, [currentStepId, shopify, triggerSaveBar]);
+
+  // Step-specific collection management modal handlers
+  const handleOpenStepCollectionModal = useCallback((stepId: string) => {
+    setCurrentStepId(stepId);
+    setIsStepCollectionModalOpen(true);
+  }, []);
+
+  const handleCloseStepCollectionModal = useCallback(() => {
+    setIsStepCollectionModalOpen(false);
+    setCurrentStepId(null);
+  }, []);
+
+  const handleRemoveStepCollection = useCallback((collectionId: string) => {
+    if (!currentStepId) return;
+    
+    setSelectedCollections(prev => ({
+      ...prev,
+      [currentStepId]: prev[currentStepId]?.filter(c => c.id !== collectionId) || []
+    }));
+    triggerSaveBar();
+  }, [currentStepId, triggerSaveBar]);
+
+  const handleAddMoreStepCollections = useCallback(async () => {
+    if (!currentStepId) return;
+    
+    try {
+      const collections = await shopify.resourcePicker({
+        type: "collection",
+        multiple: true,
+      });
+      
+      if (collections && collections.length > 0) {
+        setSelectedCollections(prev => {
+          const existingIds = prev[currentStepId]?.map(c => c.id) || [];
+          const newCollections = collections.filter(c => !existingIds.includes(c.id));
+          return {
+            ...prev,
+            [currentStepId]: [...(prev[currentStepId] || []), ...newCollections]
+          };
+        });
+        triggerSaveBar();
+        shopify.toast.show("Collections added successfully", { isError: false });
+      }
+    } catch (error) {
+      console.log("Collection selection cancelled or failed:", error);
+    }
+  }, [currentStepId, shopify, triggerSaveBar]);
 
   // Step management handlers
   const cloneStep = useCallback((stepId: string) => {
@@ -1650,26 +1647,17 @@ export default function ConfigureBundleFlow() {
     }
   }, [shopify, triggerSaveBar]);
 
-  // Discount rule management
+  // Discount rule management for discount functions
   const addDiscountRule = useCallback(() => {
-    let newRule;
-    
-    if (discountType === 'fixed_bundle_price') {
-      newRule = {
-        id: `rule-${Date.now()}`,
-        numberOfProducts: 0,
-        price: 0,
-      };
-    } else {
-      // For percentage_off and fixed_amount_off
-      newRule = {
-        id: `rule-${Date.now()}`,
-        type: 'amount', // amount or quantity
-        condition: 'greater_than_equal_to', // greater_than_equal_to, less_than_equal_to, equal_to
-        value: 0,
-        discountValue: 0, // percentage or fixed amount
-      };
-    }
+    const newRule = {
+      id: `rule-${Date.now()}`,
+      discountOn: 'quantity', // quantity or amount
+      minimumQuantity: 2,
+      minimumAmount: 0,
+      fixedAmountOff: 0,
+      percentageOff: 0,
+      code: 'BUNDLE' // Custom discount code prefix
+    };
     
     setDiscountRules([...discountRules, newRule]);
     
@@ -1677,14 +1665,14 @@ export default function ConfigureBundleFlow() {
     setRuleMessages(prev => ({
       ...prev,
       [newRule.id]: {
-        discountText: 'Add {{discountConditionDiff}} {{discountUnit}} to get the bundle at {{discountValueUnit}}{{discountValue}}',
-        successMessage: 'Congratulations 🎉 you have gotten the best offer on your bundle!'
+        discountText: 'Add {{discountConditionDiff}} {{discountUnit}} to get {{discountValue}} off your bundle with code {{discountCode}}',
+        successMessage: 'Congratulations 🎉 Your discount code {{discountCode}} has been applied!'
       }
     }));
     
     // Trigger save bar for adding discount rule
     triggerSaveBar();
-  }, [discountRules, discountType, triggerSaveBar]);
+  }, [discountRules, triggerSaveBar]);
 
   const removeDiscountRule = useCallback((ruleId: string) => {
     setDiscountRules(discountRules.filter(rule => rule.id !== ruleId));
@@ -1702,7 +1690,7 @@ export default function ConfigureBundleFlow() {
   const updateDiscountRule = useCallback((ruleId: string, field: string, value: any) => {
     // Ensure numeric values are never negative
     let processedValue = value;
-    if (['numberOfProducts', 'price', 'value', 'discountValue'].includes(field)) {
+    if (['minimumQuantity', 'minimumAmount', 'fixedAmountOff', 'percentageOff'].includes(field)) {
       const numValue = typeof value === 'string' ? parseFloat(value) : value;
       processedValue = Math.max(0, numValue || 0);
     }
@@ -1729,65 +1717,78 @@ export default function ConfigureBundleFlow() {
     triggerSaveBar();
   }, [triggerSaveBar]);
 
-  // Function to load available theme templates
-  const loadAvailablePages = useCallback(() => {
+  // Function to load available pages
+  const loadAvailablePages = useCallback(async () => {
     setIsLoadingPages(true);
     try {
       const formData = new FormData();
-      formData.append("intent", "getThemeTemplates");
+      formData.append("intent", "getPages");
 
-      fetcher.submit(formData, { method: "post" });
-      // Response will be handled by the existing useEffect
+      const response = await fetch(window.location.pathname, {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setAvailablePages(result.pages || []);
+      } else {
+        throw new Error(result.error || "Failed to load pages");
+      }
     } catch (error) {
-      console.error("Failed to load theme templates:", error);
-      shopify.toast.show("Failed to load theme templates", { isError: true });
+      console.error("Failed to load pages:", error);
+      shopify.toast.show("Failed to load pages", { isError: true });
+    } finally {
       setIsLoadingPages(false);
     }
-  }, [fetcher, shopify]);
+  }, [shopify]);
 
   // Place widget handlers with page selection modal
-  const handlePlaceWidget = useCallback(() => {
+  const handlePlaceWidget = useCallback(async () => {
     try {
       console.log('Opening page selection modal');
       setIsPageSelectionModalOpen(true);
-      loadAvailablePages();
+      await loadAvailablePages();
     } catch (error) {
       console.error('Error opening page selection:', error);
       shopify.toast.show("Failed to open page selection", { isError: true });
     }
   }, [loadAvailablePages, shopify]);
 
-  const handlePageSelection = useCallback((template: any) => {
+  const handlePageSelection = useCallback(async (page: any) => {
     try {
-      console.log('Template selected:', template);
-      
-      if (!template || !template.handle) {
-        console.error('Invalid template object:', template);
-        shopify.toast.show("Template data is invalid", { isError: true });
-        return;
-      }
-
       const shopDomain = shop.includes('.myshopify.com') 
         ? shop.replace('.myshopify.com', '') 
         : shop;
 
-      // Use correct app block ID format: {client_id}/{block_handle}
-      // The block handle is the filename without .liquid (bundle.liquid -> bundle)
-      const appBlockId = 'bfda5624970c7ada838998eb951e9e85/bundle';
-      
-      // Generate theme editor deep link for template with app block
-      // Format based on Shopify documentation: https://{shop}.myshopify.com/admin/themes/current/editor?template={template}&addAppBlockId={appBlockId}
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
+      // Get current theme ID for deep linking
+      const formData = new FormData();
+      formData.append("intent", "getCurrentTheme");
 
-      console.log('Generated theme editor URL:', themeEditorUrl);
+      const response = await fetch(window.location.pathname, {
+        method: "POST",
+        body: formData
+      });
 
-      setSelectedPage(template);
+      const result = await response.json();
+      let themeEditorUrl;
+
+      if (result.success && result.themeId) {
+        // Use specific theme and page context
+        themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/${result.themeId}/editor?context=templates%2Fpage&template=${page.handle}&addAppBlockId=bundle-builder`;
+      } else {
+        // Fallback to general theme editor
+        themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=templates%2Fpage&template=${page.handle}`;
+      }
+
+      setSelectedPage(page);
       setIsPageSelectionModalOpen(false);
 
       // Open theme editor in new tab
       window.open(themeEditorUrl, '_blank', 'noopener,noreferrer');
       
-      shopify.toast.show(`Theme editor opened for "${template.title}". Look for "Bundle Builder" in the Apps section and drag it to your desired location.`, { isError: false, duration: 6000 });
+      shopify.toast.show(`Theme editor opened for "${page.title}" page. Add the Bundle Builder widget from the Apps section.`, { isError: false });
       
     } catch (error) {
       console.error('Error opening theme editor:', error);
@@ -1819,12 +1820,12 @@ export default function ConfigureBundleFlow() {
 
   return (
     <Page
-      title={`Configure: ${bundleName}`}
-      subtitle="Set up your cart transform bundle configuration"
+      title={`Configure: ${bundleName || 'Discount Function Bundle'}`}
+      subtitle="Set up your discount function bundle configuration"
       secondaryActions={[
         {
-          content: "Back to Cart Transform Bundles",
-          onAction: () => navigate("/app/bundles/cart-transform"),
+          content: "Back to Discount Function Bundles",
+          onAction: () => navigate("/app/bundles/discount-functions"),
         },
       ]}
     >
@@ -1881,9 +1882,6 @@ export default function ConfigureBundleFlow() {
               icon={ArrowLeftIcon}
               disabled={hasUnsavedChanges}
             />
-            <Text variant="headingLg" as="h1">
-              Configure Bundle Flow
-            </Text>
           </InlineStack>
           <Button 
             variant="primary" 
@@ -1928,67 +1926,71 @@ export default function ConfigureBundleFlow() {
               </BlockStack>
             </Card>
 
-            {/* Bundle Product Card */}
+            {/* Product/Collection Selection Card */}
             <Card>
               <BlockStack gap="300">
-                <InlineStack align="space-between" blockAlign="center">
-                  <Text variant="headingSm" as="h3">
-                    Bundle Product
-                  </Text>
-                  <Button 
-                    variant="plain" 
-                    tone="critical"
-                    onClick={handleSyncProduct}
-                  >
-                    Sync Product
-                  </Button>
-                </InlineStack>
+                <Text variant="headingSm" as="h3">
+                  Bundle Scope
+                </Text>
+                <Text variant="bodyMd" tone="subdued">
+                  Select products and collections where this discount function bundle should be available
+                </Text>
                 
-                {bundleProduct ? (
-                  <InlineStack gap="300" blockAlign="center">
-                    <Thumbnail
-                      source={bundleProduct.featuredImage?.url || bundleProduct.images?.[0]?.originalSrc || "/bundle.png"}
-                      alt={bundleProduct.title || "Bundle Product"}
-                      size="small"
-                    />
-                    <InlineStack gap="200" blockAlign="center">
-                      <Button
-                        variant="plain"
-                        url={`https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`}
-                        external
-                        icon={ExternalIcon}
-                      >
-                        {bundleProduct.title || "Untitled Product"}
-                      </Button>
-                      <Button
-                        variant="tertiary"
-                        size="micro"
-                        icon={RefreshIcon}
-                        onClick={handleBundleProductSelect}
-                        accessibilityLabel="Change bundle product"
-                      />
-                    </InlineStack>
+                {/* Products Section */}
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h4">
+                    Products
+                  </Text>
+                  <InlineStack gap="200" align="start">
+                    <Button 
+                      variant="primary" 
+                      size="medium"
+                      icon={ProductIcon}
+                      onClick={handleBundleProductSelection}
+                    >
+                      Select Products
+                    </Button>
+                    {selectedProducts.length > 0 && (
+                      <Badge tone="info">
+                        <Button
+                          variant="plain"
+                          size="micro"
+                          onClick={handleOpenProductManagementModal}
+                        >
+                          {selectedProducts.length} Selected
+                        </Button>
+                      </Badge>
+                    )}
                   </InlineStack>
-                ) : (
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center',
-                    height: '80px',
-                    border: '1px dashed #ccc',
-                    borderRadius: '8px'
-                  }}>
-                    <BlockStack gap="100" inlineAlign="center">
-                      <Icon source={ProductIcon} />
-                      <Button
-                        variant="plain"
-                        onClick={handleBundleProductSelect}
-                      >
-                        Select Bundle Product
-                      </Button>
-                    </BlockStack>
-                  </div>
-                )}
+                </BlockStack>
+
+                {/* Collections Section */}
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h4">
+                    Collections
+                  </Text>
+                  <InlineStack gap="200" align="start">
+                    <Button 
+                      variant="primary" 
+                      size="medium"
+                      icon={CollectionIcon}
+                      onClick={handleBundleCollectionSelection}
+                    >
+                      Select Collections
+                    </Button>
+                    {selectedBundleCollections.length > 0 && (
+                      <Badge tone="info">
+                        <Button
+                          variant="plain"
+                          size="micro"
+                          onClick={handleOpenCollectionManagementModal}
+                        >
+                          {selectedBundleCollections.length} Selected
+                        </Button>
+                      </Badge>
+                    )}
+                  </InlineStack>
+                </BlockStack>
 
                 {/* Bundle Status Dropdown */}
                 <BlockStack gap="200">
@@ -2166,7 +2168,7 @@ export default function ConfigureBundleFlow() {
                                       <Button
                                         variant="plain"
                                         size="micro"
-                                        onClick={() => handleShowProducts(step.id)}
+                                        onClick={() => handleOpenStepProductModal(step.id)}
                                       >
                                         {step.StepProduct.length} Selected
                                       </Button>
@@ -2200,9 +2202,8 @@ export default function ConfigureBundleFlow() {
                                       <Button
                                         variant="plain"
                                         size="micro"
-                                        onClick={() => handleShowCollections(step.id)}
-
->
+                                        onClick={() => handleOpenStepCollectionModal(step.id)}
+                                      >
                                         {selectedCollections[step.id].length} Selected
                                       </Button>
                                     </Badge>
@@ -2347,7 +2348,7 @@ export default function ConfigureBundleFlow() {
                     Discount & Pricing
                   </Text>
                   <Text variant="bodyMd" tone="subdued">
-                    Set up to 4 discount rules, applied from lowest to highest.
+                    Set up discount rules with automatic discount code generation for qualified purchases.
                   </Text>
                 </BlockStack>
 
@@ -2366,14 +2367,13 @@ export default function ConfigureBundleFlow() {
                     <Select
                       label="Discount Type"
                       options={[
-                        { label: 'Fixed Bundle Price', value: 'fixed_bundle_price' },
-                        { label: 'Percentage Off', value: 'percentage_off' },
                         { label: 'Fixed Amount Off', value: 'fixed_amount_off' },
+                        { label: 'Percentage Off', value: 'percentage_off' },
                       ]}
                       value={discountType}
                       onChange={(value) => {
                         setDiscountType(value);
-                        // Clear existing rules when discount type changes since field structure is different
+                        // Clear existing rules when discount type changes since field structure might be different
                         setDiscountRules([]);
                         // Clear rule messages when discount type changes
                         setRuleMessages({});
@@ -2398,74 +2398,73 @@ export default function ConfigureBundleFlow() {
                               </Button>
                             </InlineStack>
                             
-                            {/* Render different fields based on discount type */}
-                            {discountType === 'fixed_bundle_price' ? (
-                              <InlineStack gap="200" align="start">
+                            <InlineStack gap="200" align="start">
+                              <Select
+                                label="Discount on"
+                                options={[
+                                  { label: 'Quantity', value: 'quantity' },
+                                  { label: 'Amount', value: 'amount' },
+                                ]}
+                                value={rule.discountOn || 'quantity'}
+                                onChange={(value) => updateDiscountRule(rule.id, 'discountOn', value)}
+                              />
+                              
+                              {rule.discountOn === 'quantity' ? (
                                 <TextField
-                                  label="Number of Products in Bundle"
-                                  value={String(rule.numberOfProducts || 0)}
-                                  onChange={(value) => updateDiscountRule(rule.id, 'numberOfProducts', parseInt(value) || 0)}
+                                  label="Minimum quantity"
+                                  value={String(rule.minimumQuantity || 0)}
+                                  onChange={(value) => updateDiscountRule(rule.id, 'minimumQuantity', parseInt(value) || 0)}
                                   type="number"
                                   min="0"
                                   autoComplete="off"
                                 />
+                              ) : (
                                 <TextField
-                                  label="Price"
-                                  value={String(rule.price || 0)}
-                                  onChange={(value) => updateDiscountRule(rule.id, 'price', parseFloat(value) || 0)}
+                                  label="Minimum amount"
+                                  value={String(rule.minimumAmount || 0)}
+                                  onChange={(value) => updateDiscountRule(rule.id, 'minimumAmount', parseFloat(value) || 0)}
                                   type="number"
                                   min="0"
                                   step="0.01"
                                   prefix="₹"
                                   autoComplete="off"
                                 />
-                              </InlineStack>
-                            ) : (
-                              <BlockStack gap="300">
-                                <InlineStack gap="200" align="start">
-                                  <Select
-                                    label="Type"
-                                    options={[
-                                      { label: 'Amount', value: 'amount' },
-                                      { label: 'Quantity', value: 'quantity' },
-                                    ]}
-                                    value={rule.type || 'amount'}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'type', value)}
-                                  />
-                                  <Select
-                                    label="Condition"
-                                    options={[
-                                      { label: 'Greater than & equal to', value: 'greater_than_equal_to' },
-                                      { label: 'Less than & equal to', value: 'less_than_equal_to' },
-                                      { label: 'Equal to', value: 'equal_to' },
-                                    ]}
-                                    value={rule.condition || 'greater_than_equal_to'}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'condition', value)}
-                                  />
-                                  <TextField
-                                    label="Value"
-                                    value={String(rule.value || 0)}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'value', parseFloat(value) || 0)}
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    autoComplete="off"
-                                  />
-                                </InlineStack>
+                              )}
+
+                              {discountType === 'fixed_amount_off' ? (
                                 <TextField
-                                  label={discountType === 'percentage_off' ? 'Discount Percentage (%)' : 'Discount Amount (₹)'}
-                                  value={String(rule.discountValue || 0)}
-                                  onChange={(value) => updateDiscountRule(rule.id, 'discountValue', parseFloat(value) || 0)}
+                                  label="Fixed Amount Off"
+                                  value={String(rule.fixedAmountOff || 0)}
+                                  onChange={(value) => updateDiscountRule(rule.id, 'fixedAmountOff', parseFloat(value) || 0)}
                                   type="number"
                                   min="0"
-                                  max={discountType === 'percentage_off' ? "100" : undefined}
                                   step="0.01"
-                                  prefix={discountType === 'fixed_amount_off' ? '₹' : undefined}
-                                  suffix={discountType === 'percentage_off' ? '%' : undefined}
+                                  prefix="₹"
                                   autoComplete="off"
                                 />
-                              </BlockStack>
-                            )}
+                              ) : (
+                                <TextField
+                                  label="Percentage Off (%)"
+                                  value={String(rule.percentageOff || 0)}
+                                  onChange={(value) => updateDiscountRule(rule.id, 'percentageOff', parseFloat(value) || 0)}
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.01"
+                                  suffix="%"
+                                  autoComplete="off"
+                                />
+                              )}
+
+                              <TextField
+                                label="Code"
+                                value={rule.code || ''}
+                                onChange={(value) => updateDiscountRule(rule.id, 'code', value)}
+                                autoComplete="off"
+                                helpText="Custom discount code prefix (timestamp will be appended)"
+                                placeholder="BUNDLE"
+                              />
+                            </InlineStack>
                           </BlockStack>
                         </Card>
                       ))}
@@ -2527,7 +2526,7 @@ export default function ConfigureBundleFlow() {
                         <Card background="bg-surface-secondary">
                           <BlockStack gap="300">
                             <Text variant="headingSm" as="h4">
-                              Variables
+                              Variables for Discount Functions
                             </Text>
                             <BlockStack gap="200">
                               <InlineStack align="space-between" blockAlign="center">
@@ -2559,10 +2558,10 @@ export default function ConfigureBundleFlow() {
                               
                               <InlineStack align="space-between" blockAlign="center">
                                 <Text variant="bodyMd">
-                                  Discount Value Unit
+                                  Discount Code
                                 </Text>
                                 <Text variant="bodyMd" tone="subdued">
-                                  {'{{discountValueUnit}}'}
+                                  {'{{discountCode}}'}
                                 </Text>
                               </InlineStack>
                             </BlockStack>
@@ -2584,7 +2583,7 @@ export default function ConfigureBundleFlow() {
                                     Discount Text
                                   </Text>
                                   <TextField
-                                    value={ruleMessages[rule.id]?.discountText || 'Add {{discountConditionDiff}} {{discountUnit}} to get the bundle at {{discountValueUnit}}{{discountValue}}'}
+                                    value={ruleMessages[rule.id]?.discountText || 'Add {{discountConditionDiff}} {{discountUnit}} to get {{discountValue}} off your bundle with code {{discountCode}}'}
                                     onChange={(value) => updateRuleMessage(rule.id, 'discountText', value)}
                                     multiline={2}
                                     autoComplete="off"
@@ -2599,11 +2598,11 @@ export default function ConfigureBundleFlow() {
                                     Success Message
                                   </Text>
                                   <TextField
-                                    value={ruleMessages[rule.id]?.successMessage || 'Congratulations 🎉 you have gotten the best offer on your bundle!'}
+                                    value={ruleMessages[rule.id]?.successMessage || 'Congratulations 🎉 Your discount code {{discountCode}} has been applied!'}
                                     onChange={(value) => updateRuleMessage(rule.id, 'successMessage', value)}
                                     multiline={2}
                                     autoComplete="off"
-                                    helpText="This message appears when the customer qualifies for the discount"
+                                    helpText="This message appears when the discount code is automatically applied"
                                   />
                                 </BlockStack>
                               </Card>
@@ -2636,7 +2635,7 @@ export default function ConfigureBundleFlow() {
       <Modal
         open={isPageSelectionModalOpen}
         onClose={() => setIsPageSelectionModalOpen(false)}
-        title="Select Template for Widget Placement"
+        title="Select Page for Widget Placement"
         primaryAction={{
           content: "Cancel",
           onAction: () => setIsPageSelectionModalOpen(false),
@@ -2645,43 +2644,31 @@ export default function ConfigureBundleFlow() {
         <Modal.Section>
           <BlockStack gap="400">
             <Text variant="bodyMd">
-              Choose a page template where you want to place the Bundle Builder widget. The theme editor will open with the selected template ready for widget configuration. Look for the "Bundle Builder" app block in the Apps section and drag it to your desired location.
+              Choose a page where you want to place the Bundle Builder widget. The theme editor will open with the selected page ready for widget configuration.
             </Text>
             
             {isLoadingPages ? (
               <BlockStack gap="200" inlineAlign="center">
-                <Text variant="bodyMd" tone="subdued">Loading templates...</Text>
+                <Text variant="bodyMd" tone="subdued">Loading pages...</Text>
               </BlockStack>
             ) : availablePages.length > 0 ? (
               <BlockStack gap="200">
-                {availablePages.map((template) => (
-                  <Card key={template.id} sectioned>
+                {availablePages.map((page) => (
+                  <Card key={page.id} sectioned>
                     <InlineStack wrap={false} gap="300" align="space-between">
                       <BlockStack gap="100">
-                        <InlineStack gap="200" blockAlign="center">
-                          <Text variant="bodyMd" fontWeight="medium">
-                            {template.title}
-                          </Text>
-                          {template.recommended && (
-                            <Badge tone="success">Recommended</Badge>
-                          )}
-                          {template.fileType && (
-                            <Badge tone="info">{template.fileType}</Badge>
-                          )}
-                        </InlineStack>
-                        <Text variant="bodySm" tone="subdued">
-                          {template.description}
+                        <Text variant="bodyMd" fontWeight="medium">
+                          {page.title}
                         </Text>
-                        <Text variant="bodyXs" tone="subdued">
-                          Template: {template.handle}
+                        <Text variant="bodySm" tone="subdued">
+                          Handle: {page.handle}
                         </Text>
                       </BlockStack>
                       <Button
-                        onClick={() => handlePageSelection(template)}
+                        onClick={() => handlePageSelection(page)}
                         primary
-                        icon={ExternalIcon}
                       >
-                        Select Template
+                        Select Page
                       </Button>
                     </InlineStack>
                   </Card>
@@ -2706,111 +2693,266 @@ export default function ConfigureBundleFlow() {
         </Modal.Section>
       </Modal>
 
-      {/* Selected Products Modal */}
+      {/* Product Management Modal */}
       <Modal
-        open={isProductsModalOpen}
-        onClose={handleCloseProductsModal}
-        title="Selected Products"
+        open={isProductManagementModalOpen}
+        onClose={handleCloseProductManagementModal}
+        title="Manage Selected Products"
         primaryAction={{
-          content: "Close",
-          onAction: handleCloseProductsModal,
+          content: "Add More Products",
+          onAction: handleAddMoreProducts,
         }}
+        secondaryActions={[
+          {
+            content: "Done",
+            onAction: handleCloseProductManagementModal,
+          },
+        ]}
       >
         <Modal.Section>
-          <BlockStack gap="400">
-            {(() => {
-              const currentStep = steps.find(step => step.id === currentModalStepId);
-              const selectedProducts = currentStep?.StepProduct || [];
-              
-              return selectedProducts.length > 0 ? (
-                <BlockStack gap="300">
-                  <Text variant="bodyMd" fontWeight="medium">
-                    {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected for this step:
-                  </Text>
-                  <Card>
-                    <List type="bullet">
-                      {selectedProducts.map((product: any, index: number) => (
-                        <List.Item key={product.id || index}>
-                          <InlineStack gap="200" align="space-between">
-                            <BlockStack gap="050">
-                              <Text variant="bodyMd" fontWeight="medium">
-                                {product.title || product.name || 'Unnamed Product'}
-                              </Text>
-                              {product.variants && product.variants.length > 0 && (
-                                <Text variant="bodySm" tone="subdued">
-                                  {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
-                                </Text>
-                              )}
-                            </BlockStack>
-                            <Badge tone="info">Product</Badge>
-                          </InlineStack>
-                        </List.Item>
-                      ))}
-                    </List>
+          <BlockStack gap="300">
+            {selectedProducts.length > 0 ? (
+              <BlockStack gap="200">
+                <Text variant="bodyMd" fontWeight="medium">
+                  {selectedProducts.length} Product{selectedProducts.length !== 1 ? 's' : ''} Selected
+                </Text>
+                {selectedProducts.map((product) => (
+                  <Card key={product.id} sectioned>
+                    <InlineStack wrap={false} gap="300" align="space-between">
+                      <BlockStack gap="100">
+                        <Text variant="bodyMd" fontWeight="medium">
+                          {product.title || 'Unnamed Product'}
+                        </Text>
+                        {product.handle && (
+                          <Text variant="bodySm" tone="subdued">
+                            Handle: {product.handle}
+                          </Text>
+                        )}
+                        {product.vendor && (
+                          <Text variant="bodySm" tone="subdued">
+                            Vendor: {product.vendor}
+                          </Text>
+                        )}
+                      </BlockStack>
+                      <Button
+                        variant="plain"
+                        tone="critical"
+                        onClick={() => handleRemoveProduct(product.id)}
+                      >
+                        Remove
+                      </Button>
+                    </InlineStack>
                   </Card>
-                </BlockStack>
-              ) : (
+                ))}
+              </BlockStack>
+            ) : (
+              <Card sectioned>
                 <BlockStack gap="200" inlineAlign="center">
-                  <Text variant="bodyMd" tone="subdued">
-                    No products selected for this step yet.
+                  <Text variant="bodyMd" tone="subdued" alignment="center">
+                    No products selected. Click "Add More Products" to select products for this bundle scope.
                   </Text>
                 </BlockStack>
-              );
-            })()}
+              </Card>
+            )}
           </BlockStack>
         </Modal.Section>
       </Modal>
 
-      {/* Selected Collections Modal */}
+      {/* Collection Management Modal */}
       <Modal
-        open={isCollectionsModalOpen}
-        onClose={handleCloseCollectionsModal}
-        title="Selected Collections"
+        open={isCollectionManagementModalOpen}
+        onClose={handleCloseCollectionManagementModal}
+        title="Manage Selected Collections"
         primaryAction={{
-          content: "Close",
-          onAction: handleCloseCollectionsModal,
+          content: "Add More Collections",
+          onAction: handleAddMoreCollections,
         }}
+        secondaryActions={[
+          {
+            content: "Done",
+            onAction: handleCloseCollectionManagementModal,
+          },
+        ]}
       >
         <Modal.Section>
-          <BlockStack gap="400">
-            {(() => {
-              const collections = selectedCollections[currentModalStepId] || [];
-              
-              return collections.length > 0 ? (
-                <BlockStack gap="300">
-                  <Text variant="bodyMd" fontWeight="medium">
-                    {collections.length} collection{collections.length !== 1 ? 's' : ''} selected for this step:
-                  </Text>
-                  <Card>
-                    <List type="bullet">
-                      {collections.map((collection: any, index: number) => (
-                        <List.Item key={collection.id || index}>
-                          <InlineStack gap="200" align="space-between">
-                            <BlockStack gap="050">
-                              <Text variant="bodyMd" fontWeight="medium">
-                                {collection.title || 'Unnamed Collection'}
-                              </Text>
-                              {collection.handle && (
-                                <Text variant="bodySm" tone="subdued">
-                                  Handle: {collection.handle}
-                                </Text>
-                              )}
-                            </BlockStack>
-                            <Badge tone="success">Collection</Badge>
-                          </InlineStack>
-                        </List.Item>
-                      ))}
-                    </List>
+          <BlockStack gap="300">
+            {selectedBundleCollections.length > 0 ? (
+              <BlockStack gap="200">
+                <Text variant="bodyMd" fontWeight="medium">
+                  {selectedBundleCollections.length} Collection{selectedBundleCollections.length !== 1 ? 's' : ''} Selected
+                </Text>
+                {selectedBundleCollections.map((collection) => (
+                  <Card key={collection.id} sectioned>
+                    <InlineStack wrap={false} gap="300" align="space-between">
+                      <BlockStack gap="100">
+                        <Text variant="bodyMd" fontWeight="medium">
+                          {collection.title || 'Unnamed Collection'}
+                        </Text>
+                        {collection.handle && (
+                          <Text variant="bodySm" tone="subdued">
+                            Handle: {collection.handle}
+                          </Text>
+                        )}
+                        {collection.description && (
+                          <Text variant="bodySm" tone="subdued">
+                            {collection.description.length > 100 
+                              ? `${collection.description.substring(0, 100)}...` 
+                              : collection.description}
+                          </Text>
+                        )}
+                      </BlockStack>
+                      <Button
+                        variant="plain"
+                        tone="critical"
+                        onClick={() => handleRemoveCollection(collection.id)}
+                      >
+                        Remove
+                      </Button>
+                    </InlineStack>
                   </Card>
-                </BlockStack>
-              ) : (
+                ))}
+              </BlockStack>
+            ) : (
+              <Card sectioned>
                 <BlockStack gap="200" inlineAlign="center">
-                  <Text variant="bodyMd" tone="subdued">
-                    No collections selected for this step yet.
+                  <Text variant="bodyMd" tone="subdued" alignment="center">
+                    No collections selected. Click "Add More Collections" to select collections for this bundle scope.
                   </Text>
                 </BlockStack>
-              );
-            })()}
+              </Card>
+            )}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Step Product Management Modal */}
+      <Modal
+        open={isStepProductModalOpen}
+        onClose={handleCloseStepProductModal}
+        title={`Manage Products - Step ${currentStepId ? steps.find(s => s.id === currentStepId)?.name || currentStepId : ''}`}
+        primaryAction={{
+          content: "Add More Products",
+          onAction: handleAddMoreStepProducts,
+        }}
+        secondaryActions={[
+          {
+            content: "Done",
+            onAction: handleCloseStepProductModal,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            {currentStepId && steps.find(s => s.id === currentStepId)?.StepProduct?.length > 0 ? (
+              <BlockStack gap="200">
+                <Text variant="bodyMd" fontWeight="medium">
+                  {steps.find(s => s.id === currentStepId)?.StepProduct?.length || 0} Product{(steps.find(s => s.id === currentStepId)?.StepProduct?.length || 0) !== 1 ? 's' : ''} Selected
+                </Text>
+                {steps.find(s => s.id === currentStepId)?.StepProduct?.map((product: any) => (
+                  <Card key={product.id} sectioned>
+                    <InlineStack wrap={false} gap="300" align="space-between">
+                      <BlockStack gap="100">
+                        <Text variant="bodyMd" fontWeight="medium">
+                          {product.title || product.name || 'Unnamed Product'}
+                        </Text>
+                        {product.handle && (
+                          <Text variant="bodySm" tone="subdued">
+                            Handle: {product.handle}
+                          </Text>
+                        )}
+                        {product.vendor && (
+                          <Text variant="bodySm" tone="subdued">
+                            Vendor: {product.vendor}
+                          </Text>
+                        )}
+                      </BlockStack>
+                      <Button
+                        variant="plain"
+                        tone="critical"
+                        onClick={() => handleRemoveStepProduct(product.id)}
+                      >
+                        Remove
+                      </Button>
+                    </InlineStack>
+                  </Card>
+                ))}
+              </BlockStack>
+            ) : (
+              <Card sectioned>
+                <BlockStack gap="200" inlineAlign="center">
+                  <Text variant="bodyMd" tone="subdued" alignment="center">
+                    No products selected for this step. Click "Add More Products" to select products.
+                  </Text>
+                </BlockStack>
+              </Card>
+            )}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Step Collection Management Modal */}
+      <Modal
+        open={isStepCollectionModalOpen}
+        onClose={handleCloseStepCollectionModal}
+        title={`Manage Collections - Step ${currentStepId ? steps.find(s => s.id === currentStepId)?.name || currentStepId : ''}`}
+        primaryAction={{
+          content: "Add More Collections",
+          onAction: handleAddMoreStepCollections,
+        }}
+        secondaryActions={[
+          {
+            content: "Done",
+            onAction: handleCloseStepCollectionModal,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            {currentStepId && selectedCollections[currentStepId]?.length > 0 ? (
+              <BlockStack gap="200">
+                <Text variant="bodyMd" fontWeight="medium">
+                  {selectedCollections[currentStepId]?.length || 0} Collection{(selectedCollections[currentStepId]?.length || 0) !== 1 ? 's' : ''} Selected
+                </Text>
+                {selectedCollections[currentStepId]?.map((collection: any) => (
+                  <Card key={collection.id} sectioned>
+                    <InlineStack wrap={false} gap="300" align="space-between">
+                      <BlockStack gap="100">
+                        <Text variant="bodyMd" fontWeight="medium">
+                          {collection.title || 'Unnamed Collection'}
+                        </Text>
+                        {collection.handle && (
+                          <Text variant="bodySm" tone="subdued">
+                            Handle: {collection.handle}
+                          </Text>
+                        )}
+                        {collection.description && (
+                          <Text variant="bodySm" tone="subdued">
+                            {collection.description.length > 100 
+                              ? `${collection.description.substring(0, 100)}...` 
+                              : collection.description}
+                          </Text>
+                        )}
+                      </BlockStack>
+                      <Button
+                        variant="plain"
+                        tone="critical"
+                        onClick={() => handleRemoveStepCollection(collection.id)}
+                      >
+                        Remove
+                      </Button>
+                    </InlineStack>
+                  </Card>
+                ))}
+              </BlockStack>
+            ) : (
+              <Card sectioned>
+                <BlockStack gap="200" inlineAlign="center">
+                  <Text variant="bodyMd" tone="subdued" alignment="center">
+                    No collections selected for this step. Click "Add More Collections" to select collections.
+                  </Text>
+                </BlockStack>
+              </Card>
+            )}
           </BlockStack>
         </Modal.Section>
       </Modal>

@@ -38,6 +38,12 @@ export default function BundleTypeSelection() {
     <Page 
       title="Choose Your Bundle Type"
       subtitle="Select the bundle implementation that best fits your store's needs"
+      secondaryActions={[
+        {
+          content: "Back to Dashboard",
+          onAction: () => navigate("/app/dashboard"),
+        },
+      ]}
     >
       <Layout>
         <Layout.Section>

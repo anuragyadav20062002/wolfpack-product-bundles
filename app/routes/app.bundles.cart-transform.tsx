@@ -20,6 +20,7 @@ import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon } from "@shopify/polaris-
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { useState, useCallback, useRef, useEffect } from "react";
+import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -545,31 +546,85 @@ export default function CartTransformBundles() {
         </Layout.Section>
         
         <Layout.Section>
-          <Card>
-            <BlockStack gap="300">
-              <Text variant="headingSm" as="h4">
-                Cart Transform Bundle Features
-              </Text>
-              <BlockStack gap="200">
-                <Text variant="bodyMd">
-                  <strong>Real-time Updates:</strong> Bundle items are automatically merged 
-                  in the cart as customers add products.
-                </Text>
-                <Text variant="bodyMd">
-                  <strong>Single Cart Line:</strong> Multiple bundle components appear as 
-                  one item with combined pricing and savings display.
-                </Text>
-                <Text variant="bodyMd">
-                  <strong>Immediate Savings:</strong> Customers see discounts applied 
-                  instantly without needing discount codes.
-                </Text>
-                <Text variant="bodyMd">
-                  <strong>Professional Presentation:</strong> Bundle appears cohesively 
-                  with the first product's image and combined title.
-                </Text>
-              </BlockStack>
-            </BlockStack>
-          </Card>
+          <InlineStack gap="400" align="start" blockAlign="start">
+            {/* Cart Transform Bundle Setup Instructions */}
+            <div style={{ flex: '1' }}>
+              <BundleSetupInstructions
+                title="Cart Transform Bundle Setup"
+                subtitle="Follow these steps to create your cart transform bundle"
+                bundlesExist={bundles.length > 0}
+                steps={[
+                  {
+                    id: "create_bundle",
+                    title: 'Click "Create Cart Transform Bundle"',
+                    description: "Start by clicking the create button above",
+                    isClickable: true,
+                    onClick: handleCreateBundle,
+                  },
+                  {
+                    id: "name_description",
+                    title: "Enter bundle name and description",
+                    description: "Give your bundle a descriptive name and optional description",
+                  },
+                  {
+                    id: "create_bundle_modal",
+                    title: 'Click "Create Bundle" in modal',
+                    description: "This will create the bundle and navigate to configuration",
+                  },
+                  {
+                    id: "add_steps",
+                    title: "Add bundle steps and select products",
+                    description: "Configure your bundle steps and add products/collections",
+                    isClickable: bundles.length > 0,
+                    onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                  },
+                  {
+                    id: "setup_pricing",
+                    title: "Set up discount rules and pricing",
+                    description: "Configure discount methods and pricing rules",
+                    isClickable: bundles.length > 0,
+                    onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                  },
+                  {
+                    id: "publish",
+                    title: "Save and publish your bundle",
+                    description: "Save your changes and publish to make it live",
+                    isClickable: bundles.length > 0,
+                    onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                  },
+                ]}
+              />
+            </div>
+
+            {/* Cart Transform Bundle Features */}
+            <div style={{ flex: '1' }}>
+              <Card>
+                <BlockStack gap="300">
+                  <Text variant="headingSm" as="h4">
+                    Cart Transform Features
+                  </Text>
+                  <BlockStack gap="200">
+                    <Text variant="bodyMd">
+                      <strong>Real-time Updates:</strong> Bundle items are automatically merged 
+                      in the cart as customers add products.
+                    </Text>
+                    <Text variant="bodyMd">
+                      <strong>Single Cart Line:</strong> Multiple bundle components appear as 
+                      one item with combined pricing and savings display.
+                    </Text>
+                    <Text variant="bodyMd">
+                      <strong>Immediate Savings:</strong> Customers see discounts applied 
+                      instantly without needing discount codes.
+                    </Text>
+                    <Text variant="bodyMd">
+                      <strong>Professional Presentation:</strong> Bundle appears cohesively 
+                      with the first product's image and combined title.
+                    </Text>
+                  </BlockStack>
+                </BlockStack>
+              </Card>
+            </div>
+          </InlineStack>
         </Layout.Section>
       </Layout>
     </Page>

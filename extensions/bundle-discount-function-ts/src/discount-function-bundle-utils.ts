@@ -1,8 +1,10 @@
 export interface DiscountRule {
   discountOn: string;
   minimumQuantity: number;
+  minimumAmount?: number;
   fixedAmountOff: number;
   percentageOff: number;
+  code?: string; // Custom discount code prefix
 }
 
 export interface BundleProduct {
@@ -240,15 +242,42 @@ export function getBundleDataFromCart(cart: any): BundleData | null {
 export function getApplicableDiscountRule(
   bundleData: BundleData,
   totalQuantity: number,
+  totalAmount?: number,
 ): DiscountRule | null {
   if (!bundleData.pricing?.rules || bundleData.pricing.rules.length === 0) {
     return null;
   }
 
-  // Sort rules by minimum quantity descending to get the best applicable discount
-  const applicableRules = bundleData.pricing.rules
-    .filter((rule) => totalQuantity >= rule.minimumQuantity)
-    .sort((a, b) => b.minimumQuantity - a.minimumQuantity);
+  const applicableRules = bundleData.pricing.rules.filter((rule) => {
+    // Check quantity-based rules
+    if (rule.discountOn === 'quantity' && totalQuantity >= rule.minimumQuantity) {
+      return true;
+    }
+    
+    // Check amount-based rules
+    if (rule.discountOn === 'amount' && totalAmount !== undefined && rule.minimumAmount && totalAmount >= rule.minimumAmount) {
+      return true;
+    }
+
+    return false;
+  });
+
+  // Sort rules by priority: amount-based rules first, then by minimum value descending
+  applicableRules.sort((a, b) => {
+    if (a.discountOn === 'amount' && b.discountOn === 'quantity') {
+      return -1; // Amount-based rules have higher priority
+    }
+    if (a.discountOn === 'quantity' && b.discountOn === 'amount') {
+      return 1; // Quantity-based rules have lower priority
+    }
+    
+    // If both are the same type, sort by minimum value descending
+    if (a.discountOn === 'amount' && b.discountOn === 'amount') {
+      return (b.minimumAmount || 0) - (a.minimumAmount || 0);
+    }
+    
+    return b.minimumQuantity - a.minimumQuantity;
+  });
 
   return applicableRules.length > 0 ? applicableRules[0] : null;
 }
