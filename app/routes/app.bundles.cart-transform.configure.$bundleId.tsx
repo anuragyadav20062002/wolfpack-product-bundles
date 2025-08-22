@@ -295,11 +295,12 @@ async function updateBundleProductMetafields(admin: any, bundleProductId: string
 async function updateShopBundlesMetafield(admin: any, shopId: string) {
   try {
     // Get all published cart transform bundles from database
+    // Force refresh by including even draft bundles with steps for debugging
     const allBundles = await db.bundle.findMany({
       where: {
         shopId: shopId,
-        bundleType: 'cart_transform',
-        status: 'active'
+        bundleType: 'cart_transform'
+        // Temporarily remove status filter to see all cart transform bundles
       },
       include: {
         steps: {
@@ -422,6 +423,19 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
   const stepsData = JSON.parse(formData.get("stepsData") as string);
   const discountData = JSON.parse(formData.get("discountData") as string);
 
+  // Automatically set status to 'active' if bundle has configured steps
+  let finalStatus = bundleStatus as any;
+  if (bundleStatus === 'draft' && stepsData && stepsData.length > 0) {
+    const hasConfiguredSteps = stepsData.some((step: any) => 
+      (step.StepProduct && step.StepProduct.length > 0) || 
+      (step.collections && step.collections.length > 0)
+    );
+    if (hasConfiguredSteps) {
+      finalStatus = 'active';
+      console.log('Auto-activating cart transform bundle due to configured steps');
+    }
+  }
+
   // Update bundle in database
   const updatedBundle = await db.bundle.update({
     where: { 
@@ -431,7 +445,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     data: {
       name: bundleName,
       description: bundleDescription,
-      status: bundleStatus as any,
+      status: finalStatus,
       // Update steps if provided
       ...(stepsData && {
         steps: {
@@ -529,8 +543,10 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     }
   }
 
-  // Update shop-level all_bundles metafield for Liquid extension
+  // ALWAYS update shop-level all_bundles metafield for Liquid extension
+  // This ensures the widget gets updated bundle data immediately
   try {
+    console.log('Force updating shop bundles metafield after bundle save');
     await updateShopBundlesMetafield(admin, session.shop);
   } catch (error) {
     console.error("Failed to update shop bundles metafield:", error);

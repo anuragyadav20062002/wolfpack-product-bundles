@@ -69,16 +69,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  console.log('DEBUG: Starting bundle matching process');
-  console.log('DEBUG: Total bundles to check:', bundlesArray.length);
+  console.log('DEBUG: Starting bundle selection process');
+  console.log('DEBUG: Total bundles available:', bundlesArray.length);
   console.log('DEBUG: Widget config bundleId:', widgetConfig.bundleId);
+  console.log('DEBUG: Bundle types in data:', bundlesArray.map(b => ({name: b.name, bundleType: b.bundleType, status: b.status})));
 
+  // For cart transform bundles: Use explicit bundle ID or first available cart transform bundle
+  // For discount function bundles: Use product/collection matching logic
   for (const bundle of bundlesArray) {
-    console.log('DEBUG: Checking bundle:', bundle?.name || 'Unnamed', 'Status:', bundle?.status, 'Steps:', bundle?.steps?.length || 0);
-    if (bundle && bundle.status === 'active') {
+    console.log('DEBUG: Checking bundle:', bundle?.name || 'Unnamed', 'Type:', bundle?.bundleType, 'Status:', bundle?.status, 'Steps:', bundle?.steps?.length || 0);
+    
+    // Skip inactive bundles
+    if (!bundle || bundle.status !== 'active') {
+      console.log('DEBUG: Skipping inactive bundle:', bundle?.name);
+      continue;
+    }
+
+    // CART TRANSFORM BUNDLE LOGIC: Use specific bundle ID or first available
+    if (bundle.bundleType === 'cart_transform') {
+      // If specific bundle ID is configured, use only that bundle
+      if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
+        console.log('DEBUG: Skipping cart transform bundle (ID mismatch):', bundle.name);
+        continue;
+      }
+      
+      // For cart transform bundles, select immediately without product matching
+      selectedBundle = bundle;
+      console.log('DEBUG: Selected cart transform bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
+      break;
+    }
+
+    // DISCOUNT FUNCTION BUNDLE LOGIC: Use product/collection matching
+    if (bundle.bundleType === 'discount_function') {
       // If a specific bundle ID is configured, only use that bundle
       if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
-        console.log('DEBUG: Skipping bundle (ID mismatch):', bundle.name);
+        console.log('DEBUG: Skipping discount function bundle (ID mismatch):', bundle.name);
         continue;
       }
       
@@ -136,16 +161,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                 });
       console.log('Collection Matches:', collectionMatches);
 
-      if (productMatches || collectionMatches) { // Modified condition
-        selectedBundle = bundle; // We'll use the raw bundle object, which contains `steps` etc. directly.
-        selectedBundle.parsedMatching = parsedMatching; // Attach parsed matching for future use
-        console.log('DEBUG: Selected bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
-        break; // Found a matching bundle, take the first one
-      } else {
-        console.log('DEBUG: No match for bundle:', bundle.name, 'Product match:', productMatches, 'Collection match:', collectionMatches);
-      }
-    }
-  }
+        if (productMatches || collectionMatches) { // Modified condition
+          selectedBundle = bundle; // We'll use the raw bundle object, which contains `steps` etc. directly.
+          selectedBundle.parsedMatching = parsedMatching; // Attach parsed matching for future use
+          console.log('DEBUG: Selected discount function bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
+          break; // Found a matching bundle, take the first one
+        } else {
+          console.log('DEBUG: No match for discount function bundle:', bundle.name, 'Product match:', productMatches, 'Collection match:', collectionMatches);
+        }
+      } // End discount function bundle logic
+    } // End bundle type check
+  } // End bundle loop
 
   // Use the already declared appContainer from earlier in the code
   if (!appContainer) {
