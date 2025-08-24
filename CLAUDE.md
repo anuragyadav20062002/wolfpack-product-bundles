@@ -55,6 +55,7 @@ Shopify bundling app with dual implementation approaches:
 
 **Key Files:**
 - `app/routes/app.bundles.cart-transform.configure.$bundleId.tsx` - Main bundle configuration UI
+- `extensions/bundle-builder/` - Liquid theme extension with widget, CSS, and JavaScript
 - `extensions/bundle-discount-function-ts/` - Discount functions
 - `extensions/bundle-cart-transform-ts/` - Cart transform functions
 - `prisma/schema.prisma` - Database schema
@@ -87,6 +88,20 @@ Shopify bundling app with dual implementation approaches:
 - Cart Transform: `bundle_discounts/cart_transform_config`
 - Discount Function: `bundle_discounts/discount_function_config`
 
+## Bundle Widget System
+
+**Theme Integration:**
+- **Liquid Template**: `extensions/bundle-builder/blocks/bundle.liquid`
+- **CSS Styling**: `extensions/bundle-builder/assets/bundle-widget.css`
+- **JavaScript Logic**: `extensions/bundle-builder/assets/bundle-widget.js`
+
+**Key Features:**
+- **Product Matching**: Cart Transform bundles only show on configured Bundle Product
+- **Step Cards**: Visual representation of bundle steps with product images
+- **Modal Interface**: Interactive product selection with tabs and navigation
+- **Preview URLs**: Automatic generation using `onlineStorePreviewUrl` for draft products
+- **Development Store Support**: Compatible with both `shopifypreview.com` and `myshopify.com`
+
 ## Function Limitations
 
 - Collection membership queries not supported in Functions GraphQL
@@ -112,6 +127,14 @@ Shopify bundling app with dual implementation approaches:
 - Theme editor integration with deep linking
 - Authentication fixes for embedded app context
 - Comprehensive metafield architecture
+
+**🆕 Recent Enhancements (Latest):**
+- **Enhanced Bundle Widget**: Step cards with product images and modal selection
+- **Smart Product Matching**: Widget only displays on configured Bundle Products
+- **Preview URL Generation**: Proper preview links for draft/unpublished products using `onlineStorePreviewUrl`
+- **JavaScript Error Fixes**: Resolved syntax errors in bundle-widget.js
+- **Improved UX**: Better visual feedback, debugging, and error handling
+- **MCP Integration**: All GraphQL queries validated using Shopify dev MCP server
 
 **🔧 High Priority TODOs:**
 1. Bundle creation error handling (app/routes/app.bundles.create.tsx:22)
