@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://referenced-monkey-walks-supposed.trycloudflare.com"
+application_url = "https://mountains-swaziland-dial-whether.trycloudflare.com"
 embedded = true
 
 [build]
@@ -18,7 +18,11 @@ api_version = "2025-04"
 scopes = "read_content,write_discounts,write_products,read_themes,write_themes"
 
 [auth]
-redirect_urls = ["https://referenced-monkey-walks-supposed.trycloudflare.com/auth/callback", "https://referenced-monkey-walks-supposed.trycloudflare.com/auth/shopify/callback", "https://referenced-monkey-walks-supposed.trycloudflare.com/api/auth/callback"]
+redirect_urls = [
+  "https://mountains-swaziland-dial-whether.trycloudflare.com/auth/callback",
+  "https://mountains-swaziland-dial-whether.trycloudflare.com/auth/shopify/callback",
+  "https://mountains-swaziland-dial-whether.trycloudflare.com/api/auth/callback"
+]
 
 [pos]
 embedded = false

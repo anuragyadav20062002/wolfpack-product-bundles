@@ -200,34 +200,42 @@ export async function action({ request }: ActionFunctionArgs) {
         return json({ error: 'Bundle not found' }, { status: 404 });
       }
 
+      // Delete the associated Shopify product first (if it exists)
+      if (bundle.shopifyProductId) {
+        try {
+          const DELETE_PRODUCT = `
+            mutation DeleteProduct($id: ID!) {
+              productDelete(input: {id: $id}) {
+                deletedProductId
+                userErrors {
+                  field
+                  message
+                }
+              }
+            }
+          `;
+          
+          const response = await admin.graphql(DELETE_PRODUCT, {
+            variables: {
+              id: bundle.shopifyProductId
+            }
+          });
+
+          const data = await response.json();
+          if (data.data?.productDelete?.userErrors?.length > 0) {
+            console.error("Error deleting Shopify product:", data.data.productDelete.userErrors);
+          } else {
+            console.log("Successfully deleted Shopify product:", bundle.shopifyProductId);
+          }
+        } catch (error) {
+          console.error("Failed to delete Shopify product:", error);
+        }
+      }
+
       // Delete the bundle from database (cascade will handle related records)
       await db.bundle.delete({
         where: { id: bundleId, shopId: shop },
       });
-
-      // Optionally delete the Shopify product (commented out for safety)
-      // You might want to keep the product for reference or delete it
-      /*
-      if (bundle.shopifyProductId) {
-        const DELETE_PRODUCT = `
-          mutation DeleteProduct($id: ID!) {
-            productDelete(input: {id: $id}) {
-              deletedProductId
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
-        
-        await admin.graphql(DELETE_PRODUCT, {
-          variables: {
-            id: bundle.shopifyProductId
-          }
-        });
-      }
-      */
 
       return json({ 
         success: true, 
@@ -274,7 +282,7 @@ export async function action({ request }: ActionFunctionArgs) {
           descriptionHtml: description || `${bundleName} - Bundle Product`,
           productType: "Bundle",
           vendor: "Bundle Builder",
-          status: "DRAFT",
+          status: "ACTIVE",
           tags: ["bundle", "cart-transform"]
         }
       }

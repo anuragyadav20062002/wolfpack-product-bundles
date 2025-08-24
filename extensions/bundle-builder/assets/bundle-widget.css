@@ -45,6 +45,7 @@
 
 .step-box {
   border: 2px dashed #ccc;
+  border-radius: 12px;
   width: 150px;
   height: 150px;
   display: flex;
@@ -53,22 +54,107 @@
   align-items: center;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  background-color: #fafafa;
+  box-sizing: border-box;
 }
 
 .step-box:hover {
   border-color: #333;
+  background-color: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.step-box.has-selections {
+  border-style: solid;
+  border-color: #28a745;
+  background-color: #f8fff8;
+}
+
+.step-box.has-selections:hover {
+  border-color: #1e7e34;
+  background-color: #f0fff0;
 }
 
 .plus-icon {
   font-size: 3em;
   color: #ccc;
   margin-bottom: 10px;
+  transition: color 0.3s ease;
+}
+
+.step-box:hover .plus-icon {
+  color: #666;
+}
+
+.step-box.has-selections .plus-icon {
+  display: none;
 }
 
 .step-name {
   font-size: 0.9em;
   color: #555;
+  font-weight: 500;
+  margin: 0;
+  padding: 0 8px;
+}
+
+/* Step images container */
+.step-images {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  max-width: 120px;
+  max-height: 80px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.step-image {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #e0e0e0;
+  transition: transform 0.2s ease;
+}
+
+.step-image:hover {
+  transform: scale(1.1);
+}
+
+/* Handle multiple images layout */
+.step-images.two-images .step-image {
+  width: 45px;
+  height: 45px;
+}
+
+.step-images.three-images .step-image {
+  width: 35px;
+  height: 35px;
+}
+
+.step-images.four-plus-images .step-image {
+  width: 28px;
+  height: 28px;
+}
+
+/* Show count badge for many images */
+.step-images .image-count-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #28a745;
+  color: white;
+  font-size: 0.7em;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+  z-index: 1;
 }
 
 .bundle-includes {
@@ -197,6 +283,23 @@
   border-bottom: none;
   margin-bottom: 0;
   position: relative;
+}
+
+.modal-step-title {
+  font-size: 1.4em;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 15px;
+  padding: 0 20px;
+}
+
+.modal-step-subtitle {
+  font-size: 0.9em;
+  color: #666;
+  text-align: center;
+  margin-bottom: 10px;
+  padding: 0 20px;
 }
 
 .modal-tabs {

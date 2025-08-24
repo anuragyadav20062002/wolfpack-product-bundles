@@ -1,24 +1,4 @@
-function renderBundleSteps(numberOfSteps) {
-  const bundleStepsContainer = document.querySelector('.bundle-steps');
-  bundleStepsContainer.innerHTML = ''; // Clear existing steps
-
-  for (let i = 0; i < numberOfSteps; i++) {
-    const stepBox = document.createElement('div');
-    stepBox.classList.add('step-box');
-
-    const plusIcon = document.createElement('span');
-    plusIcon.classList.add('plus-icon');
-    plusIcon.textContent = '+';
-
-    const stepName = document.createElement('p');
-    stepName.classList.add('step-name');
-    stepName.textContent = `Select ${i === 0 ? 'First' : i === 1 ? 'Second' : 'Third'} Shade`; // Hardcoded for 3 steps
-
-    stepBox.appendChild(plusIcon);
-    stepBox.appendChild(stepName);
-    bundleStepsContainer.appendChild(stepBox);
-  }
-}
+// Old renderBundleSteps function removed - now using updateMainBundleStepsDisplay()
 
 // Initialize bundle widgets (supports multiple instances on same page)
 function initializeBundleWidget(containerElement) {
@@ -88,7 +68,7 @@ function initializeBundleWidget(containerElement) {
       continue;
     }
 
-    // CART TRANSFORM BUNDLE LOGIC: Use specific bundle ID or first available
+    // CART TRANSFORM BUNDLE LOGIC: Use specific bundle ID or match Bundle Product
     if (bundle.bundleType === 'cart_transform') {
       // If specific bundle ID is configured, use only that bundle
       if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
@@ -96,7 +76,25 @@ function initializeBundleWidget(containerElement) {
         continue;
       }
       
-      // For cart transform bundles, select immediately without product matching
+      // For cart transform bundles, only show on the configured Bundle Product
+      if (bundle.shopifyProductId) {
+        // Extract numerical ID from Shopify product GID for comparison
+        const bundleProductId = bundle.shopifyProductId.includes('gid://shopify/Product/') 
+          ? bundle.shopifyProductId.split('/').pop() 
+          : bundle.shopifyProductId;
+        
+        console.log('DEBUG: Comparing Bundle Product ID:', bundleProductId, 'with currentProductId:', currentProductId);
+        
+        // Only show bundle widget if current product matches the configured Bundle Product
+        if (bundleProductId !== currentProductId.toString()) {
+          console.log('DEBUG: Skipping cart transform bundle (not Bundle Product):', bundle.name, 'Bundle Product:', bundleProductId, 'Current:', currentProductId);
+          continue;
+        }
+      } else {
+        console.log('DEBUG: Skipping cart transform bundle (no Bundle Product configured):', bundle.name);
+        continue;
+      }
+      
       selectedBundle = bundle;
       console.log('DEBUG: Selected cart transform bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
       break;
@@ -164,16 +162,15 @@ function initializeBundleWidget(containerElement) {
                                 });
       console.log('Collection Matches:', collectionMatches);
 
-        if (productMatches || collectionMatches) { // Modified condition
-          selectedBundle = bundle; // We'll use the raw bundle object, which contains `steps` etc. directly.
-          selectedBundle.parsedMatching = parsedMatching; // Attach parsed matching for future use
-          console.log('DEBUG: Selected discount function bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
-          break; // Found a matching bundle, take the first one
-        } else {
-          console.log('DEBUG: No match for discount function bundle:', bundle.name, 'Product match:', productMatches, 'Collection match:', collectionMatches);
-        }
+      if (productMatches || collectionMatches) { // Modified condition
+        selectedBundle = bundle; // We'll use the raw bundle object, which contains `steps` etc. directly.
+        selectedBundle.parsedMatching = parsedMatching; // Attach parsed matching for future use
+        console.log('DEBUG: Selected discount function bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
+        break; // Found a matching bundle, take the first one
+      } else {
+        console.log('DEBUG: No match for discount function bundle:', bundle.name, 'Product match:', productMatches, 'Collection match:', collectionMatches);
+      }
       } // End discount function bundle logic
-    } // End bundle type check
   } // End bundle loop
 
   // Use the containerElement that was passed to this function
@@ -536,6 +533,43 @@ function initializeBundleWidget(containerElement) {
 
   // Render current step info
   function renderCurrentStepInfo() {
+    // Update modal header step title and subtitle
+    const modalStepTitle = bundleBuilderModal.querySelector('.modal-step-title');
+    const modalStepSubtitle = bundleBuilderModal.querySelector('.modal-step-subtitle');
+    
+    if (modalStepTitle && modalStepSubtitle && selectedBundle) {
+      const step = selectedBundle.steps[currentActiveStepIndex];
+      const selectedCount = Object.values(selectedProductsQuantities[currentActiveStepIndex]).reduce((a, b) => a + b, 0);
+
+      // Set the step title
+      modalStepTitle.textContent = step.name || `Step ${currentActiveStepIndex + 1}`;
+      
+      // Set the step subtitle with quantity requirements
+      let subtitleText = '';
+      if (step.conditionType && step.conditionValue) {
+        const value = step.conditionValue;
+        switch (step.conditionType) {
+          case 'equal_to':
+            subtitleText = `Select exactly ${value} product${value > 1 ? 's' : ''}`;
+            break;
+          case 'at_least':
+            subtitleText = `Select at least ${value} product${value > 1 ? 's' : ''}`;
+            break;
+          case 'at_most':
+            subtitleText = `Select up to ${value} product${value > 1 ? 's' : ''}`;
+            break;
+        }
+        if (selectedCount > 0) {
+          subtitleText += ` (${selectedCount} selected)`;
+        }
+      } else {
+        subtitleText = selectedCount > 0 ? `${selectedCount} product${selectedCount > 1 ? 's' : ''} selected` : 'Choose products for this step';
+      }
+      
+      modalStepSubtitle.textContent = subtitleText;
+    }
+
+    // Legacy support for existing modal-current-step-info container  
     const currentStepInfoContainer = bundleBuilderModal.querySelector('.modal-current-step-info');
     if (currentStepInfoContainer && selectedBundle) {
       const step = selectedBundle.steps[currentActiveStepIndex];
@@ -839,6 +873,10 @@ function initializeBundleWidget(containerElement) {
 
   // Function to update the main bundle steps display after modal is closed
   function updateMainBundleStepsDisplay() {
+    console.log('DEBUG: updateMainBundleStepsDisplay called');
+    console.log('DEBUG: bundleStepsContainer:', bundleStepsContainer);
+    console.log('DEBUG: selectedBundle:', selectedBundle);
+    
     // Use container-specific bundle steps container (not global querySelector)
     if (!bundleStepsContainer) {
       console.error('Bundle steps container not found in this widget instance');
@@ -849,57 +887,78 @@ function initializeBundleWidget(containerElement) {
 
     if (!selectedBundle || !selectedBundle.steps) {
       console.log('DEBUG: No selected bundle or steps to render');
+      console.log('DEBUG: selectedBundle exists:', !!selectedBundle);
+      console.log('DEBUG: selectedBundle.steps exists:', !!selectedBundle?.steps);
+      console.log('DEBUG: selectedBundle.steps length:', selectedBundle?.steps?.length);
       return;
     }
 
     console.log('DEBUG: Rendering steps for bundle:', selectedBundle.name, 'Steps count:', selectedBundle.steps.length);
+    console.log('DEBUG: selectedProductsQuantities:', selectedProductsQuantities);
 
     selectedBundle.steps.forEach((step, index) => {
-        const stepBox = document.createElement('div');
-        stepBox.classList.add('step-box');
+      const stepBox = document.createElement('div');
+      stepBox.classList.add('step-box');
       stepBox.dataset.stepIndex = index.toString();
 
       const selectedProductsInStep = selectedProductsQuantities[index];
-      const hasSelections = Object.keys(selectedProductsInStep).length > 0;
-
+      const hasSelections = Object.keys(selectedProductsInStep).some(key => selectedProductsInStep[key] > 0);
+      
       if (hasSelections) {
-        const imagesContainer = document.createElement('div');
-        imagesContainer.classList.add('step-images-container');
-
+        stepBox.classList.add('has-selections');
+        
+        // Collect unique product images
+        const productImages = [];
+        let totalQuantity = 0;
+        
         for (const variantId in selectedProductsInStep) {
           const quantity = selectedProductsInStep[variantId];
-          const product = stepProductDataCache[index].find((p) => (p.variantId || p.id) === variantId);
-
-          if (product && product.imageUrl) {
-            for (let i = 0; i < quantity; i++) {
-              const img = document.createElement('img');
-              img.src = product.imageUrl;
-              img.alt = product.title || '';
-              img.classList.add('bundle-step-product-image');
-              imagesContainer.appendChild(img);
+          if (quantity > 0) {
+            totalQuantity += quantity;
+            const product = stepProductDataCache[index].find((p) => (p.variantId || p.id) === variantId);
+            if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
+              productImages.push({
+                url: product.imageUrl,
+                alt: product.title || ''
+              });
             }
           }
         }
         
-        if (imagesContainer.children.length > 0) {
-          stepBox.appendChild(imagesContainer);
-
-          // Adjust image sizes to fit in a grid
-          const totalImages = imagesContainer.children.length;
-          const columns = Math.ceil(Math.sqrt(totalImages));
-          const sizePercent = 100 / columns;
+        if (productImages.length > 0) {
+          const imagesContainer = document.createElement('div');
+          imagesContainer.classList.add('step-images');
           
-          for (const img of imagesContainer.children) {
-            img.style.width = `${sizePercent}%`;
-            img.style.height = `${sizePercent}%`;
+          // Add image count class for styling
+          if (productImages.length === 2) {
+            imagesContainer.classList.add('two-images');
+          } else if (productImages.length === 3) {
+            imagesContainer.classList.add('three-images');  
+          } else if (productImages.length >= 4) {
+            imagesContainer.classList.add('four-plus-images');
           }
-
-        } else {
-          // Fallback to plus icon if no images could be created
-          const plusIcon = document.createElement('span');
-          plusIcon.classList.add('plus-icon');
-          plusIcon.textContent = '+';
-          stepBox.appendChild(plusIcon);
+          
+          // Show up to 4 images, then show count badge
+          const maxVisibleImages = 4;
+          const imagesToShow = productImages.slice(0, maxVisibleImages);
+          
+          imagesToShow.forEach(imageData => {
+            const img = document.createElement('img');
+            img.src = imageData.url;
+            img.alt = imageData.alt;
+            img.classList.add('step-image');
+            imagesContainer.appendChild(img);
+          });
+          
+          // Add count badge if there are more than 4 products
+          if (productImages.length > maxVisibleImages || totalQuantity > maxVisibleImages) {
+            const countBadge = document.createElement('div');
+            countBadge.classList.add('image-count-badge');
+            countBadge.textContent = totalQuantity > maxVisibleImages ? `${totalQuantity}` : `${productImages.length}`;
+            stepBox.appendChild(countBadge);
+          }
+          
+          stepBox.appendChild(imagesContainer);
         }
       } else {
         // If no product is selected for this step, show plus icon
@@ -909,11 +968,17 @@ function initializeBundleWidget(containerElement) {
         stepBox.appendChild(plusIcon);
       }
 
+      // Add step name
+      const stepName = document.createElement('p');
+      stepName.classList.add('step-name');
+      stepName.textContent = step.name || `Step ${index + 1}`;
+      stepBox.appendChild(stepName);
+
       // Attach click listener to open modal for this step
       stepBox.addEventListener('click', () => openBundleModal(index));
-        bundleStepsContainer.appendChild(stepBox);
-      });
-    }
+      bundleStepsContainer.appendChild(stepBox);
+    });
+  }
 
   // Initial rendering of bundle content based on selectedBundle (if any)
   if (selectedBundle) {
@@ -948,6 +1013,7 @@ function initializeBundleWidget(containerElement) {
     }
     
     // Initial rendering of main bundle steps
+    console.log('DEBUG: About to call updateMainBundleStepsDisplay for initial render');
     updateMainBundleStepsDisplay();
     updateAddToCartButton(); // Initial update of the add to cart button
     updateFooterDiscountMessaging(); // Initial update of footer discount messaging

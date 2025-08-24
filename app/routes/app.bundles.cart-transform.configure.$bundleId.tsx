@@ -96,6 +96,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
             handle
             status
             onlineStoreUrl
+            onlineStorePreviewUrl
+            publishedOnCurrentPublication
             description
             productType
             vendor
@@ -339,6 +341,7 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
       description: bundle.description,
       status: bundle.status, // Include status for JavaScript filtering
       bundleType: bundle.bundleType, // Include bundle type for debugging
+      shopifyProductId: bundle.shopifyProductId, // Include configured Bundle Product ID for matching
       steps: bundle.steps.map(step => ({
         id: step.id,
         name: step.name,
@@ -622,6 +625,159 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
 
   let productId = bundle.shopifyProductId;
 
+  // If product exists, fetch latest data from Shopify and sync to database
+  if (productId) {
+    try {
+      const GET_PRODUCT_FOR_SYNC = `
+        query GetBundleProductForSync($id: ID!) {
+          product(id: $id) {
+            id
+            title
+            description
+            descriptionHtml
+            handle
+            status
+            productType
+            vendor
+            tags
+            onlineStoreUrl
+            featuredMedia {
+              ... on MediaImage {
+                id
+                image {
+                  url
+                  altText
+                }
+              }
+            }
+            media(first: 10) {
+              nodes {
+                ... on MediaImage {
+                  id
+                  image {
+                    url
+                    altText
+                  }
+                }
+              }
+            }
+            variants(first: 1) {
+              nodes {
+                id
+                price
+                compareAtPrice
+                sku
+                inventoryQuantity
+              }
+            }
+            updatedAt
+            createdAt
+          }
+        }
+      `;
+
+      const response = await admin.graphql(GET_PRODUCT_FOR_SYNC, {
+        variables: { id: productId }
+      });
+
+      const data = await response.json();
+
+      if (data.errors) {
+        console.error("GraphQL errors:", data.errors);
+        return json({ 
+          success: false, 
+          error: `Failed to fetch product: ${data.errors[0].message}` 
+        }, { status: 400 });
+      }
+
+      const shopifyProduct = data.data?.product;
+
+      if (!shopifyProduct) {
+        // Product no longer exists in Shopify, remove reference from bundle
+        await db.bundle.update({
+          where: { id: bundleId },
+          data: { shopifyProductId: null }
+        });
+
+        return json({ 
+          success: false, 
+          error: "Product no longer exists in Shopify. Bundle product reference has been cleared." 
+        }, { status: 404 });
+      }
+
+      // Check if bundle name has changed and optionally sync it
+      let bundleNeedsSyncing = false;
+      const updatedBundle: any = {};
+
+      // If Shopify product title differs from bundle name, you could sync it back
+      // (Optional: uncomment if you want to sync title back to bundle)
+      // if (shopifyProduct.title !== bundle.name) {
+      //   updatedBundle.name = shopifyProduct.title;
+      //   bundleNeedsSyncing = true;
+      // }
+
+      // Sync bundle description if changed in Shopify
+      if (shopifyProduct.description !== bundle.description) {
+        updatedBundle.description = shopifyProduct.description;
+        bundleNeedsSyncing = true;
+      }
+
+      // Update bundle with synced data if needed
+      if (bundleNeedsSyncing) {
+        await db.bundle.update({
+          where: { id: bundleId },
+          data: updatedBundle
+        });
+      }
+
+      // Update metafields with current bundle configuration
+      if (bundle.pricing?.enableDiscount) {
+        const bundleConfiguration = {
+          bundleId: bundle.id,
+          name: bundle.name,
+          type: "cart_transform",
+          steps: bundle.steps || [],
+          pricing: {
+            enabled: bundle.pricing.enableDiscount,
+            method: bundle.pricing.discountMethod,
+            rules: bundle.pricing.rules || []
+          },
+          lastSynced: new Date().toISOString(),
+          shopifyProduct: {
+            id: shopifyProduct.id,
+            title: shopifyProduct.title,
+            handle: shopifyProduct.handle,
+            updatedAt: shopifyProduct.updatedAt
+          }
+        };
+
+        await updateBundleProductMetafields(admin, productId, bundleConfiguration);
+      }
+
+      return json({ 
+        success: true,
+        productId,
+        syncedData: {
+          title: shopifyProduct.title,
+          description: shopifyProduct.description,
+          status: shopifyProduct.status,
+          lastUpdated: shopifyProduct.updatedAt,
+          changesDetected: bundleNeedsSyncing
+        },
+        message: bundleNeedsSyncing 
+          ? "Bundle product synchronized successfully. Changes detected and updated." 
+          : "Bundle product synchronized successfully. No changes detected."
+      });
+
+    } catch (error) {
+      console.error("Sync error:", error);
+      return json({ 
+        success: false, 
+        error: `Failed to sync product: ${error.message}` 
+      }, { status: 500 });
+    }
+  }
+
   // Create product if it doesn't exist
   if (!productId) {
     const CREATE_PRODUCT = `
@@ -662,6 +818,8 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
     });
 
     const data = await response.json();
+    
+    console.log('Product creation response:', JSON.stringify(data, null, 2));
 
     if (data.data?.productCreate?.userErrors?.length > 0) {
       const error = data.data.productCreate.userErrors[0];
@@ -669,6 +827,9 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
     }
 
     productId = data.data?.productCreate?.product?.id;
+    
+    const createdStatus = data.data?.productCreate?.product?.status;
+    console.log('Created product status:', createdStatus);
 
     // Update bundle with product ID
     await db.bundle.update({
@@ -1253,8 +1414,31 @@ export default function ConfigureBundleFlow() {
           shopify.toast.show(result.message || "Changes saved successfully", { isError: false });
         } else if (result.productId) {
           // This is a sync product response
-          shopify.toast.show(result.message || "Product synced successfully", { isError: false });
-          // Optionally refetch bundle product data here
+          const syncMessage = result.message || "Product synced successfully";
+          shopify.toast.show(syncMessage, { isError: false });
+          
+          // Show detailed sync information if available
+          if (result.syncedData) {
+            const { title, status, lastUpdated, changesDetected } = result.syncedData;
+            console.log("Sync details:", {
+              title,
+              status,
+              lastUpdated,
+              changesDetected
+            });
+            
+            // If changes were detected and applied, show additional notification
+            if (changesDetected) {
+              setTimeout(() => {
+                shopify.toast.show("Bundle data updated with changes from Shopify product", { isError: false });
+              }, 2000);
+            }
+          }
+          
+          // Trigger a page refresh to show updated product data
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
         } else if (result.templates) {
           // This is a get theme templates response
           setAvailablePages(result.templates || []);
@@ -1360,35 +1544,68 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    // Extract shop domain properly
-    const shopDomain = shop.includes('.myshopify.com') 
-      ? shop.replace('.myshopify.com', '') 
-      : shop;
-
     // Try different URL construction methods
     let productUrl = null;
 
-    // Method 1: Use onlineStoreUrl if available
-    if (bundleProduct.onlineStoreUrl) {
+    console.log('Bundle product data for preview:', {
+      id: bundleProduct.id,
+      handle: bundleProduct.handle,
+      status: bundleProduct.status,
+      publishedOnCurrentPublication: bundleProduct.publishedOnCurrentPublication,
+      onlineStoreUrl: bundleProduct.onlineStoreUrl,
+      onlineStorePreviewUrl: bundleProduct.onlineStorePreviewUrl,
+      shop: shop
+    });
+
+    // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
+    if (bundleProduct.onlineStorePreviewUrl) {
+      productUrl = bundleProduct.onlineStorePreviewUrl;
+      console.log('Using onlineStorePreviewUrl:', productUrl);
+    }
+    // Method 2: Fallback to onlineStoreUrl if preview URL not available
+    else if (bundleProduct.onlineStoreUrl) {
       productUrl = bundleProduct.onlineStoreUrl;
+      console.log('Using onlineStoreUrl:', productUrl);
     }
-    // Method 2: Use handle to construct URL
+    // Method 3: Construct URL based on shop type (development vs live store)
     else if (bundleProduct.handle) {
-      productUrl = `https://${shopDomain}.myshopify.com/products/${bundleProduct.handle}`;
+      if (shop.includes('shopifypreview.com')) {
+        // For development stores with shopifypreview.com domain
+        productUrl = `https://${shop}/products/${bundleProduct.handle}`;
+      } else {
+        // For live stores or development stores with myshopify.com
+        const shopDomain = shop.includes('.myshopify.com') 
+          ? shop.replace('.myshopify.com', '') 
+          : shop;
+        productUrl = `https://${shopDomain}.myshopify.com/products/${bundleProduct.handle}`;
+      }
+      console.log('Using handle-based URL:', productUrl);
     }
-    // Method 3: Extract ID from GraphQL ID and construct URL
+    // Method 4: Fallback - Extract ID and use admin URL
     else if (bundleProduct.id) {
       const productId = bundleProduct.id.includes('gid://shopify/Product/') 
         ? bundleProduct.id.split('/').pop() 
         : bundleProduct.id;
-      // Use Shopify admin preview URL as fallback
+      
+      const shopDomain = shop.includes('.myshopify.com') 
+        ? shop.replace('.myshopify.com', '') 
+        : shop.split('.')[0]; // Extract first part of domain
+      
       productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
+      console.log('Using admin URL fallback:', productUrl);
     }
 
     if (productUrl) {
       console.log('Opening bundle product URL:', productUrl);
       window.open(productUrl, '_blank');
-      shopify.toast.show("Bundle product opened in new tab", { isError: false });
+      
+      // Show appropriate success message based on the URL type used
+      const isPreviewUrl = productUrl === bundleProduct.onlineStorePreviewUrl;
+      const message = isPreviewUrl 
+        ? "Bundle product preview opened in new tab" 
+        : "Bundle product opened in new tab";
+      
+      shopify.toast.show(message, { isError: false });
     } else {
       console.error('Bundle product data:', bundleProduct);
       shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", { 
@@ -1573,6 +1790,9 @@ export default function ConfigureBundleFlow() {
   const handleSyncProduct = useCallback(() => {
     try {
       console.log("Syncing bundle product...");
+      
+      // Show loading toast
+      shopify.toast.show("Syncing bundle product with Shopify...", { isError: false });
       
       // Prepare form data for sync operation
       const formData = new FormData();
@@ -1996,12 +2216,16 @@ export default function ConfigureBundleFlow() {
     <Page
       title={`Configure: ${bundleName}`}
       subtitle="Set up your cart transform bundle configuration"
-      secondaryActions={[
-        {
-          content: "Back to Cart Transform Bundles",
-          onAction: () => navigate("/app/bundles/cart-transform"),
-        },
-      ]}
+      backAction={{
+        content: "Cart Transform Bundles",
+        onAction: handleBackClick,
+      }}
+      primaryAction={{
+        content: "Preview Bundle",
+        onAction: handlePreviewBundle,
+        icon: ViewIcon,
+        disabled: hasUnsavedChanges,
+      }}
     >
       {/* Modern App Bridge contextual save bar using form with data-save-bar */}
       <form 
@@ -2046,30 +2270,6 @@ export default function ConfigureBundleFlow() {
           value={JSON.stringify({ discountEnabled, discountType, discountRules })} 
           readOnly
         />
-        {/* Page Header */}
-      <div style={{ marginBottom: "20px" }}>
-        <InlineStack align="space-between" blockAlign="center">
-          <InlineStack gap="200" blockAlign="center">
-            <Button 
-              variant="tertiary" 
-              onClick={handleBackClick}
-              icon={ArrowLeftIcon}
-              disabled={hasUnsavedChanges}
-            />
-            <Text variant="headingLg" as="h1">
-              Configure Bundle Flow
-            </Text>
-          </InlineStack>
-          <Button 
-            variant="primary" 
-            onClick={handlePreviewBundle}
-            icon={ViewIcon}
-            disabled={hasUnsavedChanges}
-          >
-            Preview Bundle
-          </Button>
-        </InlineStack>
-      </div>
 
       <Layout>
         {/* Left Sidebar */}
@@ -2311,7 +2511,7 @@ export default function ConfigureBundleFlow() {
                               tabs={[
                                 {
                                   id: 'products',
-                                  content: `Products ${step.StepProduct?.length > 0 ? step.StepProduct.length : ''}`,
+                                  content: 'Products',
                                   badge: step.StepProduct?.length > 0 ? step.StepProduct.length.toString() : undefined,
                                 },
                                 {

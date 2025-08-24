@@ -83,52 +83,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     throw new Response("Bundle not found", { status: 404 });
   }
 
-  // Fetch bundle product data from Shopify if it exists
-  let bundleProduct = null;
-  if (bundle.shopifyProductId) {
-    try {
-      const GET_BUNDLE_PRODUCT = `
-        query GetBundleProduct($id: ID!) {
-          product(id: $id) {
-            id
-            title
-            handle
-            status
-            onlineStoreUrl
-            description
-            productType
-            vendor
-            tags
-            variants(first: 1) {
-              edges {
-                node {
-                  id
-                  title
-                  price
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const productResponse = await admin.graphql(GET_BUNDLE_PRODUCT, {
-        variables: {
-          id: bundle.shopifyProductId
-        }
-      });
-
-      const productData = await productResponse.json();
-      bundleProduct = productData.data?.product;
-    } catch (error) {
-      console.warn("Failed to fetch bundle product:", error);
-      // Don't fail the entire request if we can't fetch the product
-    }
-  }
-
+  // Discount function bundles don't need bundle product data
   return json({ 
     bundle,
-    bundleProduct,
     shop: session.shop,
   });
 };
@@ -150,7 +107,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       case "updateBundleStatus":
         return await handleUpdateBundleStatus(admin, session, bundleId, formData);
       case "syncProduct":
-        return await handleSyncProduct(admin, session, bundleId, formData);
+        // Discount function bundles don't need product sync functionality
+        return json({ success: true, message: "Sync not needed for discount function bundles" });
       case "getPages":
         return await handleGetPages(admin, session);
       case "getCurrentTheme":
@@ -231,56 +189,6 @@ async function ensureBundleMetafieldDefinitions(admin: any) {
   return true;
 }
 
-// Helper function to update bundle product metafields
-async function updateBundleProductMetafields(admin: any, bundleProductId: string, bundleConfiguration: any, bundleType: 'cart_transform' | 'discount_function' = 'discount_function') {
-  await ensureBundleMetafieldDefinitions(admin);
-
-  const SET_METAFIELDS = `
-    mutation SetBundleMetafields($metafields: [MetafieldsSetInput!]!) {
-      metafieldsSet(metafields: $metafields) {
-        metafields {
-          id
-          key
-          namespace
-          value
-          createdAt
-          updatedAt
-        }
-        userErrors {
-          field
-          message
-          code
-        }
-      }
-    }
-  `;
-
-  const metafieldKey = bundleType === 'cart_transform' ? 'cart_transform_config' : 'discount_function_config';
-  
-  const response = await admin.graphql(SET_METAFIELDS, {
-    variables: {
-      metafields: [
-        {
-          ownerId: bundleProductId,
-          namespace: "bundle_discounts",
-          key: metafieldKey,
-          type: "json",
-          value: JSON.stringify(bundleConfiguration)
-        }
-      ]
-    }
-  });
-
-  const data = await response.json();
-
-  if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-    const error = data.data.metafieldsSet.userErrors[0];
-    console.error("Metafield set error:", error);
-    throw new Error(`Failed to update bundle metafields: ${error.message}`);
-  }
-
-  return data.data?.metafieldsSet?.metafields?.[0];
-}
 
 // Handle saving bundle configuration
 async function handleSaveBundle(admin: any, session: any, bundleId: string, formData: FormData) {
@@ -352,33 +260,8 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     }
   });
 
-  // If bundle has a Shopify product and discount is enabled, update its metafields
-  if (updatedBundle.shopifyProductId && discountData?.discountEnabled) {
-    const baseConfiguration = {
-      bundleId: updatedBundle.id,
-      name: updatedBundle.name,
-      steps: stepsData || [],
-      pricing: {
-        enabled: discountData.discountEnabled,
-        method: discountData.discountType,
-        rules: discountData.discountRules || []
-      },
-      updatedAt: new Date().toISOString()
-    };
-
-    try {
-      // Save discount function configuration
-      const discountFunctionConfig = {
-        ...baseConfiguration,
-        type: "discount_function"
-      };
-      await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, discountFunctionConfig, 'discount_function');
-
-    } catch (error) {
-      console.error("Failed to update bundle product metafields:", error);
-      // Don't fail the entire operation - just log the error
-    }
-  }
+  // For discount function bundles, metafields are applied to the selected products instead of a bundle product
+  // This is handled in the discount function itself
 
   return json({ 
     success: true, 
@@ -410,104 +293,6 @@ async function handleUpdateBundleStatus(admin: any, session: any, bundleId: stri
   });
 }
 
-// Handle syncing bundle product
-async function handleSyncProduct(admin: any, session: any, bundleId: string, formData: FormData) {
-  const bundle = await db.bundle.findUnique({
-    where: { 
-      id: bundleId, 
-      shopId: session.shop 
-    },
-    include: {
-      steps: true,
-      pricing: true
-    }
-  });
-
-  if (!bundle) {
-    return json({ success: false, error: "Bundle not found" }, { status: 404 });
-  }
-
-  let productId = bundle.shopifyProductId;
-
-  // Create product if it doesn't exist
-  if (!productId) {
-    const CREATE_PRODUCT = `
-      mutation CreateBundleProduct($input: ProductInput!) {
-        productCreate(input: $input) {
-          product {
-            id
-            title
-            handle
-            status
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `;
-
-    const response = await admin.graphql(CREATE_PRODUCT, {
-      variables: {
-        input: {
-          title: bundle.name,
-          handle: `bundle-${bundle.id}`,
-          productType: "Bundle",
-          vendor: "Bundle Builder",
-          status: "ACTIVE",
-          descriptionHtml: bundle.description || "",
-          variants: [
-            {
-              price: "0.00",
-              inventoryManagement: "NOT_MANAGED",
-              inventoryPolicy: "CONTINUE"
-            }
-          ]
-        }
-      }
-    });
-
-    const data = await response.json();
-
-    if (data.data?.productCreate?.userErrors?.length > 0) {
-      const error = data.data.productCreate.userErrors[0];
-      throw new Error(`Failed to create bundle product: ${error.message}`);
-    }
-
-    productId = data.data?.productCreate?.product?.id;
-
-    // Update bundle with product ID
-    await db.bundle.update({
-      where: { id: bundleId },
-      data: { shopifyProductId: productId }
-    });
-  }
-
-  // Update metafields with current bundle configuration
-  if (productId && bundle.pricing?.enableDiscount) {
-    const bundleConfiguration = {
-      bundleId: bundle.id,
-      name: bundle.name,
-      type: "discount_function",
-      steps: bundle.steps || [],
-      pricing: {
-        enabled: bundle.pricing.enableDiscount,
-        method: bundle.pricing.discountMethod,
-        rules: bundle.pricing.rules || []
-      },
-      updatedAt: new Date().toISOString()
-    };
-
-    await updateBundleProductMetafields(admin, productId, bundleConfiguration, 'discount_function');
-  }
-
-  return json({ 
-    success: true,
-    productId,
-    message: "Bundle product synchronized successfully"
-  });
-}
 
 // Handle getting available pages for widget placement
 async function handleGetPages(admin: any, session: any) {
@@ -635,7 +420,7 @@ async function handleCreateDiscountCode(admin: any, session: any, bundleId: stri
 }
 
 export default function ConfigureDiscountFunctionBundle() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<typeof loader>();
+  const { bundle, shop } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   
@@ -875,8 +660,8 @@ export default function ConfigureDiscountFunctionBundle() {
     setHasUnsavedChanges(hasChanges);
     
     // Manage save bar based on whether changes exist
-    // Only interact with save bar if form is ready (originalValues.bundleProduct is set)
-    if (originalValues.bundleProduct !== undefined) {
+    // Only interact with save bar if form is ready (originalValues initialized)
+    if (originalValues.status !== undefined) {
       if (hasChanges) {
         triggerSaveBar();
       } else {
@@ -1181,37 +966,6 @@ export default function ConfigureDiscountFunctionBundle() {
     }
   }, [steps, shopify, triggerSaveBar]);
 
-  const handleSyncProduct = useCallback(async () => {
-    try {
-      console.log("Syncing bundle product...");
-      
-      // Prepare form data for sync operation
-      const formData = new FormData();
-      formData.append("intent", "syncProduct");
-
-      // Submit to server action
-      const response = await fetch(window.location.pathname, {
-        method: "POST",
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Update bundle product info if productId was returned
-        if (result.productId) {
-          // You might want to refetch the bundle product data here
-          // For now, just show success message
-        }
-        shopify.toast.show(result.message || "Product synced successfully", { isError: false });
-      } else {
-        throw new Error(result.error || "Failed to sync product");
-      }
-    } catch (error) {
-      console.error("Product sync failed:", error);
-      shopify.toast.show(error.message || "Failed to sync product", { isError: true });
-    }
-  }, [shopify]);
 
   // Product selection for bundle scope
   const handleBundleProductSelection = useCallback(async () => {
@@ -1822,12 +1576,16 @@ export default function ConfigureDiscountFunctionBundle() {
     <Page
       title={`Configure: ${bundleName || 'Discount Function Bundle'}`}
       subtitle="Set up your discount function bundle configuration"
-      secondaryActions={[
-        {
-          content: "Back to Discount Function Bundles",
-          onAction: () => navigate("/app/bundles/discount-functions"),
-        },
-      ]}
+      backAction={{
+        content: "Discount Function Bundles",
+        onAction: handleBackClick,
+      }}
+      primaryAction={{
+        content: "Preview Bundle",
+        onAction: handlePreviewBundle,
+        icon: ViewIcon,
+        disabled: hasUnsavedChanges,
+      }}
     >
       {/* Modern App Bridge contextual save bar using form with data-save-bar */}
       <form 
@@ -1872,27 +1630,6 @@ export default function ConfigureDiscountFunctionBundle() {
           value={JSON.stringify({ discountEnabled, discountType, discountRules })} 
           readOnly
         />
-        {/* Page Header */}
-      <div style={{ marginBottom: "20px" }}>
-        <InlineStack align="space-between" blockAlign="center">
-          <InlineStack gap="200" blockAlign="center">
-            <Button 
-              variant="tertiary" 
-              onClick={handleBackClick}
-              icon={ArrowLeftIcon}
-              disabled={hasUnsavedChanges}
-            />
-          </InlineStack>
-          <Button 
-            variant="primary" 
-            onClick={handlePreviewBundle}
-            icon={ViewIcon}
-            disabled={hasUnsavedChanges}
-          >
-            Preview Bundle
-          </Button>
-        </InlineStack>
-      </div>
 
       <Layout>
         {/* Left Sidebar */}
