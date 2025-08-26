@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://mountains-swaziland-dial-whether.trycloudflare.com"
+application_url = "https://dui-net-model-lectures.trycloudflare.com"
 embedded = true
 
 [build]
@@ -15,14 +15,10 @@ api_version = "2025-04"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,write_discounts,write_products,read_themes,write_themes"
+scopes = "read_content,write_discounts,read_products,write_products,read_product_listings,write_cart_transforms,read_themes,write_themes"
 
 [auth]
-redirect_urls = [
-  "https://mountains-swaziland-dial-whether.trycloudflare.com/auth/callback",
-  "https://mountains-swaziland-dial-whether.trycloudflare.com/auth/shopify/callback",
-  "https://mountains-swaziland-dial-whether.trycloudflare.com/api/auth/callback"
-]
+redirect_urls = ["https://dui-net-model-lectures.trycloudflare.com/auth/callback", "https://dui-net-model-lectures.trycloudflare.com/auth/shopify/callback", "https://dui-net-model-lectures.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false

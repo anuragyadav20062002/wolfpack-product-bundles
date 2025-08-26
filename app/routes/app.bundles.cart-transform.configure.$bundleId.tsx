@@ -97,7 +97,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
             status
             onlineStoreUrl
             onlineStorePreviewUrl
-            publishedOnCurrentPublication
             description
             productType
             vendor
@@ -1551,7 +1550,7 @@ export default function ConfigureBundleFlow() {
       id: bundleProduct.id,
       handle: bundleProduct.handle,
       status: bundleProduct.status,
-      publishedOnCurrentPublication: bundleProduct.publishedOnCurrentPublication,
+      publishedOnCurrentPublication: bundleProduct.status === 'ACTIVE',
       onlineStoreUrl: bundleProduct.onlineStoreUrl,
       onlineStorePreviewUrl: bundleProduct.onlineStorePreviewUrl,
       shop: shop
