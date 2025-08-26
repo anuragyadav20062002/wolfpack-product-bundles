@@ -453,18 +453,35 @@ function initializeBundleWidget(containerElement) {
   // Function to open the modal
   function openBundleModal(stepIndex) {
     currentActiveStepIndex = stepIndex;
+    
+    // Ensure modal is appended directly to document.body
+    if (!document.body.contains(bundleBuilderModal)) {
+      document.body.appendChild(bundleBuilderModal);
+    }
+    
+    // Remove any inline styling that might conflict with CSS rules
+    bundleBuilderModal.removeAttribute('style');
+    
+    // Activate the modal
     bundleBuilderModal.classList.add('active');
-    document.body.style.overflow = 'hidden'; // Prevent scrolling of background content
+    
+    // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
+    
     renderModalContent();
   }
 
   // Function to close the modal
   function closeBundleModal() {
     bundleBuilderModal.classList.remove('active');
-    document.body.style.overflow = ''; // Restore scrolling
-    updateMainBundleStepsDisplay(); // Update the main display on close
-    updateAddToCartButton(); // Update the button price after modal closes
-    updateFooterDiscountMessaging(); // Update footer discount messaging after modal closes
+    
+    // Restore background scrolling
+    document.body.style.overflow = '';
+    
+    // Update displays after closing
+    updateMainBundleStepsDisplay();
+    updateAddToCartButton();
+    updateFooterDiscountMessaging();
   }
 
   // Function to render modal content (tabs and product grid for current step)

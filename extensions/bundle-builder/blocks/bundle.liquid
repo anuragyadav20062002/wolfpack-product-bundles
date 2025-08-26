@@ -195,26 +195,6 @@
   {% endif %}
 {% endif %}
 
-  <!-- Bundle Builder Modal -->
-  <div id="bundle-builder-modal" class="bundle-builder-modal">
-    <div class="modal-overlay"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-step-title"></div>
-        <div class="modal-step-subtitle"></div>
-        <div class="modal-tabs"></div>
-        <span class="close-button">&times;</span>
-      </div>
-      <div class="modal-body">
-        <div class="product-grid"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="modal-nav-button prev-button">Prev</button>
-        <button class="modal-nav-button next-button">Next</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Product Grid -->
   <div class="bundle-product-grid"></div>
 
@@ -266,5 +246,30 @@
   // Run on page load
   extractBundleIdFromUrl();
 </script>
+
+<!-- Render modal only once per page, outside any container constraints -->
+<!-- Use conditional rendering to avoid duplicate modals -->
+{% unless bundle_modal_rendered %}
+  {% assign bundle_modal_rendered = true %}
+  <div id="bundle-builder-modal" class="bundle-builder-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-step-title"></div>
+        <div class="modal-step-subtitle"></div>
+        <div class="modal-tabs"></div>
+        <span class="close-button">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="product-grid"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-nav-button prev-button">Prev</button>
+        <button class="modal-nav-button next-button">Next</button>
+      </div>
+    </div>
+  </div>
+{% endunless %}
+
 <link rel="stylesheet" href="{{ 'bundle-widget.css' | asset_url }}">
 <script src="{{ 'bundle-widget.js' | asset_url }}" defer></script> 
