@@ -41,6 +41,10 @@ export function cartLinesDiscountsGenerateRun(
   const hasOrderDiscountClass = input.discount.discountClasses.includes(
     DiscountClass.Order,
   );
+  
+  const hasProductDiscountClass = input.discount.discountClasses.includes(
+    DiscountClass.Product,
+  );
 
   // Check each bundle for applicability
   for (const bundleData of bundles) {
@@ -170,6 +174,97 @@ export function cartLinesDiscountsGenerateRun(
           ],
           selectionStrategy: OrderDiscountSelectionStrategy.First,
         },
+      });
+      
+    } else if (
+      bundleData.pricing.discountMethod === "fixed_amount_off" &&
+      hasProductDiscountClass &&
+      applicableRule.fixedAmountOff > 0
+    ) {
+      // Apply line-item (product-level) discount for fixed amount off
+      
+      // Convert USD discount to cart currency 
+      const originalAmount = applicableRule.fixedAmountOff;
+      const convertedAmount = convertDiscountAmount(originalAmount, cartCurrency);
+      
+      const discountMessage = formatDiscountMessage(
+        bundleData.name, 
+        'fixed', 
+        convertedAmount, 
+        cartCurrency
+      );
+      
+      // Apply discount to each matching line proportionally
+      matchResult.matchingLines.forEach((line) => {
+        const lineAmount = parseFloat(line.cost?.subtotalAmount?.amount || '0');
+        const lineDiscountAmount = totalBundleAmount > 0 
+          ? (lineAmount / totalBundleAmount) * convertedAmount 
+          : 0;
+        
+        if (lineDiscountAmount > 0) {
+          operations.push({
+            productDiscountsAdd: {
+              candidates: [
+                {
+                  message: discountMessage,
+                  targets: [
+                    {
+                      productVariant: {
+                        id: line.merchandise.id,
+                        quantity: line.quantity,
+                      },
+                    },
+                  ],
+                  value: {
+                    fixedAmount: {
+                      amount: String(Math.min(lineDiscountAmount, lineAmount)),
+                    },
+                  },
+                },
+              ],
+            },
+          });
+        }
+      });
+      
+    } else if (
+      bundleData.pricing.discountMethod === "percentage_off" &&
+      hasProductDiscountClass &&
+      applicableRule.percentageOff > 0
+    ) {
+      // Apply line-item (product-level) discount for percentage off
+      
+      const discountMessage = formatDiscountMessage(
+        bundleData.name, 
+        'percentage', 
+        applicableRule.percentageOff, 
+        cartCurrency
+      );
+      
+      // Apply percentage discount to each matching line
+      matchResult.matchingLines.forEach((line) => {
+        operations.push({
+          productDiscountsAdd: {
+            candidates: [
+              {
+                message: discountMessage,
+                targets: [
+                  {
+                    productVariant: {
+                      id: line.merchandise.id,
+                      quantity: line.quantity,
+                    },
+                  },
+                ],
+                value: {
+                  percentage: {
+                    value: applicableRule.percentageOff,
+                  },
+                },
+              },
+            ],
+          },
+        });
       });
       
     } else {

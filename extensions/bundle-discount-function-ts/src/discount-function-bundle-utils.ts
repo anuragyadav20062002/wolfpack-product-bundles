@@ -21,6 +21,7 @@ export interface BundleStep {
   minQuantity: number;
   maxQuantity: number;
   conditionType?: string;
+  conditionOperator?: string;
   conditionValue?: number;
   enabled?: boolean;
 }
@@ -62,10 +63,15 @@ export function checkCartMeetsBundleConditions(
   const matchingLines: any[] = [];
   let totalQuantity = 0;
 
-  // Find cart lines that match any bundle product
+  // Find cart lines that match bundle products AND have the bundle property
   for (const line of cart.lines) {
     const productId = line.merchandise?.product?.id;
-    if (productId && bundleData.allBundleProductIds.includes(productId)) {
+    const bundleIdProperty = line.attribute?.find((attr: any) => attr.key === '_wolfpack_bundle_id')?.value;
+    
+    // Line must match bundle products AND have the correct bundle ID property
+    if (productId && 
+        bundleData.allBundleProductIds.includes(productId) && 
+        bundleIdProperty === bundleData.id) {
       matchingLines.push(line);
       totalQuantity += line.quantity;
     }
@@ -86,10 +92,10 @@ export function checkCartMeetsBundleConditions(
 
 export function checkStepCondition(
   quantity: number,
-  conditionType: string,
+  conditionOperator: string,
   conditionValue: number,
 ): boolean {
-  switch (conditionType) {
+  switch (conditionOperator) {
     case "equal_to":
       return quantity === conditionValue;
     case "greater_than":

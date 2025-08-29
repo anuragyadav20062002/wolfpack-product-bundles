@@ -1,7 +1,151 @@
-// Old renderBundleSteps function removed - now using updateMainBundleStepsDisplay()
+// Toast notification system
+function showToast(message, type = 'info', duration = 4000) {
+  // Remove any existing toast
+  const existingToast = document.getElementById('bundle-toast');
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.id = 'bundle-toast';
+  toast.className = `bundle-toast bundle-toast-${type}`;
+  toast.innerHTML = `
+    <div class="bundle-toast-content">
+      <span class="bundle-toast-message">${message}</span>
+      <button class="bundle-toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+    </div>
+  `;
+
+  // Add CSS styles
+  if (!document.getElementById('bundle-toast-styles')) {
+    const styles = document.createElement('style');
+    styles.id = 'bundle-toast-styles';
+    styles.textContent = `
+      .bundle-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        max-width: 400px;
+        padding: 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        line-height: 1.4;
+        animation: slideInRight 0.3s ease-out;
+      }
+      .bundle-toast-info {
+        background-color: #f0f8ff;
+        border-left: 4px solid #007ace;
+        color: #003d82;
+      }
+      .bundle-toast-warning {
+        background-color: #fff8e1;
+        border-left: 4px solid #ff9800;
+        color: #e65100;
+      }
+      .bundle-toast-error {
+        background-color: #ffebee;
+        border-left: 4px solid #f44336;
+        color: #c62828;
+      }
+      .bundle-toast-success {
+        background-color: #e8f5e8;
+        border-left: 4px solid #4caf50;
+        color: #2e7d32;
+      }
+      .bundle-toast-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .bundle-toast-message {
+        flex: 1;
+      }
+      .bundle-toast-close {
+        background: none;
+        border: none;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+        opacity: 0.7;
+      }
+      .bundle-toast-close:hover {
+        opacity: 1;
+      }
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(styles);
+  }
+
+  // Add to page
+  document.body.appendChild(toast);
+
+  // Auto-remove after duration
+  if (duration > 0) {
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.remove();
+      }
+    }, duration);
+  }
+}
+
+// Ensure modal is created only once globally
+function ensureBundleModal() {
+  if (document.getElementById('bundle-builder-modal')) {
+    return; // Modal already exists
+  }
+
+  const modalHTML = `
+    <div id="bundle-builder-modal" class="bundle-builder-modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-step-title"></div>
+          <div class="modal-step-subtitle"></div>
+          <div class="modal-tabs"></div>
+          <span class="close-button">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="product-grid"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-nav-button prev-button">Prev</button>
+          <button class="modal-nav-button next-button">Next</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
 
 // Initialize bundle widgets (supports multiple instances on same page)
 function initializeBundleWidget(containerElement) {
+  // Ensure modal exists globally (created only once)
+  ensureBundleModal();
+  
+  // Check if this widget has already been initialized to prevent duplicates
+  if (containerElement.dataset.initialized === 'true') {
+    console.log('Bundle widget already initialized, skipping duplicate.');
+    return;
+  }
+  
   const allBundlesDataRaw = window.allBundlesData;
   const currentProductId = window.currentProductId;
   const currentProductHandle = window.currentProductHandle;
@@ -13,17 +157,17 @@ function initializeBundleWidget(containerElement) {
     return;
   }
   
-  console.log('DEBUG: Initializing bundle widget for container:', containerElement.id);
   
   const widgetConfig = {
     bundleId: containerElement.dataset.bundleId || window.autoDetectedBundleId || null,
-    position: containerElement.dataset.position || 'after_description',
     showTitle: containerElement.dataset.showTitle === 'true',
     showStepNumbers: containerElement.dataset.showStepNumbers === 'true',
-    showFooterMessaging: containerElement.dataset.showFooterMessaging === 'true'
+    showFooterMessaging: containerElement.dataset.showFooterMessaging === 'true',
+    discountTextTemplate: containerElement.dataset.discountTextTemplate || 'Add {discountConditionDiff} {discountUnit} to get the bundle at {discountValueUnit}{discountValue}',
+    successMessageTemplate: containerElement.dataset.successMessageTemplate || 'Congratulations 🎉 you have gotten the best offer on your bundle!',
+    progressTextTemplate: containerElement.dataset.progressTextTemplate || '{selectedQuantity} / {targetQuantity} items'
   };
   
-  console.log('DEBUG: Widget config with auto-detection:', widgetConfig);
 
   if (!allBundlesDataRaw || !currentProductId) {
     console.warn('Bundle data or current product ID not available. Make sure bundles are published and the product context is available.');
@@ -52,19 +196,13 @@ function initializeBundleWidget(containerElement) {
     }
   }
 
-  console.log('DEBUG: Starting bundle selection process');
-  console.log('DEBUG: Total bundles available:', bundlesArray.length);
-  console.log('DEBUG: Widget config bundleId:', widgetConfig.bundleId);
-  console.log('DEBUG: Bundle types in data:', bundlesArray.map(b => ({name: b.name, bundleType: b.bundleType, status: b.status})));
 
   // For cart transform bundles: Use explicit bundle ID or first available cart transform bundle
   // For discount function bundles: Use product/collection matching logic
   for (const bundle of bundlesArray) {
-    console.log('DEBUG: Checking bundle:', bundle?.name || 'Unnamed', 'Type:', bundle?.bundleType, 'Status:', bundle?.status, 'Steps:', bundle?.steps?.length || 0);
     
     // Skip inactive bundles
     if (!bundle || bundle.status !== 'active') {
-      console.log('DEBUG: Skipping inactive bundle:', bundle?.name);
       continue;
     }
 
@@ -72,31 +210,39 @@ function initializeBundleWidget(containerElement) {
     if (bundle.bundleType === 'cart_transform') {
       // If specific bundle ID is configured, use only that bundle
       if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
-        console.log('DEBUG: Skipping cart transform bundle (ID mismatch):', bundle.name);
         continue;
       }
       
-      // For cart transform bundles, only show on the configured Bundle Product
-      if (bundle.shopifyProductId) {
-        // Extract numerical ID from Shopify product GID for comparison
+      // Check if we're in theme editor context (admin viewing)
+      const isThemeEditor = window.isThemeEditorContext || // Set by extractBundleIdFromUrl function
+                           window.location.pathname.includes('/editor') || 
+                           window.location.search.includes('preview_theme_id') ||
+                           window.location.search.includes('previewPath') ||
+                           document.referrer.includes('admin.shopify.com') ||
+                           window.parent !== window || // In iframe
+                           window.autoDetectedBundleId; // Bundle ID detected from URL indicates theme editor
+      
+      
+      // For cart transform bundles, show logic depends on context
+      if (bundle.shopifyProductId && !isThemeEditor) {
+        // CUSTOMER VIEW: Only show on the configured Bundle Product
         const bundleProductId = bundle.shopifyProductId.includes('gid://shopify/Product/') 
           ? bundle.shopifyProductId.split('/').pop() 
           : bundle.shopifyProductId;
         
-        console.log('DEBUG: Comparing Bundle Product ID:', bundleProductId, 'with currentProductId:', currentProductId);
         
         // Only show bundle widget if current product matches the configured Bundle Product
         if (bundleProductId !== currentProductId.toString()) {
-          console.log('DEBUG: Skipping cart transform bundle (not Bundle Product):', bundle.name, 'Bundle Product:', bundleProductId, 'Current:', currentProductId);
           continue;
         }
-      } else {
-        console.log('DEBUG: Skipping cart transform bundle (no Bundle Product configured):', bundle.name);
+      } else if (!bundle.shopifyProductId && !isThemeEditor) {
+        // CUSTOMER VIEW: Skip if no Bundle Product configured
         continue;
+      } else if (isThemeEditor) {
+        // ADMIN VIEW: Show regardless of Bundle Product match for theme editor
       }
       
       selectedBundle = bundle;
-      console.log('DEBUG: Selected cart transform bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
       break;
     }
 
@@ -104,7 +250,6 @@ function initializeBundleWidget(containerElement) {
     if (bundle.bundleType === 'discount_function') {
       // If a specific bundle ID is configured, only use that bundle
       if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
-        console.log('DEBUG: Skipping discount function bundle (ID mismatch):', bundle.name);
         continue;
       }
       
@@ -165,10 +310,8 @@ function initializeBundleWidget(containerElement) {
       if (productMatches || collectionMatches) { // Modified condition
         selectedBundle = bundle; // We'll use the raw bundle object, which contains `steps` etc. directly.
         selectedBundle.parsedMatching = parsedMatching; // Attach parsed matching for future use
-        console.log('DEBUG: Selected discount function bundle:', bundle.name, 'Steps count:', bundle.steps?.length || 0);
         break; // Found a matching bundle, take the first one
       } else {
-        console.log('DEBUG: No match for discount function bundle:', bundle.name, 'Product match:', productMatches, 'Collection match:', collectionMatches);
       }
       } // End discount function bundle logic
   } // End bundle loop
@@ -269,13 +412,36 @@ function initializeBundleWidget(containerElement) {
     };
   }
 
-  // Function to replace variables in discount messages
+  // Function to replace variables in discount messages using proper discount configuration variables
   function replaceDiscountVariables(message, variables) {
     if (!message) return '';
     
     let processedMessage = message;
     
-    // Replace all supported variables
+    // Replace discount configuration variables - support both single and double curly braces
+    // Single curly braces (default theme editor format)
+    processedMessage = processedMessage.replace(/\{discountConditionDiff\}/g, variables.discountConditionDiff || '0');
+    processedMessage = processedMessage.replace(/\{discountUnit\}/g, variables.discountUnit || 'items');
+    processedMessage = processedMessage.replace(/\{discountValue\}/g, variables.discountValue || '0');
+    processedMessage = processedMessage.replace(/\{discountValueUnit\}/g, variables.discountValueUnit || '');
+    
+    // Single curly braces (theme editor format) for quantity variables
+    processedMessage = processedMessage.replace(/\{selectedQuantity\}/g, variables.selectedQuantity || '0');
+    processedMessage = processedMessage.replace(/\{targetQuantity\}/g, variables.targetQuantity || '0');
+    processedMessage = processedMessage.replace(/\{bundleName\}/g, variables.bundleName || '');
+    processedMessage = processedMessage.replace(/\{itemsNeeded\}/g, variables.itemsNeeded || '0');
+    
+    // Double curly braces (backwards compatibility for user entered values)
+    processedMessage = processedMessage.replace(/\{\{discountConditionDiff\}\}/g, variables.discountConditionDiff || '0');
+    processedMessage = processedMessage.replace(/\{\{discountUnit\}\}/g, variables.discountUnit || 'items');
+    processedMessage = processedMessage.replace(/\{\{discountValue\}\}/g, variables.discountValue || '0');
+    processedMessage = processedMessage.replace(/\{\{discountValueUnit\}\}/g, variables.discountValueUnit || '');
+    processedMessage = processedMessage.replace(/\{\{selectedQuantity\}\}/g, variables.selectedQuantity || '0');
+    processedMessage = processedMessage.replace(/\{\{targetQuantity\}\}/g, variables.targetQuantity || '0');
+    processedMessage = processedMessage.replace(/\{\{bundleName\}\}/g, variables.bundleName || '');
+    processedMessage = processedMessage.replace(/\{\{itemsNeeded\}\}/g, variables.itemsNeeded || '0');
+    
+    // Legacy support for existing variables (maintain backward compatibility)
     processedMessage = processedMessage.replace(/\{bundle_name\}/g, variables.bundleName || '');
     processedMessage = processedMessage.replace(/\{original_price\}/g, variables.originalPrice || '');
     processedMessage = processedMessage.replace(/\{bundle_price\}/g, variables.bundlePrice || '');
@@ -312,17 +478,28 @@ function initializeBundleWidget(containerElement) {
     const nextRule = sortedRules.find(rule => selectedQuantity < (rule.numberOfProducts || 0));
     const targetQuantity = nextRule ? (nextRule.numberOfProducts || 0) : (sortedRules[sortedRules.length - 1]?.numberOfProducts || 0);
     
-    // Prepare variables for message replacement
+    // Prepare variables for message replacement (matching admin discount configuration variables)
+    const itemsNeeded = Math.max(0, targetQuantity - selectedQuantity);
+    const discountValueUnit = pricing.discountMethod === 'percentage_off' ? '% off' : shopCurrency;
+    const currentDiscountValue = discountInfo.applicableRule ? (discountInfo.applicableRule.discountValue || discountInfo.applicableRule.value || 0) : 0;
+    
     const variables = {
+      // Primary discount configuration variables (matching admin interface)
+      discountConditionDiff: itemsNeeded.toString(),
+      discountUnit: itemsNeeded === 1 ? 'item' : 'items', 
+      discountValue: currentDiscountValue.toString(),
+      discountValueUnit: discountValueUnit,
+      selectedQuantity: selectedQuantity.toString(),
+      targetQuantity: targetQuantity.toString(),
       bundleName: selectedBundle.name || 'Bundle',
+      itemsNeeded: itemsNeeded.toString(),
+      
+      // Legacy/additional variables for backward compatibility
       originalPrice: formatCurrency(totalPrice),
       bundlePrice: formatCurrency(discountedPrice),
       savingsAmount: formatCurrency(discountInfo.discountAmount),
       savingsPercentage: totalPrice > 0 ? Math.round((discountInfo.discountAmount / totalPrice) * 100) + '%' : '0%',
-      selectedQuantity: selectedQuantity.toString(),
-      minimumQuantity: discountInfo.applicableRule ? (discountInfo.applicableRule.numberOfProducts || 0).toString() : '0',
-      targetQuantity: targetQuantity.toString(),
-      itemsNeeded: Math.max(0, targetQuantity - selectedQuantity).toString()
+      minimumQuantity: discountInfo.applicableRule ? (discountInfo.applicableRule.numberOfProducts || 0).toString() : '0'
     };
 
     // Update footer messaging elements
@@ -353,21 +530,25 @@ function initializeBundleWidget(containerElement) {
         }
       }
       
-      // Update quantity display
-      if (currentQuantityElement) currentQuantityElement.textContent = selectedQuantity;
-      if (targetQuantityElement) targetQuantityElement.textContent = targetQuantity;
+      // Update quantity display using configurable template
+      const progressText = replaceDiscountVariables(widgetConfig.progressTextTemplate, variables);
+      const progressTextElement = document.querySelector('.progress-text');
+      if (progressTextElement) {
+        progressTextElement.innerHTML = progressText;
+      } else {
+        // Fallback to individual elements if progress-text container doesn't exist
+        if (currentQuantityElement) currentQuantityElement.textContent = selectedQuantity;
+        if (targetQuantityElement) targetQuantityElement.textContent = targetQuantity;
+      }
       
       // Determine messaging state and content
       let messageState = 'default';
       let discountMessage = '';
       
       if (discountInfo.discountAmount > 0 && discountInfo.applicableRule) {
-        // Already qualified for discount
+        // Already qualified for discount - use success message template
         messageState = 'qualified';
-        const ruleMessages = pricing.messages || {};
-        const ruleId = discountInfo.applicableRule.id;
-        discountMessage = ruleMessages[ruleId]?.successMessage || 
-                         `🎉 Congratulations! You're saving ${variables.savingsAmount} with this bundle!`;
+        discountMessage = replaceDiscountVariables(widgetConfig.successMessageTemplate, variables);
         
         // Show savings display
         if (footerSavingsDisplay && savingsAmountElement) {
@@ -375,23 +556,36 @@ function initializeBundleWidget(containerElement) {
           footerSavingsDisplay.style.display = 'block';
         }
       } else if (nextRule && selectedQuantity > 0) {
-        // Getting close to next discount
+        // Getting close to next discount - use discount progress template
         const itemsNeeded = targetQuantity - selectedQuantity;
         if (itemsNeeded <= 2) {
           messageState = 'nearly-qualified';
-          discountMessage = `Almost there! Add ${itemsNeeded} more item${itemsNeeded === 1 ? '' : 's'} to unlock savings!`;
-        } else {
-          discountMessage = `Add ${itemsNeeded} more items to unlock bundle savings of ${formatCurrency(parseFloat(nextRule.value || nextRule.discountValue || 0))}!`;
         }
+        
+        // Update variables for next rule
+        const nextRuleVariables = {
+          ...variables,
+          discountValue: (nextRule.discountValue || nextRule.value || 0).toString(),
+          discountConditionDiff: itemsNeeded.toString(),
+          itemsNeeded: itemsNeeded.toString()
+        };
+        
+        discountMessage = replaceDiscountVariables(widgetConfig.discountTextTemplate, nextRuleVariables);
         
         if (footerSavingsDisplay) {
           footerSavingsDisplay.style.display = 'none';
         }
       } else if (selectedQuantity === 0) {
-        // No items selected yet
+        // No items selected yet - use initial state message
         const minRule = sortedRules[0];
         if (minRule) {
-          discountMessage = `Start building your bundle! Select ${minRule.numberOfProducts || 1} items to unlock savings.`;
+          const initialVariables = {
+            ...variables,
+            discountValue: (minRule.discountValue || minRule.value || 0).toString(),
+            discountConditionDiff: (minRule.numberOfProducts || 1).toString(),
+            itemsNeeded: (minRule.numberOfProducts || 1).toString()
+          };
+          discountMessage = replaceDiscountVariables(widgetConfig.discountTextTemplate, initialVariables);
         } else {
           discountMessage = 'Build your perfect bundle and save!';
         }
@@ -505,17 +699,23 @@ function initializeBundleWidget(containerElement) {
       const stepTotalQuantity = Object.values(selectedProductsQuantities[index]).reduce((sum, qty) => sum + qty, 0);
       const currentStep = selectedBundle.steps[index];
       let isStepCompleted = false;
-      if (currentStep.conditionType && currentStep.conditionValue !== null) {
+      if (currentStep.conditionType === 'quantity' && currentStep.conditionOperator && currentStep.conditionValue !== null) {
         const requiredQuantity = currentStep.conditionValue;
-        switch (currentStep.conditionType) {
+        switch (currentStep.conditionOperator) {
           case 'equal_to':
             isStepCompleted = stepTotalQuantity === requiredQuantity;
             break;
-          case 'at_most':
-            isStepCompleted = stepTotalQuantity <= requiredQuantity;
+          case 'greater_than':
+            isStepCompleted = stepTotalQuantity > requiredQuantity;
             break;
-          case 'at_least':
+          case 'less_than':
+            isStepCompleted = stepTotalQuantity < requiredQuantity;
+            break;
+          case 'greater_than_or_equal_to':
             isStepCompleted = stepTotalQuantity >= requiredQuantity;
+            break;
+          case 'less_than_or_equal_to':
+            isStepCompleted = stepTotalQuantity <= requiredQuantity;
             break;
         }
       }
@@ -541,7 +741,7 @@ function initializeBundleWidget(containerElement) {
           currentActiveStepIndex = index;
           renderModalContent();
         } else {
-          alert('Please meet the quantity conditions for the current step before moving to another tab.');
+          showToast('Please meet the quantity conditions for the current step before moving to another tab.', 'warning');
         }
       });
       modalTabsContainer.appendChild(tab);
@@ -563,17 +763,23 @@ function initializeBundleWidget(containerElement) {
       
       // Set the step subtitle with quantity requirements
       let subtitleText = '';
-      if (step.conditionType && step.conditionValue) {
+      if (step.conditionType === 'quantity' && step.conditionOperator && step.conditionValue !== null) {
         const value = step.conditionValue;
-        switch (step.conditionType) {
+        switch (step.conditionOperator) {
           case 'equal_to':
             subtitleText = `Select exactly ${value} product${value > 1 ? 's' : ''}`;
             break;
-          case 'at_least':
+          case 'greater_than_or_equal_to':
             subtitleText = `Select at least ${value} product${value > 1 ? 's' : ''}`;
             break;
-          case 'at_most':
+          case 'less_than_or_equal_to':
             subtitleText = `Select up to ${value} product${value > 1 ? 's' : ''}`;
+            break;
+          case 'greater_than':
+            subtitleText = `Select more than ${value} product${value > 1 ? 's' : ''}`;
+            break;
+          case 'less_than':
+            subtitleText = `Select less than ${value} product${value > 1 ? 's' : ''}`;
             break;
         }
         if (selectedCount > 0) {
@@ -593,17 +799,23 @@ function initializeBundleWidget(containerElement) {
       const selectedCount = Object.values(selectedProductsQuantities[currentActiveStepIndex]).reduce((a, b) => a + b, 0);
 
       let quantityText = '';
-      if (step.conditionType && step.conditionValue) {
+      if (step.conditionType === 'quantity' && step.conditionOperator && step.conditionValue !== null) {
         const value = step.conditionValue;
-        switch (step.conditionType) {
+        switch (step.conditionOperator) {
           case 'equal_to':
             quantityText = `Add ${value} product${value > 1 ? 's' : ''} only`;
             break;
-          case 'at_least':
+          case 'greater_than_or_equal_to':
             quantityText = `Add at least ${value} product${value > 1 ? 's' : ''}`;
             break;
-          case 'at_most':
+          case 'less_than_or_equal_to':
             quantityText = `Add at most ${value} product${value > 1 ? 's' : ''}`;
+            break;
+          case 'greater_than':
+            quantityText = `Add more than ${value} product${value > 1 ? 's' : ''}`;
+            break;
+          case 'less_than':
+            quantityText = `Add less than ${value} product${value > 1 ? 's' : ''}`;
             break;
         }
       }
@@ -645,9 +857,28 @@ function initializeBundleWidget(containerElement) {
       let explicitProducts = [];
       let collectionProducts = [];
 
-      // 1. Process explicitly selected products
+      // 1. Process explicitly selected products from both products and StepProduct arrays
+      let allProducts = [];
+      
+      // Add products from the products array (if available)
       if (currentStep.products && Array.isArray(currentStep.products) && currentStep.products.length > 0) {
-        explicitProducts = currentStep.products.flatMap(p => {
+        allProducts = allProducts.concat(currentStep.products);
+      }
+      
+      // Add products from the StepProduct array (if available) 
+      if (currentStep.StepProduct && Array.isArray(currentStep.StepProduct) && currentStep.StepProduct.length > 0) {
+        // Convert StepProduct format to match products format
+        const stepProducts = currentStep.StepProduct.map(sp => ({
+          id: sp.productId,
+          title: sp.title,
+          images: sp.imageUrl ? [{ originalSrc: sp.imageUrl }] : [],
+          variants: sp.variants || []
+        }));
+        allProducts = allProducts.concat(stepProducts);
+      }
+      
+      if (allProducts.length > 0) {
+        explicitProducts = allProducts.flatMap(p => {
           if (currentStep.displayVariantsAsIndividual && p.variants && p.variants.length > 0) {
             return p.variants.map(variant => ({
               id: variant.id.split('/').pop(),
@@ -823,7 +1054,7 @@ function initializeBundleWidget(containerElement) {
     });
   }
 
-  // Function to update selected product quantities
+  // Function to update selected product quantities with step condition validation
   function updateProductSelection(stepIndex, productId, newQuantity) {
     if (!selectedProductsQuantities[stepIndex]) {
       selectedProductsQuantities[stepIndex] = {};
@@ -831,6 +1062,57 @@ function initializeBundleWidget(containerElement) {
 
     // Ensure quantities don't go below 0
     const quantity = Math.max(0, newQuantity);
+    
+    // Check step conditions before allowing the update
+    const currentStep = selectedBundle.steps[stepIndex];
+    if (currentStep.conditionType === 'quantity' && currentStep.conditionOperator && currentStep.conditionValue !== null) {
+      // Calculate what the total would be with this change
+      let totalQuantityWouldBe = 0;
+      for (const prodId in selectedProductsQuantities[stepIndex]) {
+        if (prodId === productId) {
+          totalQuantityWouldBe += quantity;
+        } else {
+          totalQuantityWouldBe += selectedProductsQuantities[stepIndex][prodId];
+        }
+      }
+      
+      const requiredQuantity = currentStep.conditionValue;
+      let allowUpdate = false;
+      
+      switch (currentStep.conditionOperator) {
+        case 'equal_to':
+          allowUpdate = totalQuantityWouldBe <= requiredQuantity;
+          break;
+        case 'greater_than':
+          allowUpdate = true; // Allow any increase for greater_than
+          break;
+        case 'less_than':
+          allowUpdate = totalQuantityWouldBe < requiredQuantity;
+          break;
+        case 'greater_than_or_equal_to':
+          allowUpdate = true; // Allow any increase
+          break;
+        case 'less_than_or_equal_to':
+          allowUpdate = totalQuantityWouldBe <= requiredQuantity;
+          break;
+        default:
+          allowUpdate = true;
+      }
+      
+      if (!allowUpdate && quantity > (selectedProductsQuantities[stepIndex][productId] || 0)) {
+        // Show user-friendly message about step limits
+        const operatorText = {
+          'equal_to': `exactly ${requiredQuantity}`,
+          'less_than': `less than ${requiredQuantity}`,
+          'less_than_or_equal_to': `at most ${requiredQuantity}`,
+          'greater_than': `more than ${requiredQuantity}`,
+          'greater_than_or_equal_to': `at least ${requiredQuantity}`
+        };
+        const limitText = operatorText[currentStep.conditionOperator] || requiredQuantity;
+        showToast(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`, 'warning');
+        return; // Don't update if it would violate the condition
+      }
+    }
 
     selectedProductsQuantities[stepIndex][productId] = quantity;
 
@@ -855,17 +1137,22 @@ function initializeBundleWidget(containerElement) {
       totalQuantitySelected += selectedProductsInCurrentStep[prodId];
     }
 
-    if (currentStep.conditionType && currentStep.conditionValue !== null) {
+    // Check if step has quantity-based conditions
+    if (currentStep.conditionType === 'quantity' && currentStep.conditionOperator && currentStep.conditionValue !== null) {
       const requiredQuantity = currentStep.conditionValue;
-      switch (currentStep.conditionType) {
+      switch (currentStep.conditionOperator) {
         case 'equal_to':
           return totalQuantitySelected === requiredQuantity;
-        case 'at_most':
-          return totalQuantitySelected <= requiredQuantity;
-        case 'at_least':
+        case 'greater_than':
+          return totalQuantitySelected > requiredQuantity;
+        case 'less_than':
+          return totalQuantitySelected < requiredQuantity;
+        case 'greater_than_or_equal_to':
           return totalQuantitySelected >= requiredQuantity;
+        case 'less_than_or_equal_to':
+          return totalQuantitySelected <= requiredQuantity;
         default:
-          return false; // Unknown condition type
+          return false; // Unknown condition operator
       }
     }
     // If no explicit condition, consider it valid if at least one product is selected
@@ -890,9 +1177,6 @@ function initializeBundleWidget(containerElement) {
 
   // Function to update the main bundle steps display after modal is closed
   function updateMainBundleStepsDisplay() {
-    console.log('DEBUG: updateMainBundleStepsDisplay called');
-    console.log('DEBUG: bundleStepsContainer:', bundleStepsContainer);
-    console.log('DEBUG: selectedBundle:', selectedBundle);
     
     // Use container-specific bundle steps container (not global querySelector)
     if (!bundleStepsContainer) {
@@ -903,15 +1187,9 @@ function initializeBundleWidget(containerElement) {
     bundleStepsContainer.innerHTML = ''; // Clear existing steps
 
     if (!selectedBundle || !selectedBundle.steps) {
-      console.log('DEBUG: No selected bundle or steps to render');
-      console.log('DEBUG: selectedBundle exists:', !!selectedBundle);
-      console.log('DEBUG: selectedBundle.steps exists:', !!selectedBundle?.steps);
-      console.log('DEBUG: selectedBundle.steps length:', selectedBundle?.steps?.length);
       return;
     }
 
-    console.log('DEBUG: Rendering steps for bundle:', selectedBundle.name, 'Steps count:', selectedBundle.steps.length);
-    console.log('DEBUG: selectedProductsQuantities:', selectedProductsQuantities);
 
     selectedBundle.steps.forEach((step, index) => {
       const stepBox = document.createElement('div');
@@ -985,10 +1263,14 @@ function initializeBundleWidget(containerElement) {
         stepBox.appendChild(plusIcon);
       }
 
-      // Add step name
+      // Add step name with optional step numbers
       const stepName = document.createElement('p');
       stepName.classList.add('step-name');
-      stepName.textContent = step.name || `Step ${index + 1}`;
+      if (widgetConfig.showStepNumbers) {
+        stepName.textContent = `${index + 1}. ${step.name || `Step ${index + 1}`}`;
+      } else {
+        stepName.textContent = step.name || `Step ${index + 1}`;
+      }
       stepBox.appendChild(stepName);
 
       // Attach click listener to open modal for this step
@@ -999,13 +1281,15 @@ function initializeBundleWidget(containerElement) {
 
   // Initial rendering of bundle content based on selectedBundle (if any)
   if (selectedBundle) {
-    // Render bundle header
-    let displayPrice = selectedBundle.price || 'N/A';
-    let displayComparePrice = selectedBundle.compareAtPrice || 'N/A';
-
-    bundleHeader.innerHTML = `
-      <h2 class="bundle-title">${selectedBundle.name || ''}</h2>
-    `;
+    // Render bundle header conditionally based on settings
+    if (widgetConfig.showTitle && bundleHeader) {
+      bundleHeader.innerHTML = `
+        <h2 class="bundle-title">${selectedBundle.name || ''}</h2>
+      `;
+      bundleHeader.style.display = 'block';
+    } else if (bundleHeader) {
+      bundleHeader.style.display = 'none';
+    }
 
     // Render bundle includes (if any and data exists)
     if (selectedBundle.includes && Array.isArray(selectedBundle.includes) && selectedBundle.includes.length > 0) {
@@ -1030,7 +1314,6 @@ function initializeBundleWidget(containerElement) {
     }
     
     // Initial rendering of main bundle steps
-    console.log('DEBUG: About to call updateMainBundleStepsDisplay for initial render');
     updateMainBundleStepsDisplay();
     updateAddToCartButton(); // Initial update of the add to cart button
     updateFooterDiscountMessaging(); // Initial update of footer discount messaging
@@ -1038,7 +1321,6 @@ function initializeBundleWidget(containerElement) {
   } else {
     // No bundle found for this product, hide the entire container
     containerElement.style.display = 'none';
-    console.log('No published bundle found for this product.');
   }
 
   // Event Listeners for the modal controls
@@ -1050,7 +1332,7 @@ function initializeBundleWidget(containerElement) {
       currentActiveStepIndex--;
       renderModalContent();
     } else if (currentActiveStepIndex > 0 && !validateCurrentStep()) {
-      alert('Please meet the quantity conditions for the current step before going back.');
+      showToast('Please meet the quantity conditions for the current step before going back.', 'warning');
     }
   });
 
@@ -1064,7 +1346,7 @@ function initializeBundleWidget(containerElement) {
         closeBundleModal();
       }
     } else {
-      alert('Please meet the quantity conditions for the current step before proceeding.');
+      showToast('Please meet the quantity conditions for the current step before proceeding.', 'warning');
     }
   });
 
@@ -1103,7 +1385,7 @@ function initializeBundleWidget(containerElement) {
     console.log('itemsToAdd', itemsToAdd);
 
     if (itemsToAdd.length === 0) {
-      alert('Please select products for your bundle before adding to cart.');
+      showToast('Please select products for your bundle before adding to cart.', 'warning');
       return;
     }
 
@@ -1117,7 +1399,7 @@ function initializeBundleWidget(containerElement) {
     // For this context, it's fine as we are about to redirect.
 
     if (!allStepsValid) {
-        alert('Please complete all bundle steps before adding to cart.');
+        showToast('Please complete all bundle steps before adding to cart.', 'warning');
         return;
     }
 
@@ -1141,13 +1423,13 @@ function initializeBundleWidget(containerElement) {
         window.location.href = '/cart'; // Redirect to cart page
       } else {
         console.error('Error adding products to cart:', data);
-        alert(`Failed to add bundle to cart: ${data.message || 'Unknown error'}`);
+        showToast(`Failed to add bundle to cart: ${data.message || 'Unknown error'}`, 'error');
         addBundleToCartButton.disabled = false; // Re-enable button on error
         updateAddToCartButton(); // Restore original button text
       }
     } catch (error) {
       console.error('Network or unexpected error adding to cart:', error);
-      alert('An error occurred while adding the bundle to your cart. Please try again.');
+      showToast('An error occurred while adding the bundle to your cart. Please try again.', 'error');
       addBundleToCartButton.disabled = false; // Re-enable button on error
       updateAddToCartButton(); // Restore original button text
     }
@@ -1171,26 +1453,58 @@ function initializeBundleWidget(containerElement) {
   if (selectedBundle) {
     initializeBundleBuilder();
   }
+  
+  // Mark container as initialized to prevent duplicates
+  containerElement.dataset.initialized = 'true';
 }
 
-// Initialize all bundle widgets on page load
-document.addEventListener('DOMContentLoaded', () => {
-  // Support multiple bundle widget instances on same page
+
+// Function to reinitialize all widgets (for theme editor real-time updates)
+function reinitializeAllBundleWidgets() {
   const allBundleContainers = document.querySelectorAll('[id^="bundle-builder-app"]');
   
-  console.log('DEBUG: Found bundle widget containers:', allBundleContainers.length);
-  
   if (allBundleContainers.length === 0) {
-    // Fallback for single container with exact ID
     const singleContainer = document.getElementById('bundle-builder-app');
     if (singleContainer) {
       initializeBundleWidget(singleContainer);
     }
   } else {
-    // Initialize each container separately
-    allBundleContainers.forEach((container, index) => {
-      console.log(`DEBUG: Initializing bundle widget ${index + 1} of ${allBundleContainers.length}`);
+    allBundleContainers.forEach((container) => {
       initializeBundleWidget(container);
     });
+  }
+}
+
+// Initialize all bundle widgets on page load
+document.addEventListener('DOMContentLoaded', () => {
+  reinitializeAllBundleWidgets();
+  
+  // Listen for theme editor changes (Shopify theme editor specific)
+  if (window.isThemeEditorContext || window.parent !== window) {
+    // Watch for changes to bundle widget containers
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && 
+            mutation.target.classList && 
+            mutation.target.classList.contains('bundle-widget-container')) {
+          // Re-initialize when container attributes change
+          setTimeout(() => reinitializeAllBundleWidgets(), 100);
+        }
+      });
+    });
+    
+    // Start observing
+    observer.observe(document.body, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ['data-show-title', 'data-show-step-numbers', 'data-show-footer-messaging', 'style']
+    });
+    
+    // Also listen for Shopify theme editor events
+    document.addEventListener('shopify:section:load', reinitializeAllBundleWidgets);
+    document.addEventListener('shopify:section:select', reinitializeAllBundleWidgets);
+    document.addEventListener('shopify:section:deselect', reinitializeAllBundleWidgets);
+    document.addEventListener('shopify:block:select', reinitializeAllBundleWidgets);
+    document.addEventListener('shopify:block:deselect', reinitializeAllBundleWidgets);
   }
 }); 
