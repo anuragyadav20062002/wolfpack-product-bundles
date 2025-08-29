@@ -117,6 +117,52 @@ Shopify bundling app with dual implementation approaches:
 - `/app/bundles/cart-transform/configure/{bundleId}` - Main configuration UI
 - `/app/settings` - Implementation type selection
 
+## Bundle Step Conditions System
+
+**Implementation Status:** ✅ Production Ready
+
+**Key Features:**
+- **Step-Level Conditions**: Each bundle step can have quantity/amount-based conditions
+- **Operator Support**: `equal_to`, `greater_than`, `less_than`, `greater_than_or_equal_to`, `less_than_or_equal_to`
+- **Database Schema**: Added `conditionType`, `conditionOperator`, `conditionValue` fields to BundleStep model
+- **Function Integration**: Conditions propagate to discount/cart transform functions via metafields
+
+**Technical Architecture:**
+```javascript
+// Database Storage
+{
+  conditionType: "quantity",        // Type of condition (quantity/amount)
+  conditionOperator: "equal_to",    // Comparison operator
+  conditionValue: 2                 // Numeric value to compare against
+}
+```
+
+**Debug Logging:** Comprehensive logging system tracks condition flow from UI → database → functions
+
+---
+
+## Recent Technical Improvements (Latest)
+
+**✅ Type Safety & Validation Fixes:**
+- Fixed PrismaClientValidationError for integer field type mismatches
+- Added `parseInt()` conversions for `minQuantity`, `maxQuantity`, `conditionValue`
+- Resolved form syntax errors preventing proper data submission
+
+**✅ App Bridge Save Bar Modernization:**
+- Updated to modern `data-save-bar` attribute approach (App Bridge 4.x)
+- Removed complex manual save bar triggering logic
+- Improved change detection for configuration updates
+
+**✅ Step Conditions Data Flow:**
+- Verified end-to-end propagation from UI → database → metafields → functions
+- Fixed operator value mismatches between UI and function expectations
+- Added comprehensive debug logging for troubleshooting
+
+**✅ Code Quality & Consistency:**
+- Synchronized UI components between cart transform and discount function pages
+- Removed outdated console logs and replaced with structured debug logging
+- Fixed JavaScript syntax errors in bundle widget components
+
 ---
 
 ## Current Implementation Status
@@ -135,11 +181,85 @@ Shopify bundling app with dual implementation approaches:
 - **JavaScript Error Fixes**: Resolved syntax errors in bundle-widget.js
 - **Improved UX**: Better visual feedback, debugging, and error handling
 - **MCP Integration**: All GraphQL queries validated using Shopify dev MCP server
+- **Theme Editor Configuration**: Comprehensive widget configuration with improved UX
+- **Widget Positioning**: Fixed theme block positioning using proper Shopify architecture
+- **Configuration Options**: Added 20+ new configuration options with intuitive names and tooltips
+- **Prisma Validation Fixes**: Resolved PrismaClientValidationError with proper type conversions
+- **Bundle Step Conditions System**: Complete implementation with quantity/amount-based rules
+- **App Bridge Save Bar Modernization**: Updated to modern data-save-bar approach
+- **Database Schema Evolution**: Added conditionOperator field for proper function integration
+- **UI Synchronization**: Aligned cart transform and discount function configure pages
+
+**✅ Recently Completed Tasks:**
+1. **Fix Liquid syntax validation errors in theme extension** - Removed double curly braces from template defaults
+2. **Deploy theme extension with fixes** - Successfully deployed version bundle-discount-functions-43
+3. **Verify new config options appear in theme editor** - All configuration sections now visible
+4. **Improve configuration option names and tooltips for better UX** - Enhanced labels and added helpful tooltips
+5. **Add width configuration options for widget elements** - Added responsive sizing controls
+6. **Verify widget positioning functionality using MCP server** - Confirmed proper theme block architecture
+7. **Resolve Prisma validation errors** - Fixed syntax and type conversion issues preventing application functionality
+8. **Implement bundle step conditions system** - Added complete quantity/amount-based condition logic with database integration
+9. **Modernize App Bridge save bar** - Updated from manual triggering to modern data-save-bar approach
+10. **Synchronize UI components** - Aligned cart transform and discount function configuration pages
+11. **Implement toast notification system** - Replaced browser alert dialogs with professional toast notifications
+12. **Enable line-item discount support** - Added PRODUCT class discount functionality alongside ORDER class discounts
+13. **Fix cart line discount application** - Resolved issues with bundle discounts not applying to individual cart items
+14. **Enhance bundle condition enforcement UX** - Improved user feedback with contextual toast messages
+
+**📋 Recent Technical Improvements:**
+
+**Bundle Step Conditions System:**
+- **Database Schema**: Added `conditionOperator` field to BundleStep model for proper function integration
+- **Type Safety**: Implemented parseInt() conversions for quantity/amount fields (minQuantity, maxQuantity, conditionValue)
+- **Operator Synchronization**: Fixed UI-function mismatch by updating from 'is_equal_to' to 'equal_to' format
+- **Debug Logging**: Added comprehensive logging system for condition flow verification
+- **End-to-End Verification**: Confirmed conditions propagate correctly from UI through database to functions
+
+**App Bridge Save Bar Modernization:**
+- **Modern Approach**: Replaced manual save bar triggering with data-save-bar attribute approach
+- **MCP Research**: Used Shopify dev MCP server to verify current best practices
+- **Simplified Implementation**: Removed complex hidden field logic in favor of React state management
+- **Improved UX**: Better responsiveness to configuration changes
+
+**Database and Type Safety:**
+- **Prisma Validation**: Fixed PrismaClientValidationError with proper syntax and type conversions
+- **Schema Evolution**: Added conditionOperator field for complete step condition support  
+- **Integer Conversion**: Implemented proper parseInt() handling for numeric database fields
+- **Error Prevention**: Added comprehensive validation to prevent future type mismatch issues
+
+**Toast Notification System:**
+- **Modern UX**: Replaced all browser alert() dialogs with professional toast notifications
+- **Multiple Types**: Support for info, warning, error, and success messages with distinct styling
+- **Smart Positioning**: Fixed positioning (top-right) with proper z-index stacking
+- **Auto-Dismiss**: Configurable timeout with manual close option
+- **Smooth Animations**: CSS transitions for slide-in effects and fade-out
+
+**Line-Item Discount Enhancement:**
+- **PRODUCT Class Support**: Added individual cart line targeting alongside ORDER class discounts
+- **Proportional Distribution**: Smart allocation of fixed amount discounts across multiple items
+- **Enhanced GraphQL**: Updated input queries to capture line attributes for bundle detection
+- **Test Coverage**: All discount function tests updated and passing for new functionality
 
 **🔧 High Priority TODOs:**
-1. Bundle creation error handling (app/routes/app.bundles.create.tsx:22)
-2. Database error handling (app/routes/app.bundles.create.tsx:40)
-3. Product status management (app/routes/app.bundles.cart-transform.configure.$bundleId.tsx:1230)
+1. **Bundle Creation Error Handling** - Implement comprehensive error handling for bundle creation workflow
+2. **Database Error Handling** - Add robust error recovery and user feedback for database operations  
+3. **Product Status Management** - Enhance product synchronization and status tracking
+4. **Performance Optimization** - Review and optimize bundle widget JavaScript for large product catalogs
+5. **Fixed Bundle Price Support** - Complete implementation of fixed bundle pricing in discount functions
+
+**🎯 Medium Priority TODOs:**
+1. **Bundle Analytics Dashboard** - Add metrics and reporting for bundle performance
+2. **Bulk Bundle Operations** - Enable batch creation, editing, and publishing of bundles
+3. **Advanced Step Conditions** - Add amount-based conditions and complex logic operators
+4. **Theme Compatibility Testing** - Verify widget compatibility across popular Shopify themes
+5. **Mobile UX Enhancement** - Optimize bundle widget for mobile devices and touch interactions
+
+**📱 Future Enhancements:**
+1. **A/B Testing Framework** - Enable testing different bundle configurations
+2. **AI-Powered Bundle Suggestions** - Recommend optimal bundle combinations
+3. **Customer Behavior Tracking** - Analytics for bundle interaction patterns
+4. **Multi-Language Support** - Internationalization for global stores
+5. **Advanced Discount Rules** - Tiered pricing, buy-X-get-Y offers, and seasonal promotions
 
 
 
