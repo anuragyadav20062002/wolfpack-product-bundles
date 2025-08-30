@@ -353,10 +353,6 @@ export async function action({ request }: ActionFunctionArgs) {
       });
       
       const discountImplementation = shopSettings?.discountImplementation || "discount_function";
-      console.log(`🔍 [BUNDLE PUBLISH DEBUG] Shop ID: ${session.shop}`);
-      console.log(`🔍 [BUNDLE PUBLISH DEBUG] Shop Settings:`, shopSettings);
-      console.log(`🔍 [BUNDLE PUBLISH DEBUG] Discount implementation type: ${discountImplementation}`);
-      console.log(`🔍 [BUNDLE PUBLISH DEBUG] Should skip Shopify discount creation: ${discountImplementation === "cart_transformation"}`);
 
       // Store bundle discount settings on individual products
       const allPublishedBundles = await db.bundle.findMany({
@@ -784,7 +780,6 @@ export default function BundleBuilderPage() {
           };
           handleAddStepModalClose();
           shopify.toast.show("Step saved successfully!");
-          console.log("Bundle Step Data:", stepData.step);
         } else if (fetcher.data.intent === "publishBundle") {
           const publishedBundleData = fetcher.data as {
             success: true;
@@ -793,7 +788,6 @@ export default function BundleBuilderPage() {
           };
           handlePublishModalClose();
           shopify.toast.show("Bundle published successfully!");
-          console.log("Published Bundle Details:", publishedBundleData.bundle);
         } else if (fetcher.data.intent === "updateDiscount") {
           const updatedPricingData = fetcher.data as {
             success: true;
@@ -801,7 +795,6 @@ export default function BundleBuilderPage() {
             intent: string;
           };
           shopify.toast.show("Discount settings saved successfully!");
-          console.log("Updated Pricing Data:", updatedPricingData.pricing);
         }
       } else if ("error" in fetcher.data && fetcher.data.error) {
         const errorData = fetcher.data as {
@@ -810,7 +803,6 @@ export default function BundleBuilderPage() {
           intent?: string;
         };
         shopify.toast.show(`Error: ${errorData.error}`, { isError: true });
-        console.error("Action Error:", errorData.error);
         //hello
       }
     }

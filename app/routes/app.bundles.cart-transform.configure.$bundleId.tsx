@@ -84,6 +84,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     throw new Response("Bundle not found", { status: 404 });
   }
 
+  // Debug: Log existing step conditions from database
+  console.log("[DEBUG] Bundle loaded from DB:", {
+    id: bundle.id,
+    stepsCount: bundle.steps.length,
+    steps: bundle.steps.map(step => ({
+      id: step.id,
+      name: step.name,
+      conditionType: step.conditionType,
+      conditionOperator: step.conditionOperator,
+      conditionValue: step.conditionValue
+    }))
+  });
+
   // Fetch bundle product data from Shopify if it exists
   let bundleProduct = null;
   if (bundle.shopifyProductId) {
@@ -140,10 +153,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const { session, admin } = await authenticate.admin(request);
     const { bundleId } = params;
     
-    console.log("Authentication successful:", { shop: session?.shop, bundleId });
     
     if (!session?.shop) {
-      console.error("No session shop found");
       return json({ success: false, error: "Authentication required" }, { status: 401 });
     }
     
@@ -313,7 +324,6 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
     }
 
     const shopGlobalId = shopData.data.shop.id;
-    console.log('Shop global ID:', shopGlobalId);
 
     // Get all published cart transform bundles from database
     // Force refresh by including even draft bundles with steps for debugging
@@ -354,6 +364,7 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
         StepProduct: step.StepProduct || [],
         // Add condition data if needed
         conditionType: step.conditionType,
+        conditionOperator: step.conditionOperator,
         conditionValue: step.conditionValue
       })),
       pricing: bundle.pricing ? {
@@ -412,7 +423,6 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
       return null;
     }
 
-    console.log(`Updated shop metafield with ${formattedBundles.length} bundles:`, formattedBundles.map(b => ({ id: b.id, name: b.name, bundleType: 'cart_transform', stepsCount: b.steps.length })));
     return data.data?.metafieldsSet?.metafields?.[0];
 
   } catch (error) {
@@ -444,6 +454,8 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
   const bundleStatus = formData.get("bundleStatus") as string;
   const stepsData = JSON.parse(formData.get("stepsData") as string);
   const discountData = JSON.parse(formData.get("discountData") as string);
+  const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
+  console.log("[DEBUG] Step Conditions Data from form:", stepConditionsData);
 
   // Automatically set status to 'active' if bundle has configured steps
   let finalStatus = bundleStatus as any;
@@ -454,7 +466,6 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     );
     if (hasConfiguredSteps) {
       finalStatus = 'active';
-      console.log('Auto-activating cart transform bundle due to configured steps');
     }
   }
 
@@ -472,28 +483,41 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       ...(stepsData && {
         steps: {
           deleteMany: {},
-          create: stepsData.map((step: any, index: number) => ({
-            name: step.pageTitle || step.name, // Use pageTitle as name if available
-            position: index + 1, // Map stepNumber to position field
-            products: step.products || [],
-            collections: step.collections || [],
-            displayVariantsAsIndividual: step.displayVariantsAsIndividualProducts || false,
-            minQuantity: step.minQuantity || 1,
-            maxQuantity: step.maxQuantity || 1,
-            enabled: step.enabled !== false, // Default to true unless explicitly false
-            // Create StepProduct records for selected products
-            StepProduct: {
+          create: stepsData.map((step: any, index: number) => {
+            // Get conditions for this step from stepConditionsData
+            const stepConditions = stepConditionsData[step.id] || [];
+            const firstCondition = stepConditions.length > 0 ? stepConditions[0] : null;
+            console.log(`[DEBUG] Step ${step.id} conditions:`, stepConditions);
+            console.log(`[DEBUG] Step ${step.id} first condition:`, firstCondition);
+            console.log(`[DEBUG] Will save to DB - conditionType: ${firstCondition?.type || null}, conditionOperator: ${firstCondition?.operator || null}, conditionValue: ${firstCondition?.value ? parseInt(firstCondition.value) || null : null}`);
+            
+            return {
+              name: step.pageTitle || step.name, // Use pageTitle as name if available
+              position: index + 1, // Map stepNumber to position field
+              products: step.products || [],
+              collections: step.collections || [],
+              displayVariantsAsIndividual: step.displayVariantsAsIndividualProducts || false,
+              minQuantity: parseInt(step.minQuantity) || 1,
+              maxQuantity: parseInt(step.maxQuantity) || 1,
+              enabled: step.enabled !== false, // Default to true unless explicitly false
+              // Apply condition data if available
+              conditionType: firstCondition?.type || null,
+              conditionOperator: firstCondition?.operator || null,
+              conditionValue: firstCondition?.value ? parseInt(firstCondition.value) || null : null,
+              // Create StepProduct records for selected products
+              StepProduct: {
               create: (step.StepProduct || []).map((product: any, productIndex: number) => ({
                 productId: product.id,
                 title: product.title || product.name || 'Unnamed Product',
                 imageUrl: product.image?.url || product.imageUrl || null,
                 variants: product.variants || null,
-                minQuantity: product.minQuantity || 1,
-                maxQuantity: product.maxQuantity || 10,
+                minQuantity: parseInt(product.minQuantity) || 1,
+                maxQuantity: parseInt(product.maxQuantity) || 10,
                 position: productIndex + 1
               }))
             }
-          }))
+          };
+          })
         }
       }),
       // Update pricing if provided
@@ -568,7 +592,6 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
   // ALWAYS update shop-level all_bundles metafield for Liquid extension
   // This ensures the widget gets updated bundle data immediately
   try {
-    console.log('Force updating shop bundles metafield after bundle save');
     await updateShopBundlesMetafield(admin, session.shop);
   } catch (error) {
     console.error("Failed to update shop bundles metafield:", error);
@@ -735,7 +758,19 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
           bundleId: bundle.id,
           name: bundle.name,
           type: "cart_transform",
-          steps: bundle.steps || [],
+          steps: bundle.steps.map(step => ({
+            id: step.id,
+            name: step.name,
+            position: step.position,
+            minQuantity: step.minQuantity,
+            maxQuantity: step.maxQuantity,
+            enabled: step.enabled,
+            displayVariantsAsIndividual: step.displayVariantsAsIndividual,
+            products: step.products || [],
+            collections: step.collections || [],
+            conditionType: step.conditionType,
+            conditionValue: step.conditionValue
+          })),
           pricing: {
             enabled: bundle.pricing.enableDiscount,
             method: bundle.pricing.discountMethod,
@@ -818,7 +853,6 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
 
     const data = await response.json();
     
-    console.log('Product creation response:', JSON.stringify(data, null, 2));
 
     if (data.data?.productCreate?.userErrors?.length > 0) {
       const error = data.data.productCreate.userErrors[0];
@@ -828,7 +862,6 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
     productId = data.data?.productCreate?.product?.id;
     
     const createdStatus = data.data?.productCreate?.product?.status;
-    console.log('Created product status:', createdStatus);
 
     // Update bundle with product ID
     await db.bundle.update({
@@ -935,18 +968,15 @@ async function handleGetThemeTemplates(admin: any, session: any) {
       });
     }
 
-    console.log("Found published theme:", publishedTheme);
 
     // Extract theme ID (remove gid prefix if present)
     const themeId = publishedTheme.id.replace('gid://shopify/OnlineStoreTheme/', '');
-    console.log("Theme ID extracted:", themeId);
 
     // Now fetch theme assets using REST API (since GraphQL doesn't expose theme assets)
     const shop = session.shop;
     const accessToken = session.accessToken;
     
     const assetsUrl = `https://${shop}/admin/api/2025-01/themes/${themeId}/assets.json`;
-    console.log("Assets URL:", assetsUrl);
     
     const assetsResponse = await fetch(assetsUrl, {
       headers: {
@@ -966,7 +996,6 @@ async function handleGetThemeTemplates(admin: any, session: any) {
     }
 
     const assetsData = await assetsResponse.json();
-    console.log("Assets fetched successfully, count:", assetsData.assets?.length || 0);
     
     // Filter for template files and organize them
     const templates = assetsData.assets
@@ -1093,6 +1122,7 @@ export default function ConfigureBundleFlow() {
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState(0);
   const [stepConditions, setStepConditions] = useState<Record<string, any[]>>({});
+  console.log("[DEBUG] Initial step conditions state:", stepConditions);
   
   // State for widget placement
   const [widgetPlacementConfig, setWidgetPlacementConfig] = useState<Record<string, boolean>>({
@@ -1177,7 +1207,6 @@ export default function ConfigureBundleFlow() {
         // Find the form with data-save-bar attribute
         const form = document.querySelector('form[data-save-bar]') as HTMLFormElement;
         if (!form) {
-          console.warn('Save bar form not found - form may not be mounted yet');
           // Retry after a short delay if form is not found
           setTimeout(() => {
             const retryForm = document.querySelector('form[data-save-bar]') as HTMLFormElement;
@@ -1186,7 +1215,6 @@ export default function ConfigureBundleFlow() {
               if (retryInputs.length > 0) {
                 const event = new Event('input', { bubbles: true, cancelable: true });
                 retryInputs[0].dispatchEvent(event);
-                console.log('Save bar triggered successfully on retry');
               }
             }
           }, 100);
@@ -1196,7 +1224,6 @@ export default function ConfigureBundleFlow() {
         // Get all input elements in the form
         const formInputs = form.querySelectorAll('input');
         if (formInputs.length === 0) {
-          console.warn('No form inputs found for save bar');
           return;
         }
 
@@ -1204,7 +1231,6 @@ export default function ConfigureBundleFlow() {
         const event = new Event('input', { bubbles: true, cancelable: true });
         formInputs[0].dispatchEvent(event);
         
-        console.log('Save bar triggered successfully');
       } catch (error) {
         console.error('Error triggering save bar:', error);
         // Fallback: Try to trigger on any form element
@@ -1233,7 +1259,6 @@ export default function ConfigureBundleFlow() {
         // Find the form with data-save-bar attribute
         const form = document.querySelector('form[data-save-bar]') as HTMLFormElement;
         if (!form) {
-          console.warn('Save bar form not found for dismissal');
           return;
         }
 
@@ -1252,7 +1277,6 @@ export default function ConfigureBundleFlow() {
           }
         });
         
-        console.log('Save bar dismissed successfully - form inputs synchronized');
       } catch (error) {
         console.error('Error dismissing save bar:', error);
       }
@@ -1361,10 +1385,10 @@ export default function ConfigureBundleFlow() {
         discountMessagingEnabled,
         ruleMessages
       }));
+      formData.append("stepConditions", JSON.stringify(stepConditions));
+      console.log("[DEBUG] Submitting step conditions to server:", stepConditions);
 
       // Submit to server action using fetcher
-      console.log("Submitting save request with fetcher");
-      console.log("FormData intent:", formData.get("intent"));
       
       fetcher.submit(formData, { method: "post" });
       
@@ -1419,12 +1443,10 @@ export default function ConfigureBundleFlow() {
           // Show detailed sync information if available
           if (result.syncedData) {
             const { title, status, lastUpdated, changesDetected } = result.syncedData;
-            console.log("Sync details:", {
               title,
               status,
               lastUpdated,
               changesDetected
-            });
             
             // If changes were detected and applied, show additional notification
             if (changesDetected) {
@@ -1434,18 +1456,14 @@ export default function ConfigureBundleFlow() {
             }
           }
           
-          // Trigger a page refresh to show updated product data
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
+          // Note: Removed forced page reload to preserve unsaved UI changes
+          // The sync updates metafields but doesn't affect the current UI state
         } else if (result.templates) {
           // This is a get theme templates response
           setAvailablePages(result.templates || []);
           setIsLoadingPages(false);
-          console.log("Theme templates loaded successfully:", result.templates.length, "from theme:", result.themeName);
         } else if (result.themeId) {
           // This is a get current theme response - handled by individual callbacks
-          console.log("Theme ID fetched:", result.themeId);
         } else {
           // Generic success response
           shopify.toast.show(result.message || "Operation completed successfully", { isError: false });
@@ -1559,12 +1577,10 @@ export default function ConfigureBundleFlow() {
     // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
     if (bundleProduct.onlineStorePreviewUrl) {
       productUrl = bundleProduct.onlineStorePreviewUrl;
-      console.log('Using onlineStorePreviewUrl:', productUrl);
     }
     // Method 2: Fallback to onlineStoreUrl if preview URL not available
     else if (bundleProduct.onlineStoreUrl) {
       productUrl = bundleProduct.onlineStoreUrl;
-      console.log('Using onlineStoreUrl:', productUrl);
     }
     // Method 3: Construct URL based on shop type (development vs live store)
     else if (bundleProduct.handle) {
@@ -1578,7 +1594,6 @@ export default function ConfigureBundleFlow() {
           : shop;
         productUrl = `https://${shopDomain}.myshopify.com/products/${bundleProduct.handle}`;
       }
-      console.log('Using handle-based URL:', productUrl);
     }
     // Method 4: Fallback - Extract ID and use admin URL
     else if (bundleProduct.id) {
@@ -1591,11 +1606,9 @@ export default function ConfigureBundleFlow() {
         : shop.split('.')[0]; // Extract first part of domain
       
       productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
-      console.log('Using admin URL fallback:', productUrl);
     }
 
     if (productUrl) {
-      console.log('Opening bundle product URL:', productUrl);
       window.open(productUrl, '_blank');
       
       // Show appropriate success message based on the URL type used
@@ -1707,16 +1720,21 @@ export default function ConfigureBundleFlow() {
     const newRule = {
       id: `rule-${Date.now()}`,
       type: 'quantity',
-      operator: 'is_equal_to',
+      operator: 'equal_to',
       value: '0',
     };
-    setStepConditions(prev => ({
-      ...prev,
-      [stepId]: [...(prev[stepId] || []), newRule],
-    }));
+    console.log(`[DEBUG] Adding condition rule for step ${stepId}:`, newRule);
+    setStepConditions(prev => {
+      const updated = {
+        ...prev,
+        [stepId]: [...(prev[stepId] || []), newRule],
+      };
+      console.log(`[DEBUG] Updated step conditions state:`, updated);
+      return updated;
+    });
     
-    // Trigger save bar for adding step condition
-    triggerSaveBar();
+    // Modern App Bridge will automatically detect form changes
+    setHasUnsavedChanges(true);
   }, [triggerSaveBar]);
 
   const removeConditionRule = useCallback((stepId: string, ruleId: string) => {
@@ -1725,20 +1743,25 @@ export default function ConfigureBundleFlow() {
       [stepId]: (prev[stepId] || []).filter(rule => rule.id !== ruleId),
     }));
     
-    // Trigger save bar for removing step condition
-    triggerSaveBar();
+    // Modern App Bridge will automatically detect form changes
+    setHasUnsavedChanges(true);
   }, [triggerSaveBar]);
 
   const updateConditionRule = useCallback((stepId: string, ruleId: string, field: string, value: string) => {
-    setStepConditions(prev => ({
-      ...prev,
-      [stepId]: (prev[stepId] || []).map(rule =>
-        rule.id === ruleId ? { ...rule, [field]: value } : rule
-      ),
-    }));
+    console.log(`[DEBUG] Updating condition rule - Step: ${stepId}, Rule: ${ruleId}, Field: ${field}, Value: ${value}`);
+    setStepConditions(prev => {
+      const updated = {
+        ...prev,
+        [stepId]: (prev[stepId] || []).map(rule =>
+          rule.id === ruleId ? { ...rule, [field]: value } : rule
+        ),
+      };
+      console.log(`[DEBUG] Updated step conditions after field update:`, updated);
+      return updated;
+    });
     
-    // Trigger save bar for updating step condition
-    triggerSaveBar();
+    // Modern App Bridge will automatically detect form changes
+    setHasUnsavedChanges(true);
   }, [triggerSaveBar]);
 
   // Product selection handlers
@@ -1788,7 +1811,6 @@ export default function ConfigureBundleFlow() {
 
   const handleSyncProduct = useCallback(() => {
     try {
-      console.log("Syncing bundle product...");
       
       // Show loading toast
       shopify.toast.show("Syncing bundle product with Shopify...", { isError: false });
@@ -1817,7 +1839,6 @@ export default function ConfigureBundleFlow() {
       if (products.length > 0) {
         const selectedProduct = products[0];
         setBundleProduct(selectedProduct);
-        console.log("Bundle product selected:", selectedProduct);
         shopify.toast.show("Bundle product updated successfully", { isError: false });
       }
     } catch (error) {
@@ -1844,7 +1865,6 @@ export default function ConfigureBundleFlow() {
     try {
       setProductStatus(newStatus);
       // TODO: Implement actual product status update via GraphQL
-      console.log("Product status changed to:", newStatus);
       shopify.toast.show("Product status updated successfully", { isError: false });
     } catch (error) {
       console.error("Product status update failed:", error);
@@ -2142,7 +2162,6 @@ export default function ConfigureBundleFlow() {
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
     try {
-      console.log('Opening page selection modal');
       setIsPageSelectionModalOpen(true);
       loadAvailablePages();
     } catch (error) {
@@ -2153,7 +2172,6 @@ export default function ConfigureBundleFlow() {
 
   const handlePageSelection = useCallback((template: any) => {
     try {
-      console.log('Template selected:', template);
       
       if (!template || !template.handle) {
         console.error('Invalid template object:', template);
@@ -2171,9 +2189,8 @@ export default function ConfigureBundleFlow() {
       
       // Generate theme editor deep link for template with app block and bundle ID
       // Include bundle ID so the placed widget automatically loads this specific cart transform bundle
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&bundleId=${bundle.id}`;
 
-      console.log('Generated theme editor URL:', themeEditorUrl);
 
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
@@ -2238,37 +2255,13 @@ export default function ConfigureBundleFlow() {
           handleDiscard();
         }}
       >
-        {/* Hidden form inputs to track changes for App Bridge contextual save bar */}
-        <input 
-          type="hidden" 
-          name="bundleName" 
-          value={bundleName} 
-          readOnly
-        />
-        <input 
-          type="hidden" 
-          name="bundleDescription" 
-          value={bundleDescription} 
-          readOnly
-        />
-        <input 
-          type="hidden" 
-          name="bundleStatus" 
-          value={bundleStatus} 
-          readOnly
-        />
-        <input 
-          type="hidden" 
-          name="stepsData" 
-          value={JSON.stringify(steps)} 
-          readOnly
-        />
-        <input 
-          type="hidden" 
-          name="discountData" 
-          value={JSON.stringify({ discountEnabled, discountType, discountRules })} 
-          readOnly
-        />
+        {/* Hidden inputs for form submission - values will be updated by React state changes */}
+        <input type="hidden" name="bundleName" value={bundleName} />
+        <input type="hidden" name="bundleDescription" value={bundleDescription} />
+        <input type="hidden" name="bundleStatus" value={bundleStatus} />
+        <input type="hidden" name="stepsData" value={JSON.stringify(steps)} />
+        <input type="hidden" name="discountData" value={JSON.stringify({ discountEnabled, discountType, discountRules })} />
+        <input type="hidden" name="stepConditions" value={JSON.stringify(stepConditions)} />
 
       <Layout>
         {/* Left Sidebar */}
@@ -2662,11 +2655,11 @@ export default function ConfigureBundleFlow() {
                                     />
                                     <Select
                                       options={[
-                                        { label: 'is equal to', value: 'is_equal_to' },
-                                        { label: 'is greater than', value: 'is_greater_than' },
-                                        { label: 'is less than', value: 'is_less_than' },
-                                        { label: 'is greater than or equal to', value: 'is_greater_than_or_equal_to' },
-                                        { label: 'is less than or equal to', value: 'is_less_than_or_equal_to' },
+                                        { label: 'is equal to', value: 'equal_to' },
+                                        { label: 'is greater than', value: 'greater_than' },
+                                        { label: 'is less than', value: 'less_than' },
+                                        { label: 'is greater than or equal to', value: 'greater_than_or_equal_to' },
+                                        { label: 'is less than or equal to', value: 'less_than_or_equal_to' },
                                       ]}
                                       value={rule.operator}
                                       onChange={(value) => updateConditionRule(step.id, rule.id, 'operator', value)}

@@ -37,6 +37,12 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
       {
         id: "line-1",
         quantity: 2,
+        attribute: [
+          {
+            key: "_wolfpack_bundle_id",
+            value: "bundle-1"
+          }
+        ],
         merchandise: {
           __typename: "ProductVariant",
           id: "variant-1",

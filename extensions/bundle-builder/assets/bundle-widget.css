@@ -1,13 +1,33 @@
 #bundle-builder-app {
   font-family: sans-serif;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  margin: var(--container-spacing, 20px) auto;
+  padding: var(--container-spacing, 20px);
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: min(var(--widget-max-width, 800px), 100%);
 }
+
+
+
+/* Ensure proper width behavior for positioned widgets */
+.positioned-before_title,
+.positioned-after_title,
+.positioned-after_description,
+.positioned-after_form {
+  display: block;
+  clear: both;
+  /* Inherit parent container constraints */
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box;
+}
+
 
 .bundle-header {
   text-align: left;
-  margin-bottom: 20px;
+  margin-bottom: var(--element-spacing, 15px);
+  padding: var(--element-spacing, 15px);
 }
 
 .bundle-title {
@@ -38,16 +58,33 @@
 }
 
 .bundle-steps {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 30px;
+  display: grid;
+  grid-template-columns: repeat(var(--step-cards-per-row, 3), 1fr);
+  gap: var(--step-card-spacing, 15px);
+  margin-bottom: var(--element-spacing, 15px);
+  padding: var(--element-spacing, 15px);
 }
+
+/* Responsive adjustments for step cards */
+@media (max-width: 768px) {
+  .bundle-steps {
+    grid-template-columns: repeat(2, 1fr);
+    gap: calc(var(--step-card-spacing, 15px) / 2);
+  }
+}
+
+@media (max-width: 480px) {
+  .bundle-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 .step-box {
   border: 2px dashed #ccc;
   border-radius: 12px;
-  width: 150px;
-  height: 150px;
+  width: var(--step-box-size, 150px);
+  height: var(--step-box-size, 150px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -58,6 +95,8 @@
   position: relative;
   background-color: #fafafa;
   box-sizing: border-box;
+  padding: var(--step-card-spacing, 15px);
+  margin: var(--step-card-spacing, 15px);
 }
 
 .step-box:hover {
@@ -160,12 +199,15 @@
 .bundle-includes {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: var(--element-spacing, 15px);
+  margin-bottom: var(--element-spacing, 15px);
+  padding: var(--element-spacing, 15px);
 }
 
 .include-item {
   text-align: center;
+  padding: var(--element-spacing, 15px);
+  margin: calc(var(--element-spacing, 15px) / 2);
 }
 
 .include-item img {
@@ -184,15 +226,19 @@
 .add-bundle-to-cart {
   background-color: #000;
   color: #fff;
-  padding: 16px 0;
+  height: var(--button-height, 55px);
   border: none;
   border-radius: 4px;
   font-size: 1em;
   font-weight: 600;
   cursor: pointer;
   width: 100%;
-  display: block;
-  margin: 20px 0;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--button-spacing, 25px) auto;
+  padding: var(--button-spacing, 25px);
   transition: background-color 0.25s ease;
 }
 
@@ -778,11 +824,14 @@
 
 /* Bundle footer messaging with progress bars */
 .bundle-footer-messaging {
-  background: linear-gradient(135deg, var(--footer-bg-color, #f8f9fa) 0%, var(--footer-border-color, #e9ecef) 100%);
-  border: 2px solid var(--footer-border-color, #dee2e6);
+  background: linear-gradient(135deg, var(--footer-bg-color, #f8f9fa) 0%, #e9ecef 100%);
+  border: 2px solid #dee2e6;
   border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
+  padding: var(--element-spacing, 15px);
+  margin: var(--element-spacing, 15px) auto 0 auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
@@ -797,13 +846,13 @@
 .footer-progress-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: calc(var(--element-spacing, 15px) * 0.6);
 }
 
 .progress-bar-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: calc(var(--element-spacing, 15px) * 0.6);
 }
 
 .progress-bar {
@@ -940,8 +989,8 @@
   }
 
   .bundle-footer-messaging {
-    margin: 16px 0;
-    padding: 16px;
+    margin: var(--element-spacing, 15px) 0 0 0;
+    padding: var(--element-spacing, 15px);
   }
 
   .progress-bar-wrapper {

@@ -49,7 +49,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     orderBy: { createdAt: "desc" },
   });
 
-  console.log(`🔍 [DASHBOARD DEBUG] Total bundles found: ${bundles.length}`);
 
   return json({ 
     bundles,

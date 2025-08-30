@@ -107,6 +107,7 @@ model BundleStep {
   products                    Json?
   displayVariantsAsIndividual Boolean       @default(false)
   conditionType               String?
+  conditionOperator           String?
   conditionValue              Int?
   bundleId                    String
   bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)

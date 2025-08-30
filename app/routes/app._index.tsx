@@ -32,49 +32,46 @@ export default function Index() {
     <Page>
       <Layout>
         <Layout.Section>
-          <BlockStack gap="1200">
-            <BlockStack gap="1200" />
-            <BlockStack gap="1200" />
-            <BlockStack gap="1200" />
-            <BlockStack gap="1200" />
-            <BlockStack gap="1200" />
-            <BlockStack gap="1200" />
-            <BlockStack gap="1200" />
-            <InlineStack align="center">
-              <div style={{ width: '100%', maxWidth: '700px' }}>
-                <Card padding="800">
-                  <BlockStack gap="600" align="center">
-                    <BlockStack gap="400" align="center">
-                      <Icon source={CartIcon} tone="primary" />
-                      <BlockStack gap="200" align="center">
-                        <Text variant="displayMd" as="h1" alignment="center">
-                          Welcome to Wolfpack: Product Bundles
-                        </Text>
-                        <Text variant="bodyLg" tone="subdued" alignment="center">
-                          Create powerful product bundles that increase your average order value 
-                          and provide exceptional customer experiences.
-                        </Text>
-                      </BlockStack>
-                    </BlockStack>
-                    
-                    <BlockStack gap="400" align="center">
-                      <Button 
-                        variant="primary" 
-                        size="large"
-                        onClick={handleStartJourney}
-                      >
-                        Start My Bundling Journey
-                      </Button>
-                      
-                      <Text variant="bodySm" tone="subdued" alignment="center">
-                        Set up your first bundle in just a few minutes
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            minHeight: '70vh',
+            width: '100%'
+          }}>
+            <div style={{ width: '100%', maxWidth: '700px' }}>
+              <Card padding="800">
+                <BlockStack gap="600" align="center">
+                  <BlockStack gap="400" align="center">
+                    <Icon source={CartIcon} tone="primary" />
+                    <BlockStack gap="200" align="center">
+                      <Text variant="displayMd" as="h1" alignment="center">
+                        Welcome to Wolfpack: Product Bundles
+                      </Text>
+                      <Text variant="bodyLg" tone="subdued" alignment="center">
+                        Create powerful product bundles that increase your average order value 
+                        and provide exceptional customer experiences.
                       </Text>
                     </BlockStack>
                   </BlockStack>
-                </Card>
-              </div>
-            </InlineStack>
-          </BlockStack>
+                  
+                  <BlockStack gap="400" align="center">
+                    <Button 
+                      variant="primary" 
+                      size="large"
+                      onClick={handleStartJourney}
+                    >
+                      Start My Bundling Journey
+                    </Button>
+                    
+                    <Text variant="bodySm" tone="subdued" alignment="center">
+                      Set up your first bundle in just a few minutes
+                    </Text>
+                  </BlockStack>
+                </BlockStack>
+              </Card>
+            </div>
+          </div>
         </Layout.Section>
       </Layout>
     </Page>

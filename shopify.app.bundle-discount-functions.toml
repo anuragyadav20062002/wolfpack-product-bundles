@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://dui-net-model-lectures.trycloudflare.com"
+application_url = "https://ceramic-spots-mods-jackson.trycloudflare.com"
 embedded = true
 
 [build]
@@ -18,7 +18,11 @@ api_version = "2025-04"
 scopes = "read_content,write_discounts,read_products,write_products,read_product_listings,write_cart_transforms,read_themes,write_themes"
 
 [auth]
-redirect_urls = ["https://dui-net-model-lectures.trycloudflare.com/auth/callback", "https://dui-net-model-lectures.trycloudflare.com/auth/shopify/callback", "https://dui-net-model-lectures.trycloudflare.com/api/auth/callback"]
+redirect_urls = [
+  "https://ceramic-spots-mods-jackson.trycloudflare.com/auth/callback",
+  "https://ceramic-spots-mods-jackson.trycloudflare.com/auth/shopify/callback",
+  "https://ceramic-spots-mods-jackson.trycloudflare.com/api/auth/callback"
+]
 
 [pos]
 embedded = false

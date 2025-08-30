@@ -225,7 +225,6 @@ export async function action({ request }: ActionFunctionArgs) {
           if (data.data?.productDelete?.userErrors?.length > 0) {
             console.error("Error deleting Shopify product:", data.data.productDelete.userErrors);
           } else {
-            console.log("Successfully deleted Shopify product:", bundle.shopifyProductId);
           }
         } catch (error) {
           console.error("Failed to delete Shopify product:", error);
@@ -315,7 +314,6 @@ export async function action({ request }: ActionFunctionArgs) {
       },
     });
 
-    console.log(`✅ Created bundle product: ${shopifyProductId} for bundle: ${newBundle.id}`);
 
     // Return success with the bundle ID to allow client-side navigation
     return json({ 
@@ -364,7 +362,6 @@ export default function CartTransformBundles() {
   useEffect(() => {
     if (actionData?.success && actionData?.message) {
       // Show success message for clone/delete operations
-      console.log(actionData.message);
     }
   }, [actionData]);
 

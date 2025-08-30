@@ -887,7 +887,7 @@ export default function ConfigureDiscountFunctionBundle() {
     const newRule = {
       id: `rule-${Date.now()}`,
       type: 'quantity',
-      operator: 'is_equal_to',
+      operator: 'equal_to',
       value: '0',
     };
     setStepConditions(prev => ({
@@ -2026,11 +2026,11 @@ export default function ConfigureDiscountFunctionBundle() {
                                     />
                                     <Select
                                       options={[
-                                        { label: 'is equal to', value: 'is_equal_to' },
-                                        { label: 'is greater than', value: 'is_greater_than' },
-                                        { label: 'is less than', value: 'is_less_than' },
-                                        { label: 'is greater than or equal to', value: 'is_greater_than_or_equal_to' },
-                                        { label: 'is less than or equal to', value: 'is_less_than_or_equal_to' },
+                                        { label: 'is equal to', value: 'equal_to' },
+                                        { label: 'is greater than', value: 'greater_than' },
+                                        { label: 'is less than', value: 'less_than' },
+                                        { label: 'is greater than or equal to', value: 'greater_than_or_equal_to' },
+                                        { label: 'is less than or equal to', value: 'less_than_or_equal_to' },
                                       ]}
                                       value={rule.operator}
                                       onChange={(value) => updateConditionRule(step.id, rule.id, 'operator', value)}
