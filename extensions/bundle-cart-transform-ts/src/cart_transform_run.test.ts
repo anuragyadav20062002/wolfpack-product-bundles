@@ -262,6 +262,96 @@ describe("cartTransformRun", () => {
     // The bundle should show savings of $6.00 (20% of $30)
     const operation = result.operations[0];
     expect(operation).toHaveProperty("merge");
-    expect(operation).toHaveProperty("update");
+    expect(operation.merge).toHaveProperty("price");
+    expect(operation.merge.price.percentageDecrease.value).toBe(20);
+  });
+
+  it("handles fixed bundle price correctly", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Fixed Price Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_bundle_price",
+                      fixedPrice: 20.00,
+                      rules: [{
+                        discountOn: "quantity",
+                        minimumQuantity: 2,
+                        fixedAmountOff: 0,
+                        percentageOff: 0
+                      }]
+                    }
+                  })
+                }
+              }
+            },
+            cost: {
+              amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+              totalAmount: { amount: "10.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line2",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant2",
+              product: {
+                id: "product2",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Fixed Price Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_bundle_price",
+                      fixedPrice: 20.00,
+                      rules: [{
+                        discountOn: "quantity",
+                        minimumQuantity: 2,
+                        fixedAmountOff: 0,
+                        percentageOff: 0
+                      }]
+                    }
+                  })
+                }
+              }
+            },
+            cost: {
+              amountPerQuantity: { amount: "20.00", currencyCode: "USD" },
+              totalAmount: { amount: "20.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "30.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "30.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    expect(result.operations).toHaveLength(1);
+    
+    // The bundle should show savings of $10.00 ($30 original vs $20 fixed price)
+    const operation = result.operations[0];
+    expect(operation).toHaveProperty("merge");
+    expect(operation.merge).toHaveProperty("price");
+    // Fixed price of $20 on original $30 = 33.33% discount
+    expect(Math.round(operation.merge.price.percentageDecrease.value)).toBe(33);
   });
 });

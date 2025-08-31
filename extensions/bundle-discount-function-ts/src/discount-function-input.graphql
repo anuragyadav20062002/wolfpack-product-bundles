@@ -40,4 +40,10 @@ query BundleDiscountFunctionInput {
   discount {
     discountClasses
   }
+  shop {
+    metafield(namespace: "custom", key: "all_bundles") {
+      value
+      jsonValue
+    }
+  }
 }

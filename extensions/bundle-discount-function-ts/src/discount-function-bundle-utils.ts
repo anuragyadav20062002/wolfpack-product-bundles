@@ -48,6 +48,10 @@ export function checkCartMeetsBundleConditions(
   cart: any,
   bundleData: BundleData,
 ): BundleMatchResult {
+  console.log("🔍 [BUNDLE_UTILS] Checking cart meets bundle conditions for:", bundleData.name);
+  console.log("🎯 [BUNDLE_UTILS] Bundle product IDs:", bundleData.allBundleProductIds);
+  console.log("🛒 [BUNDLE_UTILS] Cart lines count:", cart.lines.length);
+  
   const result: BundleMatchResult = {
     bundle: bundleData,
     matchingLines: [],
@@ -56,6 +60,7 @@ export function checkCartMeetsBundleConditions(
   };
 
   if (!bundleData.allBundleProductIds || bundleData.allBundleProductIds.length === 0) {
+    console.log("⚠️ [BUNDLE_UTILS] Bundle has no product IDs, returning false");
     return result;
   }
 
@@ -64,28 +69,80 @@ export function checkCartMeetsBundleConditions(
   let totalQuantity = 0;
 
   // Find cart lines that match bundle products AND have the bundle property
+  console.log("🔄 [BUNDLE_UTILS] Scanning cart lines for bundle matches");
   for (const line of cart.lines) {
     const productId = line.merchandise?.product?.id;
-    const bundleIdProperty = line.attribute?.find((attr: any) => attr.key === '_wolfpack_bundle_id')?.value;
+    console.log("📦 [BUNDLE_UTILS] Checking line - Product ID:", productId, "Quantity:", line.quantity);
     
-    // Line must match bundle products AND have the correct bundle ID property
-    if (productId && 
-        bundleData.allBundleProductIds.includes(productId) && 
-        bundleIdProperty === bundleData.id) {
+    // Handle both single attribute object and attribute array
+    let bundleIdProperty = null;
+    if (line.attribute) {
+      if (Array.isArray(line.attribute)) {
+        // Array format - find the bundle ID attribute
+        bundleIdProperty = line.attribute.find((attr: any) => attr.key === '_wolfpack_bundle_id')?.value;
+        console.log("🏷️ [BUNDLE_UTILS] Line attributes (array):", line.attribute.map((attr: any) => `${attr.key}:${attr.value}`));
+      } else if (line.attribute.key === '_wolfpack_bundle_id') {
+        // Single attribute object format
+        bundleIdProperty = line.attribute.value;
+        console.log("🏷️ [BUNDLE_UTILS] Line attribute (single):", `${line.attribute.key}:${line.attribute.value}`);
+      }
+    }
+    console.log("🆔 [BUNDLE_UTILS] Bundle ID property found:", bundleIdProperty);
+    
+    // Line must match this bundle (either by product ID or by bundle attribute)
+    let isMatchingLine = false;
+    let matchMethod = '';
+    
+    // Method 1: Match by product ID (for Bundle Product pages)
+    if (productId && bundleData.allBundleProductIds.includes(productId)) {
+      isMatchingLine = true;
+      matchMethod = 'product_id';
+      console.log("✅ [BUNDLE_UTILS] Line matches by product ID");
+    }
+    
+    // Method 2: Match by bundle ID attribute (for widget-added products)
+    if (bundleIdProperty === bundleData.id) {
+      isMatchingLine = true;
+      matchMethod = 'bundle_attribute';
+      console.log("✅ [BUNDLE_UTILS] Line matches by bundle ID attribute");
+    }
+    
+    if (isMatchingLine) {
+      console.log("🎯 [BUNDLE_UTILS] Adding matching line:", {
+        productId,
+        quantity: line.quantity,
+        matchMethod
+      });
       matchingLines.push(line);
       totalQuantity += line.quantity;
+    } else {
+      console.log("❌ [BUNDLE_UTILS] Line does not match bundle");
     }
   }
+  
+  console.log("📊 [BUNDLE_UTILS] Scan complete - Matching lines:", matchingLines.length, "Total quantity:", totalQuantity);
 
 
   // Check if bundle conditions are met (minimum quantity from pricing rules)
   const minimumQuantity = bundleData.pricing?.rules?.[0]?.minimumQuantity || 2;
   const meetsConditions = totalQuantity >= minimumQuantity;
+  
+  console.log("🎯 [BUNDLE_UTILS] Bundle condition evaluation:", {
+    totalQuantity,
+    minimumQuantity,
+    meetsConditions
+  });
 
   result.matchingLines = matchingLines;
   result.totalBundleQuantity = totalQuantity;
   result.meetsConditions = meetsConditions;
 
+  console.log("✅ [BUNDLE_UTILS] Bundle check complete:", {
+    bundleName: bundleData.name,
+    meetsConditions,
+    matchingLinesCount: matchingLines.length,
+    totalQuantity
+  });
 
   return result;
 }
@@ -201,33 +258,89 @@ export function getAllBundleDataFromShop(input: any): BundleData[] {
   }
 }
 
-export function getAllBundleDataFromCart(cart: any): BundleData[] {
+export function getAllBundleDataFromCart(cart: any, shop?: any): BundleData[] {
+  console.log("🔍 [BUNDLE_UTILS] Getting all bundle data from cart and shop");
+  console.log("🛒 [BUNDLE_UTILS] Cart has", cart.lines.length, "lines");
+  console.log("🏪 [BUNDLE_UTILS] Shop metafield available:", !!shop?.metafield?.value);
+  
   const bundles: BundleData[] = [];
   const processedBundles = new Set<string>();
 
+  // Method 1: Get bundles from shop metafields (widget-added products)
+  console.log("🔄 [BUNDLE_UTILS] Method 1: Checking shop metafields for bundles");
+  if (shop?.metafield?.value) {
+    try {
+      const allBundles = JSON.parse(shop.metafield.value);
+      console.log("📦 [BUNDLE_UTILS] Parsed shop bundles:", allBundles.length, "total bundles");
+      
+      // Get unique bundle IDs from cart line properties
+      const bundleIdsInCart = new Set<string>();
+      console.log("🔍 [BUNDLE_UTILS] Scanning cart lines for bundle IDs");
+      for (const line of cart.lines) {
+        let bundleIdProperty = null;
+        if (line.attribute) {
+          if (Array.isArray(line.attribute)) {
+            bundleIdProperty = line.attribute.find((attr: any) => attr.key === '_wolfpack_bundle_id')?.value;
+          } else if (line.attribute.key === '_wolfpack_bundle_id') {
+            bundleIdProperty = line.attribute.value;
+          }
+        }
+        if (bundleIdProperty) {
+          console.log("🆔 [BUNDLE_UTILS] Found bundle ID in cart:", bundleIdProperty);
+          bundleIdsInCart.add(bundleIdProperty);
+        }
+      }
+      console.log("📋 [BUNDLE_UTILS] Unique bundle IDs found in cart:", Array.from(bundleIdsInCart));
+      
+      // Add bundles that have products in cart
+      for (const bundle of allBundles) {
+        console.log("🔍 [BUNDLE_UTILS] Checking bundle:", bundle.name, {
+          status: bundle.status,
+          discountEnabled: bundle.pricing?.enableDiscount,
+          inCart: bundleIdsInCart.has(bundle.id)
+        });
+        if (bundle.status === 'active' && bundle.pricing?.enableDiscount === true && bundleIdsInCart.has(bundle.id)) {
+          console.log("✅ [BUNDLE_UTILS] Adding bundle from shop metafield:", bundle.name);
+          bundles.push(bundle);
+          processedBundles.add(bundle.id);
+        }
+      }
+    } catch (error) {
+      console.error('❌ [BUNDLE_UTILS] Failed to parse shop bundles metafield:', error);
+    }
+  }
 
-  // Check all products in cart for bundle discount settings
+  // Method 2: Check all products in cart for bundle discount settings (Bundle Product pages)
+  console.log("🔄 [BUNDLE_UTILS] Method 2: Checking product metafields for bundle configurations");
   for (let i = 0; i < cart.lines.length; i++) {
     const line = cart.lines[i];
+    console.log("📦 [BUNDLE_UTILS] Checking line", i+1, "- Product:", line.merchandise?.product?.id);
 
     if (
       line.merchandise.__typename === "ProductVariant" &&
       line.merchandise.product &&
       line.merchandise.product.metafield?.value
     ) {
+      console.log("🔍 [BUNDLE_UTILS] Found product metafield, parsing bundle data");
       const bundleData = parseBundleDataFromMetafield(
         line.merchandise.product.metafield.value,
       );
       
-      
       if (bundleData && !processedBundles.has(bundleData.id)) {
+        console.log("✅ [BUNDLE_UTILS] Adding bundle from product metafield:", bundleData.name);
         bundles.push(bundleData);
         processedBundles.add(bundleData.id);
+      } else if (bundleData) {
+        console.log("⏭️ [BUNDLE_UTILS] Bundle already processed:", bundleData.name);
+      } else {
+        console.log("❌ [BUNDLE_UTILS] Failed to parse bundle data from metafield");
       }
-    } else {
     }
   }
 
+  console.log("🏁 [BUNDLE_UTILS] Bundle collection complete - Found", bundles.length, "bundles");
+  console.log("📋 [BUNDLE_UTILS] Bundle names:", bundles.map(b => b.name));
+  
   return bundles;
 }
 
@@ -250,21 +363,55 @@ export function getApplicableDiscountRule(
   totalQuantity: number,
   totalAmount?: number,
 ): DiscountRule | null {
+  console.log("🎯 [BUNDLE_UTILS] Finding applicable discount rule:", {
+    bundleName: bundleData.name,
+    totalQuantity,
+    totalAmount,
+    rulesCount: bundleData.pricing?.rules?.length || 0
+  });
+  
   if (!bundleData.pricing?.rules || bundleData.pricing.rules.length === 0) {
+    console.log("❌ [BUNDLE_UTILS] No pricing rules available");
     return null;
   }
+
+  console.log("📋 [BUNDLE_UTILS] Available rules:", bundleData.pricing.rules.map((rule, idx) => ({
+    index: idx,
+    discountOn: rule.discountOn,
+    minimumQuantity: rule.minimumQuantity,
+    minimumAmount: rule.minimumAmount,
+    fixedAmountOff: rule.fixedAmountOff,
+    percentageOff: rule.percentageOff
+  })));
 
   const applicableRules = bundleData.pricing.rules.filter((rule) => {
     // Check quantity-based rules
     if (rule.discountOn === 'quantity' && totalQuantity >= rule.minimumQuantity) {
+      console.log("✅ [BUNDLE_UTILS] Rule qualifies (quantity):", {
+        discountOn: rule.discountOn,
+        totalQuantity,
+        minimumQuantity: rule.minimumQuantity
+      });
       return true;
     }
     
     // Check amount-based rules
     if (rule.discountOn === 'amount' && totalAmount !== undefined && rule.minimumAmount && totalAmount >= rule.minimumAmount) {
+      console.log("✅ [BUNDLE_UTILS] Rule qualifies (amount):", {
+        discountOn: rule.discountOn,
+        totalAmount,
+        minimumAmount: rule.minimumAmount
+      });
       return true;
     }
 
+    console.log("❌ [BUNDLE_UTILS] Rule does not qualify:", {
+      discountOn: rule.discountOn,
+      totalQuantity,
+      minimumQuantity: rule.minimumQuantity,
+      totalAmount,
+      minimumAmount: rule.minimumAmount
+    });
     return false;
   });
 
@@ -285,5 +432,20 @@ export function getApplicableDiscountRule(
     return b.minimumQuantity - a.minimumQuantity;
   });
 
-  return applicableRules.length > 0 ? applicableRules[0] : null;
+  console.log("📊 [BUNDLE_UTILS] Applicable rules after sorting:", applicableRules.length);
+  const selectedRule = applicableRules.length > 0 ? applicableRules[0] : null;
+  
+  if (selectedRule) {
+    console.log("🎯 [BUNDLE_UTILS] Selected rule:", {
+      discountOn: selectedRule.discountOn,
+      minimumQuantity: selectedRule.minimumQuantity,
+      minimumAmount: selectedRule.minimumAmount,
+      fixedAmountOff: selectedRule.fixedAmountOff,
+      percentageOff: selectedRule.percentageOff
+    });
+  } else {
+    console.log("❌ [BUNDLE_UTILS] No applicable rules found");
+  }
+
+  return selectedRule;
 }

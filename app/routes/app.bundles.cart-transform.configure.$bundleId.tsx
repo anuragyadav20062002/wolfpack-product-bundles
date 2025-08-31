@@ -254,6 +254,11 @@ async function ensureBundleMetafieldDefinitions(admin: any) {
 
 // Helper function to update bundle product metafields
 async function updateBundleProductMetafields(admin: any, bundleProductId: string, bundleConfiguration: any, bundleType: 'cart_transform' | 'discount_function' = 'cart_transform') {
+  console.log("🔧 [METAFIELD] Starting bundle product metafield update");
+  console.log("📦 [METAFIELD] Bundle Product ID:", bundleProductId);
+  console.log("📋 [METAFIELD] Bundle Type:", bundleType);
+  console.log("⚙️ [METAFIELD] Configuration size:", JSON.stringify(bundleConfiguration).length, "chars");
+  
   await ensureBundleMetafieldDefinitions(admin);
 
   const SET_METAFIELDS = `
@@ -293,18 +298,25 @@ async function updateBundleProductMetafields(admin: any, bundleProductId: string
   });
 
   const data = await response.json();
+  
+  console.log("📡 [METAFIELD] GraphQL response received");
+  console.log("✅ [METAFIELD] Metafields set:", data.data?.metafieldsSet?.metafields?.length || 0);
 
   if (data.data?.metafieldsSet?.userErrors?.length > 0) {
     const error = data.data.metafieldsSet.userErrors[0];
-    console.error("Metafield set error:", error);
+    console.error("❌ [METAFIELD] Set error:", error);
     throw new Error(`Failed to update bundle metafields: ${error.message}`);
   }
 
+  console.log("🎉 [METAFIELD] Bundle product metafields updated successfully");
   return data.data?.metafieldsSet?.metafields?.[0];
 }
 
 // Helper function to update shop-level all_bundles metafield for Liquid extension
 async function updateShopBundlesMetafield(admin: any, shopId: string) {
+  console.log("🏪 [SHOP_METAFIELD] Starting shop bundles metafield update");
+  console.log("🆔 [SHOP_METAFIELD] Shop ID:", shopId);
+  
   try {
     // First get the shop's global ID
     const GET_SHOP_ID = `
@@ -327,6 +339,7 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
 
     // Get all published cart transform bundles from database
     // Force refresh by including even draft bundles with steps for debugging
+    console.log("📊 [SHOP_METAFIELD] Querying database for all cart transform bundles");
     const allBundles = await db.bundle.findMany({
       where: {
         shopId: shopId,
@@ -342,6 +355,8 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
         pricing: true
       }
     });
+    
+    console.log("📦 [SHOP_METAFIELD] Found bundles in database:", allBundles.length);
 
     // Format bundles for Liquid extension
     const formattedBundles = allBundles.map(bundle => ({
@@ -415,18 +430,23 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
     });
 
     const data = await response.json();
+    
+    console.log("📡 [SHOP_METAFIELD] GraphQL response received");
+    console.log("✅ [SHOP_METAFIELD] Metafields set:", data.data?.metafieldsSet?.metafields?.length || 0);
 
     if (data.data?.metafieldsSet?.userErrors?.length > 0) {
       const error = data.data.metafieldsSet.userErrors[0];
-      console.error("Shop metafield set error:", error);
+      console.error("❌ [SHOP_METAFIELD] Set error:", error);
       // Don't throw error as this is not critical for bundle functionality
       return null;
     }
 
+    console.log("🎉 [SHOP_METAFIELD] Shop bundles metafield updated successfully");
+    console.log("📋 [SHOP_METAFIELD] Total bundles in metafield:", allBundles.length);
     return data.data?.metafieldsSet?.metafields?.[0];
 
   } catch (error) {
-    console.error("Error updating shop bundles metafield:", error);
+    console.error("❌ [SHOP_METAFIELD] Error updating shop bundles metafield:", error);
     return null;
   }
 }
@@ -448,6 +468,10 @@ function mapDiscountMethod(discountType: string): string {
 
 // Handle saving bundle configuration
 async function handleSaveBundle(admin: any, session: any, bundleId: string, formData: FormData) {
+  console.log("🚀 [BUNDLE_CONFIG] Starting bundle save process");
+  console.log("🆔 [BUNDLE_CONFIG] Bundle ID:", bundleId);
+  console.log("🏪 [BUNDLE_CONFIG] Shop:", session.shop);
+  
   // Parse form data
   const bundleName = formData.get("bundleName") as string;
   const bundleDescription = formData.get("bundleDescription") as string;
@@ -455,7 +479,21 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
   const stepsData = JSON.parse(formData.get("stepsData") as string);
   const discountData = JSON.parse(formData.get("discountData") as string);
   const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
+  const bundleProductData = formData.get("bundleProduct") ? JSON.parse(formData.get("bundleProduct") as string) : null;
+  
+  console.log("📝 [BUNDLE_CONFIG] Parsed form data:", {
+    bundleName,
+    bundleDescription,
+    bundleStatus,
+    stepsCount: stepsData.length,
+    discountEnabled: discountData.discountEnabled,
+    discountType: discountData.discountType,
+    hasConditions: Object.keys(stepConditionsData).length > 0,
+    hasBundleProduct: !!bundleProductData
+  });
+  
   console.log("[DEBUG] Step Conditions Data from form:", stepConditionsData);
+  console.log("[DEBUG] Bundle Product Data from form:", bundleProductData);
 
   // Automatically set status to 'active' if bundle has configured steps
   let finalStatus = bundleStatus as any;
@@ -464,12 +502,19 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       (step.StepProduct && step.StepProduct.length > 0) || 
       (step.collections && step.collections.length > 0)
     );
+    console.log("📊 [BUNDLE_CONFIG] Status evaluation:", {
+      originalStatus: bundleStatus,
+      hasConfiguredSteps,
+      stepsCount: stepsData.length
+    });
     if (hasConfiguredSteps) {
       finalStatus = 'active';
+      console.log("🔄 [BUNDLE_CONFIG] Auto-activating bundle with configured steps");
     }
   }
 
   // Update bundle in database
+  console.log("💾 [BUNDLE_CONFIG] Updating bundle in database");
   const updatedBundle = await db.bundle.update({
     where: { 
       id: bundleId, 
@@ -479,6 +524,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       name: bundleName,
       description: bundleDescription,
       status: finalStatus,
+      shopifyProductId: bundleProductData?.id || null,
       // Update steps if provided
       ...(stepsData && {
         steps: {
@@ -1144,7 +1190,7 @@ export default function ConfigureBundleFlow() {
   const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
   
   // State for bundle product - initialize with loaded data
-  const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct);
+  const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct || null);
   const [isBundleProductPickerOpen, setIsBundleProductPickerOpen] = useState(false);
   const [productStatus, setProductStatus] = useState(loadedBundleProduct?.status || "ACTIVE");
   
@@ -1192,7 +1238,7 @@ export default function ConfigureBundleFlow() {
     selectedCollections: JSON.stringify({}),
     ruleMessages: JSON.stringify({}),
     stepConditions: JSON.stringify({}),
-    bundleProduct: loadedBundleProduct, // Initialize with loaded data to prevent false changes
+    bundleProduct: loadedBundleProduct || null, // Initialize with loaded data, ensuring null if undefined
     productStatus: loadedBundleProduct?.status || "ACTIVE",
   });
   
@@ -1213,8 +1259,13 @@ export default function ConfigureBundleFlow() {
             if (retryForm) {
               const retryInputs = retryForm.querySelectorAll('input');
               if (retryInputs.length > 0) {
-                const event = new Event('input', { bubbles: true, cancelable: true });
-                retryInputs[0].dispatchEvent(event);
+                const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                const visibleInput = Array.from(retryInputs).find(input => 
+                  input.type !== 'hidden' && input.offsetParent !== null
+                ) || retryInputs[0];
+                visibleInput.dispatchEvent(inputEvent);
+                visibleInput.dispatchEvent(changeEvent);
               }
             }
           }, 100);
@@ -1227,9 +1278,17 @@ export default function ConfigureBundleFlow() {
           return;
         }
 
-        // Trigger input event on the first input to activate save bar
-        const event = new Event('input', { bubbles: true, cancelable: true });
-        formInputs[0].dispatchEvent(event);
+        // Trigger multiple event types to ensure App Bridge detects changes
+        const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+        
+        // Try triggering on first visible input
+        const visibleInput = Array.from(formInputs).find(input => 
+          input.type !== 'hidden' && input.offsetParent !== null
+        ) || formInputs[0];
+        
+        visibleInput.dispatchEvent(inputEvent);
+        visibleInput.dispatchEvent(changeEvent);
         
       } catch (error) {
         console.error('Error triggering save bar:', error);
@@ -1239,9 +1298,13 @@ export default function ConfigureBundleFlow() {
           if (anyForm) {
             const anyInputs = anyForm.querySelectorAll('input');
             if (anyInputs.length > 0) {
-              const event = new Event('input', { bubbles: true, cancelable: true });
-              anyInputs[0].dispatchEvent(event);
-              console.log('Save bar triggered using fallback method');
+              const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+              const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+              const visibleInput = Array.from(anyInputs).find(input => 
+                input.type !== 'hidden' && input.offsetParent !== null
+              ) || anyInputs[0];
+              visibleInput.dispatchEvent(inputEvent);
+              visibleInput.dispatchEvent(changeEvent);
             }
           }
         } catch (fallbackError) {
@@ -1311,13 +1374,20 @@ export default function ConfigureBundleFlow() {
 
   // Check for changes whenever form values change
   useEffect(() => {
+    // Helper function to safely compare bundle products
+    const compareBundleProducts = (current: any, original: any) => {
+      if (!current && !original) return true;
+      if (!current || !original) return false;
+      return current.id === original.id;
+    };
+
     const stepSetupChanges = (
       bundleName !== originalValues.name ||
       bundleDescription !== originalValues.description ||
       JSON.stringify(steps) !== originalValues.steps ||
       JSON.stringify(selectedCollections) !== originalValues.selectedCollections ||
       JSON.stringify(stepConditions) !== originalValues.stepConditions ||
-      JSON.stringify(bundleProduct) !== JSON.stringify(originalValues.bundleProduct) ||
+      !compareBundleProducts(bundleProduct, originalValues.bundleProduct) ||
       productStatus !== originalValues.productStatus
     );
     
@@ -1344,21 +1414,18 @@ export default function ConfigureBundleFlow() {
     
     setHasUnsavedChanges(hasChanges);
     
-    // Manage save bar based on whether changes exist
-    // Only interact with save bar if form is ready (originalValues.bundleProduct is set)
-    if (originalValues.bundleProduct !== undefined) {
-      if (hasChanges) {
-        triggerSaveBar();
-      } else {
-        dismissSaveBar();
-      }
+    // Simplified save bar management - no timeout
+    if (hasChanges) {
+      triggerSaveBar();
+    } else {
+      dismissSaveBar();
     }
   }, [
     bundleStatus, bundleName, bundleDescription, steps, 
     discountEnabled, discountType, discountRules, 
     discountDisplayEnabled, discountMessagingEnabled, ruleMessages,
     selectedCollections, stepConditions, bundleProduct, productStatus,
-    originalValues, triggerSaveBar, dismissSaveBar
+    originalValues
   ]);
 
   // Save handler
@@ -1386,7 +1453,9 @@ export default function ConfigureBundleFlow() {
         ruleMessages
       }));
       formData.append("stepConditions", JSON.stringify(stepConditions));
+      formData.append("bundleProduct", JSON.stringify(bundleProduct));
       console.log("[DEBUG] Submitting step conditions to server:", stepConditions);
+      console.log("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
       // Submit to server action using fetcher
       
@@ -1424,7 +1493,7 @@ export default function ConfigureBundleFlow() {
             selectedCollections: JSON.stringify(selectedCollections),
             ruleMessages: JSON.stringify(ruleMessages),
             stepConditions: JSON.stringify(stepConditions),
-            bundleProduct: bundleProduct,
+            bundleProduct: bundleProduct || null,
             productStatus: productStatus,
           });
           
@@ -1498,7 +1567,7 @@ export default function ConfigureBundleFlow() {
       setRuleMessages(JSON.parse(originalValues.ruleMessages));
       setStepConditions(JSON.parse(originalValues.stepConditions));
       // Keep the loaded bundle product instead of resetting to null
-      setBundleProduct(originalValues.bundleProduct || loadedBundleProduct);
+      setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
       setProductStatus(originalValues.productStatus);
       
       // Reset section changes after discard
@@ -1839,6 +1908,10 @@ export default function ConfigureBundleFlow() {
       if (products.length > 0) {
         const selectedProduct = products[0];
         setBundleProduct(selectedProduct);
+        
+        // Trigger save bar immediately after bundle product selection
+        triggerSaveBar();
+        
         shopify.toast.show("Bundle product updated successfully", { isError: false });
       }
     } catch (error) {
@@ -2240,7 +2313,7 @@ export default function ConfigureBundleFlow() {
         content: "Preview Bundle",
         onAction: handlePreviewBundle,
         icon: ViewIcon,
-        disabled: hasUnsavedChanges,
+        disabled: !bundleProduct || steps.length === 0,
       }}
     >
       {/* Modern App Bridge contextual save bar using form with data-save-bar */}
@@ -2259,9 +2332,27 @@ export default function ConfigureBundleFlow() {
         <input type="hidden" name="bundleName" value={bundleName} />
         <input type="hidden" name="bundleDescription" value={bundleDescription} />
         <input type="hidden" name="bundleStatus" value={bundleStatus} />
+        <input type="hidden" name="bundleProduct" value={JSON.stringify(bundleProduct)} />
         <input type="hidden" name="stepsData" value={JSON.stringify(steps)} />
         <input type="hidden" name="discountData" value={JSON.stringify({ discountEnabled, discountType, discountRules })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(stepConditions)} />
+        
+        {/* Invisible trigger input for App Bridge save bar - required for proper change detection */}
+        <input 
+          type="text" 
+          name="changeDetector"
+          value={hasUnsavedChanges ? "changed" : "unchanged"}
+          style={{ 
+            position: 'absolute', 
+            left: '-9999px', 
+            opacity: 0, 
+            width: '1px', 
+            height: '1px',
+            pointerEvents: 'none'
+          }}
+          tabIndex={-1}
+          readOnly
+        />
 
       <Layout>
         {/* Left Sidebar */}
@@ -2285,7 +2376,7 @@ export default function ConfigureBundleFlow() {
                       fullWidth
                       textAlign="start"
                       icon={item.icon}
-                      disabled={hasUnsavedChanges && activeSection !== item.id}
+                      disabled={false}
                       onClick={() => handleSectionChange(item.id)}
                     >
                       {item.label}

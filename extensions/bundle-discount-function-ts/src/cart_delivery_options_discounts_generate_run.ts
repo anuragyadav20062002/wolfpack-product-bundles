@@ -31,7 +31,7 @@ export function cartDeliveryOptionsDiscountsGenerateRun(
   }
 
   // Get all bundle data from cart
-  const bundles = getAllBundleDataFromCart(input.cart);
+  const bundles = getAllBundleDataFromCart(input.cart, input.shop);
   
   if (bundles.length === 0) {
     return { operations: [] };

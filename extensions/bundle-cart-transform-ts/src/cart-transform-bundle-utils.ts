@@ -31,6 +31,8 @@ export interface BundleData {
     enableDiscount: boolean;
     discountMethod: string;
     rules: DiscountRule[];
+    fixedPrice?: number; // For fixed_bundle_price method
+    bundleVariantId?: string; // For fixed_bundle_price method
   } | null;
 }
 
@@ -56,27 +58,48 @@ export function checkCartMeetsBundleConditions(
     totalDiscountedCost: 0,
   };
 
-  if (!bundleData.allBundleProductIds || bundleData.allBundleProductIds.length === 0) {
-    return result;
-  }
+  // For bundles loaded from shop metafields (widget-added), we don't need predefined product IDs
+  // We'll match by cart line attributes instead
 
   const matchingLines: any[] = [];
   let totalQuantity = 0;
   let totalOriginalCost = 0;
 
-  // Find cart lines that match any bundle product
+  console.log(`🔍 [CART TRANSFORM DEBUG] Checking bundle conditions for bundle: ${bundleData.id}`);
+  console.log(`🔍 [CART TRANSFORM DEBUG] Bundle allBundleProductIds:`, bundleData.allBundleProductIds);
+
+  // Find cart lines that match this bundle (either by product ID or by bundle attribute)
   for (const line of cart.lines) {
+    let isMatchingLine = false;
+    
+    console.log(`🔍 [CART TRANSFORM DEBUG] Checking line: ${line.id}`);
+    console.log(`🔍 [CART TRANSFORM DEBUG] Line attribute:`, line.attribute);
+    console.log(`🔍 [CART TRANSFORM DEBUG] Line product ID:`, line.merchandise?.product?.id);
+    
+    // Method 1: Match by product ID (for Bundle Product pages)
     const productId = line.merchandise?.product?.id;
     if (productId && bundleData.allBundleProductIds.includes(productId)) {
+      isMatchingLine = true;
+      console.log(`🔍 [CART TRANSFORM DEBUG] Found matching line by product ID: line=${line.id}, product=${productId}`);
+    }
+    
+    // Method 2: Match by bundle ID attribute (for widget-added products)
+    if (line.attribute && line.attribute.value === bundleData.id) {
+      isMatchingLine = true;
+      console.log(`🔍 [CART TRANSFORM DEBUG] Found matching line by attribute: line=${line.id}, bundle=${bundleData.id}`);
+    }
+    
+    
+    if (isMatchingLine) {
       matchingLines.push(line);
       totalQuantity += line.quantity;
       totalOriginalCost += parseFloat(line.cost.totalAmount.amount);
     }
   }
 
-  // Check if bundle conditions are met (minimum quantity from pricing rules)
+  // Check if bundle conditions are met (minimum quantity from pricing rules or default to 2)
   const minimumQuantity = bundleData.pricing?.rules?.[0]?.minimumQuantity || 2;
-  const meetsConditions = totalQuantity >= minimumQuantity;
+  const meetsConditions = totalQuantity >= minimumQuantity && matchingLines.length >= 2;
 
   // Calculate discounted cost if conditions are met
   let totalDiscountedCost = totalOriginalCost;
@@ -87,10 +110,19 @@ export function checkCartMeetsBundleConditions(
     if (applicableRule) {
       if (bundleData.pricing.discountMethod === "fixed_amount_off") {
         totalDiscountedCost = Math.max(0, totalOriginalCost - applicableRule.fixedAmountOff);
+        console.log(`🔍 [CART TRANSFORM DEBUG] Fixed amount discount: ${totalOriginalCost} - ${applicableRule.fixedAmountOff} = ${totalDiscountedCost}`);
       } else if (bundleData.pricing.discountMethod === "percentage_off") {
         totalDiscountedCost = totalOriginalCost * (1 - applicableRule.percentageOff / 100);
+        console.log(`🔍 [CART TRANSFORM DEBUG] Percentage discount: ${totalOriginalCost} * (1 - ${applicableRule.percentageOff}/100) = ${totalDiscountedCost}`);
+      } else if (bundleData.pricing.discountMethod === "fixed_bundle_price" && bundleData.pricing.fixedPrice > 0) {
+        totalDiscountedCost = bundleData.pricing.fixedPrice;
+        console.log(`🔍 [CART TRANSFORM DEBUG] Fixed bundle price: ${totalDiscountedCost}`);
       }
+    } else {
+      console.log(`🔍 [CART TRANSFORM DEBUG] No applicable rule found for quantity: ${totalQuantity}`);
     }
+  } else {
+    console.log(`🔍 [CART TRANSFORM DEBUG] Conditions not met or discount disabled`);
   }
 
   result.matchingLines = matchingLines;
@@ -112,26 +144,100 @@ export function parseBundleDataFromMetafield(
   }
 }
 
-export function getAllBundleDataFromCart(cart: any): BundleData[] {
+export function getAllBundleDataFromCart(cart: any, shop: any): BundleData[] {
   const bundles: BundleData[] = [];
   const processedBundles = new Set<string>();
 
-  // Check all products in cart for bundle discount settings
+  // Get shop-level bundle data for lookups
+  let shopBundlesData = null;
+  if (shop?.metafield?.value) {
+    try {
+      shopBundlesData = JSON.parse(shop.metafield.value);
+      console.log("🔍 [CART TRANSFORM DEBUG] Shop bundles data loaded:", Object.keys(shopBundlesData || {}).length, "bundles");
+    } catch (error) {
+      console.error("🔍 [CART TRANSFORM DEBUG] Failed to parse shop bundles data:", error);
+    }
+  }
+
+  // Check all cart lines for bundle products (both Bundle Products with metafields and individual products with bundle properties)
   for (let i = 0; i < cart.lines.length; i++) {
     const line = cart.lines[i];
 
-    if (
-      line.merchandise.__typename === "ProductVariant" &&
-      line.merchandise.product &&
-      line.merchandise.product.metafield?.value
-    ) {
-      const bundleData = parseBundleDataFromMetafield(
-        line.merchandise.product.metafield.value,
-      );
+    if (line.merchandise.__typename === "ProductVariant" && line.merchandise.product) {
+      // Method 1: Check if this is a Bundle Product with metafields (for bundle product page)
+      if (line.merchandise.product.metafield?.value) {
+        const bundleData = parseBundleDataFromMetafield(
+          line.merchandise.product.metafield.value,
+        );
+        
+        if (bundleData && !processedBundles.has(bundleData.id)) {
+          bundles.push(bundleData);
+          processedBundles.add(bundleData.id);
+        }
+      }
+
+      // Method 2: Check if this line has bundle properties (for individual products added via widget)
+      let bundleId = null;
       
-      if (bundleData && !processedBundles.has(bundleData.id)) {
-        bundles.push(bundleData);
-        processedBundles.add(bundleData.id);
+      // Check in attributes
+      if (line.attribute && line.attribute.key === '_wolfpack_bundle_id' && line.attribute.value) {
+        bundleId = line.attribute.value;
+        console.log(`🔍 [CART TRANSFORM DEBUG] Found bundle ID in attributes: ${bundleId}`);
+      }
+      
+      
+      if (bundleId) {
+        
+        if (!processedBundles.has(bundleId)) {
+          console.log(`🔍 [CART TRANSFORM DEBUG] Found bundle product with bundle ID: ${bundleId}`);
+          
+          // Look up bundle data from shop metafields
+          let bundleData: BundleData | null = null;
+          if (shopBundlesData && shopBundlesData[bundleId]) {
+            const shopBundle = shopBundlesData[bundleId];
+            bundleData = {
+              id: bundleId,
+              name: shopBundle.name || `Bundle ${bundleId}`,
+              allBundleProductIds: [], // Will be populated during matching by collecting all product IDs
+              pricing: shopBundle.pricing || {
+                enableDiscount: false, // Don't apply discount by default unless configured
+                discountMethod: "percentage_off",
+                rules: [{
+                  discountOn: "total",
+                  minimumQuantity: 2,
+                  fixedAmountOff: 0,
+                  percentageOff: 0
+                }],
+                fixedPrice: shopBundle.pricing?.fixedPrice,
+                bundleVariantId: shopBundle.pricing?.bundleVariantId
+              }
+            };
+            console.log(`🔍 [CART TRANSFORM DEBUG] Found bundle data from shop metafields:`, bundleData.name);
+          } else {
+            // Fallback: create placeholder bundle data
+            bundleData = {
+              id: bundleId,
+              name: `Bundle ${bundleId}`,
+              allBundleProductIds: [],
+              pricing: {
+                enableDiscount: false,
+                discountMethod: "percentage_off",
+                rules: [{
+                  discountOn: "total",
+                  minimumQuantity: 2,
+                  fixedAmountOff: 0,
+                  percentageOff: 0
+                }]
+              }
+            };
+            console.log(`🔍 [CART TRANSFORM DEBUG] Using placeholder bundle data for:`, bundleId);
+          }
+          
+          if (bundleData) {
+            bundles.push(bundleData);
+            processedBundles.add(bundleId);
+          }
+        }
       }
     }
   }

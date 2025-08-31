@@ -17,7 +17,13 @@
       "Bash(npm run build:*)",
       "Bash(npx prisma generate:*)",
       "Bash(npm run test:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm run:*)",
+      "WebSearch",
+      "WebFetch(domain:community.shopify.dev)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.skailama.com)",
+      "Bash(npx prisma studio:*)"
     ],
     "deny": []
   }

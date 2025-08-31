@@ -137,12 +137,15 @@ function ensureBundleModal() {
 
 // Initialize bundle widgets (supports multiple instances on same page)
 function initializeBundleWidget(containerElement) {
+  console.log('🚀 [WIDGET] Bundle widget initialization started');
+  console.log('🔍 [WIDGET] Container element:', containerElement);
+  
   // Ensure modal exists globally (created only once)
   ensureBundleModal();
   
   // Check if this widget has already been initialized to prevent duplicates
   if (containerElement.dataset.initialized === 'true') {
-    console.log('Bundle widget already initialized, skipping duplicate.');
+    console.log('⚠️ [WIDGET] Bundle widget already initialized, skipping duplicate.');
     return;
   }
   
@@ -151,6 +154,15 @@ function initializeBundleWidget(containerElement) {
   const currentProductHandle = window.currentProductHandle;
   const currentProductCollections = window.currentProductCollections;
   const shopCurrency = window.shopCurrency || 'USD';
+  
+  console.log('📋 [WIDGET] Window data:', {
+    allBundlesDataRaw: !!allBundlesDataRaw,
+    bundlesCount: allBundlesDataRaw ? Object.keys(allBundlesDataRaw).length : 0,
+    currentProductId,
+    currentProductHandle,
+    collectionsCount: currentProductCollections ? currentProductCollections.length : 0,
+    shopCurrency
+  });
   
   if (!containerElement) {
     console.error('Bundle widget container element not provided.');
@@ -170,7 +182,11 @@ function initializeBundleWidget(containerElement) {
   
 
   if (!allBundlesDataRaw || !currentProductId) {
-    console.warn('Bundle data or current product ID not available. Make sure bundles are published and the product context is available.');
+    console.error('❌ [WIDGET] Bundle data or current product ID not available. Make sure bundles are published and the product context is available.');
+    console.error('❌ [WIDGET] Missing data:', {
+      allBundlesDataRaw: !!allBundlesDataRaw,
+      currentProductId: !!currentProductId
+    });
     return;
   }
 
@@ -180,6 +196,7 @@ function initializeBundleWidget(containerElement) {
 
   // Convert bundles object to an array for easier iteration and filter out null/undefined entries
   const bundlesArray = Object.values(bundles).filter(bundle => bundle !== null && bundle !== undefined);
+  console.log('📦 [WIDGET] Bundles array after filtering:', bundlesArray.length, 'valid bundles');
 
   // Currency formatter helper
   function formatCurrency(amount) {
@@ -199,17 +216,24 @@ function initializeBundleWidget(containerElement) {
 
   // For cart transform bundles: Use explicit bundle ID or first available cart transform bundle
   // For discount function bundles: Use product/collection matching logic
+  console.log('🔄 [WIDGET] Starting bundle selection process');
   for (const bundle of bundlesArray) {
+    console.log('🔍 [WIDGET] Evaluating bundle:', bundle.name, 'Status:', bundle.status, 'Type:', bundle.bundleType);
     
     // Skip inactive bundles
     if (!bundle || bundle.status !== 'active') {
+      console.log('⏭️ [WIDGET] Skipping inactive bundle:', bundle.name);
       continue;
     }
 
     // CART TRANSFORM BUNDLE LOGIC: Use specific bundle ID or match Bundle Product
     if (bundle.bundleType === 'cart_transform') {
+      console.log('🛒 [WIDGET] Processing cart transform bundle:', bundle.name);
+      console.log('⚙️ [WIDGET] Widget config bundle ID:', widgetConfig.bundleId);
+      
       // If specific bundle ID is configured, use only that bundle
       if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
+        console.log('⏭️ [WIDGET] Bundle ID mismatch, skipping:', bundle.id, '!==', widgetConfig.bundleId);
         continue;
       }
       
@@ -222,6 +246,11 @@ function initializeBundleWidget(containerElement) {
                            window.parent !== window || // In iframe
                            window.autoDetectedBundleId; // Bundle ID detected from URL indicates theme editor
       
+      console.log('🖥️ [WIDGET] Context check:', {
+        isThemeEditor,
+        bundleShopifyProductId: bundle.shopifyProductId,
+        currentProductId
+      });
       
       // For cart transform bundles, show logic depends on context
       if (bundle.shopifyProductId && !isThemeEditor) {
@@ -230,18 +259,26 @@ function initializeBundleWidget(containerElement) {
           ? bundle.shopifyProductId.split('/').pop() 
           : bundle.shopifyProductId;
         
+        console.log('🔍 [WIDGET] Product matching check:', {
+          bundleProductId,
+          currentProductId: currentProductId.toString(),
+          matches: bundleProductId === currentProductId.toString()
+        });
         
         // Only show bundle widget if current product matches the configured Bundle Product
         if (bundleProductId !== currentProductId.toString()) {
+          console.log('⏭️ [WIDGET] Product ID mismatch for cart transform bundle');
           continue;
         }
       } else if (!bundle.shopifyProductId && !isThemeEditor) {
+        console.log('⏭️ [WIDGET] No Bundle Product configured for cart transform bundle in customer view');
         // CUSTOMER VIEW: Skip if no Bundle Product configured
         continue;
       } else if (isThemeEditor) {
         // ADMIN VIEW: Show regardless of Bundle Product match for theme editor
       }
       
+      console.log('✅ [WIDGET] Selected cart transform bundle:', bundle.name);
       selectedBundle = bundle;
       break;
     }
@@ -308,10 +345,12 @@ function initializeBundleWidget(containerElement) {
       console.log('Collection Matches:', collectionMatches);
 
       if (productMatches || collectionMatches) { // Modified condition
+        console.log('✅ [WIDGET] Selected discount function bundle:', bundle.name, 'Product match:', productMatches, 'Collection match:', collectionMatches);
         selectedBundle = bundle; // We'll use the raw bundle object, which contains `steps` etc. directly.
         selectedBundle.parsedMatching = parsedMatching; // Attach parsed matching for future use
         break; // Found a matching bundle, take the first one
       } else {
+        console.log('❌ [WIDGET] No product/collection match for bundle:', bundle.name);
       }
       } // End discount function bundle logic
   } // End bundle loop
@@ -1437,9 +1476,25 @@ function initializeBundleWidget(containerElement) {
 
   function initializeBundleBuilder() {
     if (!selectedBundle) {
+      console.log('❌ [WIDGET] No bundle selected, widget not available for this product');
+      console.log('🔍 [WIDGET] Debug info:', {
+        bundlesEvaluated: bundlesArray.length,
+        currentProductId,
+        currentProductCollections: currentProductCollections?.map(c => c.id),
+        widgetConfigBundleId: widgetConfig.bundleId
+      });
       containerElement.innerHTML = '<p>This bundle is not available for this product.</p>';
       return;
     }
+    
+    console.log('🎉 [WIDGET] Bundle selected successfully:', selectedBundle.name);
+    console.log('📋 [WIDGET] Bundle details:', {
+      id: selectedBundle.id,
+      name: selectedBundle.name,
+      type: selectedBundle.bundleType,
+      stepsCount: selectedBundle.steps?.length || 0,
+      pricingEnabled: selectedBundle.pricing?.enabled || false
+    });
     containerElement.style.display = 'block';
 
     // Initial setup

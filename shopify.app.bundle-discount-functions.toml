@@ -3,26 +3,22 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://ceramic-spots-mods-jackson.trycloudflare.com"
+application_url = "https://liable-longitude-unusual-groups.trycloudflare.com"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
+include_config_on_deploy = false
 
 [webhooks]
 api_version = "2025-04"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,write_discounts,read_products,write_products,read_product_listings,write_cart_transforms,read_themes,write_themes"
+scopes = "read_content,read_product_listings,read_products,read_themes,write_cart_transforms,write_discounts,write_products,write_themes"
 
 [auth]
-redirect_urls = [
-  "https://ceramic-spots-mods-jackson.trycloudflare.com/auth/callback",
-  "https://ceramic-spots-mods-jackson.trycloudflare.com/auth/shopify/callback",
-  "https://ceramic-spots-mods-jackson.trycloudflare.com/api/auth/callback"
-]
+redirect_urls = ["https://liable-longitude-unusual-groups.trycloudflare.com/auth/callback", "https://liable-longitude-unusual-groups.trycloudflare.com/auth/shopify/callback", "https://liable-longitude-unusual-groups.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false

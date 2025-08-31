@@ -8,7 +8,7 @@ import {
   getApplicableDiscountRule,
   BundleData,
   BundleMatchResult,
-} from "./cart-transform-bundle-utils";
+} from "./cart-transform-bundle-utils-v2";
 import {
   formatBundleSavings,
   getCurrencySymbol,
@@ -33,8 +33,8 @@ export function cartTransformRun(
 
   const operations = [];
 
-  // Get all bundle data from cart product metafields
-  const bundles = getAllBundleDataFromCart(input.cart);
+  // Get all bundle data from cart product metafields and shop metafields
+  const bundles = getAllBundleDataFromCart(input.cart, input.shop);
   console.log("🔍 [CART TRANSFORM DEBUG] Bundle detection results:", bundles);
   
   if (bundles.length === 0) {
@@ -55,14 +55,9 @@ export function cartTransformRun(
   for (const bundleData of bundles) {
     console.log(`Processing bundle: ${bundleData.name}`);
 
-    if (
-      !bundleData.pricing?.enableDiscount ||
-      !bundleData.pricing.rules ||
-      bundleData.pricing.rules.length === 0
-    ) {
-      console.log(`Bundle ${bundleData.name} has no discount pricing`);
-      continue;
-    }
+    // Bundle merging should work even without discounts enabled
+    // We'll merge the products and apply discounts only if pricing is configured
+    console.log(`Processing bundle ${bundleData.name} - discount enabled: ${bundleData.pricing?.enableDiscount || false}`);
 
     // Skip free shipping bundles - handled in delivery options function
     if (bundleData.pricing.discountMethod === "free_shipping") {
@@ -109,15 +104,18 @@ function createBundleTransformOperation(
   const applicableRule = getApplicableDiscountRule(bundle, totalBundleQuantity);
   
   if (!applicableRule) {
+    console.log(`🔍 [CART TRANSFORM DEBUG] No applicable rule found for bundle: ${bundle.name}`);
+    return null;
+  }
+
+  if (matchingLines.length < 2) {
+    console.log(`🔍 [CART TRANSFORM DEBUG] Bundle ${bundle.name} has less than 2 matching lines, skipping merge`);
     return null;
   }
 
   // Calculate bundle pricing
   const savings = totalOriginalCost - totalDiscountedCost;
   const savingsText = formatBundleSavings(totalOriginalCost, totalDiscountedCost, cartCurrency);
-  
-  // Get line IDs to merge
-  const lineIdsToMerge = matchingLines.map(line => line.id);
   
   // Create bundle title with savings info
   const bundleTitle = savings > 0 
@@ -128,35 +126,92 @@ function createBundleTransformOperation(
   const bundleImage = matchingLines[0]?.merchandise?.product?.featuredImage?.url ||
                      matchingLines[0]?.merchandise?.image?.url;
 
-  // Create merge operation to combine bundle items into single cart line
+  // Find or create a bundle parent variant ID
+  let parentVariantId = null;
+  
+  // Check if we have a bundle product variant (for fixed bundle price method)
+  if (bundle.pricing?.discountMethod === "fixed_bundle_price" && bundle.pricing?.bundleVariantId) {
+    parentVariantId = bundle.pricing.bundleVariantId;
+    console.log(`🔍 [CART TRANSFORM DEBUG] Using bundle variant ID: ${parentVariantId}`);
+  } else {
+    // Use the first line's variant as parent for percentage and fixed amount discounts
+    parentVariantId = matchingLines[0]?.merchandise?.id;
+    console.log(`🔍 [CART TRANSFORM DEBUG] Using first line variant as parent: ${parentVariantId}`);
+  }
+  
+  if (!parentVariantId) {
+    console.log(`🔍 [CART TRANSFORM DEBUG] Bundle ${bundle.name} missing parent variant ID`);
+    return null;
+  }
+
+  // Prepare cart lines for merge - include ALL lines
+  const cartLines = matchingLines.map(line => ({
+    cartLineId: line.id,
+    quantity: line.quantity,
+  }));
+
+  console.log(`🔍 [CART TRANSFORM DEBUG] Creating merge operation for ${cartLines.length} lines`);
+  console.log(`🔍 [CART TRANSFORM DEBUG] Parent variant ID: ${parentVariantId}`);
+  console.log(`🔍 [CART TRANSFORM DEBUG] Cart lines to merge:`, cartLines);
+
+  // Create the merge operation structure
   const mergeOperation = {
     merge: {
-      parentCartLineId: lineIdsToMerge[0], // Use first line as parent
-      cartLineIds: lineIdsToMerge.slice(1), // Merge other lines into it
+      cartLines: cartLines,
+      parentVariantId: parentVariantId,
       title: bundleTitle,
       image: bundleImage ? { url: bundleImage } : undefined,
+      attributes: [
+        {
+          key: "_bundle_name",
+          value: bundle.name
+        },
+        {
+          key: "_bundle_id", 
+          value: bundle.id
+        },
+        {
+          key: "_bundle_type",
+          value: bundle.pricing?.discountMethod || "bundle"
+        }
+      ]
     },
   };
 
-  // If there's a discount, also update the pricing
-  if (savings > 0) {
-    const discountPerUnit = savings / totalBundleQuantity;
+  // Add price adjustment based on discount method (only if discount is enabled)
+  if (bundle.pricing?.enableDiscount && savings > 0 && applicableRule) {
+    let discountPercentage = 0;
     
-    return {
-      ...mergeOperation,
-      update: {
-        cartLineId: lineIdsToMerge[0],
-        title: bundleTitle,
-        image: bundleImage ? { url: bundleImage } : undefined,
-        cost: {
-          amountPerQuantity: {
-            amount: String((totalDiscountedCost / totalBundleQuantity).toFixed(2)),
-            currencyCode: cartCurrency,
-          },
-        },
-      },
-    };
+    if (bundle.pricing.discountMethod === "percentage_off" && applicableRule.percentageOff > 0) {
+      discountPercentage = applicableRule.percentageOff;
+      console.log(`🔍 [CART TRANSFORM DEBUG] Applied percentage discount: ${discountPercentage}%`);
+    } else if (bundle.pricing.discountMethod === "fixed_amount_off" && applicableRule.fixedAmountOff > 0) {
+      // For fixed amount discounts, calculate the equivalent percentage
+      discountPercentage = Math.min(99, Math.max(0, (applicableRule.fixedAmountOff / totalOriginalCost) * 100));
+      console.log(`🔍 [CART TRANSFORM DEBUG] Applied fixed amount discount as percentage: ${discountPercentage}% (${applicableRule.fixedAmountOff} off ${totalOriginalCost})`);
+    } else if (bundle.pricing.discountMethod === "fixed_bundle_price" && bundle.pricing.fixedPrice > 0) {
+      // For fixed bundle price, calculate percentage discount
+      if (bundle.pricing.fixedPrice < totalOriginalCost) {
+        discountPercentage = Math.min(99, Math.max(0, ((totalOriginalCost - bundle.pricing.fixedPrice) / totalOriginalCost) * 100));
+        console.log(`🔍 [CART TRANSFORM DEBUG] Applied fixed bundle price as percentage: ${discountPercentage}% (fixed price ${bundle.pricing.fixedPrice} vs original ${totalOriginalCost})`);
+      } else {
+        console.log(`🔍 [CART TRANSFORM DEBUG] Fixed bundle price ${bundle.pricing.fixedPrice} is higher than original cost ${totalOriginalCost}, no discount applied`);
+      }
+    }
+    
+    // Apply the discount percentage if it's greater than 0
+    if (discountPercentage > 0) {
+      mergeOperation.merge.price = {
+        percentageDecrease: {
+          value: discountPercentage
+        }
+      };
+    }
+  } else {
+    console.log(`🔍 [CART TRANSFORM DEBUG] No discount applied - discount enabled: ${bundle.pricing?.enableDiscount}, savings: ${savings}, applicable rule: ${!!applicableRule}`);
   }
+
+  console.log(`🔍 [CART TRANSFORM DEBUG] Final merge operation:`, JSON.stringify(mergeOperation, null, 2));
 
   return mergeOperation;
 }
