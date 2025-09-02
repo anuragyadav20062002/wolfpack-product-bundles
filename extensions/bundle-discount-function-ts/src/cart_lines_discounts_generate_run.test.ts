@@ -73,9 +73,15 @@ describe("cartLinesDiscountsGenerateRun", () => {
     discountClasses: [DiscountClass.Order],
   };
 
+  const mockShop = {
+    domain: "test-shop.myshopify.com",
+    metafield: null,
+  };
+
   it("should return empty operations when cart is empty", () => {
     const input = {
       cart: { lines: [] },
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 
@@ -102,6 +108,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithoutBundleSettings,
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 
@@ -138,6 +145,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithDisabledDiscount,
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 
@@ -148,6 +156,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
   it("should apply fixed amount discount when conditions are met", () => {
     const input = {
       cart: mockCartWithBundleProduct,
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 
@@ -201,6 +210,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithPercentageDiscount,
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 
@@ -246,6 +256,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithFreeShipping,
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 
@@ -289,6 +300,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithInsufficientQuantity,
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 
@@ -334,6 +346,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithCollectionProduct,
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 
@@ -374,6 +387,7 @@ describe("cartLinesDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithDisabledStep,
+      shop: mockShop,
       discount: mockDiscountInput,
     };
 

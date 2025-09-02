@@ -33,8 +33,9 @@ export function cartTransformRun(
 
   const operations = [];
 
-  // Get all bundle data from cart product metafields and shop metafields
+  // Get all bundle data from cart product metafields and shop metafields  
   const bundles = getAllBundleDataFromCart(input.cart, input.shop);
+  console.log("🔍 [CART TRANSFORM DEBUG] Shop domain available:", input.shop ? "NO - not available in cart transform" : "NO - shop is null");
   console.log("🔍 [CART TRANSFORM DEBUG] Bundle detection results:", bundles);
   
   if (bundles.length === 0) {
@@ -129,14 +130,20 @@ function createBundleTransformOperation(
   // Find or create a bundle parent variant ID
   let parentVariantId = null;
   
-  // Check if we have a bundle product variant (for fixed bundle price method)
-  if (bundle.pricing?.discountMethod === "fixed_bundle_price" && bundle.pricing?.bundleVariantId) {
+  // Priority 1: Use bundle product variant ID if available (any bundle)
+  if (bundle.bundleParentVariantId) {
+    parentVariantId = bundle.bundleParentVariantId;
+    console.log(`🔍 [CART TRANSFORM DEBUG] Using bundle parent variant ID: ${parentVariantId}`);
+  } 
+  // Priority 2: Use bundle pricing variant ID (for fixed bundle price method)
+  else if (bundle.pricing?.bundleVariantId) {
     parentVariantId = bundle.pricing.bundleVariantId;
-    console.log(`🔍 [CART TRANSFORM DEBUG] Using bundle variant ID: ${parentVariantId}`);
-  } else {
-    // Use the first line's variant as parent for percentage and fixed amount discounts
+    console.log(`🔍 [CART TRANSFORM DEBUG] Using bundle pricing variant ID: ${parentVariantId}`);
+  } 
+  // Priority 3: Fallback to first line's variant as parent
+  else {
     parentVariantId = matchingLines[0]?.merchandise?.id;
-    console.log(`🔍 [CART TRANSFORM DEBUG] Using first line variant as parent: ${parentVariantId}`);
+    console.log(`🔍 [CART TRANSFORM DEBUG] Using first line variant as parent (fallback): ${parentVariantId}`);
   }
   
   if (!parentVariantId) {

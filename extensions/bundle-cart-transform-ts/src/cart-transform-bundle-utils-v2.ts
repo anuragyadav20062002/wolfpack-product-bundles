@@ -1,6 +1,7 @@
 export interface DiscountRule {
   discountOn: string;
-  numberOfProducts: number; // Cart transform bundles ONLY use this field
+  numberOfProducts?: number; // Cart transform bundles legacy field
+  minimumQuantity: number; // Minimum quantity required for this discount rule
   fixedAmountOff: number;
   percentageOff: number;
 }
@@ -212,10 +213,9 @@ export function checkCartMeetsBundleConditions(
   }
 
   // Check if bundle conditions are met (minimum quantity from pricing rules or default to 2)
-  // Cart transform bundles ONLY use numberOfProducts field
   const firstRule = bundleData.pricing?.rules?.[0];
-  const numberOfProducts = firstRule ? (firstRule.numberOfProducts || 2) : 2;
-  const meetsConditions = totalQuantity >= numberOfProducts && componentLines.length >= 2;
+  const minimumQuantity = firstRule ? (firstRule.minimumQuantity || firstRule.numberOfProducts || 2) : 2;
+  const meetsConditions = totalQuantity >= minimumQuantity && componentLines.length >= 2;
 
   // Calculate discounted cost if conditions are met
   let totalDiscountedCost = totalOriginalCost;
@@ -248,7 +248,7 @@ export function checkCartMeetsBundleConditions(
     meetsConditions,
     componentCount: componentLines.length,
     totalQuantity,
-    numberOfProducts,
+    minimumQuantity,
     totalCost: totalOriginalCost
   });
 
@@ -343,11 +343,10 @@ export function getApplicableDiscountRule(
     return null;
   }
 
-  // Sort rules by numberOfProducts descending to get the best applicable discount
-  // Cart transform bundles use numberOfProducts field (NOT minimumQuantity)
+  // Sort rules by minimumQuantity descending to get the best applicable discount
   const applicableRules = bundleData.pricing.rules
-    .filter((rule) => totalQuantity >= (rule.numberOfProducts || 0))
-    .sort((a, b) => (b.numberOfProducts || 0) - (a.numberOfProducts || 0));
+    .filter((rule) => totalQuantity >= (rule.minimumQuantity || rule.numberOfProducts || 0))
+    .sort((a, b) => (b.minimumQuantity || b.numberOfProducts || 0) - (a.minimumQuantity || a.numberOfProducts || 0));
 
   return applicableRules.length > 0 ? applicableRules[0] : null;
 }

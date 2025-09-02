@@ -3,7 +3,7 @@ query BundleDiscountFunctionInput {
     lines {
       id
       quantity
-      attribute {
+      attribute(key: "_wolfpack_bundle_id") {
         key
         value
       }

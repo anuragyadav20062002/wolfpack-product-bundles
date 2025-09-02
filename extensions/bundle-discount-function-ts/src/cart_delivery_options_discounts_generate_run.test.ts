@@ -69,9 +69,15 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
     ],
   };
 
+  const mockShop = {
+    domain: "test-shop.myshopify.com",
+    metafield: null,
+  };
+
   it("should return empty operations when cart is empty", () => {
     const input = {
       cart: { lines: [], deliveryGroups: [] },
+      shop: mockShop,
       discount: { discountClasses: [DiscountClass.Shipping] },
     };
 
@@ -98,6 +104,7 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithoutBundleSettings,
+      shop: mockShop,
       discount: { discountClasses: [DiscountClass.Shipping] },
     };
 
@@ -134,6 +141,7 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithDisabledDiscount,
+      shop: mockShop,
       discount: { discountClasses: [DiscountClass.Shipping] },
     };
 
@@ -170,6 +178,7 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithFixedDiscount,
+      shop: mockShop,
       discount: { discountClasses: [DiscountClass.Shipping] },
     };
 
@@ -180,6 +189,7 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
   it("should return empty operations when shipping discount class not present", () => {
     const input = {
       cart: mockCartWithBundleProduct,
+      shop: mockShop,
       discount: { discountClasses: [DiscountClass.Order] },
     };
 
@@ -190,6 +200,7 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
   it("should apply free shipping discount when conditions are met", () => {
     const input = {
       cart: mockCartWithBundleProduct,
+      shop: mockShop,
       discount: { discountClasses: [DiscountClass.Shipping] },
     };
 
@@ -242,6 +253,7 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithInsufficientQuantity,
+      shop: mockShop,
       discount: { discountClasses: [DiscountClass.Shipping] },
     };
 
@@ -287,6 +299,7 @@ describe("cartDeliveryOptionsDiscountsGenerateRun", () => {
 
     const input = {
       cart: cartWithCollectionProduct,
+      shop: mockShop,
       discount: { discountClasses: [DiscountClass.Shipping] },
     };
 

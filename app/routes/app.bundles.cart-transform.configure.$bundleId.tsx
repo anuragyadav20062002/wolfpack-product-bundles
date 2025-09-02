@@ -602,10 +602,32 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 
   // If bundle has a Shopify product and discount is enabled, update its metafields
   if (updatedBundle.shopifyProductId && discountData?.discountEnabled) {
+    // Create optimized configuration with only essential data for functions
+    const optimizedSteps = (stepsData || []).map((step: any) => ({
+      id: step.id,
+      name: step.name || step.pageTitle || 'Step',
+      minQuantity: parseInt(step.minQuantity) || 1,
+      maxQuantity: parseInt(step.maxQuantity) || 1,
+      enabled: step.enabled !== false,
+      conditionType: stepConditionsData[step.id]?.[0]?.type || null,
+      conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
+      conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
+      // Only store essential product data (IDs and titles, no descriptions/images)
+      products: (step.StepProduct || []).map((product: any) => ({
+        id: product.id,
+        title: product.title || product.name || 'Product'
+      })),
+      // Only store essential collection data
+      collections: (step.collections || []).map((collection: any) => ({
+        id: collection.id,
+        title: collection.title || 'Collection'
+      }))
+    }));
+
     const baseConfiguration = {
       bundleId: updatedBundle.id,
       name: updatedBundle.name,
-      steps: stepsData || [],
+      steps: optimizedSteps,
       pricing: {
         enabled: discountData.discountEnabled,
         method: discountData.discountType,
@@ -613,6 +635,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       },
       updatedAt: new Date().toISOString()
     };
+
+    const configSize = JSON.stringify(baseConfiguration).length;
+    console.log("📏 [METAFIELD] Optimized configuration size:", configSize, "chars (vs 12KB+ before)");
 
     try {
       // Save cart transform configuration
@@ -800,23 +825,34 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
 
       // Update metafields with current bundle configuration
       if (bundle.pricing?.enableDiscount) {
+        // Create optimized configuration with only essential data for functions
+        const optimizedSteps = bundle.steps.map((step: any) => ({
+          id: step.id,
+          name: step.name,
+          position: step.position,
+          minQuantity: step.minQuantity,
+          maxQuantity: step.maxQuantity,
+          enabled: step.enabled,
+          conditionType: step.conditionType,
+          conditionOperator: step.conditionOperator,
+          conditionValue: step.conditionValue,
+          // Only store essential product data (IDs only, no full objects)
+          products: (step.products || []).map((product: any) => ({
+            id: product.id,
+            title: product.title || 'Product'
+          })),
+          // Only store essential collection data
+          collections: (step.collections || []).map((collection: any) => ({
+            id: collection.id,
+            title: collection.title || 'Collection'
+          }))
+        }));
+
         const bundleConfiguration = {
           bundleId: bundle.id,
           name: bundle.name,
           type: "cart_transform",
-          steps: bundle.steps.map(step => ({
-            id: step.id,
-            name: step.name,
-            position: step.position,
-            minQuantity: step.minQuantity,
-            maxQuantity: step.maxQuantity,
-            enabled: step.enabled,
-            displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-            products: step.products || [],
-            collections: step.collections || [],
-            conditionType: step.conditionType,
-            conditionValue: step.conditionValue
-          })),
+          steps: optimizedSteps,
           pricing: {
             enabled: bundle.pricing.enableDiscount,
             method: bundle.pricing.discountMethod,
@@ -918,11 +954,33 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
 
   // Update metafields with current bundle configuration
   if (productId && bundle.pricing?.enableDiscount) {
+    // Create optimized configuration with only essential data for functions
+    const optimizedSteps = (bundle.steps || []).map((step: any) => ({
+      id: step.id,
+      name: step.name,
+      minQuantity: step.minQuantity || 1,
+      maxQuantity: step.maxQuantity || 1,
+      enabled: step.enabled !== false,
+      conditionType: step.conditionType,
+      conditionOperator: step.conditionOperator,
+      conditionValue: step.conditionValue,
+      // Only store essential product data (IDs only, no full objects)
+      products: (step.products || []).map((product: any) => ({
+        id: product.id,
+        title: product.title || 'Product'
+      })),
+      // Only store essential collection data
+      collections: (step.collections || []).map((collection: any) => ({
+        id: collection.id,
+        title: collection.title || 'Collection'
+      }))
+    }));
+
     const bundleConfiguration = {
       bundleId: bundle.id,
       name: bundle.name,
       type: "cart_transform",
-      steps: bundle.steps || [],
+      steps: optimizedSteps,
       pricing: {
         enabled: bundle.pricing.enableDiscount,
         method: bundle.pricing.discountMethod,
@@ -930,6 +988,9 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
       },
       updatedAt: new Date().toISOString()
     };
+
+    const configSize = JSON.stringify(bundleConfiguration).length;
+    console.log("📏 [METAFIELD] Sync optimized configuration size:", configSize, "chars");
 
     await updateBundleProductMetafields(admin, productId, bundleConfiguration);
   }

@@ -89,22 +89,27 @@ export function checkCartMeetsBundleConditions(
     }
     console.log("🆔 [BUNDLE_UTILS] Bundle ID property found:", bundleIdProperty);
     
-    // Line must match this bundle (either by product ID or by bundle attribute)
+    // Line must match this bundle by product ID AND optionally by bundle attribute for validation
     let isMatchingLine = false;
     let matchMethod = '';
     
-    // Method 1: Match by product ID (for Bundle Product pages)
+    // Primary requirement: Product ID must be in bundle configuration
     if (productId && bundleData.allBundleProductIds.includes(productId)) {
       isMatchingLine = true;
       matchMethod = 'product_id';
       console.log("✅ [BUNDLE_UTILS] Line matches by product ID");
-    }
-    
-    // Method 2: Match by bundle ID attribute (for widget-added products)
-    if (bundleIdProperty === bundleData.id) {
-      isMatchingLine = true;
-      matchMethod = 'bundle_attribute';
-      console.log("✅ [BUNDLE_UTILS] Line matches by bundle ID attribute");
+      
+      // Additional validation: If bundle ID attribute is present, it should match
+      if (bundleIdProperty && bundleIdProperty !== bundleData.id) {
+        isMatchingLine = false;
+        matchMethod = 'bundle_id_mismatch';
+        console.log("❌ [BUNDLE_UTILS] Line has mismatched bundle ID attribute");
+      } else if (bundleIdProperty === bundleData.id) {
+        matchMethod = 'product_id_and_bundle_attribute';
+        console.log("✅ [BUNDLE_UTILS] Line matches by both product ID and bundle ID attribute");
+      }
+    } else {
+      console.log("❌ [BUNDLE_UTILS] Line product ID not in bundle configuration");
     }
     
     if (isMatchingLine) {
