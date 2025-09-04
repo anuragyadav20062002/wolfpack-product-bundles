@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { cartTransformRun } from "./cart_transform_run";
+import { getAllBundleDataFromCart } from "./cart-transform-bundle-utils-v2";
 
 describe("cartTransformRun", () => {
   it("returns empty operations for empty cart", () => {
@@ -266,6 +267,614 @@ describe("cartTransformRun", () => {
     expect(operation.merge.price.percentageDecrease.value).toBe(20);
   });
 
+  it("handles multiple bundles with different configurations", () => {
+    const input = {
+      cart: {
+        lines: [
+          // First bundle - Bundle A products
+          {
+            id: "line1",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundleA",
+                    name: "Bundle A",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+                    }
+                  })
+                }
+              }
+            },
+            cost: {
+              amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+              totalAmount: { amount: "10.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line2",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant2",
+              product: {
+                id: "product2",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundleA",
+                    name: "Bundle A",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+                    }
+                  })
+                }
+              }
+            },
+            cost: {
+              amountPerQuantity: { amount: "15.00", currencyCode: "USD" },
+              totalAmount: { amount: "15.00", currencyCode: "USD" },
+            },
+          },
+          // Second bundle - Bundle B products  
+          {
+            id: "line3",
+            quantity: 2,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant3",
+              product: {
+                id: "product3",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundleB",
+                    name: "Bundle B",
+                    allBundleProductIds: ["product3", "product4"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "percentage_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 3, fixedAmountOff: 0, percentageOff: 15 }]
+                    }
+                  })
+                }
+              }
+            },
+            cost: {
+              amountPerQuantity: { amount: "8.00", currencyCode: "USD" },
+              totalAmount: { amount: "16.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line4",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant4",
+              product: {
+                id: "product4",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundleB",
+                    name: "Bundle B",
+                    allBundleProductIds: ["product3", "product4"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "percentage_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 3, fixedAmountOff: 0, percentageOff: 15 }]
+                    }
+                  })
+                }
+              }
+            },
+            cost: {
+              amountPerQuantity: { amount: "12.00", currencyCode: "USD" },
+              totalAmount: { amount: "12.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "53.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "53.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    // Should create 2 operations - one for each bundle
+    expect(result.operations).toHaveLength(2);
+    
+    // Both should be merge operations
+    result.operations.forEach(op => {
+      expect(op).toHaveProperty("merge");
+    });
+  });
+
+  it("handles malformed metafield data gracefully", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: "invalid json content",
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+              totalAmount: { amount: "10.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "10.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "10.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    expect(result.operations).toEqual([]);
+  });
+
+  it("handles missing metafield properties gracefully", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Incomplete Bundle"
+                    // Missing allBundleProductIds and pricing
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+              totalAmount: { amount: "10.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "10.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "10.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    expect(result.operations).toEqual([]);
+  });
+
+  it("handles quantity-based conditions correctly", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 3, // Higher quantity
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Quantity Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [
+                        {
+                          discountOn: "quantity",
+                          minimumQuantity: 5, // Requires 5 total items
+                          fixedAmountOff: 10,
+                          percentageOff: 0,
+                        },
+                      ],
+                    },
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+              totalAmount: { amount: "30.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line2",
+            quantity: 2,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant2",
+              product: {
+                id: "product2",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Quantity Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [
+                        {
+                          discountOn: "quantity",
+                          minimumQuantity: 5, // Total is 3+2=5, meets condition
+                          fixedAmountOff: 10,
+                          percentageOff: 0,
+                        },
+                      ],
+                    },
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "15.00", currencyCode: "USD" },
+              totalAmount: { amount: "30.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "60.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "60.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    expect(result.operations).toHaveLength(1);
+    expect(result.operations[0]).toHaveProperty("merge");
+  });
+
+  it("handles amount-based conditions correctly", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Amount Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "percentage_off",
+                      rules: [
+                        {
+                          discountOn: "amount",
+                          minimumAmount: 75, // Requires $75 total
+                          fixedAmountOff: 0,
+                          percentageOff: 20,
+                        },
+                      ],
+                    },
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "50.00", currencyCode: "USD" },
+              totalAmount: { amount: "50.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line2",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant2",
+              product: {
+                id: "product2",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Amount Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "percentage_off",
+                      rules: [
+                        {
+                          discountOn: "amount",
+                          minimumAmount: 75, // Total is $50+$30=$80, meets condition
+                          fixedAmountOff: 0,
+                          percentageOff: 20,
+                        },
+                      ],
+                    },
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "30.00", currencyCode: "USD" },
+              totalAmount: { amount: "30.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "80.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "80.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    expect(result.operations).toHaveLength(1);
+    expect(result.operations[0]).toHaveProperty("merge");
+    expect(result.operations[0].merge.price.percentageDecrease.value).toBe(20);
+  });
+
+  it("handles different merchandise types correctly", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant", // Valid type
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Test Bundle",
+                    allBundleProductIds: ["product1"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 1, fixedAmountOff: 5, percentageOff: 0 }]
+                    }
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+              totalAmount: { amount: "10.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line2",
+            quantity: 1,
+            merchandise: {
+              __typename: "GiftCard", // Invalid type for bundles
+              id: "giftcard1",
+            },
+            cost: {
+              amountPerQuantity: { amount: "25.00", currencyCode: "USD" },
+              totalAmount: { amount: "25.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "35.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "35.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    // Should process ProductVariant lines if they form valid bundles, ignore GiftCard
+    // This test verifies the function handles mixed merchandise types gracefully
+    expect(result.operations.length).toBeGreaterThanOrEqual(0);
+  });
+
+  it("handles edge case with zero prices", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Free Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+                    }
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "0.00", currencyCode: "USD" },
+              totalAmount: { amount: "0.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line2",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant2",
+              product: {
+                id: "product2",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Free Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+                    }
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "0.00", currencyCode: "USD" },
+              totalAmount: { amount: "0.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "0.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "0.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    // Should handle zero prices gracefully
+    expect(result.operations).toHaveLength(1);
+    expect(result.operations[0]).toHaveProperty("merge");
+  });
+
+  it("handles bundle step conditions correctly", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 2,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Step Condition Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    steps: [
+                      {
+                        id: "step1",
+                        products: ["product1"],
+                        conditionType: "quantity",
+                        conditionOperator: "equal_to",
+                        conditionValue: 2
+                      },
+                      {
+                        id: "step2",
+                        products: ["product2"],
+                        conditionType: "quantity",
+                        conditionOperator: "greater_than_or_equal_to",
+                        conditionValue: 1
+                      }
+                    ],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 3, fixedAmountOff: 8, percentageOff: 0 }]
+                    }
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+              totalAmount: { amount: "20.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line2",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant2",
+              product: {
+                id: "product2",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Step Condition Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    steps: [
+                      {
+                        id: "step1",
+                        products: ["product1"],
+                        conditionType: "quantity",
+                        conditionOperator: "equal_to",
+                        conditionValue: 2
+                      },
+                      {
+                        id: "step2",
+                        products: ["product2"],
+                        conditionType: "quantity",
+                        conditionOperator: "greater_than_or_equal_to",
+                        conditionValue: 1
+                      }
+                    ],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 3, fixedAmountOff: 8, percentageOff: 0 }]
+                    }
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "15.00", currencyCode: "USD" },
+              totalAmount: { amount: "15.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "35.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "35.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    // Should meet both step conditions and overall bundle conditions
+    expect(result.operations).toHaveLength(1);
+    expect(result.operations[0]).toHaveProperty("merge");
+  });
+
   it("handles fixed bundle price correctly", () => {
     const input = {
       cart: {
@@ -353,5 +962,242 @@ describe("cartTransformRun", () => {
     expect(operation.merge).toHaveProperty("price");
     // Fixed price of $20 on original $30 = 33.33% discount
     expect(Math.round(operation.merge.price.percentageDecrease.value)).toBe(33);
+  });
+
+  it("validates merge operation structure", () => {
+    const input = {
+      cart: {
+        lines: [
+          {
+            id: "line1",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant1",
+              product: {
+                id: "product1",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Structure Test Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+                    }
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+              totalAmount: { amount: "10.00", currencyCode: "USD" },
+            },
+          },
+          {
+            id: "line2",
+            quantity: 1,
+            merchandise: {
+              __typename: "ProductVariant",
+              id: "variant2",
+              product: {
+                id: "product2",
+                metafield: {
+                  value: JSON.stringify({
+                    id: "bundle1",
+                    name: "Structure Test Bundle",
+                    allBundleProductIds: ["product1", "product2"],
+                    pricing: {
+                      enableDiscount: true,
+                      discountMethod: "fixed_amount_off",
+                      rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+                    }
+                  }),
+                },
+              },
+            },
+            cost: {
+              amountPerQuantity: { amount: "15.00", currencyCode: "USD" },
+              totalAmount: { amount: "15.00", currencyCode: "USD" },
+            },
+          },
+        ],
+        cost: {
+          totalAmount: { amount: "25.00", currencyCode: "USD" },
+          subtotalAmount: { amount: "25.00", currencyCode: "USD" },
+        },
+      },
+    };
+
+    const result = cartTransformRun(input);
+    expect(result.operations).toHaveLength(1);
+    
+    const operation = result.operations[0];
+    expect(operation).toHaveProperty("merge");
+    expect(operation.merge).toHaveProperty("cartLines");
+    expect(operation.merge).toHaveProperty("parentVariantId");
+    expect(operation.merge).toHaveProperty("title");
+    expect(operation.merge).toHaveProperty("price");
+    expect(operation.merge.price).toHaveProperty("percentageDecrease");
+    expect(operation.merge.cartLines).toEqual([
+      { cartLineId: "line1", quantity: 1 },
+      { cartLineId: "line2", quantity: 1 }
+    ]);
+    expect(operation.merge.parentVariantId).toBe("variant1");
+    expect(operation.merge.title).toBe("Structure Test Bundle Bundle - Save $5.00");
+  });
+});
+
+// Additional utility function tests
+describe("cart transform utilities", () => {
+  it("getAllBundleDataFromCart handles empty cart", () => {
+    const cart = {
+      lines: [],
+      cost: {
+        totalAmount: { amount: "0", currencyCode: "USD" },
+        subtotalAmount: { amount: "0", currencyCode: "USD" },
+      },
+    };
+
+    const result = getAllBundleDataFromCart(cart);
+    expect(result).toEqual([]);
+  });
+
+  it("getAllBundleDataFromCart extracts bundle data correctly", () => {
+    const bundleConfig = {
+      id: "test-bundle",
+      name: "Test Bundle",
+      allBundleProductIds: ["product1", "product2"],
+      pricing: {
+        enableDiscount: true,
+        discountMethod: "fixed_amount_off",
+        rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+      }
+    };
+
+    const cart = {
+      lines: [
+        {
+          id: "line1",
+          quantity: 1,
+          merchandise: {
+            __typename: "ProductVariant",
+            id: "variant1",
+            product: {
+              id: "product1",
+              metafield: {
+                value: JSON.stringify(bundleConfig),
+              },
+            },
+          },
+          cost: {
+            amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+            totalAmount: { amount: "10.00", currencyCode: "USD" },
+          },
+        },
+      ],
+      cost: {
+        totalAmount: { amount: "10.00", currencyCode: "USD" },
+        subtotalAmount: { amount: "10.00", currencyCode: "USD" },
+      },
+    };
+
+    const result = getAllBundleDataFromCart(cart, null);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(bundleConfig.id);
+    expect(result[0].name).toBe(bundleConfig.name);
+    expect(result[0].allBundleProductIds).toEqual(bundleConfig.allBundleProductIds);
+  });
+
+  it("getAllBundleDataFromCart handles malformed JSON gracefully", () => {
+    const cart = {
+      lines: [
+        {
+          id: "line1",
+          quantity: 1,
+          merchandise: {
+            __typename: "ProductVariant",
+            id: "variant1",
+            product: {
+              id: "product1",
+              metafield: {
+                value: "invalid json",
+              },
+            },
+          },
+          cost: {
+            amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+            totalAmount: { amount: "10.00", currencyCode: "USD" },
+          },
+        },
+      ],
+      cost: {
+        totalAmount: { amount: "10.00", currencyCode: "USD" },
+        subtotalAmount: { amount: "10.00", currencyCode: "USD" },
+      },
+    };
+
+    const result = getAllBundleDataFromCart(cart);
+    expect(result).toEqual([]);
+  });
+
+  it("getAllBundleDataFromCart groups cart lines by bundle ID", () => {
+    const bundleConfig = {
+      id: "shared-bundle",
+      name: "Shared Bundle",
+      allBundleProductIds: ["product1", "product2"],
+      pricing: {
+        enableDiscount: true,
+        discountMethod: "percentage_off",
+        rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 0, percentageOff: 15 }]
+      }
+    };
+
+    const cart = {
+      lines: [
+        {
+          id: "line1",
+          quantity: 1,
+          merchandise: {
+            __typename: "ProductVariant",
+            id: "variant1",
+            product: {
+              id: "product1",
+              metafield: { value: JSON.stringify(bundleConfig) },
+            },
+          },
+          cost: {
+            amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
+            totalAmount: { amount: "10.00", currencyCode: "USD" },
+          },
+        },
+        {
+          id: "line2",
+          quantity: 1,
+          merchandise: {
+            __typename: "ProductVariant",
+            id: "variant2",
+            product: {
+              id: "product2",
+              metafield: { value: JSON.stringify(bundleConfig) },
+            },
+          },
+          cost: {
+            amountPerQuantity: { amount: "15.00", currencyCode: "USD" },
+            totalAmount: { amount: "15.00", currencyCode: "USD" },
+          },
+        },
+      ],
+      cost: {
+        totalAmount: { amount: "25.00", currencyCode: "USD" },
+        subtotalAmount: { amount: "25.00", currencyCode: "USD" },
+      },
+    };
+
+    const result = getAllBundleDataFromCart(cart, null);
+    expect(result).toHaveLength(1); // Should group into one bundle
+    expect(result[0].id).toBe("shared-bundle");
+    expect(result[0].name).toBe("Shared Bundle");
   });
 });

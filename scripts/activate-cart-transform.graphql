@@ -1,0 +1,12 @@
+mutation CreateCartTransform($functionId: String!) {
+  cartTransformCreate(functionId: $functionId) {
+    cartTransform {
+      id
+      functionId
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}

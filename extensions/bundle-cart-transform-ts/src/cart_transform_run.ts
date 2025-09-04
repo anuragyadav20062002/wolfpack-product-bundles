@@ -61,8 +61,14 @@ export function cartTransformRun(
     console.log(`Processing bundle ${bundleData.name} - discount enabled: ${bundleData.pricing?.enableDiscount || false}`);
 
     // Skip free shipping bundles - handled in delivery options function
-    if (bundleData.pricing.discountMethod === "free_shipping") {
+    if (bundleData.pricing?.discountMethod === "free_shipping") {
       console.log(`Bundle ${bundleData.name} is free shipping, skipping transform`);
+      continue;
+    }
+
+    // Skip bundles without proper pricing configuration
+    if (!bundleData.pricing || !bundleData.pricing.enableDiscount) {
+      console.log(`Bundle ${bundleData.name} has no pricing configuration or discounts disabled, skipping transform`);
       continue;
     }
 
