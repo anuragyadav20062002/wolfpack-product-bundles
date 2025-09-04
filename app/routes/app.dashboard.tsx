@@ -25,7 +25,7 @@ interface Bundle {
   description?: string;
   shopId: string;
   shopifyProductId?: string;
-  bundleType: 'cart_transform' | 'discount_function';
+  bundleType: 'cart_transform';
   status: 'draft' | 'active' | 'archived';
   active: boolean;
   publishedAt?: Date;
@@ -85,11 +85,11 @@ export default function Dashboard() {
   const fetcher = useFetcher();
 
   const handleCreateBundle = () => {
-    navigate("/app/bundle-type-selection");
+    navigate("/app/bundles/cart-transform");
   };
 
   const handleQuickSetup = () => {
-    navigate("/app/bundle-type-selection");
+    navigate("/app/bundles/cart-transform");
   };
 
   const handleScheduleMeeting = () => {
@@ -98,24 +98,11 @@ export default function Dashboard() {
   };
 
   const handleEditBundle = (bundle: Bundle) => {
-    if (bundle.bundleType === "cart_transform") {
-      navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
-    } else if (bundle.bundleType === "discount_function") {
-      navigate(`/app/bundles/discount-functions/configure/${bundle.id}`);
-    } else {
-      navigate(`/app/bundles/${bundle.id}`);
-    }
+    navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
   };
 
   const handleBundleRowClick = (bundle: Bundle) => {
-    // Navigate to the bundle type's main page where they can see all bundles of that type
-    if (bundle.bundleType === "cart_transform") {
-      navigate("/app/bundles/cart-transform");
-    } else if (bundle.bundleType === "discount_function") {
-      navigate("/app/bundles/discount-functions");
-    } else {
-      navigate("/app/bundle-type-selection");
-    }
+    navigate("/app/bundles/cart-transform");
   };
 
   const handleDeleteBundle = (bundleId: string) => {
@@ -128,14 +115,7 @@ export default function Dashboard() {
   };
 
   const getBundleTypeDisplay = (bundleType: string) => {
-    switch (bundleType) {
-      case "cart_transform":
-        return <Badge tone="info">Cart Transform</Badge>;
-      case "discount_function":
-        return <Badge tone="success">Discount Function</Badge>;
-      default:
-        return <Badge tone="subdued">Unknown</Badge>;
-    }
+    return <Badge tone="info">Cart Transform</Badge>;
   };
 
   const getStatusDisplay = (status: string) => {
@@ -300,15 +280,15 @@ export default function Dashboard() {
                         </div>
                         <div style={{ textAlign: 'center', padding: '0.5rem' }}>
                           <Text variant="headingLg" as="p" fontWeight="bold">
-                            {bundles.filter(b => b.bundleType === 'cart_transform').length}
+                            {bundles.filter(b => b.pricing?.enableDiscount).length}
                           </Text>
-                          <Text variant="bodyMd" tone="subdued">Cart Transform</Text>
+                          <Text variant="bodyMd" tone="subdued">With Discounts</Text>
                         </div>
                         <div style={{ textAlign: 'center', padding: '0.5rem' }}>
                           <Text variant="headingLg" as="p" fontWeight="bold">
-                            {bundles.filter(b => b.bundleType === 'discount_function').length}
+                            {bundles.reduce((total, b) => total + (b.steps?.length || 0), 0)}
                           </Text>
-                          <Text variant="bodyMd" tone="subdued">Discount Function</Text>
+                          <Text variant="bodyMd" tone="subdued">Total Steps</Text>
                         </div>
                       </div>
                       

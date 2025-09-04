@@ -240,6 +240,12 @@ Shopify bundling app with dual implementation approaches:
 - **Enhanced GraphQL**: Updated input queries to capture line attributes for bundle detection
 - **Test Coverage**: All discount function tests updated and passing for new functionality
 
+**Bundle Discount Extension Cleanup:**
+- **File Architecture Optimization**: Removed obsolete bundle-discount-function-ts extension files
+- **Configuration Streamlining**: Consolidated discount configuration into single extension system
+- **Build Process Enhancement**: Improved deployment workflow by removing unused components
+- **Code Quality**: Eliminated redundant files and outdated configuration references
+
 **🔧 High Priority TODOs:**
 1. **Bundle Creation Error Handling** - Implement comprehensive error handling for bundle creation workflow
 2. **Database Error Handling** - Add robust error recovery and user feedback for database operations  

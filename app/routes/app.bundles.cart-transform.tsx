@@ -509,8 +509,8 @@ export default function CartTransformBundles() {
         }}
         secondaryActions={[
           {
-            content: "Back to Bundle Types",
-            onAction: () => navigate("/app/bundle-type-selection"),
+            content: "Back to Dashboard",
+            onAction: () => navigate("/app/dashboard"),
           },
         ]}
       >

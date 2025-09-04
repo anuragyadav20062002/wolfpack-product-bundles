@@ -3,12 +3,12 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://rapid-donald-poems-phrases.trycloudflare.com"
+application_url = "https://screen-varied-vbulletin-cited.trycloudflare.com"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = false
+include_config_on_deploy = true
 
 [webhooks]
 api_version = "2025-04"
@@ -18,11 +18,7 @@ api_version = "2025-04"
 scopes = "read_content,read_product_listings,read_products,read_themes,write_cart_transforms,write_discounts,write_products,write_themes"
 
 [auth]
-redirect_urls = [
-  "https://rapid-donald-poems-phrases.trycloudflare.com/auth/callback",
-  "https://rapid-donald-poems-phrases.trycloudflare.com/auth/shopify/callback",
-  "https://rapid-donald-poems-phrases.trycloudflare.com/api/auth/callback"
-]
+redirect_urls = ["https://screen-varied-vbulletin-cited.trycloudflare.com/auth/callback", "https://screen-varied-vbulletin-cited.trycloudflare.com/auth/shopify/callback", "https://screen-varied-vbulletin-cited.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false

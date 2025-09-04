@@ -23,7 +23,18 @@
       "WebFetch(domain:community.shopify.dev)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.skailama.com)",
-      "Bash(npx prisma studio:*)"
+      "Bash(npx prisma studio:*)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\extensions/**)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\prisma/**)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
+      "Bash(npx prisma:*)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles/**)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles/**)",
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles/**)"
     ],
     "deny": []
   }
