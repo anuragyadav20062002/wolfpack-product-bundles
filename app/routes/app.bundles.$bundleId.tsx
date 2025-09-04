@@ -401,9 +401,9 @@ export async function action({ request }: ActionFunctionArgs) {
         };
 
         // Collect all unique product IDs from all steps for bundle matching
-        const allProductIds = new Set();
+        const allProductIds = new Set<string>();
         steps.forEach(step => {
-          step.products.forEach(product => {
+          step.products.forEach((product: any) => {
             if (product.id && product.id.startsWith('gid://shopify/Product/')) {
               allProductIds.add(product.id);
             }
@@ -469,7 +469,7 @@ export async function action({ request }: ActionFunctionArgs) {
           const errors = metafieldDefData.data.metafieldDefinitionCreate.userErrors;
           
           // Check if it's just because it already exists
-          const alreadyExistsError = errors.find(e => e.message?.includes("already exists") || e.code === "TAKEN");
+          const alreadyExistsError = errors.find((e: any) => e.message?.includes("already exists") || e.code === "TAKEN");
           if (alreadyExistsError) {
           } else {
           }

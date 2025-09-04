@@ -35,9 +35,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     console.log('🔍 Raw response:', JSON.stringify(data, null, 2));
     
-    if (data.errors) {
-      console.error('❌ GraphQL Errors:', data.errors);
-      return json({ success: false, errors: data.errors });
+    if ((data as any).errors) {
+      console.error('❌ GraphQL Errors:', (data as any).errors);
+      return json({ success: false, errors: (data as any).errors });
     }
     
     if (data.data.cartTransformCreate.userErrors.length > 0) {
@@ -61,7 +61,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.error('❌ Error activating cart transform:', error);
     return json({ 
       success: false, 
-      error: error.message 
+      error: (error as Error).message 
     });
   }
 };

@@ -42,7 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Create sample bundle products if none exist with proper metafields
     const productsToCreate = [];
     const hasExistingBundleProducts = checkData.data.products.edges.some(
-      edge => edge.node.cartTransformConfig?.value
+      (edge: any) => edge.node.cartTransformConfig?.value
     );
     
     if (!hasExistingBundleProducts) {
@@ -253,7 +253,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return json({
         success: true,
         message: 'Bundle products already configured',
-        products: checkData.data.products.edges.map(edge => edge.node)
+        products: checkData.data.products.edges.map((edge: any) => edge.node)
       });
     }
     
@@ -261,7 +261,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.error('❌ Error setting up bundle products:', error);
     return json({ 
       success: false, 
-      error: error.message 
+      error: (error as Error).message 
     });
   }
 };

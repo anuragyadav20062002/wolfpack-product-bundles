@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://hindu-differ-approval-sources.trycloudflare.com"
+application_url = "https://const-urgent-clinical-song.trycloudflare.com"
 embedded = true
 
 [build]
@@ -19,9 +19,9 @@ scopes = "read_content,read_product_listings,read_products,read_themes,write_car
 
 [auth]
 redirect_urls = [
-  "https://hindu-differ-approval-sources.trycloudflare.com/auth/callback",
-  "https://hindu-differ-approval-sources.trycloudflare.com/auth/shopify/callback",
-  "https://hindu-differ-approval-sources.trycloudflare.com/api/auth/callback"
+  "https://const-urgent-clinical-song.trycloudflare.com/auth/callback",
+  "https://const-urgent-clinical-song.trycloudflare.com/auth/shopify/callback",
+  "https://const-urgent-clinical-song.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

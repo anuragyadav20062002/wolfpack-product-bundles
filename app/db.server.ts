@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaClient as PrismaClientEdge } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 
-let prisma: PrismaClient | PrismaClientEdge;
+let prisma: PrismaClient;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === "production") {
   if (!global.__prisma) {
     global.__prisma = new PrismaClient().$extends(withAccelerate()) as any;
   }
-  prisma = global.__prisma;
+  prisma = global.__prisma!;
 }
 
 export { prisma };

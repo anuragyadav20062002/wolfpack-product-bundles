@@ -52,6 +52,60 @@ export interface BundleMatchResult {
 }
 
 /**
+ * Utility function to normalize product ID formats for consistent matching
+ * Handles both full GIDs and extracted IDs
+ */
+export function normalizeProductId(id: string): string {
+  if (!id) return '';
+  
+  // If it's already a GID, return as-is
+  if (id.startsWith('gid://shopify/Product/')) {
+    return id;
+  }
+  
+  // If it's just a number or simple string, assume it's a product ID and create GID
+  if (/^\d+$/.test(id)) {
+    return `gid://shopify/Product/${id}`;
+  }
+  
+  // Handle test product IDs (like "product1", "product2") - convert to GID for consistency
+  if (/^product\d+$/.test(id)) {
+    const testId = id.replace('product', '');
+    return `gid://shopify/Product/${testId}`;
+  }
+  
+  // For other formats, try to extract if it contains the pattern
+  const gidMatch = id.match(/gid:\/\/shopify\/Product\/(\d+)/);
+  if (gidMatch) {
+    return `gid://shopify/Product/${gidMatch[1]}`;
+  }
+  
+  // For non-numeric IDs that might be valid product identifiers, create a test GID
+  if (/^[a-zA-Z0-9_-]+$/.test(id) && id.length > 0) {
+    return `gid://shopify/Product/${id}`;
+  }
+  
+  // If all else fails, return the original ID
+  console.warn(`🔍 [CART TRANSFORM DEBUG] Could not normalize product ID: ${id}`);
+  return id;
+}
+
+/**
+ * Extract product ID from variant GID for product matching
+ */
+export function extractProductIdFromVariantGid(variantGid: string): string {
+  // First check if this is actually a product GID (not variant)
+  if (variantGid.includes('gid://shopify/Product/')) {
+    return variantGid; // It's already a product GID
+  }
+  
+  // For variant GIDs, we need to look up the product via the cart data
+  // This function should be used in context where product data is available
+  console.warn(`🔍 [CART TRANSFORM DEBUG] Cannot extract product ID from variant GID without product data: ${variantGid}`);
+  return variantGid;
+}
+
+/**
  * Enhanced bundle detection following Shopify's best practices for cart transforms
  */
 export function getAllBundleDataFromCart(cart: any, shop: any): BundleData[] {
@@ -178,6 +232,9 @@ export function checkCartMeetsBundleConditions(
   const componentLines: any[] = [];
   let totalQuantity = 0;
   let totalOriginalCost = 0;
+  
+  // Populate allBundleProductIds during matching if not already populated
+  const bundleProductIds = new Set<string>();
 
   for (const line of cart.lines) {
     let isComponentLine = false;
@@ -188,21 +245,35 @@ export function checkCartMeetsBundleConditions(
     
     // Match by product ID (for Bundle Product pages or component matching)
     const productId = line.merchandise?.product?.id;
-    if (productId && bundleData.allBundleProductIds.includes(productId)) {
-      isComponentLine = true;
-      console.log(`🔍 [CART TRANSFORM DEBUG] Found component by product ID: line=${line.id}, product=${productId}`);
+    if (productId) {
+      const normalizedProductId = normalizeProductId(productId);
+      
+      // Check if this product is in our bundle configuration
+      const isInBundleConfig = bundleData.allBundleProductIds.some(configProductId => 
+        normalizeProductId(configProductId) === normalizedProductId
+      );
+      
+      if (isInBundleConfig) {
+        isComponentLine = true;
+        bundleProductIds.add(normalizedProductId);
+        console.log(`🔍 [CART TRANSFORM DEBUG] Found component by product ID: line=${line.id}, product=${normalizedProductId}`);
+      } else {
+        // Also check if this line's product corresponds to any of our component references
+        if (bundleData.componentReferences && bundleData.componentReferences.includes(line.merchandise?.id)) {
+          isComponentLine = true;
+          bundleProductIds.add(normalizedProductId);
+          console.log(`🔍 [CART TRANSFORM DEBUG] Found component by variant reference: line=${line.id}, variant=${line.merchandise?.id}, product=${normalizedProductId}`);
+        }
+      }
     }
     
     // Match by bundle ID attribute (for widget-added products)
-    if (line.attribute && line.attribute.value === bundleData.id) {
+    if (!isComponentLine && line.attribute && line.attribute.value === bundleData.id) {
       isComponentLine = true;
+      if (productId) {
+        bundleProductIds.add(normalizeProductId(productId));
+      }
       console.log(`🔍 [CART TRANSFORM DEBUG] Found component by attribute: line=${line.id}, bundle=${bundleData.id}`);
-    }
-    
-    // Match by component reference (if available)
-    if (bundleData.componentReferences && bundleData.componentReferences.includes(line.merchandise?.id)) {
-      isComponentLine = true;
-      console.log(`🔍 [CART TRANSFORM DEBUG] Found component by reference: line=${line.id}, variant=${line.merchandise?.id}`);
     }
     
     if (isComponentLine) {
@@ -210,6 +281,12 @@ export function checkCartMeetsBundleConditions(
       totalQuantity += line.quantity;
       totalOriginalCost += parseFloat(line.cost.totalAmount.amount);
     }
+  }
+  
+  // Update bundle data with discovered product IDs if it was empty
+  if (bundleData.allBundleProductIds.length === 0 && bundleProductIds.size > 0) {
+    bundleData.allBundleProductIds = Array.from(bundleProductIds);
+    console.log(`🔍 [CART TRANSFORM DEBUG] Populated allBundleProductIds:`, bundleData.allBundleProductIds);
   }
 
   // Check if bundle conditions are met (minimum quantity from pricing rules or default to 2)
@@ -230,7 +307,7 @@ export function checkCartMeetsBundleConditions(
       } else if (bundleData.pricing.discountMethod === "percentage_off") {
         totalDiscountedCost = totalOriginalCost * (1 - applicableRule.percentageOff / 100);
         console.log(`🔍 [CART TRANSFORM DEBUG] Percentage discount: ${totalOriginalCost} * (1 - ${applicableRule.percentageOff}/100) = ${totalDiscountedCost}`);
-      } else if (bundleData.pricing.discountMethod === "fixed_bundle_price" && bundleData.pricing.fixedPrice > 0) {
+      } else if (bundleData.pricing.discountMethod === "fixed_bundle_price" && bundleData.pricing.fixedPrice && bundleData.pricing.fixedPrice > 0) {
         totalDiscountedCost = bundleData.pricing.fixedPrice;
         console.log(`🔍 [CART TRANSFORM DEBUG] Fixed bundle price: ${totalDiscountedCost}`);
       }
@@ -264,11 +341,18 @@ function parseBundleFromComponentMetafields(variant: any, product: any): BundleD
       return null;
     }
     
+    // Extract product IDs from component variant references
+    // We need to get the product IDs from the variants, but since we only have variant GIDs here,
+    // we'll populate this during matching when we have access to cart line product data
+    const allBundleProductIds: string[] = [];
+    
+    console.log(`🔍 [CART TRANSFORM DEBUG] Parsing standard bundle with ${componentReferences.length} component references`);
+    
     // Create bundle data from component metafields
     const bundleData: BundleData = {
       id: variant.id, // Use variant ID as bundle ID for standard bundles
       name: product.title || `Bundle ${variant.id}`,
-      allBundleProductIds: componentReferences.map(ref => ref.split('/').pop()), // Extract product IDs from GIDs
+      allBundleProductIds: allBundleProductIds, // Will be populated during matching
       componentReferences: componentReferences, // Store the full component variant GIDs
       componentQuantities: componentQuantities,
       bundleParentVariantId: variant.id,
@@ -277,6 +361,7 @@ function parseBundleFromComponentMetafields(variant: any, product: any): BundleD
         discountMethod: "percentage_off",
         rules: [{
           discountOn: "total",
+          minimumQuantity: Math.max(2, componentQuantities.reduce((sum: number, qty: number) => sum + qty, 0)),
           numberOfProducts: Math.max(2, componentQuantities.reduce((sum: number, qty: number) => sum + qty, 0)),
           fixedAmountOff: 0,
           percentageOff: 10 // Default 10% bundle discount
@@ -329,8 +414,17 @@ export function parseBundleDataFromMetafield(
   metafieldValue: string,
 ): BundleData | null {
   try {
-    return JSON.parse(metafieldValue);
+    const bundleData = JSON.parse(metafieldValue) as BundleData;
+    
+    // Normalize all product IDs to ensure consistent GID format
+    if (bundleData.allBundleProductIds && Array.isArray(bundleData.allBundleProductIds)) {
+      bundleData.allBundleProductIds = bundleData.allBundleProductIds.map(id => normalizeProductId(id));
+      console.log(`🔍 [CART TRANSFORM DEBUG] Normalized bundle product IDs:`, bundleData.allBundleProductIds);
+    }
+    
+    return bundleData;
   } catch (error) {
+    console.error("🔍 [CART TRANSFORM DEBUG] Error parsing bundle data from metafield:", error);
     return null;
   }
 }

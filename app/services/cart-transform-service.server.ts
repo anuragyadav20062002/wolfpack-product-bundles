@@ -1,5 +1,7 @@
 // Cart Transform Automatic Activation Service
-import type { AdminApiContext } from "~/shopify.server";
+import type { authenticate } from "~/shopify.server";
+
+type AdminApiContext = Awaited<ReturnType<typeof authenticate.admin>>['admin'];
 
 export interface CartTransformActivationResult {
   success: boolean;
@@ -73,7 +75,7 @@ export class CartTransformService {
     
     try {
       const response = await admin.graphql(CHECK_EXISTING_QUERY);
-      const data = await response.json();
+      const data = await response.json() as any;
       
       if (data.errors) {
         console.warn('⚠️ [CART TRANSFORM] Error checking existing cart transforms:', data.errors);
@@ -121,7 +123,7 @@ export class CartTransformService {
         }
       });
       
-      const data = await response.json();
+      const data = await response.json() as any;
       
       if (data.errors) {
         return {

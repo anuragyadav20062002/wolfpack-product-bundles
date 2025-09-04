@@ -12,7 +12,7 @@ export async function loader({ request }: any) {
       include: { 
         steps: {
           include: {
-            products: true
+            StepProduct: true
           }
         },
         pricing: true 
@@ -49,7 +49,7 @@ export async function loader({ request }: any) {
           collections: safeJsonParse(s.collections, []),
         }));
 
-        const totalProducts = steps.reduce((sum, step) => sum + step.products.length, 0);
+        const totalProducts = steps.reduce((sum: number, step: any) => sum + (step.StepProduct?.length || 0), 0);
         if (totalProducts > 0) bundleReport.bundlesWithProducts++;
 
         return {
@@ -64,11 +64,11 @@ export async function loader({ request }: any) {
           pricingEnabled: bundle.pricing?.enableDiscount || false,
           discountMethod: bundle.pricing?.discountMethod || null,
           rulesCount: bundle.pricing?.rules ? safeJsonParse(bundle.pricing.rules, []).length : 0,
-          steps: steps.map(step => ({
+          steps: steps.map((step: any) => ({
             id: step.id,
             name: step.name,
             enabled: step.enabled,
-            productCount: step.products.length,
+            productCount: step.StepProduct?.length || 0,
             collectionCount: step.collections.length,
             products: step.products.map((p: any) => ({
               id: p.id,

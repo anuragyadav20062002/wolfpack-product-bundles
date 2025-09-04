@@ -68,19 +68,19 @@ export default function BundleTypeSelection() {
                 </InlineStack>
                 
                 <BlockStack gap="300">
-                  <Text variant="bodyMd" tone="subdued">
+                  <Text variant="bodyMd" tone="subdued" as="p">
                     Real-time cart transformation that merges bundle items into 
                     a single cart line with automatic discount pricing.
                   </Text>
                   
                   <BlockStack gap="200">
-                    <Text variant="bodySm" fontWeight="semibold">Features:</Text>
+                    <Text variant="bodySm" fontWeight="semibold" as="p">Features:</Text>
                     <ul style={{ paddingLeft: '16px', margin: 0 }}>
-                      <li><Text variant="bodySm">Real-time cart updates</Text></li>
-                      <li><Text variant="bodySm">Bundle appears as single item</Text></li>
-                      <li><Text variant="bodySm">Discount pricing applied automatically</Text></li>
-                      <li><Text variant="bodySm">Immediate savings visibility</Text></li>
-                      <li><Text variant="bodySm">Enhanced shopping experience</Text></li>
+                      <li><Text variant="bodySm" as="span">Real-time cart updates</Text></li>
+                      <li><Text variant="bodySm" as="span">Bundle appears as single item</Text></li>
+                      <li><Text variant="bodySm" as="span">Discount pricing applied automatically</Text></li>
+                      <li><Text variant="bodySm" as="span">Immediate savings visibility</Text></li>
+                      <li><Text variant="bodySm" as="span">Enhanced shopping experience</Text></li>
                     </ul>
                   </BlockStack>
                   
@@ -98,7 +98,7 @@ export default function BundleTypeSelection() {
               </Card>
             </Layout.Section>
 
-            <Layout.Section variant="twoThirds">
+            <Layout.Section variant="oneHalf">
               <Card>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h3">
@@ -118,18 +118,18 @@ export default function BundleTypeSelection() {
                     </Text>
                     
                     <BlockStack gap="200">
-                      <Text variant="bodySm" fontWeight="semibold">Benefits:</Text>
+                      <Text variant="bodySm" fontWeight="semibold" as="p">Benefits:</Text>
                       <ul style={{ paddingLeft: '16px', margin: 0 }}>
-                        <li><Text variant="bodySm">✅ Real-time cart synchronization</Text></li>
-                        <li><Text variant="bodySm">✅ Automatic discount application</Text></li>
-                        <li><Text variant="bodySm">✅ Clean cart presentation</Text></li>
-                        <li><Text variant="bodySm">✅ Better inventory management</Text></li>
-                        <li><Text variant="bodySm">✅ Enhanced analytics tracking</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Real-time cart synchronization</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Automatic discount application</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Clean cart presentation</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Better inventory management</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Enhanced analytics tracking</Text></li>
                       </ul>
                     </BlockStack>
                     
                     {!shopifyPlus && (
-                      <Text variant="bodyMd" tone="subdued">
+                      <Text variant="bodyMd" tone="subdued" as="p">
                         <strong>Note:</strong> Cart transform functionality requires Shopify Plus. 
                         Please upgrade your plan to access this feature.
                       </Text>

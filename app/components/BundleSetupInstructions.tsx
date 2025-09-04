@@ -27,7 +27,7 @@ export function BundleSetupInstructions({
         <Text variant="headingSm" as="h3">
           {title}
         </Text>
-        <Text variant="bodySm" tone="subdued">
+        <Text variant="bodySm" tone="subdued" as="p">
           {subtitle}
         </Text>
         
@@ -43,7 +43,6 @@ export function BundleSetupInstructions({
                   key={step.id}
                   variant="plain" 
                   fullWidth 
-                  textAlign="left"
                   onClick={step.onClick}
                 >
                   <InlineStack gap="200" align="start">
@@ -64,10 +63,10 @@ export function BundleSetupInstructions({
                       {stepNumber}
                     </div>
                     <BlockStack gap="050">
-                      <Text variant="bodySm" fontWeight="medium">
+                      <Text variant="bodySm" fontWeight="medium" as="p">
                         {step.title}
                       </Text>
-                      <Text variant="bodyXs" tone="subdued">
+                      <Text variant="bodyXs" tone="subdued" as="p">
                         {step.description}
                       </Text>
                     </BlockStack>
@@ -103,10 +102,11 @@ export function BundleSetupInstructions({
                       variant="bodySm" 
                       fontWeight="medium" 
                       tone={isAvailable ? undefined : "subdued"}
+                      as="p"
                     >
                       {step.title}
                     </Text>
-                    <Text variant="bodyXs" tone="subdued">
+                    <Text variant="bodyXs" tone="subdued" as="p">
                       {step.description}
                     </Text>
                   </BlockStack>

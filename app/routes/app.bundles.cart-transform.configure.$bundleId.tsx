@@ -183,7 +183,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     }
   } catch (error) {
     console.error("Action error:", error);
-    return json({ success: false, error: error.message || "An error occurred" }, { status: 500 });
+    return json({ success: false, error: (error as Error).message || "An error occurred" }, { status: 500 });
   }
 };
 
@@ -889,7 +889,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
       console.error("Sync error:", error);
       return json({ 
         success: false, 
-        error: `Failed to sync product: ${error.message}` 
+        error: `Failed to sync product: ${(error as Error).message}` 
       }, { status: 500 });
     }
   }
@@ -1228,7 +1228,24 @@ export default function ConfigureBundleFlow() {
   const [steps, setSteps] = useState(bundle.steps || []);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState(0);
-  const [stepConditions, setStepConditions] = useState<Record<string, any[]>>({});
+  
+  // Initialize step conditions from bundle data
+  const initializeStepConditions = () => {
+    const initialConditions: Record<string, any[]> = {};
+    (bundle.steps || []).forEach((step: any) => {
+      if (step.conditionType && step.conditionOperator && step.conditionValue !== null) {
+        initialConditions[step.id] = [{
+          id: `condition_${step.id}_${Date.now()}`,
+          type: step.conditionType,
+          operator: step.conditionOperator,
+          value: step.conditionValue.toString()
+        }];
+      }
+    });
+    return initialConditions;
+  };
+  
+  const [stepConditions, setStepConditions] = useState<Record<string, any[]>>(initializeStepConditions);
   console.log("[DEBUG] Initial step conditions state:", stepConditions);
   
   // State for widget placement
@@ -1298,7 +1315,7 @@ export default function ConfigureBundleFlow() {
     discountMessagingEnabled: true,
     selectedCollections: JSON.stringify({}),
     ruleMessages: JSON.stringify({}),
-    stepConditions: JSON.stringify({}),
+    stepConditions: JSON.stringify(initializeStepConditions()),
     bundleProduct: loadedBundleProduct || null, // Initialize with loaded data, ensuring null if undefined
     productStatus: loadedBundleProduct?.status || "ACTIVE",
   });
@@ -1390,13 +1407,14 @@ export default function ConfigureBundleFlow() {
         // It automatically dismisses when form inputs return to their original values
         // We just need to ensure the hidden inputs reflect the current state correctly
         const formInputs = form.querySelectorAll('input[type="hidden"]');
-        formInputs.forEach((input: HTMLInputElement) => {
+        formInputs.forEach((input) => {
+          const htmlInput = input as HTMLInputElement;
           // Update hidden inputs to current values without triggering events
-          if (input.name) {
+          if (htmlInput.name) {
             // Update the value silently to reflect current state
-            const currentValue = getCurrentValueForField(input.name);
+            const currentValue = getCurrentValueForField(htmlInput.name);
             if (currentValue !== undefined) {
-              input.value = currentValue;
+              htmlInput.value = currentValue;
             }
           }
         });
@@ -1527,7 +1545,7 @@ export default function ConfigureBundleFlow() {
       return;
     } catch (error) {
       console.error("Save failed:", error);
-      shopify.toast.show(error.message || "Failed to save changes", { isError: true });
+      shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true });
     }
   }, [bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
 
@@ -1539,7 +1557,7 @@ export default function ConfigureBundleFlow() {
       // Handle different action types based on the response or form data
       if (result.success) {
         // Check if this was a save bundle action by looking for bundle data in response
-        if (result.bundle) {
+        if ('bundle' in result && result.bundle) {
           // This is a save bundle response
           setOriginalValues({
             status: bundleStatus,
@@ -1564,15 +1582,16 @@ export default function ConfigureBundleFlow() {
             discount_pricing: false
           });
           
-          shopify.toast.show(result.message || "Changes saved successfully", { isError: false });
-        } else if (result.productId) {
+          shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
+        } else if ('productId' in result && result.productId) {
           // This is a sync product response
-          const syncMessage = result.message || "Product synced successfully";
+          const syncMessage = ('message' in result ? result.message : null) || "Product synced successfully";
           shopify.toast.show(syncMessage, { isError: false });
           
           // Show detailed sync information if available
-          if (result.syncedData) {
-            const { title, status, lastUpdated, changesDetected } = result.syncedData;
+          if ('syncedData' in result && result.syncedData) {
+            const syncedData = result.syncedData as any;
+            const { title, status, lastUpdated, changesDetected } = syncedData;
               title,
               status,
               lastUpdated,

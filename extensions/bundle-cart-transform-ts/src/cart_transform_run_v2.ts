@@ -1,7 +1,5 @@
-import type {
-  CartTransformRunResult,
-  Input_CartTransformRun,
-} from "../generated/api";
+// Import types from cart_transform_run.ts
+import type { CartTransformInput, CartTransformResult, CartTransformOperation } from "./cart_transform_run";
 import {
   getAllBundleDataFromCart,
   checkCartMeetsBundleConditions,
@@ -19,8 +17,8 @@ import {
  * Supports both merge (components -> bundle) and expand (bundle -> components) operations
  */
 export function cartTransformRun(
-  input: Input_CartTransformRun,
-): CartTransformRunResult {
+  input: CartTransformInput,
+): CartTransformResult {
   console.log("🔍 [CART TRANSFORM V2 DEBUG] Enhanced Cart Transform function called!");
   console.log("🔍 [CART TRANSFORM V2 DEBUG] Function execution started at:", new Date().toISOString());
 
@@ -155,7 +153,7 @@ function createBundleMergeOperation(
   console.log(`🔍 [CART TRANSFORM V2 DEBUG] Parent variant ID: ${parentVariantId}`);
 
   // Create the merge operation structure
-  const mergeOperation = {
+  const mergeOperation: CartTransformOperation = {
     merge: {
       cartLines: cartLines,
       parentVariantId: parentVariantId,
@@ -190,13 +188,13 @@ function createBundleMergeOperation(
       discountPercentage = applicableRule.percentageOff;
     } else if (bundle.pricing.discountMethod === "fixed_amount_off" && applicableRule.fixedAmountOff > 0) {
       discountPercentage = Math.min(99, Math.max(0, (applicableRule.fixedAmountOff / totalOriginalCost) * 100));
-    } else if (bundle.pricing.discountMethod === "fixed_bundle_price" && bundle.pricing.fixedPrice > 0) {
+    } else if (bundle.pricing.discountMethod === "fixed_bundle_price" && bundle.pricing.fixedPrice && bundle.pricing.fixedPrice > 0) {
       if (bundle.pricing.fixedPrice < totalOriginalCost) {
         discountPercentage = Math.min(99, Math.max(0, ((totalOriginalCost - bundle.pricing.fixedPrice) / totalOriginalCost) * 100));
       }
     }
     
-    if (discountPercentage > 0) {
+    if (discountPercentage > 0 && mergeOperation.merge) {
       mergeOperation.merge.price = {
         percentageDecrease: {
           value: discountPercentage

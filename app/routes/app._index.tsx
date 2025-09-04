@@ -45,10 +45,10 @@ export default function Index() {
                   <BlockStack gap="400" align="center">
                     <Icon source={CartIcon} tone="primary" />
                     <BlockStack gap="200" align="center">
-                      <Text variant="displayMd" as="h1" alignment="center">
+                      <Text variant="headingXl" as="h1" alignment="center">
                         Welcome to Wolfpack: Product Bundles
                       </Text>
-                      <Text variant="bodyLg" tone="subdued" alignment="center">
+                      <Text variant="bodyLg" tone="subdued" alignment="center" as="p">
                         Create powerful product bundles that increase your average order value 
                         and provide exceptional customer experiences.
                       </Text>
@@ -64,7 +64,7 @@ export default function Index() {
                       Start My Bundling Journey
                     </Button>
                     
-                    <Text variant="bodySm" tone="subdued" alignment="center">
+                    <Text variant="bodySm" tone="subdued" alignment="center" as="p">
                       Set up your first bundle in just a few minutes
                     </Text>
                   </BlockStack>

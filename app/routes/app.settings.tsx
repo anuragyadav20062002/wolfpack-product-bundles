@@ -35,7 +35,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     shopSettings = await db.shopSettings.create({
       data: {
         shopId: shop,
-        discountImplementation: "discount_function",
+        discountImplementation: "cart_transformation",
       },
     });
   }
@@ -52,9 +52,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const shop = session.shop;
   
   const formData = await request.formData();
-  const discountImplementation = formData.get("discountImplementation") as "discount_function" | "cart_transformation";
+  const discountImplementation = formData.get("discountImplementation") as "cart_transformation";
 
-  if (!discountImplementation || !["discount_function", "cart_transformation"].includes(discountImplementation)) {
+  if (!discountImplementation || !["cart_transformation"].includes(discountImplementation)) {
     return json({ error: "Invalid discount implementation type" }, { status: 400 });
   }
 
@@ -75,7 +75,7 @@ export default function Settings() {
   const { shopSettings } = useLoaderData<LoaderData>();
   const fetcher = useFetcher();
   
-  const [discountImplementation, setDiscountImplementation] = useState<"discount_function" | "cart_transformation">(
+  const [discountImplementation, setDiscountImplementation] = useState<"cart_transformation">(
     shopSettings.discountImplementation
   );
   const [showToast, setShowToast] = useState(false);
@@ -90,7 +90,7 @@ export default function Settings() {
   const handleDiscountImplementationChange = useCallback(
     (checked: boolean, newValue: string) => {
       if (checked) {
-        setDiscountImplementation(newValue as "discount_function" | "cart_transformation");
+        setDiscountImplementation(newValue as "cart_transformation");
       }
     },
     []
@@ -117,7 +117,7 @@ export default function Settings() {
                   Discount Implementation
                 </Text>
                 
-                <Text as="p" color="subdued">
+                <Text as="p" tone="subdued">
                   Choose how bundle discounts are applied in your store. This setting affects all bundles store-wide.
                 </Text>
 
@@ -142,7 +142,7 @@ export default function Settings() {
                 </BlockStack>
 
                 {discountImplementation === "cart_transformation" && (
-                  <Banner status="info">
+                  <Banner tone="info">
                     <p>
                       <strong>Cart Transformation Features:</strong>
                     </p>
@@ -179,7 +179,7 @@ export default function Settings() {
                 <BlockStack gap="200">
                   <div>
                     <Text variant="headingSm" as="h4">Discount Functions</Text>
-                    <Text as="p" color="subdued">
+                    <Text as="p" tone="subdued">
                       ✓ Works on all Shopify plans<br/>
                       ✓ Compatible with all themes<br/>
                       ✓ Standard checkout flow<br/>
@@ -189,7 +189,7 @@ export default function Settings() {
                   
                   <div>
                     <Text variant="headingSm" as="h4">Cart Transformation</Text>
-                    <Text as="p" color="subdued">
+                    <Text as="p" tone="subdued">
                       ✓ Real-time pricing updates<br/>
                       ✓ Bundle as single cart item<br/>
                       ✓ Enhanced user experience<br/>

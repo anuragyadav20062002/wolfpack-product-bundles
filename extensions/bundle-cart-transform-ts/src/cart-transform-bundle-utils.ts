@@ -114,7 +114,7 @@ export function checkCartMeetsBundleConditions(
       } else if (bundleData.pricing.discountMethod === "percentage_off") {
         totalDiscountedCost = totalOriginalCost * (1 - applicableRule.percentageOff / 100);
         console.log(`🔍 [CART TRANSFORM DEBUG] Percentage discount: ${totalOriginalCost} * (1 - ${applicableRule.percentageOff}/100) = ${totalDiscountedCost}`);
-      } else if (bundleData.pricing.discountMethod === "fixed_bundle_price" && bundleData.pricing.fixedPrice > 0) {
+      } else if (bundleData.pricing.discountMethod === "fixed_bundle_price" && bundleData.pricing.fixedPrice && bundleData.pricing.fixedPrice > 0) {
         totalDiscountedCost = bundleData.pricing.fixedPrice;
         console.log(`🔍 [CART TRANSFORM DEBUG] Fixed bundle price: ${totalDiscountedCost}`);
       }

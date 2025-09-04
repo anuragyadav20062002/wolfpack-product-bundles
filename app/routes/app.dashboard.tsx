@@ -188,7 +188,7 @@ export default function Dashboard() {
                       <Text variant="headingLg" as="h2" alignment="center">
                         Setup your bundles quickly
                       </Text>
-                      <Text variant="bodyMd" tone="subdued" alignment="center">
+                      <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
                         Get your bundles up and running in 2 easy steps!
                       </Text>
                     </BlockStack>
@@ -248,7 +248,7 @@ export default function Dashboard() {
                       <Text variant="headingSm" as="h4" tone="text-inverse">
                         Bundle Overview
                       </Text>
-                      <Text variant="bodyLg" fontWeight="semibold" tone="text-inverse">
+                      <Text as="h3" variant="bodyLg" fontWeight="semibold" tone="text-inverse">
                         {bundles.length} Total
                       </Text>
                     </InlineStack>
@@ -270,31 +270,31 @@ export default function Dashboard() {
                           <Text variant="headingLg" as="p" fontWeight="bold">
                             {bundles.filter(b => b.status === 'active').length}
                           </Text>
-                          <Text variant="bodyMd" tone="subdued">Active Bundles</Text>
+                          <Text as="span" variant="bodyMd" tone="subdued">Active Bundles</Text>
                         </div>
                         <div style={{ textAlign: 'center', padding: '0.5rem' }}>
                           <Text variant="headingLg" as="p" fontWeight="bold">
                             {bundles.filter(b => b.status === 'draft').length}
                           </Text>
-                          <Text variant="bodyMd" tone="subdued">Draft Bundles</Text>
+                          <Text as="span" variant="bodyMd" tone="subdued">Draft Bundles</Text>
                         </div>
                         <div style={{ textAlign: 'center', padding: '0.5rem' }}>
                           <Text variant="headingLg" as="p" fontWeight="bold">
                             {bundles.filter(b => b.pricing?.enableDiscount).length}
                           </Text>
-                          <Text variant="bodyMd" tone="subdued">With Discounts</Text>
+                          <Text as="span" variant="bodyMd" tone="subdued">With Discounts</Text>
                         </div>
                         <div style={{ textAlign: 'center', padding: '0.5rem' }}>
                           <Text variant="headingLg" as="p" fontWeight="bold">
                             {bundles.reduce((total, b) => total + (b.steps?.length || 0), 0)}
                           </Text>
-                          <Text variant="bodyMd" tone="subdued">Total Steps</Text>
+                          <Text as="span" variant="bodyMd" tone="subdued">Total Steps</Text>
                         </div>
                       </div>
                       
                       {bundles.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '2rem' }}>
-                          <Text variant="bodyLg" tone="subdued">
+                          <Text as="span" variant="bodyLg" tone="subdued">
                             No bundles created yet
                           </Text>
                         </div>
@@ -326,7 +326,7 @@ export default function Dashboard() {
                   
                   {/* Content area */}
                   <div style={{ padding: '0 1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <InlineStack gap="400" align="start" blockAlignment="start">
+                    <InlineStack gap="400" align="start" blockAlign="start">
                       <div style={{ position: 'relative', minWidth: '120px' }}>
                         <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
                           <img 
@@ -351,10 +351,10 @@ export default function Dashboard() {
                       
                       <BlockStack gap="200" align="start">
                         <BlockStack gap="100">
-                          <Text variant="bodyLg" fontWeight="semibold">
+                          <Text as="h4" variant="bodyLg" fontWeight="semibold">
                             Yash Chaudhari
                           </Text>
-                          <Text variant="bodySm" tone="subdued">
+                          <Text as="span" variant="bodySm" tone="subdued">
                             Founder
                           </Text>
                         </BlockStack>
@@ -363,19 +363,19 @@ export default function Dashboard() {
                         <BlockStack gap="150">
                           <InlineStack gap="200" align="start">
                             <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
-                            <Text variant="bodySm">
+                            <Text as="span" variant="bodySm">
                               Bundle setup & publishing
                             </Text>
                           </InlineStack>
                           <InlineStack gap="200" align="start">
                             <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
-                            <Text variant="bodySm">
+                            <Text as="span" variant="bodySm">
                               Custom design & styling
                             </Text>
                           </InlineStack>
                           <InlineStack gap="200" align="start">
                             <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
-                            <Text variant="bodySm">
+                            <Text as="span" variant="bodySm">
                               Technical support
                             </Text>
                           </InlineStack>
@@ -388,7 +388,7 @@ export default function Dashboard() {
                   <div style={{ padding: '1.5rem', marginTop: 'auto' }}>
                     <InlineStack gap="300" align="center">
                       <div style={{ flex: 1 }}>
-                        <Text variant="bodySm" tone="subdued">
+                        <Text as="span" variant="bodySm" tone="subdued">
                           Available Mon-Fri • Responds within 1hr
                         </Text>
                       </div>

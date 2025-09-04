@@ -1,7 +1,89 @@
-import type {
-  CartTransformRunResult,
-  Input_CartTransformRun,
-} from "../generated/api";
+// Define types for cart transform function
+export interface CartTransformInput {
+  cart: {
+    lines: Array<{
+      id: string;
+      quantity: number;
+      attribute?: {
+        key: string;
+        value: string;
+      };
+      merchandise: {
+        __typename: string;
+        id: string;
+        product?: {
+          id: string;
+          title?: string;
+          handle?: string;
+          metafield?: {
+            value: string;
+          };
+        };
+        componentReference?: {
+          value: string;
+        };
+        componentQuantities?: {
+          value: string;
+        };
+        bundleConfig?: {
+          value: string;
+        };
+      };
+      cost: {
+        amountPerQuantity: {
+          amount: string;
+          currencyCode: string;
+        };
+        totalAmount: {
+          amount: string;
+          currencyCode: string;
+        };
+      };
+    }>;
+    cost: {
+      totalAmount: {
+        amount: string;
+        currencyCode: string;
+      };
+      subtotalAmount: {
+        amount: string;
+        currencyCode: string;
+      };
+    };
+  };
+  shop?: {
+    metafield?: {
+      value: string;
+    };
+  };
+}
+
+export interface CartTransformOperation {
+  merge?: {
+    cartLines: Array<{
+      cartLineId: string;
+      quantity: number;
+    }>;
+    parentVariantId: string;
+    title: string;
+    image?: {
+      url: string;
+    };
+    attributes?: Array<{
+      key: string;
+      value: string;
+    }>;
+    price?: {
+      percentageDecrease: {
+        value: number;
+      };
+    };
+  };
+}
+
+export interface CartTransformResult {
+  operations: CartTransformOperation[];
+}
 import {
   getAllBundleDataFromCart,
   checkCartMeetsBundleConditions,
@@ -15,8 +97,8 @@ import {
 } from "./cart-transform-currency-utils";
 
 export function cartTransformRun(
-  input: Input_CartTransformRun,
-): CartTransformRunResult {
+  input: CartTransformInput,
+): CartTransformResult {
   console.log("🔍 [CART TRANSFORM DEBUG] Cart Transform function called!");
   console.log("🔍 [CART TRANSFORM DEBUG] Function execution started at:", new Date().toISOString());
   console.log("🔍 [CART TRANSFORM DEBUG] Input cart:", JSON.stringify(input.cart, null, 2));
@@ -168,7 +250,7 @@ function createBundleTransformOperation(
   console.log(`🔍 [CART TRANSFORM DEBUG] Cart lines to merge:`, cartLines);
 
   // Create the merge operation structure
-  const mergeOperation = {
+  const mergeOperation: CartTransformOperation = {
     merge: {
       cartLines: cartLines,
       parentVariantId: parentVariantId,
@@ -202,7 +284,7 @@ function createBundleTransformOperation(
       // For fixed amount discounts, calculate the equivalent percentage
       discountPercentage = Math.min(99, Math.max(0, (applicableRule.fixedAmountOff / totalOriginalCost) * 100));
       console.log(`🔍 [CART TRANSFORM DEBUG] Applied fixed amount discount as percentage: ${discountPercentage}% (${applicableRule.fixedAmountOff} off ${totalOriginalCost})`);
-    } else if (bundle.pricing.discountMethod === "fixed_bundle_price" && bundle.pricing.fixedPrice > 0) {
+    } else if (bundle.pricing.discountMethod === "fixed_bundle_price" && bundle.pricing.fixedPrice && bundle.pricing.fixedPrice > 0) {
       // For fixed bundle price, calculate percentage discount
       if (bundle.pricing.fixedPrice < totalOriginalCost) {
         discountPercentage = Math.min(99, Math.max(0, ((totalOriginalCost - bundle.pricing.fixedPrice) / totalOriginalCost) * 100));
@@ -213,7 +295,7 @@ function createBundleTransformOperation(
     }
     
     // Apply the discount percentage if it's greater than 0
-    if (discountPercentage > 0) {
+    if (discountPercentage > 0 && mergeOperation.merge) {
       mergeOperation.merge.price = {
         percentageDecrease: {
           value: discountPercentage
