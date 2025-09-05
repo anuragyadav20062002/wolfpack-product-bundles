@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -75,8 +75,8 @@ export default function Settings() {
   const { shopSettings } = useLoaderData<LoaderData>();
   const fetcher = useFetcher();
   
-  const [discountImplementation, setDiscountImplementation] = useState<"cart_transformation">(
-    shopSettings.discountImplementation
+  const [discountImplementation, setDiscountImplementation] = useState<"cart_transformation" | "discount_function">(
+    shopSettings.discountImplementation as "cart_transformation" | "discount_function"
   );
   const [showToast, setShowToast] = useState(false);
 
@@ -90,7 +90,7 @@ export default function Settings() {
   const handleDiscountImplementationChange = useCallback(
     (checked: boolean, newValue: string) => {
       if (checked) {
-        setDiscountImplementation(newValue as "cart_transformation");
+        setDiscountImplementation(newValue as "cart_transformation" | "discount_function");
       }
     },
     []

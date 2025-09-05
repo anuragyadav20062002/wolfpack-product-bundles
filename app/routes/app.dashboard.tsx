@@ -11,7 +11,6 @@ import {
   ButtonGroup,
   Badge,
   DataTable,
-  EmptyState,
   Thumbnail,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
@@ -22,15 +21,15 @@ import db from "../db.server";
 interface Bundle {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   shopId: string;
-  shopifyProductId?: string;
+  shopifyProductId?: string | null;
   bundleType: 'cart_transform';
   status: 'draft' | 'active' | 'archived';
   active: boolean;
-  publishedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  publishedAt?: Date | string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   steps: any[];
   pricing?: any;
 }
@@ -101,7 +100,7 @@ export default function Dashboard() {
     navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
   };
 
-  const handleBundleRowClick = (bundle: Bundle) => {
+  const handleBundleRowClick = (_bundle: Bundle) => {
     navigate("/app/bundles/cart-transform");
   };
 
@@ -114,7 +113,7 @@ export default function Dashboard() {
     }
   };
 
-  const getBundleTypeDisplay = (bundleType: string) => {
+  const getBundleTypeDisplay = (_bundleType: string) => {
     return <Badge tone="info">Cart Transform</Badge>;
   };
 
@@ -123,11 +122,11 @@ export default function Dashboard() {
       case "active":
         return <Badge tone="success">Active</Badge>;
       case "draft":
-        return <Badge tone="subdued">Draft</Badge>;
+        return <Badge tone="info">Draft</Badge>;
       case "archived":
         return <Badge tone="critical">Archived</Badge>;
       default:
-        return <Badge tone="subdued">{status}</Badge>;
+        return <Badge tone="info">{status}</Badge>;
     }
   };
 
@@ -139,8 +138,7 @@ export default function Dashboard() {
     bundle.pricing?.enableDiscount ? "Enabled" : "Disabled",
     bundle.createdAt ? new Date(bundle.createdAt).toLocaleDateString() : "",
     <ButtonGroup key={bundle.id}>
-      <Button size="micro" onClick={(e) => {
-        e.stopPropagation();
+      <Button size="micro" onClick={() => {
         handleEditBundle(bundle);
       }}>
         Edit
@@ -148,8 +146,7 @@ export default function Dashboard() {
       <Button 
         size="micro" 
         tone="critical" 
-        onClick={(e) => {
-          e.stopPropagation();
+        onClick={() => {
           handleDeleteBundle(bundle.id);
         }}
       >

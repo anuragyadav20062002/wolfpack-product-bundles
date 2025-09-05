@@ -40,7 +40,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.log('📋 Existing products:', checkData.data.products.edges);
     
     // Create sample bundle products if none exist with proper metafields
-    const productsToCreate = [];
     const hasExistingBundleProducts = checkData.data.products.edges.some(
       (edge: any) => edge.node.cartTransformConfig?.value
     );

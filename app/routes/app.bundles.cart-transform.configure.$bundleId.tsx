@@ -12,7 +12,6 @@ import {
   Icon,
   Select,
   Badge,
-  ButtonGroup,
   TextField,
   Tabs,
   Collapsible,
@@ -23,7 +22,6 @@ import {
   List,
 } from "@shopify/polaris";
 import {
-  ArrowLeftIcon,
   ViewIcon,
   SettingsIcon,
   DragHandleIcon,
@@ -44,16 +42,6 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
-// Bundle types based on existing schema
-interface Bundle {
-  id: string;
-  name: string;
-  description?: string;
-  status: 'draft' | 'active' | 'archived';
-  bundleType: 'cart_transform';
-  steps: any[];
-  pricing?: any;
-}
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -677,7 +665,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 }
 
 // Handle updating bundle status
-async function handleUpdateBundleStatus(admin: any, session: any, bundleId: string, formData: FormData) {
+async function handleUpdateBundleStatus(_admin: any, session: any, bundleId: string, formData: FormData) {
   const status = formData.get("status") as string;
 
   const updatedBundle = await db.bundle.update({
@@ -700,7 +688,7 @@ async function handleUpdateBundleStatus(admin: any, session: any, bundleId: stri
 }
 
 // Handle syncing bundle product
-async function handleSyncProduct(admin: any, session: any, bundleId: string, formData: FormData) {
+async function handleSyncProduct(admin: any, session: any, bundleId: string, _formData: FormData) {
   const bundle = await db.bundle.findUnique({
     where: { 
       id: bundleId, 
@@ -943,7 +931,6 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
 
     productId = data.data?.productCreate?.product?.id;
     
-    const createdStatus = data.data?.productCreate?.product?.status;
 
     // Update bundle with product ID
     await db.bundle.update({
@@ -1003,7 +990,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, for
 }
 
 // Handle getting available pages for widget placement
-async function handleGetPages(admin: any, session: any) {
+async function handleGetPages(admin: any, _session: any) {
   const GET_PAGES = `
     query getPages($first: Int!) {
       pages(first: $first) {
@@ -1181,7 +1168,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
 }
 
 // Handle getting current theme for deep linking
-async function handleGetCurrentTheme(admin: any, session: any) {
+async function handleGetCurrentTheme(admin: any, _session: any) {
   const GET_CURRENT_THEME = `
     query getCurrentTheme {
       themes(first: 1, query: "role:main") {
@@ -1248,13 +1235,6 @@ export default function ConfigureBundleFlow() {
   const [stepConditions, setStepConditions] = useState<Record<string, any[]>>(initializeStepConditions);
   console.log("[DEBUG] Initial step conditions state:", stepConditions);
   
-  // State for widget placement
-  const [widgetPlacementConfig, setWidgetPlacementConfig] = useState<Record<string, boolean>>({
-    productPages: true,
-    collectionPages: false,
-    cartPage: false,
-    customPages: false
-  });
   
   // State for page selection modal
   const [isPageSelectionModalOpen, setIsPageSelectionModalOpen] = useState(false);
@@ -1269,7 +1249,6 @@ export default function ConfigureBundleFlow() {
   
   // State for bundle product - initialize with loaded data
   const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct || null);
-  const [isBundleProductPickerOpen, setIsBundleProductPickerOpen] = useState(false);
   const [productStatus, setProductStatus] = useState(loadedBundleProduct?.status || "ACTIVE");
   
   // State for collections - initialize with data from loaded bundle steps
@@ -1282,8 +1261,6 @@ export default function ConfigureBundleFlow() {
     });
     return collections;
   });
-  const [isCollectionPickerOpen, setIsCollectionPickerOpen] = useState(false);
-  const [currentStepIdForCollection, setCurrentStepIdForCollection] = useState<string | null>(null);
   
   // State for discount & pricing
   const [discountEnabled, setDiscountEnabled] = useState(bundle.pricing?.enableDiscount || false);
@@ -1592,10 +1569,7 @@ export default function ConfigureBundleFlow() {
           if ('syncedData' in result && result.syncedData) {
             const syncedData = result.syncedData as any;
             const { title, status, lastUpdated, changesDetected } = syncedData;
-              title,
-              status,
-              lastUpdated,
-              changesDetected
+            console.log('Sync data:', { title, status, lastUpdated, changesDetected });
             
             // If changes were detected and applied, show additional notification
             if (changesDetected) {
@@ -1607,19 +1581,19 @@ export default function ConfigureBundleFlow() {
           
           // Note: Removed forced page reload to preserve unsaved UI changes
           // The sync updates metafields but doesn't affect the current UI state
-        } else if (result.templates) {
+        } else if ('templates' in result && result.templates) {
           // This is a get theme templates response
-          setAvailablePages(result.templates || []);
+          setAvailablePages((result as any).templates || []);
           setIsLoadingPages(false);
-        } else if (result.themeId) {
+        } else if ('themeId' in result && result.themeId) {
           // This is a get current theme response - handled by individual callbacks
         } else {
           // Generic success response
-          shopify.toast.show(result.message || "Operation completed successfully", { isError: false });
+          shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });
         }
       } else {
         // Handle errors based on action type
-        const errorMessage = result.error || "Operation failed";
+        const errorMessage = ('error' in result ? result.error : null) || "Operation failed";
         shopify.toast.show(errorMessage, { isError: true });
         
         // Handle specific error cases
@@ -1818,27 +1792,6 @@ export default function ConfigureBundleFlow() {
   }, []);
 
   // Step management functions
-  const addNewStep = useCallback(() => {
-    const newStep = {
-      id: `temp-${Date.now()}`,
-      name: `Step ${steps.length + 1}`,
-      position: steps.length,
-      minQuantity: 1,
-      maxQuantity: 1,
-      enabled: true,
-      StepProduct: [],
-      icon: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      productCategory: null,
-      collections: null,
-      products: null,
-      displayVariantsAsIndividual: false,
-      bundleId: bundle.id,
-    };
-    setSteps([...steps, newStep] as any);
-    setExpandedSteps(new Set([...Array.from(expandedSteps), newStep.id]));
-  }, [steps, expandedSteps, bundle.id]);
 
 
   const toggleStepExpansion = useCallback((stepId: string) => {
@@ -1943,7 +1896,7 @@ export default function ConfigureBundleFlow() {
       console.log("Product selection cancelled or failed:", error);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error : 
-                          (error && typeof error === 'object' && 'message' in error) ? error.message : '';
+                          (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
       
       const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
                             errorMessage?.toLowerCase().includes('abort') ||
@@ -1974,7 +1927,7 @@ export default function ConfigureBundleFlow() {
       // Response will be handled by the existing useEffect
     } catch (error) {
       console.error("Product sync failed:", error);
-      shopify.toast.show(error.message || "Failed to sync product", { isError: true });
+      shopify.toast.show((error as Error).message || "Failed to sync product", { isError: true });
     }
   }, [fetcher, shopify]);
 
@@ -1985,7 +1938,7 @@ export default function ConfigureBundleFlow() {
         multiple: false,
       });
       
-      if (products.length > 0) {
+      if (products && products.length > 0) {
         const selectedProduct = products[0];
         setBundleProduct(selectedProduct);
         
@@ -1999,7 +1952,7 @@ export default function ConfigureBundleFlow() {
       console.log("Bundle product selection cancelled or failed:", error);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error : 
-                          (error && typeof error === 'object' && 'message' in error) ? error.message : '';
+                          (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
       
       const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
                             errorMessage?.toLowerCase().includes('abort') ||
@@ -2014,16 +1967,6 @@ export default function ConfigureBundleFlow() {
     }
   }, [shopify]);
 
-  const handleProductStatusChange = useCallback(async (newStatus: string) => {
-    try {
-      setProductStatus(newStatus);
-      // TODO: Implement actual product status update via GraphQL
-      shopify.toast.show("Product status updated successfully", { isError: false });
-    } catch (error) {
-      console.error("Product status update failed:", error);
-      shopify.toast.show("Failed to update product status", { isError: true });
-    }
-  }, [shopify]);
 
   // Step management handlers
   const cloneStep = useCallback((stepId: string) => {
@@ -2091,7 +2034,7 @@ export default function ConfigureBundleFlow() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Drag and drop handlers
-  const handleDragStart = useCallback((e: React.DragEvent, stepId: string, index: number) => {
+  const handleDragStart = useCallback((e: React.DragEvent, stepId: string, _index: number) => {
     setDraggedStep(stepId);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/html", stepId);
@@ -2169,7 +2112,7 @@ export default function ConfigureBundleFlow() {
       displayVariantsAsIndividual: false
     };
     setSteps(prev => {
-      const newSteps = [...prev, newStep];
+      const newSteps = [...prev, newStep as any];
       // Trigger save bar for adding step
       triggerSaveBar();
       return newSteps;
@@ -2186,10 +2129,10 @@ export default function ConfigureBundleFlow() {
         multiple: true,
       });
       
-      if (collections.length > 0) {
+      if (collections && collections.length > 0) {
         setSelectedCollections(prev => ({
           ...prev,
-          [stepId]: collections
+          [stepId]: collections as any
         }));
         
         // Trigger save bar for collection selection changes
@@ -2202,7 +2145,7 @@ export default function ConfigureBundleFlow() {
       console.log("Collection selection cancelled or failed:", error);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error : 
-                          (error && typeof error === 'object' && 'message' in error) ? error.message : '';
+                          (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
       
       const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
                             errorMessage?.toLowerCase().includes('abort') ||
@@ -2238,7 +2181,7 @@ export default function ConfigureBundleFlow() {
       };
     }
     
-    setDiscountRules([...discountRules, newRule]);
+    setDiscountRules([...(discountRules as any[]), newRule]);
     
     // Initialize messaging for new rule
     setRuleMessages(prev => ({
@@ -2254,7 +2197,7 @@ export default function ConfigureBundleFlow() {
   }, [discountRules, discountType, triggerSaveBar]);
 
   const removeDiscountRule = useCallback((ruleId: string) => {
-    setDiscountRules(discountRules.filter(rule => rule.id !== ruleId));
+    setDiscountRules((discountRules as any[]).filter((rule: any) => rule.id !== ruleId));
     // Remove messaging for deleted rule
     setRuleMessages(prev => {
       const updated = { ...prev };
@@ -2274,7 +2217,7 @@ export default function ConfigureBundleFlow() {
       processedValue = Math.max(0, numValue || 0);
     }
     
-    setDiscountRules(discountRules.map(rule => 
+    setDiscountRules((discountRules as any[]).map((rule: any) => 
       rule.id === ruleId ? { ...rule, [field]: processedValue } : rule
     ));
     
@@ -2374,12 +2317,6 @@ export default function ConfigureBundleFlow() {
     { label: "Archived", value: "archived" },
   ];
 
-  // Product status options based on Shopify ProductStatus enum
-  const productStatusOptions = [
-    { label: "Active", value: "ACTIVE" },
-    { label: "Draft", value: "DRAFT" },
-    { label: "Archived", value: "ARCHIVED" },
-  ];
 
   return (
     <Page
@@ -2444,7 +2381,7 @@ export default function ConfigureBundleFlow() {
                 <Text variant="headingSm" as="h3">
                   Bundle Setup
                 </Text>
-                <Text variant="bodySm" tone="subdued">
+                <Text variant="bodySm" tone="subdued" as="p">
                   Set-up your bundle builder
                 </Text>
                 
@@ -2534,9 +2471,11 @@ export default function ConfigureBundleFlow() {
                     Bundle Status
                   </Text>
                   <Select
+                    label="Bundle Status"
                     options={statusOptions}
                     value={bundleStatus}
-                    onChange={setBundleStatus}
+                    onChange={(selected: string) => setBundleStatus(selected as 'active' | 'draft' | 'archived')}
+                    labelHidden
                   />
                 </BlockStack>
               </BlockStack>
@@ -2549,7 +2488,7 @@ export default function ConfigureBundleFlow() {
                   Take your bundle live
                 </Text>
                 <InlineStack align="space-between" blockAlign="center">
-                  <Text variant="bodyMd">
+                  <Text variant="bodyMd" as="p">
                     Place on theme
                   </Text>
                   <Button 
@@ -2573,7 +2512,7 @@ export default function ConfigureBundleFlow() {
                   <Text variant="headingSm" as="h3">
                     Bundle Steps
                   </Text>
-                  <Text variant="bodyMd" tone="subdued">
+                  <Text variant="bodyMd" tone="subdued" as="p">
                     Create steps for your multi-step bundle here. Select product options for each step below
                   </Text>
                 </BlockStack>
@@ -2618,7 +2557,7 @@ export default function ConfigureBundleFlow() {
                         <InlineStack align="space-between" blockAlign="center" gap="300">
                           <InlineStack gap="200" blockAlign="center">
                             <Icon source={DragHandleIcon} tone="subdued" />
-                            <Text variant="bodyMd" fontWeight="medium">
+                            <Text variant="bodyMd" fontWeight="medium" as="p">
                               Step {index + 1}
                             </Text>
                           </InlineStack>
@@ -2650,7 +2589,7 @@ export default function ConfigureBundleFlow() {
                       </InlineStack>
 
                       {/* Expanded Step Content */}
-                      <Collapsible open={expandedSteps.has(step.id)}>
+                      <Collapsible id={`step-${step.id}`} open={expandedSteps.has(step.id)}>
                         <BlockStack gap="400">
                           {/* Step Name and Page Title */}
                           <FormLayout>

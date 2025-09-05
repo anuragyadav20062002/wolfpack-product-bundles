@@ -28,7 +28,7 @@ import db from "../db.server";
 import { authenticate } from "../shopify.server";
 import bundlePreviewStyles from "../styles/bundle-preview.css?url";
 import bundlePreviewGif from "../bundleprev.gif";
-import type { Prisma, DiscountMethodType, BundlePricing } from "@prisma/client"; // Import Prisma types
+import type { Prisma, DiscountMethodType } from "@prisma/client"; // Import Prisma types
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -46,20 +46,6 @@ interface ResourcePickerCollection {
 }
 
 // Define a type for Bundle, matching Prisma's Bundle model (used only for `publishBundle` data in action)
-interface Bundle {
-  id: string;
-  name: string;
-  description: string | null;
-  shopId: string;
-  status: string;
-  active: boolean;
-  publishedAt: Date | null;
-  settings: Prisma.JsonValue | null; // Use Prisma.JsonValue for raw JSON
-  matching: Prisma.JsonValue | null; // Use Prisma.JsonValue for raw JSON
-  createdAt: Date;
-  updatedAt: Date;
-  shopifyProductId: string | null;
-}
 
 // Define a type for BundleStep, matching Prisma schema for raw data
 interface BundleStepRaw {
@@ -347,12 +333,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const shopIdData = await shopIdResponse.json();
       const shopGid = shopIdData.data.shop.id;
 
-      // Get shop settings to determine discount implementation type
-      const shopSettings = await db.shopSettings.findUnique({
-        where: { shopId: session.shop },
-      });
       
-      const discountImplementation = shopSettings?.discountImplementation || "discount_function";
 
       // Store bundle discount settings on individual products
       const allPublishedBundles = await db.bundle.findMany({
@@ -397,7 +378,7 @@ export async function action({ request }: ActionFunctionArgs) {
               }
             : null,
           // Only include product IDs from all steps for bundle matching
-          allBundleProductIds: []
+          allBundleProductIds: [] as string[]
         };
 
         // Collect all unique product IDs from all steps for bundle matching
@@ -773,27 +754,12 @@ export default function BundleBuilderPage() {
           fetcher.data.intent === "addStep" ||
           fetcher.data.intent === "editStep"
         ) {
-          const stepData = fetcher.data as {
-            success: true;
-            step: BundleStep;
-            intent: string;
-          };
           handleAddStepModalClose();
           shopify.toast.show("Step saved successfully!");
         } else if (fetcher.data.intent === "publishBundle") {
-          const publishedBundleData = fetcher.data as {
-            success: true;
-            bundle: Bundle;
-            intent: string;
-          };
           handlePublishModalClose();
           shopify.toast.show("Bundle published successfully!");
         } else if (fetcher.data.intent === "updateDiscount") {
-          const updatedPricingData = fetcher.data as {
-            success: true;
-            pricing: BundlePricing;
-            intent: string;
-          };
           shopify.toast.show("Discount settings saved successfully!");
         }
       } else if ("error" in fetcher.data && fetcher.data.error) {

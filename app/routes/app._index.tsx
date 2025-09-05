@@ -7,11 +7,10 @@ import {
   Card,
   Button,
   BlockStack,
-  InlineStack,
   Icon,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { PlusIcon, CartIcon } from "@shopify/polaris-icons";
+import { CartIcon } from "@shopify/polaris-icons";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await authenticate.admin(request);

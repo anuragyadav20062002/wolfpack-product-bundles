@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cartTransformRun, type CartTransformInput } from "./cart_transform_run";
+import { cartTransformRun } from "./cart_transform_run";
 import { getAllBundleDataFromCart, normalizeProductId, parseBundleDataFromMetafield } from "./cart-transform-bundle-utils-v2";
 
 describe("cartTransformRun", () => {

@@ -1,4 +1,4 @@
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs, redirect } from "@remix-run/node";
+import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, Form, useActionData, useNavigation, Outlet, useLocation, useFetcher } from "@remix-run/react";
 import {
   Page,
@@ -134,10 +134,10 @@ export async function action({ request }: ActionFunctionArgs) {
             data: {
               bundleId: clonedBundle.id,
               name: step.name,
-              pageTitle: step.pageTitle,
-              products: step.products,
-              collections: step.collections,
-              conditions: step.conditions,
+              // pageTitle: (step as any).pageTitle, // Non-standard field
+              products: step.products || [],
+              collections: step.collections || [],
+              // conditions: (step as any).conditions, // Non-standard field
               displayVariantsAsIndividual: step.displayVariantsAsIndividual,
             },
           });
@@ -148,13 +148,13 @@ export async function action({ request }: ActionFunctionArgs) {
               await db.stepProduct.create({
                 data: {
                   stepId: clonedStep.id,
-                  id: stepProduct.id,
+                  productId: stepProduct.productId,
                   title: stepProduct.title,
-                  handle: stepProduct.handle,
-                  images: stepProduct.images,
-                  variants: stepProduct.variants,
-                  vendor: stepProduct.vendor,
-                  productType: stepProduct.productType,
+                  // handle: (stepProduct as any).handle, // Non-standard field
+                  // images: (stepProduct as any).images, // Non-standard field
+                  variants: stepProduct.variants || [],
+                  // vendor: (stepProduct as any).vendor, // Non-standard field
+                  // productType: stepProduct.productType, // Non-standard field
                 },
               });
             }
@@ -169,8 +169,8 @@ export async function action({ request }: ActionFunctionArgs) {
             bundleId: clonedBundle.id,
             enableDiscount: originalBundle.pricing.enableDiscount,
             discountMethod: originalBundle.pricing.discountMethod,
-            rules: originalBundle.pricing.rules,
-            messages: originalBundle.pricing.messages,
+            rules: originalBundle.pricing.rules || [],
+            messages: originalBundle.pricing.messages || [],
           },
         });
       }
@@ -350,7 +350,7 @@ export default function CartTransformBundles() {
 
   // Handle successful bundle creation
   useEffect(() => {
-    if (actionData?.success && actionData?.redirectTo) {
+    if (actionData && 'success' in actionData && actionData.success && 'redirectTo' in actionData && actionData.redirectTo) {
       setModalOpen(false);
       setBundleName("");
       setDescription("");
@@ -360,7 +360,7 @@ export default function CartTransformBundles() {
 
   // Handle other action responses
   useEffect(() => {
-    if (actionData?.success && actionData?.message) {
+    if (actionData && 'success' in actionData && actionData.success && 'message' in actionData && actionData.message) {
       // Show success message for clone/delete operations
     }
   }, [actionData]);
@@ -406,7 +406,7 @@ export default function CartTransformBundles() {
 
   const bundleRows = bundles.map((bundle) => [
     bundle.name,
-    <Badge tone={bundle.status === "active" ? "success" : "subdued"} key={`status-${bundle.id}`}>
+    <Badge tone={bundle.status === "active" ? "success" : "info"} key={`status-${bundle.id}`}>
       {bundle.status}
     </Badge>,
     bundle.steps.length,
@@ -474,7 +474,7 @@ export default function CartTransformBundles() {
                 onChange={setBundleName}
                 name="bundleName"
                 autoComplete="off"
-                error={actionData?.error}
+                error={actionData && 'error' in actionData ? actionData.error : undefined}
                 helpText="Choose a descriptive name for your bundle"
                 requiredIndicator
               />
@@ -534,7 +534,7 @@ export default function CartTransformBundles() {
                   }}
                   image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
                 >
-                  <Text variant="bodyMd" tone="subdued">
+                  <Text variant="bodyMd" tone="subdued" as="p">
                     Cart transform bundles provide real-time cart updates and merge 
                     bundle items into a single cart line with automatic pricing.
                   </Text>
@@ -609,19 +609,19 @@ export default function CartTransformBundles() {
                     Cart Transform Features
                   </Text>
                   <BlockStack gap="200">
-                    <Text variant="bodyMd">
+                    <Text variant="bodyMd" as="p">
                       <strong>Real-time Updates:</strong> Bundle items are automatically merged 
                       in the cart as customers add products.
                     </Text>
-                    <Text variant="bodyMd">
+                    <Text variant="bodyMd" as="p">
                       <strong>Single Cart Line:</strong> Multiple bundle components appear as 
                       one item with combined pricing and savings display.
                     </Text>
-                    <Text variant="bodyMd">
+                    <Text variant="bodyMd" as="p">
                       <strong>Immediate Savings:</strong> Customers see discounts applied 
                       instantly without needing discount codes.
                     </Text>
-                    <Text variant="bodyMd">
+                    <Text variant="bodyMd" as="p">
                       <strong>Professional Presentation:</strong> Bundle appears cohesively 
                       with the first product's image and combined title.
                     </Text>

@@ -4,12 +4,10 @@ import {
   getAllBundleDataFromCart,
   checkCartMeetsBundleConditions,
   getApplicableDiscountRule,
-  BundleData,
   BundleMatchResult,
 } from "./cart-transform-bundle-utils-v2";
 import {
   formatBundleSavings,
-  getCurrencySymbol,
 } from "./cart-transform-currency-utils";
 
 /**
@@ -213,7 +211,7 @@ function createBundleMergeOperation(
  */
 function createBundleExpandOperation(
   matchResult: BundleMatchResult,
-  cartCurrency: string,
+  _cartCurrency: string,
 ): any[] {
   const { bundle, bundleParentLine, totalBundleQuantity } = matchResult;
 

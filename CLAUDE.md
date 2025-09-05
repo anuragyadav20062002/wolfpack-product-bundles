@@ -40,13 +40,13 @@
 
 ## Architecture Overview
 
-Shopify bundling app with dual implementation approaches:
+Shopify bundling app with cart transform-focused implementation:
 
 **Core Components:**
-- **Discount Functions** (All Shopify plans) - Applied at checkout
-- **Cart Transform Functions** (Shopify Plus only) - Real-time cart modifications
+- **Cart Transform Functions** (Shopify Plus only) - Real-time cart modifications with integrated discounts
 - **Bundle System** - Database models: Bundle, BundleStep, BundlePricing, StepProduct
 - **Metafield Storage** - Bundle configurations stored in product metafields
+- **Unified Approach** - Cart transforms handle both line merging and discount application
 
 **Key Implementation Details:**
 - **Metafields**: `bundle_discounts` namespace for function configuration
@@ -285,6 +285,18 @@ Shopify bundling app with dual implementation approaches:
 ## 🧪 Cart Transform Testing & Activation System
 
 **✅ Recently Completed Cart Transform Enhancements (Latest):**
+
+### **Manual Cart Transform Activation**
+- **Activation API**: New `/api/activate-cart-transform` endpoint for manual cart transform activation
+- **Service Integration**: `CartTransformService.activateForNewInstallation()` method for programmatic activation
+- **GraphQL Validation**: Corrected cart transform query schema (removed invalid `title` field)
+- **Activation Verification**: Proper GraphQL query for checking cart transform status
+
+### **Cart Transform Architecture Clarification**
+- **Single Extension Approach**: Cart transforms handle both line merging AND discount application
+- **No Separate Discount Functions**: Unified system eliminates need for dual extension architecture
+- **Real-time Processing**: Immediate discount calculation and cart line merging
+- **Shopify Plus Optimization**: Leverages cart transform capabilities for enhanced user experience
 
 ### **Comprehensive Test Suite Implementation**
 - **Test Coverage**: 19 comprehensive test cases covering all cart transform scenarios

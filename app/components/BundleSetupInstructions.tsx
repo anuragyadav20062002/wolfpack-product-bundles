@@ -1,4 +1,4 @@
-import { Card, Text, BlockStack, Button, InlineStack } from "@shopify/polaris";
+import { Card, Text, BlockStack, InlineStack } from "@shopify/polaris";
 
 interface SetupStep {
   id: string;
@@ -39,11 +39,12 @@ export function BundleSetupInstructions({
             
             if (step.isClickable && step.onClick && isAvailable) {
               return (
-                <Button 
+                <div 
                   key={step.id}
-                  variant="plain" 
-                  fullWidth 
                   onClick={step.onClick}
+                  style={{ cursor: 'pointer', padding: '12px 0', borderRadius: '8px' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f3f3'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   <InlineStack gap="200" align="start">
                     <div style={{ 
@@ -71,7 +72,7 @@ export function BundleSetupInstructions({
                       </Text>
                     </BlockStack>
                   </InlineStack>
-                </Button>
+                </div>
               );
             }
             

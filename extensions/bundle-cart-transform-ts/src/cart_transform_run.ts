@@ -88,12 +88,10 @@ import {
   getAllBundleDataFromCart,
   checkCartMeetsBundleConditions,
   getApplicableDiscountRule,
-  BundleData,
   BundleMatchResult,
 } from "./cart-transform-bundle-utils-v2";
 import {
   formatBundleSavings,
-  getCurrencySymbol,
 } from "./cart-transform-currency-utils";
 
 export function cartTransformRun(
@@ -311,59 +309,3 @@ function createBundleTransformOperation(
   return mergeOperation;
 }
 
-// Alternative implementation: Expand bundle into individual discounted items
-function createBundleExpandOperation(
-  matchResult: BundleMatchResult,
-  cartCurrency: string,
-): any {
-  const { bundle, matchingLines, totalBundleQuantity } = matchResult;
-
-  // Get the applicable discount rule
-  const applicableRule = getApplicableDiscountRule(bundle, totalBundleQuantity);
-  
-  if (!applicableRule) {
-    return null;
-  }
-
-  const expandOperations = [];
-
-  // Calculate discount per item
-  let discountPerItem = 0;
-  if (bundle.pricing?.discountMethod === "fixed_amount_off") {
-    discountPerItem = applicableRule.fixedAmountOff / totalBundleQuantity;
-  } else if (bundle.pricing?.discountMethod === "percentage_off") {
-    // Percentage discount will be applied proportionally
-  }
-
-  // Create expand operation for each bundle line
-  for (const line of matchingLines) {
-    const originalPrice = parseFloat(line.cost.amountPerQuantity.amount);
-    let discountedPrice = originalPrice;
-
-    if (bundle.pricing?.discountMethod === "fixed_amount_off") {
-      discountedPrice = Math.max(0, originalPrice - discountPerItem);
-    } else if (bundle.pricing?.discountMethod === "percentage_off") {
-      discountedPrice = originalPrice * (1 - applicableRule.percentageOff / 100);
-    }
-
-    const savingsText = formatBundleSavings(originalPrice, discountedPrice, cartCurrency);
-    const newTitle = savingsText 
-      ? `${line.merchandise.product.title} - ${savingsText}`
-      : line.merchandise.product.title;
-
-    expandOperations.push({
-      update: {
-        cartLineId: line.id,
-        title: newTitle,
-        cost: {
-          amountPerQuantity: {
-            amount: String(discountedPrice.toFixed(2)),
-            currencyCode: cartCurrency,
-          },
-        },
-      },
-    });
-  }
-
-  return expandOperations.length > 0 ? { expand: expandOperations } : null;
-}
