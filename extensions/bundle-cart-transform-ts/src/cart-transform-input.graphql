@@ -1,35 +1,24 @@
-query BundleCartTransformInput {
+query Input {
   cart {
     lines {
       id
       quantity
-      attribute(key: "_wolfpack_bundle_id") {
-        key
-        value
-      }
       merchandise {
+        __typename
         ... on ProductVariant {
           id
-          product {
-            id
-            title
-            handle
-            metafield(namespace: "bundle_discounts", key: "cart_transform_config") {
-              value
-            }
-          }
+          title
           # Standard Shopify bundle metafields for cart transform
-          componentReference: metafield(namespace: "custom", key: "component_reference") {
+          component_reference: metafield(namespace: "custom", key: "component_reference") {
             value
           }
-          componentQuantities: metafield(namespace: "custom", key: "component_quantities") {
+          component_quantities: metafield(namespace: "custom", key: "component_quantities") {
             value
           }
-          componentParents: metafield(namespace: "custom", key: "component_parents") {
+          component_parents: metafield(namespace: "custom", key: "component_parents") {
             value
           }
-          # Our custom bundle configuration
-          bundleConfig: metafield(namespace: "bundle_discounts", key: "cart_transform_config") {
+          price_adjustment: metafield(namespace: "custom", key: "price_adjustment") {
             value
           }
         }
@@ -44,12 +33,6 @@ query BundleCartTransformInput {
           currencyCode
         }
       }
-    }
-  }
-  shop {
-    metafield(namespace: "custom", key: "all_bundles") {
-      value
-      jsonValue
     }
   }
 }

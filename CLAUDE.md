@@ -466,4 +466,455 @@ for (const line of cart.lines) {
 
 ---
 
-This documentation is based on official Shopify documentation and follows current best practices for Shopify app development.
+## 🔗 **Shopify Standard Metafields Integration (Latest)**
+
+### **Critical Integration with Official Shopify Examples**
+Following the official Shopify cart transform examples from [GitHub - Shopify/function-examples](https://github.com/Shopify/function-examples/tree/main/sample-apps/bundles-cart-transform) and [YouTube Tutorial](https://www.youtube.com/watch?v=x5HIBHq9TkY), we've implemented dual metafield support for maximum compatibility.
+
+### **Problem Identified:**
+Our custom bundle configuration system was incompatible with the cart transform function we updated to follow Shopify's official standards. The cart transform expected specific metafields that weren't being set by our bundle publishing system.
+
+### **Comprehensive Solution Implemented:**
+
+#### **1. Standard Metafield Structure (Based on Official Examples)**
+Following Shopify's official patterns, we now set these standard metafields:
+
+**Bundle Products (Parent Products):**
+```json
+{
+  "component_reference": ["gid://shopify/ProductVariant/123", "gid://shopify/ProductVariant/456"],
+  "component_quantities": [1, 2],
+  "price_adjustment": {
+    "percentageDecrease": 10
+  }
+}
+```
+
+**Component Products (Individual Products):**
+```json
+{
+  "component_parents": [{
+    "id": "bundle_123",
+    "title": "Amazing Bundle",
+    "parentVariantId": "gid://shopify/ProductVariant/789",
+    "components": [{
+      "merchandiseId": "gid://shopify/ProductVariant/123",
+      "quantity": 1
+    }],
+    "price_adjustment": "{\"percentageDecrease\": 10}"
+  }]
+}
+```
+
+#### **2. Dual Metafield Architecture**
+- **Custom Namespace (`bundle_discounts`)**: Maintains our existing rich bundle configuration for the admin interface and widget
+- **Standard Namespace (`custom`)**: Provides the simple metafields expected by our updated cart transform function
+- **Automatic Conversion**: New helper functions convert between formats seamlessly
+
+#### **3. Key Implementation Functions**
+
+**Conversion Function:**
+```typescript
+// Helper function to convert bundle configuration to standard Shopify metafields
+function convertBundleToStandardMetafields(bundle: any) {
+  const standardMetafields: any = {};
+  
+  // Extract component references and quantities from bundle steps
+  if (bundle.steps && bundle.steps.length > 0) {
+    const componentReferences: string[] = [];
+    const componentQuantities: number[] = [];
+    
+    for (const step of bundle.steps) {
+      // Process StepProduct entries and products arrays
+      // Convert product IDs to proper variant GID format
+    }
+    
+    standardMetafields.component_reference = JSON.stringify(componentReferences);
+    standardMetafields.component_quantities = JSON.stringify(componentQuantities);
+  }
+  
+  // Add price adjustment for percentage discounts
+  if (bundle.pricing && bundle.pricing.enabled) {
+    standardMetafields.price_adjustment = JSON.stringify({
+      percentageDecrease: parseFloat(rule.discountValue) || 0
+    });
+  }
+  
+  return standardMetafields;
+}
+```
+
+**Metafield Definitions:**
+```typescript
+// Ensure standard metafield definitions exist
+const standardDefinitions = [
+  {
+    namespace: "custom",
+    key: "component_reference", 
+    name: "Component Reference",
+    description: "Bundle component variant IDs",
+    type: "json",
+    ownerType: "PRODUCT"
+  },
+  {
+    namespace: "custom",
+    key: "component_quantities",
+    name: "Component Quantities", 
+    description: "Bundle component quantities",
+    type: "json",
+    ownerType: "PRODUCT"
+  },
+  {
+    namespace: "custom",
+    key: "component_parents",
+    name: "Component Parents",
+    description: "Bundle parent configurations",
+    type: "json",
+    ownerType: "PRODUCT"
+  },
+  {
+    namespace: "custom",
+    key: "price_adjustment",
+    name: "Price Adjustment",
+    description: "Bundle price adjustment configuration",
+    type: "json",
+    ownerType: "PRODUCT"
+  }
+];
+```
+
+#### **4. Integration into Bundle Save Process**
+```typescript
+// Added to handleSaveBundle function after custom metafield updates
+console.log("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
+const standardMetafields = convertBundleToStandardMetafields(baseConfiguration);
+if (Object.keys(standardMetafields).length > 0) {
+  await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
+  console.log("🔧 [STANDARD_METAFIELD] Standard metafields updated successfully");
+}
+```
+
+### **Key Benefits:**
+- **✅ Official Compatibility**: Cart transform function now works with Shopify's standard examples
+- **🔄 Seamless Integration**: Automatic conversion between custom and standard formats
+- **📈 Future-Proof**: Follows official Shopify patterns for maximum compatibility
+- **🛡️ Backward Compatible**: Existing bundle configurations continue working unchanged
+- **🎯 Best Practices**: Based on official Shopify GitHub examples and video tutorials
+
+### **Cart Transform Function Integration:**
+The updated cart transform function at `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts` now properly reads these standard metafields and performs both expand and merge operations following Shopify's official patterns.
+
+**GraphQL Input Query:**
+```graphql
+query Input {
+  cart {
+    lines {
+      id
+      quantity
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+          title
+          # Standard Shopify bundle metafields for cart transform
+          component_reference: metafield(namespace: "custom", key: "component_reference") {
+            value
+          }
+          component_quantities: metafield(namespace: "custom", key: "component_quantities") {
+            value
+          }
+          component_parents: metafield(namespace: "custom", key: "component_parents") {
+            value
+          }
+          price_adjustment: metafield(namespace: "custom", key: "price_adjustment") {
+            value
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### **References:**
+- **Official Example**: [Shopify/function-examples - Bundle Cart Transform](https://github.com/Shopify/function-examples/tree/main/sample-apps/bundles-cart-transform)
+- **Video Tutorial**: [YouTube - Cart Transform Implementation](https://www.youtube.com/watch?v=x5HIBHq9TkY)
+- **Implementation Files**: 
+  - `app/routes/app.bundles.cart-transform.configure.$bundleId.tsx` - Metafield conversion and updates
+  - `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts` - Standard metafield processing
+  - `extensions/bundle-cart-transform-ts/src/cart-transform-input.graphql` - Updated GraphQL query
+
+**Production Impact**: Bundle publishing now automatically creates both custom configuration metafields (for admin interface) and standard Shopify metafields (for cart transform compatibility), ensuring seamless operation with official Shopify examples and maximum future compatibility.
+
+---
+
+---
+
+## 📚 **Comprehensive Shopify Development Resources & API Documentation**
+
+*Generated via Shopify Dev MCP Server - Conversation ID: 4dd14a7a-746c-41ce-b9ac-7bf12aac44df*
+
+### **🔧 Shopify Admin GraphQL API (2025-07)**
+
+The Admin GraphQL API is the primary way to manage Shopify stores programmatically. **Critical**: As of April 1, 2025, all new apps must use GraphQL - REST Admin API will be legacy.
+
+**Key Components:**
+- **Authentication**: OAuth or Custom Apps with proper access tokens
+- **Rate Limits**: Doubled in 2024, significant performance improvements
+- **Query Cost**: Reduced by 75% for connection-based queries
+- **Validation**: Always validate GraphQL with `mcp__shopify-dev-mcp__validate_graphql_codeblocks`
+
+**Essential Operations for Bundle Apps:**
+```graphql
+# Product Management
+mutation productCreate($input: ProductInput!) {
+  productCreate(input: $input) {
+    product { id title }
+    userErrors { field message }
+  }
+}
+
+# Metafield Management
+mutation metafieldSet($metafields: [MetafieldInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields { id namespace key value }
+    userErrors { field message }
+  }
+}
+
+# Cart Transform Management
+mutation cartTransformCreate($cartTransform: CartTransformInput!) {
+  cartTransformCreate(cartTransform: $cartTransform) {
+    cartTransform { id functionId }
+    userErrors { field message }
+  }
+}
+```
+
+### **⚙️ Shopify Functions API**
+
+Shopify Functions enable backend logic customization with pure, stateless operations.
+
+**Available Function Types:**
+- **Discount**: Create merchandise/shipping discounts (✅ Use for bundle discounts)
+- **Cart Transform**: Real-time cart modifications (Shopify Plus only)
+- **Cart/Checkout Validation**: Custom validation logic
+- **Delivery Customization**: Modify delivery options
+- **Payment Customization**: Customize payment methods
+
+**Bundle App Implementation:**
+```typescript
+// Cart Transform Function Structure
+export function run(input: Input): FunctionResult {
+  const bundles = parseBundleConfigurations(input.cart.metafield?.jsonValue);
+  
+  return {
+    operations: bundles.map(bundle => ({
+      merge: {
+        parentVariantId: bundle.parentVariant.id,
+        cartLines: bundle.lines.map(line => ({
+          cartLineId: line.id,
+          quantity: line.quantity
+        })),
+        title: bundle.title,
+        price: { percentageDecrease: { value: bundle.discount } }
+      }
+    }))
+  };
+}
+```
+
+**Key Limitations:**
+- No network access, filesystem, or random data
+- Collection membership queries not supported
+- All data must be provided via input query
+
+### **🎨 Shopify Polaris Design System**
+
+Polaris ensures consistent, accessible UI that matches Shopify Admin design.
+
+**Core Principles:**
+- **Accessibility**: WCAG compliant components
+- **Consistency**: Matches Shopify Admin styling
+- **Responsive**: Works across all device sizes
+- **TypeScript**: Full type support for safer development
+
+**Essential Bundle App Components:**
+```tsx
+import {
+  Page,
+  Layout,
+  Card,
+  Button,
+  FormLayout,
+  TextField,
+  Select,
+  Modal,
+  Toast,
+  Banner,
+  DataTable,
+  ResourceList
+} from '@shopify/polaris';
+
+// Modern App Bridge Integration
+import { useAppBridge } from '@shopify/app-bridge-react';
+import { redirect } from '@shopify/app-bridge/actions';
+```
+
+**Best Practices:**
+- Use `shopify-app-remix` for authentication
+- Implement proper error boundaries
+- Follow App Bridge patterns for navigation
+- Use Polaris tokens for consistent spacing/colors
+
+### **💧 Shopify Liquid Template Language**
+
+Liquid powers theme rendering with secure templating.
+
+**Core Concepts:**
+- **Objects**: Access store data (`{{ product.title }}`)
+- **Tags**: Control logic (`{% if %}`, `{% for %}`)
+- **Filters**: Transform data (`{{ price | money }}`)
+
+**Bundle Widget Integration:**
+```liquid
+<!-- Bundle Theme Extension -->
+{% comment %} Bundle Widget Configuration {% endcomment %}
+<div class="bundle-widget" 
+     data-bundle-id="{{ block.settings.bundle_id }}"
+     data-bundle-config="{{ product.metafields.bundle_discounts.cart_transform_config }}">
+  
+  {% for step in bundle.steps %}
+    <div class="bundle-step">
+      <h3>{{ step.title }}</h3>
+      {% for product in step.products %}
+        <div class="bundle-product" data-product-id="{{ product.id }}">
+          <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
+          <span>{{ product.title }}</span>
+          <span>{{ product.price | money }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+
+{% schema %}
+{
+  "name": "Bundle Builder",
+  "settings": [
+    {
+      "type": "text",
+      "id": "bundle_id",
+      "label": "Bundle ID"
+    }
+  ]
+}
+{% endschema %}
+```
+
+**Advanced Features:**
+- **LiquidDoc**: Document snippets with JSDoc-style annotations
+- **Schema**: Configure section settings for theme editor
+- **JSON Templates**: Modern approach with sections and blocks
+- **App Blocks**: Support for app-provided content blocks
+
+### **📱 Shopify Storefront Web Components**
+
+Build storefronts using HTML and Shopify's APIs without complex frameworks.
+
+**Core Components:**
+```html
+<script src="https://cdn.shopify.com/storefront/web-components.js"></script>
+
+<shopify-store store-domain="shop.myshopify.com" country="US" language="en">
+  <shopify-context type="product" handle="bundle-product">
+    <template>
+      <shopify-media query="product.featuredImage" width="300" height="300"></shopify-media>
+      <h2><shopify-data query="product.title"></shopify-data></h2>
+      <shopify-money query="product.selectedOrFirstAvailableVariant.price"></shopify-money>
+      <shopify-variant-selector></shopify-variant-selector>
+      <button onclick="getElementById('cart').addLine(event).showModal();">
+        Add Bundle to Cart
+      </button>
+    </template>
+  </shopify-context>
+</shopify-store>
+
+<shopify-cart id="cart"></shopify-cart>
+```
+
+### **🏆 Competitor Analysis: Skai Lama Bundle Apps**
+
+**Skai Lama's Market Position:**
+- **Products**: Easy Bundles, Fly Bundles, Gift Lab, Checkout Wiz
+- **USP**: "5X ROI", 5.0★ rating, $30M+ additional revenue generated
+- **Strengths**: Superior customer support (5min response), Shopify Plus focus
+- **Bundle Types**: Mix & Match, Fixed Price, Buy More Save More, Subscriptions
+
+**Key Competitors:**
+1. **Bold Bundles**: Customizable but with compatibility issues
+2. **Picky Story**: Flexible discounts with analytics
+3. **ReConvert**: 4.8★ with 2,574 reviews, strong upsell focus
+
+**Competitive Advantages to Target:**
+- **Technical Excellence**: Cart Transform real-time vs checkout-time processing
+- **Developer Experience**: Open-source approach with extensible architecture
+- **Advanced Features**: AI-powered recommendations, A/B testing, analytics
+- **Performance**: Real-time bundle detection and application
+
+### **📖 2024 Shopify Development Best Practices**
+
+**GraphQL Migration (Mandatory by 2025):**
+- All new apps must use GraphQL Admin API
+- REST Admin API becomes legacy April 1, 2025
+- 75% cost reduction for connection queries
+- Doubled rate limits for improved performance
+
+**Modern Development Stack:**
+- **Framework**: Remix with TypeScript
+- **Authentication**: shopify-app-remix package
+- **UI**: Polaris components + App Bridge 4.x
+- **Database**: Prisma with PostgreSQL/MySQL for production
+- **Functions**: Rust or TypeScript for optimal performance
+
+**Architecture Patterns:**
+- **Metafields**: Store configuration in structured JSON
+- **Extensions**: Functions for backend, theme extensions for frontend
+- **Sections/Blocks**: JSON templates for merchant customization
+- **App Blocks**: Support third-party integrations
+
+**Performance Optimization:**
+- Use GraphQL batching and caching
+- Implement proper error handling and retries
+- Monitor webhook processing times
+- Optimize theme extension JavaScript
+
+**Security & Compliance:**
+- Validate all GraphQL operations
+- Implement proper HMAC verification for webhooks
+- Use secure session storage (Prisma recommended)
+- Follow GDPR/privacy requirements for customer data
+
+### **🔗 Essential Documentation Links**
+
+**Official Shopify Documentation:**
+- [Admin GraphQL API](https://shopify.dev/docs/api/admin-graphql) - Primary API reference
+- [Shopify Functions](https://shopify.dev/docs/api/functions) - Backend customization
+- [Polaris Design System](https://polaris.shopify.com/) - UI components
+- [Liquid Template Language](https://shopify.dev/docs/api/liquid) - Theme development
+- [App Bridge](https://shopify.dev/docs/api/app-bridge) - Embedded app integration
+
+**Development Tools:**
+- [Shopify CLI](https://shopify.dev/docs/apps/tools/cli) - Development workflow
+- [Theme Inspector](https://shopify.dev/docs/themes/tools/theme-inspector) - Performance debugging  
+- [GraphiQL App](https://shopify-graphiql-app.shopifycloud.com/) - GraphQL query testing
+- [Shopify Partners](https://partners.shopify.com/) - App development hub
+
+**Community & Learning:**
+- [Shopify Engineering Blog](https://shopify.engineering/) - Technical insights
+- [Shopify Community Forums](https://community.shopify.com/) - Developer discussions
+- [Shopify Academy](https://shopify.dev/docs/apps/build/tutorials) - Structured tutorials
+
+---
+
+This comprehensive resource compilation is based on official Shopify documentation and follows current best practices for Shopify app development. Use the MCP server tools for real-time verification and updates.
