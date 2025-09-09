@@ -168,11 +168,32 @@ function buildExpandOperation(cartLine: any) {
     );
 
     if (expandedCartItems.length > 0) {
-      return { 
+      const expandOperation: any = {
         cartLineId, 
         expandedCartItems,
         title: `${merchandise.title || 'Bundle'} (Components)`,
       };
+
+      // Apply price adjustment if specified
+      if (merchandise.price_adjustment) {
+        try {
+          const priceAdjustmentValue = typeof merchandise.price_adjustment.value === 'string' 
+            ? parseFloat(merchandise.price_adjustment.value) 
+            : merchandise.price_adjustment.value;
+          
+          if (typeof priceAdjustmentValue === 'number' && !isNaN(priceAdjustmentValue)) {
+            expandOperation.price = {
+              percentageDecrease: {
+                value: priceAdjustmentValue,
+              },
+            };
+          }
+        } catch (error) {
+          console.error("🔍 [CART TRANSFORM DEBUG] Error parsing expand price adjustment:", error);
+        }
+      }
+      
+      return expandOperation;
     }
   } catch (error) {
     console.error("🔍 [CART TRANSFORM DEBUG] Error parsing expand metafields:", error);
@@ -229,17 +250,34 @@ function getBundleParentDefinitions(cartLines: any[]) {
 }
 
 function buildMergeOperation(cartLines: any[], parentDef: any) {
-  const requiredComponents = parentDef.components || [];
-  const componentsInCart = getComponentsInCart(cartLines, requiredComponents);
+  // Parse the official component_parents metafield structure
+  if (!parentDef.component_reference?.value || !parentDef.component_quantities?.value) {
+    console.log(`🔍 [CART TRANSFORM DEBUG] Bundle ${parentDef.id} missing component_reference or component_quantities`);
+    return null;
+  }
+
+  const componentReferences = parentDef.component_reference.value;
+  const componentQuantities = parentDef.component_quantities.value;
+
+  if (componentReferences.length !== componentQuantities.length) {
+    console.log(`🔍 [CART TRANSFORM DEBUG] Bundle ${parentDef.id} mismatched component arrays: ${componentReferences.length} references vs ${componentQuantities.length} quantities`);
+    return null;
+  }
+
+  console.log(`🔍 [CART TRANSFORM DEBUG] Processing bundle ${parentDef.id} with ${componentReferences.length} components`);
+  console.log(`🔍 [CART TRANSFORM DEBUG] Component references:`, componentReferences);
+  console.log(`🔍 [CART TRANSFORM DEBUG] Component quantities:`, componentQuantities);
+
+  const componentsInCart = getComponentsInCart(cartLines, componentReferences, componentQuantities);
   
-  if (componentsInCart.length !== requiredComponents.length) {
-    console.log(`🔍 [CART TRANSFORM DEBUG] Bundle ${parentDef.id} missing components: ${requiredComponents.length} required, ${componentsInCart.length} found`);
+  if (componentsInCart.length !== componentReferences.length) {
+    console.log(`🔍 [CART TRANSFORM DEBUG] Bundle ${parentDef.id} missing components: ${componentReferences.length} required, ${componentsInCart.length} found`);
     return null;
   }
 
   // Check if we have sufficient quantities
   const hasRequiredQuantities = componentsInCart.every((component, index) => {
-    const requiredQuantity = requiredComponents[index].quantity || 1;
+    const requiredQuantity = componentQuantities[index];
     return component.totalQuantity >= requiredQuantity;
   });
 
@@ -251,15 +289,15 @@ function buildMergeOperation(cartLines: any[], parentDef: any) {
   console.log(`🔍 [CART TRANSFORM DEBUG] Creating merge operation for bundle ${parentDef.id}`);
 
   // Create cart lines for merge
-  const cartLinesToMerge = componentsInCart.map(component => ({
+  const cartLinesToMerge = componentsInCart.map((component, index) => ({
     cartLineId: component.cartLineId,
-    quantity: component.quantityToMerge,
+    quantity: componentQuantities[index], // Use the required quantity for the bundle
   }));
 
   const mergeOperation = {
     cartLines: cartLinesToMerge,
-    parentVariantId: parentDef.parentVariantId,
-    title: parentDef.title || `Bundle ${parentDef.id}`,
+    parentVariantId: parentDef.id, // Use parentDef.id as the bundle parent variant ID
+    title: `Bundle ${parentDef.id}`,
     attributes: [
       {
         key: "_bundle_id",
@@ -271,11 +309,14 @@ function buildMergeOperation(cartLines: any[], parentDef: any) {
   // Apply price adjustment if specified
   if (parentDef.price_adjustment) {
     try {
-      const priceAdjustment = JSON.parse(parentDef.price_adjustment);
-      if (priceAdjustment.percentageDecrease) {
+      const priceAdjustmentValue = typeof parentDef.price_adjustment === 'string' 
+        ? JSON.parse(parentDef.price_adjustment) 
+        : parentDef.price_adjustment;
+      
+      if (typeof priceAdjustmentValue === 'number') {
         mergeOperation.price = {
           percentageDecrease: {
-            value: priceAdjustment.percentageDecrease,
+            value: priceAdjustmentValue,
           },
         };
       }
@@ -287,16 +328,20 @@ function buildMergeOperation(cartLines: any[], parentDef: any) {
   return mergeOperation;
 }
 
-function getComponentsInCart(cartLines: any[], requiredComponents: any[]) {
+function getComponentsInCart(cartLines: any[], componentReferences: string[], componentQuantities: number[]) {
   const componentsInCart = [];
 
-  for (const required of requiredComponents) {
+  // Process each component reference with its corresponding quantity
+  for (let i = 0; i < componentReferences.length; i++) {
+    const requiredVariantId = componentReferences[i];
+    const requiredQuantity = componentQuantities[i];
     let totalQuantity = 0;
     let cartLineId = null;
 
+    // Find matching cart lines for this component
     for (const cartLine of cartLines) {
       const { merchandise } = cartLine;
-      if (merchandise.__typename === "ProductVariant" && merchandise.id === required.merchandiseId) {
+      if (merchandise.__typename === "ProductVariant" && merchandise.id === requiredVariantId) {
         totalQuantity += cartLine.quantity;
         cartLineId = cartLine.id; // Use the last matching cart line ID
       }
@@ -304,11 +349,15 @@ function getComponentsInCart(cartLines: any[], requiredComponents: any[]) {
 
     if (totalQuantity > 0) {
       componentsInCart.push({
-        merchandiseId: required.merchandiseId,
+        merchandiseId: requiredVariantId,
         totalQuantity,
-        quantityToMerge: required.quantity || 1,
+        requiredQuantity,
         cartLineId,
       });
+      
+      console.log(`🔍 [CART TRANSFORM DEBUG] Found component ${requiredVariantId}: ${totalQuantity} in cart, ${requiredQuantity} required`);
+    } else {
+      console.log(`🔍 [CART TRANSFORM DEBUG] Missing component ${requiredVariantId} (required: ${requiredQuantity})`);
     }
   }
 
