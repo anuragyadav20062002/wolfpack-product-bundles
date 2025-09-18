@@ -100,7 +100,18 @@ export async function action({ request }: ActionFunctionArgs) {
             productType: "Bundle",
             vendor: "Bundle Builder",
             status: "DRAFT",
-            tags: ["bundle", "cart-transform"]
+            tags: ["bundle", "cart-transform"],
+            variants: [
+              {
+                price: "0.00",
+                inventoryPolicy: "DENY",
+                inventoryManagement: null,
+                requiresShipping: true,
+                taxable: true,
+                weight: 0,
+                weightUnit: "POUNDS"
+              }
+            ]
           }
         }
       });
@@ -265,6 +276,15 @@ export async function action({ request }: ActionFunctionArgs) {
             title
             handle
             status
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                  title
+                  price
+                }
+              }
+            }
           }
           userErrors {
             field

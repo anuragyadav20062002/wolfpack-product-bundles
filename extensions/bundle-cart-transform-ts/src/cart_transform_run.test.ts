@@ -30,7 +30,6 @@ describe("cartTransformRun", () => {
               id: "variant1",
               product: {
                 id: "product1",
-                metafield: undefined,
               },
             },
             cost: {
@@ -39,6 +38,7 @@ describe("cartTransformRun", () => {
             },
           },
         ],
+        metafield: null,
         cost: {
           totalAmount: { amount: "10.00", currencyCode: "USD" },
           subtotalAmount: { amount: "10.00", currencyCode: "USD" },
@@ -51,24 +51,7 @@ describe("cartTransformRun", () => {
   });
 
   it("transforms bundle when conditions are met", () => {
-    const bundleData = {
-      id: "bundle1",
-      name: "Test Bundle",
-      allBundleProductIds: ["product1", "product2"],
-      pricing: {
-        enableDiscount: true,
-        discountMethod: "fixed_amount_off",
-        rules: [
-          {
-            discountOn: "quantity",
-            minimumQuantity: 2,
-            fixedAmountOff: 5.0,
-            percentageOff: 0,
-          },
-        ],
-      },
-    };
-
+    // Component products with component_parents metafield that references a bundle
     const input = {
       cart: {
         lines: [
@@ -77,13 +60,23 @@ describe("cartTransformRun", () => {
             quantity: 1,
             merchandise: {
               __typename: "ProductVariant",
-              id: "variant1",
-              product: {
-                id: "product1",
-                metafield: {
-                  value: JSON.stringify(bundleData),
-                },
-              },
+              id: "gid://shopify/ProductVariant/component1",
+              component_parents: {
+                value: JSON.stringify([{
+                  id: "gid://shopify/ProductVariant/bundle123",
+                  title: "Test Bundle",
+                  parentVariantId: "gid://shopify/ProductVariant/bundle123",
+                  component_reference: {
+                    value: ["gid://shopify/ProductVariant/component1", "gid://shopify/ProductVariant/component2"]
+                  },
+                  component_quantities: {
+                    value: [1, 1]
+                  },
+                  price_adjustment: {
+                    value: JSON.stringify({ percentageDecrease: 0 })
+                  }
+                }])
+              }
             },
             cost: {
               amountPerQuantity: { amount: "10.00", currencyCode: "USD" },
@@ -95,13 +88,23 @@ describe("cartTransformRun", () => {
             quantity: 1,
             merchandise: {
               __typename: "ProductVariant",
-              id: "variant2",
-              product: {
-                id: "product2",
-                metafield: {
-                  value: JSON.stringify(bundleData),
-                },
-              },
+              id: "gid://shopify/ProductVariant/component2",
+              component_parents: {
+                value: JSON.stringify([{
+                  id: "gid://shopify/ProductVariant/bundle123",
+                  title: "Test Bundle", 
+                  parentVariantId: "gid://shopify/ProductVariant/bundle123",
+                  component_reference: {
+                    value: ["gid://shopify/ProductVariant/component1", "gid://shopify/ProductVariant/component2"]
+                  },
+                  component_quantities: {
+                    value: [1, 1]
+                  },
+                  price_adjustment: {
+                    value: JSON.stringify({ percentageDecrease: 0 })
+                  }
+                }])
+              }
             },
             cost: {
               amountPerQuantity: { amount: "15.00", currencyCode: "USD" },
@@ -123,20 +126,22 @@ describe("cartTransformRun", () => {
 
   it("skips transformation when bundle conditions not met", () => {
     const bundleData = {
-      id: "bundle1",
-      name: "Test Bundle",
-      allBundleProductIds: ["product1", "product2"],
-      pricing: {
-        enableDiscount: true,
-        discountMethod: "fixed_amount_off",
-        rules: [
-          {
-            discountOn: "quantity",
-            minimumQuantity: 3, // Requires 3 items, but only 2 in cart
-            fixedAmountOff: 5.0,
-            percentageOff: 0,
-          },
-        ],
+      "bundle1": {
+        id: "bundle1",
+        name: "Test Bundle",
+        allBundleProductIds: ["gid://shopify/Product/1", "gid://shopify/Product/2"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "fixed_amount_off",
+          rules: [
+            {
+              discountOn: "quantity",
+              minimumQuantity: 3, // Requires 3 items, but only 2 in cart
+              fixedAmountOff: 5.0,
+              percentageOff: 0,
+            },
+          ],
+        },
       },
     };
 
@@ -150,10 +155,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant1",
               product: {
-                id: "product1",
-                metafield: {
-                  value: JSON.stringify(bundleData),
-                },
+                id: "gid://shopify/Product/1",
+                title: "Product 1",
               },
             },
             cost: {
@@ -168,10 +171,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant2",
               product: {
-                id: "product2",
-                metafield: {
-                  value: JSON.stringify(bundleData),
-                },
+                id: "gid://shopify/Product/2",
+                title: "Product 2",
               },
             },
             cost: {
@@ -180,6 +181,9 @@ describe("cartTransformRun", () => {
             },
           },
         ],
+        metafield: {
+          value: JSON.stringify(bundleData),
+        },
         cost: {
           totalAmount: { amount: "25.00", currencyCode: "USD" },
           subtotalAmount: { amount: "25.00", currencyCode: "USD" },
@@ -193,20 +197,22 @@ describe("cartTransformRun", () => {
 
   it("handles percentage discount correctly", () => {
     const bundleData = {
-      id: "bundle1",
-      name: "Percentage Bundle",
-      allBundleProductIds: ["product1", "product2"],
-      pricing: {
-        enableDiscount: true,
-        discountMethod: "percentage_off",
-        rules: [
-          {
-            discountOn: "quantity",
-            minimumQuantity: 2,
-            fixedAmountOff: 0,
-            percentageOff: 20,
-          },
-        ],
+      "bundle1": {
+        id: "bundle1",
+        name: "Percentage Bundle",
+        allBundleProductIds: ["gid://shopify/Product/1", "gid://shopify/Product/2"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "percentage_off",
+          rules: [
+            {
+              discountOn: "quantity",
+              minimumQuantity: 2,
+              fixedAmountOff: 0,
+              percentageOff: 20,
+            },
+          ],
+        },
       },
     };
 
@@ -220,10 +226,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant1",
               product: {
-                id: "product1",
-                metafield: {
-                  value: JSON.stringify(bundleData),
-                },
+                id: "gid://shopify/Product/1",
+                title: "Product 1",
               },
             },
             cost: {
@@ -238,10 +242,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant2",
               product: {
-                id: "product2",
-                metafield: {
-                  value: JSON.stringify(bundleData),
-                },
+                id: "gid://shopify/Product/2",
+                title: "Product 2",
               },
             },
             cost: {
@@ -250,6 +252,9 @@ describe("cartTransformRun", () => {
             },
           },
         ],
+        metafield: {
+          value: JSON.stringify(bundleData),
+        },
         cost: {
           totalAmount: { amount: "30.00", currencyCode: "USD" },
           subtotalAmount: { amount: "30.00", currencyCode: "USD" },
@@ -268,6 +273,29 @@ describe("cartTransformRun", () => {
   });
 
   it("handles multiple bundles with different configurations", () => {
+    const bundleData = {
+      "bundleA": {
+        id: "bundleA",
+        name: "Bundle A",
+        allBundleProductIds: ["gid://shopify/Product/1", "gid://shopify/Product/2"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "fixed_amount_off",
+          rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+        }
+      },
+      "bundleB": {
+        id: "bundleB",
+        name: "Bundle B",
+        allBundleProductIds: ["gid://shopify/Product/3", "gid://shopify/Product/4"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "percentage_off",
+          rules: [{ discountOn: "quantity", minimumQuantity: 3, fixedAmountOff: 0, percentageOff: 15 }]
+        }
+      }
+    };
+
     const input = {
       cart: {
         lines: [
@@ -279,19 +307,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant1",
               product: {
-                id: "product1",
-                metafield: {
-                  value: JSON.stringify({
-                    id: "bundleA",
-                    name: "Bundle A",
-                    allBundleProductIds: ["product1", "product2"],
-                    pricing: {
-                      enableDiscount: true,
-                      discountMethod: "fixed_amount_off",
-                      rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
-                    }
-                  })
-                }
+                id: "gid://shopify/Product/1",
+                title: "Product 1",
               }
             },
             cost: {
@@ -306,19 +323,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant2",
               product: {
-                id: "product2",
-                metafield: {
-                  value: JSON.stringify({
-                    id: "bundleA",
-                    name: "Bundle A",
-                    allBundleProductIds: ["product1", "product2"],
-                    pricing: {
-                      enableDiscount: true,
-                      discountMethod: "fixed_amount_off",
-                      rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
-                    }
-                  })
-                }
+                id: "gid://shopify/Product/2",
+                title: "Product 2",
               }
             },
             cost: {
@@ -334,19 +340,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant3",
               product: {
-                id: "product3",
-                metafield: {
-                  value: JSON.stringify({
-                    id: "bundleB",
-                    name: "Bundle B",
-                    allBundleProductIds: ["product3", "product4"],
-                    pricing: {
-                      enableDiscount: true,
-                      discountMethod: "percentage_off",
-                      rules: [{ discountOn: "quantity", minimumQuantity: 3, fixedAmountOff: 0, percentageOff: 15 }]
-                    }
-                  })
-                }
+                id: "gid://shopify/Product/3",
+                title: "Product 3",
               }
             },
             cost: {
@@ -361,19 +356,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant4",
               product: {
-                id: "product4",
-                metafield: {
-                  value: JSON.stringify({
-                    id: "bundleB",
-                    name: "Bundle B",
-                    allBundleProductIds: ["product3", "product4"],
-                    pricing: {
-                      enableDiscount: true,
-                      discountMethod: "percentage_off",
-                      rules: [{ discountOn: "quantity", minimumQuantity: 3, fixedAmountOff: 0, percentageOff: 15 }]
-                    }
-                  })
-                }
+                id: "gid://shopify/Product/4",
+                title: "Product 4",
               }
             },
             cost: {
@@ -382,6 +366,9 @@ describe("cartTransformRun", () => {
             },
           },
         ],
+        metafield: {
+          value: JSON.stringify(bundleData),
+        },
         cost: {
           totalAmount: { amount: "53.00", currencyCode: "USD" },
           subtotalAmount: { amount: "53.00", currencyCode: "USD" },
@@ -410,10 +397,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant1",
               product: {
-                id: "product1",
-                metafield: {
-                  value: "invalid json content",
-                },
+                id: "gid://shopify/Product/1",
+                title: "Product 1",
               },
             },
             cost: {
@@ -422,6 +407,9 @@ describe("cartTransformRun", () => {
             },
           },
         ],
+        metafield: {
+          value: "invalid json content",
+        },
         cost: {
           totalAmount: { amount: "10.00", currencyCode: "USD" },
           subtotalAmount: { amount: "10.00", currencyCode: "USD" },
@@ -434,6 +422,14 @@ describe("cartTransformRun", () => {
   });
 
   it("handles missing metafield properties gracefully", () => {
+    const bundleData = {
+      "bundle1": {
+        id: "bundle1",
+        name: "Incomplete Bundle"
+        // Missing allBundleProductIds and pricing
+      }
+    };
+
     const input = {
       cart: {
         lines: [
@@ -444,14 +440,8 @@ describe("cartTransformRun", () => {
               __typename: "ProductVariant",
               id: "variant1",
               product: {
-                id: "product1",
-                metafield: {
-                  value: JSON.stringify({
-                    id: "bundle1",
-                    name: "Incomplete Bundle"
-                    // Missing allBundleProductIds and pricing
-                  }),
-                },
+                id: "gid://shopify/Product/1",
+                title: "Product 1",
               },
             },
             cost: {
@@ -460,6 +450,9 @@ describe("cartTransformRun", () => {
             },
           },
         ],
+        metafield: {
+          value: JSON.stringify(bundleData),
+        },
         cost: {
           totalAmount: { amount: "10.00", currencyCode: "USD" },
           subtotalAmount: { amount: "10.00", currencyCode: "USD" },
@@ -1054,6 +1047,7 @@ describe("cart transform utilities", () => {
   it("getAllBundleDataFromCart handles empty cart", () => {
     const cart = {
       lines: [],
+      metafield: null,
       cost: {
         totalAmount: { amount: "0", currencyCode: "USD" },
         subtotalAmount: { amount: "0", currencyCode: "USD" },
@@ -1064,15 +1058,17 @@ describe("cart transform utilities", () => {
     expect(result).toEqual([]);
   });
 
-  it("getAllBundleDataFromCart extracts bundle data correctly", () => {
-    const bundleConfig = {
-      id: "test-bundle",
-      name: "Test Bundle",
-      allBundleProductIds: ["product1", "product2"],
-      pricing: {
-        enableDiscount: true,
-        discountMethod: "fixed_amount_off",
-        rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+  it("getAllBundleDataFromCart extracts bundle data correctly from cart metafield", () => {
+    const bundleData = {
+      "test-bundle": {
+        id: "test-bundle",
+        name: "Test Bundle",
+        allBundleProductIds: ["gid://shopify/Product/1", "gid://shopify/Product/2"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "fixed_amount_off",
+          rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+        }
       }
     };
 
@@ -1085,10 +1081,8 @@ describe("cart transform utilities", () => {
             __typename: "ProductVariant",
             id: "variant1",
             product: {
-              id: "product1",
-              metafield: {
-                value: JSON.stringify(bundleConfig),
-              },
+              id: "gid://shopify/Product/1",
+              title: "Product 1",
             },
           },
           cost: {
@@ -1097,17 +1091,19 @@ describe("cart transform utilities", () => {
           },
         },
       ],
+      metafield: {
+        value: JSON.stringify(bundleData),
+      },
       cost: {
         totalAmount: { amount: "10.00", currencyCode: "USD" },
         subtotalAmount: { amount: "10.00", currencyCode: "USD" },
       },
     };
 
-    const result = getAllBundleDataFromCart(cart, null);
+    const result = getAllBundleDataFromCart(cart, JSON.stringify(bundleData));
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe(bundleConfig.id);
-    expect(result[0].name).toBe(bundleConfig.name);
-    // Product IDs are normalized to GID format
+    expect(result[0].id).toBe("test-bundle");
+    expect(result[0].name).toBe("Test Bundle");
     expect(result[0].allBundleProductIds).toEqual(["gid://shopify/Product/1", "gid://shopify/Product/2"]);
   });
 
@@ -1121,10 +1117,8 @@ describe("cart transform utilities", () => {
             __typename: "ProductVariant",
             id: "variant1",
             product: {
-              id: "product1",
-              metafield: {
-                value: "invalid json",
-              },
+              id: "gid://shopify/Product/1",
+              title: "Product 1",
             },
           },
           cost: {
@@ -1133,25 +1127,40 @@ describe("cart transform utilities", () => {
           },
         },
       ],
+      metafield: {
+        value: "invalid json",
+      },
       cost: {
         totalAmount: { amount: "10.00", currencyCode: "USD" },
         subtotalAmount: { amount: "10.00", currencyCode: "USD" },
       },
     };
 
-    const result = getAllBundleDataFromCart(cart, null);
+    const result = getAllBundleDataFromCart(cart, "invalid json");
     expect(result).toEqual([]);
   });
 
-  it("getAllBundleDataFromCart groups cart lines by bundle ID", () => {
-    const bundleConfig = {
-      id: "shared-bundle",
-      name: "Shared Bundle",
-      allBundleProductIds: ["product1", "product2"],
-      pricing: {
-        enableDiscount: true,
-        discountMethod: "percentage_off",
-        rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 0, percentageOff: 15 }]
+  it("getAllBundleDataFromCart handles multiple bundles correctly", () => {
+    const bundleData = {
+      "bundle-a": {
+        id: "bundle-a",
+        name: "Bundle A",
+        allBundleProductIds: ["gid://shopify/Product/1", "gid://shopify/Product/2"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "percentage_off",
+          rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 0, percentageOff: 15 }]
+        }
+      },
+      "bundle-b": {
+        id: "bundle-b",
+        name: "Bundle B",
+        allBundleProductIds: ["gid://shopify/Product/3", "gid://shopify/Product/4"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "fixed_amount_off",
+          rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 10, percentageOff: 0 }]
+        }
       }
     };
 
@@ -1164,8 +1173,8 @@ describe("cart transform utilities", () => {
             __typename: "ProductVariant",
             id: "variant1",
             product: {
-              id: "product1",
-              metafield: { value: JSON.stringify(bundleConfig) },
+              id: "gid://shopify/Product/1",
+              title: "Product 1",
             },
           },
           cost: {
@@ -1180,8 +1189,8 @@ describe("cart transform utilities", () => {
             __typename: "ProductVariant",
             id: "variant2",
             product: {
-              id: "product2",
-              metafield: { value: JSON.stringify(bundleConfig) },
+              id: "gid://shopify/Product/2",
+              title: "Product 2",
             },
           },
           cost: {
@@ -1190,16 +1199,19 @@ describe("cart transform utilities", () => {
           },
         },
       ],
+      metafield: {
+        value: JSON.stringify(bundleData),
+      },
       cost: {
         totalAmount: { amount: "25.00", currencyCode: "USD" },
         subtotalAmount: { amount: "25.00", currencyCode: "USD" },
       },
     };
 
-    const result = getAllBundleDataFromCart(cart, null);
-    expect(result).toHaveLength(1); // Should group into one bundle
-    expect(result[0].id).toBe("shared-bundle");
-    expect(result[0].name).toBe("Shared Bundle");
+    const result = getAllBundleDataFromCart(cart, JSON.stringify(bundleData));
+    expect(result).toHaveLength(2); // Should find both bundles
+    expect(result.map(b => b.id)).toContain("bundle-a");
+    expect(result.map(b => b.id)).toContain("bundle-b");
   });
 });
 
@@ -1282,15 +1294,17 @@ describe("parseBundleDataFromMetafield", () => {
 // Product ID format mismatch integration test
 describe("Product ID format mismatch handling", () => {
   it("matches products correctly with mixed ID formats in cart vs bundle config", () => {
-    // Bundle config with numeric IDs
-    const bundleConfig = {
-      id: "format-test-bundle",
-      name: "Format Test Bundle",
-      allBundleProductIds: ["10203664711974", "10203664777510"],
-      pricing: {
-        enableDiscount: true,
-        discountMethod: "fixed_amount_off",
-        rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+    // Bundle config with mixed ID formats
+    const bundleData = {
+      "format-test-bundle": {
+        id: "format-test-bundle",
+        name: "Format Test Bundle",
+        allBundleProductIds: ["10203664711974", "gid://shopify/Product/10203664777510"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "fixed_amount_off",
+          rules: [{ discountOn: "quantity", minimumQuantity: 2, fixedAmountOff: 5, percentageOff: 0 }]
+        }
       }
     };
 
@@ -1306,9 +1320,7 @@ describe("Product ID format mismatch handling", () => {
               id: "gid://shopify/ProductVariant/41234567890123",
               product: {
                 id: "gid://shopify/Product/10203664711974", // Full GID format
-                metafield: {
-                  value: JSON.stringify(bundleConfig),
-                },
+                title: "Product 1",
               },
             },
             cost: {
@@ -1324,9 +1336,7 @@ describe("Product ID format mismatch handling", () => {
               id: "gid://shopify/ProductVariant/41234567890456",
               product: {
                 id: "gid://shopify/Product/10203664777510", // Full GID format
-                metafield: {
-                  value: JSON.stringify(bundleConfig),
-                },
+                title: "Product 2",
               },
             },
             cost: {
@@ -1335,6 +1345,9 @@ describe("Product ID format mismatch handling", () => {
             },
           },
         ],
+        metafield: {
+          value: JSON.stringify(bundleData),
+        },
         cost: {
           totalAmount: { amount: "25.00", currencyCode: "USD" },
           subtotalAmount: { amount: "25.00", currencyCode: "USD" },
@@ -1353,6 +1366,19 @@ describe("Product ID format mismatch handling", () => {
 
   it("handles component reference matching with variant GIDs", () => {
     // Test standard Shopify bundle with component references
+    const bundleData = {
+      "standard-bundle": {
+        id: "standard-bundle",
+        name: "Standard Bundle Product",
+        allBundleProductIds: ["gid://shopify/Product/bundle789"],
+        pricing: {
+          enableDiscount: true,
+          discountMethod: "percentage_off",
+          rules: [{ discountOn: "quantity", minimumQuantity: 1, fixedAmountOff: 0, percentageOff: 10 }]
+        }
+      }
+    };
+
     const input = {
       cart: {
         lines: [
@@ -1362,13 +1388,13 @@ describe("Product ID format mismatch handling", () => {
             merchandise: {
               __typename: "ProductVariant",
               id: "gid://shopify/ProductVariant/parent456",
-              componentReference: {
+              component_reference: {
                 value: JSON.stringify([
                   "gid://shopify/ProductVariant/component789",
                   "gid://shopify/ProductVariant/component012"
                 ])
               },
-              componentQuantities: {
+              component_quantities: {
                 value: JSON.stringify([1, 1])
               },
               product: {
@@ -1382,6 +1408,9 @@ describe("Product ID format mismatch handling", () => {
             },
           },
         ],
+        metafield: {
+          value: JSON.stringify(bundleData),
+        },
         cost: {
           totalAmount: { amount: "25.00", currencyCode: "USD" },
           subtotalAmount: { amount: "25.00", currencyCode: "USD" },
@@ -1391,9 +1420,8 @@ describe("Product ID format mismatch handling", () => {
 
     const result = cartTransformRun(input);
     
-    // Bundle parent should expand - but first needs proper discount rules to trigger transformation
-    // Since we have a 10% default discount and quantity 1 meets minimum, should create operation
-    // However, the bundle parent expansion logic may need adjustment for single line bundles
-    expect(result.operations).toHaveLength(0); // Currently expected based on debug logs showing no applicable rule
+    // Should create merge operation for bundle parent
+    expect(result.operations).toHaveLength(1);
+    expect(result.operations[0]).toHaveProperty("merge");
   });
 });

@@ -103,7 +103,17 @@
       "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
       "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
       "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
-      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)"
+      "Read(/C:\\Users\\91945\\wolfpack-main\\Only-Bundles\\app\\routes/**)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npx vitest run:*)",
+      "Bash(curl:*)",
+      "Bash(npm test:*)",
+      "WebFetch(domain:help.shopify.com)",
+      "Bash(env)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd //c:*)"
     ],
     "deny": []
   }

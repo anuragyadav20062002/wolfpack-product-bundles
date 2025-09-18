@@ -1,4 +1,4 @@
-// Define types for cart transform function following Shopify standard
+// Define types for cart transform function following official Shopify standard
 export interface CartTransformInput {
   cart: {
     lines: Array<{
@@ -20,6 +20,14 @@ export interface CartTransformInput {
         price_adjustment?: {
           value: string;
         };
+        product?: {
+          id: string;
+          title: string;
+          bundle_config?: {
+            value: string;
+            jsonValue?: any;
+          };
+        };
       };
       cost: {
         amountPerQuantity: {
@@ -32,7 +40,7 @@ export interface CartTransformInput {
         };
       };
     }>;
-    cost: {
+    cost?: {
       totalAmount: {
         amount: string;
         currencyCode: string;
@@ -41,6 +49,10 @@ export interface CartTransformInput {
         amount: string;
         currencyCode: string;
       };
+    };
+    // Cart-level attributes for bundle information (alternative approach)
+    attribute?: {
+      value: string;
     };
   };
 }
@@ -85,6 +97,12 @@ export interface CartTransformResult {
   operations: CartTransformOperation[];
 }
 
+// Main function - matches the export name expected by Shopify Functions
+export function run(input: CartTransformInput): CartTransformResult {
+  return cartTransformRun(input);
+}
+
+// Internal function - keeping for compatibility
 export function cartTransformRun(
   input: CartTransformInput,
 ): CartTransformResult {
@@ -97,22 +115,355 @@ export function cartTransformRun(
     return { operations: [] };
   }
 
+  // Try multiple approaches for maximum compatibility
+  
+  // 1. Check for cart-level bundle configurations (legacy approach)
+  if (input.cart.metafield?.value) {
+    try {
+      console.log("🔍 [CART TRANSFORM DEBUG] Using cart-level bundle configurations approach");
+      const bundleConfigs = JSON.parse(input.cart.metafield.value);
+      return processCartTransformWithBundleConfigs(input.cart, bundleConfigs);
+    } catch (error) {
+      console.log("🔍 [CART TRANSFORM DEBUG] Error parsing cart metafield, falling back to standard approach");
+    }
+  }
+
+  // 2. Check for product-level metafields (also legacy but from product level)
+  const hasProductMetafields = input.cart.lines.some(line => 
+    line.merchandise?.product?.bundle_config?.value
+  );
+  
+  if (hasProductMetafields) {
+    console.log("🔍 [CART TRANSFORM DEBUG] Using product-level bundle configurations approach");
+    return processCartTransformWithProductMetafields(input.cart);
+  }
+
+  // 3. Standard Shopify metafields approach (official)
+  console.log("🔍 [CART TRANSFORM DEBUG] Using official Shopify standard metafields approach");
+  return processCartTransformWithStandardMetafields(input.cart);
+}
+
+// NEW: Official Shopify standard metafields approach (following sample.md)
+function processCartTransformWithStandardMetafields(cart: any): CartTransformResult {
   const operations = [];
 
   // Process expand operations first (bundle products → individual components)
-  const expandOperations = getExpandOperations(input.cart.lines);
+  const expandOperations = getExpandOperations(cart.lines);
   operations.push(...expandOperations);
 
   // Process merge operations (individual components → bundle products)
-  const mergeOperations = getMergeOperations(input.cart.lines);
+  const mergeOperations = getMergeOperations(cart.lines);
   operations.push(...mergeOperations);
 
   console.log(`🔍 [CART TRANSFORM DEBUG] Cart Transform completed with ${operations.length} operations`);
   console.log(`🔍 [CART TRANSFORM DEBUG] Operations:`, JSON.stringify(operations, null, 2));
 
-  return {
-    operations,
+  return { operations };
+}
+
+// LEGACY: Primary approach using bundle configurations from product metafields or cart attributes
+function processCartTransformWithBundleConfigs(cart: any, bundleConfigs: any): CartTransformResult {
+  try {
+    console.log("🔍 [CART TRANSFORM BUNDLE] Processing with bundle configurations");
+    console.log("🔍 [CART TRANSFORM BUNDLE] Bundle configs:", JSON.stringify(bundleConfigs, null, 2));
+    
+    const operations = [];
+    
+    // Process each bundle configuration - bundleConfigs can be object with bundle IDs as keys or array
+    const bundleConfigArray = Array.isArray(bundleConfigs) 
+      ? bundleConfigs 
+      : Object.values(bundleConfigs);
+    
+    for (const bundleConfig of bundleConfigArray) {
+      if (bundleConfig && typeof bundleConfig === 'object') {
+        console.log(`🔍 [CART TRANSFORM BUNDLE] Processing bundle: ${bundleConfig.name || 'Unnamed Bundle'}`);
+        
+        // Find products in cart that match this bundle
+        const bundleOperations = processBundleConfiguration(cart, bundleConfig);
+        operations.push(...bundleOperations);
+      }
+    }
+    
+    console.log(`🔍 [CART TRANSFORM BUNDLE] Generated ${operations.length} operations`);
+    console.log("🔍 [CART TRANSFORM BUNDLE] Operations:", JSON.stringify(operations, null, 2));
+    
+    return { operations };
+  } catch (error) {
+    console.error("🔍 [CART TRANSFORM BUNDLE] Error processing bundle configs:", error);
+    return { operations: [] };
+  }
+}
+
+// FALLBACK: Original approach using product metafields (less reliable due to propagation delays)
+function processCartTransformWithProductMetafields(cart: any): CartTransformResult {
+  const operations = [];
+  console.log("🔍 [PRODUCT METAFIELDS] Starting to process product-level bundle configurations");
+
+  // Collect all bundle configurations from product metafields
+  const bundleConfigurations: any[] = [];
+
+  for (const line of cart.lines) {
+    if (line.merchandise?.product?.bundle_config?.value) {
+      try {
+        const productBundleConfig = JSON.parse(line.merchandise.product.bundle_config.value);
+        console.log(`🔍 [PRODUCT METAFIELDS] Found bundle config in product ${line.merchandise.product.id}:`, JSON.stringify(productBundleConfig, null, 2));
+
+        // This is a structured bundle config - process it directly
+        bundleConfigurations.push(productBundleConfig);
+      } catch (error) {
+        console.log(`🔍 [PRODUCT METAFIELDS] Error parsing product bundle config: ${error}`);
+      }
+    }
+  }
+
+  // Process each bundle configuration found
+  for (const bundleConfig of bundleConfigurations) {
+    console.log(`🔍 [PRODUCT METAFIELDS] Processing bundle configuration: ${bundleConfig.name} (ID: ${bundleConfig.bundleId})`);
+
+    // Check if we have the required cart lines for this bundle
+    const bundleOperations = processBundleConfiguration(cart, bundleConfig);
+    operations.push(...bundleOperations);
+  }
+
+  // If no bundle configurations were found, fall back to standard metafields approach
+  if (bundleConfigurations.length === 0) {
+    console.log("🔍 [PRODUCT METAFIELDS] No product bundle configs found, using standard metafields");
+
+    // Process expand operations first (bundle products → individual components)
+    const expandOperations = getExpandOperations(cart.lines);
+    operations.push(...expandOperations);
+
+    // Process merge operations (individual components → bundle products)
+    const mergeOperations = getMergeOperations(cart.lines);
+    operations.push(...mergeOperations);
+  }
+
+  console.log(`🔍 [PRODUCT METAFIELDS] Cart Transform completed with ${operations.length} operations`);
+  console.log(`🔍 [PRODUCT METAFIELDS] Operations:`, JSON.stringify(operations, null, 2));
+
+  return { operations };
+}
+
+// NEW: Process bundle configuration using cart transform metafield data
+function processBundleConfiguration(cart: any, bundleConfig: any): CartTransformOperation[] {
+  const operations: CartTransformOperation[] = [];
+
+  const bundleId = bundleConfig.bundleId || bundleConfig.id;
+  console.log(`🔍 [BUNDLE CONFIG] Processing bundle: ${bundleConfig.name} (ID: ${bundleId})`);
+
+  // Extract all product IDs from bundle steps
+  const bundleProductIds: string[] = [];
+  const steps = bundleConfig.steps || [];
+
+  for (const step of steps) {
+    // Handle both formats: products[] array and productIds[] array
+    const stepProducts = step.products || [];
+    const stepProductIds = step.productIds || [];
+
+    // Add from products array (format: [{id: "gid://...", title: "..."}])
+    for (const product of stepProducts) {
+      if (product.id) {
+        bundleProductIds.push(product.id);
+      }
+    }
+
+    // Add from productIds array (format: ["gid://...", "gid://..."])
+    bundleProductIds.push(...stepProductIds);
+  }
+
+  console.log(`🔍 [BUNDLE CONFIG] Bundle products: ${JSON.stringify(bundleProductIds)}`);
+
+  // Find cart lines that match this bundle's products
+  const matchingLines = cart.lines.filter((line: any) => {
+    const productId = line.merchandise?.product?.id;
+    if (!productId) return false;
+
+    const isMatch = bundleProductIds.includes(productId);
+    if (isMatch) {
+      console.log(`🔍 [BUNDLE CONFIG] Found matching line: ${line.id} for product ${productId}`);
+    }
+    return isMatch;
+  });
+
+  console.log(`🔍 [BUNDLE CONFIG] Found ${matchingLines.length} matching lines for bundle ${bundleConfig.name}`);
+
+  if (matchingLines.length === 0) {
+    console.log(`🔍 [BUNDLE CONFIG] No matching products in cart for bundle ${bundleConfig.name}`);
+    return operations;
+  }
+
+  // For this bundle, check if we can create a merge operation
+  // In the cart transform context, if we have bundle components in the cart,
+  // we want to merge them into the bundle product
+
+  // Find the bundle product (the one that has bundle_config)
+  const bundleProductLine = cart.lines.find((line: any) =>
+    line.merchandise?.product?.bundle_config?.value
+  );
+
+  if (bundleProductLine) {
+    console.log(`🔍 [BUNDLE CONFIG] Found bundle product line: ${bundleProductLine.id}`);
+
+    // Find component lines (products that are in the bundle but NOT the bundle product itself)
+    const componentLines = matchingLines.filter((line: any) =>
+      line.id !== bundleProductLine.id
+    );
+
+    if (componentLines.length > 0) {
+      console.log(`🔍 [BUNDLE CONFIG] Found ${componentLines.length} component lines to merge`);
+
+      // Create merge operation: merge component lines into the bundle product
+      const mergeOperation = createMergeOperationForBundle(bundleProductLine, componentLines, bundleConfig);
+      if (mergeOperation) {
+        operations.push({ merge: mergeOperation });
+        console.log(`🔍 [BUNDLE CONFIG] Created merge operation for bundle ${bundleConfig.name}`);
+      }
+    } else {
+      console.log(`🔍 [BUNDLE CONFIG] No component lines to merge for bundle ${bundleConfig.name}`);
+    }
+  } else {
+    console.log(`🔍 [BUNDLE CONFIG] No bundle product found in cart for bundle ${bundleConfig.name}`);
+  }
+
+  return operations;
+}
+
+// Check if bundle conditions are satisfied
+function checkBundleConditions(cartLines: any[], bundleConfig: any): boolean {
+  const steps = bundleConfig.steps || [];
+  
+  // Check step-level conditions
+  for (const step of steps) {
+    const stepProductIds = step.productIds || [];
+    const minQuantity = step.minQuantity || 1;
+    
+    // Count how many products from this step are in the cart
+    let stepQuantity = 0;
+    for (const line of cartLines) {
+      const productId = line.merchandise?.product?.id;
+      if (stepProductIds.includes(productId)) {
+        stepQuantity += line.quantity;
+      }
+    }
+    
+    console.log(`🔍 [BUNDLE CONDITIONS] Step "${step.name}": need ${minQuantity}, have ${stepQuantity}`);
+    
+    if (stepQuantity < minQuantity) {
+      console.log(`🔍 [BUNDLE CONDITIONS] Step "${step.name}" not satisfied (${stepQuantity} < ${minQuantity})`);
+      return false;
+    }
+  }
+  
+  // Check bundle-level pricing conditions
+  const pricing = bundleConfig.pricing;
+  if (pricing && pricing.rules && pricing.rules.length > 0) {
+    for (const rule of pricing.rules) {
+      if (rule.discountOn === "quantity" && rule.minimumQuantity) {
+        // Calculate total quantity for this bundle
+        let totalQuantity = 0;
+        for (const line of cartLines) {
+          totalQuantity += line.quantity;
+        }
+        
+        console.log(`🔍 [BUNDLE CONDITIONS] Pricing rule: need ${rule.minimumQuantity}, have ${totalQuantity}`);
+        
+        if (totalQuantity < rule.minimumQuantity) {
+          console.log(`🔍 [BUNDLE CONDITIONS] Pricing rule not satisfied (${totalQuantity} < ${rule.minimumQuantity})`);
+          return false;
+        }
+      } else if (rule.discountOn === "amount" && rule.minimumAmount) {
+        // Calculate total amount for this bundle
+        let totalAmount = 0;
+        for (const line of cartLines) {
+          totalAmount += parseFloat(line.cost?.totalAmount?.amount || 0);
+        }
+        
+        console.log(`🔍 [BUNDLE CONDITIONS] Pricing rule: need $${rule.minimumAmount}, have $${totalAmount}`);
+        
+        if (totalAmount < rule.minimumAmount) {
+          console.log(`🔍 [BUNDLE CONDITIONS] Pricing rule not satisfied ($${totalAmount} < $${rule.minimumAmount})`);
+          return false;
+        }
+      }
+    }
+  }
+  
+  console.log("🔍 [BUNDLE CONDITIONS] All bundle conditions satisfied");
+  return true;
+}
+
+// Create merge operation for bundle
+function createMergeOperation(cartLines: any[], bundleConfig: any): any {
+  const cartLinesForMerge = cartLines.map(line => ({
+    cartLineId: line.id,
+    quantity: line.quantity
+  }));
+  
+  // Use bundleParentVariantId if available, otherwise create a synthetic parent ID
+  const parentVariantId = bundleConfig.bundleParentVariantId || 
+                         bundleConfig.parentVariantId ||
+                         `gid://shopify/ProductVariant/bundle_${bundleConfig.id}`;
+  
+  const mergeOperation: any = {
+    cartLines: cartLinesForMerge,
+    parentVariantId: parentVariantId,
+    title: bundleConfig.name,
+    attributes: [
+      { key: "_bundle_id", value: bundleConfig.id }
+    ]
   };
+  
+  // Apply pricing if configured
+  if (bundleConfig.pricing && bundleConfig.pricing.enableDiscount && bundleConfig.pricing.rules) {
+    const rules = bundleConfig.pricing.rules || [];
+    if (rules.length > 0) {
+      const rule = rules[0];
+      
+      if (bundleConfig.pricing.discountMethod === 'percentage_off' && rule.percentageOff) {
+        mergeOperation.price = {
+          percentageDecrease: {
+            value: parseFloat(rule.percentageOff) || 0
+          }
+        };
+        console.log(`🔍 [MERGE OPERATION] Applied ${rule.percentageOff}% discount to ${bundleConfig.name}`);
+      } else if (bundleConfig.pricing.discountMethod === 'fixed_amount_off' && rule.fixedAmountOff) {
+        // For fixed amount discounts, we need to calculate the percentage based on original price
+        let totalOriginalAmount = 0;
+        for (const line of cartLines) {
+          totalOriginalAmount += parseFloat(line.cost?.totalAmount?.amount || 0);
+        }
+        
+        const discountPercentage = totalOriginalAmount > 0 ? (rule.fixedAmountOff / totalOriginalAmount) * 100 : 0;
+        
+        mergeOperation.price = {
+          percentageDecrease: {
+            value: Math.min(100, Math.max(0, discountPercentage)) // Ensure it's between 0-100%
+          }
+        };
+        console.log(`🔍 [MERGE OPERATION] Applied $${rule.fixedAmountOff} discount (${discountPercentage.toFixed(2)}%) to ${bundleConfig.name}`);
+      } else if (bundleConfig.pricing.discountMethod === 'fixed_bundle_price' && bundleConfig.pricing.fixedPrice) {
+        // For fixed bundle price, calculate discount percentage from original total
+        let totalOriginalAmount = 0;
+        for (const line of cartLines) {
+          totalOriginalAmount += parseFloat(line.cost?.totalAmount?.amount || 0);
+        }
+        
+        const fixedPrice = parseFloat(bundleConfig.pricing.fixedPrice);
+        const discountAmount = totalOriginalAmount - fixedPrice;
+        const discountPercentage = totalOriginalAmount > 0 ? (discountAmount / totalOriginalAmount) * 100 : 0;
+        
+        mergeOperation.price = {
+          percentageDecrease: {
+            value: Math.min(100, Math.max(0, discountPercentage)) // Ensure it's between 0-100%
+          }
+        };
+        console.log(`🔍 [MERGE OPERATION] Applied fixed price $${fixedPrice} (${discountPercentage.toFixed(2)}% discount) to ${bundleConfig.name}`);
+      }
+    }
+  }
+  
+  console.log(`🔍 [MERGE OPERATION] Created merge operation: ${JSON.stringify(mergeOperation, null, 2)}`);
+  return mergeOperation;
 }
 
 // Expand operations: Convert bundle products to individual components
@@ -137,6 +488,12 @@ function buildExpandOperation(cartLine: any) {
     return null;
   }
 
+  // Check for null metafields (the current issue)
+  if (!merchandise.component_reference?.value || !merchandise.component_quantities?.value) {
+    console.log(`🔍 [CART TRANSFORM DEBUG] Product ${merchandise.id} has null metafields - no expand needed`);
+    return null;
+  }
+
   const hasExpandMetafields = 
     !!merchandise.component_reference && !!merchandise.component_quantities;
     
@@ -145,8 +502,37 @@ function buildExpandOperation(cartLine: any) {
   }
 
   try {
-    const componentReferences = JSON.parse(merchandise.component_reference.value);
-    const componentQuantities = JSON.parse(merchandise.component_quantities.value);
+    // Handle list.product_reference metafield - value should be JSON array string
+    let componentReferences = [];
+    if (merchandise.component_reference.value) {
+      try {
+        componentReferences = JSON.parse(merchandise.component_reference.value);
+        // Ensure array format
+        if (!Array.isArray(componentReferences)) {
+          componentReferences = [componentReferences];
+        }
+      } catch {
+        // If not JSON, treat as single value
+        componentReferences = [merchandise.component_reference.value];
+      }
+    }
+
+    // Handle list.number_integer metafield - value should be JSON array string
+    let componentQuantities = [];
+    if (merchandise.component_quantities.value) {
+      try {
+        componentQuantities = JSON.parse(merchandise.component_quantities.value);
+        // Ensure array format and convert to numbers
+        if (!Array.isArray(componentQuantities)) {
+          componentQuantities = [parseInt(componentQuantities) || 1];
+        } else {
+          componentQuantities = componentQuantities.map(q => parseInt(q) || 1);
+        }
+      } catch {
+        // If not JSON, treat as single numeric value
+        componentQuantities = [parseInt(merchandise.component_quantities.value) || 1];
+      }
+    }
 
     console.log(`🔍 [CART TRANSFORM DEBUG] Expanding bundle variant ${merchandise.id}`);
     console.log(`🔍 [CART TRANSFORM DEBUG] Component references:`, componentReferences);
@@ -177,16 +563,21 @@ function buildExpandOperation(cartLine: any) {
       // Apply price adjustment if specified
       if (merchandise.price_adjustment) {
         try {
-          const priceAdjustmentValue = typeof merchandise.price_adjustment.value === 'string' 
-            ? parseFloat(merchandise.price_adjustment.value) 
-            : merchandise.price_adjustment.value;
+          // Handle number_decimal metafield: value should be a number
+          let priceAdjustmentValue = merchandise.price_adjustment.value;
           
-          if (typeof priceAdjustmentValue === 'number' && !isNaN(priceAdjustmentValue)) {
+          // Convert to number if it's a string
+          if (typeof priceAdjustmentValue === 'string') {
+            priceAdjustmentValue = parseFloat(priceAdjustmentValue);
+          }
+          
+          if (typeof priceAdjustmentValue === 'number' && !isNaN(priceAdjustmentValue) && priceAdjustmentValue > 0) {
             expandOperation.price = {
               percentageDecrease: {
                 value: priceAdjustmentValue,
               },
             };
+            console.log(`🔍 [CART TRANSFORM DEBUG] Applied ${priceAdjustmentValue}% discount to expand operation`);
           }
         } catch (error) {
           console.error("🔍 [CART TRANSFORM DEBUG] Error parsing expand price adjustment:", error);
@@ -226,7 +617,8 @@ function getBundleParentDefinitions(cartLines: any[]) {
   for (const cartLine of cartLines) {
     const { merchandise } = cartLine;
     
-    if (merchandise.__typename !== "ProductVariant" || !merchandise.component_parents) {
+    if (merchandise.__typename !== "ProductVariant" || !merchandise.component_parents?.value) {
+      console.log(`🔍 [CART TRANSFORM DEBUG] Product ${merchandise.id} has null component_parents metafield - skipping`);
       continue;
     }
 
@@ -306,19 +698,24 @@ function buildMergeOperation(cartLines: any[], parentDef: any) {
     ],
   };
 
-  // Apply price adjustment if specified
-  if (parentDef.price_adjustment) {
+  // Apply price adjustment if specified (official Shopify format)
+  if (parentDef.price_adjustment?.value) {
     try {
-      const priceAdjustmentValue = typeof parentDef.price_adjustment === 'string' 
-        ? JSON.parse(parentDef.price_adjustment) 
-        : parentDef.price_adjustment;
+      // Handle number_decimal metafield: value should be a number
+      let priceAdjustmentValue = parentDef.price_adjustment.value;
       
-      if (typeof priceAdjustmentValue === 'number') {
+      // Convert to number if it's a string
+      if (typeof priceAdjustmentValue === 'string') {
+        priceAdjustmentValue = parseFloat(priceAdjustmentValue);
+      }
+      
+      if (typeof priceAdjustmentValue === 'number' && priceAdjustmentValue > 0) {
         mergeOperation.price = {
           percentageDecrease: {
             value: priceAdjustmentValue,
           },
         };
+        console.log(`🔍 [CART TRANSFORM DEBUG] Applied ${priceAdjustmentValue}% discount to bundle ${parentDef.id}`);
       }
     } catch (error) {
       console.error("🔍 [CART TRANSFORM DEBUG] Error parsing price adjustment:", error);
@@ -362,6 +759,59 @@ function getComponentsInCart(cartLines: any[], componentReferences: string[], co
   }
 
   return componentsInCart;
+}
+
+// Create a merge operation for bundle products + component products
+function createMergeOperationForBundle(bundleProductLine: any, componentLines: any[], bundleConfig: any): any {
+  console.log(`🔍 [MERGE OPERATION] Creating merge operation for bundle: ${bundleConfig.name}`);
+  console.log(`🔍 [MERGE OPERATION] Bundle product line: ${bundleProductLine.id}`);
+  console.log(`🔍 [MERGE OPERATION] Component lines: ${componentLines.map((line: any) => line.id).join(', ')}`);
+
+  // Create the merge operation structure
+  const mergeOperation = {
+    parentVariantId: bundleProductLine.merchandise.id,
+    cartLines: [
+      // Include the bundle product itself
+      {
+        cartLineId: bundleProductLine.id,
+        quantity: bundleProductLine.quantity,
+      },
+      // Include all component product lines
+      ...componentLines.map((line: any) => ({
+        cartLineId: line.id,
+        quantity: line.quantity,
+      })),
+    ],
+    title: `${bundleConfig.name} Bundle`,
+    attributes: [
+      {
+        key: "Bundle",
+        value: bundleConfig.name,
+      },
+      {
+        key: "Bundle ID",
+        value: bundleConfig.bundleId || bundleConfig.id,
+      },
+    ],
+  };
+
+  // Apply discount if configured
+  const pricing = bundleConfig.pricing;
+  if (pricing?.enabled && pricing.rules && pricing.rules.length > 0) {
+    const rule = pricing.rules[0];
+    if (pricing.method === "percentage_off" && rule.discountValue) {
+      mergeOperation.price = {
+        percentageDecrease: {
+          value: parseFloat(rule.discountValue),
+        },
+      };
+      console.log(`🔍 [MERGE OPERATION] Applied ${rule.discountValue}% discount to bundle`);
+    }
+  }
+
+  console.log(`🔍 [MERGE OPERATION] Created merge operation:`, JSON.stringify(mergeOperation, null, 2));
+
+  return mergeOperation;
 }
 
 

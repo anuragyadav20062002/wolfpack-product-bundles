@@ -315,6 +315,42 @@ async function updateBundleProductMetafields(admin: any, bundleProductId: string
   return data.data?.metafieldsSet?.metafields?.[0];
 }
 
+// Helper function to get bundle product variant ID
+async function getBundleProductVariantId(admin: any, shopifyProductId: string | null): Promise<string | null> {
+  if (!shopifyProductId) {
+    return null;
+  }
+  
+  try {
+    const GET_BUNDLE_PRODUCT_VARIANT = `
+      query GetBundleProductVariant($id: ID!) {
+        product(id: $id) {
+          variants(first: 1) {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(GET_BUNDLE_PRODUCT_VARIANT, {
+      variables: { id: shopifyProductId }
+    });
+
+    const data = await response.json();
+    const variantId = data.data?.product?.variants?.edges?.[0]?.node?.id;
+    
+    console.log(`🔍 [VARIANT_LOOKUP] Product ${shopifyProductId} → Variant ${variantId}`);
+    return variantId || null;
+  } catch (error) {
+    console.error(`❌ [VARIANT_LOOKUP] Failed to get variant for product ${shopifyProductId}:`, error);
+    return null;
+  }
+}
+
 // Helper function to update cart transform metafields (Shopify recommended approach)
 async function updateCartTransformMetafield(admin: any, shopId: string) {
   console.log("🔄 [CART_TRANSFORM_METAFIELD] Starting cart transform metafield update");
@@ -366,7 +402,7 @@ async function updateCartTransformMetafield(admin: any, shopId: string) {
     console.log(`🔄 [CART_TRANSFORM_METAFIELD] Found ${allPublishedBundles.length} published bundles`);
 
     // Create MINIMAL optimized bundle configuration for cart transform performance
-    const optimizedBundleConfigs = allPublishedBundles.map((bundle) => {
+    const optimizedBundleConfigs = await Promise.all(allPublishedBundles.map(async (bundle) => {
       // Extract all product IDs from bundle steps for quick lookup
       const allBundleProductIds = [];
       const stepConfigs = [];
@@ -428,13 +464,12 @@ async function updateCartTransformMetafield(admin: any, shopId: string) {
           bundleVariantId: bundle.pricing.bundleVariantId,
           fixedPrice: bundle.pricing.fixedPrice
         } : null,
-        // Include bundle parent variant if available
-        bundleParentVariantId: bundle.shopifyProductId ? 
-          `gid://shopify/ProductVariant/${bundle.shopifyProductId}` : null
+        // Include bundle parent variant if available - fetch from bundle product
+        bundleParentVariantId: await getBundleProductVariantId(admin, bundle.shopifyProductId)
       };
 
       return optimizedBundle;
-    });
+    }));
 
     const originalSize = JSON.stringify(allPublishedBundles).length;
     const optimizedSize = JSON.stringify(optimizedBundleConfigs).length;
@@ -602,7 +637,7 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
         metafields: [
           {
             ownerId: shopGlobalId,
-            namespace: "custom",
+            namespace: "$app",
             key: "all_bundles", 
             type: "json",
             value: JSON.stringify(formattedBundles)
@@ -648,9 +683,213 @@ function mapDiscountMethod(discountType: string): string {
   }
 }
 
+// Helper function to get first variant ID for a product
+async function getFirstVariantId(admin: any, productId: string): Promise<string> {
+  try {
+    // Remove gid prefix if present to get just the ID
+    const cleanProductId = productId.replace('gid://shopify/Product/', '');
+    
+    const PRODUCT_QUERY = `
+      query GetProduct($id: ID!) {
+        product(id: $id) {
+          variants(first: 1) {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(PRODUCT_QUERY, {
+      variables: {
+        id: `gid://shopify/Product/${cleanProductId}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.data?.product?.variants?.edges?.[0]?.node?.id) {
+      return data.data.product.variants.edges[0].node.id;
+    }
+    
+    // Fallback to old method if query fails
+    return `gid://shopify/ProductVariant/${cleanProductId}`;
+  } catch (error) {
+    console.error('Error fetching first variant ID:', error);
+    // Fallback to old method if query fails
+    const cleanProductId = productId.replace('gid://shopify/Product/', '');
+    return `gid://shopify/ProductVariant/${cleanProductId}`;
+  }
+}
+
+// Helper function to calculate bundle product price based on component products
+async function calculateBundlePrice(admin: any, bundle: any) {
+  try {
+    if (!bundle.steps || bundle.steps.length === 0) {
+      console.log("🔧 [BUNDLE_PRICING] No steps found, using default price of 1.00");
+      return "1.00";
+    }
+
+    let totalPrice = 0;
+    let productCount = 0;
+
+    // Get prices from all component products
+    for (const step of bundle.steps) {
+      if (step.StepProduct && Array.isArray(step.StepProduct)) {
+        for (const stepProduct of step.StepProduct) {
+          try {
+            const productPrice = await getProductPrice(admin, stepProduct.productId);
+            const quantity = step.minQuantity || 1;
+            totalPrice += parseFloat(productPrice) * quantity;
+            productCount++;
+          } catch (error) {
+            console.error(`🔧 [BUNDLE_PRICING] Error getting price for product ${stepProduct.productId}:`, error);
+          }
+        }
+      }
+    }
+
+    // Apply discount if configured
+    if (bundle.pricing && bundle.pricing.enabled && bundle.pricing.rules) {
+      const rules = Array.isArray(bundle.pricing.rules) ? bundle.pricing.rules : [];
+      if (rules.length > 0 && bundle.pricing.method === 'percentage_off') {
+        const discountPercent = parseFloat(rules[0].discountValue) || 0;
+        totalPrice = totalPrice * (1 - discountPercent / 100);
+      }
+    }
+
+    const finalPrice = Math.max(totalPrice, 0.01); // Minimum price 1 cent
+    console.log(`🔧 [BUNDLE_PRICING] Calculated bundle price: $${finalPrice.toFixed(2)} (${productCount} products)`);
+    
+    return finalPrice.toFixed(2);
+  } catch (error) {
+    console.error("🔧 [BUNDLE_PRICING] Error calculating bundle price:", error);
+    return "1.00"; // Fallback price
+  }
+}
+
+// Helper function to get product variant price
+async function getProductPrice(admin: any, productId: string) {
+  try {
+    const cleanProductId = productId.replace('gid://shopify/Product/', '');
+    
+    const PRODUCT_PRICE_QUERY = `
+      query getProductPrice($id: ID!) {
+        product(id: $id) {
+          variants(first: 1) {
+            edges {
+              node {
+                price
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(PRODUCT_PRICE_QUERY, {
+      variables: {
+        id: `gid://shopify/Product/${cleanProductId}`
+      }
+    });
+
+    const data = await response.json();
+    
+    if (data.data?.product?.variants?.edges?.[0]?.node?.price) {
+      return data.data.product.variants.edges[0].node.price;
+    }
+    
+    // Fallback price
+    return "10.00";
+  } catch (error) {
+    console.error('Error fetching product price:', error);
+    return "10.00"; // Fallback price
+  }
+}
+
+// Helper function to update bundle product variant price
+async function updateBundleProductPrice(admin: any, productId: string, newPrice: string) {
+  try {
+    console.log(`🔧 [BUNDLE_PRICING] Updating bundle product ${productId} price to $${newPrice}`);
+    
+    // First, get the variant ID
+    const PRODUCT_VARIANT_QUERY = `
+      query getProductVariant($id: ID!) {
+        product(id: $id) {
+          variants(first: 1) {
+            edges {
+              node {
+                id
+                price
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(PRODUCT_VARIANT_QUERY, {
+      variables: { id: productId }
+    });
+
+    const data = await response.json();
+    const variantId = data.data?.product?.variants?.edges?.[0]?.node?.id;
+    const currentPrice = data.data?.product?.variants?.edges?.[0]?.node?.price;
+
+    if (!variantId) {
+      throw new Error("No variant found for bundle product");
+    }
+
+    // Only update if price has changed
+    if (currentPrice === newPrice) {
+      console.log(`🔧 [BUNDLE_PRICING] Price unchanged ($${currentPrice}), skipping update`);
+      return;
+    }
+
+    // Update the variant price
+    const UPDATE_VARIANT_PRICE = `
+      mutation updateVariantPrice($input: ProductVariantInput!) {
+        productVariantUpdate(input: $input) {
+          productVariant {
+            id
+            price
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const updateResponse = await admin.graphql(UPDATE_VARIANT_PRICE, {
+      variables: {
+        input: {
+          id: variantId,
+          price: newPrice
+        }
+      }
+    });
+
+    const updateData = await updateResponse.json();
+    
+    if (updateData.data?.productVariantUpdate?.userErrors?.length > 0) {
+      throw new Error(`Failed to update variant price: ${updateData.data.productVariantUpdate.userErrors[0].message}`);
+    }
+
+    console.log(`🔧 [BUNDLE_PRICING] Successfully updated bundle product price from $${currentPrice} to $${newPrice}`);
+  } catch (error) {
+    console.error("🔧 [BUNDLE_PRICING] Error updating bundle product price:", error);
+    throw error;
+  }
+}
+
 // Handle saving bundle configuration
 // Helper function to convert bundle configuration to standard Shopify metafields
-function convertBundleToStandardMetafields(bundle: any) {
+async function convertBundleToStandardMetafields(admin: any, bundle: any) {
   const standardMetafields: any = {};
   
   // For bundle products (parent products), create component_reference and component_quantities
@@ -662,11 +901,8 @@ function convertBundleToStandardMetafields(bundle: any) {
     for (const step of bundle.steps) {
       if (step.StepProduct && Array.isArray(step.StepProduct)) {
         for (const stepProduct of step.StepProduct) {
-          // Convert product ID to variant ID format if needed
-          const variantId = stepProduct.productId.startsWith('gid://') 
-            ? stepProduct.productId.replace('/Product/', '/ProductVariant/') + '/' + (stepProduct.variants?.[0]?.id || '1')
-            : `gid://shopify/ProductVariant/${stepProduct.productId}`;
-          
+          // Get the actual first variant ID
+          const variantId = await getFirstVariantId(admin, stepProduct.productId);
           componentReferences.push(variantId);
           componentQuantities.push(step.minQuantity || 1);
         }
@@ -675,10 +911,7 @@ function convertBundleToStandardMetafields(bundle: any) {
       // Also handle products array if it exists
       if (step.products && Array.isArray(step.products)) {
         for (const product of step.products) {
-          const variantId = product.id.startsWith('gid://') 
-            ? product.id.replace('/Product/', '/ProductVariant/') + '/' + (product.variants?.[0]?.id || '1')
-            : `gid://shopify/ProductVariant/${product.id}`;
-          
+          const variantId = await getFirstVariantId(admin, product.id);
           componentReferences.push(variantId);
           componentQuantities.push(step.minQuantity || 1);
         }
@@ -686,8 +919,10 @@ function convertBundleToStandardMetafields(bundle: any) {
     }
     
     if (componentReferences.length > 0) {
-      standardMetafields.component_reference = JSON.stringify(componentReferences);
-      standardMetafields.component_quantities = JSON.stringify(componentQuantities);
+      standardMetafields.component_reference = componentReferences; // Array of GIDs for list.product_reference
+      standardMetafields.component_quantities = componentQuantities; // Array of integers for list.number_integer
+      console.log("🔧 [STANDARD_METAFIELD] Component references:", componentReferences);
+      console.log("🔧 [STANDARD_METAFIELD] Component quantities:", componentQuantities);
     }
   }
   
@@ -697,9 +932,8 @@ function convertBundleToStandardMetafields(bundle: any) {
     if (rules.length > 0) {
       const rule = rules[0]; // Use first rule for simplicity
       if (bundle.pricing.method === 'percentage_off' && rule.discountValue) {
-        standardMetafields.price_adjustment = JSON.stringify({
-          percentageDecrease: parseFloat(rule.discountValue) || 0
-        });
+        // For number_decimal metafield type, store as number (not string)
+        standardMetafields.price_adjustment = parseFloat(rule.discountValue) || 0;
       }
     }
   }
@@ -766,6 +1000,144 @@ function generateComponentParentsMetafield(bundleConfig: any, productId: string)
   return parents.length > 0 ? JSON.stringify(parents) : null;
 }
 
+// Helper function to update component products with component_parents metafield
+async function updateComponentProductMetafields(admin: any, bundleProductId: string, bundleConfig: any) {
+  console.log("🔧 [COMPONENT_METAFIELD] Setting component_parents metafield on individual component products");
+  
+  if (!bundleConfig.steps || bundleConfig.steps.length === 0) {
+    console.log("🔧 [COMPONENT_METAFIELD] No steps found in bundle config");
+    return;
+  }
+  
+  // Extract all component product IDs from bundle steps
+  const componentProductIds = new Set<string>();
+  
+  for (const step of bundleConfig.steps) {
+    // Handle StepProduct entries
+    if (step.StepProduct && Array.isArray(step.StepProduct)) {
+      for (const stepProduct of step.StepProduct) {
+        if (stepProduct.productId) {
+          // Ensure we have a proper product GID
+          const productId = stepProduct.productId.startsWith('gid://') 
+            ? stepProduct.productId 
+            : `gid://shopify/Product/${stepProduct.productId}`;
+          componentProductIds.add(productId);
+        }
+      }
+    }
+    
+    // Handle products array if it exists
+    if (step.products && Array.isArray(step.products)) {
+      for (const product of step.products) {
+        if (product.id) {
+          const productId = product.id.startsWith('gid://') 
+            ? product.id 
+            : `gid://shopify/Product/${product.id}`;
+          componentProductIds.add(productId);
+        }
+      }
+    }
+  }
+  
+  console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentProductIds.size} component products to update`);
+  
+  // Create component_parents metafield data using OFFICIAL Shopify format
+  // First, extract component references and quantities from bundle config
+  const componentReferences: string[] = [];
+  const componentQuantities: number[] = [];
+  
+  for (const step of bundleConfig.steps) {
+    // Handle StepProduct entries
+    if (step.StepProduct && Array.isArray(step.StepProduct)) {
+      for (const stepProduct of step.StepProduct) {
+        if (stepProduct.productId) {
+          // Get the actual first variant ID
+          const variantId = await getFirstVariantId(admin, stepProduct.productId);
+          componentReferences.push(variantId);
+          componentQuantities.push(step.minQuantity || 1);
+        }
+      }
+    }
+    
+    // Handle products array if it exists
+    if (step.products && Array.isArray(step.products)) {
+      for (const product of step.products) {
+        if (product.id) {
+          const variantId = await getFirstVariantId(admin, product.id);
+          componentReferences.push(variantId);
+          componentQuantities.push(step.minQuantity || 1);
+        }
+      }
+    }
+  }
+  
+  // Get the bundle product's first variant ID to use as the parent ID
+  const bundleVariantId = await getFirstVariantId(admin, bundleProductId);
+  
+  // Create component_parents in OFFICIAL Shopify format
+  const componentParentsData = [{
+    id: bundleVariantId, // Use the bundle product variant ID as the parent ID
+    component_reference: {
+      value: componentReferences
+    },
+    component_quantities: {
+      value: componentQuantities
+    },
+    ...(bundleConfig.pricing?.enabled && bundleConfig.pricing?.rules?.length > 0 && bundleConfig.pricing.method === 'percentage_off' ? {
+      price_adjustment: {
+        value: parseFloat(bundleConfig.pricing.rules[0]?.discountValue) || 0
+      }
+    } : {})
+  }];
+  
+  console.log("🔧 [COMPONENT_METAFIELD] Bundle variant ID:", bundleVariantId);
+  console.log("🔧 [COMPONENT_METAFIELD] Component parents data:", JSON.stringify(componentParentsData, null, 2));
+  
+  // Update each component product
+  for (const productId of componentProductIds) {
+    try {
+      console.log(`🔧 [COMPONENT_METAFIELD] Updating product: ${productId}`);
+      
+      const metafieldsToSet = [{
+        ownerId: productId,
+        namespace: "$app",
+        key: "component_parents",
+        value: JSON.stringify(componentParentsData),
+        type: "json"
+      }];
+      
+      const SET_METAFIELDS = `
+        mutation SetMetafields($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              namespace
+              key
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+      
+      const response = await admin.graphql(SET_METAFIELDS, {
+        variables: { metafields: metafieldsToSet }
+      });
+      
+      const data = await response.json();
+      if (data.data?.metafieldsSet?.userErrors?.length > 0) {
+        console.error(`🔧 [COMPONENT_METAFIELD] Error updating product ${productId}:`, data.data.metafieldsSet.userErrors);
+      } else {
+        console.log(`🔧 [COMPONENT_METAFIELD] Successfully updated product ${productId}`);
+      }
+    } catch (error) {
+      console.error(`🔧 [COMPONENT_METAFIELD] Failed to update product ${productId}:`, error);
+    }
+  }
+}
+
 // Helper function to update standard Shopify metafields on products
 async function updateProductStandardMetafields(admin: any, productId: string, standardMetafields: any) {
   console.log("🔧 [STANDARD_METAFIELD] Setting standard Shopify metafields on product:", productId);
@@ -774,17 +1146,48 @@ async function updateProductStandardMetafields(admin: any, productId: string, st
   // Ensure metafield definitions exist for the custom namespace
   await ensureStandardMetafieldDefinitions(admin);
   
-  const metafieldsToSet = [];
+  const metafieldsToSet: any[] = [];
   
-  // Add each standard metafield
+  // Add each standard metafield with correct types and formats
+  // CRITICAL: All metafield values must be JSON-encoded strings in Shopify GraphQL
   Object.keys(standardMetafields).forEach(key => {
-    if (standardMetafields[key]) {
+    if (standardMetafields[key] !== null && standardMetafields[key] !== undefined) {
+      let value = standardMetafields[key];
+      let type = 'json'; // Default fallback
+
+      // Use proper types for each metafield and ensure all values are strings
+      switch(key) {
+        case 'component_reference':
+          type = 'list.product_reference';
+          // Arrays must be JSON-encoded strings
+          value = JSON.stringify(Array.isArray(value) ? value : []);
+          break;
+        case 'component_quantities':
+          type = 'list.number_integer';
+          // Arrays must be JSON-encoded strings
+          value = JSON.stringify(Array.isArray(value) ? value : []);
+          break;
+        case 'component_parents':
+          type = 'json';
+          // Ensure it's a JSON string
+          value = typeof value === 'string' ? value : JSON.stringify(value);
+          break;
+        case 'price_adjustment':
+          type = 'number_decimal';
+          // Numbers must be strings
+          value = typeof value === 'number' ? value.toString() : parseFloat(value || '0').toString();
+          break;
+        default:
+          // For any other metafields, convert to JSON string
+          value = typeof value === 'string' ? value : JSON.stringify(value);
+      }
+
       metafieldsToSet.push({
         ownerId: productId,
-        namespace: "custom",
+        namespace: "$app", // Use app-reserved namespace
         key: key,
-        type: "json",
-        value: standardMetafields[key]
+        type: type,
+        value: value
       });
     }
   });
@@ -830,76 +1233,79 @@ async function updateProductStandardMetafields(admin: any, productId: string, st
 
 // Helper function to ensure standard metafield definitions exist
 async function ensureStandardMetafieldDefinitions(admin: any) {
+  console.log("🔧 [STANDARD_METAFIELD] Creating definitions in app-reserved namespace");
+
+  // Use app-reserved namespace to avoid type conflicts with existing custom namespace definitions
   const standardDefinitions = [
     {
-      namespace: "custom",
-      key: "component_reference", 
+      namespace: "$app", // App-reserved namespace avoids conflicts
+      key: "component_reference",
       name: "Component Reference",
       description: "Bundle component variant IDs",
-      type: "json"
+      type: "list.product_reference",
+      ownerType: "PRODUCT"
     },
     {
-      namespace: "custom",
+      namespace: "$app",
       key: "component_quantities",
-      name: "Component Quantities", 
+      name: "Component Quantities",
       description: "Bundle component quantities",
-      type: "json"
+      type: "list.number_integer",
+      ownerType: "PRODUCT"
     },
     {
-      namespace: "custom",
+      namespace: "$app",
       key: "component_parents",
       name: "Component Parents",
       description: "Bundle parent configurations",
-      type: "json"  
+      type: "json",
+      ownerType: "PRODUCT"
     },
     {
-      namespace: "custom",
+      namespace: "$app",
       key: "price_adjustment",
       name: "Price Adjustment",
       description: "Bundle price adjustment configuration",
-      type: "json"
+      type: "number_decimal",
+      ownerType: "PRODUCT"
     }
   ];
 
-  const CREATE_DEFINITIONS = `
-    mutation CreateMetafieldDefinitions($definitions: [MetafieldDefinitionInput!]!) {
-      metafieldDefinitionCreate(definitions: $definitions) {
-        createdDefinitions {
-          id
-          namespace
-          key
+  for (const definition of standardDefinitions) {
+    try {
+      const CREATE_METAFIELD_DEFINITION = `
+        mutation createMetafieldDefinition($definition: MetafieldDefinitionInput!) {
+          metafieldDefinitionCreate(definition: $definition) {
+            createdDefinition {
+              id
+              name
+              namespace
+              key
+              type
+            }
+            userErrors {
+              field
+              message
+            }
+          }
         }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-  `;
+      `;
 
-  try {
-    const response = await admin.graphql(CREATE_DEFINITIONS, {
-      variables: {
-        definitions: standardDefinitions.map(def => ({
-          ...def,
-          ownerType: "PRODUCT"
-        }))
-      }
-    });
+      const response = await admin.graphql(CREATE_METAFIELD_DEFINITION, {
+        variables: { definition }
+      });
 
-    const data = await response.json();
-    if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
-      // Ignore "already exists" errors
-      const realErrors = data.data.metafieldDefinitionCreate.userErrors.filter(
-        (error: any) => !error.message.includes("already been taken")
-      );
-      if (realErrors.length > 0) {
-        console.error("🔧 [STANDARD_METAFIELD] Definition errors:", realErrors);
+      const data = await response.json();
+      if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
+        const errors = data.data.metafieldDefinitionCreate.userErrors;
+        console.log(`🔧 [STANDARD_METAFIELD] Definition error for ${definition.key}:`, errors);
+        // Don't throw - definitions might already exist
+      } else {
+        console.log(`🔧 [STANDARD_METAFIELD] Created definition for ${definition.key} in $app namespace`);
       }
+    } catch (error) {
+      console.log(`🔧 [STANDARD_METAFIELD] Error creating definition for ${definition.key}:`, error);
     }
-  } catch (error) {
-    console.error("🔧 [STANDARD_METAFIELD] Failed to create definitions:", error);
-    // Don't fail the entire process
   }
 }
 
@@ -1092,13 +1498,18 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 
       // ALSO update standard Shopify metafields for cart transform compatibility
       console.log("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
-      const standardMetafields = convertBundleToStandardMetafields(baseConfiguration);
+      const standardMetafields = await convertBundleToStandardMetafields(admin, baseConfiguration);
       if (Object.keys(standardMetafields).length > 0) {
         await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
         console.log("🔧 [STANDARD_METAFIELD] Standard metafields updated successfully");
       } else {
         console.log("🔧 [STANDARD_METAFIELD] No standard metafields to update");
       }
+
+      // CRITICAL: Also update component products with component_parents metafield
+      console.log("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
+      await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, baseConfiguration);
+      console.log("🔧 [COMPONENT_METAFIELD] Component product metafields updated successfully");
 
     } catch (error) {
       console.error("Failed to update bundle product metafields:", error);
@@ -1351,6 +1762,10 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
 
   // Create product if it doesn't exist
   if (!productId) {
+    // Calculate proper bundle price based on component products
+    console.log("🔧 [BUNDLE_PRICING] Calculating bundle price for product creation");
+    const bundlePrice = await calculateBundlePrice(admin, baseConfiguration);
+    
     const CREATE_PRODUCT = `
       mutation CreateBundleProduct($input: ProductInput!) {
         productCreate(input: $input) {
@@ -1376,10 +1791,11 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
           productType: "Bundle",
           vendor: "Bundle Builder",
           status: "ACTIVE",
-          descriptionHtml: bundle.description || "",
+          descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
+          tags: ["bundle", "cart-transform"],
           variants: [
             {
-              price: "0.00",
+              price: bundlePrice,
               inventoryManagement: "NOT_MANAGED",
               inventoryPolicy: "CONTINUE"
             }
@@ -1404,6 +1820,16 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
       where: { id: bundleId },
       data: { shopifyProductId: productId }
     });
+  } else {
+    // Update existing bundle product price if configuration changed
+    try {
+      console.log("🔧 [BUNDLE_PRICING] Updating existing bundle product price");
+      const bundlePrice = await calculateBundlePrice(admin, baseConfiguration);
+      await updateBundleProductPrice(admin, productId, bundlePrice);
+    } catch (error) {
+      console.error("🔧 [BUNDLE_PRICING] Error updating bundle product price:", error);
+      // Don't fail the whole operation for pricing update errors
+    }
   }
 
   // Update metafields with current bundle configuration
