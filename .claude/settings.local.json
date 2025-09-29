@@ -113,7 +113,12 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(cmd //c:*)"
+      "Bash(cmd //c:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:community.shopify.com)",
+      "Bash(npx shopify:*)",
+      "Bash(copy .env .env.backup)",
+      "Bash(copy .env.local .env)"
     ],
     "deny": []
   }

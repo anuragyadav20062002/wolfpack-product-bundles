@@ -3,6 +3,9 @@ api_version = "2025-04"
 [[extensions]]
 name = "Bundle Cart Transform"
 handle = "bundle-cart-transform-ts"
+
+uid = "06d00551-8da0-9b28-79e8-63af90adb1019dc2f112"
+
 type = "function"
 
 description = "Transform cart lines to display bundles as single items with discount pricing"

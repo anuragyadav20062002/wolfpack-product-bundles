@@ -29,6 +29,7 @@ import { authenticate } from "../shopify.server";
 import bundlePreviewStyles from "../styles/bundle-preview.css?url";
 import bundlePreviewGif from "../bundleprev.gif";
 import type { Prisma, DiscountMethodType } from "@prisma/client"; // Import Prisma types
+import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 
 // Define types for products and collections coming from ResourcePicker
 interface ResourcePickerProduct {
@@ -575,13 +576,67 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     try {
+      console.log(`🗑️ [DELETE_BUNDLE] Starting deletion process for bundle ${bundleId}`);
+
+      // 1. Get bundle data before deletion (needed for metafield cleanup)
+      const bundleToDelete = await db.bundle.findUnique({
+        where: { id: bundleId, shopId: session.shop },
+        include: {
+          steps: {
+            include: {
+              StepProduct: true
+            }
+          }
+        }
+      });
+
+      if (!bundleToDelete) {
+        return json(
+          { error: "Bundle not found" },
+          { status: 404 }
+        );
+      }
+
+      // 2. Collect component product IDs for metafield cleanup
+      const componentProductIds = bundleToDelete.steps
+        .flatMap(step => step.StepProduct || [])
+        .map(sp => sp.productId)
+        .filter(Boolean);
+
+      console.log(`🗑️ [DELETE_BUNDLE] Found ${componentProductIds.length} component products to clean up`);
+
+      // 3. Clean up all metafields first (before database deletion)
+      if (bundleToDelete.shopifyProductId) {
+        console.log(`🧹 [DELETE_BUNDLE] Cleaning up metafields for bundle product ${bundleToDelete.shopifyProductId}`);
+
+        await MetafieldCleanupService.cleanupBundleMetafields(
+          admin,
+          bundleId,
+          bundleToDelete.shopifyProductId,
+          componentProductIds
+        );
+      } else {
+        console.log(`⚠️ [DELETE_BUNDLE] No shopifyProductId found, skipping metafield cleanup`);
+      }
+
+      // 4. Delete database records
+      console.log(`🗑️ [DELETE_BUNDLE] Deleting database records for bundle ${bundleId}`);
+
+      // Delete bundle steps first (foreign key constraint)
       await db.bundleStep.deleteMany({ where: { bundleId: bundleId } });
+
+      // Delete bundle pricing if exists
+      await db.bundlePricing.deleteMany({ where: { bundleId: bundleId } });
+
+      // Delete the bundle
       await db.bundle.delete({ where: { id: bundleId } });
+
+      console.log(`✅ [DELETE_BUNDLE] Successfully deleted bundle ${bundleId} and cleaned up all metafields`);
 
       return json({ success: true, intent: intent });
     } catch (error) {
-      console.error("Error deleting bundle:", error);
-      return json({ error: "Failed to delete bundle" }, { status: 500 });
+      console.error(`❌ [DELETE_BUNDLE] Error deleting bundle ${bundleId}:`, error);
+      return json({ error: "Failed to delete bundle. Please try again." }, { status: 500 });
     }
   }
 

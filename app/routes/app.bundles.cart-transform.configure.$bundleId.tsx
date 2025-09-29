@@ -41,6 +41,10 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 // Using modern App Bridge contextual save bar with data-save-bar attribute on form
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
+import { ThemeTemplateService } from "../services/theme-template-service.server";
+import { BundleProductManagerService } from "../services/bundle-product-manager.server";
+import { BundleIsolationService } from "../services/bundle-isolation.server";
+import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -166,6 +170,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleGetThemeTemplates(admin, session);
       case "getCurrentTheme":
         return await handleGetCurrentTheme(admin, session);
+      case "cleanupDeletedBundles":
+        return await handleCleanupDeletedBundles(admin, session);
+      case "ensureBundleTemplates":
+        return await handleEnsureBundleTemplates(admin, session);
       default:
         return json({ success: false, error: "Unknown action" }, { status: 400 });
     }
@@ -452,6 +460,7 @@ async function updateCartTransformMetafield(admin: any, shopId: string) {
       const optimizedBundle = {
         id: bundle.id,
         name: bundle.name,
+        templateName: bundle.templateName || null,
         type: bundle.bundleType,
         allBundleProductIds, // All product IDs for quick bundle detection
         steps: stepConfigs,
@@ -1310,14 +1319,17 @@ async function ensureStandardMetafieldDefinitions(admin: any) {
 }
 
 async function handleSaveBundle(admin: any, session: any, bundleId: string, formData: FormData) {
-  console.log("🚀 [BUNDLE_CONFIG] Starting bundle save process");
+  console.log("🚀 [BUNDLE_CONFIG] Starting enhanced bundle save process with isolation");
   console.log("🆔 [BUNDLE_CONFIG] Bundle ID:", bundleId);
   console.log("🏪 [BUNDLE_CONFIG] Shop:", session.shop);
+
+  try {
   
   // Parse form data
   const bundleName = formData.get("bundleName") as string;
   const bundleDescription = formData.get("bundleDescription") as string;
   const bundleStatus = formData.get("bundleStatus") as string;
+  const templateName = formData.get("templateName") as string || null;
   const stepsData = JSON.parse(formData.get("stepsData") as string);
   const discountData = JSON.parse(formData.get("discountData") as string);
   const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -1367,6 +1379,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       description: bundleDescription,
       status: finalStatus,
       shopifyProductId: bundleProductData?.id || null,
+      templateName: templateName,
       // Update steps if provided
       ...(stepsData && {
         steps: {
@@ -1469,6 +1482,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     const baseConfiguration = {
       bundleId: updatedBundle.id,
       name: updatedBundle.name,
+      templateName: updatedBundle.templateName || null,
       steps: optimizedSteps,
       pricing: {
         enabled: discountData.discountEnabled,
@@ -1535,11 +1549,150 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     // Don't fail the entire operation - just log the error
   }
 
-  return json({ 
-    success: true, 
+  // Helper function to create bundle product isolation metafields
+  async function createBundleProductIsolationMetafields(admin: any, bundleProductId: string, bundleId: string) {
+    console.log(`🏷️ [ISOLATION_METAFIELDS] Creating isolation metafields for bundle product: ${bundleProductId}`);
+
+    try {
+      const metafields = [
+        {
+          ownerId: bundleProductId,
+          namespace: "$app:bundle_isolation",
+          key: "bundle_id",
+          type: "single_line_text_field",
+          value: bundleId
+        },
+        {
+          ownerId: bundleProductId,
+          namespace: "$app:bundle_isolation",
+          key: "bundle_type",
+          type: "single_line_text_field",
+          value: "cart_transform"
+        },
+        {
+          ownerId: bundleProductId,
+          namespace: "$app:bundle_isolation",
+          key: "owns_bundle_id",
+          type: "single_line_text_field",
+          value: bundleId
+        },
+        {
+          ownerId: bundleProductId,
+          namespace: "$app:bundle_isolation",
+          key: "bundle_product_type",
+          type: "single_line_text_field",
+          value: "cart_transform_bundle"
+        },
+        {
+          ownerId: bundleProductId,
+          namespace: "$app:bundle_isolation",
+          key: "auto_injection_enabled",
+          type: "single_line_text_field",
+          value: "true"
+        },
+        {
+          ownerId: bundleProductId,
+          namespace: "$app:bundle_isolation",
+          key: "created_at",
+          type: "single_line_text_field",
+          value: new Date().toISOString()
+        }
+      ];
+
+      const SET_METAFIELDS_MUTATION = `
+        mutation SetIsolationMetafields($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              key
+              namespace
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(SET_METAFIELDS_MUTATION, {
+        variables: { metafields }
+      });
+
+      const data = await response.json();
+
+      if (data.data?.metafieldsSet?.userErrors?.length > 0) {
+        console.error('❌ [ISOLATION_METAFIELDS] Metafield errors:', data.data.metafieldsSet.userErrors);
+        return false;
+      }
+
+      console.log(`✅ [ISOLATION_METAFIELDS] Created ${data.data?.metafieldsSet?.metafields?.length || 0} isolation metafields`);
+      return true;
+
+    } catch (error) {
+      console.error('❌ [ISOLATION_METAFIELDS] Error creating isolation metafields:', error);
+      return false;
+    }
+  }
+
+  // Helper function to set up automatic bundle extension injection
+  async function setupBundleAutoInjection(admin: any, bundleProductId: string, bundleId: string) {
+    console.log(`🎯 [AUTO_INJECTION] Setting up automatic bundle extension injection for product: ${bundleProductId}`);
+
+    try {
+      // Use the auto-injection service
+      const result = await BundleAutoInjectionService.injectBundleExtensionIntoProduct(
+        admin,
+        bundleProductId,
+        bundleId
+      );
+
+      if (result.success) {
+        console.log(`✅ [AUTO_INJECTION] Successfully set up automatic bundle extension injection`);
+      } else {
+        console.log(`⚠️ [AUTO_INJECTION] Auto-injection setup warning: ${result.error}`);
+        // Note: This is not a fatal error - the bundle widget will still work via JavaScript detection
+      }
+
+      return result.success;
+
+    } catch (error) {
+      console.error(`❌ [AUTO_INJECTION] Error setting up auto-injection:`, error);
+      // Don't throw - this is not critical for bundle functionality
+      return false;
+    }
+  }
+
+  // 🎯 BUNDLE PRODUCT ISOLATION SETUP: Set up automatic bundle extension injection
+  if (bundleProductData?.id && updatedBundle.id) {
+    console.log("🎯 [BUNDLE_ISOLATION] Setting up bundle product isolation for automatic extension display");
+    try {
+      // Create isolation metafields for automatic bundle detection
+      await createBundleProductIsolationMetafields(admin, bundleProductData.id, updatedBundle.id);
+
+      // Set up automatic bundle extension injection
+      await setupBundleAutoInjection(admin, bundleProductData.id, updatedBundle.id);
+
+      console.log("✅ [BUNDLE_ISOLATION] Bundle product isolation setup completed successfully");
+    } catch (error) {
+      console.error("❌ [BUNDLE_ISOLATION] Bundle product isolation setup failed:", error);
+      // Don't fail the entire operation - this is not critical for core functionality
+    }
+  }
+
+  return json({
+    success: true,
     bundle: updatedBundle,
     message: "Bundle configuration saved successfully"
   });
+
+  } catch (error) {
+    console.error("❌ [BUNDLE_CONFIG] Error saving bundle:", error);
+    return json({
+      success: false,
+      error: (error as Error).message || "Failed to save bundle configuration"
+    }, { status: 500 });
+  }
 }
 
 // Handle updating bundle status
@@ -1717,6 +1870,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
         const bundleConfiguration = {
           bundleId: bundle.id,
           name: bundle.name,
+          templateName: bundle.templateName || null,
           type: "cart_transform",
           steps: optimizedSteps,
           pricing: {
@@ -1859,6 +2013,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
     const bundleConfiguration = {
       bundleId: bundle.id,
       name: bundle.name,
+      templateName: bundle.templateName || null,
       type: "cart_transform",
       steps: optimizedSteps,
       pricing: {
@@ -1984,47 +2139,119 @@ async function handleGetThemeTemplates(admin: any, session: any) {
 
     const assetsData = await assetsResponse.json();
     
-    // Filter for template files and organize them
+    // Get active bundle container products for this shop
+    let bundleContainerProducts = [];
+    try {
+      // First, get active bundles from database to get their product IDs
+      const activeBundles = await db.bundle.findMany({
+        where: {
+          shopId: session.shop,
+          status: 'active'
+        },
+        select: {
+          id: true,
+          name: true,
+          shopifyProductId: true
+        }
+      });
+
+      console.log(`🎯 [TEMPLATE_FILTER] Found ${activeBundles.length} active bundles with container products`);
+
+      // Get bundle container products from Shopify
+      if (activeBundles.length > 0) {
+        const productIds = activeBundles
+          .filter(bundle => bundle.shopifyProductId)
+          .map(bundle => bundle.shopifyProductId);
+
+        if (productIds.length > 0) {
+          console.log(`🎯 [TEMPLATE_FILTER] Product IDs to query:`, productIds);
+          console.log(`🎯 [TEMPLATE_FILTER] Fetching products with IDs: ${productIds.join(', ')}`);
+
+          const GET_BUNDLE_PRODUCTS = `
+            query getBundleContainerProducts($ids: [ID!]!) {
+              nodes(ids: $ids) {
+                ... on Product {
+                  id
+                  title
+                  handle
+                  legacyResourceId
+                  featuredImage {
+                    url
+                  }
+                  metafields(first: 5, namespace: "bundle_discounts") {
+                    nodes {
+                      key
+                      value
+                    }
+                  }
+                }
+              }
+            }
+          `;
+
+          const bundleProductsResponse = await admin.graphql(GET_BUNDLE_PRODUCTS, {
+            variables: { ids: productIds }
+          });
+          const bundleProductsData = await bundleProductsResponse.json();
+          bundleContainerProducts = bundleProductsData.data?.nodes?.filter(node => node) || [];
+
+          console.log(`🎯 [TEMPLATE_FILTER] Fetched ${bundleContainerProducts.length} bundle container products from Shopify`);
+        }
+      }
+    } catch (error) {
+      console.warn("🎯 [TEMPLATE_FILTER] Could not fetch bundle container products:", error);
+    }
+
+    // Filter for template files and organize them with bundle context
     const templates = assetsData.assets
-      .filter((asset: any) => asset.key.startsWith('templates/') && 
+      .filter((asset: any) => asset.key.startsWith('templates/') &&
                                (asset.key.endsWith('.liquid') || asset.key.endsWith('.json')))
       .map((asset: any) => {
         const templateName = asset.key.replace('templates/', '').replace(/\.(liquid|json)$/, '');
         const isJson = asset.key.endsWith('.json');
-        
+
         // Determine template type and description
         let title = templateName;
         let description = '';
         let recommended = false;
+        let bundleRelevant = false;
 
         if (templateName === 'index') {
           title = 'Homepage';
-          description = 'Main landing page of your store';
-          recommended = true;
+          description = 'Main landing page of your store - useful for promoting bundles';
+          recommended = false;
+          bundleRelevant = true;
         } else if (templateName.startsWith('product')) {
-          title = templateName === 'product' ? 'Product Pages' : `Product - ${templateName.replace('product.', '')}`;
-          description = 'Individual product detail pages';
+          // Product templates are most relevant for bundle widgets
+          title = templateName === 'product' ? 'Product Pages (Default)' : `Product - ${templateName.replace('product.', '')}`;
+          description = 'Individual product detail pages - ideal for bundle widgets';
           recommended = templateName === 'product';
+          bundleRelevant = true;
         } else if (templateName.startsWith('collection')) {
           title = templateName === 'collection' ? 'Collection Pages' : `Collection - ${templateName.replace('collection.', '')}`;
-          description = 'Product collection listing pages';
-          recommended = templateName === 'collection';
+          description = 'Product collection listing pages - can promote bundle collections';
+          recommended = false;
+          bundleRelevant = true;
         } else if (templateName === 'page') {
           title = 'Static Pages';
-          description = 'Custom content pages (About, Contact, etc.)';
-          recommended = true;
+          description = 'Custom content pages (About, Contact, etc.) - useful for bundle explanations';
+          recommended = false;
+          bundleRelevant = false;
         } else if (templateName === 'cart') {
           title = 'Cart Page';
-          description = 'Shopping cart page';
+          description = 'Shopping cart page - not recommended for bundle widgets (cart transforms handle this)';
           recommended = false;
+          bundleRelevant = false;
         } else if (templateName === 'search') {
           title = 'Search Results';
-          description = 'Search results page';
+          description = 'Search results page - can show bundle products in search';
           recommended = false;
+          bundleRelevant = false;
         } else {
           title = templateName.charAt(0).toUpperCase() + templateName.slice(1);
           description = `${title} template`;
           recommended = false;
+          bundleRelevant = false;
         }
 
         return {
@@ -2033,9 +2260,15 @@ async function handleGetThemeTemplates(admin: any, session: any) {
           handle: templateName,
           description,
           recommended,
+          bundleRelevant,
           fileType: isJson ? 'JSON' : 'Liquid',
           fullKey: asset.key
         };
+      })
+      // ENHANCED FILTERING: Show only product templates for bundle widgets
+      .filter((template: any) => {
+        // Only show product templates - bundles work best on product pages
+        return template.handle.startsWith('product');
       })
       .sort((a: any, b: any) => {
         // Sort by recommended first, then alphabetically
@@ -2044,11 +2277,70 @@ async function handleGetThemeTemplates(admin: any, session: any) {
         return a.title.localeCompare(b.title);
       });
 
-    return json({ 
-      success: true, 
-      templates,
+    console.log(`🎯 [TEMPLATE_FILTER] Filtered to ${templates.length} product templates`);
+
+    // PRIORITIZE: Bundle container product specific templates with auto-creation
+    const bundleSpecificTemplates = [];
+    if (bundleContainerProducts.length > 0) {
+      console.log(`🎯 [TEMPLATE_FILTER] Creating ${bundleContainerProducts.length} bundle-specific template recommendations`);
+
+      const templateService = new ThemeTemplateService(admin, session);
+
+      for (const product of bundleContainerProducts) {
+        // Check if template exists, create if it doesn't
+        const templateResult = await templateService.ensureProductTemplate(product.handle);
+
+        bundleSpecificTemplates.push({
+          id: `product.${product.handle}`,
+          title: `📦 ${product.title} (Bundle Container)`,
+          handle: `product.${product.handle}`,
+          description: templateResult.created
+            ? `✨ NEW TEMPLATE CREATED for ${product.title} - Widget automatically configured!`
+            : `Dedicated template for ${product.title} - Widget will be placed here`,
+          recommended: true,
+          bundleRelevant: true,
+          fileType: templateResult.created ? 'NEW' : 'Existing',
+          fullKey: templateResult.templatePath || `templates/product.${product.handle}.json`,
+          bundleProduct: product, // Store product data for preview path
+          isBundleContainer: true,
+          templateCreated: templateResult.created,
+          templateExists: templateResult.success
+        });
+
+        console.log(`🎯 [TEMPLATE_FILTER] Product ${product.handle}: Template ${templateResult.success ? 'ready' : 'failed'} ${templateResult.created ? '(created)' : '(exists)'}`);
+      }
+    }
+
+    // COMBINE: Bundle-specific templates first, then general product templates
+    const allTemplates = [
+      ...bundleSpecificTemplates,
+      ...templates.filter(t => !bundleSpecificTemplates.some(bt => bt.handle === t.handle))
+    ];
+
+    console.log(`🎯 [TEMPLATE_FILTER] Final template list: ${allTemplates.length} templates (${bundleSpecificTemplates.length} bundle-specific)`);
+
+    // Add general product template as fallback if not already present
+    const hasGeneralProductTemplate = allTemplates.some(t => t.handle === 'product');
+    if (!hasGeneralProductTemplate) {
+      allTemplates.push({
+        id: 'product',
+        title: '🛍️ All Product Pages (General)',
+        handle: 'product',
+        description: 'Default product template - widget will appear on all product pages',
+        recommended: bundleSpecificTemplates.length === 0, // Only recommend if no bundle products
+        bundleRelevant: true,
+        fileType: 'General',
+        fullKey: 'templates/product.liquid',
+        isBundleContainer: false
+      });
+    }
+
+    return json({
+      success: true,
+      templates: allTemplates,
       themeId,
-      themeName: publishedTheme.name
+      themeName: publishedTheme.name,
+      bundleContainerCount: bundleSpecificTemplates.length
     });
 
   } catch (error) {
@@ -2092,6 +2384,236 @@ async function handleGetCurrentTheme(admin: any, _session: any) {
   }
 }
 
+// Handle cleanup of deleted bundle metafields
+async function handleCleanupDeletedBundles(admin: any, session: any) {
+  try {
+    console.log("🧹 [CLEANUP] Starting cleanup of deleted bundle metafields");
+
+    // Get all active bundles from database
+    const activeBundles = await db.bundle.findMany({
+      where: {
+        shopId: session.shop
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true
+      }
+    });
+
+    console.log(`🧹 [CLEANUP] Found ${activeBundles.length} active bundles in database`);
+
+    // Get current shop metafield data
+    const SHOP_METAFIELD_QUERY = `
+      query getShopBundleMetafield {
+        shop {
+          metafield(namespace: "custom", key: "all_bundles") {
+            id
+            value
+          }
+        }
+      }
+    `;
+
+    const metafieldResponse = await admin.graphql(SHOP_METAFIELD_QUERY);
+    const metafieldData = await metafieldResponse.json();
+
+    let currentBundleData = {};
+    if (metafieldData.data?.shop?.metafield?.value) {
+      try {
+        currentBundleData = JSON.parse(metafieldData.data.shop.metafield.value);
+        console.log(`🧹 [CLEANUP] Current metafield contains ${Object.keys(currentBundleData).length} bundle entries`);
+      } catch (error) {
+        console.error("🧹 [CLEANUP] Error parsing current metafield data:", error);
+      }
+    }
+
+    // Create cleaned bundle data with only active bundles
+    const cleanedBundleData = {};
+    const activeBundleIds = new Set(activeBundles.map(b => b.id));
+
+    for (const [bundleId, bundleConfig] of Object.entries(currentBundleData)) {
+      if (activeBundleIds.has(bundleId)) {
+        cleanedBundleData[bundleId] = bundleConfig;
+        console.log(`🧹 [CLEANUP] Keeping bundle: ${bundleId}`);
+      } else {
+        console.log(`🧹 [CLEANUP] Removing deleted bundle: ${bundleId}`);
+      }
+    }
+
+    const removedCount = Object.keys(currentBundleData).length - Object.keys(cleanedBundleData).length;
+    console.log(`🧹 [CLEANUP] Removed ${removedCount} deleted bundle entries`);
+
+    // Update shop metafield with cleaned data if needed
+    if (removedCount > 0) {
+      const UPDATE_SHOP_METAFIELD = `
+        mutation updateShopMetafield($metafields: [MetafieldInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              namespace
+              key
+              value
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const metafieldInput = [{
+        namespace: "custom",
+        key: "all_bundles",
+        type: "json",
+        value: JSON.stringify(cleanedBundleData),
+        ownerId: `gid://shopify/Shop/${session.shop.split('.')[0]}`
+      }];
+
+      const updateResponse = await admin.graphql(UPDATE_SHOP_METAFIELD, {
+        variables: { metafields: metafieldInput }
+      });
+
+      const updateData = await updateResponse.json();
+
+      if (updateData.data?.metafieldsSet?.userErrors?.length > 0) {
+        console.error("🧹 [CLEANUP] Error updating shop metafield:", updateData.data.metafieldsSet.userErrors);
+        return json({
+          success: false,
+          error: "Failed to update shop metafield",
+          details: updateData.data.metafieldsSet.userErrors
+        }, { status: 500 });
+      }
+
+      console.log("🧹 [CLEANUP] Shop metafield updated successfully");
+    }
+
+    return json({
+      success: true,
+      message: `Cleanup completed. Removed ${removedCount} deleted bundle entries.`,
+      activeBundlesCount: activeBundles.length,
+      removedBundlesCount: removedCount
+    });
+
+  } catch (error) {
+    console.error("🧹 [CLEANUP] Error during cleanup:", error);
+    return json({
+      success: false,
+      error: (error as Error).message || "Cleanup failed"
+    }, { status: 500 });
+  }
+}
+
+// Handle ensuring bundle templates exist
+async function handleEnsureBundleTemplates(admin: any, session: any) {
+  try {
+    console.log("🎨 [TEMPLATE_HANDLER] Ensuring bundle templates exist");
+
+    const templateService = new ThemeTemplateService(admin, session);
+
+    // Get all active bundles with container products
+    const activeBundles = await db.bundle.findMany({
+      where: {
+        shopId: session.shop,
+        status: 'active'
+      },
+      select: {
+        id: true,
+        name: true,
+        shopifyProductId: true
+      }
+    });
+
+    console.log(`🎨 [TEMPLATE_HANDLER] Found ${activeBundles.length} active bundles`);
+
+    if (activeBundles.length === 0) {
+      return json({
+        success: true,
+        message: "No active bundles found - no templates to create",
+        results: []
+      });
+    }
+
+    // Get product handles from Shopify
+    const productIds = activeBundles
+      .filter(bundle => bundle.shopifyProductId)
+      .map(bundle => bundle.shopifyProductId);
+
+    if (productIds.length === 0) {
+      return json({
+        success: true,
+        message: "No bundle container products found",
+        results: []
+      });
+    }
+
+    const GET_BUNDLE_PRODUCTS = `
+      query getBundleContainerProducts($ids: [ID!]!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id
+            handle
+            title
+            legacyResourceId
+          }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(GET_BUNDLE_PRODUCTS, {
+      variables: { ids: productIds }
+    });
+    const data = await response.json();
+    const products = data.data?.nodes?.filter(node => node) || [];
+
+    console.log(`🎨 [TEMPLATE_HANDLER] Found ${products.length} bundle container products`);
+
+    // Create templates for each bundle container product
+    const results = [];
+    for (const product of products) {
+      console.log(`🎨 [TEMPLATE_HANDLER] Processing product: ${product.title} (${product.handle})`);
+
+      const result = await templateService.ensureProductTemplate(product.handle);
+      results.push({
+        productId: product.id,
+        productHandle: product.handle,
+        productTitle: product.title,
+        templatePath: result.templatePath,
+        created: result.created || false,
+        success: result.success,
+        error: result.error
+      });
+
+      console.log(`🎨 [TEMPLATE_HANDLER] Product ${product.handle}: ${result.success ? 'SUCCESS' : 'FAILED'} ${result.created ? '(CREATED)' : '(EXISTS)'}`);
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const createdCount = results.filter(r => r.created).length;
+
+    console.log(`🎨 [TEMPLATE_HANDLER] Template creation completed: ${successCount}/${results.length} successful, ${createdCount} created`);
+
+    return json({
+      success: true,
+      message: `Template creation completed: ${successCount}/${results.length} successful, ${createdCount} new templates created`,
+      results,
+      summary: {
+        totalProducts: products.length,
+        successCount,
+        createdCount,
+        failedCount: results.length - successCount
+      }
+    });
+
+  } catch (error) {
+    console.error("🔥 [TEMPLATE_HANDLER] Error during template creation:", error);
+    return json({
+      success: false,
+      error: (error as Error).message || "Template creation failed"
+    }, { status: 500 });
+  }
+}
+
 export default function ConfigureBundleFlow() {
   const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
@@ -2103,6 +2625,7 @@ export default function ConfigureBundleFlow() {
   const [activeSection, setActiveSection] = useState("step_setup");
   const [bundleName, setBundleName] = useState(bundle.name);
   const [bundleDescription, setBundleDescription] = useState(bundle.description || "");
+  const [templateName, setTemplateName] = useState(bundle.templateName || "");
   
   // State for step management
   const [steps, setSteps] = useState(bundle.steps || []);
@@ -2177,6 +2700,7 @@ export default function ConfigureBundleFlow() {
     status: bundle.status,
     name: bundle.name,
     description: bundle.description || "",
+    templateName: bundle.templateName || "",
     steps: JSON.stringify(bundle.steps || []),
     discountEnabled: bundle.pricing?.enableDiscount || false,
     discountType: bundle.pricing?.discountMethod || 'fixed_bundle_price',
@@ -2302,6 +2826,8 @@ export default function ConfigureBundleFlow() {
         return bundleName;
       case 'bundleDescription':
         return bundleDescription;
+      case 'templateName':
+        return templateName;
       case 'bundleStatus':
         return bundleStatus;
       case 'stepsData':
@@ -2319,7 +2845,7 @@ export default function ConfigureBundleFlow() {
       default:
         return '';
     }
-  }, [bundleName, bundleDescription, bundleStatus, steps, discountEnabled, discountType, discountRules, selectedCollections, stepConditions, bundleProduct, productStatus]);
+  }, [bundleName, bundleDescription, templateName, bundleStatus, steps, discountEnabled, discountType, discountRules, selectedCollections, stepConditions, bundleProduct, productStatus]);
 
   // Check for changes whenever form values change
   useEffect(() => {
@@ -2333,6 +2859,7 @@ export default function ConfigureBundleFlow() {
     const stepSetupChanges = (
       bundleName !== originalValues.name ||
       bundleDescription !== originalValues.description ||
+      templateName !== originalValues.templateName ||
       JSON.stringify(steps) !== originalValues.steps ||
       JSON.stringify(selectedCollections) !== originalValues.selectedCollections ||
       JSON.stringify(stepConditions) !== originalValues.stepConditions ||
@@ -2370,8 +2897,8 @@ export default function ConfigureBundleFlow() {
       dismissSaveBar();
     }
   }, [
-    bundleStatus, bundleName, bundleDescription, steps, 
-    discountEnabled, discountType, discountRules, 
+    bundleStatus, bundleName, bundleDescription, templateName, steps,
+    discountEnabled, discountType, discountRules,
     discountDisplayEnabled, discountMessagingEnabled, ruleMessages,
     selectedCollections, stepConditions, bundleProduct, productStatus,
     originalValues
@@ -2385,6 +2912,7 @@ export default function ConfigureBundleFlow() {
       formData.append("intent", "saveBundle");
       formData.append("bundleName", bundleName);
       formData.append("bundleDescription", bundleDescription);
+      formData.append("templateName", templateName);
       formData.append("bundleStatus", bundleStatus);
       // Merge collections data into steps before saving
       const stepsWithCollections = steps.map(step => ({
@@ -2417,7 +2945,50 @@ export default function ConfigureBundleFlow() {
       console.error("Save failed:", error);
       shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true });
     }
-  }, [bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
+  }, [bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
+
+  // Function to enhance template list with user's selected template
+  const enhanceTemplateListWithUserSelection = useCallback((templates: any[]) => {
+    if (!templateName || templateName.trim() === '') {
+      return templates;
+    }
+
+    const userTemplateHandle = templateName.startsWith('product.') ? templateName : `product.${templateName}`;
+
+    // Check if user's template already exists in the list
+    const templateExists = templates.some(t => t.handle === userTemplateHandle || t.handle === templateName);
+
+    if (!templateExists) {
+      // Add user's selected template at the top of the list
+      const userTemplate = {
+        id: userTemplateHandle,
+        title: `🎯 ${templateName} (Your Selection)`,
+        handle: userTemplateHandle,
+        description: `Custom template "${templateName}" - your selected bundle container template`,
+        recommended: true,
+        bundleRelevant: true,
+        fileType: 'User Selected',
+        fullKey: `templates/${userTemplateHandle}.liquid`,
+        isBundleContainer: true,
+        isUserSelected: true
+      };
+
+      return [userTemplate, ...templates];
+    }
+
+    // If template exists, mark it as user selected
+    return templates.map(t => {
+      if (t.handle === userTemplateHandle || t.handle === templateName) {
+        return {
+          ...t,
+          title: `🎯 ${t.title} (Your Selection)`,
+          recommended: true,
+          isUserSelected: true
+        };
+      }
+      return t;
+    });
+  }, [templateName]);
 
   // Handle fetcher response
   useEffect(() => {
@@ -2433,6 +3004,7 @@ export default function ConfigureBundleFlow() {
             status: bundleStatus,
             name: bundleName,
             description: bundleDescription,
+            templateName: templateName,
             steps: JSON.stringify(steps),
             discountEnabled: discountEnabled,
             discountType: discountType,
@@ -2476,7 +3048,9 @@ export default function ConfigureBundleFlow() {
           // The sync updates metafields but doesn't affect the current UI state
         } else if ('templates' in result && result.templates) {
           // This is a get theme templates response
-          setAvailablePages((result as any).templates || []);
+          const rawTemplates = (result as any).templates || [];
+          const enhancedTemplates = enhanceTemplateListWithUserSelection(rawTemplates);
+          setAvailablePages(enhancedTemplates);
           setIsLoadingPages(false);
         } else if ('themeId' in result && result.themeId) {
           // This is a get current theme response - handled by individual callbacks
@@ -2495,7 +3069,7 @@ export default function ConfigureBundleFlow() {
         }
       }
     }
-  }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify]);
+  }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify, enhanceTemplateListWithUserSelection]);
 
   // Discard handler
   const handleDiscard = useCallback(() => {
@@ -2504,6 +3078,7 @@ export default function ConfigureBundleFlow() {
       setBundleStatus(originalValues.status);
       setBundleName(originalValues.name);
       setBundleDescription(originalValues.description);
+      setTemplateName(originalValues.templateName);
       setSteps(JSON.parse(originalValues.steps));
       setDiscountEnabled(originalValues.discountEnabled);
       setDiscountType(originalValues.discountType);
@@ -3159,41 +3734,87 @@ export default function ConfigureBundleFlow() {
     }
   }, [loadAvailablePages, shopify]);
 
-  const handlePageSelection = useCallback((template: any) => {
+  const handlePageSelection = useCallback(async (template: any) => {
     try {
-      
       if (!template || !template.handle) {
-        console.error('Invalid template object:', template);
+        console.error('🚨 [THEME_EDITOR] Invalid template object:', template);
         shopify.toast.show("Template data is invalid", { isError: true });
         return;
       }
 
-      const shopDomain = shop.includes('.myshopify.com') 
-        ? shop.replace('.myshopify.com', '') 
+      const shopDomain = shop.includes('.myshopify.com')
+        ? shop.replace('.myshopify.com', '')
         : shop;
 
-      // Use correct app block ID format: {client_id}/{block_handle}
-      // The block handle is the filename without .liquid (bundle.liquid -> bundle)
-      const appBlockId = 'bfda5624970c7ada838998eb951e9e85/bundle';
-      
-      // Generate theme editor deep link for template with app block and bundle ID
-      // Include bundle ID so the placed widget automatically loads this specific cart transform bundle
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&bundleId=${bundle.id}`;
+      shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
+      console.log(`🎯 [THEME_EDITOR] Starting widget placement for template: ${template.handle}`);
 
+      // Create a theme template service instance
+      // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
+      // For now, we'll use the existing approach but add template creation via API call
+
+      // Check if this is a bundle-specific template that needs to be created
+      if (template.isBundleContainer && template.bundleProduct) {
+        console.log(`🏗️ [THEME_EDITOR] Ensuring template exists for bundle product: ${template.bundleProduct.handle}`);
+
+        // Make API call to create template if needed
+        const createTemplateResponse = await fetch(`/api/ensure-product-template`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            productHandle: template.bundleProduct.handle,
+            bundleId: bundle.id
+          })
+        });
+
+        if (!createTemplateResponse.ok) {
+          console.error('🚨 [THEME_EDITOR] Failed to ensure template exists');
+          shopify.toast.show("Failed to prepare product template", { isError: true });
+          return;
+        }
+
+        const templateResult = await createTemplateResponse.json();
+        console.log(`✅ [THEME_EDITOR] Template preparation result:`, templateResult);
+
+        if (templateResult.created) {
+          shopify.toast.show(`Created new template for ${template.bundleProduct.handle}`, { isError: false, duration: 4000 });
+        }
+      }
+
+      // Use correct extension UUID - this should match your shopify.extension.toml
+      const extensionUuid = 'b8292d0c-3be5-4416-8a0d-4f6490e5e271'; // From SHOPIFY_BUNDLE_BUILDER_ID
+      const blockHandle = 'bundle';
+      const appBlockId = `${extensionUuid}/${blockHandle}`;
+
+      console.log(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
+
+      // Generate optimized theme editor deep link
+      const previewPath = template.bundleProduct ? `/products/${template.bundleProduct.handle}` : '';
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}${previewPath ? `&previewPath=${encodeURIComponent(previewPath)}` : ''}`;
+
+      console.log(`🔗 [THEME_EDITOR] Generated deep link:`, themeEditorUrl);
 
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
-      // Open theme editor in new tab
-      window.open(themeEditorUrl, '_blank', 'noopener,noreferrer');
-      
-      shopify.toast.show(`Theme editor opened for "${template.title}". Look for "Bundle Builder" in the Apps section and drag it to your desired location.`, { isError: false, duration: 6000 });
-      
+      // Open theme editor in new tab with enhanced debugging
+      const editorWindow = window.open(themeEditorUrl, '_blank', 'noopener,noreferrer');
+
+      if (editorWindow) {
+        shopify.toast.show(`Theme editor opened for "${template.title}". Widget will be automatically placed with Bundle ID ${bundle.id}.`, { isError: false, duration: 8000 });
+        console.log(`✅ [THEME_EDITOR] Successfully opened theme editor window`);
+      } else {
+        shopify.toast.show("Theme editor popup was blocked. Please allow popups and try again.", { isError: true });
+        console.error('🚨 [THEME_EDITOR] Popup was blocked');
+      }
+
     } catch (error) {
-      console.error('Error opening theme editor:', error);
+      console.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', error);
       shopify.toast.show("Failed to open theme editor", { isError: true });
     }
-  }, [shop, shopify]);
+  }, [shop, shopify, bundle.id]);
 
   // Bundle setup navigation items
   const bundleSetupItems = [
@@ -3241,6 +3862,7 @@ export default function ConfigureBundleFlow() {
         {/* Hidden inputs for form submission - values will be updated by React state changes */}
         <input type="hidden" name="bundleName" value={bundleName} />
         <input type="hidden" name="bundleDescription" value={bundleDescription} />
+        <input type="hidden" name="templateName" value={templateName} />
         <input type="hidden" name="bundleStatus" value={bundleStatus} />
         <input type="hidden" name="bundleProduct" value={JSON.stringify(bundleProduct)} />
         <input type="hidden" name="stepsData" value={JSON.stringify(steps)} />
@@ -3380,6 +4002,50 @@ export default function ConfigureBundleFlow() {
                 <Text variant="headingSm" as="h3">
                   Take your bundle live
                 </Text>
+
+                {/* Green recommendation banner for manual template creation */}
+                <div style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#e8f5e8',
+                  border: '1px solid #4caf50',
+                  borderRadius: '8px'
+                }}>
+                  <BlockStack gap="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Icon source={RefreshIcon} tone="success" />
+                      <Text variant="bodyMd" fontWeight="medium" tone="success">
+                        💡 Pro Tip: Manual Template Creation
+                      </Text>
+                    </InlineStack>
+                    <Text variant="bodySm" tone="subdued">
+                      For optimal bundle widget placement, manually create a product template named "cart-transform"
+                      in your theme's templates folder. This allows precise control over bundle widget positioning
+                      and ensures consistent styling across your store.
+                    </Text>
+                    <Text variant="bodyXs" tone="subdued">
+                      <strong>Video Tutorial:</strong> See our detailed video guide for step-by-step template creation instructions.
+                    </Text>
+                  </BlockStack>
+                </div>
+
+                {/* Template Selection */}
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h4">
+                    Bundle Container Template
+                  </Text>
+                  <Text variant="bodySm" tone="subdued">
+                    Select which product template will display this bundle widget
+                  </Text>
+                  <TextField
+                    label="Template Name"
+                    value={templateName}
+                    onChange={setTemplateName}
+                    placeholder="e.g., cart-transform, product, bundle-special"
+                    helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
+                    labelHidden
+                  />
+                </BlockStack>
+
                 <InlineStack align="space-between" blockAlign="center">
                   <Text variant="bodyMd" as="p">
                     Place on theme
@@ -4015,7 +4681,7 @@ export default function ConfigureBundleFlow() {
         <Modal.Section>
           <BlockStack gap="400">
             <Text variant="bodyMd">
-              Choose a page template where you want to place the Bundle Builder widget. The theme editor will open with the selected template ready for widget configuration. Look for the "Bundle Builder" app block in the Apps section and drag it to your desired location.
+              Choose a page template where you want to place the Bundle Builder widget. The theme editor will open with automatic widget placement and configuration. Bundle container products are highlighted as recommended templates for optimal bundle widget placement.
             </Text>
             
             {isLoadingPages ? (

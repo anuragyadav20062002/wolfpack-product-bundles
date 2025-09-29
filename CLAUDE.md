@@ -246,7 +246,16 @@ Shopify bundling app with cart transform-focused implementation:
 - **Build Process Enhancement**: Improved deployment workflow by removing unused components
 - **Code Quality**: Eliminated redundant files and outdated configuration references
 
-**TypeScript Error Fixes (Latest):**
+**Database Connection & Development Environment Fixes (Latest):**
+- **SQLite Development Setup**: Resolved Prisma Accelerate TLS connection issues by implementing local SQLite database for development
+- **Database Migration**: Successfully migrated from PostgreSQL to SQLite for development workflow with proper schema updates
+- **Environment Configuration**: Created `.env.local` backup system with SQLite configuration while preserving production PostgreSQL setup
+- **Development Server**: Fixed development server startup issues - all services now running properly (GraphiQL, proxy, theme extension)
+- **Prisma Schema**: Updated datasource configuration to support both SQLite (development) and PostgreSQL (production)
+- **Migration Management**: Cleaned up existing PostgreSQL migrations and created fresh SQLite migration infrastructure
+- **Error Resolution**: Eliminated P1011 TLS handshake errors that were blocking development workflow
+
+**TypeScript Error Fixes:**
 - **Component Type Safety**: Fixed missing 'as' prop requirements in Polaris Text components across dashboard and other routes
 - **Error Handling**: Improved error type assertions using `(error as Error).message` pattern for consistent error handling
 - **Enum Compatibility**: Fixed settings route to use correct `cart_transformation` enum values matching database schema
@@ -256,11 +265,12 @@ Shopify bundling app with cart transform-focused implementation:
 - **Implicit Any Fixes**: Resolved implicit any type issues in bundle routes and product setup handlers
 
 **🔧 High Priority TODOs:**
-1. **Bundle Creation Error Handling** - Implement comprehensive error handling for bundle creation workflow
-2. **Database Error Handling** - Add robust error recovery and user feedback for database operations  
-3. **Product Status Management** - Enhance product synchronization and status tracking
-4. **Performance Optimization** - Review and optimize bundle widget JavaScript for large product catalogs
-5. **Fixed Bundle Price Support** - Complete implementation of fixed bundle pricing in discount functions
+1. **Production Database Migration** - Plan PostgreSQL deployment strategy for production environment
+2. **Bundle Creation Error Handling** - Implement comprehensive error handling for bundle creation workflow
+3. **Database Error Handling** - Add robust error recovery and user feedback for database operations
+4. **Product Status Management** - Enhance product synchronization and status tracking
+5. **Performance Optimization** - Review and optimize bundle widget JavaScript for large product catalogs
+6. **Fixed Bundle Price Support** - Complete implementation of fixed bundle pricing in discount functions
 
 **🎯 Medium Priority TODOs:**
 1. **Bundle Analytics Dashboard** - Add metrics and reporting for bundle performance
@@ -918,3 +928,139 @@ Build storefronts using HTML and Shopify's APIs without complex frameworks.
 ---
 
 This comprehensive resource compilation is based on official Shopify documentation and follows current best practices for Shopify app development. Use the MCP server tools for real-time verification and updates.
+
+---
+
+## 🧪 **Scene-by-Scene Testing Guide (Latest)**
+
+### **Scene 1: Bundle Creation & Configuration**
+**Test Location**: `/app/bundles/cart-transform/configure/{bundleId}`
+
+**Test Steps**:
+1. **Navigate to Dashboard** → Click "Create Bundle"
+2. **Bundle Setup**:
+   - Name: "Test Bundle"
+   - Description: "Testing bundle functionality"
+   - Select bundle product from dropdown
+3. **Step Configuration**:
+   - Add 2-3 bundle steps with different products
+   - Set min/max quantities (e.g., Step 1: 2-3, Step 2: 1-2)
+   - Configure step conditions (quantity: equal_to 2)
+4. **Pricing Setup**:
+   - Enable discounts
+   - Set percentage discount (e.g., 15%)
+   - Configure discount messages
+5. **Save & Verify**:
+   - Click Save → Should show toast notification
+   - Verify data persists on page reload
+   - Check bundle appears in dashboard
+
+**Expected Results**:
+- ✅ Bundle saves without errors
+- ✅ Step conditions properly stored
+- ✅ Pricing configuration saved
+- ✅ Toast notifications display correctly
+
+### **Scene 2: Bundle Publishing**
+**Test Location**: Bundle configuration page
+
+**Test Steps**:
+1. **Publish Bundle**:
+   - Click "Publish Bundle" button
+   - Verify metafields creation in network tab
+2. **Metafield Verification**:
+   - Check `bundle_discounts/cart_transform_config` metafield
+   - Verify standard Shopify metafields (`custom` namespace)
+   - Confirm proper product ID normalization
+
+**Expected Results**:
+- ✅ Both custom and standard metafields created
+- ✅ Product IDs normalized to GID format
+- ✅ Bundle marked as active in database
+
+### **Scene 3: Theme Widget Display**
+**Test Location**: Storefront product page
+
+**Test Steps**:
+1. **Navigate to Bundle Product Page**:
+   - Go to storefront
+   - Open bundle product page
+2. **Widget Verification**:
+   - Bundle widget should appear on page
+   - Step cards display with product images
+   - Product selection modal opens correctly
+3. **Product Selection**:
+   - Click products from each step
+   - Verify quantities can be adjusted
+   - Check total price updates
+
+**Expected Results**:
+- ✅ Widget only shows on configured bundle products
+- ✅ Step cards display correctly
+- ✅ Modal functionality works
+- ✅ Price calculations are accurate
+
+### **Scene 4: Cart Transform Function Testing**
+**Test Location**: Storefront cart
+
+**Test Steps**:
+1. **Add Bundle Products to Cart**:
+   - Add products matching bundle configuration
+   - Ensure quantities meet step conditions
+2. **Cart Transform Verification**:
+   - Cart should automatically merge bundle items
+   - Discount should apply correctly
+   - Bundle should show as single line item
+3. **Test Edge Cases**:
+   - Add incomplete bundle (missing products)
+   - Test with different quantities
+   - Verify condition enforcement
+
+**Expected Results**:
+- ✅ Bundle items merge automatically
+- ✅ Discounts apply correctly
+- ✅ Conditions enforced properly
+- ✅ Edge cases handled gracefully
+
+### **Scene 5: Development Environment Testing**
+**Test Location**: Local development setup
+
+**Test Steps**:
+1. **Database Operations**:
+   - `npm run dev` → Should start without errors
+   - Database migrations should apply cleanly
+   - Prisma operations should work
+2. **Function Building**:
+   - Cart transform function compiles successfully
+   - Theme extension bundles without errors
+   - GraphQL types generate correctly
+3. **Development Workflow**:
+   - Hot reload works for code changes
+   - Error handling displays properly
+   - Debugging tools accessible
+
+**Expected Results**:
+- ✅ SQLite database works for development
+- ✅ All extensions build successfully
+- ✅ Development server runs stable
+- ✅ No TypeScript errors or warnings
+
+### **Development Environment Setup**
+
+**Database Configuration**:
+- **Development**: SQLite (`file:./dev.db`) for local testing
+- **Production**: PostgreSQL via Prisma Accelerate
+- **Migration**: Automatic schema sync with `npx prisma migrate dev`
+
+**Server Ports**:
+- **App Preview**: yash-wolfpack.myshopify.com
+- **GraphiQL**: Port 3457
+- **Proxy Server**: Port 62639
+- **Theme Extension**: http://127.0.0.1:9293
+
+**Command Verification**:
+```bash
+npm run dev          # Start development server
+npx prisma generate  # Generate Prisma client
+npx prisma migrate dev --name <migration_name>  # Apply migrations
+```

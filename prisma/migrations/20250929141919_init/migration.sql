@@ -1,23 +1,11 @@
--- CreateEnum
-CREATE TYPE "BundleStatus" AS ENUM ('draft', 'active', 'archived');
-
--- CreateEnum
-CREATE TYPE "JobStatus" AS ENUM ('pending', 'processing', 'completed', 'failed');
-
--- CreateEnum
-CREATE TYPE "JobType" AS ENUM ('publish', 'unpublish', 'sync');
-
--- CreateEnum
-CREATE TYPE "PricingType" AS ENUM ('percentage', 'fixed');
-
 -- CreateTable
 CREATE TABLE "Session" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "shop" TEXT NOT NULL,
     "state" TEXT NOT NULL,
     "isOnline" BOOLEAN NOT NULL DEFAULT false,
     "scope" TEXT,
-    "expires" TIMESTAMP(3),
+    "expires" DATETIME,
     "accessToken" TEXT NOT NULL,
     "userId" BIGINT,
     "firstName" TEXT,
@@ -27,32 +15,31 @@ CREATE TABLE "Session" (
     "locale" TEXT,
     "collaborator" BOOLEAN DEFAULT false,
     "emailVerified" BOOLEAN DEFAULT false,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "Bundle" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "shopId" TEXT NOT NULL,
-    "status" "BundleStatus" NOT NULL DEFAULT 'draft',
+    "shopifyProductId" TEXT,
+    "templateName" TEXT,
+    "bundleType" TEXT NOT NULL DEFAULT 'cart_transform',
+    "status" TEXT NOT NULL DEFAULT 'draft',
     "active" BOOLEAN NOT NULL DEFAULT false,
-    "publishedAt" TIMESTAMP(3),
+    "publishedAt" DATETIME,
     "settings" JSONB,
     "matching" JSONB,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Bundle_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "BundleStep" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "icon" TEXT DEFAULT 'box',
     "position" INTEGER NOT NULL DEFAULT 0,
@@ -64,17 +51,17 @@ CREATE TABLE "BundleStep" (
     "products" JSONB,
     "displayVariantsAsIndividual" BOOLEAN NOT NULL DEFAULT false,
     "conditionType" TEXT,
+    "conditionOperator" TEXT,
     "conditionValue" INTEGER,
     "bundleId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "BundleStep_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "BundleStep_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "StepProduct" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "stepId" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -83,80 +70,73 @@ CREATE TABLE "StepProduct" (
     "minQuantity" INTEGER NOT NULL DEFAULT 1,
     "maxQuantity" INTEGER NOT NULL DEFAULT 1,
     "position" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "StepProduct_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "StepProduct_stepId_fkey" FOREIGN KEY ("stepId") REFERENCES "BundleStep" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "BundlePricing" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "bundleId" TEXT NOT NULL,
-    "type" "PricingType" NOT NULL DEFAULT 'percentage',
-    "status" BOOLEAN NOT NULL DEFAULT false,
+    "enableDiscount" BOOLEAN NOT NULL DEFAULT false,
+    "discountMethod" TEXT NOT NULL DEFAULT 'fixed_amount_off',
     "rules" JSONB,
+    "discountId" TEXT,
     "showFooter" BOOLEAN NOT NULL DEFAULT true,
     "showBar" BOOLEAN NOT NULL DEFAULT false,
     "messages" JSONB,
     "published" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "BundlePricing_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "BundlePricing_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "BundleAnalytics" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "bundleId" TEXT NOT NULL,
     "shopId" TEXT NOT NULL,
     "event" TEXT NOT NULL,
     "metadata" JSONB,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "BundleAnalytics_pkey" PRIMARY KEY ("id")
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "BundleAnalytics_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
 CREATE TABLE "ShopSettings" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "shopId" TEXT NOT NULL,
     "theme" JSONB,
     "defaultSettings" JSONB,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "ShopSettings_pkey" PRIMARY KEY ("id")
+    "discountImplementation" TEXT NOT NULL DEFAULT 'cart_transformation',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "QueuedJob" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "shopId" TEXT NOT NULL,
-    "type" "JobType" NOT NULL DEFAULT 'publish',
-    "status" "JobStatus" NOT NULL DEFAULT 'pending',
+    "type" TEXT NOT NULL DEFAULT 'publish',
+    "status" TEXT NOT NULL DEFAULT 'pending',
     "data" JSONB,
     "error" TEXT,
-    "startedAt" TIMESTAMP(3),
-    "completedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "QueuedJob_pkey" PRIMARY KEY ("id")
+    "startedAt" DATETIME,
+    "completedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
 CREATE TABLE "ComplianceRecord" (
-    "id" TEXT NOT NULL,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "shop" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "payload" JSONB NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "processedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "ComplianceRecord_pkey" PRIMARY KEY ("id")
+    "processedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateIndex
@@ -167,6 +147,9 @@ CREATE INDEX "Bundle_shopId_idx" ON "Bundle"("shopId");
 
 -- CreateIndex
 CREATE INDEX "Bundle_status_idx" ON "Bundle"("status");
+
+-- CreateIndex
+CREATE INDEX "Bundle_bundleType_idx" ON "Bundle"("bundleType");
 
 -- CreateIndex
 CREATE INDEX "BundleStep_bundleId_idx" ON "BundleStep"("bundleId");
@@ -218,15 +201,3 @@ CREATE INDEX "ComplianceRecord_type_idx" ON "ComplianceRecord"("type");
 
 -- CreateIndex
 CREATE INDEX "ComplianceRecord_status_idx" ON "ComplianceRecord"("status");
-
--- AddForeignKey
-ALTER TABLE "BundleStep" ADD CONSTRAINT "BundleStep_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "StepProduct" ADD CONSTRAINT "StepProduct_stepId_fkey" FOREIGN KEY ("stepId") REFERENCES "BundleStep"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "BundlePricing" ADD CONSTRAINT "BundlePricing_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "BundleAnalytics" ADD CONSTRAINT "BundleAnalytics_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;

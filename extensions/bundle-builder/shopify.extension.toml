@@ -5,9 +5,20 @@ asset_dir = "assets"
 
 [[extensions]]
 name = "bundle-builder"
+
+uid = "23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2"
+
 type = "theme"
 handle = "bundle-builder"
 api_version = "2025-04" # Or the latest stable API version you intend to use.
+
+[[extensions.blocks]]
+target = "section-group:product-form"
+liquid_path = "blocks/bundle.liquid"
+
+[[extensions.blocks]]
+target = "section:main-product"
+liquid_path = "blocks/bundle.liquid"
 
 [[extensions.blocks]]
 target = "all"

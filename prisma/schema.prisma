@@ -9,9 +9,8 @@ generator client {
 // enough when changing adapters.
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 enum BundleStatus {
@@ -75,6 +74,7 @@ model Bundle {
   description      String?
   shopId           String
   shopifyProductId String? // New field to store the Shopify Product ID (GID)
+  templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
   bundleType       BundleType        @default(cart_transform)
   status           BundleStatus      @default(draft)
   active           Boolean           @default(false)

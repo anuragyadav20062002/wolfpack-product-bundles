@@ -25,11 +25,14 @@ import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
   
-  // Get cart transform bundles only
+  // Get cart transform bundles only (exclude archived)
   const cartTransformBundles = await db.bundle.findMany({
-    where: { 
+    where: {
       shopId: session.shop,
       bundleType: "cart_transform",
+      status: {
+        in: ['active', 'draft'] // Only show active and draft bundles, exclude archived
+      }
     },
     include: {
       steps: true,

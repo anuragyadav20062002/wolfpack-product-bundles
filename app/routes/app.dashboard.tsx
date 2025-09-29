@@ -38,11 +38,16 @@ interface Bundle {
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
 
-  // Get all bundles for the shop
+  // Get active and draft bundles for the shop (exclude archived/deleted)
   const bundles = await db.bundle.findMany({
-    where: { shopId: session.shop },
-    include: { 
-      steps: true, 
+    where: {
+      shopId: session.shop,
+      status: {
+        in: ['active', 'draft'] // Only show active and draft bundles, exclude archived
+      }
+    },
+    include: {
+      steps: true,
       pricing: true,
     },
     orderBy: { createdAt: "desc" },
@@ -62,16 +67,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (intent === "deleteBundle") {
     const bundleId = formData.get("bundleId") as string;
-    
+
     try {
-      await db.bundle.delete({
+      // Soft delete by setting status to archived instead of hard deleting
+      await db.bundle.update({
         where: { id: bundleId, shopId: session.shop },
+        data: {
+          status: 'archived',
+          active: false,
+          updatedAt: new Date()
+        }
       });
-      
-      return json({ success: true, message: "Bundle deleted successfully" });
+
+      return json({ success: true, message: "Bundle archived successfully" });
     } catch (error) {
-      console.error("Error deleting bundle:", error);
-      return json({ success: false, error: "Failed to delete bundle" }, { status: 500 });
+      console.error("Error archiving bundle:", error);
+      return json({ success: false, error: "Failed to archive bundle" }, { status: 500 });
     }
   }
 
