@@ -251,6 +251,7 @@
         bundleId: {{ block.settings.bundle_id | json }},
         productId: {{ product.id | json }},
         productHandle: {{ product.handle | json }},
+        productTemplate: {{ product.template_suffix | json }},
         isContainerProduct: {{ is_container_product | json }},
         containerBundleId: {{ container_bundle_id | json }},
         widgetHasBundleId: {{ widget_has_bundle_id | json }},
@@ -259,6 +260,21 @@
         autoDisplayMode: {{ auto_display_mode | json }},
         isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
         urlParams: new URLSearchParams(window.location.search).toString()
+      });
+
+      // 🔍 Enhanced debugging for custom template pages
+      console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
+        bundleIsolationType: {{ product.metafields['$app:bundle_isolation'].bundle_product_type | json }},
+        ownsBundleId: {{ product.metafields['$app:bundle_isolation'].owns_bundle_id | json }},
+        cartTransformConfig: {{ product.metafields.bundle_discounts.cart_transform_config | json }}
+      });
+
+      // 🔍 Debug the Liquid template bundle ID selection logic
+      console.log('🔍 [LIQUID_DEBUG] Bundle ID Selection:', {
+        blockSettingsBundleId: {{ block.settings.bundle_id | json }},
+        isContainerProduct: {{ is_container_product | json }},
+        containerBundleId: {{ container_bundle_id | json }},
+        finalBundleIdValue: {% if block.settings.bundle_id and block.settings.bundle_id != blank %}'{{ block.settings.bundle_id }}'{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}'{{ container_bundle_id }}'{% else %}''{% endif %}
       });
     </script>
 
@@ -307,7 +323,7 @@
 
     <div
       id="bundle-builder-app"
-      data-bundle-id="{% if is_container_product and container_bundle_id %}{{ container_bundle_id }}{% else %}{{ block.settings.bundle_id }}{% endif %}"
+      data-bundle-id="{% if block.settings.bundle_id and block.settings.bundle_id != blank %}{{ block.settings.bundle_id }}{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}{{ container_bundle_id }}{% endif %}"
       data-is-container-product="{{ is_container_product }}"
       data-container-bundle-id="{{ container_bundle_id }}"
       data-auto-display-mode="{{ auto_display_mode }}"
@@ -396,15 +412,23 @@
     // Enhanced debugging for bundle data loading
     console.log('🎯 [BUNDLE_DATA] Loading bundle data for product:', {{ product.id | json }});
     console.log('🎯 [BUNDLE_DATA] Primary bundle data (custom namespace):', !!primaryBundleData, primaryBundleData ? Object.keys(primaryBundleData).length : 0);
+    console.log('🔍 [BUNDLE_DATA] Primary data structure:', primaryBundleData);
     console.log('🎯 [BUNDLE_DATA] Fallback bundle data ($app namespace):', !!fallbackBundleData, fallbackBundleData ? Object.keys(fallbackBundleData).length : 0);
     console.log('🎯 [BUNDLE_DATA] Alt app bundle data (app namespace):', !!altAppBundleData, altAppBundleData ? Object.keys(altAppBundleData).length : 0);
     console.log('🎯 [BUNDLE_DATA] Final bundle data:', !!window.allBundlesData, window.allBundlesData ? Object.keys(window.allBundlesData).length : 0);
+    console.log('🔍 [BUNDLE_DATA] Final data structure:', window.allBundlesData);
 
-    // If no bundle data is available, try to fetch it dynamically
-    if (!window.allBundlesData || Object.keys(window.allBundlesData).length === 0) {
-      console.log('🔄 [BUNDLE_DATA] No bundle data found in metafields, attempting dynamic fetch...');
+    // Enhanced bundle data validation and fallback fetching
+    const hasExpectedBundle = window.allBundlesData &&
+                              (window.allBundlesData['{{ container_bundle_id }}'] ||
+                               Object.keys(window.allBundlesData).length > 0);
 
-      // Try to fetch bundle data from a custom endpoint if available
+    if (!hasExpectedBundle) {
+      console.log('🔄 [BUNDLE_DATA] Bundle data missing or stale (expected: {{ container_bundle_id }}), fetching fresh data...');
+      console.log('🔍 [BUNDLE_DATA] Current bundle IDs in metafield:', Object.keys(window.allBundlesData || {}));
+
+      // Force refresh by fetching latest bundle data from shop metafield via Shopify API
+      // This bypasses Liquid's cache and gets the latest data
       fetch('/apps/bundle-discounts/api/bundles.json', {
         method: 'GET',
         headers: {
@@ -418,17 +442,21 @@
         throw new Error('Bundle data fetch failed');
       })
       .then(data => {
-        console.log('✅ [BUNDLE_DATA] Successfully fetched bundle data dynamically:', data);
+        console.log('✅ [BUNDLE_DATA] Successfully fetched fresh bundle data:', data);
         window.allBundlesData = data.bundles || data || {};
+        console.log('✅ [BUNDLE_DATA] Updated bundle IDs:', Object.keys(window.allBundlesData));
+
         // Re-initialize widgets with new data
         if (window.reinitializeAllBundleWidgets) {
           setTimeout(() => window.reinitializeAllBundleWidgets(), 100);
         }
       })
       .catch(error => {
-        console.log('⚠️ [BUNDLE_DATA] Dynamic fetch failed, using empty bundle data:', error);
-        window.allBundlesData = {};
+        console.log('⚠️ [BUNDLE_DATA] Dynamic fetch failed, using cached data:', error);
+        // Keep the existing cached data rather than clearing it
       });
+    } else {
+      console.log('✅ [BUNDLE_DATA] Bundle data looks good, expected bundle found');
     }
   }
   

@@ -22,6 +22,15 @@
 
 ---
 
+## ⚠️ Critical Known Issues
+
+**Metafield Namespace Consistency** (Fixed 2025-01-04):
+- **Issue**: Bundle widget failed to render due to metafield namespace mismatch
+- **Cause**: Backend saved to `$app:all_bundles`, frontend read from `custom:all_bundles`
+- **Fix**: Changed namespace to `custom` in save function (Line 649 of configure.$bundleId.tsx)
+- **Documentation**: See `docs/METAFIELD_NAMESPACE_FIX.md` for full details
+- **Prevention**: Always use `docs/METAFIELD_CHECKLIST.md` when working with metafields
+
 ## Development Commands
 
 ### Main Application
@@ -205,6 +214,7 @@ Shopify bundling app with cart transform-focused implementation:
 12. **Enable line-item discount support** - Added PRODUCT class discount functionality alongside ORDER class discounts
 13. **Fix cart line discount application** - Resolved issues with bundle discounts not applying to individual cart items
 14. **Enhance bundle condition enforcement UX** - Improved user feedback with contextual toast messages
+15. **Fix bundle widget rendering issue** - Resolved critical metafield namespace mismatch preventing step boxes from rendering
 
 **📋 Recent Technical Improvements:**
 

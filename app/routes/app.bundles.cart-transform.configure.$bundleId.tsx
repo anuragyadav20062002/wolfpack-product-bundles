@@ -646,8 +646,8 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
         metafields: [
           {
             ownerId: shopGlobalId,
-            namespace: "$app",
-            key: "all_bundles", 
+            namespace: "custom",
+            key: "all_bundles",
             type: "json",
             value: JSON.stringify(formattedBundles)
           }

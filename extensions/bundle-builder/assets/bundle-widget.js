@@ -242,7 +242,7 @@ function initializeBundleWidget(containerElement) {
   
   
   const widgetConfig = {
-    bundleId: containerElement.dataset.bundleId || containerElement.dataset.containerBundleId || window.autoDetectedBundleId || null,
+    bundleId: containerElement.dataset.bundleId || window.autoDetectedBundleId || null,
     isContainerProduct: containerElement.dataset.isContainerProduct === 'true',
     containerBundleId: containerElement.dataset.containerBundleId || null,
     hideDefaultButtons: containerElement.dataset.hideDefaultButtons === 'true',
@@ -253,6 +253,8 @@ function initializeBundleWidget(containerElement) {
     successMessageTemplate: containerElement.dataset.successMessageTemplate || 'Congratulations 🎉 you have gotten the best offer on your bundle!',
     progressTextTemplate: containerElement.dataset.progressTextTemplate || '{selectedQuantity} / {targetQuantity} items'
   };
+
+  console.log('🔧 [WIDGET] Widget configuration:', widgetConfig);
   
 
   if (!allBundlesDataRaw || !currentProductId) {
@@ -296,6 +298,7 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
   // Convert bundles object to an array for easier iteration and filter out null/undefined entries
   const bundlesArray = Object.values(bundles).filter(bundle => bundle !== null && bundle !== undefined);
   console.log('📦 [WIDGET] Bundles array after filtering:', bundlesArray.length, 'valid bundles');
+  console.log('📦 [WIDGET] Bundle IDs in array:', bundlesArray.map(b => ({ id: b.id, name: b.name, status: b.status })));
 
   // Currency formatter helper
   function formatCurrency(amount) {
@@ -330,12 +333,24 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
       continue;
     }
 
-    // CART TRANSFORM BUNDLE LOGIC: STRICT CONTAINER MATCHING
+    // CART TRANSFORM BUNDLE LOGIC: FLEXIBLE CONTAINER MATCHING
     if (bundle.bundleType === 'cart_transform') {
       console.log('🛒 [WIDGET] Processing cart transform bundle:', bundle.name);
 
-      // PRIORITY 1: Container product with specific bundle ID
-      if (widgetConfig.isContainerProduct && widgetConfig.containerBundleId) {
+      // PRIORITY 1: Manual bundle ID configuration (theme editor or widget settings)
+      if (widgetConfig.bundleId && widgetConfig.bundleId !== '') {
+        if (bundle.id === widgetConfig.bundleId) {
+          console.log('✅ [WIDGET] MANUAL BUNDLE ID MATCH: Found configured bundle:', bundle.name);
+          selectedBundle = bundle;
+          break;
+        } else {
+          console.log('⏭️ [WIDGET] Manual bundle ID mismatch, skipping:', bundle.id, '!==', widgetConfig.bundleId);
+          continue;
+        }
+      }
+
+      // PRIORITY 2: Container product with specific bundle ID (auto-detected from metafields)
+      if (widgetConfig.isContainerProduct && widgetConfig.containerBundleId && widgetConfig.containerBundleId !== '') {
         if (bundle.id === widgetConfig.containerBundleId) {
           console.log('✅ [WIDGET] CONTAINER MATCH: Found bundle for container product:', bundle.name);
           selectedBundle = bundle;
@@ -344,12 +359,6 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
           console.log('⏭️ [WIDGET] Container bundle ID mismatch, skipping:', bundle.id, '!==', widgetConfig.containerBundleId);
           continue;
         }
-      }
-
-      // PRIORITY 2: Manual bundle ID configuration (theme editor)
-      if (widgetConfig.bundleId && bundle.id !== widgetConfig.bundleId) {
-        console.log('⏭️ [WIDGET] Manual bundle ID mismatch, skipping:', bundle.id, '!==', widgetConfig.bundleId);
-        continue;
       }
       
       // Check if we're in theme editor context (admin viewing)
@@ -407,15 +416,15 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
           console.log('⏭️ [WIDGET] Product ID mismatch for cart transform bundle');
           continue;
         }
-      } else if (!bundle.shopifyProductId && !bundle.isolation && !isThemeEditor) {
-        console.log('⏭️ [WIDGET] No Bundle Product or isolation configured for cart transform bundle in customer view');
-        // CUSTOMER VIEW: Skip if no Bundle Product or isolation configured
-        continue;
       } else if (isThemeEditor) {
-        // ADMIN VIEW: Show regardless of Bundle Product match for theme editor
+        // ADMIN/THEME EDITOR: Show regardless of Bundle Product match
         console.log('🖥️ [WIDGET] Theme editor mode - showing bundle regardless of isolation');
+      } else if (!bundle.shopifyProductId && !bundle.isolation) {
+        // CUSTOMER VIEW WITHOUT RESTRICTIONS: Allow bundle to show if no specific product isolation is configured
+        // This allows bundles to work on custom template pages where the container product setup may not be complete
+        console.log('🎯 [WIDGET] No product isolation configured - allowing bundle to show on this page');
       }
-      
+
       console.log('✅ [WIDGET] Selected cart transform bundle:', bundle.name);
       selectedBundle = bundle;
       break;
