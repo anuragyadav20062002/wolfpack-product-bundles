@@ -692,11 +692,24 @@ function mapDiscountMethod(discountType: string): string {
   }
 }
 
+// Helper function to validate if a product ID is a valid Shopify numeric ID
+function isValidShopifyProductId(productId: string): boolean {
+  const cleanId = productId.replace('gid://shopify/Product/', '');
+  // Shopify product IDs are numeric strings
+  return /^\d+$/.test(cleanId);
+}
+
 // Helper function to get first variant ID for a product
-async function getFirstVariantId(admin: any, productId: string): Promise<string> {
+async function getFirstVariantId(admin: any, productId: string): Promise<string | null> {
   try {
     // Remove gid prefix if present to get just the ID
     const cleanProductId = productId.replace('gid://shopify/Product/', '');
+
+    // Validate that it's a proper Shopify product ID (numeric)
+    if (!isValidShopifyProductId(productId)) {
+      console.error(`❌ [VARIANT_LOOKUP] Invalid product ID format (expected numeric, got "${cleanProductId}")`);
+      return null;
+    }
     
     const PRODUCT_QUERY = `
       query GetProduct($id: ID!) {
@@ -724,13 +737,11 @@ async function getFirstVariantId(admin: any, productId: string): Promise<string>
       return data.data.product.variants.edges[0].node.id;
     }
     
-    // Fallback to old method if query fails
-    return `gid://shopify/ProductVariant/${cleanProductId}`;
+    console.error(`❌ [VARIANT_LOOKUP] Product ${productId} not found in Shopify`);
+    return null;
   } catch (error) {
-    console.error('Error fetching first variant ID:', error);
-    // Fallback to old method if query fails
-    const cleanProductId = productId.replace('gid://shopify/Product/', '');
-    return `gid://shopify/ProductVariant/${cleanProductId}`;
+    console.error(`❌ [VARIANT_LOOKUP] Error fetching variant for ${productId}:`, error);
+    return null;
   }
 }
 
@@ -912,8 +923,10 @@ async function convertBundleToStandardMetafields(admin: any, bundle: any) {
         for (const stepProduct of step.StepProduct) {
           // Get the actual first variant ID
           const variantId = await getFirstVariantId(admin, stepProduct.productId);
-          componentReferences.push(variantId);
-          componentQuantities.push(step.minQuantity || 1);
+          if (variantId) {
+            componentReferences.push(variantId);
+            componentQuantities.push(step.minQuantity || 1);
+          }
         }
       }
       
@@ -921,8 +934,10 @@ async function convertBundleToStandardMetafields(admin: any, bundle: any) {
       if (step.products && Array.isArray(step.products)) {
         for (const product of step.products) {
           const variantId = await getFirstVariantId(admin, product.id);
-          componentReferences.push(variantId);
-          componentQuantities.push(step.minQuantity || 1);
+          if (variantId) {
+            componentReferences.push(variantId);
+            componentQuantities.push(step.minQuantity || 1);
+          }
         }
       }
     }
@@ -1030,7 +1045,12 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
           const productId = stepProduct.productId.startsWith('gid://') 
             ? stepProduct.productId 
             : `gid://shopify/Product/${stepProduct.productId}`;
-          componentProductIds.add(productId);
+          // Only add if it's a valid Shopify product ID (numeric)
+          if (isValidShopifyProductId(productId)) {
+            componentProductIds.add(productId);
+          } else {
+            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping invalid product ID: ${productId}`);
+          }
         }
       }
     }
@@ -1042,13 +1062,18 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
           const productId = product.id.startsWith('gid://') 
             ? product.id 
             : `gid://shopify/Product/${product.id}`;
-          componentProductIds.add(productId);
+          // Only add if it's a valid Shopify product ID (numeric)
+          if (isValidShopifyProductId(productId)) {
+            componentProductIds.add(productId);
+          } else {
+            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping invalid product ID: ${productId}`);
+          }
         }
       }
     }
   }
   
-  console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentProductIds.size} component products to update`);
+  console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentProductIds.size} valid component products to update`);
   
   // Create component_parents metafield data using OFFICIAL Shopify format
   // First, extract component references and quantities from bundle config
@@ -1062,8 +1087,10 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
         if (stepProduct.productId) {
           // Get the actual first variant ID
           const variantId = await getFirstVariantId(admin, stepProduct.productId);
-          componentReferences.push(variantId);
-          componentQuantities.push(step.minQuantity || 1);
+          if (variantId) {
+            componentReferences.push(variantId);
+            componentQuantities.push(step.minQuantity || 1);
+          }
         }
       }
     }
@@ -1073,8 +1100,10 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
       for (const product of step.products) {
         if (product.id) {
           const variantId = await getFirstVariantId(admin, product.id);
-          componentReferences.push(variantId);
-          componentQuantities.push(step.minQuantity || 1);
+          if (variantId) {
+            componentReferences.push(variantId);
+            componentQuantities.push(step.minQuantity || 1);
+          }
         }
       }
     }
@@ -1083,6 +1112,11 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
   // Get the bundle product's first variant ID to use as the parent ID
   const bundleVariantId = await getFirstVariantId(admin, bundleProductId);
   
+  if (!bundleVariantId) {
+    console.error('❌ [COMPONENT_METAFIELD] Cannot update component products: bundle product variant not found');
+    return;
+  }
+
   // Create component_parents in OFFICIAL Shopify format
   const componentParentsData = [{
     id: bundleVariantId, // Use the bundle product variant ID as the parent ID
