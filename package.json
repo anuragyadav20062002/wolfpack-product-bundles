@@ -17,7 +17,14 @@
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
-    "fix-uuids": "node scripts/fix-uuid-product-ids.js"
+    "fix-uuids": "node scripts/fix-uuid-product-ids.js",
+    "test": "node run-all-tests.cjs",
+    "test:metafields": "node tests/metafield-validation.test.cjs",
+    "test:cart-transform": "node tests/cart-transform.test.cjs",
+    "test:bundle-config": "node tests/bundle-configuration.test.cjs",
+    "test:product-ids": "node test-product-id-validation.cjs",
+    "test:strict-validation": "node test-strict-validation.cjs",
+    "pre-deploy": "npm test && npm run build"
   },
   "type": "module",
   "engines": {

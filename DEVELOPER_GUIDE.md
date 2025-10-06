@@ -1,35 +1,14 @@
-# CLAUDE.md
-
-## 🚨 MCP Server Usage
-
-**MANDATORY**: Always use the Shopify dev MCP server as the **single source of truth** for all Shopify-related development work.
-
-### Required MCP Server Workflow
-
-**Before implementing ANY Shopify-related changes:**
-
-1. **🔍 Research First**: Query the Shopify dev MCP server for official documentation and examples
-2. **✅ Validate Everything**: Use MCP to verify API usage, component props, GraphQL schemas, and best practices  
-3. **🚫 No Assumptions**: Never assume anything about Shopify APIs, Polaris components, or implementation patterns without MCP verification
-4. **🛠️ Plan with MCP**: Base all implementation decisions on verified MCP information
-5. **🔄 Verify Results**: Use MCP for troubleshooting and refinements
-
-**Key MCP Tools Available:**
-- `mcp__shopify-dev-mcp__learn_shopify_api` - Initialize API context
-- `mcp__shopify-dev-mcp__search_docs_chunks` - Search documentation
-- `mcp__shopify-dev-mcp__validate_graphql_codeblocks` - Validate GraphQL
-- `mcp__shopify-dev-mcp__introspect_graphql_schema` - Explore schema
-
----
+# DEVELOPER_GUIDE.md
 
 ## ⚠️ Critical Known Issues
 
-**Product ID Format Validation** (Fixed 2025-01-07):
-- **Issue**: Standard Shopify metafields not populated due to UUID product IDs instead of Shopify GIDs
-- **Cause**: StepProduct records stored internal UUIDs instead of proper Shopify product IDs
-- **Fix**: Added product ID validation and normalization when creating StepProduct records
-- **Impact**: Ensures component_reference and component_parents metafields are populated correctly
-- **File**: `app/routes/app.bundles.cart-transform.configure.$bundleId.tsx` (Line 1557-1583)
+**Strict Product ID Validation** (Implemented 2025-01-07):
+- **Issue**: Bundle products were being saved with UUID values instead of proper Shopify GIDs
+- **Cause**: StepProduct records stored internal UUIDs instead of proper Shopify product identifiers
+- **Fix**: Implemented strict product ID validation that rejects UUIDs and only accepts Shopify GIDs
+- **Impact**: Prevents invalid product IDs from being saved; forces re-selection of products with UUIDs
+- **Validation**: `app/routes/app.bundles.cart-transform.configure.$bundleId.tsx` (Lines 1582-1630)
+- **Testing**: Comprehensive test suite validates all product ID formats (64 total tests)
 
 **Metafield Namespace Consistency** (Fixed 2025-01-04):
 - **Issue**: Bundle widget failed to render due to metafield namespace mismatch
@@ -53,6 +32,15 @@
 ### Database
 - `npx prisma generate` - Generate Prisma client
 - `npx prisma db push` - Push schema changes to database
+
+### Testing
+- `npm test` - Run all test suites (64 tests across 5 suites)
+- `npm run test:product-ids` - Test product ID validation
+- `npm run test:strict-validation` - Test strict validation logic
+- `npm run test:metafields` - Test metafield namespace consistency
+- `npm run test:cart-transform` - Test cart transform discount calculations
+- `npm run test:bundle-config` - Test bundle configuration validation
+- `npm run pre-deploy` - Run tests AND build before deployment
 
 ## Architecture Overview
 
@@ -157,7 +145,87 @@ Shopify bundling app with cart transform-focused implementation:
 
 ---
 
+## Comprehensive Test Suite
+
+**Implementation Status:** ✅ Production Ready (Implemented 2025-01-07)
+
+**Overview**: 64 tests across 5 test suites ensuring code quality and preventing regressions.
+
+### Test Suites
+
+1. **Product ID Validation** (4 tests)
+   - Validates Shopify GID format handling
+   - Tests numeric ID to GID conversion
+   - Verifies UUID detection with warnings
+
+2. **Strict Validation** (10 tests)
+   - Enforces Shopify GID-only policy
+   - Rejects UUIDs, empty strings, null/undefined
+   - Validates non-numeric GID rejection
+   - Tests error message clarity
+
+3. **Metafield Validation** (12 tests)
+   - Ensures namespace consistency (`custom`, `bundle_discounts`, `$app`)
+   - Validates metafield type correctness
+   - Prevents UUID contamination in metafields
+   - Tests component reference format validation
+
+4. **Cart Transform** (18 tests)
+   - Fixed bundle price discount calculations
+   - Percentage and fixed amount discount conversions
+   - Bundle condition validation (quantity/amount)
+   - Product ID matching in bundle detection
+   - Multi-bundle support testing
+
+5. **Bundle Configuration** (20 tests)
+   - Bundle structure validation
+   - Step configuration correctness
+   - Discount method validation
+   - Product ID format in configurations
+   - Pricing rule completeness
+
+### Running Tests
+
+```bash
+# Run all tests (recommended before deployment)
+npm test
+
+# Run specific test suite
+npm run test:product-ids
+npm run test:strict-validation
+npm run test:metafields
+npm run test:cart-transform
+npm run test:bundle-config
+
+# Pre-deployment validation (tests + build)
+npm run pre-deploy
+```
+
+### Test Architecture
+
+- **Test Runner**: `run-all-tests.cjs` - Unified test runner with colored output
+- **CommonJS Format**: All test files use `.cjs` extension for compatibility
+- **Clear Output**: Professional summaries with pass/fail indicators
+- **Documentation**: Comprehensive guide in `docs/TESTING_GUIDE.md`
+
+**Benefits**:
+- Prevents metafield namespace mismatches
+- Validates product ID format correctness
+- Ensures cart transform discount accuracy
+- Catches configuration errors before deployment
+- Provides confidence for code changes
+
+---
+
 ## Recent Technical Improvements (Latest)
+
+**✅ Comprehensive Test Suite Implementation (2025-01-07):**
+- **64 Total Tests**: Comprehensive coverage across 5 test suites
+- **Pre-Deployment Validation**: `npm run pre-deploy` command runs tests + build
+- **Metafield Protection**: Tests prevent namespace mismatches that broke widget rendering
+- **Product ID Validation**: Ensures only Shopify GIDs are stored, rejects UUIDs
+- **Cart Transform Testing**: Validates discount calculations and bundle detection
+- **Documentation**: Complete testing guide with usage instructions and troubleshooting
 
 **✅ Fixed Bundle Price Discount Implementation (2025-01-07):**
 - **Runtime Calculation**: Fixed bundle price now calculates discount percentage dynamically based on actual cart total
