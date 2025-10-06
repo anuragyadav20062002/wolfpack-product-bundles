@@ -118,7 +118,15 @@
       "WebFetch(domain:community.shopify.com)",
       "Bash(npx shopify:*)",
       "Bash(copy .env .env.backup)",
-      "Bash(copy .env.local .env)"
+      "Bash(copy .env.local .env)",
+      "Bash(cat:*)",
+      "Read(//c/Users/91945/AppData/Local/shopify-cli-nodejs/Log/bfda5624970c7ada838998eb951e9e85/**)",
+      "Bash(git status:*)",
+      "Read(//c/**)",
+      "Bash(node fix-graphql.js)",
+      "Bash(node:*)",
+      "Bash(del fix-graphql.js fix-graphql.cjs)",
+      "Bash(del \"C:/Users/91945/wolfpack-main/Only-Bundles/add-all-bundles-data.cjs\")"
     ],
     "deny": []
   }

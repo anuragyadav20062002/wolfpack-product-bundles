@@ -1113,7 +1113,8 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
         id: bundleConfig.id || bundleConfig.bundleId,
         name: bundleConfig.name,
         bundleParentVariantId: bundleConfig.bundleParentVariantId,
-        shopifyProductId: bundleConfig.shopifyProductId
+        shopifyProductId: bundleConfig.shopifyProductId,
+        pricing: bundleConfig.pricing // Include pricing for discounts
       };
 
       const metafieldsToSet = [
@@ -1130,7 +1131,7 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
           ownerId: productId,
           namespace: "bundle_discounts",
           key: "cart_transform_config",
-          value: JSON.stringify(bundleConfig),
+          value: JSON.stringify(minimalBundleConfig),
           type: "json"
         },
         // CRITICAL: Add all_bundles_data metafield for cart transform to access ALL bundles
