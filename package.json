@@ -16,7 +16,8 @@
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
-    "vite": "vite"
+    "vite": "vite",
+    "fix-uuids": "node scripts/fix-uuid-product-ids.js"
   },
   "type": "module",
   "engines": {

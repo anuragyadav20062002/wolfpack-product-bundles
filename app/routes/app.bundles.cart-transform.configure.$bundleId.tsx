@@ -973,6 +973,14 @@ async function convertBundleToStandardMetafields(admin: any, bundle: any) {
     for (const step of bundle.steps) {
       if (step.StepProduct && Array.isArray(step.StepProduct)) {
         for (const stepProduct of step.StepProduct) {
+          // Check if this is a UUID (old data that needs migration)
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stepProduct.productId);
+
+          if (isUUID) {
+            console.warn(`⚠️ [STANDARD_METAFIELD] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
+            continue; // Skip UUID products entirely
+          }
+
           // Get the actual first variant ID
           const variantId = await getFirstVariantId(admin, stepProduct.productId);
           if (variantId) {
@@ -1093,15 +1101,24 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
     if (step.StepProduct && Array.isArray(step.StepProduct)) {
       for (const stepProduct of step.StepProduct) {
         if (stepProduct.productId) {
+          // Check if this is a UUID (old data that needs migration)
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stepProduct.productId);
+
+          if (isUUID) {
+            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
+            continue; // Skip UUID products entirely
+          }
+
           // Ensure we have a proper product GID
-          const productId = stepProduct.productId.startsWith('gid://') 
-            ? stepProduct.productId 
+          const productId = stepProduct.productId.startsWith('gid://')
+            ? stepProduct.productId
             : `gid://shopify/Product/${stepProduct.productId}`;
+
           // Only add if it's a valid Shopify product ID (numeric)
           if (isValidShopifyProductId(productId)) {
             componentProductIds.add(productId);
           } else {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping invalid product ID: ${productId}`);
+            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping invalid product ID format: ${productId}`);
           }
         }
       }
@@ -1137,6 +1154,14 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
     if (step.StepProduct && Array.isArray(step.StepProduct)) {
       for (const stepProduct of step.StepProduct) {
         if (stepProduct.productId) {
+          // Check if this is a UUID (old data that needs migration)
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stepProduct.productId);
+
+          if (isUUID) {
+            console.warn(`⚠️ [COMPONENT_REFERENCE] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
+            continue; // Skip UUID products entirely
+          }
+
           // Get the actual first variant ID
           const variantId = await getFirstVariantId(admin, stepProduct.productId);
           if (variantId) {
@@ -1555,20 +1580,42 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
               // Create StepProduct records for selected products
               StepProduct: {
               create: (step.StepProduct || []).map((product: any, productIndex: number) => {
-                // Extract proper Shopify product ID from GID format
-                // product.id might be "gid://shopify/Product/123" - we need the full GID
+                // STRICT VALIDATION: Only allow Shopify GIDs
                 let productId = product.id;
 
-                // If it's already a GID, use it directly
-                if (typeof productId === 'string' && productId.startsWith('gid://shopify/Product/')) {
-                  // Already in correct format
-                  productId = productId;
-                } else if (typeof productId === 'string' && /^\d+$/.test(productId)) {
-                  // If it's a numeric ID, convert to GID
+                if (!productId || typeof productId !== 'string') {
+                  throw new Error(`Invalid product ID: Product ID is required and must be a string. Got: ${typeof productId}`);
+                }
+
+                // Check if it's a UUID (reject immediately)
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId);
+                if (isUUID) {
+                  throw new Error(
+                    `Invalid product ID: UUID detected "${productId}" for product "${product.title || product.name}". ` +
+                    `Only Shopify product IDs are allowed. Please re-select the product using the product picker.`
+                  );
+                }
+
+                // Normalize to Shopify GID format
+                if (productId.startsWith('gid://shopify/Product/')) {
+                  // Already in correct format - validate it's numeric after the prefix
+                  const numericId = productId.replace('gid://shopify/Product/', '');
+                  if (!/^\d+$/.test(numericId)) {
+                    throw new Error(
+                      `Invalid product ID format: "${productId}" for product "${product.title || product.name}". ` +
+                      `Shopify product IDs must be numeric. Expected format: gid://shopify/Product/123456`
+                    );
+                  }
+                  // Valid Shopify GID
+                } else if (/^\d+$/.test(productId)) {
+                  // Numeric ID - convert to GID
                   productId = `gid://shopify/Product/${productId}`;
                 } else {
-                  // Otherwise use as-is (might be UUID from old data)
-                  console.warn(`⚠️ [STEP_PRODUCT] Unexpected product ID format: ${productId}`);
+                  // Invalid format - reject
+                  throw new Error(
+                    `Invalid product ID format: "${productId}" for product "${product.title || product.name}". ` +
+                    `Expected Shopify GID (gid://shopify/Product/123456) or numeric ID (123456).`
+                  );
                 }
 
                 return {
