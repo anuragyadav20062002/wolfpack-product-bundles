@@ -3,6 +3,11 @@ query Input {
     lines {
       id
       quantity
+      # CRITICAL: Cart line attributes for bundle detection
+      # Line item properties (added via properties in cart add) become accessible as attributes
+      attribute(key: "_wolfpack_bundle_id") {
+        value
+      }
       merchandise {
         __typename
         ... on ProductVariant {
@@ -30,6 +35,10 @@ query Input {
               value
               jsonValue
             }
+            # Fallback: All bundles data stored on products for cart transform access
+            all_bundles_data: metafield(namespace: "custom", key: "all_bundles_data") {
+              value
+            }
           }
         }
       }
@@ -44,5 +53,6 @@ query Input {
         }
       }
     }
+    # CRITICAL: Cart-level bundle configurations from CartTransform metafield
   }
 }

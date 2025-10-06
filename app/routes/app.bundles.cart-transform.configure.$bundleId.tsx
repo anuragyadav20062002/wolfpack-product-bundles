@@ -1106,14 +1106,42 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
   for (const productId of componentProductIds) {
     try {
       console.log(`🔧 [COMPONENT_METAFIELD] Updating product: ${productId}`);
-      
-      const metafieldsToSet = [{
-        ownerId: productId,
-        namespace: "$app",
-        key: "component_parents",
-        value: JSON.stringify(componentParentsData),
-        type: "json"
-      }];
+
+      // Create minimal bundle config for all_bundles_data (to avoid instruction count limit)
+      const minimalBundleConfig = {
+        bundleId: bundleConfig.bundleId || bundleConfig.id,
+        id: bundleConfig.id || bundleConfig.bundleId,
+        name: bundleConfig.name,
+        bundleParentVariantId: bundleConfig.bundleParentVariantId,
+        shopifyProductId: bundleConfig.shopifyProductId
+      };
+
+      const metafieldsToSet = [
+        // Standard Shopify component_parents metafield
+        {
+          ownerId: productId,
+          namespace: "$app",
+          key: "component_parents",
+          value: JSON.stringify(componentParentsData),
+          type: "json"
+        },
+        // CRITICAL: Also add bundle_config so cart transform can access it from component products
+        {
+          ownerId: productId,
+          namespace: "bundle_discounts",
+          key: "cart_transform_config",
+          value: JSON.stringify(bundleConfig),
+          type: "json"
+        },
+        // CRITICAL: Add all_bundles_data metafield for cart transform to access ALL bundles
+        {
+          ownerId: productId,
+          namespace: "custom",
+          key: "all_bundles_data",
+          value: JSON.stringify([minimalBundleConfig]), // Store minimal config to avoid exceeding instruction limit
+          type: "json"
+        }
+      ];
       
       const SET_METAFIELDS = `
         mutation SetMetafields($metafields: [MetafieldsSetInput!]!) {
@@ -1290,7 +1318,9 @@ async function ensureStandardMetafieldDefinitions(admin: any) {
               name
               namespace
               key
-              type
+              type {
+                name
+              }
             }
             userErrors {
               field
@@ -1367,18 +1397,25 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     }
   }
 
+  // Get existing bundle to preserve shopifyProductId if not provided
+  const existingBundle = await db.bundle.findUnique({
+    where: { id: bundleId, shopId: session.shop },
+    select: { shopifyProductId: true }
+  });
+
   // Update bundle in database
   console.log("💾 [BUNDLE_CONFIG] Updating bundle in database");
   const updatedBundle = await db.bundle.update({
-    where: { 
-      id: bundleId, 
-      shopId: session.shop 
+    where: {
+      id: bundleId,
+      shopId: session.shop
     },
     data: {
       name: bundleName,
       description: bundleDescription,
       status: finalStatus,
-      shopifyProductId: bundleProductData?.id || null,
+      // Preserve existing shopifyProductId if not provided in form
+      shopifyProductId: bundleProductData?.id || existingBundle?.shopifyProductId || null,
       templateName: templateName,
       // Update steps if provided
       ...(stepsData && {
@@ -1450,13 +1487,17 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       })
     },
     include: {
-      steps: true,
+      steps: {
+        include: {
+          StepProduct: true  // Include StepProduct for component metafield updates
+        }
+      },
       pricing: true
     }
   });
 
-  // If bundle has a Shopify product and discount is enabled, update its metafields
-  if (updatedBundle.shopifyProductId && discountData?.discountEnabled) {
+  // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
+  if (updatedBundle.shopifyProductId) {
     // Create optimized configuration with only essential data for functions
     const optimizedSteps = (stepsData || []).map((step: any) => ({
       id: step.id,
@@ -1479,8 +1520,13 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       }))
     }));
 
+    // Get the bundle product's first variant ID for cart transform merge operations
+    const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
+    console.log(`🔍 [BUNDLE_CONFIG] Bundle parent variant ID: ${bundleParentVariantId}`);
+
     const baseConfiguration = {
       bundleId: updatedBundle.id,
+      id: updatedBundle.id, // Also include as 'id' for easier matching
       name: updatedBundle.name,
       templateName: updatedBundle.templateName || null,
       steps: optimizedSteps,
@@ -1489,6 +1535,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         method: discountData.discountType,
         rules: discountData.discountRules || []
       },
+      // CRITICAL: Include bundle parent variant ID for cart transform merge operations
+      bundleParentVariantId: bundleParentVariantId,
+      shopifyProductId: updatedBundle.shopifyProductId, // Bundle product ID for querying metafield
       updatedAt: new Date().toISOString()
     };
 
@@ -1511,18 +1560,54 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, discountFunctionConfig, 'discount_function');
 
       // ALSO update standard Shopify metafields for cart transform compatibility
+
+
       console.log("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
-      const standardMetafields = await convertBundleToStandardMetafields(admin, baseConfiguration);
-      if (Object.keys(standardMetafields).length > 0) {
-        await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
-        console.log("🔧 [STANDARD_METAFIELD] Standard metafields updated successfully");
-      } else {
-        console.log("🔧 [STANDARD_METAFIELD] No standard metafields to update");
+
+
+      try {
+
+
+        const standardMetafields = await convertBundleToStandardMetafields(admin, baseConfiguration);
+
+
+        if (Object.keys(standardMetafields).length > 0) {
+
+
+          await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
+
+
+          console.log("🔧 [STANDARD_METAFIELD] Standard metafields updated successfully");
+
+
+        } else {
+
+
+          console.log("🔧 [STANDARD_METAFIELD] No standard metafields to update (products may be using UUIDs)");
+
+
+        }
+
+
+      } catch (error) {
+
+
+        console.log("🔧 [STANDARD_METAFIELD] Skipping standard metafields (optional feature):", (error as Error).message);
+
+
+        // Don't throw - standard metafields are optional, custom metafields are what actually matter
+
+
       }
 
       // CRITICAL: Also update component products with component_parents metafield
       console.log("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
-      await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, baseConfiguration);
+      // Pass the FULL bundle configuration with StepProduct data from database
+      const fullBundleConfig = {
+        ...baseConfiguration,
+        steps: updatedBundle.steps  // Use database steps with StepProduct array
+      };
+      await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
       console.log("🔧 [COMPONENT_METAFIELD] Component product metafields updated successfully");
 
     } catch (error) {

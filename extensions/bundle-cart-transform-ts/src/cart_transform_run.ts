@@ -7,6 +7,10 @@ export interface CartTransformInput {
     lines: Array<{
       id: string;
       quantity: number;
+      // Cart line attribute for bundle ID (line item properties become attributes)
+      attribute?: {
+        value: string;
+      };
       merchandise: {
         __typename: string;
         id: string;
@@ -29,6 +33,9 @@ export interface CartTransformInput {
           bundle_config?: {
             value: string;
             jsonValue?: any;
+          };
+          all_bundles_data?: {
+            value: string;
           };
         };
       };
@@ -53,14 +60,14 @@ export interface CartTransformInput {
         currencyCode: string;
       };
     };
-    // Cart-level metafields for bundle configurations
+    // Cart-level bundle configurations metafield
+    bundleConfig?: {
+      value: string;
+    };
+    // Legacy fallback
     allBundlesConfig?: {
       value: string;
       jsonValue?: any;
-    };
-    // Cart-level attributes for bundle information (legacy fallback)
-    attribute?: {
-      value: string;
     };
   };
 }
@@ -125,7 +132,45 @@ export function cartTransformRun(
 
   // Try multiple approaches for maximum compatibility
 
-  // 1. Check for cart-level bundle configurations (primary approach - from cart transform metafield)
+  // 1. PRIORITY: Check for cart line attributes (widget-based bundles)
+  // Line item properties added via cart add become accessible as attributes in cart transform
+  const hasCartLineAttributes = input.cart.lines.some(line => line.attribute?.value);
+
+  if (hasCartLineAttributes) {
+    console.log("🔍 [CART TRANSFORM DEBUG] Detected cart line attributes - using widget-based bundle approach");
+
+    // Try to get bundle configs from product metafields (all_bundles_data)
+    let bundleConfigsMap: any = {};
+
+    // Check each product in cart for all_bundles_data metafield
+    for (const line of input.cart.lines) {
+      if (line.merchandise?.product?.all_bundles_data?.value) {
+        try {
+          const bundleConfigsArray = JSON.parse(line.merchandise.product.all_bundles_data.value);
+          console.log("🔍 [CART TRANSFORM DEBUG] Found all_bundles_data on product:", line.merchandise.product.id);
+          console.log("🔍 [CART TRANSFORM DEBUG] Bundle configs:", bundleConfigsArray);
+
+          // Convert array to map indexed by bundle ID
+          if (Array.isArray(bundleConfigsArray)) {
+            bundleConfigsArray.forEach((config: any) => {
+              const bundleId = config.id || config.bundleId;
+              if (bundleId && !bundleConfigsMap[bundleId]) {
+                bundleConfigsMap[bundleId] = config;
+                console.log(`🔍 [CART TRANSFORM DEBUG] Mapped bundle config for ID: ${bundleId}`);
+              }
+            });
+          }
+        } catch (error) {
+          console.log("⚠️ [CART TRANSFORM DEBUG] Error parsing all_bundles_data:", error);
+        }
+      }
+    }
+
+    // Process widget bundles WITH bundle configs from product metafields
+    return processCartTransformWithWidgetBundles(input.cart, bundleConfigsMap);
+  }
+
+  // 2. Check for cart-level bundle configurations (legacy approach)
   if (input.cart.allBundlesConfig?.value || input.cart.allBundlesConfig?.jsonValue) {
     try {
       console.log("🔍 [CART TRANSFORM DEBUG] Using cart-level allBundlesConfig metafield approach");
@@ -137,30 +182,225 @@ export function cartTransformRun(
     }
   }
 
-  // 2. Fallback: Check for legacy cart-level metafield (if exists)
-  if (input.cart.metafield?.value) {
+  // 3. Check for cart bundleConfig metafield
+  if (input.cart.bundleConfig?.value) {
     try {
-      console.log("🔍 [CART TRANSFORM DEBUG] Using legacy cart-level bundle configurations approach");
-      const bundleConfigs = JSON.parse(input.cart.metafield.value);
+      console.log("🔍 [CART TRANSFORM DEBUG] Using cart-level bundleConfig metafield approach");
+      const bundleConfigs = JSON.parse(input.cart.bundleConfig.value);
       return processCartTransformWithBundleConfigs(input.cart, bundleConfigs);
     } catch (error) {
-      console.log("🔍 [CART TRANSFORM DEBUG] Error parsing legacy cart metafield, falling back to standard approach");
+      console.log("🔍 [CART TRANSFORM DEBUG] Error parsing bundleConfig metafield:", error);
     }
   }
 
-  // 3. Check for product-level metafields (also legacy but from product level)
-  const hasProductMetafields = input.cart.lines.some(line => 
+  // 4. Check for product-level metafields (also legacy but from product level)
+  const hasProductMetafields = input.cart.lines.some(line =>
     line.merchandise?.product?.bundle_config?.value
   );
-  
+
   if (hasProductMetafields) {
     console.log("🔍 [CART TRANSFORM DEBUG] Using product-level bundle configurations approach");
     return processCartTransformWithProductMetafields(input.cart);
   }
 
-  // 4. Standard Shopify metafields approach (official)
+  // 5. Standard Shopify metafields approach (official)
   console.log("🔍 [CART TRANSFORM DEBUG] Using official Shopify standard metafields approach");
   return processCartTransformWithStandardMetafields(input.cart);
+}
+
+// NEW: Widget-based bundle processing (using cart line attributes)
+function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): CartTransformResult {
+  console.log("🔍 [WIDGET BUNDLES] Processing widget-based bundles");
+  const operations = [];
+
+  // Group cart lines by bundle ID
+  const bundleGroups = new Map<string, any[]>();
+
+  for (const line of cart.lines) {
+    // Extract bundle ID from attribute (line item properties become attributes in cart transform)
+    const bundleId = line.attribute?.value;
+
+    if (bundleId) {
+      if (!bundleGroups.has(bundleId)) {
+        bundleGroups.set(bundleId, []);
+      }
+      bundleGroups.get(bundleId)!.push(line);
+      console.log(`🔍 [WIDGET BUNDLES] Found line ${line.id} with bundle ID: ${bundleId}`);
+    }
+  }
+
+  console.log(`🔍 [WIDGET BUNDLES] Found ${bundleGroups.size} bundle groups`);
+
+  // Process each bundle group
+  for (const [bundleId, lines] of bundleGroups.entries()) {
+    console.log(`🔍 [WIDGET BUNDLES] Processing bundle ${bundleId} with ${lines.length} lines`);
+
+    // Try to get bundle config from cart line product metafields
+    // Priority 1: Check product metafields on cart line products
+    let bundleConfig = null;
+
+    for (const line of lines) {
+      if (line.merchandise?.product?.bundle_config?.value) {
+        try {
+          const productBundleConfig = JSON.parse(line.merchandise.product.bundle_config.value);
+          console.log(`🔍 [WIDGET BUNDLES] Found bundle config on product ${line.merchandise.product.id}:`, JSON.stringify(productBundleConfig, null, 2));
+
+          // Match by bundle ID
+          if (productBundleConfig.bundleId === bundleId || productBundleConfig.id === bundleId) {
+            bundleConfig = productBundleConfig;
+            console.log(`✅ [WIDGET BUNDLES] Matched bundle config: ${bundleConfig.name} (ID: ${bundleId})`);
+            break;
+          }
+        } catch (error) {
+          console.log(`⚠️ [WIDGET BUNDLES] Error parsing product bundle config:`, error);
+        }
+      }
+    }
+
+    // Priority 2: Fallback to passed bundleConfigs object (from cart transform metafield - if available)
+    if (!bundleConfig && bundleConfigs[bundleId]) {
+      bundleConfig = bundleConfigs[bundleId];
+      console.log(`🔍 [WIDGET BUNDLES] Using bundle config from cart transform metafield`);
+    }
+
+    if (bundleConfig) {
+      console.log(`🔍 [WIDGET BUNDLES] Found config for bundle: ${bundleConfig.name}`);
+    } else {
+      console.log(`🔍 [WIDGET BUNDLES] No config found for bundle ${bundleId} - using minimal merge`);
+    }
+
+    // Get bundle container product variant ID
+    let bundleContainerVariantId = null;
+
+    // PRIORITY 1: Use explicit bundleParentVariantId if available (most reliable)
+    if (bundleConfig?.bundleParentVariantId) {
+      bundleContainerVariantId = bundleConfig.bundleParentVariantId;
+      console.log(`🔍 [WIDGET BUNDLES] Using explicit bundleParentVariantId: ${bundleContainerVariantId}`);
+    }
+    // PRIORITY 2: Use shopifyProductId to construct variant ID
+    else if (bundleConfig?.shopifyProductId) {
+      const productId = bundleConfig.shopifyProductId;
+      console.log(`🔍 [WIDGET BUNDLES] Found shopifyProductId: ${productId}`);
+
+      // Convert Product GID to ProductVariant GID by extracting numeric ID
+      if (productId.includes('/Product/')) {
+        // Extract numeric ID from GID (e.g., "gid://shopify/Product/8375848042692" → "8375848042692")
+        const numericId = productId.split('/Product/')[1];
+        // We need the actual first variant ID - for now, log warning that we need it from metafield
+        console.log(`⚠️ [WIDGET BUNDLES] WARNING: Cannot construct variant ID from product ID alone`);
+        console.log(`⚠️ [WIDGET BUNDLES] Product ID: ${productId}, Numeric ID: ${numericId}`);
+        console.log(`⚠️ [WIDGET BUNDLES] Bundle config must include bundleParentVariantId for merge operations to work`);
+        bundleContainerVariantId = null; // Cannot merge without valid variant ID
+      }
+    }
+
+    // If we don't have a valid variant ID, skip this bundle
+    if (!bundleContainerVariantId) {
+      console.log(`❌ [WIDGET BUNDLES] Cannot create merge operation: missing bundleParentVariantId in bundle config`);
+      console.log(`❌ [WIDGET BUNDLES] Bundle ${bundleId} will not be merged - please ensure bundleParentVariantId is set in metafield`);
+      continue; // Skip this bundle
+    }
+
+    console.log(`✅ [WIDGET BUNDLES] Using bundle container variant: ${bundleContainerVariantId}`);
+
+    // Create merge operation
+    const mergeOperation: any = {
+      parentVariantId: bundleContainerVariantId,
+      cartLines: lines.map(line => ({
+        cartLineId: line.id,
+        quantity: line.quantity
+      })),
+      title: bundleConfig?.name || `Bundle ${bundleId}`,
+      attributes: [
+        {
+          key: "_bundle_id",
+          value: bundleId
+        }
+      ]
+    };
+
+    // Apply pricing if available
+    if (bundleConfig?.pricing) {
+      const pricingAdjustment = calculateBundlePriceFromConfig(bundleConfig, lines);
+      if (pricingAdjustment) {
+        mergeOperation.price = pricingAdjustment;
+      }
+    }
+
+    operations.push({ merge: mergeOperation });
+    console.log(`🔍 [WIDGET BUNDLES] Created merge operation for bundle ${bundleId}`);
+  }
+
+  console.log(`🔍 [WIDGET BUNDLES] Completed with ${operations.length} operations`);
+  console.log(`🔍 [WIDGET BUNDLES] Operations:`, JSON.stringify(operations, null, 2));
+
+  return { operations };
+}
+
+// Helper function to calculate bundle price from config
+function calculateBundlePriceFromConfig(bundleConfig: any, lines: any[]): any {
+  const pricing = bundleConfig.pricing;
+  if (!pricing || !pricing.enabled) {
+    return null;
+  }
+
+  const rules = pricing.rules || [];
+  if (rules.length === 0) {
+    return null;
+  }
+
+  // Get the first rule (can be enhanced for multiple rules)
+  const rule = rules[0];
+
+  // Calculate total quantity and amount
+  const totalQuantity = lines.reduce((sum: number, line: any) => sum + line.quantity, 0);
+  const totalAmount = lines.reduce((sum: number, line: any) => {
+    const amount = parseFloat(line.cost?.totalAmount?.amount || '0');
+    return sum + amount;
+  }, 0);
+
+  console.log(`🔍 [BUNDLE PRICING] Bundle pricing: method=${pricing.method}, totalQty=${totalQuantity}, totalAmt=${totalAmount}`);
+
+  // Apply discount based on method
+  switch (pricing.method) {
+    case 'percentage_off':
+      const discountPercent = parseFloat(rule.discountValue || '0');
+      if (discountPercent > 0) {
+        return {
+          percentageDecrease: {
+            value: discountPercent
+          }
+        };
+      }
+      break;
+
+    case 'fixed_amount_off':
+      const discountAmount = parseFloat(rule.discountValue || '0');
+      if (discountAmount > 0 && totalAmount > 0) {
+        const discountPercent = (discountAmount / totalAmount) * 100;
+        return {
+          percentageDecrease: {
+            value: Math.min(100, discountPercent)
+          }
+        };
+      }
+      break;
+
+    case 'fixed_bundle_price':
+      const bundlePrice = parseFloat(rule.discountValue || '0');
+      if (bundlePrice > 0 && totalAmount > bundlePrice) {
+        const discountAmount = totalAmount - bundlePrice;
+        const discountPercent = (discountAmount / totalAmount) * 100;
+        return {
+          percentageDecrease: {
+            value: Math.min(100, discountPercent)
+          }
+        };
+      }
+      break;
+  }
+
+  return null;
 }
 
 // NEW: Official Shopify standard metafields approach (following sample.md)
