@@ -363,7 +363,7 @@ function calculateBundlePriceFromConfig(bundleConfig: any, lines: any[]): any {
 
   // Apply discount based on method
   switch (pricing.method) {
-    case 'percentage_off':
+    case 'percentage_off': {
       const discountPercent = parseFloat(rule.discountValue || '0');
       if (discountPercent > 0) {
         return {
@@ -373,8 +373,9 @@ function calculateBundlePriceFromConfig(bundleConfig: any, lines: any[]): any {
         };
       }
       break;
+    }
 
-    case 'fixed_amount_off':
+    case 'fixed_amount_off': {
       const discountAmount = parseFloat(rule.discountValue || '0');
       if (discountAmount > 0 && totalAmount > 0) {
         const discountPercent = (discountAmount / totalAmount) * 100;
@@ -385,19 +386,33 @@ function calculateBundlePriceFromConfig(bundleConfig: any, lines: any[]): any {
         };
       }
       break;
+    }
 
-    case 'fixed_bundle_price':
-      const bundlePrice = parseFloat(rule.discountValue || '0');
-      if (bundlePrice > 0 && totalAmount > bundlePrice) {
-        const discountAmount = totalAmount - bundlePrice;
+    case 'fixed_bundle_price': {
+      // Fixed bundle price: Calculate discount based on ACTUAL cart total
+      // rule.fixedBundlePrice contains the target price (e.g., ₹30)
+      // rule.price is a fallback if fixedBundlePrice isn't set
+      const fixedBundlePrice = parseFloat(rule.fixedBundlePrice || rule.price || '0');
+
+      if (fixedBundlePrice > 0 && totalAmount > fixedBundlePrice) {
+        // Calculate discount percentage based on actual cart total
+        const discountAmount = totalAmount - fixedBundlePrice;
         const discountPercent = (discountAmount / totalAmount) * 100;
+
+        console.log(`🔍 [BUNDLE PRICING] Fixed bundle price: ₹${fixedBundlePrice}`);
+        console.log(`🔍 [BUNDLE PRICING] Cart total: ₹${totalAmount}`);
+        console.log(`🔍 [BUNDLE PRICING] Calculated discount: ${discountPercent.toFixed(2)}%`);
+
         return {
           percentageDecrease: {
-            value: Math.min(100, discountPercent)
+            value: Math.min(100, Math.round(discountPercent * 100) / 100)
           }
         };
+      } else {
+        console.log(`🔍 [BUNDLE PRICING] Fixed bundle price not applicable: price=${fixedBundlePrice}, total=${totalAmount}`);
       }
       break;
+    }
   }
 
   return null;
@@ -1165,7 +1180,7 @@ function calculateBundlePrice(bundleConfig: any, componentLines: any[]): any {
 
   // Apply pricing based on method
   switch (pricing.method) {
-    case 'percentage_off':
+    case 'percentage_off': {
       const discountPercent = parseFloat(rule.discountValue || '0');
       if (discountPercent > 0) {
         console.log(`🔍 [BUNDLE PRICING] Applying ${discountPercent}% discount`);
@@ -1176,39 +1191,44 @@ function calculateBundlePrice(bundleConfig: any, componentLines: any[]): any {
         };
       }
       break;
+    }
 
-    case 'fixed_amount_off':
+    case 'fixed_amount_off': {
       const discountAmount = parseFloat(rule.discountValue || '0');
       if (discountAmount > 0) {
         console.log(`🔍 [BUNDLE PRICING] Applying ${discountAmount} fixed discount`);
         return {
-          decreaseBy: {
-            amount: discountAmount.toString(),
-            currencyCode: componentLines[0]?.cost?.totalAmount?.currencyCode || 'USD'
+          percentageDecrease: {
+            value: (discountAmount / totalComponentPrice) * 100
           }
         };
       }
       break;
+    }
 
-    case 'fixed_bundle_price':
-      const bundlePrice = parseFloat(rule.discountValue || '0');
-      if (bundlePrice > 0) {
-        console.log(`🔍 [BUNDLE PRICING] Setting fixed bundle price to ${bundlePrice}`);
-        // Calculate the discount amount needed to reach the fixed price
-        const discountNeeded = Math.max(0, totalComponentPrice - bundlePrice);
-        if (discountNeeded > 0) {
-          return {
-            decreaseBy: {
-              amount: discountNeeded.toString(),
-              currencyCode: componentLines[0]?.cost?.totalAmount?.currencyCode || 'USD'
-            }
-          };
-        }
+    case 'fixed_bundle_price': {
+      // Fixed bundle price: Calculate discount based on ACTUAL component total
+      const fixedBundlePrice = parseFloat(rule.fixedBundlePrice || rule.price || '0');
+
+      if (fixedBundlePrice > 0 && totalComponentPrice > fixedBundlePrice) {
+        const discountAmount = totalComponentPrice - fixedBundlePrice;
+        const discountPercent = (discountAmount / totalComponentPrice) * 100;
+
+        console.log(`🔍 [BUNDLE PRICING] Fixed bundle price: ₹${fixedBundlePrice}, Component total: ₹${totalComponentPrice}, Discount: ${discountPercent.toFixed(2)}%`);
+
+        return {
+          percentageDecrease: {
+            value: Math.min(100, Math.round(discountPercent * 100) / 100)
+          }
+        };
       }
       break;
+    }
 
-    default:
+    default: {
       console.log(`🔍 [BUNDLE PRICING] Unknown pricing method: ${pricing.method}`);
+      break;
+    }
   }
 
   console.log(`🔍 [BUNDLE PRICING] No applicable pricing found - using component sum`);

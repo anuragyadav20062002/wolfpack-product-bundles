@@ -231,13 +231,11 @@
 {% comment %} 1. CONTAINER PRODUCT: Always show if this is a bundle container {% endcomment %}
 {% if is_container_product %}
   {% assign should_show_widget = true %}
-  {% assign show_bundle_widget = true %}
   {% comment %} Hide default buy buttons automatically {% endcomment %}
   {% assign hide_default_buttons = true %}
 {% comment %} 2. THEME EDITOR: Show if bundle ID is manually configured {% endcomment %}
 {% elsif widget_has_bundle_id and block.settings.enabled %}
   {% assign should_show_widget = true %}
-  {% assign show_bundle_widget = true %}
 {% comment %} 3. ALL OTHER CASES: Don't show to avoid confusion {% endcomment %}
 {% else %}
   {% assign should_show_widget = false %}

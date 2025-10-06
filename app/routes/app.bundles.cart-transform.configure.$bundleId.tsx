@@ -681,6 +681,7 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
 function mapDiscountMethod(discountType: string): string {
   switch (discountType) {
     case 'fixed_bundle_price':
+      return 'fixed_bundle_price';  // ✅ Keep distinct from fixed_amount_off
     case 'fixed_amount_off':
       return 'fixed_amount_off';
     case 'percentage_off':
@@ -745,6 +746,57 @@ async function getFirstVariantId(admin: any, productId: string): Promise<string 
   }
 }
 
+// Helper function to calculate total undiscounted bundle price (for discount conversion)
+// This calculates the AVERAGE expected bundle price based on one product selection per step
+async function calculateBundleTotalPrice(admin: any, stepsData: any[]) {
+  try {
+    if (!stepsData || stepsData.length === 0) {
+      console.log("🔧 [BUNDLE_TOTAL_PRICE] No steps found, returning 0");
+      return 0;
+    }
+
+    let totalPrice = 0;
+    let stepCount = 0;
+
+    // Calculate average price per step (customer selects ONE product per step)
+    for (const step of stepsData) {
+      if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+        let stepTotalPrice = 0;
+        let validProductCount = 0;
+
+        // Get prices for all products in this step
+        for (const stepProduct of step.StepProduct) {
+          try {
+            const productPrice = await getProductPrice(admin, stepProduct.id);
+            stepTotalPrice += parseFloat(productPrice);
+            validProductCount++;
+          } catch (error) {
+            console.error(`🔧 [BUNDLE_TOTAL_PRICE] Error getting price for product ${stepProduct.id}:`, error);
+          }
+        }
+
+        // Calculate average price for this step
+        if (validProductCount > 0) {
+          const stepAveragePrice = stepTotalPrice / validProductCount;
+          const quantity = parseInt(step.minQuantity) || 1;
+          const stepContribution = stepAveragePrice * quantity;
+
+          totalPrice += stepContribution;
+          stepCount++;
+
+          console.log(`🔧 [BUNDLE_TOTAL_PRICE] Step ${stepCount}: avg ₹${stepAveragePrice.toFixed(2)} x ${quantity} = ₹${stepContribution.toFixed(2)} (from ${validProductCount} products)`);
+        }
+      }
+    }
+
+    console.log(`🔧 [BUNDLE_TOTAL_PRICE] Total bundle price (${stepCount} steps): ₹${totalPrice.toFixed(2)}`);
+    return totalPrice;
+  } catch (error) {
+    console.error("🔧 [BUNDLE_TOTAL_PRICE] Error calculating total bundle price:", error);
+    return 0;
+  }
+}
+
 // Helper function to calculate bundle product price based on component products
 async function calculateBundlePrice(admin: any, bundle: any) {
   try {
@@ -783,7 +835,7 @@ async function calculateBundlePrice(admin: any, bundle: any) {
 
     const finalPrice = Math.max(totalPrice, 0.01); // Minimum price 1 cent
     console.log(`🔧 [BUNDLE_PRICING] Calculated bundle price: $${finalPrice.toFixed(2)} (${productCount} products)`);
-    
+
     return finalPrice.toFixed(2);
   } catch (error) {
     console.error("🔧 [BUNDLE_PRICING] Error calculating bundle price:", error);
@@ -1414,6 +1466,29 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
   console.log("[DEBUG] Step Conditions Data from form:", stepConditionsData);
   console.log("[DEBUG] Bundle Product Data from form:", bundleProductData);
 
+  // ✅ FIXED_BUNDLE_PRICE: Store the fixed price directly (NO conversion)
+  // The cart transform will calculate the percentage dynamically based on actual cart total
+  if (discountData.discountEnabled && discountData.discountType === 'fixed_bundle_price') {
+    console.log("💰 [FIXED_BUNDLE_PRICE] Storing fixed bundle price (will be converted at runtime)");
+
+    // For fixed_bundle_price, keep the original price value in a special field
+    // The cart transform will read this and calculate discount based on actual cart total
+    const processedRules = (discountData.discountRules || []).map((rule: any) => {
+      const fixedPrice = parseFloat(rule.price || 0);
+      console.log(`💰 [FIXED_BUNDLE_PRICE] Rule fixed price: ₹${fixedPrice}`);
+
+      // Store the fixed price in a dedicated field for runtime calculation
+      return {
+        ...rule,
+        fixedBundlePrice: fixedPrice,  // The target bundle price (e.g., ₹30)
+        // Don't set discountValue here - it will be calculated at runtime
+      };
+    });
+
+    discountData.discountRules = processedRules;
+    console.log("✅ [FIXED_BUNDLE_PRICE] Stored fixed price for runtime calculation:", processedRules);
+  }
+
   // Automatically set status to 'active' if bundle has configured steps
   let finalStatus = bundleStatus as any;
   if (bundleStatus === 'draft' && stepsData && stepsData.length > 0) {
@@ -1479,15 +1554,33 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
               conditionValue: firstCondition?.value ? parseInt(firstCondition.value) || null : null,
               // Create StepProduct records for selected products
               StepProduct: {
-              create: (step.StepProduct || []).map((product: any, productIndex: number) => ({
-                productId: product.id,
-                title: product.title || product.name || 'Unnamed Product',
-                imageUrl: product.image?.url || product.imageUrl || null,
-                variants: product.variants || null,
-                minQuantity: parseInt(product.minQuantity) || 1,
-                maxQuantity: parseInt(product.maxQuantity) || 10,
-                position: productIndex + 1
-              }))
+              create: (step.StepProduct || []).map((product: any, productIndex: number) => {
+                // Extract proper Shopify product ID from GID format
+                // product.id might be "gid://shopify/Product/123" - we need the full GID
+                let productId = product.id;
+
+                // If it's already a GID, use it directly
+                if (typeof productId === 'string' && productId.startsWith('gid://shopify/Product/')) {
+                  // Already in correct format
+                  productId = productId;
+                } else if (typeof productId === 'string' && /^\d+$/.test(productId)) {
+                  // If it's a numeric ID, convert to GID
+                  productId = `gid://shopify/Product/${productId}`;
+                } else {
+                  // Otherwise use as-is (might be UUID from old data)
+                  console.warn(`⚠️ [STEP_PRODUCT] Unexpected product ID format: ${productId}`);
+                }
+
+                return {
+                  productId: productId,
+                  title: product.title || product.name || 'Unnamed Product',
+                  imageUrl: product.image?.url || product.imageUrl || null,
+                  variants: product.variants || null,
+                  minQuantity: parseInt(product.minQuantity) || 1,
+                  maxQuantity: parseInt(product.maxQuantity) || 10,
+                  position: productIndex + 1
+                };
+              })
             }
           };
           })
@@ -3467,16 +3560,18 @@ export default function ConfigureBundleFlow() {
       });
 
       if (products && products.selection) {
+        console.log("🔍 [PRODUCT_SELECTION] Raw products from resource picker:", JSON.stringify(products.selection.slice(0, 2), null, 2));
+
         // Update the step with selected products
-        setSteps(steps.map(step => 
-          step.id === stepId 
+        setSteps(steps.map(step =>
+          step.id === stepId
             ? { ...step, StepProduct: products.selection }
             : step
         ) as any);
-        
+
         // Trigger save bar for product selection changes
         triggerSaveBar();
-        
+
         shopify.toast.show("Products updated successfully!");
       }
     } catch (error) {

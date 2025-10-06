@@ -24,6 +24,13 @@
 
 ## ⚠️ Critical Known Issues
 
+**Product ID Format Validation** (Fixed 2025-01-07):
+- **Issue**: Standard Shopify metafields not populated due to UUID product IDs instead of Shopify GIDs
+- **Cause**: StepProduct records stored internal UUIDs instead of proper Shopify product IDs
+- **Fix**: Added product ID validation and normalization when creating StepProduct records
+- **Impact**: Ensures component_reference and component_parents metafields are populated correctly
+- **File**: `app/routes/app.bundles.cart-transform.configure.$bundleId.tsx` (Line 1557-1583)
+
 **Metafield Namespace Consistency** (Fixed 2025-01-04):
 - **Issue**: Bundle widget failed to render due to metafield namespace mismatch
 - **Cause**: Backend saved to `$app:all_bundles`, frontend read from `custom:all_bundles`
@@ -152,6 +159,19 @@ Shopify bundling app with cart transform-focused implementation:
 
 ## Recent Technical Improvements (Latest)
 
+**✅ Fixed Bundle Price Discount Implementation (2025-01-07):**
+- **Runtime Calculation**: Fixed bundle price now calculates discount percentage dynamically based on actual cart total
+- **Shopify API Compatibility**: All discount types convert to percentageDecrease format for Shopify's discount API
+- **Accurate Pricing**: Fixed bundle price of ₹30 now consistently results in ₹30 final price regardless of product selection
+- **Database Schema**: Added `fixed_bundle_price` to DiscountMethodType enum in Prisma schema
+- **Function Integration**: Updated cart transform function to handle fixed bundle pricing with runtime conversion
+
+**✅ Product ID Format Validation (2025-01-07):**
+- **Shopify GID Enforcement**: Product IDs now validated and normalized to proper Shopify GID format
+- **UUID Prevention**: Added validation to prevent internal UUIDs from being stored as product IDs
+- **Metafield Population**: Ensures component_reference and component_parents metafields are populated correctly
+- **Debug Logging**: Added comprehensive logging for product selection to track ID formats
+
 **✅ Type Safety & Validation Fixes:**
 - Fixed PrismaClientValidationError for integer field type mismatches
 - Added `parseInt()` conversions for `minQuantity`, `maxQuantity`, `conditionValue`
@@ -205,7 +225,7 @@ Shopify bundling app with cart transform-focused implementation:
 3. **Verify new config options appear in theme editor** - All configuration sections now visible
 4. **Improve configuration option names and tooltips for better UX** - Enhanced labels and added helpful tooltips
 5. **Add width configuration options for widget elements** - Added responsive sizing controls
-6. **Verify widget positioning functionality using MCP server** - Confirmed proper theme block architecture
+6. **Verify widget positioning functionality** - Confirmed proper theme block architecture
 7. **Resolve Prisma validation errors** - Fixed syntax and type conversion issues preventing application functionality
 8. **Implement bundle step conditions system** - Added complete quantity/amount-based condition logic with database integration
 9. **Modernize App Bridge save bar** - Updated from manual triggering to modern data-save-bar approach
@@ -215,8 +235,25 @@ Shopify bundling app with cart transform-focused implementation:
 13. **Fix cart line discount application** - Resolved issues with bundle discounts not applying to individual cart items
 14. **Enhance bundle condition enforcement UX** - Improved user feedback with contextual toast messages
 15. **Fix bundle widget rendering issue** - Resolved critical metafield namespace mismatch preventing step boxes from rendering
+16. **Implement fixed bundle price discount** - Added runtime calculation for fixed bundle pricing with proper Shopify API integration
+17. **Fix product ID format validation** - Ensured all product IDs use proper Shopify GID format instead of internal UUIDs
 
 **📋 Recent Technical Improvements:**
+
+**Fixed Bundle Price Implementation:**
+- **Runtime Discount Calculation**: Discount percentage calculated dynamically based on actual cart total at runtime
+- **Formula**: `discountPercent = (cartTotal - fixedBundlePrice) / cartTotal * 100`
+- **Shopify API Compatibility**: Converts fixed price to percentageDecrease format for Shopify's discount API
+- **Database Storage**: Fixed bundle price stored as-is, conversion happens at runtime
+- **Example**: 3 products totaling ₹255.99 with fixed bundle price of ₹30 = 88.29% discount
+- **File Location**: `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts` (Lines 391-415)
+
+**Product ID Format Validation:**
+- **GID Normalization**: All product IDs validated and converted to Shopify GID format on save
+- **Format Handling**: Supports numeric IDs, full GIDs, and warns on unexpected formats
+- **Metafield Compatibility**: Ensures standard Shopify metafields use proper product references
+- **Validation Logic**: `productId.startsWith('gid://shopify/Product/')` for GID detection
+- **File Location**: `app/routes/app.bundles.cart-transform.configure.$bundleId.tsx` (Lines 1557-1583)
 
 **Bundle Step Conditions System:**
 - **Database Schema**: Added `conditionOperator` field to BundleStep model for proper function integration
@@ -227,13 +264,12 @@ Shopify bundling app with cart transform-focused implementation:
 
 **App Bridge Save Bar Modernization:**
 - **Modern Approach**: Replaced manual save bar triggering with data-save-bar attribute approach
-- **MCP Research**: Used Shopify dev MCP server to verify current best practices
 - **Simplified Implementation**: Removed complex hidden field logic in favor of React state management
 - **Improved UX**: Better responsiveness to configuration changes
 
 **Database and Type Safety:**
 - **Prisma Validation**: Fixed PrismaClientValidationError with proper syntax and type conversions
-- **Schema Evolution**: Added conditionOperator field for complete step condition support  
+- **Schema Evolution**: Added conditionOperator field for complete step condition support
 - **Integer Conversion**: Implemented proper parseInt() handling for numeric database fields
 - **Error Prevention**: Added comprehensive validation to prevent future type mismatch issues
 
@@ -280,7 +316,7 @@ Shopify bundling app with cart transform-focused implementation:
 3. **Database Error Handling** - Add robust error recovery and user feedback for database operations
 4. **Product Status Management** - Enhance product synchronization and status tracking
 5. **Performance Optimization** - Review and optimize bundle widget JavaScript for large product catalogs
-6. **Fixed Bundle Price Support** - Complete implementation of fixed bundle pricing in discount functions
+6. **Bundle Widget Size Optimization** - Reduce bundle-widget.js file size from 86KB to under 10KB limit
 
 **🎯 Medium Priority TODOs:**
 1. **Bundle Analytics Dashboard** - Add metrics and reporting for bundle performance
