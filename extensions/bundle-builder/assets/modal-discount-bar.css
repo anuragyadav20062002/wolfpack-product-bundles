@@ -1,0 +1,144 @@
+/**
+ * Modal Discount Bar - Minimalistic & Clean Styles
+ * Only interactive animations, no excessive decorations
+ */
+
+.modal-discount-bar {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.modal-discount-bar.qualified {
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
+  border-bottom-color: #4caf50;
+}
+
+/* Progress Track */
+.discount-progress-track {
+  position: relative;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Progress Fill with smooth animation */
+.discount-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+  border-radius: 3px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Shimmer effect on progress fill */
+.discount-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Discount Info Container */
+.discount-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Discount Message */
+.discount-message {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #424242;
+  transition: color 0.3s ease;
+}
+
+.modal-discount-bar.qualified .discount-message {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+/* Discount Savings Badge */
+.discount-savings {
+  display: none;
+  padding: 6px 12px;
+  background: #4caf50;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 12px;
+  animation: pop-in 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Hover effect on qualified state */
+.modal-discount-bar.qualified {
+  animation: subtle-pulse 2s infinite;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.005);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .modal-discount-bar {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .discount-message {
+    font-size: 13px;
+  }
+
+  .discount-savings {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
+  .discount-progress-track {
+    height: 5px;
+  }
+}
+
+/* Remove when footer messaging is hidden */
+.bundle-footer-messaging {
+  display: none !important;
+}

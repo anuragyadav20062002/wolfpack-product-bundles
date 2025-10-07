@@ -533,7 +533,9 @@
 <!-- Modal will be dynamically created by JavaScript to prevent duplicates -->
 
 <link rel="stylesheet" href="{{ 'bundle-widget.css' | asset_url }}">
+<link rel="stylesheet" href="{{ 'modal-discount-bar.css' | asset_url }}">
 <script src="{{ 'bundle-widget.js' | asset_url }}" defer></script>
+<script src="{{ 'modal-discount-bar.js' | asset_url }}" defer></script>
 
 {% comment %} Auto-injection for bundle products that don't have manual widget placement {% endcomment %}
 {% unless should_show_widget %}

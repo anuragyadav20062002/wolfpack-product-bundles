@@ -189,6 +189,16 @@ function ensureBundleModal() {
           <div class="modal-tabs"></div>
           <span class="close-button">&times;</span>
         </div>
+        <!-- Minimalistic Discount Progress Bar (inside modal) -->
+        <div class="modal-discount-bar" style="display: none;">
+          <div class="discount-progress-track">
+            <div class="discount-progress-fill"></div>
+          </div>
+          <div class="discount-info">
+            <span class="discount-message"></span>
+            <span class="discount-savings"></span>
+          </div>
+        </div>
         <div class="modal-body">
           <div class="product-grid"></div>
         </div>
@@ -655,29 +665,22 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     return processedMessage;
   }
 
-  // Function to update footer discount messaging with progress bars
-  function updateFooterDiscountMessaging() {
-    if (!selectedBundle || !selectedBundle.pricing || !widgetConfig.showFooterMessaging) {
-      // Hide footer messaging if not configured to show or no bundle/pricing
-      const footerMessagingContainer = document.querySelector('.bundle-footer-messaging');
-      if (footerMessagingContainer) {
-        footerMessagingContainer.style.display = 'none';
-      }
+  // Function to update modal discount bar (minimalistic, inside modal)
+  function updateModalDiscountBar() {
+    const modalDiscountBar = document.querySelector('.modal-discount-bar');
+
+    if (!modalDiscountBar || !selectedBundle || !selectedBundle.pricing) {
+      if (modalDiscountBar) modalDiscountBar.style.display = 'none';
       return;
     }
 
     const pricing = selectedBundle.pricing;
 
-    // Check if discount messaging is enabled in bundle configuration
-    const showDiscountMessaging = pricing.messages?.showDiscountMessaging !== false; // Default to true
-    const showDiscountDisplay = pricing.messages?.showDiscountDisplay !== false; // Default to true
+    // Check if discount messaging is enabled
+    const showDiscountMessaging = pricing.messages?.showDiscountMessaging !== false;
 
-    if (!showDiscountMessaging) {
-      // Hide footer messaging if disabled in bundle configuration
-      const footerMessagingContainer = document.querySelector('.bundle-footer-messaging');
-      if (footerMessagingContainer) {
-        footerMessagingContainer.style.display = 'none';
-      }
+    if (!showDiscountMessaging || !pricing.enableDiscount) {
+      modalDiscountBar.style.display = 'none';
       return;
     }
 
@@ -915,7 +918,10 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     // Update displays after closing
     updateMainBundleStepsDisplay();
     updateAddToCartButton();
-    updateFooterDiscountMessaging();
+    // Update modal discount bar
+    if (window.updateModalDiscountBar) {
+      window.updateModalDiscountBar(selectedBundle, calculateBundleTotalPrice(), getTotalSelectedQuantity(), formatCurrency);
+    }
   }
 
   // Function to render modal content (tabs and product grid for current step)
@@ -1364,7 +1370,10 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     renderProductGrid(stepIndex); // Re-render to update UI (selected class, quantity display)
     updateNavigationButtons(); // Update button state based on new selections
     renderModalTabs(); // Re-render tabs to update checkmarks
-    updateFooterDiscountMessaging(); // Update footer discount messaging
+    // Update modal discount bar
+    if (window.updateModalDiscountBar) {
+      window.updateModalDiscountBar(selectedBundle, calculateBundleTotalPrice(), getTotalSelectedQuantity(), formatCurrency);
+    } // Update footer discount messaging
   }
 
   // Function to validate current step based on quantity rules
@@ -1556,7 +1565,10 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     // Initial rendering of main bundle steps
     updateMainBundleStepsDisplay();
     updateAddToCartButton(); // Initial update of the add to cart button
-    updateFooterDiscountMessaging(); // Initial update of footer discount messaging
+    // Update modal discount bar
+    if (window.updateModalDiscountBar) {
+      window.updateModalDiscountBar(selectedBundle, calculateBundleTotalPrice(), getTotalSelectedQuantity(), formatCurrency);
+    } // Initial update of footer discount messaging
 
   } else {
     // No bundle found for this product, hide the entire container
