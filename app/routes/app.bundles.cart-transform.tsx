@@ -633,20 +633,25 @@ export default function CartTransformBundles() {
                   </Text>
                   <BlockStack gap="200">
                     <Text variant="bodyMd" as="p">
-                      <strong>Real-time Updates:</strong> Bundle items are automatically merged 
+                      <strong>Real-time Updates:</strong> Bundle items are automatically merged
                       in the cart as customers add products.
                     </Text>
                     <Text variant="bodyMd" as="p">
-                      <strong>Single Cart Line:</strong> Multiple bundle components appear as 
+                      <strong>Single Cart Line:</strong> Multiple bundle components appear as
                       one item with combined pricing and savings display.
                     </Text>
                     <Text variant="bodyMd" as="p">
-                      <strong>Immediate Savings:</strong> Customers see discounts applied 
+                      <strong>Immediate Savings:</strong> Customers see discounts applied
                       instantly without needing discount codes.
                     </Text>
                     <Text variant="bodyMd" as="p">
-                      <strong>Professional Presentation:</strong> Bundle appears cohesively 
+                      <strong>Professional Presentation:</strong> Bundle appears cohesively
                       with the first product's image and combined title.
+                    </Text>
+                    <Text variant="bodyMd" as="p">
+                      <strong>Real-time Inventory:</strong> This feature will create a Parent bundle
+                      product in Shopify, but during checkout, it will pull stock from your regular
+                      Shopify inventory in real time.
                     </Text>
                   </BlockStack>
                 </BlockStack>
