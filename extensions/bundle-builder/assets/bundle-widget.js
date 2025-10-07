@@ -189,14 +189,26 @@ function ensureBundleModal() {
           <div class="modal-tabs"></div>
           <span class="close-button">&times;</span>
         </div>
-        <!-- Minimalistic Discount Progress Bar (inside modal) -->
-        <div class="modal-discount-bar" style="display: none;">
-          <div class="discount-progress-track">
-            <div class="discount-progress-fill"></div>
-          </div>
-          <div class="discount-info">
-            <span class="discount-message"></span>
-            <span class="discount-savings"></span>
+        <!-- Modern Discount Card with Pills & Elegant Design -->
+        <div class="modal-discount-card" style="display: none;">
+          <div class="discount-content">
+            <div class="discount-icon-wrapper">
+              <svg class="discount-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12L11 14L15 10M20.62 8.5L19.5 6.37L17.37 5.25C16.5 4.83 15.5 4.83 14.63 5.25L12.5 6.37L10.37 5.25C9.5 4.83 8.5 4.83 7.63 5.25L5.5 6.37L4.38 8.5C3.96 9.37 3.96 10.37 4.38 11.24L5.5 13.37L4.38 15.5C3.96 16.37 3.96 17.37 4.38 18.24L5.5 20.37L7.63 21.49C8.5 21.91 9.5 21.91 10.37 21.49L12.5 20.37L14.63 21.49C15.5 21.91 16.5 21.91 17.37 21.49L19.5 20.37L20.62 18.24C21.04 17.37 21.04 16.37 20.62 15.5L19.5 13.37L20.62 11.24C21.04 10.37 21.04 9.37 20.62 8.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="discount-text-wrapper">
+              <span class="discount-message"></span>
+              <div class="discount-progress-wrapper">
+                <div class="discount-progress-bar">
+                  <div class="discount-progress-fill">
+                    <div class="progress-shimmer"></div>
+                  </div>
+                </div>
+                <span class="discount-progress-text"></span>
+              </div>
+            </div>
+            <div class="discount-savings-pill"></div>
           </div>
         </div>
         <div class="modal-body">

@@ -1,14 +1,13 @@
 /**
- * Modal Discount Bar - Minimalistic discount progress indicator
- * Shows inside the bundle modal instead of footer
+ * Modern Modal Discount Card
+ * Elegant design with pills, progress tracking, and smooth animations
  */
 
-// Update modal discount bar (called when products are selected/deselected)
 function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, formatCurrency) {
-  const modalDiscountBar = document.querySelector('.modal-discount-bar');
+  const discountCard = document.querySelector('.modal-discount-card');
 
-  if (!modalDiscountBar || !selectedBundle?.pricing) {
-    if (modalDiscountBar) modalDiscountBar.style.display = 'none';
+  if (!discountCard || !selectedBundle?.pricing) {
+    if (discountCard) discountCard.style.display = 'none';
     return;
   }
 
@@ -16,13 +15,13 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
 
   // Check if discount is enabled
   if (!pricing.enableDiscount || pricing.messages?.showDiscountMessaging === false) {
-    modalDiscountBar.style.display = 'none';
+    discountCard.style.display = 'none';
     return;
   }
 
   const rules = pricing.rules || [];
   if (rules.length === 0) {
-    modalDiscountBar.style.display = 'none';
+    discountCard.style.display = 'none';
     return;
   }
 
@@ -61,54 +60,80 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
     }
   }
 
-  // Update UI elements
+  // Get UI elements
   const progressFill = document.querySelector('.discount-progress-fill');
+  const progressText = document.querySelector('.discount-progress-text');
   const discountMessage = document.querySelector('.discount-message');
-  const discountSavings = document.querySelector('.discount-savings');
+  const savingsPill = document.querySelector('.discount-savings-pill');
 
   if (!progressFill || !discountMessage) return;
 
-  // Show the bar
-  modalDiscountBar.style.display = 'flex';
+  // Show the card
+  discountCard.style.display = 'block';
 
-  // Update progress fill
+  // Calculate and update progress
   const progressPercentage = targetQuantity > 0 ? Math.min(100, (selectedQuantity / targetQuantity) * 100) : 0;
   progressFill.style.width = `${progressPercentage}%`;
 
-  // Update message and styling
+  if (progressText) {
+    progressText.textContent = `${Math.round(progressPercentage)}%`;
+  }
+
+  // Update UI based on state
   if (applicableRule && discountAmount > 0) {
-    // Qualified state
-    modalDiscountBar.classList.add('qualified');
+    // Qualified state - show success styling
+    discountCard.classList.add('qualified');
+
     const discountMethod = pricing.method || pricing.discountMethod;
     const discountValue = applicableRule.discountValue || 0;
-    discountMessage.textContent = `🎉 You got ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''} off!`;
 
-    if (discountSavings) {
-      discountSavings.textContent = `Save ${formatCurrency(discountAmount)}`;
-      discountSavings.style.display = 'inline-block';
+    // Custom message if available
+    const customMessage = pricing.messages?.successMessage || applicableRule.successMessage;
+    if (customMessage) {
+      discountMessage.textContent = customMessage;
+    } else {
+      discountMessage.textContent = `🎉 Discount Unlocked! You're saving ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''}`;
+    }
+
+    // Show savings pill
+    if (savingsPill) {
+      savingsPill.textContent = `Save ${formatCurrency(discountAmount)}`;
+      savingsPill.style.display = 'flex';
     }
   } else if (nextRule) {
-    // Progress state
-    modalDiscountBar.classList.remove('qualified');
+    // Progress state - show how many items needed
+    discountCard.classList.remove('qualified');
+
     const itemsNeeded = Math.max(0, targetQuantity - selectedQuantity);
     const discountValue = nextRule.discountValue || 0;
     const discountMethod = pricing.method || pricing.discountMethod;
-    discountMessage.textContent = `Add ${itemsNeeded} more item${itemsNeeded !== 1 ? 's' : ''} to get ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''} off`;
 
-    if (discountSavings) {
-      discountSavings.style.display = 'none';
+    // Custom message if available
+    const customMessage = pricing.messages?.discountText || nextRule.discountText;
+    if (customMessage) {
+      discountMessage.textContent = customMessage.replace('{items_needed}', itemsNeeded);
+    } else {
+      discountMessage.textContent = `Add ${itemsNeeded} more item${itemsNeeded !== 1 ? 's' : ''} to unlock ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''} off!`;
+    }
+
+    // Hide savings pill
+    if (savingsPill) {
+      savingsPill.style.display = 'none';
     }
   } else if (selectedQuantity === 0 && sortedRules[0]) {
-    // Initial state
-    modalDiscountBar.classList.remove('qualified');
+    // Initial state - show minimum requirement
+    discountCard.classList.remove('qualified');
+
     const minRule = sortedRules[0];
     const minQuantity = minRule.value || minRule.numberOfProducts || 0;
     const discountValue = minRule.discountValue || 0;
     const discountMethod = pricing.method || pricing.discountMethod;
-    discountMessage.textContent = `Select ${minQuantity} items to get ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''} off`;
 
-    if (discountSavings) {
-      discountSavings.style.display = 'none';
+    discountMessage.textContent = `Select ${minQuantity} item${minQuantity !== 1 ? 's' : ''} to get ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''} off`;
+
+    // Hide savings pill
+    if (savingsPill) {
+      savingsPill.style.display = 'none';
     }
   }
 }
