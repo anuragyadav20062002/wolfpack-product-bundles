@@ -412,17 +412,17 @@ async function updateCartTransformMetafield(admin: any, shopId: string) {
     // Create MINIMAL optimized bundle configuration for cart transform performance
     const optimizedBundleConfigs = await Promise.all(allPublishedBundles.map(async (bundle) => {
       // Extract all product IDs from bundle steps for quick lookup
-      const allBundleProductIds = [];
-      const stepConfigs = [];
+      const allBundleProductIds: string[] = [];
+      const stepConfigs: any[] = [];
 
       for (const step of bundle.steps) {
-        const stepProductIds = [];
-        
+        const stepProductIds: string[] = [];
+
         // Add products from step configuration (collections/products JSON)
         const stepProducts = safeJsonParse(step.products, []);
         const stepCollections = safeJsonParse(step.collections, []);
-        
-        stepProducts.forEach(product => {
+
+        stepProducts.forEach((product: any) => {
           if (product.id) {
             stepProductIds.push(product.id);
             if (!allBundleProductIds.includes(product.id)) {
@@ -448,7 +448,7 @@ async function updateCartTransformMetafield(admin: any, shopId: string) {
           minQuantity: step.minQuantity,
           maxQuantity: step.maxQuantity,
           productIds: stepProductIds,
-          collections: stepCollections.map(col => col.id).filter(Boolean),
+          collections: stepCollections.map((col: any) => col.id).filter(Boolean),
           // Include conditions for cart transform validation
           conditionType: step.conditionType,
           conditionOperator: step.conditionOperator,
@@ -470,8 +470,8 @@ async function updateCartTransformMetafield(admin: any, shopId: string) {
           discountMethod: bundle.pricing.discountMethod,
           rules: safeJsonParse(bundle.pricing.rules, []),
           // Include bundle variant IDs if available
-          bundleVariantId: bundle.pricing.bundleVariantId,
-          fixedPrice: bundle.pricing.fixedPrice
+          bundleVariantId: (bundle.pricing as any).bundleVariantId || null,
+          fixedPrice: (bundle.pricing as any).fixedPrice || null
         } : null,
         // Include bundle parent variant if available - fetch from bundle product
         bundleParentVariantId: await getBundleProductVariantId(admin, bundle.shopifyProductId)
@@ -602,14 +602,27 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
         displayVariantsAsIndividual: step.displayVariantsAsIndividual,
         products: step.products || [],
         collections: step.collections || [],
-        StepProduct: step.StepProduct || [],
+        StepProduct: (step.StepProduct || []).map((sp: any) => {
+          const stepProductData = {
+            id: sp.id,
+            productId: sp.productId,
+            title: sp.title,
+            imageUrl: sp.imageUrl,
+            variants: sp.variants,
+            minQuantity: sp.minQuantity,
+            maxQuantity: sp.maxQuantity,
+            position: sp.position
+          };
+          console.log(`📸 [METAFIELD] StepProduct imageUrl for ${sp.title}:`, sp.imageUrl);
+          return stepProductData;
+        }),
         // Add condition data if needed
         conditionType: step.conditionType,
         conditionOperator: step.conditionOperator,
         conditionValue: step.conditionValue
       })),
       pricing: bundle.pricing ? {
-        enabled: bundle.pricing.enableDiscount,
+        enableDiscount: bundle.pricing.enableDiscount, // Keep consistent field name for widget
         method: bundle.pricing.discountMethod,
         rules: bundle.pricing.rules || [],
         showFooter: bundle.pricing.showFooter,
@@ -1069,7 +1082,7 @@ function generateComponentParentsMetafield(bundleConfig: any, productId: string)
           if (rules.length > 0) {
             const rule = rules[0];
             if (bundleConfig.pricing.method === 'percentage_off' && rule.discountValue) {
-              parentConfig.price_adjustment = JSON.stringify({
+              (parentConfig as any).price_adjustment = JSON.stringify({
                 percentageDecrease: parseFloat(rule.discountValue) || 0
               });
             }
@@ -1621,7 +1634,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
                 return {
                   productId: productId,
                   title: product.title || product.name || 'Unnamed Product',
-                  imageUrl: product.image?.url || product.imageUrl || null,
+                  imageUrl: product.imageUrl || product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null,
                   variants: product.variants || null,
                   minQuantity: parseInt(product.minQuantity) || 1,
                   maxQuantity: parseInt(product.maxQuantity) || 10,
@@ -1683,10 +1696,11 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       conditionType: stepConditionsData[step.id]?.[0]?.type || null,
       conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
       conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
-      // Only store essential product data (IDs and titles, no descriptions/images)
+      // Store essential product data (IDs, titles, and images)
       products: (step.StepProduct || []).map((product: any) => ({
         id: product.id,
-        title: product.title || product.name || 'Product'
+        title: product.title || product.name || 'Product',
+        imageUrl: product.imageUrl || product.image?.url || null
       })),
       // Only store essential collection data
       collections: (step.collections || []).map((collection: any) => ({
@@ -2115,10 +2129,11 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
           conditionType: step.conditionType,
           conditionOperator: step.conditionOperator,
           conditionValue: step.conditionValue,
-          // Only store essential product data (IDs only, no full objects)
+          // Store essential product data (IDs, titles, and images)
           products: (step.products || []).map((product: any) => ({
             id: product.id,
-            title: product.title || 'Product'
+            title: product.title || 'Product',
+            imageUrl: product.imageUrl || null
           })),
           // Only store essential collection data
           collections: (step.collections || []).map((collection: any) => ({
@@ -2258,10 +2273,11 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue,
-      // Only store essential product data (IDs only, no full objects)
+      // Store essential product data (IDs, titles, and images)
       products: (step.products || []).map((product: any) => ({
         id: product.id,
-        title: product.title || 'Product'
+        title: product.title || 'Product',
+        imageUrl: product.imageUrl || null
       })),
       // Only store essential collection data
       collections: (step.collections || []).map((collection: any) => ({
@@ -2540,7 +2556,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
     console.log(`🎯 [TEMPLATE_FILTER] Filtered to ${templates.length} product templates`);
 
     // PRIORITIZE: Bundle container product specific templates with auto-creation
-    const bundleSpecificTemplates = [];
+    const bundleSpecificTemplates: any[] = [];
     if (bundleContainerProducts.length > 0) {
       console.log(`🎯 [TEMPLATE_FILTER] Creating ${bundleContainerProducts.length} bundle-specific template recommendations`);
 
@@ -2574,7 +2590,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
     // COMBINE: Bundle-specific templates first, then general product templates
     const allTemplates = [
       ...bundleSpecificTemplates,
-      ...templates.filter(t => !bundleSpecificTemplates.some(bt => bt.handle === t.handle))
+      ...templates.filter((t: any) => !bundleSpecificTemplates.some((bt: any) => bt.handle === t.handle))
     ];
 
     console.log(`🎯 [TEMPLATE_FILTER] Final template list: ${allTemplates.length} templates (${bundleSpecificTemplates.length} bundle-specific)`);
@@ -3594,32 +3610,90 @@ export default function ConfigureBundleFlow() {
     setHasUnsavedChanges(true);
   }, [triggerSaveBar]);
 
+  // Helper function to get unique product count
+  // When variants are displayed as individual products, the same product ID may appear multiple times
+  const getUniqueProductCount = useCallback((stepProducts: any[]) => {
+    if (!stepProducts || stepProducts.length === 0) return 0;
+    const uniqueProductIds = new Set(stepProducts.map((p) => p.id));
+    return uniqueProductIds.size;
+  }, []);
+
   // Product selection handlers
   const handleProductSelection = useCallback(async (stepId: string) => {
     try {
       const step = steps.find(s => s.id === stepId);
       const currentProducts = step?.StepProduct || [];
-      
+
+      // Build selectionIds from StepProduct
+      // When loaded from DB: use productId field
+      // When from resource picker: use id field
+      const selectionIds = currentProducts.map((p: any) => {
+        const productGid = p.productId || p.id; // productId from DB, id from picker
+        console.log(`🔍 [SELECTION_ID] Product: ${p.title}, productId: ${p.productId}, id: ${p.id}, using: ${productGid}`);
+        return { id: productGid };
+      });
+
+      console.log("🔍 [PRODUCT_SELECTION] Total items in StepProduct:", currentProducts.length);
+      console.log("🔍 [PRODUCT_SELECTION] Selection IDs being sent to picker:", selectionIds.length);
+      console.log("🔍 [PRODUCT_SELECTION] StepProduct data structure:", currentProducts.length > 0 ? Object.keys(currentProducts[0]) : 'empty');
+      console.log("🔍 [PRODUCT_SELECTION] StepProduct sample:", JSON.stringify(currentProducts.slice(0, 2), null, 2));
+      console.log("🔍 [PRODUCT_SELECTION] Selection IDs being sent to resource picker:", JSON.stringify(selectionIds, null, 2));
+
+      console.log("🚀 [RESOURCE_PICKER] Opening resource picker with config:", {
+        type: "product",
+        multiple: true,
+        selectionIds: selectionIds
+      });
+
       const products = await shopify.resourcePicker({
         type: "product",
         multiple: true,
-        selectionIds: currentProducts.map((p) => ({ id: p.id })),
+        selectionIds: selectionIds,
+        // Note: Not using variant selection mode as it causes issues
+        // Products are selected at product level, variants are handled separately
       });
 
+      console.log("✅ [RESOURCE_PICKER] Resource picker closed. Received selection:", products ? "YES" : "NO");
+
       if (products && products.selection) {
+        console.log("🔍 [PRODUCT_SELECTION] Previous products count:", currentProducts.length);
+        console.log("🔍 [PRODUCT_SELECTION] New products count:", products.selection.length);
+        console.log("🔍 [PRODUCT_SELECTION] Full response from picker:", JSON.stringify(products, null, 2));
         console.log("🔍 [PRODUCT_SELECTION] Raw products from resource picker:", JSON.stringify(products.selection.slice(0, 2), null, 2));
 
-        // Update the step with selected products
+        // Transform products to include imageUrl from images array
+        const transformedProducts = products.selection.map((product: any) => {
+          const imageUrl = product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null;
+          console.log(`📸 [PRODUCT_SELECTION] Transforming ${product.title}: images array =`, product.images, `→ imageUrl =`, imageUrl);
+          return {
+            ...product,
+            imageUrl: imageUrl
+          };
+        });
+
+        console.log("🔍 [PRODUCT_SELECTION] Transformed products with imageUrl:", JSON.stringify(transformedProducts.slice(0, 2), null, 2));
+
+        // Update the step with selected products (this replaces the entire selection)
+        // Deselected products will not be in the selection array, so they're automatically removed
         setSteps(steps.map(step =>
           step.id === stepId
-            ? { ...step, StepProduct: products.selection }
+            ? { ...step, StepProduct: transformedProducts }
             : step
         ) as any);
 
         // Trigger save bar for product selection changes
         triggerSaveBar();
 
-        shopify.toast.show("Products updated successfully!");
+        const addedCount = transformedProducts.length - currentProducts.length;
+        const message = addedCount > 0
+          ? `Added ${addedCount} product${addedCount !== 1 ? 's' : ''}!`
+          : addedCount < 0
+          ? `Removed ${Math.abs(addedCount)} product${Math.abs(addedCount) !== 1 ? 's' : ''}!`
+          : transformedProducts.length === 0
+          ? "All products removed"
+          : "Products updated successfully!";
+
+        shopify.toast.show(message);
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
@@ -3854,21 +3928,42 @@ export default function ConfigureBundleFlow() {
   // Collection management handlers
   const handleCollectionSelection = useCallback(async (stepId: string) => {
     try {
+      const currentCollections = selectedCollections[stepId] || [];
+
       const collections = await shopify.resourcePicker({
         type: "collection",
         multiple: true,
+        selectionIds: currentCollections.map((c: any) => ({ id: c.id })),
       });
-      
+
       if (collections && collections.length > 0) {
+        console.log("🔍 [COLLECTION_SELECTION] Previous collections count:", currentCollections.length);
+        console.log("🔍 [COLLECTION_SELECTION] New collections count:", collections.length);
+
         setSelectedCollections(prev => ({
           ...prev,
           [stepId]: collections as any
         }));
-        
+
         // Trigger save bar for collection selection changes
         triggerSaveBar();
-        
-        shopify.toast.show("Collections updated successfully", { isError: false });
+
+        const addedCount = collections.length - currentCollections.length;
+        const message = addedCount > 0
+          ? `Added ${addedCount} collection${addedCount !== 1 ? 's' : ''}!`
+          : addedCount < 0
+          ? `Removed ${Math.abs(addedCount)} collection${Math.abs(addedCount) !== 1 ? 's' : ''}!`
+          : "Collections updated successfully!";
+
+        shopify.toast.show(message, { isError: false });
+      } else if (collections && collections.length === 0) {
+        // User deselected all collections
+        setSelectedCollections(prev => ({
+          ...prev,
+          [stepId]: []
+        }));
+        triggerSaveBar();
+        shopify.toast.show("All collections removed", { isError: false });
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
@@ -4435,7 +4530,7 @@ export default function ConfigureBundleFlow() {
                                 {
                                   id: 'products',
                                   content: 'Products',
-                                  badge: step.StepProduct?.length > 0 ? step.StepProduct.length.toString() : undefined,
+                                  badge: step.StepProduct?.length > 0 ? getUniqueProductCount(step.StepProduct).toString() : undefined,
                                 },
                                 {
                                   id: 'collections',
@@ -4466,7 +4561,7 @@ export default function ConfigureBundleFlow() {
                                         size="micro"
                                         onClick={() => handleShowProducts(step.id)}
                                       >
-                                        {step.StepProduct.length} Selected
+                                        {getUniqueProductCount(step.StepProduct)} Selected
                                       </Button>
                                     </Badge>
                                   )}
@@ -5029,17 +5124,24 @@ export default function ConfigureBundleFlow() {
                     <List type="bullet">
                       {selectedProducts.map((product: any, index: number) => (
                         <List.Item key={product.id || index}>
-                          <InlineStack gap="200" align="space-between">
-                            <BlockStack gap="050">
-                              <Text variant="bodyMd" fontWeight="medium">
-                                {product.title || product.name || 'Unnamed Product'}
-                              </Text>
-                              {product.variants && product.variants.length > 0 && (
-                                <Text variant="bodySm" tone="subdued">
-                                  {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                          <InlineStack gap="200" align="space-between" blockAlign="center">
+                            <InlineStack gap="300" blockAlign="center">
+                              <Thumbnail
+                                source={product.imageUrl || product.image?.url || "/bundle.png"}
+                                alt={product.title || product.name || 'Product'}
+                                size="small"
+                              />
+                              <BlockStack gap="050">
+                                <Text variant="bodyMd" fontWeight="medium">
+                                  {product.title || product.name || 'Unnamed Product'}
                                 </Text>
-                              )}
-                            </BlockStack>
+                                {product.variants && product.variants.length > 0 && (
+                                  <Text variant="bodySm" tone="subdued">
+                                    {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                                  </Text>
+                                )}
+                              </BlockStack>
+                            </InlineStack>
                             <Badge tone="info">Product</Badge>
                           </InlineStack>
                         </List.Item>
