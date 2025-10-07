@@ -651,6 +651,20 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     }
 
     const pricing = selectedBundle.pricing;
+
+    // Check if discount messaging is enabled in bundle configuration
+    const showDiscountMessaging = pricing.messages?.showDiscountMessaging !== false; // Default to true
+    const showDiscountDisplay = pricing.messages?.showDiscountDisplay !== false; // Default to true
+
+    if (!showDiscountMessaging) {
+      // Hide footer messaging if disabled in bundle configuration
+      const footerMessagingContainer = document.querySelector('.bundle-footer-messaging');
+      if (footerMessagingContainer) {
+        footerMessagingContainer.style.display = 'none';
+      }
+      return;
+    }
+
     const totalPrice = calculateBundleTotalPrice();
     const selectedQuantity = getTotalSelectedQuantity();
 
@@ -821,9 +835,12 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
       const selectedQuantity = getTotalSelectedQuantity();
       const discountInfo = calculateBundleDiscount(totalBundlePrice, selectedQuantity);
       const discountedPrice = totalBundlePrice - discountInfo.discountAmount;
-      
-      // Show discounted price if applicable
-      if (discountInfo.discountAmount > 0) {
+
+      // Check if discount display is enabled in bundle configuration
+      const showDiscountDisplay = selectedBundle?.pricing?.messages?.showDiscountDisplay !== false; // Default to true
+
+      // Show discounted price if applicable and display is enabled
+      if (discountInfo.discountAmount > 0 && showDiscountDisplay) {
         const originalPriceFormatted = formatCurrency(totalBundlePrice);
         const discountedPriceFormatted = formatCurrency(discountedPrice);
         addBundleToCartButton.innerHTML = `
