@@ -23,51 +23,55 @@ export function BundleSetupInstructions({
 }: BundleSetupInstructionsProps) {
   return (
     <Card>
-      <BlockStack gap="300">
+      <BlockStack gap="400">
         <Text variant="headingSm" as="h3">
           {title}
         </Text>
         <Text variant="bodySm" tone="subdued" as="p">
           {subtitle}
         </Text>
-        
-        <BlockStack gap="200">
+
+        <BlockStack gap="300">
           {steps.map((step, index) => {
             const stepNumber = index + 1;
             const isAvailable = bundlesExist || stepNumber <= 3; // First 3 steps always available
             const stepColor = isAvailable ? '#008060' : '#999';
-            
+
             if (step.isClickable && step.onClick && isAvailable) {
               return (
-                <div 
+                <div
                   key={step.id}
                   onClick={step.onClick}
-                  style={{ cursor: 'pointer', padding: '12px 0', borderRadius: '8px' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f3f3'}
+                  style={{
+                    cursor: 'pointer',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f6f6f7'}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
-                  <InlineStack gap="200" align="start">
-                    <div style={{ 
-                      width: '20px', 
-                      height: '20px', 
-                      borderRadius: '50%', 
-                      backgroundColor: stepColor, 
-                      color: 'white', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      fontSize: '12px', 
-                      fontWeight: 'bold', 
-                      flexShrink: 0, 
-                      marginTop: '2px' 
+                  <InlineStack gap="300" align="start" blockAlign="start">
+                    <div style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      backgroundColor: stepColor,
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      flexShrink: 0
                     }}>
                       {stepNumber}
                     </div>
-                    <BlockStack gap="050">
-                      <Text variant="bodySm" fontWeight="medium" as="p">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" fontWeight="semibold" as="p">
                         {step.title}
                       </Text>
-                      <Text variant="bodyXs" tone="subdued" as="p">
+                      <Text variant="bodySm" tone="subdued" as="p">
                         {step.description}
                       </Text>
                     </BlockStack>
@@ -75,39 +79,39 @@ export function BundleSetupInstructions({
                 </div>
               );
             }
-            
+
             return (
-              <div key={step.id} style={{ 
-                cursor: 'default', 
-                opacity: isAvailable ? 1 : 0.6 
+              <div key={step.id} style={{
+                cursor: 'default',
+                opacity: isAvailable ? 1 : 0.6,
+                padding: '12px'
               }}>
-                <InlineStack gap="200" align="start">
-                  <div style={{ 
-                    width: '20px', 
-                    height: '20px', 
-                    borderRadius: '50%', 
-                    backgroundColor: stepColor, 
-                    color: 'white', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontSize: '12px', 
-                    fontWeight: 'bold', 
-                    flexShrink: 0, 
-                    marginTop: '2px' 
+                <InlineStack gap="300" align="start" blockAlign="start">
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: stepColor,
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    flexShrink: 0
                   }}>
                     {stepNumber}
                   </div>
-                  <BlockStack gap="050">
-                    <Text 
-                      variant="bodySm" 
-                      fontWeight="medium" 
+                  <BlockStack gap="100">
+                    <Text
+                      variant="bodySm"
+                      fontWeight="semibold"
                       tone={isAvailable ? undefined : "subdued"}
                       as="p"
                     >
                       {step.title}
                     </Text>
-                    <Text variant="bodyXs" tone="subdued" as="p">
+                    <Text variant="bodySm" tone="subdued" as="p">
                       {step.description}
                     </Text>
                   </BlockStack>
