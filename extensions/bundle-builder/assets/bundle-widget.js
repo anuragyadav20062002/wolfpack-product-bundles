@@ -561,8 +561,24 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     // Find the best applicable rule based on quantity
     let bestRule = null;
     for (const rule of rules) {
-      if (selectedQuantity >= (rule.numberOfProducts || 0)) {
-        if (!bestRule || (rule.numberOfProducts || 0) > (bestRule.numberOfProducts || 0)) {
+      // Support both rule.value (new format) and rule.numberOfProducts (old format)
+      const ruleQuantity = rule.value || rule.numberOfProducts || 0;
+
+      // Check if rule condition is met
+      let conditionMet = false;
+      if (rule.condition === 'greater_than_equal_to' || rule.condition === 'gte') {
+        conditionMet = selectedQuantity >= ruleQuantity;
+      } else if (rule.condition === 'equal_to' || rule.condition === 'eq') {
+        conditionMet = selectedQuantity === ruleQuantity;
+      } else if (rule.condition === 'greater_than' || rule.condition === 'gt') {
+        conditionMet = selectedQuantity > ruleQuantity;
+      } else {
+        // Fallback to >= for backward compatibility
+        conditionMet = selectedQuantity >= ruleQuantity;
+      }
+
+      if (conditionMet) {
+        if (!bestRule || ruleQuantity > (bestRule.value || bestRule.numberOfProducts || 0)) {
           bestRule = rule;
         }
       }
@@ -573,28 +589,28 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     }
 
     let discountAmount = 0;
-    let discountType = pricing.discountMethod || 'fixed_amount_off';
+    let discountType = pricing.method || pricing.discountMethod || 'fixed_amount_off';
 
     switch (discountType) {
       case 'fixed_amount_off':
-        discountAmount = parseFloat(bestRule.value || bestRule.discountValue || 0);
+        discountAmount = parseFloat(bestRule.discountValue || bestRule.value || 0);
         break;
       case 'percentage_off':
-        const percentage = parseFloat(bestRule.value || bestRule.discountValue || 0);
+        const percentage = parseFloat(bestRule.discountValue || 0);
         discountAmount = (totalPrice * percentage) / 100;
         break;
       case 'fixed_bundle_price':
-        const bundlePrice = parseFloat(bestRule.price || 0);
+        const bundlePrice = parseFloat(bestRule.price || bestRule.fixedBundlePrice || 0);
         discountAmount = Math.max(0, totalPrice - bundlePrice);
         break;
       default:
         discountAmount = 0;
     }
 
-    return { 
-      discountAmount: Math.max(0, discountAmount), 
-      discountType, 
-      applicableRule: bestRule 
+    return {
+      discountAmount: Math.max(0, discountAmount),
+      discountType,
+      applicableRule: bestRule
     };
   }
 
@@ -674,14 +690,16 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
 
     // Find the next best discount rule for progress calculation
     const rules = pricing.rules || [];
-    const sortedRules = rules.sort((a, b) => (a.numberOfProducts || 0) - (b.numberOfProducts || 0));
-    const nextRule = sortedRules.find(rule => selectedQuantity < (rule.numberOfProducts || 0));
-    const targetQuantity = nextRule ? (nextRule.numberOfProducts || 0) : (sortedRules[sortedRules.length - 1]?.numberOfProducts || 0);
+    // Support both rule.value and rule.numberOfProducts for sorting
+    const sortedRules = rules.sort((a, b) => (a.value || a.numberOfProducts || 0) - (b.value || b.numberOfProducts || 0));
+    const nextRule = sortedRules.find(rule => selectedQuantity < (rule.value || rule.numberOfProducts || 0));
+    const targetQuantity = nextRule ? (nextRule.value || nextRule.numberOfProducts || 0) : (sortedRules[sortedRules.length - 1]?.value || sortedRules[sortedRules.length - 1]?.numberOfProducts || 0);
 
     // Prepare variables for message replacement (matching admin discount configuration variables)
     const itemsNeeded = Math.max(0, targetQuantity - selectedQuantity);
-    const discountValueUnit = pricing.discountMethod === 'percentage_off' ? '% off' : shopCurrency;
-    const currentDiscountValue = discountInfo.applicableRule ? (discountInfo.applicableRule.discountValue || discountInfo.applicableRule.value || 0) : 0;
+    const discountMethod = pricing.method || pricing.discountMethod || 'fixed_amount_off';
+    const discountValueUnit = discountMethod === 'percentage_off' ? '% off' : shopCurrency;
+    const currentDiscountValue = discountInfo.applicableRule ? (discountInfo.applicableRule.discountValue || 0) : 0;
 
     const variables = {
       // Primary discount configuration variables (matching admin interface)
@@ -699,7 +717,7 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
       bundlePrice: formatCurrency(discountedPrice),
       savingsAmount: formatCurrency(discountInfo.discountAmount),
       savingsPercentage: totalPrice > 0 ? Math.round((discountInfo.discountAmount / totalPrice) * 100) + '%' : '0%',
-      minimumQuantity: discountInfo.applicableRule ? (discountInfo.applicableRule.numberOfProducts || 0).toString() : '0'
+      minimumQuantity: discountInfo.applicableRule ? (discountInfo.applicableRule.value || discountInfo.applicableRule.numberOfProducts || 0).toString() : '0'
     };
 
     // Get rule-specific messages from pricing configuration
