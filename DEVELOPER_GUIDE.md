@@ -219,6 +219,14 @@ npm run pre-deploy
 
 ## Recent Technical Improvements (Latest)
 
+**✅ Discount Messaging System Implementation (2025-01-08):**
+- **Widget Modal Messaging**: Real-time discount messaging in bundle widget with rule-specific custom messages
+- **Cart Attributes**: Added `_bundle_savings`, `_bundle_original_price`, `_bundle_discount_type` attributes to cart line items
+- **Rule-Specific Messages**: Support for custom discount text and success messages per discount rule
+- **Dynamic Calculations**: Real-time savings amount display based on cart state
+- **Fallback Support**: Graceful fallback to liquid template defaults when custom messages not configured
+- **Product Images**: Fixed product image display in bundle widget modal using `originalSrc` field
+
 **✅ Comprehensive Test Suite Implementation (2025-01-07):**
 - **64 Total Tests**: Comprehensive coverage across 5 test suites
 - **Pre-Deployment Validation**: `npm run pre-deploy` command runs tests + build
@@ -307,6 +315,15 @@ npm run pre-deploy
 17. **Fix product ID format validation** - Ensured all product IDs use proper Shopify GID format instead of internal UUIDs
 
 **📋 Recent Technical Improvements:**
+
+**Discount Messaging System:**
+- **Bundle Widget Integration**: Discount messages now use rule-specific custom messages from database instead of only liquid template defaults
+- **Message Variables**: Support for `{{discountConditionDiff}}`, `{{discountUnit}}`, `{{discountValue}}`, `{{discountValueUnit}}`
+- **Cart Transform Attributes**: Bundle items include `_bundle_savings`, `_bundle_original_price`, `_bundle_discount_type` for cart display
+- **Savings Calculation**: Returns both `priceAdjustment` and `savingsAmount` from pricing calculations
+- **File Locations**:
+  - `extensions/bundle-builder/assets/bundle-widget.js` (Lines 692-800): Rule-specific message display
+  - `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts` (Lines 329-352, 365-454): Cart attributes and savings calculation
 
 **Fixed Bundle Price Implementation:**
 - **Runtime Discount Calculation**: Discount percentage calculated dynamically based on actual cart total at runtime

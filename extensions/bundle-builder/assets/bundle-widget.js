@@ -653,33 +653,33 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     const pricing = selectedBundle.pricing;
     const totalPrice = calculateBundleTotalPrice();
     const selectedQuantity = getTotalSelectedQuantity();
-    
+
     // Get discount calculation
     const discountInfo = calculateBundleDiscount(totalPrice, selectedQuantity);
     const discountedPrice = totalPrice - discountInfo.discountAmount;
-    
+
     // Find the next best discount rule for progress calculation
     const rules = pricing.rules || [];
     const sortedRules = rules.sort((a, b) => (a.numberOfProducts || 0) - (b.numberOfProducts || 0));
     const nextRule = sortedRules.find(rule => selectedQuantity < (rule.numberOfProducts || 0));
     const targetQuantity = nextRule ? (nextRule.numberOfProducts || 0) : (sortedRules[sortedRules.length - 1]?.numberOfProducts || 0);
-    
+
     // Prepare variables for message replacement (matching admin discount configuration variables)
     const itemsNeeded = Math.max(0, targetQuantity - selectedQuantity);
     const discountValueUnit = pricing.discountMethod === 'percentage_off' ? '% off' : shopCurrency;
     const currentDiscountValue = discountInfo.applicableRule ? (discountInfo.applicableRule.discountValue || discountInfo.applicableRule.value || 0) : 0;
-    
+
     const variables = {
       // Primary discount configuration variables (matching admin interface)
       discountConditionDiff: itemsNeeded.toString(),
-      discountUnit: itemsNeeded === 1 ? 'item' : 'items', 
+      discountUnit: itemsNeeded === 1 ? 'item' : 'items',
       discountValue: currentDiscountValue.toString(),
       discountValueUnit: discountValueUnit,
       selectedQuantity: selectedQuantity.toString(),
       targetQuantity: targetQuantity.toString(),
       bundleName: selectedBundle.name || 'Bundle',
       itemsNeeded: itemsNeeded.toString(),
-      
+
       // Legacy/additional variables for backward compatibility
       originalPrice: formatCurrency(totalPrice),
       bundlePrice: formatCurrency(discountedPrice),
@@ -687,6 +687,9 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
       savingsPercentage: totalPrice > 0 ? Math.round((discountInfo.discountAmount / totalPrice) * 100) + '%' : '0%',
       minimumQuantity: discountInfo.applicableRule ? (discountInfo.applicableRule.numberOfProducts || 0).toString() : '0'
     };
+
+    // Get rule-specific messages from pricing configuration
+    const ruleMessages = pricing.messages?.ruleMessages || {};
 
     // Update footer messaging elements
     const footerMessagingContainer = document.querySelector('.bundle-footer-messaging');
@@ -730,24 +733,29 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
       // Determine messaging state and content
       let messageState = 'default';
       let discountMessage = '';
-      
+
       if (discountInfo.discountAmount > 0 && discountInfo.applicableRule) {
-        // Already qualified for discount - use success message template
+        // Already qualified for discount - use rule-specific success message or fallback to template
         messageState = 'qualified';
-        discountMessage = replaceDiscountVariables(widgetConfig.successMessageTemplate, variables);
-        
+        const ruleId = discountInfo.applicableRule.id;
+        const ruleSuccessMessage = ruleMessages[ruleId]?.successMessage;
+
+        discountMessage = ruleSuccessMessage
+          ? replaceDiscountVariables(ruleSuccessMessage, variables)
+          : replaceDiscountVariables(widgetConfig.successMessageTemplate, variables);
+
         // Show savings display
         if (footerSavingsDisplay && savingsAmountElement) {
           savingsAmountElement.textContent = variables.savingsAmount;
           footerSavingsDisplay.style.display = 'block';
         }
       } else if (nextRule && selectedQuantity > 0) {
-        // Getting close to next discount - use discount progress template
+        // Getting close to next discount - use rule-specific discount text or fallback to template
         const itemsNeeded = targetQuantity - selectedQuantity;
         if (itemsNeeded <= 2) {
           messageState = 'nearly-qualified';
         }
-        
+
         // Update variables for next rule
         const nextRuleVariables = {
           ...variables,
@@ -755,9 +763,14 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
           discountConditionDiff: itemsNeeded.toString(),
           itemsNeeded: itemsNeeded.toString()
         };
-        
-        discountMessage = replaceDiscountVariables(widgetConfig.discountTextTemplate, nextRuleVariables);
-        
+
+        const ruleId = nextRule.id;
+        const ruleDiscountText = ruleMessages[ruleId]?.discountText;
+
+        discountMessage = ruleDiscountText
+          ? replaceDiscountVariables(ruleDiscountText, nextRuleVariables)
+          : replaceDiscountVariables(widgetConfig.discountTextTemplate, nextRuleVariables);
+
         if (footerSavingsDisplay) {
           footerSavingsDisplay.style.display = 'none';
         }
@@ -771,11 +784,17 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
             discountConditionDiff: (minRule.numberOfProducts || 1).toString(),
             itemsNeeded: (minRule.numberOfProducts || 1).toString()
           };
-          discountMessage = replaceDiscountVariables(widgetConfig.discountTextTemplate, initialVariables);
+
+          const ruleId = minRule.id;
+          const ruleDiscountText = ruleMessages[ruleId]?.discountText;
+
+          discountMessage = ruleDiscountText
+            ? replaceDiscountVariables(ruleDiscountText, initialVariables)
+            : replaceDiscountVariables(widgetConfig.discountTextTemplate, initialVariables);
         } else {
           discountMessage = 'Build your perfect bundle and save!';
         }
-        
+
         if (footerSavingsDisplay) {
           footerSavingsDisplay.style.display = 'none';
         }

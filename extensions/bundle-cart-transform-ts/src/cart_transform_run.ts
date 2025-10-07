@@ -303,6 +303,12 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
 
     console.log(`✅ [WIDGET BUNDLES] Using bundle container variant: ${bundleContainerVariantId}`);
 
+    // Calculate total original price
+    const totalAmount = lines.reduce((sum: number, line: any) => {
+      const amount = parseFloat(line.cost?.totalAmount?.amount || '0');
+      return sum + amount;
+    }, 0);
+
     // Create merge operation
     const mergeOperation: any = {
       parentVariantId: bundleContainerVariantId,
@@ -319,11 +325,29 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
       ]
     };
 
-    // Apply pricing if available
+    // Apply pricing if available and add discount information to attributes
     if (bundleConfig?.pricing) {
-      const pricingAdjustment = calculateBundlePriceFromConfig(bundleConfig, lines);
-      if (pricingAdjustment) {
-        mergeOperation.price = pricingAdjustment;
+      const pricingResult = calculateBundlePriceFromConfig(bundleConfig, lines);
+      if (pricingResult) {
+        mergeOperation.price = pricingResult.priceAdjustment;
+
+        // Add discount savings information as cart attributes for display
+        if (pricingResult.savingsAmount > 0) {
+          mergeOperation.attributes.push(
+            {
+              key: "_bundle_savings",
+              value: pricingResult.savingsAmount.toFixed(2)
+            },
+            {
+              key: "_bundle_original_price",
+              value: totalAmount.toFixed(2)
+            },
+            {
+              key: "_bundle_discount_type",
+              value: bundleConfig.pricing.method || 'unknown'
+            }
+          );
+        }
       }
     }
 
@@ -366,10 +390,14 @@ function calculateBundlePriceFromConfig(bundleConfig: any, lines: any[]): any {
     case 'percentage_off': {
       const discountPercent = parseFloat(rule.discountValue || '0');
       if (discountPercent > 0) {
+        const savingsAmount = (totalAmount * discountPercent) / 100;
         return {
-          percentageDecrease: {
-            value: discountPercent
-          }
+          priceAdjustment: {
+            percentageDecrease: {
+              value: discountPercent
+            }
+          },
+          savingsAmount: savingsAmount
         };
       }
       break;
@@ -380,9 +408,12 @@ function calculateBundlePriceFromConfig(bundleConfig: any, lines: any[]): any {
       if (discountAmount > 0 && totalAmount > 0) {
         const discountPercent = (discountAmount / totalAmount) * 100;
         return {
-          percentageDecrease: {
-            value: Math.min(100, discountPercent)
-          }
+          priceAdjustment: {
+            percentageDecrease: {
+              value: Math.min(100, discountPercent)
+            }
+          },
+          savingsAmount: Math.min(discountAmount, totalAmount)
         };
       }
       break;
@@ -402,11 +433,15 @@ function calculateBundlePriceFromConfig(bundleConfig: any, lines: any[]): any {
         console.log(`🔍 [BUNDLE PRICING] Fixed bundle price: ₹${fixedBundlePrice}`);
         console.log(`🔍 [BUNDLE PRICING] Cart total: ₹${totalAmount}`);
         console.log(`🔍 [BUNDLE PRICING] Calculated discount: ${discountPercent.toFixed(2)}%`);
+        console.log(`💰 [BUNDLE PRICING] Savings amount: ₹${discountAmount.toFixed(2)}`);
 
         return {
-          percentageDecrease: {
-            value: Math.min(100, Math.round(discountPercent * 100) / 100)
-          }
+          priceAdjustment: {
+            percentageDecrease: {
+              value: Math.min(100, Math.round(discountPercent * 100) / 100)
+            }
+          },
+          savingsAmount: discountAmount
         };
       } else {
         console.log(`🔍 [BUNDLE PRICING] Fixed bundle price not applicable: price=${fixedBundlePrice}, total=${totalAmount}`);
