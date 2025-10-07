@@ -102,9 +102,11 @@ export default function Dashboard() {
     navigate("/app/bundles/cart-transform");
   };
 
-  const handleScheduleMeeting = () => {
-    // Open external link for scheduling
-    window.open("https://calendly.com/yash-wolfpack", "_blank");
+  const handleDirectChat = () => {
+    // Open Crisp chat integration
+    if (window.$crisp) {
+      window.$crisp.push(["do", "chat:open"]);
+    }
   };
 
   const handleEditBundle = (bundle: Bundle) => {
@@ -338,8 +340,8 @@ export default function Dashboard() {
                       <div style={{ position: 'relative', minWidth: '120px' }}>
                         <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
                           <img 
-                            src="/Yash.jpg"
-                            alt="Yash (Founder)"
+                            src="/shrey_pfp.jpg"
+                            alt="Shrey (Founder)"
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         </div>
@@ -360,7 +362,7 @@ export default function Dashboard() {
                       <BlockStack gap="200" align="start">
                         <BlockStack gap="100">
                           <Text as="h4" variant="bodyLg" fontWeight="semibold">
-                            Yash Chaudhari
+                            Shrey
                           </Text>
                           <Text as="span" variant="bodySm" tone="subdued">
                             Founder
@@ -402,8 +404,8 @@ export default function Dashboard() {
                       </div>
                     </InlineStack>
                     <div style={{ marginTop: '12px' }}>
-                      <Button variant="primary" fullWidth onClick={handleScheduleMeeting}>
-                        Schedule Call
+                      <Button variant="primary" fullWidth onClick={handleDirectChat}>
+                        Chat Directly with Shrey
                       </Button>
                     </div>
                   </div>
