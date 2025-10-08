@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://know-modified-scripting-familiar.trycloudflare.com"
+application_url = "https://wolfpack-product-bundle-app.onrender.com"
 embedded = true
 
 [build]
@@ -17,7 +17,7 @@ api_version = "2025-04"
 scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes"
 
 [auth]
-redirect_urls = ["https://know-modified-scripting-familiar.trycloudflare.com/auth/callback", "https://know-modified-scripting-familiar.trycloudflare.com/auth/shopify/callback", "https://know-modified-scripting-familiar.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://wolfpack-product-bundle-app.onrender.com/auth/callback", "https://wolfpack-product-bundle-app.onrender.com/auth/shopify/callback", "https://wolfpack-product-bundle-app.onrender.com/api/auth/callback"]
 
 [pos]
 embedded = false
