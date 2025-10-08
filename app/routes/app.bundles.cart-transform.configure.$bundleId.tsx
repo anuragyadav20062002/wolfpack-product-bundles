@@ -3627,9 +3627,22 @@ export default function ConfigureBundleFlow() {
       // Build selectionIds from StepProduct
       // When loaded from DB: use productId field
       // When from resource picker: use id field
+      // If variants exist and are selected, include them in the format needed by resource picker
       const selectionIds = currentProducts.map((p: any) => {
         const productGid = p.productId || p.id; // productId from DB, id from picker
         console.log(`🔍 [SELECTION_ID] Product: ${p.title}, productId: ${p.productId}, id: ${p.id}, using: ${productGid}`);
+
+        // Check if this product has specific variants selected
+        // If variants array exists and has items, include them in selectionIds
+        if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
+          const variantIds = p.variants.map((v: any) => ({ id: v.id }));
+          console.log(`🔍 [SELECTION_ID] Product ${p.title} has ${p.variants.length} variants:`, variantIds);
+          return {
+            id: productGid,
+            variants: variantIds
+          };
+        }
+
         return { id: productGid };
       });
 
@@ -3649,8 +3662,6 @@ export default function ConfigureBundleFlow() {
         type: "product",
         multiple: true,
         selectionIds: selectionIds,
-        // Note: Not using variant selection mode as it causes issues
-        // Products are selected at product level, variants are handled separately
       });
 
       console.log("✅ [RESOURCE_PICKER] Resource picker closed. Received selection:", products ? "YES" : "NO");

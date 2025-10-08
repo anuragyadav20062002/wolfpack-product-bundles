@@ -888,6 +888,10 @@ export default function BundleBuilderPage() {
   ]);
 
   const handleEditStep = useCallback((step: BundleStep) => {
+    console.log('📝 [EDIT_STEP] Step being edited:', step);
+    console.log('📝 [EDIT_STEP] Step products:', step.products);
+    console.log('📝 [EDIT_STEP] displayVariantsAsIndividual:', step.displayVariantsAsIndividual);
+
     setCurrentStepId(step.id);
     setStepName(step.name);
     setStepEnabled(step.enabled ?? true);
@@ -926,15 +930,79 @@ export default function BundleBuilderPage() {
   ];
 
   const handleProductSelection = useCallback(async () => {
-    const products = await shopify.resourcePicker({
-      type: "product",
-      multiple: true,
-      selectionIds: selectedProducts.map((p) => ({ id: p.id })),
-    });
-    if (products && products.selection) {
-      setSelectedProducts(products.selection as ResourcePickerProduct[]);
+    // Determine if we have variants in selectedProducts (when displayVariantsAsIndividual is true)
+    const hasVariants = selectedProducts.some(p => p.id.includes('/ProductVariant/'));
+
+    console.log('handleProductSelection called', { hasVariants, displayVariantsAsIndividual, selectedProducts });
+
+    if (hasVariants || displayVariantsAsIndividual) {
+      // Use product picker with variants nested - this is the correct format for pre-selecting variants
+      // Group variants by their parent product
+      const productMap = new Map<string, string[]>();
+
+      selectedProducts.forEach(p => {
+        console.log('Processing product:', p);
+        if (p.id.includes('/ProductVariant/')) {
+          // The variant object should have a productId field or we can extract from the variant structure
+          // First try direct productId property
+          let productId = (p as any).productId;
+
+          // If no productId, try to get it from the product property that resource picker returns
+          if (!productId && (p as any).product) {
+            productId = (p as any).product.id;
+          }
+
+          // If still no productId, extract from the variant GID by looking at associated product
+          // In some cases the parent product ID is stored differently
+          if (!productId) {
+            // Try common patterns: productId, product_id, or nested product.id
+            productId = (p as any).product_id || (p as any).Product?.id;
+          }
+
+          console.log('Extracted productId:', productId, 'for variant:', p.id);
+
+          if (productId) {
+            if (!productMap.has(productId)) {
+              productMap.set(productId, []);
+            }
+            productMap.get(productId)!.push(p.id);
+          }
+        }
+      });
+
+      console.log('Product map:', Array.from(productMap.entries()));
+
+      // Build selectionIds in the format: [{ id: productId, variants: [{ id: variantId }] }]
+      const selectionIds = Array.from(productMap.entries()).map(([productId, variantIds]) => ({
+        id: productId,
+        variants: variantIds.map(id => ({ id }))
+      }));
+
+      console.log('Prepared selectionIds:', selectionIds);
+
+      const variants = await shopify.resourcePicker({
+        type: "product",
+        multiple: true,
+        selectionIds: selectionIds.length > 0 ? selectionIds : undefined,
+      });
+
+      if (variants && variants.selection) {
+        console.log('New selection:', variants.selection);
+        setSelectedProducts(variants.selection as ResourcePickerProduct[]);
+      }
+    } else {
+      // Use regular product picker for product-level selection
+      const products = await shopify.resourcePicker({
+        type: "product",
+        multiple: true,
+        selectionIds: selectedProducts.map((p) => ({ id: p.id })),
+      });
+
+      if (products && products.selection) {
+        setSelectedProducts(products.selection as ResourcePickerProduct[]);
+      }
     }
-  }, [shopify, selectedProducts]);
+  }, [shopify, selectedProducts, displayVariantsAsIndividual]);
 
   const handleCollectionSelection = useCallback(async () => {
     const collections = await shopify.resourcePicker({

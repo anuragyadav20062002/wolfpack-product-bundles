@@ -1614,6 +1614,32 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     }
   });
 
+  // Helper function to generate a unique bundle instance ID
+  // This ensures same bundle + same products = same ID (qty increments)
+  // and same bundle + different products = different ID (separate line item)
+  function generateBundleInstanceId(bundleId, itemsToAdd) {
+    // Create a deterministic hash from the bundle configuration
+    // Sort items by variant ID to ensure consistent ordering
+    const sortedItems = [...itemsToAdd].sort((a, b) => a.id - b.id);
+
+    // Create a string representation: bundleId + variantId:quantity pairs
+    const itemsSignature = sortedItems
+      .map(item => `${item.id}:${item.quantity}`)
+      .join('|');
+
+    // Simple hash function (you can use a more sophisticated one if needed)
+    let hash = 0;
+    const str = `${bundleId}_${itemsSignature}`;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+
+    // Return bundle ID with hash suffix
+    return `${bundleId}_${Math.abs(hash)}`;
+  }
+
   // Add to Cart Button Logic
   addBundleToCartButton.addEventListener('click', async () => {
     const itemsToAdd = [];
@@ -1638,15 +1664,30 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
           itemsToAdd.push({
             id: variantIdNum,
             quantity,
-            properties: {
-              _wolfpack_bundle_id: selectedBundle ? selectedBundle.id : 'unknown'
-            }
+            // Properties will be added after we generate the bundle instance ID
           });
         }
       }
     });
 
-    console.log('itemsToAdd', itemsToAdd);
+    // Generate unique bundle instance ID based on bundle + selected products
+    const bundleInstanceId = generateBundleInstanceId(
+      selectedBundle ? selectedBundle.id : 'unknown',
+      itemsToAdd
+    );
+
+    // Now add properties with the unique bundle instance ID to all items
+    itemsToAdd.forEach(item => {
+      item.properties = {
+        _wolfpack_bundle_id: bundleInstanceId
+      };
+    });
+
+    console.log('🎯 [BUNDLE CART] Bundle Instance ID:', bundleInstanceId);
+    console.log('🎯 [BUNDLE CART] Items to add:', itemsToAdd);
+    console.log('📦 [BUNDLE CART] This ID ensures:');
+    console.log('  ✅ Same bundle + same products = Shopify auto-increments quantity');
+    console.log('  ✅ Same bundle + different products = Creates separate cart line');
 
     if (itemsToAdd.length === 0) {
       showToast('Please select products for your bundle before adding to cart.', 'warning');

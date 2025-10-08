@@ -631,31 +631,32 @@ export default function CartTransformBundles() {
               <Card>
                 <BlockStack gap="300">
                   <Text variant="headingSm" as="h4">
-                    Cart Transform Features
+                  It will create a Parent bundle product in Shopify, but during checkout, it will pull stock from your regular Shopify inventory in real time.
+
                   </Text>
-                  <BlockStack gap="200">
-                    <Text variant="bodyMd" as="p">
-                      <strong>Real-time Updates:</strong> Bundle items are automatically merged
-                      in the cart as customers add products.
-                    </Text>
-                    <Text variant="bodyMd" as="p">
-                      <strong>Single Cart Line:</strong> Multiple bundle components appear as
-                      one item with combined pricing and savings display.
-                    </Text>
-                    <Text variant="bodyMd" as="p">
-                      <strong>Immediate Savings:</strong> Customers see discounts applied
-                      instantly without needing discount codes.
-                    </Text>
-                    <Text variant="bodyMd" as="p">
-                      <strong>Professional Presentation:</strong> Bundle appears cohesively
-                      with the first product's image and combined title.
-                    </Text>
-                    <Text variant="bodyMd" as="p">
-                      <strong>Real-time Inventory:</strong> This feature will create a Parent bundle
-                      product in Shopify, but during checkout, it will pull stock from your regular
-                      Shopify inventory in real time.
-                    </Text>
-                  </BlockStack>
+                  <div style={{
+                    border: '2px solid #e1e3e5',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    transition: 'transform 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}>
+                    <img
+                      src="/demo.png"
+                      alt="Bundle Cart Transform Demo"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block'
+                      }}
+                    />
+                  </div>
                 </BlockStack>
               </Card>
             </div>

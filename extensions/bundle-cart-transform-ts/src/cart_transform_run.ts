@@ -213,27 +213,33 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
   console.log("🔍 [WIDGET BUNDLES] Processing widget-based bundles");
   const operations = [];
 
-  // Group cart lines by bundle ID
+  // Group cart lines by bundle instance ID
+  // Bundle instance ID format: bundleId_hash (e.g., "bundle123_456789")
+  // This allows same bundle with different products to be separate line items
   const bundleGroups = new Map<string, any[]>();
 
   for (const line of cart.lines) {
-    // Extract bundle ID from attribute (line item properties become attributes in cart transform)
-    const bundleId = line.attribute?.value;
+    // Extract bundle instance ID from attribute (line item properties become attributes in cart transform)
+    const bundleInstanceId = line.attribute?.value;
 
-    if (bundleId) {
-      if (!bundleGroups.has(bundleId)) {
-        bundleGroups.set(bundleId, []);
+    if (bundleInstanceId) {
+      if (!bundleGroups.has(bundleInstanceId)) {
+        bundleGroups.set(bundleInstanceId, []);
       }
-      bundleGroups.get(bundleId)!.push(line);
-      console.log(`🔍 [WIDGET BUNDLES] Found line ${line.id} with bundle ID: ${bundleId}`);
+      bundleGroups.get(bundleInstanceId)!.push(line);
+      console.log(`🔍 [WIDGET BUNDLES] Found line ${line.id} with bundle instance ID: ${bundleInstanceId}`);
     }
   }
 
-  console.log(`🔍 [WIDGET BUNDLES] Found ${bundleGroups.size} bundle groups`);
+  console.log(`🔍 [WIDGET BUNDLES] Found ${bundleGroups.size} bundle instance groups`);
 
   // Process each bundle group
-  for (const [bundleId, lines] of bundleGroups.entries()) {
-    console.log(`🔍 [WIDGET BUNDLES] Processing bundle ${bundleId} with ${lines.length} lines`);
+  for (const [bundleInstanceId, lines] of bundleGroups.entries()) {
+    console.log(`🔍 [WIDGET BUNDLES] Processing bundle instance ${bundleInstanceId} with ${lines.length} lines`);
+
+    // Extract base bundle ID from instance ID (format: bundleId_hash)
+    const baseBundleId = bundleInstanceId.split('_')[0];
+    console.log(`🔍 [WIDGET BUNDLES] Base bundle ID: ${baseBundleId}`);
 
     // Try to get bundle config from cart line product metafields
     // Priority 1: Check product metafields on cart line products
@@ -245,10 +251,11 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
           const productBundleConfig = JSON.parse(line.merchandise.product.bundle_config.value);
           console.log(`🔍 [WIDGET BUNDLES] Found bundle config on product ${line.merchandise.product.id}:`, JSON.stringify(productBundleConfig, null, 2));
 
-          // Match by bundle ID
-          if (productBundleConfig.bundleId === bundleId || productBundleConfig.id === bundleId) {
+          // Match by base bundle ID (strip hash suffix)
+          const configId = productBundleConfig.bundleId || productBundleConfig.id;
+          if (configId === baseBundleId || configId === bundleInstanceId) {
             bundleConfig = productBundleConfig;
-            console.log(`✅ [WIDGET BUNDLES] Matched bundle config: ${bundleConfig.name} (ID: ${bundleId})`);
+            console.log(`✅ [WIDGET BUNDLES] Matched bundle config: ${bundleConfig.name} (Base ID: ${baseBundleId})`);
             break;
           }
         } catch (error) {
@@ -258,8 +265,9 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
     }
 
     // Priority 2: Fallback to passed bundleConfigs object (from cart transform metafield - if available)
-    if (!bundleConfig && bundleConfigs[bundleId]) {
-      bundleConfig = bundleConfigs[bundleId];
+    // Try both instance ID and base ID
+    if (!bundleConfig && (bundleConfigs[bundleInstanceId] || bundleConfigs[baseBundleId])) {
+      bundleConfig = bundleConfigs[bundleInstanceId] || bundleConfigs[baseBundleId];
       console.log(`🔍 [WIDGET BUNDLES] Using bundle config from cart transform metafield`);
     }
 
@@ -316,11 +324,15 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
         cartLineId: line.id,
         quantity: line.quantity
       })),
-      title: bundleConfig?.name || `Bundle ${bundleId}`,
+      title: bundleConfig?.name || `Bundle ${baseBundleId}`,
       attributes: [
         {
           key: "_bundle_id",
-          value: bundleId
+          value: bundleInstanceId // Use full instance ID to preserve unique bundle configurations
+        },
+        {
+          key: "_bundle_base_id",
+          value: baseBundleId // Keep base ID for reference
         }
       ]
     };
@@ -352,10 +364,11 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
     }
 
     operations.push({ merge: mergeOperation });
-    console.log(`🔍 [WIDGET BUNDLES] Created merge operation for bundle ${bundleId}`);
+    console.log(`✅ [WIDGET BUNDLES] Created merge operation for bundle instance ${bundleInstanceId} (base: ${baseBundleId})`);
   }
 
   console.log(`🔍 [WIDGET BUNDLES] Completed with ${operations.length} operations`);
+  console.log(`📦 [WIDGET BUNDLES] Each unique bundle configuration is a separate cart line`);
   console.log(`🔍 [WIDGET BUNDLES] Operations:`, JSON.stringify(operations, null, 2));
 
   return { operations };
