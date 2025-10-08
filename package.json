@@ -11,7 +11,7 @@
     "env": "shopify app env",
     "start": "remix-serve ./build/server/index.js",
     "docker-start": "npm run setup && npm run start",
-    "setup": "prisma generate --data-proxy && prisma migrate deploy",
+    "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
     "prisma": "prisma",
@@ -33,7 +33,6 @@
   "dependencies": {
     "@prisma/adapter-pg": "^6.10.1",
     "@prisma/client": "^6.13.0",
-    "@prisma/extension-accelerate": "^2.0.1",
     "@remix-run/dev": "^2.16.1",
     "@remix-run/fs-routes": "^2.16.1",
     "@remix-run/node": "^2.16.1",
