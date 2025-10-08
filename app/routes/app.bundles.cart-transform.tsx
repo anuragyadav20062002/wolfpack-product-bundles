@@ -593,16 +593,18 @@ export default function CartTransformBundles() {
                     id: "name_description",
                     title: "Enter bundle name and description",
                     description: "Type a clear name and an optional description for your bundle.",
+                    onClick: () =>  {},
                   },
                   {
                     id: "create_bundle_modal",
                     title: 'Click "Create Bundle" in the popup',
                     description: "This will create your bundle and take you to the setup page.",
+                    onClick: () =>  {},
                   },
                   {
                     id: "add_steps",
                     title: "Add bundle steps and choose products",
-                    description: "Add the steps for your bundle and select the products or collections you want.",
+                    description: "Add steps to your bundle, select products/collections you want.",
                     isClickable: bundles.length > 0,
                     onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
                   },
@@ -616,7 +618,7 @@ export default function CartTransformBundles() {
                   {
                     id: "publish",
                     title: "Save and publish your bundle",
-                    description: "Save your settings and publish to make your bundle live on your store.",
+                    description: "Save your settings to make your bundle live on your store.",
                     isClickable: bundles.length > 0,
                     onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
                   },
