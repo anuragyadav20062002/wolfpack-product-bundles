@@ -11,7 +11,7 @@ import {
   Badge,
   Icon,
 } from "@shopify/polaris";
-import { CartIcon } from "@shopify/polaris-icons";
+import { CartIcon, PageIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -30,15 +30,14 @@ export default function BundleTypeSelection() {
     navigate("/app/bundles/cart-transform");
   };
 
+  const handleFullPageSelection = () => {
+    navigate("/app/bundles/full-page");
+  };
+
   return (
-    <Page 
-      title="Bundle Setup"
-      subtitle="Set up your cart transform bundles for real-time cart updates and discounts"
-      primaryAction={{
-        content: "Set Up Cart Transform Bundles",
-        onAction: handleCartTransformSelection,
-        disabled: !shopifyPlus,
-      }}
+    <Page
+      title="Choose Your Bundle Type"
+      subtitle="Select the type of bundle you want to create"
       secondaryActions={[
         {
           content: "Back to Dashboard",
@@ -98,40 +97,93 @@ export default function BundleTypeSelection() {
               </Card>
             </Layout.Section>
 
+            <Layout.Section variant="oneThird">
+              {/* Full-Page Bundles Card */}
+              <Card>
+              <BlockStack gap="400">
+                <InlineStack gap="200" align="space-between">
+                  <InlineStack gap="200" align="start">
+                    <Icon source={PageIcon} tone="success" />
+                    <Text variant="headingMd" as="h3">
+                      Full-Page Bundles
+                    </Text>
+                  </InlineStack>
+                  <Badge tone="success">All Plans</Badge>
+                </InlineStack>
+
+                <BlockStack gap="300">
+                  <Text variant="bodyMd" tone="subdued" as="p">
+                    Dedicated bundle builder pages with category tabs,
+                    allowing customers to build custom bundles from multiple product categories.
+                  </Text>
+
+                  <BlockStack gap="200">
+                    <Text variant="bodySm" fontWeight="semibold" as="p">Features:</Text>
+                    <ul style={{ paddingLeft: '16px', margin: 0 }}>
+                      <li><Text variant="bodySm" as="span">Dedicated bundle pages</Text></li>
+                      <li><Text variant="bodySm" as="span">Category-based navigation</Text></li>
+                      <li><Text variant="bodySm" as="span">Real-time bundle preview</Text></li>
+                      <li><Text variant="bodySm" as="span">Customizable layouts</Text></li>
+                      <li><Text variant="bodySm" as="span">Flexible discount rules</Text></li>
+                    </ul>
+                  </BlockStack>
+
+                  <Button
+                    variant="primary"
+                    size="large"
+                    fullWidth
+                    onClick={handleFullPageSelection}
+                  >
+                    Set Up Full-Page Bundles
+                  </Button>
+                </BlockStack>
+              </BlockStack>
+              </Card>
+            </Layout.Section>
+
             <Layout.Section variant="oneHalf">
               <Card>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h3">
-                    Why Cart Transform Bundles?
+                    Which Bundle Type Should You Choose?
                   </Text>
-                  
+
                   <BlockStack gap="300">
-                    <Text variant="bodyMd" as="p">
-                      Cart transform bundles provide the most seamless bundling experience for your customers. 
-                      When customers select bundle items, they're automatically combined into a single cart line 
-                      with discount pricing applied in real-time.
-                    </Text>
-                    
-                    <Text variant="bodyMd" as="p">
-                      This approach eliminates the need for discount codes and provides immediate visual feedback 
-                      on savings, leading to higher conversion rates and better customer satisfaction.
-                    </Text>
-                    
+                    <div>
+                      <Text variant="bodyMd" fontWeight="semibold" as="p">
+                        Cart Transform Bundles
+                      </Text>
+                      <Text variant="bodyMd" as="p">
+                        Best for simple, fixed bundles embedded on product pages. Items automatically merge
+                        into a single cart line with real-time discount application. Requires Shopify Plus.
+                      </Text>
+                    </div>
+
+                    <div>
+                      <Text variant="bodyMd" fontWeight="semibold" as="p">
+                        Full-Page Bundles
+                      </Text>
+                      <Text variant="bodyMd" as="p">
+                        Ideal for customizable bundles with multiple categories. Create dedicated bundle builder
+                        pages where customers can mix and match products. Works on all Shopify plans.
+                      </Text>
+                    </div>
+
                     <BlockStack gap="200">
-                      <Text variant="bodySm" fontWeight="semibold" as="p">Benefits:</Text>
+                      <Text variant="bodySm" fontWeight="semibold" as="p">Common Benefits:</Text>
                       <ul style={{ paddingLeft: '16px', margin: 0 }}>
-                        <li><Text variant="bodySm" as="span">✅ Real-time cart synchronization</Text></li>
-                        <li><Text variant="bodySm" as="span">✅ Automatic discount application</Text></li>
-                        <li><Text variant="bodySm" as="span">✅ Clean cart presentation</Text></li>
-                        <li><Text variant="bodySm" as="span">✅ Better inventory management</Text></li>
-                        <li><Text variant="bodySm" as="span">✅ Enhanced analytics tracking</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Flexible discount rules</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Cart transform integration</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Clean checkout experience</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Inventory management</Text></li>
+                        <li><Text variant="bodySm" as="span">✅ Increased average order value</Text></li>
                       </ul>
                     </BlockStack>
-                    
+
                     {!shopifyPlus && (
                       <Text variant="bodyMd" tone="subdued" as="p">
-                        <strong>Note:</strong> Cart transform functionality requires Shopify Plus. 
-                        Please upgrade your plan to access this feature.
+                        <strong>Note:</strong> Cart transform functionality requires Shopify Plus.
+                        Full-Page Bundles are available on all plans.
                       </Text>
                     )}
                   </BlockStack>

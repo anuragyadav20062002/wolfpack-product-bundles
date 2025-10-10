@@ -10,11 +10,11 @@ generator client {
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   // Comment out for development environment
-  // provider = "sqlite"
+   provider = "sqlite"
   // Comment out for production environment
-  provider = "postgresql"
+  // provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  // directUrl = env("DIRECT_URL")
 }
 
 enum BundleStatus {
@@ -49,6 +49,7 @@ enum DiscountImplementationType {
 
 enum BundleType {
   cart_transform
+  full_page
 }
 
 model Session {
@@ -103,7 +104,7 @@ model BundleStep {
   icon                        String?       @default("box")
   position                    Int           @default(0)
   minQuantity                 Int           @default(1)
-  maxQuantity                 Int           @default(1)
+  maxQuantity                 Int           @default(10)
   enabled                     Boolean       @default(true)
   productCategory             String?
   collections                 Json?
@@ -112,6 +113,8 @@ model BundleStep {
   conditionType               String?
   conditionOperator           String?
   conditionValue              Int?
+  requireSelection            Boolean       @default(false) // For full-page bundles: Must select at least 1 from this tab
+  allowMultiple               Boolean       @default(true)  // For full-page bundles: Allow multiple products from this tab
   bundleId                    String
   bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]

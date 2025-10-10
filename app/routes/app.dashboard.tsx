@@ -24,7 +24,7 @@ interface Bundle {
   description?: string | null;
   shopId: string;
   shopifyProductId?: string | null;
-  bundleType: 'cart_transform';
+  bundleType: 'cart_transform' | 'full_page';
   status: 'draft' | 'active' | 'archived';
   active: boolean;
   publishedAt?: Date | string | null;
@@ -95,11 +95,11 @@ export default function Dashboard() {
   const fetcher = useFetcher();
 
   const handleCreateBundle = () => {
-    navigate("/app/bundles/cart-transform");
+    navigate("/app/bundle-type-selection");
   };
 
   const handleQuickSetup = () => {
-    navigate("/app/bundles/cart-transform");
+    navigate("/app/bundle-type-selection");
   };
 
   const handleDirectChat = () => {
@@ -110,11 +110,19 @@ export default function Dashboard() {
   };
 
   const handleEditBundle = (bundle: Bundle) => {
-    navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
+    if (bundle.bundleType === 'full_page') {
+      navigate(`/app/bundles/full-page/${bundle.id}`);
+    } else {
+      navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
+    }
   };
 
-  const handleBundleRowClick = (_bundle: Bundle) => {
-    navigate("/app/bundles/cart-transform");
+  const handleBundleRowClick = (bundle: Bundle) => {
+    if (bundle.bundleType === 'full_page') {
+      navigate('/app/bundles/full-page');
+    } else {
+      navigate('/app/bundles/cart-transform');
+    }
   };
 
   const handleDeleteBundle = (bundleId: string) => {
@@ -126,8 +134,11 @@ export default function Dashboard() {
     }
   };
 
-  const getBundleTypeDisplay = (_bundleType: string) => {
-    return <Badge tone="info">Cart Transform</Badge>;
+  const getBundleTypeDisplay = (bundleType: string) => {
+    if (bundleType === 'full_page') {
+      return <Badge tone='magic'>Full-Page</Badge>;
+    }
+    return <Badge tone='info'>Cart Transform</Badge>;
   };
 
   const getStatusDisplay = (status: string) => {

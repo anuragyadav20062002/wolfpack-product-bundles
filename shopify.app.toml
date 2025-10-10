@@ -14,7 +14,7 @@ api_version = "2025-04"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes"
+scopes = "read_content,read_product_listings,read_products,read_publications,write_publications,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes"
 
 [auth]
 redirect_urls = ["https://wolfpack-product-bundle-app.onrender.com/auth/callback", "https://wolfpack-product-bundle-app.onrender.com/auth/shopify/callback", "https://wolfpack-product-bundle-app.onrender.com/api/auth/callback"]

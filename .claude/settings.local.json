@@ -126,7 +126,16 @@
       "Bash(node fix-graphql.js)",
       "Bash(node:*)",
       "Bash(del fix-graphql.js fix-graphql.cjs)",
-      "Bash(del \"C:/Users/91945/wolfpack-main/Only-Bundles/add-all-bundles-data.cjs\")"
+      "Bash(del \"C:/Users/91945/wolfpack-main/Only-Bundles/add-all-bundles-data.cjs\")",
+      "Bash(git log:*)",
+      "Bash(git checkout:*)",
+      "Bash(cmd /c:*)",
+      "Bash(move \"app\\routes\\app.bundles.full-page.tsx\" \"app\\routes\\app.bundles.full-page._index.tsx\")",
+      "Bash(dir:*)",
+      "Bash(tasklist)",
+      "Bash(Stop-Process -Id 3456 -Force)",
+      "Bash(tskill:*)",
+      "Bash(del bundle-builder.js)"
     ],
     "deny": []
   }

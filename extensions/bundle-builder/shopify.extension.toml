@@ -24,3 +24,6 @@ liquid_path = "blocks/bundle.liquid"
 target = "all"
 liquid_path = "blocks/bundle.liquid"
 
+[[extensions.blocks]]
+target = "section"
+liquid_path = "blocks/full-page-bundle-builder.liquid"

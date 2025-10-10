@@ -1,0 +1,130 @@
+{% comment %}
+  Full-Page Bundle Builder
+  Renders a complete bundle builder experience on any page
+{% endcomment %}
+
+{% schema %}
+{
+  "name": "Full Page Bundle Builder",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "bundle_id",
+      "label": "Bundle ID",
+      "info": "Enter the Bundle ID (e.g., FBP-1) from your app admin",
+      "default": "FBP-1"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Preview Position",
+      "options": [
+        {
+          "value": "sidebar-right",
+          "label": "Right Sidebar"
+        },
+        {
+          "value": "sidebar-left",
+          "label": "Left Sidebar"
+        }
+      ],
+      "default": "sidebar-right"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button Color",
+      "default": "#000000"
+    }
+  ]
+}
+{% endschema %}
+
+
+{% assign bundle_id = block.settings.bundle_id %}
+{% assign metafield_key = bundle_id | downcase | replace: '-', '_' %}
+{% assign bundle_metafield = shop.metafields.wolfpack_bundles[metafield_key] %}
+{% assign bundle_config = bundle_metafield.value %}
+
+
+{% if bundle_config == blank %}
+  <div class="bundle-error">
+    <p>⚠️ Bundle not found. Please check your Bundle ID in the theme editor.</p>
+    <p>Looking for: <strong>{{ bundle_id }}</strong> → <strong>{{ metafield_key }}</strong></p>
+  </div>
+  {{ 'bundle-builder.css' | asset_url | stylesheet_tag }}
+
+{% else %}
+  <div
+    class="wolfpack-bundle-builder"
+    data-bundle-id="{{ bundle_id }}"
+    data-layout="{{ block.settings.layout }}"
+    data-config='{{ bundle_config | json }}'
+    style="--primary-color: {{ block.settings.primary_color }}; --button-color: {{ block.settings.button_color }};"
+  >
+    <div class="bundle-builder-container">
+      <!-- Bundle Header (rendered by JS) -->
+      <div class="bundle-header"></div>
+
+      <!-- Main Content Area -->
+      <div class="bundle-content layout-{{ block.settings.layout }}">
+        <!-- Left: Product Selection Area (rendered by JS) -->
+        <div class="bundle-selection-area">
+          <div class="bundle-tabs"></div>
+          <div class="bundle-tab-contents"></div>
+        </div>
+
+        <!-- Right: Preview Sidebar -->
+        <div class="bundle-preview-sidebar">
+          <div class="preview-header">
+            <h3>Your Bundle</h3>
+            <button class="preview-clear-all" style="display: none;">Clear All</button>
+          </div>
+
+          <div class="preview-items-list">
+            <div class="preview-empty-state">
+              <p>👆 Start selecting products from the tabs above</p>
+            </div>
+          </div>
+
+          <div class="preview-summary">
+            <div class="summary-row subtotal">
+              <span>Subtotal:</span>
+              <span class="subtotal-amount">$0.00</span>
+            </div>
+            <div class="summary-row discount" style="display: none;">
+              <span>Discount:</span>
+              <span class="discount-amount">-$0.00</span>
+            </div>
+            <div class="summary-row total">
+              <span>Total:</span>
+              <span class="total-amount">$0.00</span>
+            </div>
+          </div>
+
+          <div class="preview-actions">
+            <button class="bundle-add-to-cart-btn" disabled>
+              <span class="btn-loading" style="display: none;">Adding...</span>
+              <span class="btn-text">Add to Cart</span>
+            </button>
+            <p class="validation-message" style="display: none;"></p>
+          </div>
+
+          <div class="bundle-success-message" style="display: none;">
+            <p>✅ Success! Your bundle has been added to cart!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ 'bundle-builder.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'bundle-builder.js' | asset_url }}" defer="defer"></script>
+{% endif %}
