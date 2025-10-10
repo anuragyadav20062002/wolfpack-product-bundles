@@ -242,8 +242,11 @@ export async function deleteBundleFromMetafield(
 export function formatBundleForMetafield(bundle: any): any {
   return {
     id: bundle.templateName, // Bundle ID (e.g., "FBP-1")
+    bundleId: bundle.templateName, // Duplicate for compatibility
     name: bundle.name,
     bundleType: "full_page",
+    shopifyProductId: bundle.shopifyProductId, // Product ID
+    bundleParentVariantId: bundle.shopifyParentVariantId, // CRITICAL: Variant ID for cart transform
     parentProduct: {
       id: bundle.shopifyProductId,
       title: `EasyBundleId : ${bundle.templateName}`,

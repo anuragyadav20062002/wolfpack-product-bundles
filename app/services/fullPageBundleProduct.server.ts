@@ -10,7 +10,7 @@ export async function createBundleParentProduct(
   bundleId: string,
   bundleName: string,
   visible: boolean = true
-): Promise<{ id: string; title: string }> {
+): Promise<{ id: string; title: string; variantId: string }> {
   console.log(
     `📦 [FULL_PAGE_BUNDLE] Creating parent product for bundle: ${bundleId}`
   );
@@ -27,6 +27,13 @@ export async function createBundleParentProduct(
             title
             handle
             status
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
           }
           userErrors {
             field
@@ -80,14 +87,23 @@ export async function createBundleParentProduct(
     }
 
     const product = responseJson.data.productCreate.product;
+    const variantId = product.variants?.edges?.[0]?.node?.id;
+
+    if (!variantId) {
+      throw new Error("Failed to get variant ID from created product");
+    }
 
     console.log(
       `✅ [FULL_PAGE_BUNDLE] Parent product created: ${product.id}`
+    );
+    console.log(
+      `✅ [FULL_PAGE_BUNDLE] Parent variant ID: ${variantId}`
     );
 
     return {
       id: product.id,
       title: product.title,
+      variantId: variantId,
     };
   } catch (error) {
     console.error(

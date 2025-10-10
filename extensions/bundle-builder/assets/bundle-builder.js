@@ -90,6 +90,12 @@ class WolfpackBundleBuilder {
       const isSelected = self.selections[tabIndex] === product.id;
       const quantity = self.quantities[product.id] || 1;
 
+      // Get price from variants if available, fallback to product.price
+      let price = product.price;
+      if (!price && product.variants && product.variants.length > 0) {
+        price = product.variants[0].price;
+      }
+
       return '<div class="bundle-product-card ' + (isSelected ? 'selected' : '') + '" data-product-id="' + product.id + '">' +
         '<div class="product-image-wrapper">' +
           (product.image ?
@@ -98,7 +104,7 @@ class WolfpackBundleBuilder {
         '</div>' +
         '<div class="product-info">' +
           '<h4 class="product-title">' + product.title + '</h4>' +
-          '<p class="product-price">' + self.formatMoney(product.price) + '</p>' +
+          '<p class="product-price">' + self.formatMoney(price) + '</p>' +
         '</div>' +
         '<div class="product-actions">' +
           '<button class="product-select-btn ' + (isSelected ? 'selected' : '') + '" data-product-id="' + product.id + '" data-tab-id="' + tabIndex + '">' +
@@ -126,9 +132,6 @@ class WolfpackBundleBuilder {
     '</div>';
 
     console.log('✅ Tab content rendered');
-
-    // Re-setup product selection listeners for new content
-    this.setupProductSelection();
   }
 
   formatMoney(cents) {
@@ -188,7 +191,10 @@ class WolfpackBundleBuilder {
   toggleProductSelection(tabId, productId) {
     console.log('🎯 Toggling product selection: tab=' + tabId + ', product=' + productId);
 
-    if (this.selections[tabId] === productId) {
+    const wasSelected = this.selections[tabId] === productId;
+    const previousProductId = this.selections[tabId]; // Store previous selection before changing
+
+    if (wasSelected) {
       // Deselect
       delete this.selections[tabId];
       delete this.quantities[productId];
@@ -198,10 +204,46 @@ class WolfpackBundleBuilder {
       this.quantities[productId] = 1;
     }
 
-    // Re-render current tab to update UI
-    this.renderTabContent(this.currentTab);
+    // Update preview immediately
     this.updatePreview();
     this.updateTabBadge(tabId);
+
+    // Update UI for the specific product card instead of re-rendering entire tab
+    const productCard = this.container.querySelector('.bundle-product-card[data-product-id="' + productId + '"]');
+    if (productCard) {
+      const selectBtn = productCard.querySelector('.product-select-btn');
+      const qtyControls = productCard.querySelector('.product-quantity-controls');
+      const btnText = selectBtn ? selectBtn.querySelector('.btn-text') : null;
+
+      if (!wasSelected) {
+        // Product was just selected
+        productCard.classList.add('selected');
+        if (selectBtn) selectBtn.classList.add('selected');
+        if (btnText) btnText.textContent = 'Selected';
+        if (qtyControls) qtyControls.style.display = 'flex';
+      } else {
+        // Product was just deselected
+        productCard.classList.remove('selected');
+        if (selectBtn) selectBtn.classList.remove('selected');
+        if (btnText) btnText.textContent = 'Select';
+        if (qtyControls) qtyControls.style.display = 'none';
+      }
+    }
+
+    // If there was a previously selected product in this tab (and it's different), deselect it
+    if (!wasSelected && previousProductId && previousProductId !== productId) {
+      const previousCard = this.container.querySelector('.bundle-product-card[data-product-id="' + previousProductId + '"]');
+      if (previousCard) {
+        const selectBtn = previousCard.querySelector('.product-select-btn');
+        const qtyControls = previousCard.querySelector('.product-quantity-controls');
+        const btnText = selectBtn ? selectBtn.querySelector('.btn-text') : null;
+
+        previousCard.classList.remove('selected');
+        if (selectBtn) selectBtn.classList.remove('selected');
+        if (btnText) btnText.textContent = 'Select';
+        if (qtyControls) qtyControls.style.display = 'none';
+      }
+    }
   }
 
   updateTabBadge(tabId) {
@@ -244,7 +286,11 @@ class WolfpackBundleBuilder {
   increaseQuantity(productId) {
     const currentQty = this.quantities[productId] || 1;
     this.quantities[productId] = currentQty + 1;
-    this.renderTabContent(this.currentTab);
+
+    // Update input field directly
+    const input = this.container.querySelector('.qty-input[data-product-id="' + productId + '"]');
+    if (input) input.value = this.quantities[productId];
+
     this.updatePreview();
   }
 
@@ -252,7 +298,11 @@ class WolfpackBundleBuilder {
     const currentQty = this.quantities[productId] || 1;
     if (currentQty > 1) {
       this.quantities[productId] = currentQty - 1;
-      this.renderTabContent(this.currentTab);
+
+      // Update input field directly
+      const input = this.container.querySelector('.qty-input[data-product-id="' + productId + '"]');
+      if (input) input.value = this.quantities[productId];
+
       this.updatePreview();
     }
   }
@@ -300,7 +350,12 @@ class WolfpackBundleBuilder {
       if (!product) return;
 
       const quantity = self.quantities[productId] || 1;
-      const price = parseFloat(product.price || 0) / 100;
+      // Get price from variants if available, fallback to product.price
+      let priceValue = product.price;
+      if (!priceValue && product.variants && product.variants.length > 0) {
+        priceValue = product.variants[0].price;
+      }
+      const price = parseFloat(priceValue || 0) / 100;
       const itemTotal = price * quantity;
       subtotal += itemTotal;
 
@@ -487,6 +542,11 @@ class WolfpackBundleBuilder {
     const items = [];
     const self = this;
 
+    // Generate unique bundle instance ID (bundleId + timestamp hash)
+    const timestamp = Date.now();
+    const bundleInstanceId = self.bundleId + '_' + timestamp;
+    console.log('📦 Bundle Instance ID:', bundleInstanceId);
+
     // Calculate discount for cart attributes
     const totalItems = Object.keys(this.selections).length;
     const subtotal = this.calculateSubtotal();
@@ -514,9 +574,9 @@ class WolfpackBundleBuilder {
         id: variantId,
         quantity: quantity,
         properties: {
-          '_bundle_id': self.bundleId,
+          '_wolfpack_bundle_id': bundleInstanceId, // CRITICAL: This key must match the GraphQL query
           '_bundle_type': 'full_page',
-          '_bundle_item': 'true',
+          '_bundle_name': self.config.name || 'Bundle',
           '_tab_id': tabId
         }
       });
@@ -555,9 +615,16 @@ class WolfpackBundleBuilder {
         return p.id === productId;
       });
 
-      if (product && product.price) {
-        const price = parseFloat(product.price) / 100;
-        subtotal += price * quantity;
+      if (product) {
+        // Get price from variants if available, fallback to product.price
+        let priceValue = product.price;
+        if (!priceValue && product.variants && product.variants.length > 0) {
+          priceValue = product.variants[0].price;
+        }
+        if (priceValue) {
+          const price = parseFloat(priceValue) / 100;
+          subtotal += price * quantity;
+        }
       }
     });
 

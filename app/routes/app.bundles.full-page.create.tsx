@@ -97,6 +97,7 @@ export async function action({ request }: ActionFunctionArgs) {
           description: description || null,
           shopId: shop,
           shopifyProductId: parentProduct.id,
+          shopifyParentVariantId: parentProduct.variantId, // Store variant ID for cart transform
           templateName: bundleId, // Store Bundle ID in templateName field
           bundleType: "full_page",
           status: status as any,
@@ -140,7 +141,11 @@ export async function action({ request }: ActionFunctionArgs) {
       const completeBundle = await db.bundle.findUnique({
         where: { id: bundle.id },
         include: {
-          steps: true,
+          steps: {
+            orderBy: {
+              position: 'asc',
+            },
+          },
           pricing: true,
         },
       });

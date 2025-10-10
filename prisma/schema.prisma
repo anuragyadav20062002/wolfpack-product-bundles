@@ -75,23 +75,24 @@ model Session {
 }
 
 model Bundle {
-  id               String            @id @default(cuid())
-  name             String
-  description      String?
-  shopId           String
-  shopifyProductId String? // New field to store the Shopify Product ID (GID)
-  templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
-  bundleType       BundleType        @default(cart_transform)
-  status           BundleStatus      @default(draft)
-  active           Boolean           @default(false)
-  publishedAt      DateTime?
-  settings         Json?
-  matching         Json?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  steps            BundleStep[]
-  pricing          BundlePricing?
-  analytics        BundleAnalytics[]
+  id                      String            @id @default(cuid())
+  name                    String
+  description             String?
+  shopId                  String
+  shopifyProductId        String? // Shopify Product ID (GID)
+  shopifyParentVariantId  String? // Shopify Parent Variant ID (GID) for cart transform
+  templateName            String? // Template name for bundle container (e.g., "cart-transform", "product")
+  bundleType              BundleType        @default(cart_transform)
+  status                  BundleStatus      @default(draft)
+  active                  Boolean           @default(false)
+  publishedAt             DateTime?
+  settings                Json?
+  matching                Json?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  steps                   BundleStep[]
+  pricing                 BundlePricing?
+  analytics               BundleAnalytics[]
 
   @@index([shopId])
   @@index([status])

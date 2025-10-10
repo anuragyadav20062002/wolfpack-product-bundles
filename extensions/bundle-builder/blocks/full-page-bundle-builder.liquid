@@ -64,7 +64,8 @@
 {% else %}
   <div
     class="wolfpack-bundle-builder"
-    data-bundle-id="{{ bundle_id }}"
+    data-bundle-id="{{ bundle_config.id }}"
+    data-template-name="{{ bundle_id }}"
     data-layout="{{ block.settings.layout }}"
     data-config='{{ bundle_config | json }}'
     style="--primary-color: {{ block.settings.primary_color }}; --button-color: {{ block.settings.button_color }};"

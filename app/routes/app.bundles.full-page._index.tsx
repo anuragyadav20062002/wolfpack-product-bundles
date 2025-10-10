@@ -33,7 +33,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
       }
     },
     include: {
-      steps: true,
+      steps: {
+        orderBy: {
+          position: 'asc',
+        },
+      },
       pricing: true,
     },
     orderBy: { createdAt: "desc" },

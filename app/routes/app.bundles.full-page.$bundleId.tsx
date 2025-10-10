@@ -46,7 +46,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       bundleType: "full_page",
     },
     include: {
-      steps: true,
+      steps: {
+        orderBy: {
+          position: 'asc',
+        },
+      },
       pricing: true,
     },
   });
@@ -82,7 +86,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
       // Fetch existing bundle
       const existingBundle = await db.bundle.findUnique({
         where: { id: bundleId, shopId: shop },
-        include: { steps: true, pricing: true },
+        include: {
+          steps: {
+            orderBy: {
+              position: 'asc',
+            },
+          },
+          pricing: true
+        },
       });
 
       if (!existingBundle) {
@@ -160,7 +171,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
       // Update metafield
       const completeBundle = await db.bundle.findUnique({
         where: { id: bundleId },
-        include: { steps: true, pricing: true },
+        include: {
+          steps: {
+            orderBy: {
+              position: 'asc',
+            },
+          },
+          pricing: true
+        },
       });
 
       if (completeBundle) {

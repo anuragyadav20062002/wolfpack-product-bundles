@@ -211,6 +211,7 @@ export function cartTransformRun(
 // NEW: Widget-based bundle processing (using cart line attributes)
 function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): CartTransformResult {
   console.log("🔍 [WIDGET BUNDLES] Processing widget-based bundles");
+  console.log("🔍 [WIDGET BUNDLES] Bundle configs map:", JSON.stringify(bundleConfigs, null, 2));
   const operations = [];
 
   // Group cart lines by bundle instance ID
@@ -232,6 +233,7 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
   }
 
   console.log(`🔍 [WIDGET BUNDLES] Found ${bundleGroups.size} bundle instance groups`);
+  console.log(`🔍 [WIDGET BUNDLES] Bundle group keys:`, Array.from(bundleGroups.keys()));
 
   // Process each bundle group
   for (const [bundleInstanceId, lines] of bundleGroups.entries()) {
@@ -240,6 +242,7 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
     // Extract base bundle ID from instance ID (format: bundleId_hash)
     const baseBundleId = bundleInstanceId.split('_')[0];
     console.log(`🔍 [WIDGET BUNDLES] Base bundle ID: ${baseBundleId}`);
+    console.log(`🔍 [WIDGET BUNDLES] Full instance ID: ${bundleInstanceId}`);
 
     // Try to get bundle config from cart line product metafields
     // Priority 1: Check product metafields on cart line products
@@ -253,10 +256,14 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
 
           // Match by base bundle ID (strip hash suffix)
           const configId = productBundleConfig.bundleId || productBundleConfig.id;
+          console.log(`🔍 [WIDGET BUNDLES] Comparing configId: ${configId} with baseBundleId: ${baseBundleId} and instanceId: ${bundleInstanceId}`);
+
           if (configId === baseBundleId || configId === bundleInstanceId) {
             bundleConfig = productBundleConfig;
             console.log(`✅ [WIDGET BUNDLES] Matched bundle config: ${bundleConfig.name} (Base ID: ${baseBundleId})`);
             break;
+          } else {
+            console.log(`❌ [WIDGET BUNDLES] No match: ${configId} !== ${baseBundleId}`);
           }
         } catch (error) {
           console.log(`⚠️ [WIDGET BUNDLES] Error parsing product bundle config:`, error);
@@ -274,7 +281,7 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
     if (bundleConfig) {
       console.log(`🔍 [WIDGET BUNDLES] Found config for bundle: ${bundleConfig.name}`);
     } else {
-      console.log(`🔍 [WIDGET BUNDLES] No config found for bundle ${bundleId} - using minimal merge`);
+      console.log(`🔍 [WIDGET BUNDLES] No config found for bundle ${baseBundleId} - using minimal merge`);
     }
 
     // Get bundle container product variant ID
@@ -305,7 +312,7 @@ function processCartTransformWithWidgetBundles(cart: any, bundleConfigs: any): C
     // If we don't have a valid variant ID, skip this bundle
     if (!bundleContainerVariantId) {
       console.log(`❌ [WIDGET BUNDLES] Cannot create merge operation: missing bundleParentVariantId in bundle config`);
-      console.log(`❌ [WIDGET BUNDLES] Bundle ${bundleId} will not be merged - please ensure bundleParentVariantId is set in metafield`);
+      console.log(`❌ [WIDGET BUNDLES] Bundle ${baseBundleId} will not be merged - please ensure bundleParentVariantId is set in metafield`);
       continue; // Skip this bundle
     }
 
