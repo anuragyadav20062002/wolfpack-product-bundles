@@ -1685,7 +1685,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
               discountMethod: mapDiscountMethod(discountData.discountType),
               rules: discountData.discountRules || [],
               messages: {
-                showDiscountDisplay: discountData.discountDisplayEnabled || false,
+                showDiscountDisplay: false,
                 showDiscountMessaging: discountData.discountMessagingEnabled || false,
                 ruleMessages: discountData.ruleMessages || {}
               }
@@ -1695,7 +1695,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
               discountMethod: mapDiscountMethod(discountData.discountType),
               rules: discountData.discountRules || [],
               messages: {
-                showDiscountDisplay: discountData.discountDisplayEnabled || false,
+                showDiscountDisplay: false,
                 showDiscountMessaging: discountData.discountMessagingEnabled || false,
                 ruleMessages: discountData.ruleMessages || {}
               }
@@ -2223,7 +2223,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
   if (!productId) {
     // Calculate proper bundle price based on component products
     console.log("🔧 [BUNDLE_PRICING] Calculating bundle price for product creation");
-    const bundlePrice = await calculateBundlePrice(admin, baseConfiguration);
+    const bundlePrice = await calculateBundlePrice(admin, bundle);
     
     const CREATE_PRODUCT = `
       mutation CreateBundleProduct($input: ProductInput!) {
@@ -2283,7 +2283,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
     // Update existing bundle product price if configuration changed
     try {
       console.log("🔧 [BUNDLE_PRICING] Updating existing bundle product price");
-      const bundlePrice = await calculateBundlePrice(admin, baseConfiguration);
+      const bundlePrice = await calculateBundlePrice(admin, bundle);
       await updateBundleProductPrice(admin, productId, bundlePrice);
     } catch (error) {
       console.error("🔧 [BUNDLE_PRICING] Error updating bundle product price:", error);
@@ -2499,7 +2499,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
             variables: { ids: productIds }
           });
           const bundleProductsData = await bundleProductsResponse.json();
-          bundleContainerProducts = bundleProductsData.data?.nodes?.filter(node => node) || [];
+          bundleContainerProducts = bundleProductsData.data?.nodes?.filter((node: any) => node) || [];
 
           console.log(`🎯 [TEMPLATE_FILTER] Fetched ${bundleContainerProducts.length} bundle container products from Shopify`);
         }
@@ -2735,7 +2735,7 @@ async function handleCleanupDeletedBundles(admin: any, session: any) {
     }
 
     // Create cleaned bundle data with only active bundles
-    const cleanedBundleData = {};
+    const cleanedBundleData: Record<string, any> = {};
     const activeBundleIds = new Set(activeBundles.map(b => b.id));
 
     for (const [bundleId, bundleConfig] of Object.entries(currentBundleData)) {
@@ -2871,7 +2871,7 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
       variables: { ids: productIds }
     });
     const data = await response.json();
-    const products = data.data?.nodes?.filter(node => node) || [];
+    const products = data.data?.nodes?.filter((node: any) => node) || [];
 
     console.log(`🎨 [TEMPLATE_HANDLER] Found ${products.length} bundle container products`);
 
@@ -2998,7 +2998,6 @@ export default function ConfigureBundleFlow() {
   const [discountEnabled, setDiscountEnabled] = useState(bundle.pricing?.enableDiscount || false);
   const [discountType, setDiscountType] = useState(bundle.pricing?.discountMethod || 'fixed_bundle_price');
   const [discountRules, setDiscountRules] = useState(bundle.pricing?.rules || []);
-  const [discountDisplayEnabled, setDiscountDisplayEnabled] = useState(true);
   const [discountMessagingEnabled, setDiscountMessagingEnabled] = useState(true);
   
   // State for rule-specific messaging
@@ -3029,7 +3028,6 @@ export default function ConfigureBundleFlow() {
     discountEnabled: bundle.pricing?.enableDiscount || false,
     discountType: bundle.pricing?.discountMethod || 'fixed_bundle_price',
     discountRules: JSON.stringify(bundle.pricing?.rules || []),
-    discountDisplayEnabled: true,
     discountMessagingEnabled: true,
     selectedCollections: JSON.stringify({}),
     ruleMessages: JSON.stringify({}),
@@ -3195,7 +3193,6 @@ export default function ConfigureBundleFlow() {
       discountEnabled !== originalValues.discountEnabled ||
       discountType !== originalValues.discountType ||
       JSON.stringify(discountRules) !== originalValues.discountRules ||
-      discountDisplayEnabled !== originalValues.discountDisplayEnabled ||
       discountMessagingEnabled !== originalValues.discountMessagingEnabled ||
       JSON.stringify(ruleMessages) !== originalValues.ruleMessages
     );
@@ -3223,7 +3220,7 @@ export default function ConfigureBundleFlow() {
   }, [
     bundleStatus, bundleName, bundleDescription, templateName, steps,
     discountEnabled, discountType, discountRules,
-    discountDisplayEnabled, discountMessagingEnabled, ruleMessages,
+    discountMessagingEnabled, ruleMessages,
     selectedCollections, stepConditions, bundleProduct, productStatus,
     originalValues
   ]);
@@ -3249,7 +3246,6 @@ export default function ConfigureBundleFlow() {
         discountEnabled,
         discountType,
         discountRules,
-        discountDisplayEnabled,
         discountMessagingEnabled,
         ruleMessages
       }));
@@ -3269,7 +3265,7 @@ export default function ConfigureBundleFlow() {
       console.error("Save failed:", error);
       shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true });
     }
-  }, [bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
+  }, [bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
 
   // Function to enhance template list with user's selected template
   const enhanceTemplateListWithUserSelection = useCallback((templates: any[]) => {
@@ -3333,7 +3329,6 @@ export default function ConfigureBundleFlow() {
             discountEnabled: discountEnabled,
             discountType: discountType,
             discountRules: JSON.stringify(discountRules),
-            discountDisplayEnabled: discountDisplayEnabled,
             discountMessagingEnabled: discountMessagingEnabled,
             selectedCollections: JSON.stringify(selectedCollections),
             ruleMessages: JSON.stringify(ruleMessages),
@@ -3393,7 +3388,7 @@ export default function ConfigureBundleFlow() {
         }
       }
     }
-  }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountDisplayEnabled, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify, enhanceTemplateListWithUserSelection]);
+  }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify, enhanceTemplateListWithUserSelection]);
 
   // Discard handler
   const handleDiscard = useCallback(() => {
@@ -3407,7 +3402,6 @@ export default function ConfigureBundleFlow() {
       setDiscountEnabled(originalValues.discountEnabled);
       setDiscountType(originalValues.discountType);
       setDiscountRules(JSON.parse(originalValues.discountRules));
-      setDiscountDisplayEnabled(originalValues.discountDisplayEnabled);
       setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
       setSelectedCollections(JSON.parse(originalValues.selectedCollections));
       setRuleMessages(JSON.parse(originalValues.ruleMessages));
@@ -4934,20 +4928,6 @@ export default function ConfigureBundleFlow() {
                       )}
                     </BlockStack>
 
-                    {/* Discount Display Options */}
-                    <BlockStack gap="300">
-                      <Text variant="headingSm" as="h4">
-                        Discount Display Options
-                      </Text>
-                      <Text variant="bodyMd" tone="subdued">
-                        Choose how discounts are displayed
-                      </Text>
-                      <Checkbox
-                        label="Discount Display Options"
-                        checked={discountDisplayEnabled}
-                        onChange={setDiscountDisplayEnabled}
-                      />
-                    </BlockStack>
 
                     {/* Discount Messaging */}
                     <BlockStack gap="300">

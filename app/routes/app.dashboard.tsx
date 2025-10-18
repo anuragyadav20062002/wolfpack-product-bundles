@@ -14,7 +14,6 @@ import {
   Thumbnail,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { EditIcon, PlusIcon, ProductIcon } from "@shopify/polaris-icons";
 import db from "../db.server";
 
 // Define a type for the bundle

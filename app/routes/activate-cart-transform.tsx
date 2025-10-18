@@ -8,7 +8,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.log('🚀 Activating cart transform function...');
     
     // Function ID from your .env file
-    const functionId = "527a500e-5386-4a67-a61b-9cb4cb8973f8";
+    const functionId = process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID || "527a500e-5386-4a67-a61b-9cb4cb8973f8";
     
     console.log(`📍 Using function ID: ${functionId}`);
     

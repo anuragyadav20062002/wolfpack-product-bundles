@@ -1,8 +1,12 @@
 import { json } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import { ThemeTemplateService } from "../services/theme-template-service.server";
 
+/**
+ * API endpoint for theme editor integration
+ * Note: Shopify restricts programmatic theme file creation, so this returns
+ * instructions for merchants to add the Bundle Builder block via Theme Customizer
+ */
 export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const { admin, session } = await authenticate.admin(request);
@@ -10,7 +14,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const body = await request.json();
     const { productHandle, bundleId } = body;
 
-    console.log(`🎨 [ENSURE_TEMPLATE] Creating template for product: ${productHandle}, bundle: ${bundleId}`);
+    console.log(`🎨 [ENSURE_TEMPLATE] Theme editor request for product: ${productHandle}, bundle: ${bundleId}`);
 
     if (!productHandle) {
       return json({
@@ -19,48 +23,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }, { status: 400 });
     }
 
-    const templateService = new ThemeTemplateService(admin, session);
-    const result = await templateService.ensureProductTemplate(productHandle);
+    // Shopify restricts programmatic theme file creation
+    // Return success with instructions for manual setup via Theme Customizer
+    console.log(`ℹ️ [ENSURE_TEMPLATE] Shopify restricts theme file creation - returning Theme Customizer instructions`);
 
-    if (result.success) {
-      console.log(`✅ [ENSURE_TEMPLATE] Template operation successful: ${result.created ? 'CREATED' : 'EXISTS'}`);
-
-      // Handle theme modification restriction gracefully
-      if (result.error?.includes('THEME_MODIFICATION_RESTRICTED')) {
-        return json({
-          success: true,
-          created: false,
-          templatePath: result.templatePath,
-          message: `Bundle functionality available via theme app extension. Add the Bundle Builder block to your product template through the theme editor.`,
-          bundleId,
-          themeExtensionRequired: true,
-          restrictionMessage: result.error
-        });
-      }
-
-      return json({
-        success: true,
-        created: result.created,
-        templatePath: result.templatePath,
-        message: result.created
-          ? `Created new template for ${productHandle}`
-          : `Template already exists for ${productHandle}`,
-        bundleId
-      });
-    } else {
-      console.error(`❌ [ENSURE_TEMPLATE] Template operation failed: ${result.error}`);
-
-      return json({
-        success: false,
-        error: result.error || "Failed to create template"
-      }, { status: 500 });
-    }
+    return json({
+      success: true,
+      created: false,
+      templatePath: "theme-app-extension",
+      message: `Bundle functionality available via theme app extension. Add the Bundle Builder block to your product template through the theme editor.`,
+      bundleId,
+      themeExtensionRequired: true,
+      restrictionMessage: "Shopify restricts direct theme file creation. Use Theme Customizer to add the Bundle Builder block to your product template."
+    });
 
   } catch (error) {
     console.error("🔥 [ENSURE_TEMPLATE] Unexpected error:", error);
     return json({
       success: false,
-      error: (error as Error).message || "Template creation failed"
+      error: (error as Error).message || "Request failed"
     }, { status: 500 });
   }
 };
