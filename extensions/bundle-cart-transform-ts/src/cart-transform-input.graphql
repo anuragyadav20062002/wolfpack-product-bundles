@@ -3,8 +3,6 @@ query Input {
     lines {
       id
       quantity
-      # CRITICAL: Cart line attributes for bundle detection
-      # Line item properties (added via properties in cart add) become accessible as attributes
       attribute(key: "_wolfpack_bundle_id") {
         value
       }
@@ -12,8 +10,6 @@ query Input {
         __typename
         ... on ProductVariant {
           id
-          title
-          # Standard Shopify bundle metafields for cart transform (app-reserved namespace)
           component_reference: metafield(namespace: "$app", key: "component_reference") {
             value
           }
@@ -26,17 +22,12 @@ query Input {
           price_adjustment: metafield(namespace: "$app", key: "price_adjustment") {
             value
           }
-          # Access product itself for additional bundle configuration data
           product {
             id
-            title
-            # Bundle configuration metafields on the product level
-            bundle_config: metafield(namespace: "bundle_discounts", key: "cart_transform_config") {
+            bundle_config: metafield(namespace: "$app", key: "bundle_config") {
               value
-              jsonValue
             }
-            # Fallback: All bundles data stored on products for cart transform access
-            all_bundles_data: metafield(namespace: "custom", key: "all_bundles_data") {
+            cart_transform_config: metafield(namespace: "bundle_discounts", key: "cart_transform_config") {
               value
             }
           }
@@ -45,14 +36,11 @@ query Input {
       cost {
         amountPerQuantity {
           amount
-          currencyCode
         }
         totalAmount {
           amount
-          currencyCode
         }
       }
     }
-    # CRITICAL: Cart-level bundle configurations from CartTransform metafield
   }
 }

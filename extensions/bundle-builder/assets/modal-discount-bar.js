@@ -3,6 +3,29 @@
  * Elegant design with pills, progress tracking, and smooth animations
  */
 
+// Helper function to extract discount value from rule based on discount method
+function getDiscountValueFromRule(rule, discountMethod) {
+  if (!rule) return 0;
+
+  switch (discountMethod) {
+    case 'fixed_amount_off':
+      // For fixed amount off, return the discount amount
+      return parseFloat(rule.discountValue || 0);
+
+    case 'percentage_off':
+      // For percentage off, return the percentage value
+      return parseFloat(rule.discountValue || 0);
+
+    case 'fixed_bundle_price':
+      // For fixed bundle price, return the target bundle price
+      const fixedPrice = parseFloat(rule.fixedBundlePrice || 0);
+      return fixedPrice;
+
+    default:
+      return parseFloat(rule.discountValue || 0);
+  }
+}
+
 function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, formatCurrency) {
   const discountCard = document.querySelector('.modal-discount-card');
 
@@ -28,22 +51,22 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
   // Find applicable discount rule
   let applicableRule = null;
   for (const rule of rules) {
-    const ruleQuantity = rule.value || rule.numberOfProducts || 0;
+    const ruleQuantity = rule.value || 0;
     const conditionMet = rule.condition === 'greater_than_equal_to' || rule.condition === 'gte'
       ? selectedQuantity >= ruleQuantity
       : selectedQuantity === ruleQuantity;
 
-    if (conditionMet && (!applicableRule || ruleQuantity > (applicableRule.value || applicableRule.numberOfProducts || 0))) {
+    if (conditionMet && (!applicableRule || ruleQuantity > (applicableRule.value || 0))) {
       applicableRule = rule;
     }
   }
 
   // Find target quantity for progress
-  const sortedRules = rules.sort((a, b) => (a.value || a.numberOfProducts || 0) - (b.value || b.numberOfProducts || 0));
-  const nextRule = sortedRules.find(rule => selectedQuantity < (rule.value || rule.numberOfProducts || 0));
+  const sortedRules = rules.sort((a, b) => (a.value || 0) - (b.value || 0));
+  const nextRule = sortedRules.find(rule => selectedQuantity < (rule.value || 0));
   const targetQuantity = nextRule
-    ? (nextRule.value || nextRule.numberOfProducts || 0)
-    : (sortedRules[sortedRules.length - 1]?.value || sortedRules[sortedRules.length - 1]?.numberOfProducts || 0);
+    ? (nextRule.value || 0)
+    : (sortedRules[sortedRules.length - 1]?.value || 0);
 
   // Calculate discount
   let discountAmount = 0;
@@ -55,7 +78,7 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
     } else if (discountMethod === 'fixed_amount_off') {
       discountAmount = parseFloat(applicableRule.discountValue || 0);
     } else if (discountMethod === 'fixed_bundle_price') {
-      const fixedPrice = parseFloat(applicableRule.price || applicableRule.fixedBundlePrice || 0);
+      const fixedPrice = parseFloat(applicableRule.fixedBundlePrice || 0);
       discountAmount = Math.max(0, totalPrice - fixedPrice);
     }
   }
@@ -92,7 +115,15 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
     if (customMessage) {
       discountMessage.textContent = customMessage;
     } else {
-      discountMessage.textContent = `🎉 Discount Unlocked! You're saving ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''}`;
+      // Format the discount display based on method
+      let discountDisplay;
+      if (discountMethod === 'percentage_off') {
+        discountDisplay = `${discountValue}%`;
+      } else {
+        // For fixed_amount_off and fixed_bundle_price, show the actual savings amount
+        discountDisplay = formatCurrency(discountAmount);
+      }
+      discountMessage.textContent = `🎉 Discount Unlocked! You're saving ${discountDisplay}`;
     }
 
     // Show savings pill
@@ -105,15 +136,40 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
     discountCard.classList.remove('qualified');
 
     const itemsNeeded = Math.max(0, targetQuantity - selectedQuantity);
-    const discountValue = nextRule.discountValue || 0;
     const discountMethod = pricing.method || pricing.discountMethod;
+
+    // Get discount value using helper function
+    const discountValue = getDiscountValueFromRule(nextRule, discountMethod);
+
+    // Determine value unit based on discount method
+    let valueDisplay;
+    if (discountMethod === 'percentage_off') {
+      valueDisplay = `${discountValue}% off`;
+    } else if (discountMethod === 'fixed_bundle_price') {
+      valueDisplay = formatCurrency(discountValue); // Show target price
+    } else if (discountMethod === 'fixed_amount_off') {
+      valueDisplay = `${formatCurrency(discountValue)} off`;
+    } else {
+      valueDisplay = `${discountValue} off`;
+    }
 
     // Custom message if available
     const customMessage = pricing.messages?.discountText || nextRule.discountText;
     if (customMessage) {
-      discountMessage.textContent = customMessage.replace('{items_needed}', itemsNeeded);
+      // Replace variables in custom message
+      let message = customMessage
+        .replace(/{items_needed}/g, itemsNeeded)
+        .replace(/{discountConditionDiff}/g, itemsNeeded)
+        .replace(/{discountValue}/g, discountValue)
+        .replace(/{discountValueUnit}/g, discountMethod === 'percentage_off' ? '% off' : (discountMethod === 'fixed_bundle_price' ? formatCurrency('').replace(/[0-9.,]/g, '') : formatCurrency('').replace(/[0-9.,]/g, '') + ' off'));
+      discountMessage.textContent = message;
     } else {
-      discountMessage.textContent = `Add ${itemsNeeded} more item${itemsNeeded !== 1 ? 's' : ''} to unlock ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''} off!`;
+      // Default message - different wording for fixed_bundle_price
+      if (discountMethod === 'fixed_bundle_price') {
+        discountMessage.textContent = `Add ${itemsNeeded} more item${itemsNeeded !== 1 ? 's' : ''} to get bundle at ${valueDisplay}`;
+      } else {
+        discountMessage.textContent = `Add ${itemsNeeded} more item${itemsNeeded !== 1 ? 's' : ''} to unlock ${valueDisplay}!`;
+      }
     }
 
     // Hide savings pill
@@ -125,11 +181,30 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
     discountCard.classList.remove('qualified');
 
     const minRule = sortedRules[0];
-    const minQuantity = minRule.value || minRule.numberOfProducts || 0;
-    const discountValue = minRule.discountValue || 0;
+    const minQuantity = minRule.value || 0;
     const discountMethod = pricing.method || pricing.discountMethod;
 
-    discountMessage.textContent = `Select ${minQuantity} item${minQuantity !== 1 ? 's' : ''} to get ${discountValue}${discountMethod === 'percentage_off' ? '%' : ''} off`;
+    // Get discount value using helper function
+    const discountValue = getDiscountValueFromRule(minRule, discountMethod);
+
+    // Determine value display based on discount method
+    let valueDisplay;
+    if (discountMethod === 'percentage_off') {
+      valueDisplay = `${discountValue}% off`;
+    } else if (discountMethod === 'fixed_bundle_price') {
+      valueDisplay = formatCurrency(discountValue); // Show target price
+    } else if (discountMethod === 'fixed_amount_off') {
+      valueDisplay = `${formatCurrency(discountValue)} off`;
+    } else {
+      valueDisplay = `${discountValue} off`;
+    }
+
+    // Different wording for fixed_bundle_price
+    if (discountMethod === 'fixed_bundle_price') {
+      discountMessage.textContent = `Select ${minQuantity} item${minQuantity !== 1 ? 's' : ''} to get bundle at ${valueDisplay}`;
+    } else {
+      discountMessage.textContent = `Select ${minQuantity} item${minQuantity !== 1 ? 's' : ''} to get ${valueDisplay}`;
+    }
 
     // Hide savings pill
     if (savingsPill) {

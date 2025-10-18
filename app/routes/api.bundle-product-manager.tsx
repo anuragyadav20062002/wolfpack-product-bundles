@@ -101,8 +101,26 @@ export async function action({ request }: ActionFunctionArgs) {
           bundleId
         );
 
-        // Update shop metafields with isolation
-        await BundleIsolationService.updateShopBundlesWithIsolation(admin, session.shop);
+        // Update bundle product metafield with bundle configuration
+        const bundleWithDetails = await db.bundle.findUnique({
+          where: { id: bundleId },
+          include: {
+            steps: {
+              include: {
+                StepProduct: true
+              }
+            },
+            pricing: true
+          }
+        });
+
+        if (bundleWithDetails) {
+          await BundleIsolationService.updateBundleProductMetafield(
+            admin,
+            bundleProduct.id,
+            bundleWithDetails
+          );
+        }
 
         console.log(`✅ [CREATE_BUNDLE_PRODUCT] Bundle product created successfully: ${bundleProduct.id}`);
 
@@ -182,8 +200,26 @@ export async function action({ request }: ActionFunctionArgs) {
           }, { status: 500 });
         }
 
-        // Update shop metafields with isolation
-        await BundleIsolationService.updateShopBundlesWithIsolation(admin, session.shop);
+        // Update bundle product metafield with bundle configuration
+        const bundleWithDetails = await db.bundle.findUnique({
+          where: { id: bundleId },
+          include: {
+            steps: {
+              include: {
+                StepProduct: true
+              }
+            },
+            pricing: true
+          }
+        });
+
+        if (bundleWithDetails) {
+          await BundleIsolationService.updateBundleProductMetafield(
+            admin,
+            bundleProduct.id,
+            bundleWithDetails
+          );
+        }
 
         console.log(`✅ [UPDATE_BUNDLE_PRODUCT] Bundle product updated successfully`);
 

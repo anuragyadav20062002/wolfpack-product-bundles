@@ -3,16 +3,16 @@
  * Clean, professional, and visually appealing
  */
 
-/* Main Card Container */
+/* Main Card Container - Modern Bundle App Design */
 .modal-discount-card {
   display: none;
-  margin: 20px 24px 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 16px 20px 12px;
+  background: linear-gradient(135deg, #f8f7ff 0%, #ffffff 100%);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(113, 50, 255, 0.08);
+  border: 1.5px solid rgba(113, 50, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
@@ -23,20 +23,21 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 50%, #81c784 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  height: 4px;
+  background: linear-gradient(90deg, #7132FF 0%, #9b6bff 100%);
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
 }
 
-/* Qualified State - Enhanced Styling */
-.modal-discount-card.qualified {
+/* Success State - Enhanced Styling */
+.modal-discount-card.success {
   background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
-  border-color: rgba(76, 175, 80, 0.2);
-  box-shadow: 0 4px 20px rgba(76, 175, 80, 0.15);
+  border-color: rgba(40, 167, 69, 0.3);
+  box-shadow: 0 3px 12px rgba(40, 167, 69, 0.12);
 }
 
-.modal-discount-card.qualified::before {
+.modal-discount-card.success::before {
+  background: linear-gradient(90deg, #28a745 0%, #34ce57 100%);
   opacity: 1;
 }
 
@@ -50,29 +51,29 @@
 /* Icon Wrapper with Pill Background */
 .discount-icon-wrapper {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #ede7ff 0%, #f3f0ff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.modal-discount-card.qualified .discount-icon-wrapper {
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-  transform: rotate(360deg);
+.modal-discount-card.success .discount-icon-wrapper {
+  background: linear-gradient(135deg, #28a745 0%, #34ce57 100%);
+  transform: scale(1.05);
 }
 
 .discount-icon {
-  width: 26px;
-  height: 26px;
-  color: #1976d2;
-  transition: color 0.4s ease;
+  width: 24px;
+  height: 24px;
+  color: #7132FF;
+  transition: color 0.3s ease;
 }
 
-.modal-discount-card.qualified .discount-icon {
+.modal-discount-card.success .discount-icon {
   color: #ffffff;
 }
 
@@ -86,15 +87,15 @@
 
 /* Message Text */
 .discount-message {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #2d3748;
   line-height: 1.4;
   transition: color 0.3s ease;
 }
 
-.modal-discount-card.qualified .discount-message {
-  color: #2e7d32;
+.modal-discount-card.success .discount-message {
+  color: #1e7e34;
 }
 
 /* Progress Wrapper */
@@ -107,8 +108,8 @@
 /* Modern Progress Bar */
 .discount-progress-bar {
   flex: 1;
-  height: 8px;
-  background: rgba(0, 0, 0, 0.08);
+  height: 7px;
+  background: rgba(113, 50, 255, 0.1);
   border-radius: 10px;
   overflow: hidden;
   position: relative;
@@ -116,14 +117,14 @@
 
 .discount-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #1976d2 0%, #2196f3 100%);
+  background: linear-gradient(90deg, #7132FF 0%, #9b6bff 100%);
   border-radius: 10px;
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
-.modal-discount-card.qualified .discount-progress-fill {
-  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+.modal-discount-card.success .discount-progress-fill {
+  background: linear-gradient(90deg, #28a745 0%, #34ce57 100%);
 }
 
 /* Shimmer Effect on Progress */
@@ -153,17 +154,17 @@
 
 /* Progress Percentage Text */
 .discount-progress-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: #1976d2;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #7132FF;
   white-space: nowrap;
-  min-width: 36px;
+  min-width: 42px;
   text-align: right;
   transition: color 0.3s ease;
 }
 
-.modal-discount-card.qualified .discount-progress-text {
-  color: #4caf50;
+.modal-discount-card.success .discount-progress-text {
+  color: #28a745;
 }
 
 /* Savings Pill Badge */
@@ -287,10 +288,7 @@
   }
 }
 
-/* Hide old footer messaging */
-.bundle-footer-messaging {
-  display: none !important;
-}
+/* Footer messaging is managed by bundle-widget.css */
 
 /* Loading State */
 .modal-discount-card.loading .discount-progress-fill {

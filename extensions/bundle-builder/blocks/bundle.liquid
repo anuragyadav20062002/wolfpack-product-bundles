@@ -23,6 +23,12 @@
       "info": "Enter the specific bundle ID to display. This is automatically populated when adding the widget from the bundle admin, or you can manually enter a bundle ID here."
     },
     {
+      "type": "text",
+      "id": "app_url",
+      "label": "App server URL (optional)",
+      "info": "Override the app server URL for development/testing. Leave blank to auto-detect. Example: https://your-tunnel.trycloudflare.com"
+    },
+    {
       "type": "header",
       "content": "Layout and sizing"
     },
@@ -68,54 +74,6 @@
       "label": "Add to cart button height",
       "default": 55,
       "info": "Controls the height of the main add to cart button"
-    },
-    {
-      "type": "header",
-      "content": "Spacing controls"
-    },
-    {
-      "type": "range",
-      "id": "container_spacing",
-      "min": 0,
-      "max": 60,
-      "step": 5,
-      "unit": "px",
-      "label": "Container spacing",
-      "default": 20,
-      "info": "Overall spacing around the widget container (margin and padding)"
-    },
-    {
-      "type": "range",
-      "id": "element_spacing",
-      "min": 5,
-      "max": 40,
-      "step": 5,
-      "unit": "px",
-      "label": "Element spacing",
-      "default": 15,
-      "info": "Spacing between and within widget elements (margins and padding)"
-    },
-    {
-      "type": "range",
-      "id": "step_card_spacing",
-      "min": 5,
-      "max": 40,
-      "step": 5,
-      "unit": "px",
-      "label": "Step card spacing",
-      "default": 15,
-      "info": "Space around and within individual step cards"
-    },
-    {
-      "type": "range",
-      "id": "button_spacing",
-      "min": 10,
-      "max": 50,
-      "step": 5,
-      "unit": "px",
-      "label": "Button spacing",
-      "default": 25,
-      "info": "Margin and padding around the add to cart button"
     },
     {
       "type": "header",
@@ -169,35 +127,119 @@
     },
     {
       "type": "header",
-      "content": "Colors"
-    },
-    {
-      "type": "color",
-      "id": "footer_background_color",
-      "label": "Message background color",
-      "info": "Background color for the discount messaging area",
-      "default": "#f8f9fa"
-    },
-    {
-      "type": "color",
-      "id": "footer_text_color",
-      "label": "Message text color",
-      "info": "Text color for discount messages and progress indicators",
-      "default": "#2e7d32"
+      "content": "Discount colors"
     },
     {
       "type": "color",
       "id": "progress_bar_color",
       "label": "Progress bar color",
-      "info": "Color of the progress bar as it fills up",
-      "default": "#28a745"
+      "info": "Color for discount progress indicators",
+      "default": "#7132FF"
     },
     {
       "type": "color",
-      "id": "savings_badge_color",
-      "label": "Savings highlight color",
-      "info": "Color for the savings amount badge and highlights",
+      "id": "success_color",
+      "label": "Success color",
+      "info": "Color shown when discount is qualified",
       "default": "#28a745"
+    },
+    {
+      "type": "header",
+      "content": "Step navigation styling"
+    },
+    {
+      "type": "range",
+      "id": "step_tab_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Step tab border radius",
+      "default": 10,
+      "info": "Rounded corners for step navigation tabs"
+    },
+    {
+      "type": "color",
+      "id": "step_tab_active_color",
+      "label": "Active step background",
+      "info": "Background color for the currently active step",
+      "default": "#111827"
+    },
+    {
+      "type": "color",
+      "id": "step_tab_completed_color",
+      "label": "Completed step color",
+      "info": "Color for completed step indicators",
+      "default": "#10b981"
+    },
+    {
+      "type": "header",
+      "content": "Modal UI customization"
+    },
+    {
+      "type": "range",
+      "id": "modal_product_card_height",
+      "min": 140,
+      "max": 200,
+      "step": 10,
+      "unit": "px",
+      "label": "Modal product card height",
+      "default": 160,
+      "info": "Height of product cards in the modal"
+    },
+    {
+      "type": "range",
+      "id": "modal_product_image_height",
+      "min": 50,
+      "max": 90,
+      "step": 5,
+      "unit": "px",
+      "label": "Modal product image height",
+      "default": 70,
+      "info": "Height of product images in the modal"
+    },
+    {
+      "type": "color",
+      "id": "modal_step_title_color",
+      "label": "Modal step title color",
+      "info": "Color for step titles in the modal",
+      "default": "#2c5530"
+    },
+    {
+      "type": "color",
+      "id": "modal_product_price_color",
+      "label": "Modal product price color",
+      "info": "Color for product prices in the modal",
+      "default": "#2c5530"
+    },
+    {
+      "type": "color",
+      "id": "modal_product_price_bg",
+      "label": "Modal product price background",
+      "info": "Background color for product price badges",
+      "default": "#f0f8f0"
+    },
+    {
+      "type": "range",
+      "id": "modal_product_title_size",
+      "min": 70,
+      "max": 120,
+      "step": 5,
+      "unit": "%",
+      "label": "Modal product title font size",
+      "default": 90,
+      "info": "Font size for product titles in the modal (as percentage)"
+    },
+    {
+      "type": "range",
+      "id": "modal_product_price_size",
+      "min": 60,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "label": "Modal product price font size",
+      "default": 85,
+      "info": "Font size for product prices in the modal (as percentage)"
     }
   ]
 }
@@ -307,21 +349,13 @@
         margin: 20px 0;
         box-shadow: 0 4px 12px rgba(0, 122, 206, 0.1);
       }
-
-      /* Add bundle indicator to product title */
-      .product__title:before,
-      .product-title:before,
-      h1:before {
-        content: "🎁 Bundle: ";
-        color: #007ace;
-        font-weight: bold;
-      }
     </style>
     {% endif %}
 
     <div
       id="bundle-builder-app"
       data-bundle-id="{% if block.settings.bundle_id and block.settings.bundle_id != blank %}{{ block.settings.bundle_id }}{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}{{ container_bundle_id }}{% endif %}"
+      data-app-url="{{ block.settings.app_url | default: '' }}"
       data-is-container-product="{{ is_container_product }}"
       data-container-bundle-id="{{ container_bundle_id }}"
       data-auto-display-mode="{{ auto_display_mode }}"
@@ -338,14 +372,35 @@
         --button-height: {{ block.settings.button_height }}px;
         --widget-max-width: {{ block.settings.widget_max_width }}px;
         --step-cards-per-row: {{ block.settings.step_cards_per_row }};
-        --container-spacing: {{ block.settings.container_spacing }}px;
-        --element-spacing: {{ block.settings.element_spacing }}px;
-        --step-card-spacing: {{ block.settings.step_card_spacing }}px;
-        --button-spacing: {{ block.settings.button_spacing }}px;
-        --footer-bg-color: {{ block.settings.footer_background_color }};
-        --footer-text-color: {{ block.settings.footer_text_color }};
+        --container-spacing: 20px;
+        --element-spacing: 15px;
+        --step-card-spacing: 15px;
+        --button-spacing: 25px;
+        --modal-footer-bg-color: #ffffff;
+        --modal-footer-text-color: #2d3748;
+        --modal-footer-accent-color: {{ block.settings.progress_bar_color }};
+        --modal-footer-success-color: {{ block.settings.success_color }};
+        --footer-bg-color: #f8f9fa;
+        --footer-text-color: {{ block.settings.success_color }};
         --progress-bar-color: {{ block.settings.progress_bar_color }};
-        --savings-badge-color: {{ block.settings.savings_badge_color }};
+        --savings-badge-color: {{ block.settings.success_color }};
+        --modal-tab-border-radius: {{ block.settings.step_tab_border_radius }}px;
+        --modal-tab-active-bg-start: {{ block.settings.step_tab_active_color }};
+        --modal-tab-active-bg-end: {{ block.settings.step_tab_active_color }};
+        --modal-tab-active-border-color: {{ block.settings.step_tab_active_color }};
+        --modal-tab-completed-border-color: {{ block.settings.step_tab_completed_color }};
+        --modal-tab-completed-number-bg: {{ block.settings.step_tab_completed_color }};
+        --modal-tab-checkmark-bg: {{ block.settings.step_tab_completed_color }};
+        --modal-tab-completed-progress-fill-start: {{ block.settings.step_tab_completed_color }};
+        --modal-tab-progress-fill-start: {{ block.settings.progress_bar_color }};
+        --modal-tab-progress-fill-end: {{ block.settings.progress_bar_color }};
+        --modal-product-card-height: {{ block.settings.modal_product_card_height }}px;
+        --modal-product-image-height: {{ block.settings.modal_product_image_height }}px;
+        --modal-step-title-color: {{ block.settings.modal_step_title_color }};
+        --modal-product-price-color: {{ block.settings.modal_product_price_color }};
+        --modal-product-price-bg: {{ block.settings.modal_product_price_bg }};
+        --modal-product-title-size: {{ block.settings.modal_product_title_size }}%;
+        --modal-product-price-size: {{ block.settings.modal_product_price_size }}%;
       "
       class="bundle-widget-container"
     >
@@ -386,19 +441,21 @@
 {% endif %}
 
 <script>
-  // Enhanced bundle data loading with multiple fallback sources
+  // Load bundle configuration directly from product metafield
+  // This is much faster than shop-level metafields and naturally isolated
   if (!window.allBundlesData) {
-    // Primary source: shop metafield (custom namespace)
-    const primaryBundleData = {{ shop.metafields.custom.all_bundles.value | json }};
+    // Primary source: product's bundle_config metafield
+    const productBundleConfig = {{ product.metafields['$app'].bundle_config.value | json }};
 
-    // Fallback source: app namespace metafield
-    const fallbackBundleData = {{ shop.metafields['$app:all_bundles'].value | json }};
-
-    // Alternative app namespace
-    const altAppBundleData = {{ shop.metafields.app.all_bundles.value | json }};
-
-    // Use the first available data source
-    window.allBundlesData = primaryBundleData || fallbackBundleData || altAppBundleData || {};
+    // Set as allBundlesData object (widget expects this name)
+    // Create an object with the bundle ID as key for compatibility
+    if (productBundleConfig && productBundleConfig.id) {
+      window.allBundlesData = {
+        [productBundleConfig.id]: productBundleConfig
+      };
+    } else {
+      window.allBundlesData = null;
+    }
 
     window.currentProductId = {{ product.id | json }};
     window.currentProductHandle = {{ product.handle | json }};
@@ -408,53 +465,24 @@
     window.bundleWidgetInstanceCount = (window.bundleWidgetInstanceCount || 0) + 1;
 
     // Enhanced debugging for bundle data loading
-    console.log('🎯 [BUNDLE_DATA] Loading bundle data for product:', {{ product.id | json }});
-    console.log('🎯 [BUNDLE_DATA] Primary bundle data (custom namespace):', !!primaryBundleData, primaryBundleData ? Object.keys(primaryBundleData).length : 0);
-    console.log('🔍 [BUNDLE_DATA] Primary data structure:', primaryBundleData);
-    console.log('🎯 [BUNDLE_DATA] Fallback bundle data ($app namespace):', !!fallbackBundleData, fallbackBundleData ? Object.keys(fallbackBundleData).length : 0);
-    console.log('🎯 [BUNDLE_DATA] Alt app bundle data (app namespace):', !!altAppBundleData, altAppBundleData ? Object.keys(altAppBundleData).length : 0);
-    console.log('🎯 [BUNDLE_DATA] Final bundle data:', !!window.allBundlesData, window.allBundlesData ? Object.keys(window.allBundlesData).length : 0);
-    console.log('🔍 [BUNDLE_DATA] Final data structure:', window.allBundlesData);
+    console.log('🎯 [BUNDLE_DATA] Loading bundle config from product metafield:', {{ product.id | json }});
+    console.log('🎯 [BUNDLE_DATA] Product bundle config found:', !!productBundleConfig);
+    console.log('🔍 [BUNDLE_DATA] Bundle config structure:', productBundleConfig);
 
-    // Enhanced bundle data validation and fallback fetching
-    const hasExpectedBundle = window.allBundlesData &&
-                              (window.allBundlesData['{{ container_bundle_id }}'] ||
-                               Object.keys(window.allBundlesData).length > 0);
+    // Validate bundle configuration
+    const hasBundleConfig = productBundleConfig && productBundleConfig.id;
 
-    if (!hasExpectedBundle) {
-      console.log('🔄 [BUNDLE_DATA] Bundle data missing or stale (expected: {{ container_bundle_id }}), fetching fresh data...');
-      console.log('🔍 [BUNDLE_DATA] Current bundle IDs in metafield:', Object.keys(window.allBundlesData || {}));
+    if (!hasBundleConfig) {
+      console.log('🔄 [BUNDLE_DATA] No bundle config found on product metafield');
+      console.log('🔍 [BUNDLE_DATA] Product ID:', {{ product.id | json }});
+      console.log('🔍 [BUNDLE_DATA] Is this a bundle product? Check admin configuration.');
 
-      // Force refresh by fetching latest bundle data from shop metafield via Shopify API
-      // This bypasses Liquid's cache and gets the latest data
-      fetch('/apps/bundle-discounts/api/bundles.json', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw new Error('Bundle data fetch failed');
-      })
-      .then(data => {
-        console.log('✅ [BUNDLE_DATA] Successfully fetched fresh bundle data:', data);
-        window.allBundlesData = data.bundles || data || {};
-        console.log('✅ [BUNDLE_DATA] Updated bundle IDs:', Object.keys(window.allBundlesData));
-
-        // Re-initialize widgets with new data
-        if (window.reinitializeAllBundleWidgets) {
-          setTimeout(() => window.reinitializeAllBundleWidgets(), 100);
-        }
-      })
-      .catch(error => {
-        console.log('⚠️ [BUNDLE_DATA] Dynamic fetch failed, using cached data:', error);
-        // Keep the existing cached data rather than clearing it
-      });
+      // Bundle config not found - this may be expected for non-bundle products
+      console.log('ℹ️ [BUNDLE_DATA] This product does not have a bundle configuration.');
     } else {
-      console.log('✅ [BUNDLE_DATA] Bundle data looks good, expected bundle found');
+      console.log('✅ [BUNDLE_DATA] Bundle config loaded successfully:', productBundleConfig.name);
+      console.log('✅ [BUNDLE_DATA] Bundle ID:', productBundleConfig.id);
+      console.log('✅ [BUNDLE_DATA] window.allBundlesData set with', Object.keys(window.allBundlesData).length, 'bundle(s)');
     }
   }
   
@@ -533,9 +561,9 @@
 <!-- Modal will be dynamically created by JavaScript to prevent duplicates -->
 
 <link rel="stylesheet" href="{{ 'bundle-widget.css' | asset_url }}">
-<link rel="stylesheet" href="{{ 'modal-discount-bar.css' | asset_url }}">
+
+<!-- Small loader (bundle-widget.js) handles widget initialization automatically -->
 <script src="{{ 'bundle-widget.js' | asset_url }}" defer></script>
-<script src="{{ 'modal-discount-bar.js' | asset_url }}" defer></script>
 
 {% comment %} Auto-injection for bundle products that don't have manual widget placement {% endcomment %}
 {% unless should_show_widget %}
@@ -582,15 +610,34 @@
                          document.querySelector('form[action*="/cart/add"]') ||
                          document.body;
 
-  // Create bundle widget
+  // Create bundle widget with footer messaging
   const widgetHTML = `
     <div id="bundle-builder-app" data-bundle-id="" data-is-bundle-product="true"
-         data-auto-display-mode="true" style="margin: 20px 0; padding: 20px; border: 2px solid #28a745; border-radius: 8px; background: #f8f9fa;">
+         data-auto-display-mode="true" data-show-footer-messaging="true"
+         style="margin: 20px 0; padding: 20px; border: 2px solid #28a745; border-radius: 8px; background: #f8f9fa;">
       <h2 style="color: #28a745; margin-bottom: 15px;">🎯 Bundle Product Detected</h2>
       <p>Loading bundle configuration...</p>
-      <button style="background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">
+      <button class="add-bundle-to-cart" style="background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">
         Add Bundle to Cart
       </button>
+
+      <!-- Footer discount messaging with progress bar -->
+      <div class="bundle-footer-messaging" style="display: none;">
+        <div class="footer-progress-container">
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar">
+              <div class="progress-fill"></div>
+            </div>
+            <div class="progress-text">
+              <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
+            </div>
+          </div>
+          <div class="footer-discount-text"></div>
+          <div class="footer-savings-display" style="display: none;">
+            <span class="savings-badge">You save: <span class="savings-amount"></span></span>
+          </div>
+        </div>
+      </div>
     </div>`;
 
   injectionTarget.insertAdjacentHTML('beforeend', widgetHTML);

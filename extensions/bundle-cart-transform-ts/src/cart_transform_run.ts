@@ -139,34 +139,42 @@ export function cartTransformRun(
   if (hasCartLineAttributes) {
     console.log("🔍 [CART TRANSFORM DEBUG] Detected cart line attributes - using widget-based bundle approach");
 
-    // Try to get bundle configs from product metafields (all_bundles_data)
+    // Get bundle configs from component product metafields
     let bundleConfigsMap: any = {};
 
-    // Check each product in cart for all_bundles_data metafield
+    // Read bundle configs from component products' cart_transform_config metafield
     for (const line of input.cart.lines) {
-      if (line.merchandise?.product?.all_bundles_data?.value) {
-        try {
-          const bundleConfigsArray = JSON.parse(line.merchandise.product.all_bundles_data.value);
-          console.log("🔍 [CART TRANSFORM DEBUG] Found all_bundles_data on product:", line.merchandise.product.id);
-          console.log("🔍 [CART TRANSFORM DEBUG] Bundle configs:", bundleConfigsArray);
+      const product = line.merchandise?.product;
+      if (!product) continue;
 
-          // Convert array to map indexed by bundle ID
-          if (Array.isArray(bundleConfigsArray)) {
-            bundleConfigsArray.forEach((config: any) => {
-              const bundleId = config.id || config.bundleId;
-              if (bundleId && !bundleConfigsMap[bundleId]) {
-                bundleConfigsMap[bundleId] = config;
-                console.log(`🔍 [CART TRANSFORM DEBUG] Mapped bundle config for ID: ${bundleId}`);
-              }
-            });
+      // Check for cart_transform_config on component products
+      if (product.cart_transform_config?.value) {
+        try {
+          const configValue = typeof product.cart_transform_config.value === 'string'
+            ? JSON.parse(product.cart_transform_config.value)
+            : product.cart_transform_config.value;
+
+          console.log("🔍 [CART TRANSFORM DEBUG] Found cart_transform_config on component product:", product.id);
+
+          const bundleId = configValue.id || configValue.bundleId;
+          if (bundleId && !bundleConfigsMap[bundleId]) {
+            bundleConfigsMap[bundleId] = configValue;
+            console.log(`🔍 [CART TRANSFORM DEBUG] Mapped bundle config for ID: ${bundleId}`);
           }
         } catch (error) {
-          console.log("⚠️ [CART TRANSFORM DEBUG] Error parsing all_bundles_data:", error);
+          console.log("⚠️ [CART TRANSFORM DEBUG] Error parsing cart_transform_config:", error);
         }
       }
     }
 
-    // Process widget bundles WITH bundle configs from product metafields
+    console.log(`🔍 [CART TRANSFORM DEBUG] Final bundleConfigsMap has ${Object.keys(bundleConfigsMap).length} configs`);
+
+    if (Object.keys(bundleConfigsMap).length === 0) {
+      console.log("⚠️ [CART TRANSFORM DEBUG] No bundle configs found on component products");
+      console.log("⚠️ [CART TRANSFORM DEBUG] Ensure bundle is re-saved to update component product metafields");
+    }
+
+    // Process widget bundles WITH bundle configs
     return processCartTransformWithWidgetBundles(input.cart, bundleConfigsMap);
   }
 
@@ -435,8 +443,7 @@ function calculateBundlePriceFromConfig(bundleConfig: any, lines: any[]): any {
     case 'fixed_bundle_price': {
       // Fixed bundle price: Calculate discount based on ACTUAL cart total
       // rule.fixedBundlePrice contains the target price (e.g., ₹30)
-      // rule.price is a fallback if fixedBundlePrice isn't set
-      const fixedBundlePrice = parseFloat(rule.fixedBundlePrice || rule.price || '0');
+      const fixedBundlePrice = parseFloat(rule.fixedBundlePrice || '0');
 
       if (fixedBundlePrice > 0 && totalAmount > fixedBundlePrice) {
         // Calculate discount percentage based on actual cart total
@@ -797,28 +804,28 @@ function createMergeOperation(cartLines: any[], bundleConfig: any): any {
     if (rules.length > 0) {
       const rule = rules[0];
       
-      if (bundleConfig.pricing.discountMethod === 'percentage_off' && rule.percentageOff) {
+      if (bundleConfig.pricing.discountMethod === 'percentage_off' && rule.discountValue) {
         mergeOperation.price = {
           percentageDecrease: {
-            value: parseFloat(rule.percentageOff) || 0
+            value: parseFloat(rule.discountValue) || 0
           }
         };
-        console.log(`🔍 [MERGE OPERATION] Applied ${rule.percentageOff}% discount to ${bundleConfig.name}`);
-      } else if (bundleConfig.pricing.discountMethod === 'fixed_amount_off' && rule.fixedAmountOff) {
+        console.log(`🔍 [MERGE OPERATION] Applied ${rule.discountValue}% discount to ${bundleConfig.name}`);
+      } else if (bundleConfig.pricing.discountMethod === 'fixed_amount_off' && rule.discountValue) {
         // For fixed amount discounts, we need to calculate the percentage based on original price
         let totalOriginalAmount = 0;
         for (const line of cartLines) {
           totalOriginalAmount += parseFloat(line.cost?.totalAmount?.amount || 0);
         }
         
-        const discountPercentage = totalOriginalAmount > 0 ? (rule.fixedAmountOff / totalOriginalAmount) * 100 : 0;
+        const discountPercentage = totalOriginalAmount > 0 ? (rule.discountValue / totalOriginalAmount) * 100 : 0;
         
         mergeOperation.price = {
           percentageDecrease: {
             value: Math.min(100, Math.max(0, discountPercentage)) // Ensure it's between 0-100%
           }
         };
-        console.log(`🔍 [MERGE OPERATION] Applied $${rule.fixedAmountOff} discount (${discountPercentage.toFixed(2)}%) to ${bundleConfig.name}`);
+        console.log(`🔍 [MERGE OPERATION] Applied $${rule.discountValue} discount (${discountPercentage.toFixed(2)}%) to ${bundleConfig.name}`);
       } else if (bundleConfig.pricing.discountMethod === 'fixed_bundle_price' && bundleConfig.pricing.fixedPrice) {
         // For fixed bundle price, calculate discount percentage from original total
         let totalOriginalAmount = 0;
@@ -1256,7 +1263,7 @@ function calculateBundlePrice(bundleConfig: any, componentLines: any[]): any {
 
     case 'fixed_bundle_price': {
       // Fixed bundle price: Calculate discount based on ACTUAL component total
-      const fixedBundlePrice = parseFloat(rule.fixedBundlePrice || rule.price || '0');
+      const fixedBundlePrice = parseFloat(rule.fixedBundlePrice || '0');
 
       if (fixedBundlePrice > 0 && totalComponentPrice > fixedBundlePrice) {
         const discountAmount = totalComponentPrice - fixedBundlePrice;

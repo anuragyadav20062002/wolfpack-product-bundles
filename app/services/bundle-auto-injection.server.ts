@@ -1,71 +1,23 @@
 // Bundle Auto-Injection Service
-// Automatically injects bundle extension blocks into bundle product pages
+// Automatically injects bundle widget via JavaScript on bundle product pages
+// Note: Shopify restricts theme file modification, so we use JavaScript injection
 
 export class BundleAutoInjectionService {
 
   /**
-   * Inject bundle extension block into bundle product page automatically
-   * This ensures bundle products always show the bundle widget without manual theme configuration
+   * Set up automatic bundle widget injection for a bundle product
+   * Uses JavaScript-based injection via metafields (Shopify doesn't allow theme file modification)
    */
   static async injectBundleExtensionIntoProduct(
     admin: any,
     bundleProductId: string,
     bundleId: string
   ): Promise<{ success: boolean; error?: string }> {
-    console.log(`🎯 [AUTO_INJECTION] Injecting bundle extension into product: ${bundleProductId}`);
+    console.log(`🎯 [AUTO_INJECTION] Setting up automatic bundle extension injection for product: ${bundleProductId}`);
 
     try {
-      // Get the published theme to inject the block
-      const themeResult = await this.getPublishedTheme(admin);
-      if (!themeResult.success) {
-        return { success: false, error: `Failed to get theme: ${themeResult.error}` };
-      }
-
-      const themeId = themeResult.themeId;
-
-      // Get product handle to create specific template
-      const productHandle = await this.getProductHandle(admin, bundleProductId);
-      if (!productHandle) {
-        return { success: false, error: 'Failed to get product handle' };
-      }
-
-      // Check if product-specific template exists
-      const templatePath = `templates/product.${productHandle}.json`;
-      const templateExists = await this.checkTemplateExists(admin, themeId!, templatePath);
-
-      if (!templateExists.exists) {
-        // Create product-specific template with bundle extension pre-configured
-        const createResult = await this.createBundleProductTemplate(
-          admin,
-          themeId!,
-          productHandle,
-          bundleId
-        );
-
-        if (!createResult.success) {
-          console.log(`⚠️ [AUTO_INJECTION] Template creation failed: ${createResult.error}`);
-          // Fall back to JavaScript injection if template creation fails
-          return await this.injectBundleViaJavaScript(bundleProductId, bundleId);
-        }
-      } else {
-        // Template exists, add bundle block to existing template
-        const updateResult = await this.addBundleBlockToExistingTemplate(
-          admin,
-          themeId!,
-          templatePath,
-          bundleId
-        );
-
-        if (!updateResult.success) {
-          console.log(`⚠️ [AUTO_INJECTION] Template update failed: ${updateResult.error}`);
-          // Fall back to JavaScript injection
-          return await this.injectBundleViaJavaScript(bundleProductId, bundleId);
-        }
-      }
-
-      console.log(`✅ [AUTO_INJECTION] Successfully injected bundle extension into product template`);
-      return { success: true };
-
+      // Use JavaScript injection method (only method that works with Shopify restrictions)
+      return await this.injectBundleViaJavaScript(bundleProductId, bundleId);
     } catch (error) {
       console.error(`❌ [AUTO_INJECTION] Error injecting bundle extension:`, error);
       return { success: false, error: (error as Error).message };
@@ -73,148 +25,8 @@ export class BundleAutoInjectionService {
   }
 
   /**
-   * Get published theme ID
-   */
-  private static async getPublishedTheme(admin: any): Promise<{
-    success: boolean;
-    themeId?: string;
-    error?: string;
-  }> {
-    try {
-      const GET_PUBLISHED_THEME = `
-        query getPublishedTheme {
-          themes(first: 1, roles: [MAIN]) {
-            nodes {
-              id
-              name
-              role
-            }
-          }
-        }
-      `;
-
-      const response = await admin.graphql(GET_PUBLISHED_THEME);
-      const data = await response.json();
-
-      if (data.data?.themes?.nodes?.[0]) {
-        const theme = data.data.themes.nodes[0];
-        const themeId = theme.id.replace('gid://shopify/OnlineStoreTheme/', '');
-
-        return { success: true, themeId };
-      } else {
-        return { success: false, error: "No published theme found" };
-      }
-    } catch (error) {
-      return { success: false, error: (error as Error).message };
-    }
-  }
-
-  /**
-   * Get product handle from product ID
-   */
-  private static async getProductHandle(admin: any, productId: string): Promise<string | null> {
-    try {
-      const GET_PRODUCT_HANDLE = `
-        query getProductHandle($id: ID!) {
-          product(id: $id) {
-            handle
-          }
-        }
-      `;
-
-      const response = await admin.graphql(GET_PRODUCT_HANDLE, {
-        variables: { id: productId }
-      });
-
-      const data = await response.json();
-      return data.data?.product?.handle || null;
-
-    } catch (error) {
-      console.error('Error getting product handle:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Check if template exists
-   */
-  private static async checkTemplateExists(
-    admin: any,
-    themeId: string,
-    templatePath: string
-  ): Promise<{ exists: boolean; error?: string }> {
-    try {
-      const CHECK_THEME_FILE = `
-        query checkThemeFile($themeId: ID!, $filename: String!) {
-          theme(id: $themeId) {
-            files(first: 1, filenames: [$filename]) {
-              nodes {
-                filename
-              }
-            }
-          }
-        }
-      `;
-
-      const response = await admin.graphql(CHECK_THEME_FILE, {
-        variables: {
-          themeId: `gid://shopify/OnlineStoreTheme/${themeId}`,
-          filename: templatePath
-        }
-      });
-
-      const data = await response.json();
-      return { exists: data.data?.theme?.files?.nodes?.length > 0 };
-
-    } catch (error) {
-      return { exists: false, error: (error as Error).message };
-    }
-  }
-
-  /**
-   * Create bundle product template with bundle extension pre-configured
-   */
-  private static async createBundleProductTemplate(
-    admin: any,
-    themeId: string,
-    productHandle: string,
-    bundleId: string
-  ): Promise<{ success: boolean; error?: string }> {
-    console.log(`📝 [AUTO_INJECTION] Creating bundle product template for: ${productHandle}`);
-
-    // Note: Shopify restricts theme file creation for most apps
-    // This is a graceful fallback that documents what would be ideal
-    console.log(`⚠️ [AUTO_INJECTION] Theme file creation restricted by Shopify - using JavaScript injection instead`);
-
-    return {
-      success: false,
-      error: "THEME_MODIFICATION_RESTRICTED: Shopify restricts direct theme file creation. Using JavaScript injection method instead."
-    };
-  }
-
-  /**
-   * Add bundle block to existing template
-   */
-  private static async addBundleBlockToExistingTemplate(
-    admin: any,
-    themeId: string,
-    templatePath: string,
-    bundleId: string
-  ): Promise<{ success: boolean; error?: string }> {
-    console.log(`🔧 [AUTO_INJECTION] Adding bundle block to existing template: ${templatePath}`);
-
-    // Note: Shopify restricts theme file modification for most apps
-    console.log(`⚠️ [AUTO_INJECTION] Theme file modification restricted by Shopify - using JavaScript injection instead`);
-
-    return {
-      success: false,
-      error: "THEME_MODIFICATION_RESTRICTED: Shopify restricts direct theme file modification. Using JavaScript injection method instead."
-    };
-  }
-
-  /**
-   * Inject bundle extension via JavaScript (fallback method)
-   * This method uses JavaScript to automatically show the bundle widget on bundle products
+   * Inject bundle widget via JavaScript
+   * This method relies on isolation metafields to trigger automatic widget display
    */
   private static async injectBundleViaJavaScript(
     bundleProductId: string,
@@ -222,15 +34,15 @@ export class BundleAutoInjectionService {
   ): Promise<{ success: boolean; error?: string }> {
     console.log(`💉 [AUTO_INJECTION] Using JavaScript injection method for bundle: ${bundleId}`);
 
-    // This method relies on the enhanced bundle widget JavaScript
-    // that automatically detects bundle products and shows the widget
-    // The bundle isolation metafields we set will trigger automatic display
-
-    // The JavaScript logic is already implemented in bundle-widget.js:
-    // 1. Detects bundle products via isolation metafields
-    // 2. Automatically hides default Add to Cart buttons
-    // 3. Shows bundle extension with proper bundle ID
-    // 4. Displays "Add Bundle to Cart" instead of regular "Add to Cart"
+    // The JavaScript logic is implemented in bundle.liquid (lines 547-625):
+    // 1. Detects bundle products via product tags ('bundle' or 'cart-transform')
+    // 2. Checks if widget already manually placed via theme block
+    // 3. If not, automatically injects widget HTML including:
+    //    - Bundle widget container
+    //    - Add Bundle to Cart button
+    //    - Footer discount messaging (with progress bar)
+    // 4. Hides default Add to Cart buttons
+    // 5. Widget initializes and loads bundle data from metafields
 
     console.log(`✅ [AUTO_INJECTION] JavaScript injection method configured successfully`);
     console.log(`📋 [AUTO_INJECTION] Bundle widget will automatically display on product with isolation metafields`);
@@ -248,10 +60,8 @@ export class BundleAutoInjectionService {
     console.log(`🗑️ [AUTO_INJECTION] Removing bundle injection from product: ${bundleProductId}`);
 
     try {
-      // The main cleanup is handled by removing isolation metafields
-      // This will prevent the JavaScript from auto-displaying the bundle widget
-
-      // Remove isolation metafields (this is handled by BundleIsolationService.cleanupIsolationMetafields)
+      // Cleanup is handled by removing isolation metafields
+      // This prevents the JavaScript from auto-displaying the bundle widget
       console.log(`🧹 [AUTO_INJECTION] Bundle injection removal relies on isolation metafield cleanup`);
 
       return { success: true };
@@ -273,12 +83,15 @@ export class BundleAutoInjectionService {
     console.log(`🔍 [AUTO_INJECTION] Verifying bundle injection for product: ${bundleProductId}`);
 
     try {
-      // Check for isolation metafields (JavaScript injection method)
-      const CHECK_ISOLATION_METAFIELDS = `
-        query checkIsolationMetafields($id: ID!) {
+      // Check for product bundle_config metafield and isolation metafields
+      const CHECK_BUNDLE_METAFIELDS = `
+        query checkBundleMetafields($id: ID!) {
           product(id: $id) {
             id
             handle
+            bundleConfig: metafield(namespace: "$app", key: "bundle_config") {
+              value
+            }
             bundleProductType: metafield(namespace: "$app:bundle_isolation", key: "bundle_product_type") {
               value
             }
@@ -289,25 +102,42 @@ export class BundleAutoInjectionService {
         }
       `;
 
-      const response = await admin.graphql(CHECK_ISOLATION_METAFIELDS, {
+      const response = await admin.graphql(CHECK_BUNDLE_METAFIELDS, {
         variables: { id: bundleProductId }
       });
 
       const data = await response.json();
       const product = data.data?.product;
 
+      // Primary check: bundle_config metafield exists and matches bundle ID
+      if (product?.bundleConfig?.value) {
+        try {
+          const bundleConfig = JSON.parse(product.bundleConfig.value);
+          if (bundleConfig.id === bundleId) {
+            console.log(`✅ [AUTO_INJECTION] Bundle injection verified via bundle_config metafield`);
+            return {
+              success: true,
+              injectionMethod: 'product_bundle_config_metafield'
+            };
+          }
+        } catch (parseError) {
+          console.error(`❌ [AUTO_INJECTION] Error parsing bundle_config:`, parseError);
+        }
+      }
+
+      // Secondary check: isolation metafields (legacy support)
       if (product?.bundleProductType?.value === 'cart_transform_bundle' &&
           product?.ownsBundleId?.value === bundleId) {
-        console.log(`✅ [AUTO_INJECTION] Bundle injection verified via JavaScript method`);
+        console.log(`✅ [AUTO_INJECTION] Bundle injection verified via isolation metafields`);
         return {
           success: true,
-          injectionMethod: 'javascript_isolation_metafields'
+          injectionMethod: 'isolation_metafields'
         };
       }
 
       return {
         success: false,
-        error: 'Bundle injection not detected - isolation metafields missing or incorrect'
+        error: 'Bundle injection not detected - bundle_config metafield missing or incorrect'
       };
 
     } catch (error) {

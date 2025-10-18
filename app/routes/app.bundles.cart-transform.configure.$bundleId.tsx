@@ -41,7 +41,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 // Using modern App Bridge contextual save bar with data-save-bar attribute on form
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
-import { ThemeTemplateService } from "../services/theme-template-service.server";
+import { ThemeTemplateService } from "../services/theme-template.server";
 import { BundleProductManagerService } from "../services/bundle-product-manager.server";
 import { BundleIsolationService } from "../services/bundle-isolation.server";
 import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
@@ -1504,6 +1504,36 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
   console.log("[DEBUG] Step Conditions Data from form:", stepConditionsData);
   console.log("[DEBUG] Bundle Product Data from form:", bundleProductData);
 
+  // 🔍 DEBUG: Log all product IDs being submitted
+  console.log("🔍 [DEBUG] Steps data received from form:");
+  stepsData.forEach((step: any, idx: number) => {
+    console.log(`  Step ${idx + 1}: "${step.name}" (step.id: ${step.id})`);
+    if (step.StepProduct && Array.isArray(step.StepProduct)) {
+      step.StepProduct.forEach((product: any, pidx: number) => {
+        console.log(`    Product ${pidx + 1}: "${product.title}" → product.id: ${product.id}`);
+      });
+    }
+  });
+
+  // 🛡️ VALIDATION: Check for UUID product IDs and reject them
+  // This prevents corrupted browser state from creating invalid data
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  for (const step of stepsData) {
+    if (!step.StepProduct || !Array.isArray(step.StepProduct)) continue;
+
+    for (const product of step.StepProduct) {
+      if (uuidRegex.test(product.id)) {
+        const errorMsg = `❌ Invalid product ID detected: UUID "${product.id}" for product "${product.title || product.name}" in step "${step.name}". ` +
+          `This indicates corrupted browser state. Please refresh the page and re-select the product using the product picker.`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+    }
+  }
+
+  console.log("✅ [VALIDATION] All product IDs are valid Shopify GIDs");
+
   // ✅ FIXED_BUNDLE_PRICE: Store the fixed price directly (NO conversion)
   // The cart transform will calculate the percentage dynamically based on actual cart total
   if (discountData.discountEnabled && discountData.discountType === 'fixed_bundle_price') {
@@ -1734,19 +1764,19 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     console.log("📏 [METAFIELD] Optimized configuration size:", configSize, "chars (vs 12KB+ before)");
 
     try {
-      // Save cart transform configuration
-      const cartTransformConfig = {
-        ...baseConfiguration,
-        type: "cart_transform"
-      };
-      await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, cartTransformConfig, 'cart_transform');
-
-      // Save discount function configuration
-      const discountFunctionConfig = {
-        ...baseConfiguration,
-        type: "discount_function"
-      };
-      await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, discountFunctionConfig, 'discount_function');
+      // OPTIMIZED: Use SINGLE metafield ($app:bundle_config) for ALL purposes
+      // This metafield is used by:
+      // 1. Widget (storefront) - loads bundle UI
+      // 2. Cart Transform function - applies discounts at checkout
+      // 3. Auto-injection service - identifies bundle products
+      // Memory savings: 66% reduction (15KB → 5KB per bundle)
+      console.log("🔧 [METAFIELD] Creating $app:bundle_config (single source of truth)");
+      await BundleIsolationService.updateBundleProductMetafield(admin, updatedBundle.shopifyProductId, {
+        ...updatedBundle,
+        steps: updatedBundle.steps, // Include full steps with StepProduct data
+        pricing: updatedBundle.pricing // Include pricing data
+      });
+      console.log("✅ [METAFIELD] $app:bundle_config created successfully");
 
       // ALSO update standard Shopify metafields for cart transform compatibility
 
@@ -2904,7 +2934,17 @@ export default function ConfigureBundleFlow() {
   const [templateName, setTemplateName] = useState(bundle.templateName || "");
   
   // State for step management
-  const [steps, setSteps] = useState(bundle.steps || []);
+  // 🔧 FIX: Transform StepProduct to use productId as id (not the database UUID)
+  const [steps, setSteps] = useState(
+    (bundle.steps || []).map((step: any) => ({
+      ...step,
+      StepProduct: (step.StepProduct || []).map((sp: any) => ({
+        ...sp,
+        id: sp.productId,  // Use productId (Shopify GID) as id, not database UUID
+        // Keep other fields intact
+      }))
+    }))
+  );
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState(0);
   
@@ -2977,7 +3017,15 @@ export default function ConfigureBundleFlow() {
     name: bundle.name,
     description: bundle.description || "",
     templateName: bundle.templateName || "",
-    steps: JSON.stringify(bundle.steps || []),
+    steps: JSON.stringify(
+      (bundle.steps || []).map((step: any) => ({
+        ...step,
+        StepProduct: (step.StepProduct || []).map((sp: any) => ({
+          ...sp,
+          id: sp.productId,  // Transform to use Shopify GID, not database UUID
+        }))
+      }))
+    ),
     discountEnabled: bundle.pricing?.enableDiscount || false,
     discountType: bundle.pricing?.discountMethod || 'fixed_bundle_price',
     discountRules: JSON.stringify(bundle.pricing?.rules || []),
