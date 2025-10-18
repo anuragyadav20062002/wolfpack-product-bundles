@@ -973,7 +973,7 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
 
         displayMessage = `${baseMessage} <span class="savings-badge">Saved ${variables.savingsAmount}</span>`;
       } else if (nextRule && selectedQuantity > 0) {
-        // Progress towards discount
+        // Progress towards discountO
         const itemsNeeded = targetQuantity - selectedQuantity;
         const nextRuleDiscountValue = getDiscountValueFromRule(nextRule, discountMethod, totalPrice);
         const nextRuleVariables = {
@@ -1907,11 +1907,13 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
     // Now add properties with the unique bundle instance ID to all items
     itemsToAdd.forEach(item => {
       item.properties = {
-        _wolfpack_bundle_id: bundleInstanceId
+        _wolfpack_bundle_id: bundleInstanceId,
+        _bundle_config: JSON.stringify(selectedBundle)
       };
     });
 
     console.log('🎯 [BUNDLE CART] Bundle Instance ID:', bundleInstanceId);
+    console.log('🎯 [BUNDLE CART] Bundle Config sent with cart:', selectedBundle?.name, selectedBundle?.id);
     console.log('🎯 [BUNDLE CART] Items to add:', itemsToAdd);
     console.log('📦 [BUNDLE CART] This ID ensures:');
     console.log('  ✅ Same bundle + same products = Shopify auto-increments quantity');

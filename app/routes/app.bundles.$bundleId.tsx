@@ -27,7 +27,6 @@ import { useLoaderData, useFetcher } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
 import bundlePreviewStyles from "../styles/bundle-preview.css?url";
-import bundlePreviewGif from "../bundleprev.gif";
 import type { Prisma, DiscountMethodType } from "@prisma/client"; // Import Prisma types
 import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 
@@ -1529,7 +1528,7 @@ export default function BundleBuilderPage() {
               <div style={{ flexShrink: 0 }}>
                 <div className="bundle-preview-container">
                   <img
-                    src={bundlePreviewGif}
+                    src="https://cdn.shopify.com/s/files/1/0757/9955/files/bundle-preview.gif"
                     alt="Bundle Preview"
                     className="bundle-preview-image"
                   />
