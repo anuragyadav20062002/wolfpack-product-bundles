@@ -6,28 +6,16 @@ query Input {
       attribute(key: "_wolfpack_bundle_id") {
         value
       }
+      bundleConfig: attribute(key: "_bundle_config") {
+        value
+      }
       merchandise {
         __typename
         ... on ProductVariant {
           id
-          component_reference: metafield(namespace: "$app", key: "component_reference") {
-            value
-          }
-          component_quantities: metafield(namespace: "$app", key: "component_quantities") {
-            value
-          }
-          component_parents: metafield(namespace: "$app", key: "component_parents") {
-            value
-          }
-          price_adjustment: metafield(namespace: "$app", key: "price_adjustment") {
-            value
-          }
           product {
             id
             bundle_config: metafield(namespace: "$app", key: "bundle_config") {
-              value
-            }
-            cart_transform_config: metafield(namespace: "bundle_discounts", key: "cart_transform_config") {
               value
             }
           }

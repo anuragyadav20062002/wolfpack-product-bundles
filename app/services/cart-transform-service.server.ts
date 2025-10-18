@@ -157,65 +157,11 @@ export class CartTransformService {
   
   /**
    * Ensure metafield definitions exist for bundle configuration
+   * Legacy metafield definitions removed - now using $app:bundle_config only
    */
   static async ensureBundleMetafieldDefinitions(admin: AdminApiContext): Promise<void> {
-    const CREATE_METAFIELD_DEFINITION = `
-      mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
-        metafieldDefinitionCreate(definition: $definition) {
-          createdDefinition {
-            id
-            key
-            namespace
-            ownerType
-          }
-          userErrors {
-            field
-            message
-            code
-          }
-        }
-      }
-    `;
-    
-    const definitions = [
-      {
-        name: "Cart Transform Bundle Config",
-        namespace: "bundle_discounts",
-        key: "cart_transform_config",
-        description: "Cart transform bundle configuration data",
-        type: "json",
-        ownerType: "PRODUCT" as const
-      },
-      {
-        name: "Discount Function Bundle Config", 
-        namespace: "bundle_discounts",
-        key: "discount_function_config",
-        description: "Discount function bundle configuration data",
-        type: "json",
-        ownerType: "PRODUCT" as const
-      }
-    ];
-    
-    for (const definition of definitions) {
-      try {
-        const response = await admin.graphql(CREATE_METAFIELD_DEFINITION, {
-          variables: { definition }
-        });
-        
-        const data = await response.json();
-        
-        if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
-          const error = data.data.metafieldDefinitionCreate.userErrors[0];
-          if (error.code !== "TAKEN") { // TAKEN means it already exists
-            console.warn(`⚠️ [METAFIELD] Error creating definition for ${definition.key}:`, error);
-          }
-        } else {
-          console.log(`✅ [METAFIELD] Ensured definition exists for ${definition.key}`);
-        }
-      } catch (error) {
-        console.warn(`⚠️ [METAFIELD] Error ensuring definition for ${definition.key}:`, error);
-      }
-    }
+    console.log(`✅ [METAFIELD] Skipping legacy metafield definition creation - using $app:bundle_config only`);
+    // No metafield definitions needed - $app namespace is reserved and doesn't require definitions
   }
   
   /**

@@ -40,6 +40,7 @@ export class MetafieldCleanupService {
 
   /**
    * Clean up metafields on the bundle product itself
+   * Simplified to only clean active metafields ($app namespace)
    */
   private static async cleanupBundleProductMetafields(admin: any, shopifyProductId: string) {
     const productGid = shopifyProductId.startsWith('gid://')
@@ -47,68 +48,42 @@ export class MetafieldCleanupService {
       : `gid://shopify/Product/${shopifyProductId}`;
 
     const metafieldsToDelete = [
-      // Custom bundle configuration metafields
+      // Active bundle configuration metafield
       {
         ownerId: productGid,
-        namespace: "bundle_discounts",
-        key: "cart_transform_config"
+        namespace: "$app",
+        key: "bundle_config"
+      },
+      // Bundle isolation metafields
+      {
+        ownerId: productGid,
+        namespace: "$app:bundle_isolation",
+        key: "owns_bundle_id"
       },
       {
         ownerId: productGid,
-        namespace: "bundle_discounts",
-        key: "discount_function_config"
-      },
-      // Standard Shopify metafields for cart transform compatibility
-      {
-        ownerId: productGid,
-        namespace: "custom",
-        key: "component_reference"
+        namespace: "$app:bundle_isolation",
+        key: "bundle_product_type"
       },
       {
         ownerId: productGid,
-        namespace: "custom",
-        key: "component_quantities"
-      },
-      {
-        ownerId: productGid,
-        namespace: "custom",
-        key: "price_adjustment"
-      },
-      // Legacy app metafields if they exist
-      {
-        ownerId: productGid,
-        namespace: "$app:bundle_discount",
-        key: "bundle_discount_data"
+        namespace: "$app:bundle_isolation",
+        key: "isolation_created"
       }
     ];
 
-    console.log(`🧹 [CLEANUP] Deleting ${metafieldsToDelete.length} metafields from bundle product ${productGid}`);
+    console.log(`🧹 [CLEANUP] Deleting ${metafieldsToDelete.length} active metafields from bundle product ${productGid}`);
 
     await this.batchDeleteMetafields(admin, metafieldsToDelete);
   }
 
   /**
-   * Clean up component_parents metafields from component products
+   * Clean up metafields from component products
+   * Simplified - no component product metafields to clean (using $app:bundle_config on bundle product only)
    */
   private static async cleanupComponentProductMetafields(admin: any, componentProductIds: string[]) {
-    const metafieldsToDelete = [];
-
-    for (const productId of componentProductIds) {
-      const productGid = productId.startsWith('gid://')
-        ? productId
-        : `gid://shopify/Product/${productId}`;
-
-      metafieldsToDelete.push({
-        ownerId: productGid,
-        namespace: "custom",
-        key: "component_parents"
-      });
-    }
-
-    if (metafieldsToDelete.length > 0) {
-      console.log(`🧹 [CLEANUP] Deleting component_parents metafields from ${metafieldsToDelete.length} component products`);
-      await this.batchDeleteMetafields(admin, metafieldsToDelete);
-    }
+    console.log(`✅ [CLEANUP] Skipping component product cleanup - no metafields stored on component products`);
+    // No metafields on component products in optimized architecture
   }
 
   /**

@@ -971,7 +971,7 @@ Widget Config: ${JSON.stringify(widgetConfig, null, 2)}
           ? replaceDiscountVariables(ruleSuccessMessage, variables)
           : replaceDiscountVariables(widgetConfig.successMessageTemplate, variables);
 
-        displayMessage = `${baseMessage} <span class="savings-badge">${variables.savingsAmount}</span>`;
+        displayMessage = `${baseMessage} <span class="savings-badge">Saved ${variables.savingsAmount}</span>`;
       } else if (nextRule && selectedQuantity > 0) {
         // Progress towards discount
         const itemsNeeded = targetQuantity - selectedQuantity;

@@ -48,7 +48,7 @@
     // Hardcoded URLs (process.env doesn't work in browser)
     // The developmentUrl will need updation every time the user spins a new development server and we to automate this process somehow.
     const productionUrl = "https://wolfpack-product-bundle-app.onrender.com";
-    const developmentUrl = "https://cartridge-permission-surround-xml.trycloudflare.com";
+    const developmentUrl = "https://lucky-branches-smith-reflections.trycloudflare.com";
 
     const appUrl = isDevelopment ? developmentUrl : productionUrl;
     console.log(`[Bundle Widget] Auto-detected ${isDevelopment ? 'development' : 'production'} environment, using:`, appUrl);

@@ -130,90 +130,73 @@ export function cartTransformRun(
     return { operations: [] };
   }
 
-  // Try multiple approaches for maximum compatibility
+  // OPTIMIZED APPROACH: Bundle config passed via cart line attributes
+  // Widget sends bundle config as _bundle_config property when adding to cart
 
-  // 1. PRIORITY: Check for cart line attributes (widget-based bundles)
-  // Line item properties added via cart add become accessible as attributes in cart transform
+  // Check for cart line attributes (widget-based bundles)
   const hasCartLineAttributes = input.cart.lines.some(line => line.attribute?.value);
 
   if (hasCartLineAttributes) {
-    console.log("🔍 [CART TRANSFORM DEBUG] Detected cart line attributes - using widget-based bundle approach");
+    console.log("🔍 [CART TRANSFORM] Processing widget-based bundles");
 
-    // Get bundle configs from component product metafields
+    // Get bundle configs from cart line attributes
     let bundleConfigsMap: any = {};
 
-    // Read bundle configs from component products' cart_transform_config metafield
     for (const line of input.cart.lines) {
-      const product = line.merchandise?.product;
-      if (!product) continue;
-
-      // Check for cart_transform_config on component products
-      if (product.cart_transform_config?.value) {
+      // Try to get bundle config from cart line attribute first
+      if (line.bundleConfig?.value) {
         try {
-          const configValue = typeof product.cart_transform_config.value === 'string'
-            ? JSON.parse(product.cart_transform_config.value)
-            : product.cart_transform_config.value;
-
-          console.log("🔍 [CART TRANSFORM DEBUG] Found cart_transform_config on component product:", product.id);
+          const configValue = typeof line.bundleConfig.value === 'string'
+            ? JSON.parse(line.bundleConfig.value)
+            : line.bundleConfig.value;
 
           const bundleId = configValue.id || configValue.bundleId;
           if (bundleId && !bundleConfigsMap[bundleId]) {
             bundleConfigsMap[bundleId] = configValue;
-            console.log(`🔍 [CART TRANSFORM DEBUG] Mapped bundle config for ID: ${bundleId}`);
+            console.log(`✅ [CART TRANSFORM] Loaded bundle config from cart line attribute: ${bundleId}`);
           }
         } catch (error) {
-          console.log("⚠️ [CART TRANSFORM DEBUG] Error parsing cart_transform_config:", error);
+          console.error("❌ [CART TRANSFORM] Error parsing cart line _bundle_config:", error);
+        }
+      }
+      // Fallback: Try to get from product metafield
+      else if (line.merchandise?.product?.bundle_config?.value) {
+        try {
+          const configValue = typeof line.merchandise.product.bundle_config.value === 'string'
+            ? JSON.parse(line.merchandise.product.bundle_config.value)
+            : line.merchandise.product.bundle_config.value;
+
+          const bundleId = configValue.id || configValue.bundleId;
+          if (bundleId && !bundleConfigsMap[bundleId]) {
+            bundleConfigsMap[bundleId] = configValue;
+            console.log(`✅ [CART TRANSFORM] Loaded bundle config from product metafield: ${bundleId}`);
+          }
+        } catch (error) {
+          console.error("❌ [CART TRANSFORM] Error parsing product $app:bundle_config:", error);
         }
       }
     }
 
-    console.log(`🔍 [CART TRANSFORM DEBUG] Final bundleConfigsMap has ${Object.keys(bundleConfigsMap).length} configs`);
-
     if (Object.keys(bundleConfigsMap).length === 0) {
-      console.log("⚠️ [CART TRANSFORM DEBUG] No bundle configs found on component products");
-      console.log("⚠️ [CART TRANSFORM DEBUG] Ensure bundle is re-saved to update component product metafields");
+      console.log("⚠️ [CART TRANSFORM] No bundle configs found - ensure widget sends _bundle_config");
+      return { operations: [] };
     }
 
-    // Process widget bundles WITH bundle configs
     return processCartTransformWithWidgetBundles(input.cart, bundleConfigsMap);
   }
 
-  // 2. Check for cart-level bundle configurations (legacy approach)
-  if (input.cart.allBundlesConfig?.value || input.cart.allBundlesConfig?.jsonValue) {
-    try {
-      console.log("🔍 [CART TRANSFORM DEBUG] Using cart-level allBundlesConfig metafield approach");
-      const bundleConfigsJson = input.cart.allBundlesConfig.jsonValue || input.cart.allBundlesConfig.value;
-      const bundleConfigs = typeof bundleConfigsJson === 'string' ? JSON.parse(bundleConfigsJson) : bundleConfigsJson;
-      return processCartTransformWithBundleConfigs(input.cart, bundleConfigs);
-    } catch (error) {
-      console.log("🔍 [CART TRANSFORM DEBUG] Error parsing allBundlesConfig metafield:", error);
-    }
-  }
-
-  // 3. Check for cart bundleConfig metafield
-  if (input.cart.bundleConfig?.value) {
-    try {
-      console.log("🔍 [CART TRANSFORM DEBUG] Using cart-level bundleConfig metafield approach");
-      const bundleConfigs = JSON.parse(input.cart.bundleConfig.value);
-      return processCartTransformWithBundleConfigs(input.cart, bundleConfigs);
-    } catch (error) {
-      console.log("🔍 [CART TRANSFORM DEBUG] Error parsing bundleConfig metafield:", error);
-    }
-  }
-
-  // 4. Check for product-level metafields (also legacy but from product level)
+  // Fallback: Check for product-level $app:bundle_config without cart line attributes
   const hasProductMetafields = input.cart.lines.some(line =>
     line.merchandise?.product?.bundle_config?.value
   );
 
   if (hasProductMetafields) {
-    console.log("🔍 [CART TRANSFORM DEBUG] Using product-level bundle configurations approach");
+    console.log("🔍 [CART TRANSFORM] Processing product-level $app:bundle_config");
     return processCartTransformWithProductMetafields(input.cart);
   }
 
-  // 5. Standard Shopify metafields approach (official)
-  console.log("🔍 [CART TRANSFORM DEBUG] Using official Shopify standard metafields approach");
-  return processCartTransformWithStandardMetafields(input.cart);
+  console.log("ℹ️ [CART TRANSFORM] No bundle configuration found in cart");
+  return { operations: [] };
 }
 
 // NEW: Widget-based bundle processing (using cart line attributes)

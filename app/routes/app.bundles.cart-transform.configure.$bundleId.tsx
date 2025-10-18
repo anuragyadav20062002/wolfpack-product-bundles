@@ -42,7 +42,6 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ThemeTemplateService } from "../services/theme-template.server";
-import { BundleProductManagerService } from "../services/bundle-product-manager.server";
 import { BundleIsolationService } from "../services/bundle-isolation.server";
 import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
 
