@@ -1,16 +1,17 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { AppLogger } from "../lib/logger";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
   
   try {
-    console.log('🚀 Activating cart transform function...');
+    AppLogger.info('Activating cart transform function', { operation: 'activate-cart-transform' });
     
     // Function ID from your .env file
-    const functionId = process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID || "527a500e-5386-4a67-a61b-9cb4cb8973f8";
+    const functionId = process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID
     
-    console.log(`📍 Using function ID: ${functionId}`);
+    AppLogger.debug('Using function ID', { operation: 'activate-cart-transform' }, { functionId });
     
     const CREATE_CART_TRANSFORM = `
       mutation CreateCartTransform($functionId: String!) {
@@ -33,23 +34,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     const data = await response.json();
     
-    console.log('🔍 Raw response:', JSON.stringify(data, null, 2));
+    AppLogger.debug('GraphQL response received', { operation: 'activate-cart-transform' }, data);
     
     if ((data as any).errors) {
-      console.error('❌ GraphQL Errors:', (data as any).errors);
+      AppLogger.error('GraphQL errors in cart transform activation', { operation: 'activate-cart-transform' }, (data as any).errors);
       return json({ success: false, errors: (data as any).errors });
     }
     
     if (data.data.cartTransformCreate.userErrors.length > 0) {
-      console.error('❌ User Errors:', data.data.cartTransformCreate.userErrors);
+      AppLogger.error('User errors in cart transform creation', { operation: 'activate-cart-transform' }, data.data.cartTransformCreate.userErrors);
       return json({ 
         success: false, 
         errors: data.data.cartTransformCreate.userErrors 
       });
     }
     
-    console.log('🎉 Cart transform activated successfully!');
-    console.log('📍 CartTransform ID:', data.data.cartTransformCreate.cartTransform.id);
+    AppLogger.info('Cart transform activated successfully', { operation: 'activate-cart-transform' }, { 
+      cartTransformId: data.data.cartTransformCreate.cartTransform.id 
+    });
     
     return json({
       success: true,
@@ -58,7 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
     
   } catch (error) {
-    console.error('❌ Error activating cart transform:', error);
+    AppLogger.error('Error activating cart transform', { operation: 'activate-cart-transform' }, error);
     return json({ 
       success: false, 
       error: (error as Error).message 

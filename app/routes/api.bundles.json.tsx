@@ -2,6 +2,7 @@ import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { prisma } from "../db.server";
+import { AppLogger } from "../lib/logger";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
@@ -59,7 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
   } catch (error) {
-    console.error('Error loading bundles for theme extension:', error);
+    AppLogger.error('Error loading bundles for theme extension', { operation: 'bundles-json' }, error);
     return json({
       error: "Failed to load bundles",
       bundles: {},

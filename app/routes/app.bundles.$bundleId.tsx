@@ -26,6 +26,7 @@ import {
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
+import { AppLogger } from "../lib/logger";
 import bundlePreviewStyles from "../styles/bundle-preview.css?url";
 import type { Prisma, DiscountMethodType } from "@prisma/client"; // Import Prisma types
 import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
@@ -117,10 +118,18 @@ interface BundleWithSteps {
 
 // Define DiscountRule interface here as it's used by BundleWithSteps and functions
 interface DiscountRule {
-  discountOn: string;
-  minimumQuantity: number;
-  fixedAmountOff: number;
-  percentageOff: number;
+  id?: string;
+  
+  // Core discount configuration - CLEAN, NO BACKWARD COMPATIBILITY
+  discountType: 'percentage_off' | 'fixed_amount_off' | 'fixed_bundle_price';
+  conditionType: 'amount' | 'quantity'; // What triggers the discount
+  conditionOperator: 'gte' | 'lte' | 'eq'; // How to compare
+  thresholdValue: number; // The threshold amount/quantity (decimal values like 99.99)
+  
+  // Discount values (only one will be non-zero based on discountType)
+  percentageDiscount: number; // For percentage_off (e.g., 50 for 50%)
+  amountDiscount: number; // For fixed_amount_off (decimal values like 25.50)
+  bundleFixedPrice: number; // For fixed_bundle_price (decimal values like 99.99)
 }
 
 export const links: LinksFunction = () => {
@@ -128,8 +137,23 @@ export const links: LinksFunction = () => {
 };
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const bundleId = params.bundleId;
+
+  // Fetch shop currency information
+  const shopResponse = await admin.graphql(`
+    query GetShopCurrency {
+      shop {
+        currencyCode
+        moneyFormat
+      }
+    }
+  `);
+  const shopData = await shopResponse.json();
+  const shopCurrency = {
+    code: shopData.data?.shop?.currencyCode || 'USD',
+    format: shopData.data?.shop?.moneyFormat || '${{amount}}'
+  };
 
   const bundle = await db.bundle.findUnique({
     where: {
@@ -154,7 +178,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       try {
         return JSON.parse(value);
       } catch (error) {
-        console.error("JSON parse error:", error);
+        AppLogger.error("JSON parse error in bundle route", { operation: "json-parse" }, error);
         return defaultValue;
       }
     }
@@ -203,6 +227,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       createdAt: bundle.createdAt.toISOString(),
       updatedAt: bundle.updatedAt.toISOString(),
     },
+    shopCurrency,
   });
 }
 
@@ -253,7 +278,7 @@ export async function action({ request }: ActionFunctionArgs) {
         : await db.bundleStep.create({ data });
       return json({ success: true, step: step, intent: intent });
     } catch (error) {
-      console.error("Error saving step:", error);
+      AppLogger.error("Error saving step", { operation: "save-step" }, error);
       return json({ error: "Failed to save step" }, { status: 500 });
     }
   }
@@ -288,7 +313,7 @@ export async function action({ request }: ActionFunctionArgs) {
         }
       }
     } catch (error) {
-      console.error("Error parsing visibility data:", error);
+      AppLogger.error("Error parsing visibility data", { operation: "parse-visibility" }, error);
       return json({ error: "Invalid visibility data format" }, { status: 400 });
     }
 
@@ -455,7 +480,7 @@ export async function action({ request }: ActionFunctionArgs) {
           } else {
           }
         } else {
-          console.log("📋 ✅ Metafield definition created successfully:", 
+          AppLogger.info("Metafield definition created successfully", { operation: "create-metafield-def" }, 
             metafieldDefData.data?.metafieldDefinitionCreate?.createdDefinition);
         }
       } catch (error) {
@@ -554,7 +579,7 @@ export async function action({ request }: ActionFunctionArgs) {
       // (No discount creation logic here for now)
       return json({ success: true, bundle: updatedBundle, intent: intent });
     } catch (error: any) {
-      console.error("Error publishing bundle:", error);
+      AppLogger.error("Error publishing bundle", { operation: "publish-bundle" }, error);
       return json(
         {
           error: error.message || "Failed to publish bundle",
@@ -597,10 +622,12 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       // 2. Collect component product IDs for metafield cleanup
-      const componentProductIds = bundleToDelete.steps
-        .flatMap(step => step.StepProduct || [])
-        .map(sp => sp.productId)
-        .filter(Boolean);
+      const componentProductIds = Array.from(new Set(
+        bundleToDelete.steps
+          .flatMap(step => step.StepProduct || [])
+          .map(sp => sp.productId)
+          .filter(Boolean)
+      ));
 
       console.log(`🗑️ [DELETE_BUNDLE] Found ${componentProductIds.length} component products to clean up`);
 
@@ -642,11 +669,13 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === "updateDiscount") {
     const bundleId = formData.get("bundleId") as string;
     const enableDiscount = formData.get("enableDiscount") === "true";
-    const discountMethod = formData.get("discountMethod") as DiscountMethodType; // Cast to Prisma enum type
+    const discountMethod = formData.get("discountMethod") as DiscountMethodType;
     const discountOn = formData.get("discountOn") as string;
+    const discountCondition = formData.get("discountCondition") as string;
     const minimumQuantity = formData.get("minimumQuantity") as string;
     const fixedAmountOff = formData.get("fixedAmountOff") as string;
     const percentageOff = formData.get("percentageOff") as string;
+    const fixedBundlePrice = formData.get("fixedBundlePrice") as string;
 
     if (typeof bundleId !== "string" || bundleId.length === 0) {
       return json(
@@ -657,14 +686,51 @@ export async function action({ request }: ActionFunctionArgs) {
 
     let rules: DiscountRule[] | null = null;
     if (enableDiscount) {
-      rules = [
-        {
-          discountOn,
-          minimumQuantity: parseInt(minimumQuantity, 10),
-          fixedAmountOff: parseFloat(fixedAmountOff),
-          percentageOff: parseFloat(percentageOff),
-        },
-      ];
+      let ruleData: any = {};
+
+      if (discountMethod === 'percentage_off') {
+        // Percentage Off: Support decimal values
+        ruleData = {
+          discountType: 'percentage_off',
+          conditionType: discountOn, // 'amount' or 'quantity'
+          conditionOperator: discountCondition || 'gte',
+          thresholdValue: discountOn === 'amount' 
+            ? parseFloat(minimumQuantity) // Keep as decimal (e.g., 99.99)
+            : parseInt(minimumQuantity, 10), // Keep as integer for quantity
+          percentageDiscount: parseFloat(percentageOff),
+          // Clear unused fields
+          amountDiscount: 0,
+          bundleFixedPrice: 0,
+        };
+      } else if (discountMethod === 'fixed_amount_off') {
+        // Fixed Amount Off: Support decimal values
+        ruleData = {
+          discountType: 'fixed_amount_off',
+          conditionType: discountOn, // 'amount' or 'quantity'
+          conditionOperator: discountCondition || 'gte',
+          thresholdValue: discountOn === 'amount' 
+            ? parseFloat(minimumQuantity) // Keep as decimal (e.g., 99.99)
+            : parseInt(minimumQuantity, 10), // Keep as integer for quantity
+          amountDiscount: parseFloat(fixedAmountOff), // Keep as decimal (e.g., 25.50)
+          // Clear unused fields
+          percentageDiscount: 0,
+          bundleFixedPrice: 0,
+        };
+      } else if (discountMethod === 'fixed_bundle_price') {
+        // Fixed Bundle Price: Support decimal values
+        ruleData = {
+          discountType: 'fixed_bundle_price',
+          conditionType: 'quantity', // Always quantity-based
+          conditionOperator: 'gte',
+          thresholdValue: parseInt(minimumQuantity, 10), // Minimum products required
+          bundleFixedPrice: parseFloat(fixedBundlePrice), // Keep as decimal (e.g., 99.99)
+          // Clear unused fields
+          percentageDiscount: 0,
+          amountDiscount: 0,
+        };
+      }
+      
+      rules = [ruleData];
     }
 
     try {
@@ -711,7 +777,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function BundleBuilderPage() {
-  const { bundle } = useLoaderData<{ bundle: BundleWithSteps }>();
+  const { bundle, shopCurrency } = useLoaderData<{ bundle: BundleWithSteps; shopCurrency: { code: string; format: string } }>();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
 
@@ -744,11 +810,25 @@ export default function BundleBuilderPage() {
 
   // State for Discount & Pricing
   const [enableDiscount, setEnableDiscount] = useState(false);
-  const [discountType, setDiscountType] = useState("fixed_amount_off"); // Default to Fixed Amount Off
+  const [discountType, setDiscountType] = useState("percentage_off"); // Default to Percentage Off
   const [discountOn, setDiscountOn] = useState("quantity");
+  const [discountCondition, setDiscountCondition] = useState("gte"); // New state for condition
   const [minimumQuantity, setMinimumQuantity] = useState("0");
-  const [fixedAmountOff, setFixedAmountOff] = useState("0"); // New state for Fixed Amount Off
-  const [percentageOff, setPercentageOff] = useState("0"); // New state for Percentage Off
+  const [fixedAmountOff, setFixedAmountOff] = useState("0");
+  const [percentageOff, setPercentageOff] = useState("0");
+  const [fixedBundlePrice, setFixedBundlePrice] = useState("0"); // New state for Fixed Bundle Price
+
+  // Get currency symbol from shop currency
+  const getCurrencySymbol = (currencyCode: string) => {
+    const symbols: { [key: string]: string } = {
+      'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'C$', 'AUD': 'A$',
+      'INR': '₹', 'CNY': '¥', 'KRW': '₩', 'BRL': 'R$', 'MXN': '$', 'CHF': 'CHF',
+      'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr', 'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft'
+    };
+    return symbols[currencyCode] || currencyCode;
+  };
+
+  const currencySymbol = getCurrencySymbol(shopCurrency.code);
 
   // Initialize discount states from loader data
   useEffect(() => {
@@ -756,14 +836,15 @@ export default function BundleBuilderPage() {
       setEnableDiscount(bundle.pricing.enableDiscount);
       setDiscountType(bundle.pricing.discountMethod);
       if (bundle.pricing.rules && bundle.pricing.rules.length > 0) {
-        setDiscountOn(bundle.pricing.rules[0].discountOn || "quantity");
-        setMinimumQuantity(
-          String(bundle.pricing.rules[0].minimumQuantity || "0"),
-        );
-        setFixedAmountOff(
-          String(bundle.pricing.rules[0].fixedAmountOff || "0"),
-        );
-        setPercentageOff(String(bundle.pricing.rules[0].percentageOff || "0"));
+        const rule = bundle.pricing.rules[0];
+        
+        // Use new clean field structure - NO BACKWARD COMPATIBILITY
+        setDiscountOn(rule.conditionType || "quantity");
+        setDiscountCondition(rule.conditionOperator || "gte");
+        setMinimumQuantity(String(rule.thresholdValue || 0));
+        setPercentageOff(String(rule.percentageDiscount || 0));
+        setFixedAmountOff(String(rule.amountDiscount || 0));
+        setFixedBundlePrice(String(rule.bundleFixedPrice || 0));
       }
     }
   }, [bundle.pricing]);
@@ -1023,18 +1104,22 @@ export default function BundleBuilderPage() {
     formData.append("enableDiscount", String(enableDiscount));
     formData.append("discountMethod", discountType);
     formData.append("discountOn", discountOn);
+    formData.append("discountCondition", discountCondition);
     formData.append("minimumQuantity", minimumQuantity);
     formData.append("fixedAmountOff", fixedAmountOff);
     formData.append("percentageOff", percentageOff);
+    formData.append("fixedBundlePrice", fixedBundlePrice);
     fetcher.submit(formData, { method: "post" });
   }, [
     bundle.id,
     enableDiscount,
     discountType,
     discountOn,
+    discountCondition,
     minimumQuantity,
     fixedAmountOff,
     percentageOff,
+    fixedBundlePrice,
     fetcher,
   ]);
 
@@ -1141,12 +1226,9 @@ export default function BundleBuilderPage() {
                       label="Discount Type"
                       labelHidden
                       options={[
-                        {
-                          label: "Fixed Amount Off",
-                          value: "fixed_amount_off",
-                        },
                         { label: "Percentage Off", value: "percentage_off" },
-                        { label: "Free Shipping", value: "free_shipping" },
+                        { label: "Fixed Amount Off", value: "fixed_amount_off" },
+                        { label: "Fixed Bundle Price", value: "fixed_bundle_price" },
                       ]}
                       value={discountType}
                       onChange={setDiscountType}
@@ -1163,47 +1245,85 @@ export default function BundleBuilderPage() {
                           Remove
                         </Button>
                       </InlineStack>
-                      <InlineStack gap="200">
-                        <Select
-                          label="Discount on"
-                          options={[
-                            { label: "Quantity", value: "quantity" },
-                            { label: "Amount", value: "amount" },
-                          ]}
-                          value={discountOn}
-                          onChange={setDiscountOn}
-                        />
-                        <TextField
-                          label="Minimum quantity"
-                          value={minimumQuantity}
-                          onChange={setMinimumQuantity}
-                          autoComplete="off"
-                          type="number"
-                        />
-                        {discountType === "fixed_amount_off" && (
+                      {/* Percentage Off and Fixed Amount Off - Show Type, Condition, Value, and Discount fields */}
+                      {(discountType === "percentage_off" || discountType === "fixed_amount_off") && (
+                        <InlineStack gap="200">
+                          <Select
+                            label="Type"
+                            options={[
+                              { label: "Quantity", value: "quantity" },
+                              { label: "Amount", value: "amount" },
+                            ]}
+                            value={discountOn}
+                            onChange={setDiscountOn}
+                          />
+                          <Select
+                            label="Condition"
+                            options={[
+                              { label: "Greater than & equal to", value: "gte" },
+                              { label: "Less than & equal to", value: "lte" },
+                              { label: "Equal to", value: "eq" },
+                            ]}
+                            value={discountCondition}
+                            onChange={setDiscountCondition}
+                          />
                           <TextField
-                            label="Fixed Amount Off"
-                            value={fixedAmountOff}
-                            onChange={setFixedAmountOff}
+                            label="Value"
+                            value={minimumQuantity}
+                            onChange={setMinimumQuantity}
                             autoComplete="off"
                             type="number"
-                            prefix="$"
+                            helpText={discountOn === "amount" ? `Enter amount in ${shopCurrency.code}` : "Enter quantity"}
                           />
-                        )}
+                        </InlineStack>
+                      )}
+
+                      {/* Fixed Bundle Price - Show Number of products and Fixed price */}
+                      {discountType === "fixed_bundle_price" && (
+                        <InlineStack gap="200">
+                          <TextField
+                            label="Number of products in the bundle"
+                            value={minimumQuantity}
+                            onChange={setMinimumQuantity}
+                            autoComplete="off"
+                            type="number"
+                            helpText="Minimum quantity required for this bundle price"
+                          />
+                          <TextField
+                            label="Price"
+                            value={fixedBundlePrice}
+                            onChange={setFixedBundlePrice}
+                            autoComplete="off"
+                            type="number"
+                            prefix={currencySymbol}
+                            helpText={`Fixed price for the entire bundle in ${shopCurrency.code}`}
+                          />
+                        </InlineStack>
+                      )}
+
+                      {/* Discount value fields */}
+                      <InlineStack gap="200">
                         {discountType === "percentage_off" && (
                           <TextField
-                            label="Percentage Off"
+                            label="Discount Percentage (%)"
                             value={percentageOff}
                             onChange={setPercentageOff}
                             autoComplete="off"
                             type="number"
                             suffix="%"
+                            helpText="Percentage of discount to be applied"
                           />
                         )}
-                        {discountType === "free_shipping" && (
-                          // No additional fields needed for Free Shipping based on the image,
-                          // but we keep the structure for consistency if future fields are added.
-                          <></>
+                        {discountType === "fixed_amount_off" && (
+                          <TextField
+                            label="Discount Amount"
+                            value={fixedAmountOff}
+                            onChange={setFixedAmountOff}
+                            autoComplete="off"
+                            type="number"
+                            prefix={currencySymbol}
+                            helpText={`Amount of discount to be applied in ${shopCurrency.code}`}
+                          />
                         )}
                       </InlineStack>
                     </BlockStack>

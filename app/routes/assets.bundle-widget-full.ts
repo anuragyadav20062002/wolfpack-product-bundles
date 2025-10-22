@@ -50,7 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         // Tells CDNs to cache for 1 hour as well
         "CDN-Cache-Control": "public, max-age=3600",
 
-        // ETag for cache validation
+        // ETag for cache validation - force reload with timestamp
         // Allows browser to check if file has changed without downloading it
         "ETag": `"bundle-widget-${Date.now()}"`,
 

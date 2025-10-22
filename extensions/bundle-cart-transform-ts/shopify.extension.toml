@@ -13,7 +13,7 @@ description = "Transform cart lines to display bundles as single items with disc
   [[extensions.targeting]]
   target = "purchase.cart-transform.run"
   input_query = "src/cart-transform-input.graphql"
-  export = "cart-transform-run"
+  export = "run"
 
   [extensions.build]
   command = ""

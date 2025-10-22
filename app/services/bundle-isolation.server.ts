@@ -2,6 +2,8 @@
 // Ensures cart transform bundles only appear on their designated bundle products
 // Uses product-level metafields for optimal performance
 
+import { AppLogger } from "../lib/logger";
+
 export class BundleIsolationService {
 
   /**
@@ -9,7 +11,10 @@ export class BundleIsolationService {
    * Stores bundle config on the bundle product itself for fast, isolated access
    */
   static async updateBundleProductMetafield(admin: any, bundleProductId: string, bundleConfig: any) {
-    console.log(`🔒 [ISOLATION] Updating bundle product metafield for product: ${bundleProductId}`);
+    AppLogger.info('Updating bundle product metafield', { 
+      component: 'isolation', 
+      operation: 'update-metafield'
+    }, { bundleProductId });
 
     try {
       // Helper function to safely parse JSON
@@ -20,7 +25,10 @@ export class BundleIsolationService {
           try {
             return JSON.parse(value);
           } catch (error) {
-            console.error("JSON parse error:", error);
+            AppLogger.error("JSON parse error in bundle isolation", { 
+              component: 'isolation', 
+              operation: 'parse-json'
+            }, error);
             return defaultValue;
           }
         }
@@ -33,7 +41,10 @@ export class BundleIsolationService {
       const transformPricingRules = (rules: any[], discountMethod: string) => {
         if (!rules || !Array.isArray(rules)) return [];
 
-        console.log(`🔧 [TRANSFORM_RULES] Transforming ${rules.length} pricing rules for method: ${discountMethod}`);
+        AppLogger.debug(`Transforming pricing rules`, { 
+          component: 'isolation', 
+          operation: 'transform-rules'
+        }, { ruleCount: rules.length, discountMethod });
 
         return rules.map((rule: any) => {
           // Create clean rule with standardized field names only
@@ -54,7 +65,10 @@ export class BundleIsolationService {
             transformedRule.discountValue = rule.discountValue || "0";
           }
 
-          console.log(`  ✅ Transformed rule: ${JSON.stringify(rule)} → ${JSON.stringify(transformedRule)}`);
+          AppLogger.debug('Transformed pricing rule', { 
+            component: 'isolation', 
+            operation: 'transform-rules'
+          }, { original: rule, transformed: transformedRule });
           return transformedRule;
         });
       };
@@ -85,18 +99,39 @@ export class BundleIsolationService {
         bundleParentVariantId: bundleConfig.bundleParentVariantId || null,
         steps: steps,
         pricing: bundleConfig.pricing ? {
-          enabled: bundleConfig.pricing.enableDiscount,
+          enabled: bundleConfig.pricing.enableDiscount, // Widget checks this field
           method: bundleConfig.pricing.discountMethod,
           rules: transformPricingRules(
             safeJsonParse(bundleConfig.pricing.rules, []),
             bundleConfig.pricing.discountMethod
           ),
           showFooter: bundleConfig.pricing.showFooter,
-          messages: safeJsonParse(bundleConfig.pricing.messages, {})
+          messages: {
+            ...safeJsonParse(bundleConfig.pricing.messages, {}),
+            showDiscountDisplay: safeJsonParse(bundleConfig.pricing.messages, {}).showDiscountDisplay !== false // Default to true
+          }
         } : null,
-        componentProductIds: steps.flatMap((step: any) =>
-          step.StepProduct?.map((sp: any) => sp.productId) || []
-        )
+        // Store both product IDs (for reference) and variant IDs (for cart transform)
+        componentProductIds: Array.from(new Set(
+          steps.flatMap((step: any) =>
+            step.StepProduct?.map((sp: any) => sp.productId) || []
+          )
+        )),
+        // Store component variant IDs from step products' variant data
+        componentVariantIds: Array.from(new Set(
+          steps.flatMap((step: any) =>
+            step.StepProduct?.flatMap((sp: any) => {
+              // Extract variant IDs from variants field if available
+              if (sp.variants) {
+                const variants = safeJsonParse(sp.variants, []);
+                if (Array.isArray(variants) && variants.length > 0) {
+                  return variants.map((v: any) => v.id).filter((id: any) => id && id.includes('gid://shopify/ProductVariant/'));
+                }
+              }
+              return [];
+            }) || []
+          )
+        ))
       };
 
       const SET_BUNDLE_CONFIG_METAFIELD = `
@@ -135,15 +170,24 @@ export class BundleIsolationService {
 
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
         const error = data.data.metafieldsSet.userErrors[0];
-        console.error("❌ [ISOLATION] Set bundle_config error:", error);
+        AppLogger.error('Set bundle_config error', { 
+          component: 'isolation', 
+          operation: 'update-metafield'
+        }, error);
         return false;
       }
 
-      console.log(`✅ [ISOLATION] Successfully updated bundle_config metafield for product ${bundleProductId}`);
+      AppLogger.info('Successfully updated bundle_config metafield', { 
+        component: 'isolation', 
+        operation: 'update-metafield'
+      }, { bundleProductId });
       return true;
 
     } catch (error) {
-      console.error("❌ [ISOLATION] Error updating bundle_config metafield:", error);
+      AppLogger.error('Error updating bundle_config metafield', { 
+        component: 'isolation', 
+        operation: 'update-metafield'
+      }, error);
       return false;
     }
   }
@@ -153,7 +197,10 @@ export class BundleIsolationService {
    * Each bundle product stores its own configuration
    */
   static async getBundleConfigFromProduct(admin: any, productId: string): Promise<any> {
-    console.log(`🔍 [GET_BUNDLE] Getting bundle config from product: ${productId}`);
+    AppLogger.debug('Getting bundle config from product', { 
+      component: 'isolation', 
+      operation: 'get-bundle-config'
+    }, { productId });
 
     try {
       const GET_BUNDLE_CONFIG = `
@@ -175,16 +222,25 @@ export class BundleIsolationService {
       const bundleConfigValue = data.data?.product?.bundleConfig?.value;
 
       if (!bundleConfigValue) {
-        console.log(`ℹ️ [GET_BUNDLE] No bundle config found for product ${productId}`);
+        AppLogger.info('No bundle config found for product', { 
+          component: 'isolation', 
+          operation: 'get-bundle-config'
+        }, { productId });
         return null;
       }
 
       const bundleConfig = JSON.parse(bundleConfigValue);
-      console.log(`✅ [GET_BUNDLE] Found bundle config: ${bundleConfig.name}`);
+      AppLogger.info('Found bundle config', { 
+        component: 'isolation', 
+        operation: 'get-bundle-config'
+      }, { bundleName: bundleConfig.name, productId });
       return bundleConfig;
 
     } catch (error) {
-      console.error(`❌ [GET_BUNDLE] Error getting bundle config:`, error);
+      AppLogger.error('Error getting bundle config', { 
+        component: 'isolation', 
+        operation: 'get-bundle-config'
+      }, error);
       return null;
     }
   }

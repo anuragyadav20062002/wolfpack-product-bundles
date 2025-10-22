@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { cartTransformRun } from "./cart_transform_run";
-import { getAllBundleDataFromCart, normalizeProductId, parseBundleDataFromMetafield } from "./cart-transform-bundle-utils-v2";
+import { getAllBundleDataFromCart, normalizeProductId, parseBundleDataFromMetafield } from "./cart-transform-bundle-utils";
 
 describe("cartTransformRun", () => {
   it("returns empty operations for empty cart", () => {

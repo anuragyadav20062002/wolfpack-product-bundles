@@ -2,6 +2,8 @@
 // Automatically injects bundle widget via JavaScript on bundle product pages
 // Note: Shopify restricts theme file modification, so we use JavaScript injection
 
+import { AppLogger } from "../lib/logger";
+
 export class BundleAutoInjectionService {
 
   /**
@@ -13,13 +15,21 @@ export class BundleAutoInjectionService {
     bundleProductId: string,
     bundleId: string
   ): Promise<{ success: boolean; error?: string }> {
-    console.log(`🎯 [AUTO_INJECTION] Setting up automatic bundle extension injection for product: ${bundleProductId}`);
+    AppLogger.info('Setting up automatic bundle extension injection', { 
+      component: 'auto-injection', 
+      operation: 'inject',
+      bundleId
+    }, { bundleProductId });
 
     try {
       // Use JavaScript injection method (only method that works with Shopify restrictions)
       return await this.injectBundleViaJavaScript(bundleProductId, bundleId);
     } catch (error) {
-      console.error(`❌ [AUTO_INJECTION] Error injecting bundle extension:`, error);
+      AppLogger.error('Error injecting bundle extension', { 
+        component: 'auto-injection', 
+        operation: 'inject',
+        bundleId
+      }, error);
       return { success: false, error: (error as Error).message };
     }
   }
@@ -32,7 +42,11 @@ export class BundleAutoInjectionService {
     bundleProductId: string,
     bundleId: string
   ): Promise<{ success: boolean; error?: string }> {
-    console.log(`💉 [AUTO_INJECTION] Using JavaScript injection method for bundle: ${bundleId}`);
+    AppLogger.debug('Using JavaScript injection method', { 
+      component: 'auto-injection', 
+      operation: 'inject-js',
+      bundleId
+    });
 
     // The JavaScript logic is implemented in bundle.liquid (lines 547-625):
     // 1. Detects bundle products via product tags ('bundle' or 'cart-transform')
@@ -44,8 +58,11 @@ export class BundleAutoInjectionService {
     // 4. Hides default Add to Cart buttons
     // 5. Widget initializes and loads bundle data from metafields
 
-    console.log(`✅ [AUTO_INJECTION] JavaScript injection method configured successfully`);
-    console.log(`📋 [AUTO_INJECTION] Bundle widget will automatically display on product with isolation metafields`);
+    AppLogger.info('JavaScript injection method configured successfully', { 
+      component: 'auto-injection', 
+      operation: 'inject-js',
+      bundleId
+    });
 
     return { success: true };
   }
@@ -57,17 +74,26 @@ export class BundleAutoInjectionService {
     admin: any,
     bundleProductId: string
   ): Promise<{ success: boolean; error?: string }> {
-    console.log(`🗑️ [AUTO_INJECTION] Removing bundle injection from product: ${bundleProductId}`);
+    AppLogger.info('Removing bundle injection from product', { 
+      component: 'auto-injection', 
+      operation: 'remove'
+    }, { bundleProductId });
 
     try {
       // Cleanup is handled by removing isolation metafields
       // This prevents the JavaScript from auto-displaying the bundle widget
-      console.log(`🧹 [AUTO_INJECTION] Bundle injection removal relies on isolation metafield cleanup`);
+      AppLogger.debug('Bundle injection removal relies on isolation metafield cleanup', { 
+        component: 'auto-injection', 
+        operation: 'remove'
+      });
 
       return { success: true };
 
     } catch (error) {
-      console.error(`❌ [AUTO_INJECTION] Error removing bundle injection:`, error);
+      AppLogger.error('Error removing bundle injection', { 
+        component: 'auto-injection', 
+        operation: 'remove'
+      }, error);
       return { success: false, error: (error as Error).message };
     }
   }

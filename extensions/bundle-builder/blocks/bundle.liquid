@@ -108,8 +108,8 @@
       "type": "textarea",
       "id": "discount_text_template",
       "label": "Progress encouragement message",
-      "default": "Add {discountConditionDiff} {discountUnit} to get the bundle at {discountValueUnit}{discountValue}",
-      "info": "Text shown to encourage customers to complete their bundle. Available variables: {discountConditionDiff}, {discountUnit}, {discountValue}, {discountValueUnit}"
+      "default": "Add {conditionText} to get {discountText}",
+      "info": "Text shown to encourage customers to complete their bundle. Available variables: {conditionText}, {discountText}, {amountNeeded}, {itemsNeeded}, {progressPercentage}, {bundleName}"
     },
     {
       "type": "textarea",
@@ -256,8 +256,8 @@
   {% assign container_bundle_id = product.metafields['$app:bundle_isolation'].owns_bundle_id %}
   {% assign auto_display_mode = true %}
   {% comment %} Load bundle configuration from container metafields {% endcomment %}
-  {% if product.metafields.bundle_discounts.cart_transform_config %}
-    {% assign bundle_config = product.metafields.bundle_discounts.cart_transform_config %}
+  {% if product.metafields['$app'].bundle_config %}
+    {% assign bundle_config = product.metafields['$app'].bundle_config %}
   {% endif %}
 {% endif %}
 
@@ -306,7 +306,7 @@
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
         bundleIsolationType: {{ product.metafields['$app:bundle_isolation'].bundle_product_type | json }},
         ownsBundleId: {{ product.metafields['$app:bundle_isolation'].owns_bundle_id | json }},
-        cartTransformConfig: {{ product.metafields.bundle_discounts.cart_transform_config | json }}
+        cartTransformConfig: {{ product.metafields['$app'].bundle_config | json }}
       });
 
       // 🔍 Debug the Liquid template bundle ID selection logic
@@ -441,6 +441,11 @@
 {% endif %}
 
 <script>
+  // Inject app URL from shop metafield (auto-updated by app server)
+  window.__BUNDLE_APP_URL__ = {{ shop.metafields.app_config.server_url.value | json }};
+</script>
+
+<script>
   // Load bundle configuration directly from product metafield
   // This is much faster than shop-level metafields and naturally isolated
   if (!window.allBundlesData) {
@@ -462,6 +467,16 @@
     window.currentProductCollections = {{ product.collections | json }};
     window.shopCurrency = {{ shop.currency | json }};
     window.shopMoneyFormat = {{ shop.money_format | json }};
+    
+    // Enhanced multi-currency support
+    window.shopifyMultiCurrency = {
+      shopBaseCurrency: {{ shop.currency | json }},
+      shopMoneyFormat: {{ shop.money_format | json }},
+      customerCurrency: null, // Will be detected dynamically
+      customerMoneyFormat: null,
+      exchangeRate: 1,
+      isMultiCurrencyEnabled: false
+    };
     window.bundleWidgetInstanceCount = (window.bundleWidgetInstanceCount || 0) + 1;
 
     // Enhanced debugging for bundle data loading

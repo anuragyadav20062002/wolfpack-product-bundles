@@ -35,25 +35,17 @@
       window.location.search.includes('preview_key') ||
       window.location.pathname.includes('/editor');
 
-    // Try to get app URL from the bundle container's data attribute (set by admin)
-    const container = document.querySelector('#bundle-builder-app');
-    const dataAppUrl = container?.dataset?.appUrl;
-
-    if (dataAppUrl) {
-      console.log('[Bundle Widget] Using app URL from data attribute:', dataAppUrl);
-      return dataAppUrl;
+    // 1. Check global variable from Liquid (auto-updated from shop metafield)
+    if (window.__BUNDLE_APP_URL__) {
+      console.log('[Bundle Widget] Using app URL from server config:', window.__BUNDLE_APP_URL__);
+      return window.__BUNDLE_APP_URL__;
     }
 
-    // Fallback: Auto-detect based on environment
-    // Hardcoded URLs (process.env doesn't work in browser)
-    // The developmentUrl will need updation every time the user spins a new development server and we to automate this process somehow.
+    // 2. Fallback to production URL (will show warning)
     const productionUrl = "https://wolfpack-product-bundle-app.onrender.com";
-    const developmentUrl = "https://lucky-branches-smith-reflections.trycloudflare.com";
+    console.warn('[Bundle Widget] ⚠️ No app URL configured in shop metafield or theme settings, using production fallback');
 
-    const appUrl = isDevelopment ? developmentUrl : productionUrl;
-    console.log(`[Bundle Widget] Auto-detected ${isDevelopment ? 'development' : 'production'} environment, using:`, appUrl);
-
-    return appUrl;
+    return productionUrl;
   }
 
   // Configuration

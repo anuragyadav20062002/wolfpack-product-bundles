@@ -1,6 +1,7 @@
 import { json } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { AppLogger } from "../lib/logger";
 
 /**
  * API endpoint for theme editor integration
@@ -14,7 +15,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const body = await request.json();
     const { productHandle, bundleId } = body;
 
-    console.log(`🎨 [ENSURE_TEMPLATE] Theme editor request for product: ${productHandle}, bundle: ${bundleId}`);
+    AppLogger.info('Theme editor request for product template', { operation: 'ensure-template' }, { productHandle, bundleId });
 
     if (!productHandle) {
       return json({
@@ -25,7 +26,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     // Shopify restricts programmatic theme file creation
     // Return success with instructions for manual setup via Theme Customizer
-    console.log(`ℹ️ [ENSURE_TEMPLATE] Shopify restricts theme file creation - returning Theme Customizer instructions`);
+    AppLogger.info('Shopify restricts theme file creation - returning Theme Customizer instructions', { operation: 'ensure-template' });
 
     return json({
       success: true,
@@ -38,7 +39,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
   } catch (error) {
-    console.error("🔥 [ENSURE_TEMPLATE] Unexpected error:", error);
+    AppLogger.error('Unexpected error in ensure template', { operation: 'ensure-template' }, error);
     return json({
       success: false,
       error: (error as Error).message || "Request failed"

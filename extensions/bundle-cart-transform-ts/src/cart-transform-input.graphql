@@ -3,10 +3,7 @@ query Input {
     lines {
       id
       quantity
-      attribute(key: "_wolfpack_bundle_id") {
-        value
-      }
-      bundleConfig: attribute(key: "_bundle_config") {
+      bundleId: attribute(key: "_bundle_id") {
         value
       }
       merchandise {
@@ -29,6 +26,11 @@ query Input {
           amount
         }
       }
+    }
+  }
+  shop {
+    all_bundles: metafield(namespace: "custom", key: "all_bundles") {
+      value
     }
   }
 }

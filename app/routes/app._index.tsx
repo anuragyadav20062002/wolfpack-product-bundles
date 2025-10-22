@@ -13,8 +13,74 @@ import { authenticate } from "../shopify.server";
 import { CartIcon } from "@shopify/polaris-icons";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await authenticate.admin(request);
-  
+  const { admin } = await authenticate.admin(request);
+
+  // Sync app URL to shop metafield for theme extension access
+  const appUrl = process.env.SHOPIFY_APP_URL;
+
+  if (appUrl) {
+    try {
+      // Get shop GID
+      const GET_SHOP_ID = `
+        query getShopId {
+          shop {
+            id
+          }
+        }
+      `;
+
+      const shopResponse = await admin.graphql(GET_SHOP_ID);
+      const shopData = await shopResponse.json();
+
+      if (!shopData.data?.shop?.id) {
+        console.error('❌ [APP_INIT] Failed to get shop global ID');
+        return json({ message: "Welcome to Bundle Builder" });
+      }
+
+      const shopGlobalId = shopData.data.shop.id;
+
+      // Update shop metafield with app URL
+      const UPDATE_APP_URL_METAFIELD = `
+        mutation UpdateAppUrlMetafield($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              namespace
+              key
+              value
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(UPDATE_APP_URL_METAFIELD, {
+        variables: {
+          metafields: [{
+            ownerId: shopGlobalId,
+            namespace: "app_config",
+            key: "server_url",
+            type: "single_line_text_field",
+            value: appUrl
+          }]
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.data?.metafieldsSet?.userErrors?.length > 0) {
+        console.error('❌ [APP_INIT] Metafield set error:', data.data.metafieldsSet.userErrors);
+      } else {
+        console.log(`✅ [APP_INIT] Synced app URL to shop metafield: ${appUrl}`);
+      }
+    } catch (error) {
+      console.error('❌ [APP_INIT] Failed to sync app URL to metafield:', error);
+    }
+  }
+
   return json({
     message: "Welcome to Bundle Builder",
   });
