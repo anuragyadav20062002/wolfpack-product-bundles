@@ -2181,8 +2181,10 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
                 enabled: discountData.discountEnabled,
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
+                showFooter: discountData.showFooter !== false,
+                showProgressBar: discountData.showProgressBar || false,
                 messages: {
-                  showDiscountDisplay: true, // Enable discount display by default
+                  showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
                   ruleMessages: discountData.ruleMessages || {}
                 }
@@ -2191,8 +2193,10 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
                 enabled: discountData.discountEnabled,
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
+                showFooter: discountData.showFooter !== false,
+                showProgressBar: discountData.showProgressBar || false,
                 messages: {
-                  showDiscountDisplay: true, // Enable discount display by default
+                  showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
                   ruleMessages: discountData.ruleMessages || {}
                 }
@@ -3722,7 +3726,7 @@ export default function ConfigureBundleFlow() {
       default:
         return '';
     }
-  }, [bundleName, bundleDescription, templateName, bundleStatus, steps, discountEnabled, discountType, discountRules, selectedCollections, stepConditions, bundleProduct, productStatus]);
+  }, [bundleName, bundleDescription, templateName, bundleStatus, steps, discountEnabled, discountType, discountRules, showProgressBar, showFooter, selectedCollections, stepConditions, bundleProduct, productStatus]);
 
   // Check for changes whenever form values change
   useEffect(() => {
@@ -3748,6 +3752,8 @@ export default function ConfigureBundleFlow() {
       discountEnabled !== originalValues.discountEnabled ||
       discountType !== originalValues.discountType ||
       JSON.stringify(discountRules) !== originalValues.discountRules ||
+      showProgressBar !== originalValues.showProgressBar ||
+      showFooter !== originalValues.showFooter ||
       discountMessagingEnabled !== originalValues.discountMessagingEnabled ||
       JSON.stringify(ruleMessages) !== originalValues.ruleMessages
     );
@@ -3774,7 +3780,7 @@ export default function ConfigureBundleFlow() {
     }
   }, [
     bundleStatus, bundleName, bundleDescription, templateName, steps,
-    discountEnabled, discountType, discountRules,
+    discountEnabled, discountType, discountRules, showProgressBar, showFooter,
     discountMessagingEnabled, ruleMessages,
     selectedCollections, stepConditions, bundleProduct, productStatus,
     originalValues
@@ -3820,7 +3826,7 @@ export default function ConfigureBundleFlow() {
       AppLogger.error("Save failed:", {}, error as any);
       shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true });
     }
-  }, [bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
+  }, [bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, showProgressBar, showFooter, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
 
   // Function to enhance template list with user's selected template
   const enhanceTemplateListWithUserSelection = useCallback((templates: any[]) => {
@@ -3945,7 +3951,7 @@ export default function ConfigureBundleFlow() {
         }
       }
     }
-  }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify, enhanceTemplateListWithUserSelection]);
+  }, [fetcher.data, fetcher.state, bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, showProgressBar, showFooter, discountMessagingEnabled, selectedCollections, ruleMessages, stepConditions, bundleProduct, productStatus, shopify, enhanceTemplateListWithUserSelection]);
 
   // Discard handler
   const handleDiscard = useCallback(() => {
@@ -3959,6 +3965,8 @@ export default function ConfigureBundleFlow() {
       setDiscountEnabled(originalValues.discountEnabled);
       setDiscountType(originalValues.discountType as DiscountMethod);
       setDiscountRules(JSON.parse(originalValues.discountRules));
+      setShowProgressBar(originalValues.showProgressBar);
+      setShowFooter(originalValues.showFooter);
       setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
       setSelectedCollections(JSON.parse(originalValues.selectedCollections));
       setRuleMessages(JSON.parse(originalValues.ruleMessages));
@@ -4833,7 +4841,7 @@ export default function ConfigureBundleFlow() {
         <input type="hidden" name="bundleStatus" value={bundleStatus} />
         <input type="hidden" name="bundleProduct" value={JSON.stringify(bundleProduct)} />
         <input type="hidden" name="stepsData" value={JSON.stringify(steps)} />
-        <input type="hidden" name="discountData" value={JSON.stringify({ discountEnabled, discountType, discountRules })} />
+        <input type="hidden" name="discountData" value={JSON.stringify({ discountEnabled, discountType, discountRules, showFooter, showProgressBar, discountMessagingEnabled, ruleMessages })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(stepConditions)} />
 
         {/* Invisible trigger input for App Bridge save bar - required for proper change detection */}
@@ -5374,9 +5382,9 @@ export default function ConfigureBundleFlow() {
                         }}
                       />
 
-                      {/* Discount Rules */}
+                      {/* Discount Rules - New Standardized Structure */}
                       <BlockStack gap="300">
-                        {(Array.isArray(discountRules) ? discountRules : []).map((rule: any, index: number) => (
+                        {discountRules.map((rule, index) => (
                           <Card key={rule.id} background="bg-surface-secondary">
                             <BlockStack gap="300">
                               <InlineStack align="space-between" blockAlign="center">
@@ -5392,74 +5400,80 @@ export default function ConfigureBundleFlow() {
                                 </Button>
                               </InlineStack>
 
-                              {/* Render different fields based on discount type */}
-                              {discountType === 'fixed_bundle_price' ? (
+                              {/* Condition Section */}
+                              <BlockStack gap="200">
+                                <Text as="p" variant="bodyMd" fontWeight="semibold">When:</Text>
                                 <InlineStack gap="200" align="start">
-                                  <TextField
-                                    label="Number of Products in Bundle"
-                                    value={String(rule.numberOfProducts || 0)}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'numberOfProducts', value as any)}
-                                    type="number"
-                                    min="0"
-                                    autoComplete="off"
+                                  <Select
+                                    label="Type"
+                                    options={[
+                                      { label: 'Quantity', value: ConditionType.QUANTITY },
+                                      { label: 'Amount', value: ConditionType.AMOUNT },
+                                    ]}
+                                    value={rule.condition.type}
+                                    onChange={(value) => updateDiscountRule(rule.id, 'condition.type', value)}
+                                  />
+                                  <Select
+                                    label="Operator"
+                                    options={[
+                                      { label: 'Greater than or equal (≥)', value: ConditionOperator.GTE },
+                                      { label: 'Greater than (>)', value: ConditionOperator.GT },
+                                      { label: 'Less than or equal (≤)', value: ConditionOperator.LTE },
+                                      { label: 'Less than (<)', value: ConditionOperator.LT },
+                                      { label: 'Equal to (=)', value: ConditionOperator.EQ },
+                                    ]}
+                                    value={rule.condition.operator}
+                                    onChange={(value) => updateDiscountRule(rule.id, 'condition.operator', value)}
                                   />
                                   <TextField
-                                    label="Price"
-                                    value={String(rule.price || 0)}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'price', value as any)}
+                                    label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
+                                    value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
+                                    onChange={(value) => {
+                                      const numValue = Number(value) || 0;
+                                      const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
+                                      updateDiscountRule(rule.id, 'condition.value', finalValue);
+                                    }}
                                     type="number"
                                     min="0"
-                                    step={1}
-                                    prefix="₹"
+                                    step={rule.condition.type === ConditionType.AMOUNT ? 0.01 : 1}
+                                    helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
                                     autoComplete="off"
                                   />
                                 </InlineStack>
-                              ) : (
-                                <BlockStack gap="300">
-                                  <InlineStack gap="200" align="start">
-                                    <Select
-                                      label="Type"
-                                      options={[
-                                        { label: 'Amount', value: 'amount' },
-                                        { label: 'Quantity', value: 'quantity' },
-                                      ]}
-                                      value={rule.type || 'amount'}
-                                      onChange={(value) => updateDiscountRule(rule.id, 'type', value)}
-                                    />
-                                    <Select
-                                      label="Condition"
-                                      options={[
-                                        { label: 'Greater than & equal to', value: 'greater_than_equal_to' },
-                                        { label: 'Less than & equal to', value: 'less_than_equal_to' },
-                                        { label: 'Equal to', value: 'equal_to' },
-                                      ]}
-                                      value={rule.condition || 'greater_than_equal_to'}
-                                      onChange={(value) => updateDiscountRule(rule.id, 'condition', value)}
-                                    />
-                                    <TextField
-                                      label="Value"
-                                      value={String(rule.value || 0)}
-                                      onChange={(value) => updateDiscountRule(rule.id, 'value', value as any)}
-                                      type="number"
-                                      min="0"
-                                      step={1}
-                                      autoComplete="off"
-                                    />
-                                  </InlineStack>
-                                  <TextField
-                                    label={discountType === 'percentage_off' ? 'Discount Percentage (%)' : 'Discount Amount (₹)'}
-                                    value={String(rule.discountValue || 0)}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'discountValue', value as any)}
-                                    type="number"
-                                    min="0"
-                                    max={discountType === 'percentage_off' ? "100" : undefined}
-                                    step={1}
-                                    prefix={discountType === 'fixed_amount_off' ? '₹' : undefined}
-                                    suffix={discountType === 'percentage_off' ? '%' : undefined}
-                                    autoComplete="off"
-                                  />
-                                </BlockStack>
-                              )}
+                              </BlockStack>
+
+                              {/* Discount Section */}
+                              <BlockStack gap="200">
+                                <Text as="p" variant="bodyMd" fontWeight="semibold">Apply:</Text>
+                                <TextField
+                                  label={
+                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
+                                    rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
+                                    'Bundle Price'
+                                  }
+                                  value={String(
+                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
+                                    centsToAmount(rule.discount.value)
+                                  )}
+                                  onChange={(value) => {
+                                    const numValue = Number(value) || 0;
+                                    const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
+                                    updateDiscountRule(rule.id, 'discount.value', finalValue);
+                                  }}
+                                  type="number"
+                                  min="0"
+                                  max={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
+                                  step={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 1 : 0.01}
+                                  suffix={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
+                                  helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
+                                  autoComplete="off"
+                                />
+                              </BlockStack>
+
+                              {/* Preview */}
+                              <Text as="p" variant="bodySm" tone="subdued">
+                                Preview: {generateRulePreview(rule)}
+                              </Text>
                             </BlockStack>
                           </Card>
                         ))}
