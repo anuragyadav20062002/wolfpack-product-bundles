@@ -143,14 +143,12 @@ model BundlePricing {
   id             String             @id @default(uuid())
   bundleId       String             @unique
   bundle         Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  enableDiscount Boolean            @default(false)
-  discountMethod DiscountMethodType @default(fixed_amount_off)
-  rules          Json? // Stores an array of discount rule objects
-  discountId     String? // Shopify discount ID
+  enabled        Boolean            @default(false)
+  method         DiscountMethodType @default(percentage_off)
+  rules          Json? // Stores array of standardized pricing rules with nested condition/discount structure
   showFooter     Boolean            @default(true)
-  showBar        Boolean            @default(false)
-  messages       Json?
-  published      Boolean            @default(false)
+  showProgressBar Boolean           @default(false)
+  messages       Json? // Stores progress and qualified messages with showInCart flag
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 

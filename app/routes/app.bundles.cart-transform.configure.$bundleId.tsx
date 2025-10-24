@@ -3,6 +3,17 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-r
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
 import {
+  DiscountMethod,
+  ConditionType,
+  ConditionOperator,
+  type PricingRule,
+  type PricingConfiguration,
+  createNewPricingRule,
+  generateRulePreview,
+  centsToAmount,
+  amountToCents,
+} from "../types/pricing";
+import {
   Page,
   Layout,
   Card,
@@ -45,6 +56,42 @@ import db from "../db.server";
 import { ThemeTemplateService } from "../services/theme-template.server";
 import { BundleIsolationService } from "../services/bundle-isolation.server";
 import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
+
+// Removed - now using standardized PricingRule from app/types/pricing
+
+interface LoaderData {
+  bundle: {
+    id: string;
+    name: string;
+    description?: string;
+    shopId: string;
+    shopifyProductId?: string;
+    bundleType: string;
+    status: string;
+    templateName?: string;
+    steps: Array<{
+      id: string;
+      name: string;
+      collections?: any;
+      StepProduct?: Array<{
+        id: string;
+        productId: string;
+        title: string;
+      }>;
+    }>;
+    pricing?: {
+      id: string;
+      enabled: boolean;
+      method: string;
+      rules: PricingRule[] | string;
+      showFooter: boolean;
+      showProgressBar: boolean;
+      messages: any;
+    };
+  };
+  bundleProduct?: any;
+  shop: string;
+}
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -702,11 +749,12 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
         return {
           // ESSENTIAL FIELDS ONLY (for cart transform)
           id: bundle.id,
+          name: bundle.name, // Keep for error logging
           bundleParentVariantId: bundleParentVariantId, // CRITICAL: Required for merge operations
           pricing: bundle.pricing ? {
             enabled: bundle.pricing.enableDiscount,
             method: bundle.pricing.discountMethod,
-            rules: (bundle.pricing.rules || []).map((rule: any) => ({
+            rules: (Array.isArray(bundle.pricing.rules) ? bundle.pricing.rules : []).map((rule: any) => ({
               condition: rule.condition || 'gte',
               conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
               value: rule.value || 0, // Keep as decimal - widget will convert to cents
@@ -1204,7 +1252,7 @@ async function getFirstVariantId(admin: any, productId: string): Promise<string 
 async function calculateBundleTotalPrice(admin: any, stepsData: any[]) {
   try {
     if (!stepsData || stepsData.length === 0) {
-      console.log("🔧 [BUNDLE_TOTAL_PRICE] No steps found, returning 0");
+      AppLogger.debug("🔧 [BUNDLE_TOTAL_PRICE] No steps found, returning 0");
       return 0;
     }
 
@@ -1224,7 +1272,7 @@ async function calculateBundleTotalPrice(admin: any, stepsData: any[]) {
             stepTotalPrice += parseFloat(productPrice);
             validProductCount++;
           } catch (error) {
-            console.error(`🔧 [BUNDLE_TOTAL_PRICE] Error getting price for product ${stepProduct.id}:`, error);
+            AppLogger.error(`🔧 [BUNDLE_TOTAL_PRICE] Error getting price for product ${stepProduct.id}:`, {}, error as any);
           }
         }
 
@@ -1237,15 +1285,15 @@ async function calculateBundleTotalPrice(admin: any, stepsData: any[]) {
           totalPrice += stepContribution;
           stepCount++;
 
-          console.log(`🔧 [BUNDLE_TOTAL_PRICE] Step ${stepCount}: avg ₹${stepAveragePrice.toFixed(2)} x ${quantity} = ₹${stepContribution.toFixed(2)} (from ${validProductCount} products)`);
+          AppLogger.debug(`🔧 [BUNDLE_TOTAL_PRICE] Step ${stepCount}: avg ₹${stepAveragePrice.toFixed(2)} x ${quantity} = ₹${stepContribution.toFixed(2)} (from ${validProductCount} products)`);
         }
       }
     }
 
-    console.log(`🔧 [BUNDLE_TOTAL_PRICE] Total bundle price (${stepCount} steps): ₹${totalPrice.toFixed(2)}`);
+    AppLogger.debug(`🔧 [BUNDLE_TOTAL_PRICE] Total bundle price (${stepCount} steps): ₹${totalPrice.toFixed(2)}`);
     return totalPrice;
   } catch (error) {
-    console.error("🔧 [BUNDLE_TOTAL_PRICE] Error calculating total bundle price:", error);
+    AppLogger.error("🔧 [BUNDLE_TOTAL_PRICE] Error calculating total bundle price:", {}, error as any);
     return 0;
   }
 }
@@ -1254,7 +1302,7 @@ async function calculateBundleTotalPrice(admin: any, stepsData: any[]) {
 async function calculateBundlePrice(admin: any, bundle: any) {
   try {
     if (!bundle.steps || bundle.steps.length === 0) {
-      console.log("🔧 [BUNDLE_PRICING] No steps found, using default price of 1.00");
+      AppLogger.debug("🔧 [BUNDLE_PRICING] No steps found, using default price of 1.00");
       return "1.00";
     }
 
@@ -1271,7 +1319,7 @@ async function calculateBundlePrice(admin: any, bundle: any) {
             totalPrice += parseFloat(productPrice) * quantity;
             productCount++;
           } catch (error) {
-            console.error(`🔧 [BUNDLE_PRICING] Error getting price for product ${stepProduct.productId}:`, error);
+            AppLogger.error(`🔧 [BUNDLE_PRICING] Error getting price for product ${stepProduct.productId}:`, {}, error as any);
           }
         }
       }
@@ -1287,11 +1335,11 @@ async function calculateBundlePrice(admin: any, bundle: any) {
     }
 
     const finalPrice = Math.max(totalPrice, 0.01); // Minimum price 1 cent
-    console.log(`🔧 [BUNDLE_PRICING] Calculated bundle price: $${finalPrice.toFixed(2)} (${productCount} products)`);
+    AppLogger.debug(`🔧 [BUNDLE_PRICING] Calculated bundle price: $${finalPrice.toFixed(2)} (${productCount} products)`);
 
     return finalPrice.toFixed(2);
   } catch (error) {
-    console.error("🔧 [BUNDLE_PRICING] Error calculating bundle price:", error);
+    AppLogger.error("🔧 [BUNDLE_PRICING] Error calculating bundle price:", {}, error as any);
     return "1.00"; // Fallback price
   }
 }
@@ -1330,7 +1378,7 @@ async function getProductPrice(admin: any, productId: string) {
     // Fallback price
     return "10.00";
   } catch (error) {
-    console.error('Error fetching product price:', error);
+    AppLogger.error('Error fetching product price:', {}, error as any);
     return "10.00"; // Fallback price
   }
 }
@@ -1338,7 +1386,7 @@ async function getProductPrice(admin: any, productId: string) {
 // Helper function to update bundle product variant price
 async function updateBundleProductPrice(admin: any, productId: string, newPrice: string) {
   try {
-    console.log(`🔧 [BUNDLE_PRICING] Updating bundle product ${productId} price to $${newPrice}`);
+    AppLogger.debug(`🔧 [BUNDLE_PRICING] Updating bundle product ${productId} price to $${newPrice}`);
 
     // First, get the variant ID
     const PRODUCT_VARIANT_QUERY = `
@@ -1370,7 +1418,7 @@ async function updateBundleProductPrice(admin: any, productId: string, newPrice:
 
     // Only update if price has changed
     if (currentPrice === newPrice) {
-      console.log(`🔧 [BUNDLE_PRICING] Price unchanged ($${currentPrice}), skipping update`);
+      AppLogger.debug(`🔧 [BUNDLE_PRICING] Price unchanged ($${currentPrice}), skipping update`);
       return;
     }
 
@@ -1405,9 +1453,9 @@ async function updateBundleProductPrice(admin: any, productId: string, newPrice:
       throw new Error(`Failed to update variant price: ${updateData.data.productVariantUpdate.userErrors[0].message}`);
     }
 
-    console.log(`🔧 [BUNDLE_PRICING] Successfully updated bundle product price from $${currentPrice} to $${newPrice}`);
+    AppLogger.debug(`🔧 [BUNDLE_PRICING] Successfully updated bundle product price from $${currentPrice} to $${newPrice}`);
   } catch (error) {
-    console.error("🔧 [BUNDLE_PRICING] Error updating bundle product price:", error);
+    AppLogger.error("🔧 [BUNDLE_PRICING] Error updating bundle product price:", {}, error as any);
     throw error;
   }
 }
@@ -1430,7 +1478,7 @@ async function convertBundleToStandardMetafields(admin: any, bundle: any) {
           const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stepProduct.productId);
 
           if (isUUID) {
-            console.warn(`⚠️ [STANDARD_METAFIELD] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
+            AppLogger.warn(`⚠️ [STANDARD_METAFIELD] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
             continue; // Skip UUID products entirely
           }
 
@@ -1460,8 +1508,8 @@ async function convertBundleToStandardMetafields(admin: any, bundle: any) {
     if (componentReferences.length > 0) {
       standardMetafields.component_reference = componentReferences; // Array of Product GIDs for list.product_reference
       standardMetafields.component_quantities = componentQuantities; // Array of integers for list.number_integer
-      console.log("🔧 [STANDARD_METAFIELD] Component references (Product GIDs):", componentReferences);
-      console.log("🔧 [STANDARD_METAFIELD] Component quantities:", componentQuantities);
+      AppLogger.debug("🔧 [STANDARD_METAFIELD] Component references (Product GIDs):", componentReferences);
+      AppLogger.debug("🔧 [STANDARD_METAFIELD] Component quantities:", componentQuantities);
     }
   }
 
@@ -1541,10 +1589,10 @@ function generateComponentParentsMetafield(bundleConfig: any, productId: string)
 
 // Helper function to update component products with component_parents metafield
 async function updateComponentProductMetafields(admin: any, bundleProductId: string, bundleConfig: any) {
-  console.log("🔧 [COMPONENT_METAFIELD] Setting component_parents metafield on individual component products");
+  AppLogger.debug("🔧 [COMPONENT_METAFIELD] Setting component_parents metafield on individual component products");
 
   if (!bundleConfig.steps || bundleConfig.steps.length === 0) {
-    console.log("🔧 [COMPONENT_METAFIELD] No steps found in bundle config");
+    AppLogger.debug("🔧 [COMPONENT_METAFIELD] No steps found in bundle config");
     return;
   }
 
@@ -1560,7 +1608,7 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
           const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stepProduct.productId);
 
           if (isUUID) {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
+            AppLogger.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
             continue; // Skip UUID products entirely
           }
 
@@ -1573,7 +1621,7 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
           if (isValidShopifyProductId(productId)) {
             componentProductIds.add(productId);
           } else {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping invalid product ID format: ${productId}`);
+            AppLogger.warn(`⚠️ [COMPONENT_METAFIELD] Skipping invalid product ID format: ${productId}`);
           }
         }
       }
@@ -1590,14 +1638,14 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
           if (isValidShopifyProductId(productId)) {
             componentProductIds.add(productId);
           } else {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping invalid product ID: ${productId}`);
+            AppLogger.warn(`⚠️ [COMPONENT_METAFIELD] Skipping invalid product ID: ${productId}`);
           }
         }
       }
     }
   }
 
-  console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentProductIds.size} valid component products to update`);
+  AppLogger.debug(`🔧 [COMPONENT_METAFIELD] Found ${componentProductIds.size} valid component products to update`);
 
   // Create component_parents metafield data using OFFICIAL Shopify format
   // First, extract component references and quantities from bundle config
@@ -1613,7 +1661,7 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
           const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stepProduct.productId);
 
           if (isUUID) {
-            console.warn(`⚠️ [COMPONENT_REFERENCE] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
+            AppLogger.warn(`⚠️ [COMPONENT_REFERENCE] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
             continue; // Skip UUID products entirely
           }
 
@@ -1645,7 +1693,7 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
   const bundleVariantId = await getFirstVariantId(admin, bundleProductId);
 
   if (!bundleVariantId) {
-    console.error('❌ [COMPONENT_METAFIELD] Cannot update component products: bundle product variant not found');
+    AppLogger.error('❌ [COMPONENT_METAFIELD] Cannot update component products: bundle product variant not found');
     return;
   }
 
@@ -1665,13 +1713,13 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
     } : {})
   }];
 
-  console.log("🔧 [COMPONENT_METAFIELD] Bundle variant ID:", bundleVariantId);
-  console.log("🔧 [COMPONENT_METAFIELD] Component parents data:", JSON.stringify(componentParentsData, null, 2));
+  AppLogger.debug("🔧 [COMPONENT_METAFIELD] Bundle variant ID:", {}, bundleVariantId);
+  AppLogger.debug("🔧 [COMPONENT_METAFIELD] Component parents data:", {}, JSON.stringify(componentParentsData, null, 2));
 
   // Update each component product
   for (const productId of componentProductIds) {
     try {
-      console.log(`🔧 [COMPONENT_METAFIELD] Updating product: ${productId}`);
+      AppLogger.debug(`🔧 [COMPONENT_METAFIELD] Updating product: ${productId}`);
 
       // Create minimal bundle config matching the cart transform interface
       const minimalBundleConfig = {
@@ -1729,20 +1777,20 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
 
       const data = await response.json();
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-        console.error(`🔧 [COMPONENT_METAFIELD] Error updating product ${productId}:`, data.data.metafieldsSet.userErrors);
+        AppLogger.error(`🔧 [COMPONENT_METAFIELD] Error updating product ${productId}:`, {}, data.data.metafieldsSet.userErrors);
       } else {
-        console.log(`🔧 [COMPONENT_METAFIELD] Successfully updated product ${productId}`);
+        AppLogger.debug(`🔧 [COMPONENT_METAFIELD] Successfully updated product ${productId}`);
       }
     } catch (error) {
-      console.error(`🔧 [COMPONENT_METAFIELD] Failed to update product ${productId}:`, error);
+      AppLogger.error(`🔧 [COMPONENT_METAFIELD] Failed to update product ${productId}:`, {}, error as any);
     }
   }
 }
 
 // Helper function to update standard Shopify metafields on products
 async function updateProductStandardMetafields(admin: any, productId: string, standardMetafields: any) {
-  console.log("🔧 [STANDARD_METAFIELD] Setting standard Shopify metafields on product:", productId);
-  console.log("📋 [STANDARD_METAFIELD] Metafields:", standardMetafields);
+  AppLogger.debug("🔧 [STANDARD_METAFIELD] Setting standard Shopify metafields on product:", {}, productId);
+  AppLogger.debug("📋 [STANDARD_METAFIELD] Metafields:", standardMetafields);
 
   // Ensure metafield definitions exist for the custom namespace
   await ensureStandardMetafieldDefinitions(admin);
@@ -1794,7 +1842,7 @@ async function updateProductStandardMetafields(admin: any, productId: string, st
   });
 
   if (metafieldsToSet.length === 0) {
-    console.log("🔧 [STANDARD_METAFIELD] No standard metafields to set");
+    AppLogger.debug("🔧 [STANDARD_METAFIELD] No standard metafields to set");
     return null;
   }
 
@@ -1821,20 +1869,20 @@ async function updateProductStandardMetafields(admin: any, productId: string, st
   });
 
   const data = await response.json();
-  console.log("🔧 [STANDARD_METAFIELD] GraphQL response:", JSON.stringify(data, null, 2));
+  AppLogger.debug("🔧 [STANDARD_METAFIELD] GraphQL response:", {}, JSON.stringify(data, null, 2));
 
   if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-    console.error("🔧 [STANDARD_METAFIELD] User errors:", data.data.metafieldsSet.userErrors);
+    AppLogger.error("🔧 [STANDARD_METAFIELD] User errors:", {}, data.data.metafieldsSet.userErrors);
     throw new Error(`Failed to set standard metafields: ${data.data.metafieldsSet.userErrors[0].message}`);
   }
 
-  console.log("🔧 [STANDARD_METAFIELD] Standard metafields set successfully");
+  AppLogger.debug("🔧 [STANDARD_METAFIELD] Standard metafields set successfully");
   return data.data?.metafieldsSet?.metafields;
 }
 
 // Helper function to ensure standard metafield definitions exist
 async function ensureStandardMetafieldDefinitions(admin: any) {
-  console.log("🔧 [STANDARD_METAFIELD] Creating definitions in app-reserved namespace");
+  AppLogger.debug("🔧 [STANDARD_METAFIELD] Creating definitions in app-reserved namespace");
 
   // Use app-reserved namespace to avoid type conflicts with existing custom namespace definitions
   const standardDefinitions = [
@@ -1901,13 +1949,13 @@ async function ensureStandardMetafieldDefinitions(admin: any) {
       const data = await response.json();
       if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
         const errors = data.data.metafieldDefinitionCreate.userErrors;
-        console.log(`🔧 [STANDARD_METAFIELD] Definition error for ${definition.key}:`, errors);
+        AppLogger.debug(`🔧 [STANDARD_METAFIELD] Definition error for ${definition.key}:`, errors);
         // Don't throw - definitions might already exist
       } else {
-        console.log(`🔧 [STANDARD_METAFIELD] Created definition for ${definition.key} in $app namespace`);
+        AppLogger.debug(`🔧 [STANDARD_METAFIELD] Created definition for ${definition.key} in $app namespace`);
       }
     } catch (error) {
-      console.log(`🔧 [STANDARD_METAFIELD] Error creating definition for ${definition.key}:`, error);
+      AppLogger.debug(`🔧 [STANDARD_METAFIELD] Error creating definition for ${definition.key}:`, {}, error as any);
     }
   }
 }
@@ -1939,7 +1987,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
     const bundleProductData = formData.get("bundleProduct") ? JSON.parse(formData.get("bundleProduct") as string) : null;
 
-    console.log("📝 [BUNDLE_CONFIG] Parsed form data:", {
+    AppLogger.debug("📝 [BUNDLE_CONFIG] Parsed form data:", {
       bundleName,
       bundleDescription,
       bundleStatus,
@@ -1950,16 +1998,16 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       hasBundleProduct: !!bundleProductData
     });
 
-    console.log("[DEBUG] Step Conditions Data from form:", stepConditionsData);
-    console.log("[DEBUG] Bundle Product Data from form:", bundleProductData);
+    AppLogger.debug("[DEBUG] Step Conditions Data from form:", stepConditionsData);
+    AppLogger.debug("[DEBUG] Bundle Product Data from form:", bundleProductData);
 
     // 🔍 DEBUG: Log all product IDs being submitted
-    console.log("🔍 [DEBUG] Steps data received from form:");
+    AppLogger.debug("🔍 [DEBUG] Steps data received from form:");
     stepsData.forEach((step: any, idx: number) => {
-      console.log(`  Step ${idx + 1}: "${step.name}" (step.id: ${step.id})`);
+      AppLogger.debug(`  Step ${idx + 1}: "${step.name}" (step.id: ${step.id})`);
       if (step.StepProduct && Array.isArray(step.StepProduct)) {
         step.StepProduct.forEach((product: any, pidx: number) => {
-          console.log(`    Product ${pidx + 1}: "${product.title}" → product.id: ${product.id}`);
+          AppLogger.debug(`    Product ${pidx + 1}: "${product.title}" → product.id: ${product.id}`);
         });
       }
     });
@@ -1975,24 +2023,24 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         if (uuidRegex.test(product.id)) {
           const errorMsg = `❌ Invalid product ID detected: UUID "${product.id}" for product "${product.title || product.name}" in step "${step.name}". ` +
             `This indicates corrupted browser state. Please refresh the page and re-select the product using the product picker.`;
-          console.error(errorMsg);
+          AppLogger.error(errorMsg);
           throw new Error(errorMsg);
         }
       }
     }
 
-    console.log("✅ [VALIDATION] All product IDs are valid Shopify GIDs");
+    AppLogger.debug("✅ [VALIDATION] All product IDs are valid Shopify GIDs");
 
     // ✅ FIXED_BUNDLE_PRICE: Store the fixed price directly (NO conversion)
     // The cart transform will calculate the percentage dynamically based on actual cart total
     if (discountData.discountEnabled && discountData.discountType === 'fixed_bundle_price') {
-      console.log("💰 [FIXED_BUNDLE_PRICE] Storing fixed bundle price (will be converted at runtime)");
+      AppLogger.debug("💰 [FIXED_BUNDLE_PRICE] Storing fixed bundle price (will be converted at runtime)");
 
       // For fixed_bundle_price, keep the original price value in a special field
       // The cart transform will read this and calculate discount based on actual cart total
       const processedRules = (discountData.discountRules || []).map((rule: any) => {
         const fixedPrice = parseFloat(rule.price || 0);
-        console.log(`💰 [FIXED_BUNDLE_PRICE] Rule fixed price: ₹${fixedPrice}`);
+        AppLogger.debug(`💰 [FIXED_BUNDLE_PRICE] Rule fixed price: ₹${fixedPrice}`);
 
         // Store the fixed price in a dedicated field for runtime calculation
         return {
@@ -2003,7 +2051,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       });
 
       discountData.discountRules = processedRules;
-      console.log("✅ [FIXED_BUNDLE_PRICE] Stored fixed price for runtime calculation:", processedRules);
+      AppLogger.debug("✅ [FIXED_BUNDLE_PRICE] Stored fixed price for runtime calculation:", processedRules);
     }
 
     // Automatically set status to 'active' if bundle has configured steps
@@ -2013,14 +2061,14 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         (step.StepProduct && step.StepProduct.length > 0) ||
         (step.collections && step.collections.length > 0)
       );
-      console.log("📊 [BUNDLE_CONFIG] Status evaluation:", {
+      AppLogger.debug("📊 [BUNDLE_CONFIG] Status evaluation:", {
         originalStatus: bundleStatus,
         hasConfiguredSteps,
         stepsCount: stepsData.length
       });
       if (hasConfiguredSteps) {
         finalStatus = 'active';
-        console.log("🔄 [BUNDLE_CONFIG] Auto-activating bundle with configured steps");
+        AppLogger.debug("🔄 [BUNDLE_CONFIG] Auto-activating bundle with configured steps");
       }
     }
 
@@ -2031,7 +2079,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     });
 
     // Update bundle in database
-    console.log("💾 [BUNDLE_CONFIG] Updating bundle in database");
+    AppLogger.debug("💾 [BUNDLE_CONFIG] Updating bundle in database");
     const updatedBundle = await db.bundle.update({
       where: {
         id: bundleId,
@@ -2052,9 +2100,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
               // Get conditions for this step from stepConditionsData
               const stepConditions = stepConditionsData[step.id] || [];
               const firstCondition = stepConditions.length > 0 ? stepConditions[0] : null;
-              console.log(`[DEBUG] Step ${step.id} conditions:`, stepConditions);
-              console.log(`[DEBUG] Step ${step.id} first condition:`, firstCondition);
-              console.log(`[DEBUG] Will save to DB - conditionType: ${firstCondition?.type || null}, conditionOperator: ${firstCondition?.operator || null}, conditionValue: ${firstCondition?.value ? parseInt(firstCondition.value) || null : null}`);
+              AppLogger.debug(`[DEBUG] Step ${step.id} conditions:`, stepConditions);
+              AppLogger.debug(`[DEBUG] Step ${step.id} first condition:`, firstCondition);
+              AppLogger.debug(`[DEBUG] Will save to DB - conditionType: ${firstCondition?.type || null}, conditionOperator: ${firstCondition?.operator || null}, conditionValue: ${firstCondition?.value ? parseInt(firstCondition.value) || null : null}`);
 
               return {
                 name: step.pageTitle || step.name, // Use pageTitle as name if available
@@ -2190,24 +2238,52 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 
       // Get the bundle product's first variant ID for cart transform merge operations
       const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
-      console.log(`🔍 [BUNDLE_CONFIG] Bundle parent variant ID: ${bundleParentVariantId}`);
+      AppLogger.debug(`🔍 [BUNDLE_CONFIG] Bundle parent variant ID: ${bundleParentVariantId}`);
 
       const baseConfiguration = {
         bundleId: updatedBundle.id,
         id: updatedBundle.id, // Also include as 'id' for easier matching
         name: updatedBundle.name,
-        templateName: updatedBundle.templateName || null,
+        description: updatedBundle.description,
+        status: updatedBundle.status,
+        bundleType: updatedBundle.bundleType,
+        templateName: updatedBundle.templateName,
         steps: optimizedSteps,
         pricing: {
           enabled: discountData.discountEnabled,
           method: discountData.discountType,
-          rules: (discountData.discountRules || []).map((rule: any) => ({
-            id: rule.id,
-            conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
-            value: rule.value || 0, // Keep as decimal - widget will convert to cents
-            discountValue: rule.discountValue || 0,
-            fixedBundlePrice: rule.fixedBundlePrice || rule.price || 0
-          }))
+          rules: (discountData.discountRules || []).map((rule: any) => {
+            // Map long-form condition names to shorthand for widget compatibility
+            const conditionMap: Record<string, string> = {
+              'greater_than_equal_to': 'gte',
+              'greater_than': 'gt',
+              'less_than_equal_to': 'lte',
+              'less_than': 'lt',
+              'equal_to': 'eq'
+            };
+            const condition = conditionMap[rule.condition] || rule.condition;
+
+            // Build rule with method-specific fields for cart transform
+            const baseRule: any = {
+              id: rule.id,
+              condition,
+              conditionType: rule.type,
+              value: rule.value
+            };
+
+            // Add discount fields based on pricing method
+            if (discountData.discountType === 'percentage_off') {
+              baseRule.percentageOff = rule.discountValue; // Cart transform expects percentageOff
+              baseRule.discountValue = rule.discountValue; // Widget expects discountValue
+            } else if (discountData.discountType === 'fixed_amount_off') {
+              baseRule.fixedAmountOff = rule.discountValue; // Cart transform expects fixedAmountOff
+              baseRule.discountValue = rule.discountValue; // Widget expects discountValue
+            } else if (discountData.discountType === 'fixed_bundle_price') {
+              baseRule.fixedBundlePrice = rule.fixedBundlePrice || rule.price; // Both expect this
+            }
+
+            return baseRule;
+          })
         },
         // CRITICAL: Include bundle parent variant ID for cart transform merge operations
         bundleParentVariantId: bundleParentVariantId,
@@ -2216,7 +2292,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       };
 
       const configSize = JSON.stringify(baseConfiguration).length;
-      console.log("📏 [METAFIELD] Optimized configuration size:", configSize, "chars (vs 12KB+ before)");
+      AppLogger.debug("📏 [METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);
 
       try {
         // OPTIMIZED: Use SINGLE metafield ($app:bundle_config) for ALL purposes
@@ -2225,14 +2301,14 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         // 2. Cart Transform function - applies discounts at checkout
         // 3. Auto-injection service - identifies bundle products
         // Memory savings: 66% reduction (15KB → 5KB per bundle)
-        console.log("🔧 [METAFIELD] Creating $app:bundle_config (single source of truth)");
+        AppLogger.debug("🔧 [METAFIELD] Creating $app:bundle_config (single source of truth)");
         await BundleIsolationService.updateBundleProductMetafield(admin, updatedBundle.shopifyProductId, baseConfiguration);
-        console.log("✅ [METAFIELD] $app:bundle_config created successfully");
+        AppLogger.debug("✅ [METAFIELD] $app:bundle_config created successfully");
 
         // ALSO update standard Shopify metafields for cart transform compatibility
 
 
-        console.log("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
+        AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
 
 
         try {
@@ -2247,13 +2323,13 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
             await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
 
 
-            console.log("🔧 [STANDARD_METAFIELD] Standard metafields updated successfully");
+            AppLogger.debug("🔧 [STANDARD_METAFIELD] Standard metafields updated successfully");
 
 
           } else {
 
 
-            console.log("🔧 [STANDARD_METAFIELD] No standard metafields to update (products may be using UUIDs)");
+            AppLogger.debug("🔧 [STANDARD_METAFIELD] No standard metafields to update (products may be using UUIDs)");
 
 
           }
@@ -2262,7 +2338,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         } catch (error) {
 
 
-          console.log("🔧 [STANDARD_METAFIELD] Skipping standard metafields (optional feature):", (error as Error).message);
+          AppLogger.debug("🔧 [STANDARD_METAFIELD] Skipping standard metafields (optional feature):", {}, (error as Error).message);
 
 
           // Don't throw - standard metafields are optional, custom metafields are what actually matter
@@ -2271,17 +2347,17 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         }
 
         // CRITICAL: Also update component products with component_parents metafield
-        console.log("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
+        AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
         // Pass the FULL bundle configuration with StepProduct data from database
         const fullBundleConfig = {
           ...baseConfiguration,
           steps: updatedBundle.steps  // Use database steps with StepProduct array
         };
         await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
-        console.log("🔧 [COMPONENT_METAFIELD] Component product metafields updated successfully");
+        AppLogger.debug("🔧 [COMPONENT_METAFIELD] Component product metafields updated successfully");
 
       } catch (error) {
-        console.error("Failed to update bundle product metafields:", error);
+        AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
         // Don't fail the entire operation - just log the error
       }
     }
@@ -2291,30 +2367,30 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     try {
       await updateCartTransformMetafield(admin, session.shop);
     } catch (error) {
-      console.error("Failed to update cart transform metafield:", error);
+      AppLogger.error("Failed to update cart transform metafield:", {}, error as any);
       // Don't fail the entire operation - just log the error
     }
 
     // ALSO update shop-level all_bundles metafield for cart transform and Liquid extension
     // This ensures the cart transform and widget get updated bundle data immediately
     try {
-      console.log("🔄 [BUNDLE_SAVE] About to update shop metafield for cart transform...");
+      AppLogger.debug("🔄 [BUNDLE_SAVE] About to update shop metafield for cart transform...");
       const metafieldResult = await updateShopBundlesMetafield(admin, session.shop);
 
       if (metafieldResult) {
-        console.log("✅ [BUNDLE_SAVE] Shop metafield update completed successfully");
+        AppLogger.debug("✅ [BUNDLE_SAVE] Shop metafield update completed successfully");
       } else {
-        console.warn("⚠️ [BUNDLE_SAVE] Shop metafield update returned null - check logs above for errors");
+        AppLogger.warn("⚠️ [BUNDLE_SAVE] Shop metafield update returned null - check logs above for errors");
       }
     } catch (error) {
-      console.error("❌ [BUNDLE_SAVE] Failed to update shop bundles metafield:", error);
+      AppLogger.error("❌ [BUNDLE_SAVE] Failed to update shop bundles metafield:", {}, error as any);
       // Don't fail the entire operation - just log the error
       // But this is critical for cart transform to work
     }
 
     // Helper function to create bundle product isolation metafields
     async function createBundleProductIsolationMetafields(admin: any, bundleProductId: string, bundleId: string) {
-      console.log(`🏷️ [ISOLATION_METAFIELDS] Creating isolation metafields for bundle product: ${bundleProductId}`);
+      AppLogger.debug(`🏷️ [ISOLATION_METAFIELDS] Creating isolation metafields for bundle product: ${bundleProductId}`);
 
       try {
         const metafields = [
@@ -2385,22 +2461,22 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         const data = await response.json();
 
         if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-          console.error('❌ [ISOLATION_METAFIELDS] Metafield errors:', data.data.metafieldsSet.userErrors);
+          AppLogger.error('❌ [ISOLATION_METAFIELDS] Metafield errors:', {}, data.data.metafieldsSet.userErrors);
           return false;
         }
 
-        console.log(`✅ [ISOLATION_METAFIELDS] Created ${data.data?.metafieldsSet?.metafields?.length || 0} isolation metafields`);
+        AppLogger.debug(`✅ [ISOLATION_METAFIELDS] Created ${data.data?.metafieldsSet?.metafields?.length || 0} isolation metafields`);
         return true;
 
       } catch (error) {
-        console.error('❌ [ISOLATION_METAFIELDS] Error creating isolation metafields:', error);
+        AppLogger.error('❌ [ISOLATION_METAFIELDS] Error creating isolation metafields:', {}, error as any);
         return false;
       }
     }
 
     // Helper function to set up automatic bundle extension injection
     async function setupBundleAutoInjection(admin: any, bundleProductId: string, bundleId: string) {
-      console.log(`🎯 [AUTO_INJECTION] Setting up automatic bundle extension injection for product: ${bundleProductId}`);
+      AppLogger.debug(`🎯 [AUTO_INJECTION] Setting up automatic bundle extension injection for product: ${bundleProductId}`);
 
       try {
         // Use the auto-injection service
@@ -2411,16 +2487,16 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         );
 
         if (result.success) {
-          console.log(`✅ [AUTO_INJECTION] Successfully set up automatic bundle extension injection`);
+          AppLogger.debug(`✅ [AUTO_INJECTION] Successfully set up automatic bundle extension injection`);
         } else {
-          console.log(`⚠️ [AUTO_INJECTION] Auto-injection setup warning: ${result.error}`);
+          AppLogger.debug(`⚠️ [AUTO_INJECTION] Auto-injection setup warning: ${result.error}`);
           // Note: This is not a fatal error - the bundle widget will still work via JavaScript detection
         }
 
         return result.success;
 
       } catch (error) {
-        console.error(`❌ [AUTO_INJECTION] Error setting up auto-injection:`, error);
+        AppLogger.error(`❌ [AUTO_INJECTION] Error setting up auto-injection:`, {}, error as any);
         // Don't throw - this is not critical for bundle functionality
         return false;
       }
@@ -2428,7 +2504,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 
     // 🎯 BUNDLE PRODUCT ISOLATION SETUP: Set up automatic bundle extension injection
     if (bundleProductData?.id && updatedBundle.id) {
-      console.log("🎯 [BUNDLE_ISOLATION] Setting up bundle product isolation for automatic extension display");
+      AppLogger.debug("🎯 [BUNDLE_ISOLATION] Setting up bundle product isolation for automatic extension display");
       try {
         // Create isolation metafields for automatic bundle detection
         await createBundleProductIsolationMetafields(admin, bundleProductData.id, updatedBundle.id);
@@ -2436,9 +2512,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         // Set up automatic bundle extension injection
         await setupBundleAutoInjection(admin, bundleProductData.id, updatedBundle.id);
 
-        console.log("✅ [BUNDLE_ISOLATION] Bundle product isolation setup completed successfully");
+        AppLogger.debug("✅ [BUNDLE_ISOLATION] Bundle product isolation setup completed successfully");
       } catch (error) {
-        console.error("❌ [BUNDLE_ISOLATION] Bundle product isolation setup failed:", error);
+        AppLogger.error("❌ [BUNDLE_ISOLATION] Bundle product isolation setup failed:", {}, error as any);
         // Don't fail the entire operation - this is not critical for core functionality
       }
     }
@@ -2450,7 +2526,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     });
 
   } catch (error) {
-    console.error("❌ [BUNDLE_CONFIG] Error saving bundle:", error);
+    AppLogger.error("❌ [BUNDLE_CONFIG] Error saving bundle:", {}, error as any);
     return json({
       success: false,
       error: (error as Error).message || "Failed to save bundle configuration"
@@ -2558,7 +2634,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
       const data = await response.json();
 
       if (data.errors) {
-        console.error("GraphQL errors:", data.errors);
+        AppLogger.error("GraphQL errors:", {}, data.errors);
         return json({
           success: false,
           error: `Failed to fetch product: ${data.errors[0].message}`
@@ -2676,7 +2752,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
       });
 
     } catch (error) {
-      console.error("Sync error:", error);
+      AppLogger.error("Sync error:", {}, error as any);
       return json({
         success: false,
         error: `Failed to sync product: ${(error as Error).message}`
@@ -2687,7 +2763,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
   // Create product if it doesn't exist
   if (!productId) {
     // Calculate proper bundle price based on component products
-    console.log("🔧 [BUNDLE_PRICING] Calculating bundle price for product creation");
+    AppLogger.debug("🔧 [BUNDLE_PRICING] Calculating bundle price for product creation");
     const bundlePrice = await calculateBundlePrice(admin, bundle);
 
     const CREATE_PRODUCT = `
@@ -2747,11 +2823,11 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
   } else {
     // Update existing bundle product price if configuration changed
     try {
-      console.log("🔧 [BUNDLE_PRICING] Updating existing bundle product price");
+      AppLogger.debug("🔧 [BUNDLE_PRICING] Updating existing bundle product price");
       const bundlePrice = await calculateBundlePrice(admin, bundle);
       await updateBundleProductPrice(admin, productId, bundlePrice);
     } catch (error) {
-      console.error("🔧 [BUNDLE_PRICING] Error updating bundle product price:", error);
+      AppLogger.error("🔧 [BUNDLE_PRICING] Error updating bundle product price:", {}, error as any);
       // Don't fail the whole operation for pricing update errors
     }
   }
@@ -2802,7 +2878,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
     };
 
     const configSize = JSON.stringify(bundleConfiguration).length;
-    console.log("📏 [METAFIELD] Sync optimized configuration size:", configSize, "chars");
+    AppLogger.debug("📏 [METAFIELD] Sync optimized configuration size:", {}, `${configSize} chars`);
 
     await updateBundleProductMetafields(admin, productId, bundleConfiguration);
   }
@@ -2880,7 +2956,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
     const publishedTheme = themesData.data.themes.nodes[0];
 
     if (!publishedTheme) {
-      console.error("No themes returned from GraphQL:", themesData);
+      AppLogger.error("No themes returned from GraphQL:", {}, themesData);
       return json({
         success: false,
         error: "No published theme found"
@@ -2906,7 +2982,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
 
     if (!assetsResponse.ok) {
       const errorText = await assetsResponse.text();
-      console.error("Assets response error:", {
+      AppLogger.error("Assets response error:", {
         status: assetsResponse.status,
         statusText: assetsResponse.statusText,
         body: errorText
@@ -2932,7 +3008,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
         }
       });
 
-      console.log(`🎯 [TEMPLATE_FILTER] Found ${activeBundles.length} active bundles with container products`);
+      AppLogger.debug(`🎯 [TEMPLATE_FILTER] Found ${activeBundles.length} active bundles with container products`);
 
       // Get bundle container products from Shopify
       if (activeBundles.length > 0) {
@@ -2941,8 +3017,8 @@ async function handleGetThemeTemplates(admin: any, session: any) {
           .map(bundle => bundle.shopifyProductId);
 
         if (productIds.length > 0) {
-          console.log(`🎯 [TEMPLATE_FILTER] Product IDs to query:`, productIds);
-          console.log(`🎯 [TEMPLATE_FILTER] Fetching products with IDs: ${productIds.join(', ')}`);
+          AppLogger.debug(`🎯 [TEMPLATE_FILTER] Product IDs to query:`, productIds);
+          AppLogger.debug(`🎯 [TEMPLATE_FILTER] Fetching products with IDs: ${productIds.join(', ')}`);
 
           const GET_BUNDLE_PRODUCTS = `
             query getBundleContainerProducts($ids: [ID!]!) {
@@ -2972,11 +3048,11 @@ async function handleGetThemeTemplates(admin: any, session: any) {
           const bundleProductsData = await bundleProductsResponse.json();
           bundleContainerProducts = bundleProductsData.data?.nodes?.filter((node: any) => node) || [];
 
-          console.log(`🎯 [TEMPLATE_FILTER] Fetched ${bundleContainerProducts.length} bundle container products from Shopify`);
+          AppLogger.debug(`🎯 [TEMPLATE_FILTER] Fetched ${bundleContainerProducts.length} bundle container products from Shopify`);
         }
       }
     } catch (error) {
-      console.warn("🎯 [TEMPLATE_FILTER] Could not fetch bundle container products:", error);
+      AppLogger.warn("🎯 [TEMPLATE_FILTER] Could not fetch bundle container products:", {}, error as any);
     }
 
     // Filter for template files and organize them with bundle context
@@ -3054,12 +3130,12 @@ async function handleGetThemeTemplates(admin: any, session: any) {
         return a.title.localeCompare(b.title);
       });
 
-    console.log(`🎯 [TEMPLATE_FILTER] Filtered to ${templates.length} product templates`);
+    AppLogger.debug(`🎯 [TEMPLATE_FILTER] Filtered to ${templates.length} product templates`);
 
     // PRIORITIZE: Bundle container product specific templates with auto-creation
     const bundleSpecificTemplates: any[] = [];
     if (bundleContainerProducts.length > 0) {
-      console.log(`🎯 [TEMPLATE_FILTER] Creating ${bundleContainerProducts.length} bundle-specific template recommendations`);
+      AppLogger.debug(`🎯 [TEMPLATE_FILTER] Creating ${bundleContainerProducts.length} bundle-specific template recommendations`);
 
       const templateService = new ThemeTemplateService(admin, session);
 
@@ -3084,7 +3160,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
           templateExists: templateResult.success
         });
 
-        console.log(`🎯 [TEMPLATE_FILTER] Product ${product.handle}: Template ${templateResult.success ? 'ready' : 'failed'} ${templateResult.created ? '(created)' : '(exists)'}`);
+        AppLogger.debug(`🎯 [TEMPLATE_FILTER] Product ${product.handle}: Template ${templateResult.success ? 'ready' : 'failed'} ${templateResult.created ? '(created)' : '(exists)'}`);
       }
     }
 
@@ -3094,7 +3170,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
       ...templates.filter((t: any) => !bundleSpecificTemplates.some((bt: any) => bt.handle === t.handle))
     ];
 
-    console.log(`🎯 [TEMPLATE_FILTER] Final template list: ${allTemplates.length} templates (${bundleSpecificTemplates.length} bundle-specific)`);
+    AppLogger.debug(`🎯 [TEMPLATE_FILTER] Final template list: ${allTemplates.length} templates (${bundleSpecificTemplates.length} bundle-specific)`);
 
     // Add general product template as fallback if not already present
     const hasGeneralProductTemplate = allTemplates.some(t => t.handle === 'product');
@@ -3121,7 +3197,7 @@ async function handleGetThemeTemplates(admin: any, session: any) {
     });
 
   } catch (error) {
-    console.error("Error fetching theme templates:", error);
+    AppLogger.error("Error fetching theme templates:", {}, error as any);
     return json({
       success: false,
       error: "Failed to fetch theme templates"
@@ -3164,7 +3240,7 @@ async function handleGetCurrentTheme(admin: any, _session: any) {
 // Handle cleanup of deleted bundle metafields
 async function handleCleanupDeletedBundles(admin: any, session: any) {
   try {
-    console.log("🧹 [CLEANUP] Starting cleanup of deleted bundle metafields");
+    AppLogger.debug("🧹 [CLEANUP] Starting cleanup of deleted bundle metafields");
 
     // Get all active bundles from database
     const activeBundles = await db.bundle.findMany({
@@ -3178,7 +3254,7 @@ async function handleCleanupDeletedBundles(admin: any, session: any) {
       }
     });
 
-    console.log(`🧹 [CLEANUP] Found ${activeBundles.length} active bundles in database`);
+    AppLogger.debug(`🧹 [CLEANUP] Found ${activeBundles.length} active bundles in database`);
 
     // Get current shop metafield data
     const SHOP_METAFIELD_QUERY = `
@@ -3199,9 +3275,9 @@ async function handleCleanupDeletedBundles(admin: any, session: any) {
     if (metafieldData.data?.shop?.metafield?.value) {
       try {
         currentBundleData = JSON.parse(metafieldData.data.shop.metafield.value);
-        console.log(`🧹 [CLEANUP] Current metafield contains ${Object.keys(currentBundleData).length} bundle entries`);
+        AppLogger.debug(`🧹 [CLEANUP] Current metafield contains ${Object.keys(currentBundleData).length} bundle entries`);
       } catch (error) {
-        console.error("🧹 [CLEANUP] Error parsing current metafield data:", error);
+        AppLogger.error("🧹 [CLEANUP] Error parsing current metafield data:", {}, error as any);
       }
     }
 
@@ -3212,14 +3288,14 @@ async function handleCleanupDeletedBundles(admin: any, session: any) {
     for (const [bundleId, bundleConfig] of Object.entries(currentBundleData)) {
       if (activeBundleIds.has(bundleId)) {
         cleanedBundleData[bundleId] = bundleConfig;
-        console.log(`🧹 [CLEANUP] Keeping bundle: ${bundleId}`);
+        AppLogger.debug(`🧹 [CLEANUP] Keeping bundle: ${bundleId}`);
       } else {
-        console.log(`🧹 [CLEANUP] Removing deleted bundle: ${bundleId}`);
+        AppLogger.debug(`🧹 [CLEANUP] Removing deleted bundle: ${bundleId}`);
       }
     }
 
     const removedCount = Object.keys(currentBundleData).length - Object.keys(cleanedBundleData).length;
-    console.log(`🧹 [CLEANUP] Removed ${removedCount} deleted bundle entries`);
+    AppLogger.debug(`🧹 [CLEANUP] Removed ${removedCount} deleted bundle entries`);
 
     // Update shop metafield with cleaned data if needed
     if (removedCount > 0) {
@@ -3255,7 +3331,7 @@ async function handleCleanupDeletedBundles(admin: any, session: any) {
       const updateData = await updateResponse.json();
 
       if (updateData.data?.metafieldsSet?.userErrors?.length > 0) {
-        console.error("🧹 [CLEANUP] Error updating shop metafield:", updateData.data.metafieldsSet.userErrors);
+        AppLogger.error("🧹 [CLEANUP] Error updating shop metafield:", {}, updateData.data.metafieldsSet.userErrors);
         return json({
           success: false,
           error: "Failed to update shop metafield",
@@ -3263,7 +3339,7 @@ async function handleCleanupDeletedBundles(admin: any, session: any) {
         }, { status: 500 });
       }
 
-      console.log("🧹 [CLEANUP] Shop metafield updated successfully");
+      AppLogger.debug("🧹 [CLEANUP] Shop metafield updated successfully");
     }
 
     return json({
@@ -3274,7 +3350,7 @@ async function handleCleanupDeletedBundles(admin: any, session: any) {
     });
 
   } catch (error) {
-    console.error("🧹 [CLEANUP] Error during cleanup:", error);
+    AppLogger.error("🧹 [CLEANUP] Error during cleanup:", {}, error as any);
     return json({
       success: false,
       error: (error as Error).message || "Cleanup failed"
@@ -3285,7 +3361,7 @@ async function handleCleanupDeletedBundles(admin: any, session: any) {
 // Handle ensuring bundle templates exist
 async function handleEnsureBundleTemplates(admin: any, session: any) {
   try {
-    console.log("🎨 [TEMPLATE_HANDLER] Ensuring bundle templates exist");
+    AppLogger.debug("🎨 [TEMPLATE_HANDLER] Ensuring bundle templates exist");
 
     const templateService = new ThemeTemplateService(admin, session);
 
@@ -3302,7 +3378,7 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
       }
     });
 
-    console.log(`🎨 [TEMPLATE_HANDLER] Found ${activeBundles.length} active bundles`);
+    AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Found ${activeBundles.length} active bundles`);
 
     if (activeBundles.length === 0) {
       return json({
@@ -3344,12 +3420,12 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
     const data = await response.json();
     const products = data.data?.nodes?.filter((node: any) => node) || [];
 
-    console.log(`🎨 [TEMPLATE_HANDLER] Found ${products.length} bundle container products`);
+    AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Found ${products.length} bundle container products`);
 
     // Create templates for each bundle container product
     const results = [];
     for (const product of products) {
-      console.log(`🎨 [TEMPLATE_HANDLER] Processing product: ${product.title} (${product.handle})`);
+      AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Processing product: ${product.title} (${product.handle})`);
 
       const result = await templateService.ensureProductTemplate(product.handle);
       results.push({
@@ -3362,13 +3438,13 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
         error: result.error
       });
 
-      console.log(`🎨 [TEMPLATE_HANDLER] Product ${product.handle}: ${result.success ? 'SUCCESS' : 'FAILED'} ${result.created ? '(CREATED)' : '(EXISTS)'}`);
+      AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Product ${product.handle}: ${result.success ? 'SUCCESS' : 'FAILED'} ${result.created ? '(CREATED)' : '(EXISTS)'}`);
     }
 
     const successCount = results.filter(r => r.success).length;
     const createdCount = results.filter(r => r.created).length;
 
-    console.log(`🎨 [TEMPLATE_HANDLER] Template creation completed: ${successCount}/${results.length} successful, ${createdCount} created`);
+    AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Template creation completed: ${successCount}/${results.length} successful, ${createdCount} created`);
 
     return json({
       success: true,
@@ -3383,7 +3459,7 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
     });
 
   } catch (error) {
-    console.error("🔥 [TEMPLATE_HANDLER] Error during template creation:", error);
+    AppLogger.error("🔥 [TEMPLATE_HANDLER] Error during template creation:", {}, error as any);
     return json({
       success: false,
       error: (error as Error).message || "Template creation failed"
@@ -3392,7 +3468,7 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
 }
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<typeof loader>();
+  const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -3436,7 +3512,7 @@ export default function ConfigureBundleFlow() {
   };
 
   const [stepConditions, setStepConditions] = useState<Record<string, any[]>>(initializeStepConditions);
-  console.log("[DEBUG] Initial step conditions state:", stepConditions);
+  AppLogger.debug("[DEBUG] Initial step conditions state:", stepConditions);
 
 
   // State for page selection modal
@@ -3465,10 +3541,16 @@ export default function ConfigureBundleFlow() {
     return collections;
   });
 
-  // State for discount & pricing
-  const [discountEnabled, setDiscountEnabled] = useState(bundle.pricing?.enableDiscount || false);
-  const [discountType, setDiscountType] = useState(bundle.pricing?.discountMethod || 'fixed_bundle_price');
-  const [discountRules, setDiscountRules] = useState(bundle.pricing?.rules || []);
+  // State for discount & pricing - using new standardized structure
+  const [discountEnabled, setDiscountEnabled] = useState(bundle.pricing?.enabled || false);
+  const [discountType, setDiscountType] = useState<DiscountMethod>(
+    (bundle.pricing?.method as DiscountMethod) || DiscountMethod.PERCENTAGE_OFF
+  );
+  const [discountRules, setDiscountRules] = useState<PricingRule[]>(
+    Array.isArray(bundle.pricing?.rules) ? bundle.pricing.rules : []
+  );
+  const [showProgressBar, setShowProgressBar] = useState(bundle.pricing?.showProgressBar || false);
+  const [showFooter, setShowFooter] = useState(bundle.pricing?.showFooter !== false);
   const [discountMessagingEnabled, setDiscountMessagingEnabled] = useState(true);
 
   // State for rule-specific messaging
@@ -3496,9 +3578,11 @@ export default function ConfigureBundleFlow() {
         }))
       }))
     ),
-    discountEnabled: bundle.pricing?.enableDiscount || false,
-    discountType: bundle.pricing?.discountMethod || 'fixed_bundle_price',
+    discountEnabled: bundle.pricing?.enabled || false,
+    discountType: bundle.pricing?.method || DiscountMethod.PERCENTAGE_OFF,
     discountRules: JSON.stringify(bundle.pricing?.rules || []),
+    showProgressBar: bundle.pricing?.showProgressBar || false,
+    showFooter: bundle.pricing?.showFooter !== false,
     discountMessagingEnabled: true,
     selectedCollections: JSON.stringify({}),
     ruleMessages: JSON.stringify({}),
@@ -3556,7 +3640,7 @@ export default function ConfigureBundleFlow() {
         visibleInput.dispatchEvent(changeEvent);
 
       } catch (error) {
-        console.error('Error triggering save bar:', error);
+        AppLogger.error('Error triggering save bar:', {}, error as any);
         // Fallback: Try to trigger on any form element
         try {
           const anyForm = document.querySelector('form') as HTMLFormElement;
@@ -3573,7 +3657,7 @@ export default function ConfigureBundleFlow() {
             }
           }
         } catch (fallbackError) {
-          console.error('Fallback save bar trigger also failed:', fallbackError);
+          AppLogger.error('Fallback save bar trigger also failed:', {}, fallbackError as any);
         }
       }
     });
@@ -3607,7 +3691,7 @@ export default function ConfigureBundleFlow() {
         });
 
       } catch (error) {
-        console.error('Error dismissing save bar:', error);
+        AppLogger.error('Error dismissing save bar:', {}, error as any);
       }
     });
   }, []);
@@ -3722,8 +3806,8 @@ export default function ConfigureBundleFlow() {
       }));
       formData.append("stepConditions", JSON.stringify(stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
-      console.log("[DEBUG] Submitting step conditions to server:", stepConditions);
-      console.log("[DEBUG] Submitting bundle product to server:", bundleProduct);
+      AppLogger.debug("[DEBUG] Submitting step conditions to server:", stepConditions);
+      AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
       // Submit to server action using fetcher
 
@@ -3733,7 +3817,7 @@ export default function ConfigureBundleFlow() {
       // The immediate return here will be handled by the fetcher response
       return;
     } catch (error) {
-      console.error("Save failed:", error);
+      AppLogger.error("Save failed:", {}, error as any);
       shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true });
     }
   }, [bundleStatus, bundleName, bundleDescription, templateName, steps, discountEnabled, discountType, discountRules, discountMessagingEnabled, ruleMessages, selectedCollections, stepConditions, bundleProduct, productStatus, shopify]);
@@ -3824,7 +3908,7 @@ export default function ConfigureBundleFlow() {
           if ('syncedData' in result && result.syncedData) {
             const syncedData = result.syncedData as any;
             const { title, status, lastUpdated, changesDetected } = syncedData;
-            console.log('Sync data:', { title, status, lastUpdated, changesDetected });
+            AppLogger.debug('Sync data:', { title, status, lastUpdated, changesDetected });
 
             // If changes were detected and applied, show additional notification
             if (changesDetected) {
@@ -3871,7 +3955,7 @@ export default function ConfigureBundleFlow() {
       setTemplateName(originalValues.templateName);
       setSteps(JSON.parse(originalValues.steps));
       setDiscountEnabled(originalValues.discountEnabled);
-      setDiscountType(originalValues.discountType);
+      setDiscountType(originalValues.discountType as 'percentage_off' | 'fixed_amount_off' | 'fixed_bundle_price' | 'free_shipping');
       setDiscountRules(JSON.parse(originalValues.discountRules));
       setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
       setSelectedCollections(JSON.parse(originalValues.selectedCollections));
@@ -3889,7 +3973,7 @@ export default function ConfigureBundleFlow() {
 
       shopify.toast.show("Changes discarded", { isError: false });
     } catch (error) {
-      console.error("Error discarding changes:", error);
+      AppLogger.error("Error discarding changes:", {}, error as any);
       shopify.toast.show("Error discarding changes", { isError: true });
     }
   }, [originalValues, loadedBundleProduct, shopify]);
@@ -3944,7 +4028,7 @@ export default function ConfigureBundleFlow() {
     // Try different URL construction methods
     let productUrl = null;
 
-    console.log('Bundle product data for preview:', {
+    AppLogger.debug('Bundle product data for preview:', {
       id: bundleProduct.id,
       handle: bundleProduct.handle,
       status: bundleProduct.status,
@@ -3999,7 +4083,7 @@ export default function ConfigureBundleFlow() {
 
       shopify.toast.show(message, { isError: false });
     } else {
-      console.error('Bundle product data:', bundleProduct);
+      AppLogger.error('Bundle product data:', {}, bundleProduct);
       shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
         isError: true,
         duration: 5000
@@ -4082,13 +4166,13 @@ export default function ConfigureBundleFlow() {
       operator: 'equal_to',
       value: '0',
     };
-    console.log(`[DEBUG] Adding condition rule for step ${stepId}:`, newRule);
+    AppLogger.debug(`[DEBUG] Adding condition rule for step ${stepId}:`, newRule);
     setStepConditions(prev => {
       const updated = {
         ...prev,
         [stepId]: [...(prev[stepId] || []), newRule],
       };
-      console.log(`[DEBUG] Updated step conditions state:`, updated);
+      AppLogger.debug(`[DEBUG] Updated step conditions state:`, updated);
       return updated;
     });
 
@@ -4107,7 +4191,7 @@ export default function ConfigureBundleFlow() {
   }, [triggerSaveBar]);
 
   const updateConditionRule = useCallback((stepId: string, ruleId: string, field: string, value: string) => {
-    console.log(`[DEBUG] Updating condition rule - Step: ${stepId}, Rule: ${ruleId}, Field: ${field}, Value: ${value}`);
+    AppLogger.debug(`[DEBUG] Updating condition rule - Step: ${stepId}, Rule: ${ruleId}, Field: ${field}, Value: ${value}`);
     setStepConditions(prev => {
       const updated = {
         ...prev,
@@ -4115,7 +4199,7 @@ export default function ConfigureBundleFlow() {
           rule.id === ruleId ? { ...rule, [field]: value } : rule
         ),
       };
-      console.log(`[DEBUG] Updated step conditions after field update:`, updated);
+      AppLogger.debug(`[DEBUG] Updated step conditions after field update:`, updated);
       return updated;
     });
 
@@ -4143,13 +4227,13 @@ export default function ConfigureBundleFlow() {
       // If variants exist and are selected, include them in the format needed by resource picker
       const selectionIds = currentProducts.map((p: any) => {
         const productGid = p.productId || p.id; // productId from DB, id from picker
-        console.log(`🔍 [SELECTION_ID] Product: ${p.title}, productId: ${p.productId}, id: ${p.id}, using: ${productGid}`);
+        AppLogger.debug(`🔍 [SELECTION_ID] Product: ${p.title}, productId: ${p.productId}, id: ${p.id}, using: ${productGid}`);
 
         // Check if this product has specific variants selected
         // If variants array exists and has items, include them in selectionIds
         if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
           const variantIds = p.variants.map((v: any) => ({ id: v.id }));
-          console.log(`🔍 [SELECTION_ID] Product ${p.title} has ${p.variants.length} variants:`, variantIds);
+          AppLogger.debug(`🔍 [SELECTION_ID] Product ${p.title} has ${p.variants.length} variants:`, variantIds);
           return {
             id: productGid,
             variants: variantIds
@@ -4159,13 +4243,13 @@ export default function ConfigureBundleFlow() {
         return { id: productGid };
       });
 
-      console.log("🔍 [PRODUCT_SELECTION] Total items in StepProduct:", currentProducts.length);
-      console.log("🔍 [PRODUCT_SELECTION] Selection IDs being sent to picker:", selectionIds.length);
-      console.log("🔍 [PRODUCT_SELECTION] StepProduct data structure:", currentProducts.length > 0 ? Object.keys(currentProducts[0]) : 'empty');
-      console.log("🔍 [PRODUCT_SELECTION] StepProduct sample:", JSON.stringify(currentProducts.slice(0, 2), null, 2));
-      console.log("🔍 [PRODUCT_SELECTION] Selection IDs being sent to resource picker:", JSON.stringify(selectionIds, null, 2));
+      AppLogger.debug("🔍 [PRODUCT_SELECTION] Total items in StepProduct:", currentProducts.length);
+      AppLogger.debug("🔍 [PRODUCT_SELECTION] Selection IDs being sent to picker:", selectionIds.length);
+      AppLogger.debug("🔍 [PRODUCT_SELECTION] StepProduct data structure:", {}, currentProducts.length > 0 ? Object.keys(currentProducts[0]) : 'empty');
+      AppLogger.debug("🔍 [PRODUCT_SELECTION] StepProduct sample:", {}, JSON.stringify(currentProducts.slice(0, 2), null, 2));
+      AppLogger.debug("🔍 [PRODUCT_SELECTION] Selection IDs being sent to resource picker:", {}, JSON.stringify(selectionIds, null, 2));
 
-      console.log("🚀 [RESOURCE_PICKER] Opening resource picker with config:", {
+      AppLogger.debug("🚀 [RESOURCE_PICKER] Opening resource picker with config:", {
         type: "product",
         multiple: true,
         selectionIds: selectionIds
@@ -4177,25 +4261,25 @@ export default function ConfigureBundleFlow() {
         selectionIds: selectionIds,
       });
 
-      console.log("✅ [RESOURCE_PICKER] Resource picker closed. Received selection:", products ? "YES" : "NO");
+      AppLogger.debug("✅ [RESOURCE_PICKER] Resource picker closed. Received selection:", {}, products ? "YES" : "NO");
 
       if (products && products.selection) {
-        console.log("🔍 [PRODUCT_SELECTION] Previous products count:", currentProducts.length);
-        console.log("🔍 [PRODUCT_SELECTION] New products count:", products.selection.length);
-        console.log("🔍 [PRODUCT_SELECTION] Full response from picker:", JSON.stringify(products, null, 2));
-        console.log("🔍 [PRODUCT_SELECTION] Raw products from resource picker:", JSON.stringify(products.selection.slice(0, 2), null, 2));
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] Previous products count:", {}, currentProducts.length);
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] New products count:", {}, products.selection.length);
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] Full response from picker:", {}, JSON.stringify(products, null, 2));
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] Raw products from resource picker:", {}, JSON.stringify(products.selection.slice(0, 2), null, 2));
 
         // Transform products to include imageUrl from images array
         const transformedProducts = products.selection.map((product: any) => {
           const imageUrl = product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null;
-          console.log(`📸 [PRODUCT_SELECTION] Transforming ${product.title}: images array =`, product.images, `→ imageUrl =`, imageUrl);
+          AppLogger.debug(`📸 [PRODUCT_SELECTION] Transforming ${product.title}: images array =`, {}, `${JSON.stringify(product.images)} → imageUrl = ${imageUrl}`);
           return {
             ...product,
             imageUrl: imageUrl
           };
         });
 
-        console.log("🔍 [PRODUCT_SELECTION] Transformed products with imageUrl:", JSON.stringify(transformedProducts.slice(0, 2), null, 2));
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] Transformed products with imageUrl:", {}, JSON.stringify(transformedProducts.slice(0, 2), null, 2));
 
         // Update the step with selected products (this replaces the entire selection)
         // Deselected products will not be in the selection array, so they're automatically removed
@@ -4221,7 +4305,7 @@ export default function ConfigureBundleFlow() {
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
-      console.log("Product selection cancelled or failed:", error);
+      AppLogger.debug("Product selection cancelled or failed:", {}, error as any);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error :
         (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
@@ -4254,7 +4338,7 @@ export default function ConfigureBundleFlow() {
 
       // Response will be handled by the existing useEffect
     } catch (error) {
-      console.error("Product sync failed:", error);
+      AppLogger.error("Product sync failed:", {}, error as any);
       shopify.toast.show((error as Error).message || "Failed to sync product", { isError: true });
     }
   }, [fetcher, shopify]);
@@ -4277,7 +4361,7 @@ export default function ConfigureBundleFlow() {
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
-      console.log("Bundle product selection cancelled or failed:", error);
+      AppLogger.debug("Bundle product selection cancelled or failed:", {}, error as any);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error :
         (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
@@ -4461,8 +4545,8 @@ export default function ConfigureBundleFlow() {
       });
 
       if (collections && collections.length > 0) {
-        console.log("🔍 [COLLECTION_SELECTION] Previous collections count:", currentCollections.length);
-        console.log("🔍 [COLLECTION_SELECTION] New collections count:", collections.length);
+        AppLogger.debug("🔍 [COLLECTION_SELECTION] Previous collections count:", {}, currentCollections.length);
+        AppLogger.debug("🔍 [COLLECTION_SELECTION] New collections count:", {}, collections.length);
 
         setSelectedCollections(prev => ({
           ...prev,
@@ -4491,7 +4575,7 @@ export default function ConfigureBundleFlow() {
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
-      console.log("Collection selection cancelled or failed:", error);
+      AppLogger.debug("Collection selection cancelled or failed:", {}, error as any);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error :
         (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
@@ -4509,28 +4593,10 @@ export default function ConfigureBundleFlow() {
     }
   }, [shopify, triggerSaveBar]);
 
-  // Discount rule management
+  // Discount rule management - using new standardized structure
   const addDiscountRule = useCallback(() => {
-    let newRule;
-
-    if (discountType === 'fixed_bundle_price') {
-      newRule = {
-        id: `rule-${Date.now()}`,
-        numberOfProducts: 0,
-        price: 0,
-      };
-    } else {
-      // For percentage_off and fixed_amount_off
-      newRule = {
-        id: `rule-${Date.now()}`,
-        type: 'amount', // amount or quantity
-        condition: 'greater_than_equal_to', // greater_than_equal_to, less_than_equal_to, equal_to
-        value: 0,
-        discountValue: 0, // percentage or fixed amount
-      };
-    }
-
-    setDiscountRules([...(discountRules as any[]), newRule]);
+    const newRule = createNewPricingRule(discountType);
+    setDiscountRules([...discountRules, newRule]);
 
     // Initialize messaging for new rule
     setRuleMessages(prev => ({
@@ -4546,7 +4612,7 @@ export default function ConfigureBundleFlow() {
   }, [discountRules, discountType, triggerSaveBar]);
 
   const removeDiscountRule = useCallback((ruleId: string) => {
-    setDiscountRules((discountRules as any[]).filter((rule: any) => rule.id !== ruleId));
+    setDiscountRules(discountRules.filter(rule => rule.id !== ruleId));
     // Remove messaging for deleted rule
     setRuleMessages(prev => {
       const updated = { ...prev };
@@ -4558,17 +4624,35 @@ export default function ConfigureBundleFlow() {
     triggerSaveBar();
   }, [discountRules, triggerSaveBar]);
 
-  const updateDiscountRule = useCallback((ruleId: string, field: string, value: any) => {
-    // Ensure numeric values are never negative
-    let processedValue = value;
-    if (['numberOfProducts', 'price', 'value', 'discountValue'].includes(field)) {
-      const numValue = typeof value === 'string' ? parseFloat(value) : value;
-      processedValue = Math.max(0, numValue || 0);
-    }
+  const updateDiscountRule = useCallback((ruleId: string, path: string, value: any) => {
+    setDiscountRules(discountRules.map(rule => {
+      if (rule.id !== ruleId) return rule;
 
-    setDiscountRules((discountRules as any[]).map((rule: any) =>
-      rule.id === ruleId ? { ...rule, [field]: processedValue } : rule
-    ));
+      // Handle nested updates for condition and discount objects
+      if (path.startsWith('condition.')) {
+        const field = path.split('.')[1] as keyof PricingRule['condition'];
+        return {
+          ...rule,
+          condition: {
+            ...rule.condition,
+            [field]: field === 'value' ? Math.max(0, Number(value) || 0) : value
+          }
+        };
+      }
+
+      if (path.startsWith('discount.')) {
+        const field = path.split('.')[1] as keyof PricingRule['discount'];
+        return {
+          ...rule,
+          discount: {
+            ...rule.discount,
+            [field]: field === 'value' ? Math.max(0, Number(value) || 0) : value
+          }
+        };
+      }
+
+      return rule;
+    }));
 
     // Trigger save bar for updating discount rule
     triggerSaveBar();
@@ -4598,7 +4682,7 @@ export default function ConfigureBundleFlow() {
       fetcher.submit(formData, { method: "post" });
       // Response will be handled by the existing useEffect
     } catch (error) {
-      console.error("Failed to load theme templates:", error);
+      AppLogger.error("Failed to load theme templates:", {}, error as any);
       shopify.toast.show("Failed to load theme templates", { isError: true });
       setIsLoadingPages(false);
     }
@@ -4610,7 +4694,7 @@ export default function ConfigureBundleFlow() {
       setIsPageSelectionModalOpen(true);
       loadAvailablePages();
     } catch (error) {
-      console.error('Error opening page selection:', error);
+      AppLogger.error('Error opening page selection:', {}, error as any);
       shopify.toast.show("Failed to open page selection", { isError: true });
     }
   }, [loadAvailablePages, shopify]);
@@ -4618,7 +4702,7 @@ export default function ConfigureBundleFlow() {
   const handlePageSelection = useCallback(async (template: any) => {
     try {
       if (!template || !template.handle) {
-        console.error('🚨 [THEME_EDITOR] Invalid template object:', template);
+        AppLogger.error('🚨 [THEME_EDITOR] Invalid template object:', {}, template);
         shopify.toast.show("Template data is invalid", { isError: true });
         return;
       }
@@ -4628,7 +4712,7 @@ export default function ConfigureBundleFlow() {
         : shop;
 
       shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
-      console.log(`🎯 [THEME_EDITOR] Starting widget placement for template: ${template.handle}`);
+      AppLogger.debug(`🎯 [THEME_EDITOR] Starting widget placement for template: ${template.handle}`);
 
       // Create a theme template service instance
       // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
@@ -4636,7 +4720,7 @@ export default function ConfigureBundleFlow() {
 
       // Check if this is a bundle-specific template that needs to be created
       if (template.isBundleContainer && template.bundleProduct) {
-        console.log(`🏗️ [THEME_EDITOR] Ensuring template exists for bundle product: ${template.bundleProduct.handle}`);
+        AppLogger.debug(`🏗️ [THEME_EDITOR] Ensuring template exists for bundle product: ${template.bundleProduct.handle}`);
 
         // Make API call to create template if needed
         const createTemplateResponse = await fetch(`/api/ensure-product-template`, {
@@ -4651,13 +4735,13 @@ export default function ConfigureBundleFlow() {
         });
 
         if (!createTemplateResponse.ok) {
-          console.error('🚨 [THEME_EDITOR] Failed to ensure template exists');
+          AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
           shopify.toast.show("Failed to prepare product template", { isError: true });
           return;
         }
 
         const templateResult = await createTemplateResponse.json();
-        console.log(`✅ [THEME_EDITOR] Template preparation result:`, templateResult);
+        AppLogger.debug(`✅ [THEME_EDITOR] Template preparation result:`, templateResult);
 
         if (templateResult.created) {
           shopify.toast.show(`Created new template for ${template.bundleProduct.handle}`, { isError: false, duration: 4000 });
@@ -4669,13 +4753,13 @@ export default function ConfigureBundleFlow() {
       const blockHandle = 'bundle';
       const appBlockId = `${extensionUuid}/${blockHandle}`;
 
-      console.log(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
+      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
 
       // Generate optimized theme editor deep link
       const previewPath = template.bundleProduct ? `/products/${template.bundleProduct.handle}` : '';
       const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}${previewPath ? `&previewPath=${encodeURIComponent(previewPath)}` : ''}`;
 
-      console.log(`🔗 [THEME_EDITOR] Generated deep link:`, themeEditorUrl);
+      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link:`, {}, themeEditorUrl);
 
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
@@ -4685,14 +4769,14 @@ export default function ConfigureBundleFlow() {
 
       if (editorWindow) {
         shopify.toast.show(`Theme editor opened for "${template.title}". Widget will be automatically placed with Bundle ID ${bundle.id}.`, { isError: false, duration: 8000 });
-        console.log(`✅ [THEME_EDITOR] Successfully opened theme editor window`);
+        AppLogger.debug(`✅ [THEME_EDITOR] Successfully opened theme editor window`);
       } else {
         shopify.toast.show("Theme editor popup was blocked. Please allow popups and try again.", { isError: true });
-        console.error('🚨 [THEME_EDITOR] Popup was blocked');
+        AppLogger.error('🚨 [THEME_EDITOR] Popup was blocked', {});
       }
 
     } catch (error) {
-      console.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', error);
+      AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', {}, error as any);
       shopify.toast.show("Failed to open theme editor", { isError: true });
     }
   }, [shop, shopify, bundle.id]);
@@ -4894,16 +4978,16 @@ export default function ConfigureBundleFlow() {
                     <BlockStack gap="200">
                       <InlineStack gap="200" blockAlign="center">
                         <Icon source={RefreshIcon} tone="success" />
-                        <Text variant="bodyMd" fontWeight="medium" tone="success">
+                        <Text as="span" variant="bodyMd" fontWeight="medium" tone="success">
                           💡 Pro Tip: Manual Template Creation
                         </Text>
                       </InlineStack>
-                      <Text variant="bodySm" tone="subdued">
+                      <Text as="p" variant="bodySm" tone="subdued">
                         For optimal bundle widget placement, manually create a product template named "cart-transform"
                         in your theme's templates folder. This allows precise control over bundle widget positioning
                         and ensures consistent styling across your store.
                       </Text>
-                      <Text variant="bodyXs" tone="subdued">
+                      <Text as="p" variant="bodyXs" tone="subdued">
                         <strong>Video Tutorial:</strong> See our detailed video guide for step-by-step template creation instructions.
                       </Text>
                     </BlockStack>
@@ -4914,7 +4998,7 @@ export default function ConfigureBundleFlow() {
                     <Text variant="headingSm" as="h4">
                       Bundle Container Template
                     </Text>
-                    <Text variant="bodySm" tone="subdued">
+                    <Text as="p" variant="bodySm" tone="subdued">
                       Select which product template will display this bundle widget
                     </Text>
                     <TextField
@@ -4924,6 +5008,7 @@ export default function ConfigureBundleFlow() {
                       placeholder="e.g., cart-transform, product, bundle-special"
                       helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
                       labelHidden
+                      autoComplete="off"
                     />
                   </BlockStack>
 
@@ -5067,7 +5152,7 @@ export default function ConfigureBundleFlow() {
 
                                   {selectedTab === 0 && (
                                     <BlockStack gap="200">
-                                      <Text variant="bodyMd" tone="subdued">
+                                      <Text as="p" variant="bodyMd" tone="subdued">
                                         Products selected here will be displayed on this step
                                       </Text>
                                       <InlineStack gap="200" align="start">
@@ -5080,13 +5165,7 @@ export default function ConfigureBundleFlow() {
                                         </Button>
                                         {step.StepProduct?.length > 0 && (
                                           <Badge tone="info">
-                                            <Button
-                                              variant="plain"
-                                              size="micro"
-                                              onClick={() => handleShowProducts(step.id)}
-                                            >
-                                              {getUniqueProductCount(step.StepProduct)} Selected
-                                            </Button>
+                                            {`${getUniqueProductCount(step.StepProduct)} Selected`}
                                           </Badge>
                                         )}
                                       </InlineStack>
@@ -5100,7 +5179,7 @@ export default function ConfigureBundleFlow() {
 
                                   {selectedTab === 1 && (
                                     <BlockStack gap="200">
-                                      <Text variant="bodyMd" tone="subdued">
+                                      <Text as="p" variant="bodyMd" tone="subdued">
                                         Collections selected here will be displayed on this step
                                       </Text>
                                       <InlineStack gap="200" align="start">
@@ -5114,14 +5193,7 @@ export default function ConfigureBundleFlow() {
                                         </Button>
                                         {selectedCollections[step.id]?.length > 0 && (
                                           <Badge tone="info">
-                                            <Button
-                                              variant="plain"
-                                              size="micro"
-                                              onClick={() => handleShowCollections(step.id)}
-
-                                            >
-                                              {selectedCollections[step.id].length} Selected
-                                            </Button>
+                                            {`${selectedCollections[step.id].length} Selected`}
                                           </Badge>
                                         )}
                                       </InlineStack>
@@ -5129,7 +5201,7 @@ export default function ConfigureBundleFlow() {
                                       {/* Display selected collections */}
                                       {selectedCollections[step.id]?.length > 0 && (
                                         <BlockStack gap="100">
-                                          <Text variant="bodyMd" fontWeight="medium">
+                                          <Text as="h5" variant="bodyMd" fontWeight="medium">
                                             Selected Collections:
                                           </Text>
                                           <BlockStack gap="100">
@@ -5140,7 +5212,7 @@ export default function ConfigureBundleFlow() {
                                                   alt={collection.title}
                                                   size="small"
                                                 />
-                                                <Text variant="bodyMd">{collection.title}</Text>
+                                                <Text as="span" variant="bodyMd">{collection.title}</Text>
                                                 <Button
                                                   variant="plain"
                                                   size="micro"
@@ -5169,10 +5241,10 @@ export default function ConfigureBundleFlow() {
                                     <Text variant="headingSm" as="h4">
                                       Conditions
                                     </Text>
-                                    <Text variant="bodyMd" tone="subdued">
+                                    <Text as="p" variant="bodyMd" tone="subdued">
                                       Create Conditions based on amount or quantity of products added on this step.
                                     </Text>
-                                    <Text variant="bodySm" tone="subdued">
+                                    <Text as="p" variant="bodySm" tone="subdued">
                                       Note: Conditions are only valid on this step
                                     </Text>
                                   </BlockStack>
@@ -5182,7 +5254,7 @@ export default function ConfigureBundleFlow() {
                                     <Card key={rule.id} background="bg-surface-secondary">
                                       <BlockStack gap="200">
                                         <InlineStack align="space-between" blockAlign="center">
-                                          <Text variant="bodyMd" fontWeight="medium">
+                                          <Text as="h5" variant="bodyMd" fontWeight="medium">
                                             Condition #{ruleIndex + 1}
                                           </Text>
                                           <Button
@@ -5196,6 +5268,7 @@ export default function ConfigureBundleFlow() {
 
                                         <InlineStack gap="200" align="start">
                                           <Select
+                                            label="Condition Type"
                                             options={[
                                               { label: 'Quantity', value: 'quantity' },
                                               { label: 'Amount', value: 'amount' },
@@ -5204,6 +5277,7 @@ export default function ConfigureBundleFlow() {
                                             onChange={(value) => updateConditionRule(step.id, rule.id, 'type', value)}
                                           />
                                           <Select
+                                            label="Operator"
                                             options={[
                                               { label: 'is equal to', value: 'equal_to' },
                                               { label: 'is greater than', value: 'greater_than' },
@@ -5215,6 +5289,7 @@ export default function ConfigureBundleFlow() {
                                             onChange={(value) => updateConditionRule(step.id, rule.id, 'operator', value)}
                                           />
                                           <TextField
+                                            label="Value"
                                             value={rule.value}
                                             onChange={(value) => updateConditionRule(step.id, rule.id, 'value', value)}
                                             autoComplete="off"
@@ -5244,7 +5319,7 @@ export default function ConfigureBundleFlow() {
 
                     {/* Add Step Button */}
                     <Button
-                      variant="dashed"
+                      variant="plain"
                       fullWidth
                       icon={PlusIcon}
                       onClick={addStep}
@@ -5263,7 +5338,7 @@ export default function ConfigureBundleFlow() {
                     <Text variant="headingSm" as="h3">
                       Discount & Pricing
                     </Text>
-                    <Text variant="bodyMd" tone="subdued">
+                    <Text as="p" variant="bodyMd" tone="subdued">
                       Set up to 4 discount rules, applied from lowest to highest.
                     </Text>
                   </BlockStack>
@@ -5283,14 +5358,14 @@ export default function ConfigureBundleFlow() {
                       <Select
                         label="Discount Type"
                         options={[
-                          { label: 'Fixed Bundle Price', value: 'fixed_bundle_price' },
-                          { label: 'Percentage Off', value: 'percentage_off' },
-                          { label: 'Fixed Amount Off', value: 'fixed_amount_off' },
+                          { label: 'Percentage Off', value: DiscountMethod.PERCENTAGE_OFF },
+                          { label: 'Fixed Amount Off', value: DiscountMethod.FIXED_AMOUNT_OFF },
+                          { label: 'Fixed Bundle Price', value: DiscountMethod.FIXED_BUNDLE_PRICE },
                         ]}
                         value={discountType}
                         onChange={(value) => {
-                          setDiscountType(value);
-                          // Clear existing rules when discount type changes since field structure is different
+                          setDiscountType(value as DiscountMethod);
+                          // Clear existing rules when discount type changes
                           setDiscountRules([]);
                           // Clear rule messages when discount type changes
                           setRuleMessages({});
@@ -5299,11 +5374,11 @@ export default function ConfigureBundleFlow() {
 
                       {/* Discount Rules */}
                       <BlockStack gap="300">
-                        {discountRules.map((rule, index) => (
+                        {(Array.isArray(discountRules) ? discountRules : []).map((rule: any, index: number) => (
                           <Card key={rule.id} background="bg-surface-secondary">
                             <BlockStack gap="300">
                               <InlineStack align="space-between" blockAlign="center">
-                                <Text variant="bodyMd" fontWeight="medium">
+                                <Text as="h4" variant="bodyMd" fontWeight="medium">
                                   Rule #{index + 1}
                                 </Text>
                                 <Button
@@ -5321,7 +5396,7 @@ export default function ConfigureBundleFlow() {
                                   <TextField
                                     label="Number of Products in Bundle"
                                     value={String(rule.numberOfProducts || 0)}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'numberOfProducts', parseInt(value) || 0)}
+                                    onChange={(value) => updateDiscountRule(rule.id, 'numberOfProducts', value as any)}
                                     type="number"
                                     min="0"
                                     autoComplete="off"
@@ -5329,10 +5404,10 @@ export default function ConfigureBundleFlow() {
                                   <TextField
                                     label="Price"
                                     value={String(rule.price || 0)}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'price', parseFloat(value) || 0)}
+                                    onChange={(value) => updateDiscountRule(rule.id, 'price', value as any)}
                                     type="number"
                                     min="0"
-                                    step="0.01"
+                                    step={1}
                                     prefix="₹"
                                     autoComplete="off"
                                   />
@@ -5362,21 +5437,21 @@ export default function ConfigureBundleFlow() {
                                     <TextField
                                       label="Value"
                                       value={String(rule.value || 0)}
-                                      onChange={(value) => updateDiscountRule(rule.id, 'value', parseFloat(value) || 0)}
+                                      onChange={(value) => updateDiscountRule(rule.id, 'value', value as any)}
                                       type="number"
                                       min="0"
-                                      step="0.01"
+                                      step={1}
                                       autoComplete="off"
                                     />
                                   </InlineStack>
                                   <TextField
                                     label={discountType === 'percentage_off' ? 'Discount Percentage (%)' : 'Discount Amount (₹)'}
                                     value={String(rule.discountValue || 0)}
-                                    onChange={(value) => updateDiscountRule(rule.id, 'discountValue', parseFloat(value) || 0)}
+                                    onChange={(value) => updateDiscountRule(rule.id, 'discountValue', value as any)}
                                     type="number"
                                     min="0"
                                     max={discountType === 'percentage_off' ? "100" : undefined}
-                                    step="0.01"
+                                    step={1}
                                     prefix={discountType === 'fixed_amount_off' ? '₹' : undefined}
                                     suffix={discountType === 'percentage_off' ? '%' : undefined}
                                     autoComplete="off"
@@ -5407,7 +5482,7 @@ export default function ConfigureBundleFlow() {
                             <Text variant="headingSm" as="h4">
                               Discount Messaging
                             </Text>
-                            <Text variant="bodyMd" tone="subdued">
+                            <Text as="p" variant="bodyMd" tone="subdued">
                               Edit how discount messages appear above the subtotal.
                             </Text>
                           </BlockStack>
@@ -5459,19 +5534,20 @@ export default function ConfigureBundleFlow() {
                         </details>
 
                         {/* Dynamic rule-based messaging */}
-                        {discountMessagingEnabled && discountRules.length > 0 && (
+                        {discountMessagingEnabled && (Array.isArray(discountRules) ? discountRules : []).length > 0 && (
                           <BlockStack gap="300">
-                            {discountRules.map((rule, index) => (
+                            {(Array.isArray(discountRules) ? discountRules : []).map((rule: any, index: number) => (
                               <BlockStack key={rule.id} gap="300">
                                 <Card background="bg-surface-secondary">
                                   <BlockStack gap="200">
-                                    <Text variant="bodyMd" fontWeight="medium">
+                                    <Text as="h4" variant="bodyMd" fontWeight="medium">
                                       Rule #{index + 1}
                                     </Text>
-                                    <Text variant="bodySm" tone="subdued">
+                                    <Text as="p" variant="bodySm" tone="subdued">
                                       Discount Text
                                     </Text>
                                     <TextField
+                                      label="Discount Text"
                                       value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
                                       onChange={(value) => updateRuleMessage(rule.id, 'discountText', value)}
                                       multiline={2}
@@ -5483,10 +5559,11 @@ export default function ConfigureBundleFlow() {
 
                                 <Card background="bg-surface-secondary">
                                   <BlockStack gap="200">
-                                    <Text variant="bodyMd" fontWeight="medium">
+                                    <Text as="h4" variant="bodyMd" fontWeight="medium">
                                       Success Message
                                     </Text>
                                     <TextField
+                                      label="Success Message"
                                       value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
                                       onChange={(value) => updateRuleMessage(rule.id, 'successMessage', value)}
                                       multiline={2}
@@ -5504,7 +5581,7 @@ export default function ConfigureBundleFlow() {
                         {discountMessagingEnabled && discountRules.length === 0 && (
                           <Card background="bg-surface-secondary">
                             <BlockStack gap="200" inlineAlign="center">
-                              <Text variant="bodyMd" tone="subdued" alignment="center">
+                              <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
                                 Add discount rules to configure messaging
                               </Text>
                             </BlockStack>
@@ -5532,22 +5609,22 @@ export default function ConfigureBundleFlow() {
       >
         <Modal.Section>
           <BlockStack gap="400">
-            <Text variant="bodyMd">
+            <Text as="p" variant="bodyMd">
               Choose a page template where you want to place the Bundle Builder widget. The theme editor will open with automatic widget placement and configuration. Bundle container products are highlighted as recommended templates for optimal bundle widget placement.
             </Text>
 
             {isLoadingPages ? (
               <BlockStack gap="200" inlineAlign="center">
-                <Text variant="bodyMd" tone="subdued">Loading templates...</Text>
+                <Text as="p" variant="bodyMd" tone="subdued">Loading templates...</Text>
               </BlockStack>
             ) : availablePages.length > 0 ? (
               <BlockStack gap="200">
                 {availablePages.map((template) => (
-                  <Card key={template.id} sectioned>
+                  <Card key={template.id}>
                     <InlineStack wrap={false} gap="300" align="space-between">
                       <BlockStack gap="100">
                         <InlineStack gap="200" blockAlign="center">
-                          <Text variant="bodyMd" fontWeight="medium">
+                          <Text as="h4" variant="bodyMd" fontWeight="medium">
                             {template.title}
                           </Text>
                           {template.recommended && (
@@ -5557,16 +5634,16 @@ export default function ConfigureBundleFlow() {
                             <Badge tone="info">{template.fileType}</Badge>
                           )}
                         </InlineStack>
-                        <Text variant="bodySm" tone="subdued">
+                        <Text as="p" variant="bodySm" tone="subdued">
                           {template.description}
                         </Text>
-                        <Text variant="bodyXs" tone="subdued">
+                        <Text as="p" variant="bodyXs" tone="subdued">
                           Template: {template.handle}
                         </Text>
                       </BlockStack>
                       <Button
                         onClick={() => handlePageSelection(template)}
-                        primary
+                        variant="primary"
                         icon={ExternalIcon}
                       >
                         Select Template
@@ -5576,9 +5653,9 @@ export default function ConfigureBundleFlow() {
                 ))}
               </BlockStack>
             ) : (
-              <Card sectioned>
+              <Card>
                 <BlockStack gap="200" inlineAlign="center">
-                  <Text variant="bodyMd" tone="subdued" alignment="center">
+                  <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
                     No pages found in your store. You can create pages in your Shopify admin and return here to place the widget.
                   </Text>
                   <Button
@@ -5612,7 +5689,7 @@ export default function ConfigureBundleFlow() {
 
               return selectedProducts.length > 0 ? (
                 <BlockStack gap="300">
-                  <Text variant="bodyMd" fontWeight="medium">
+                  <Text as="h4" variant="bodyMd" fontWeight="medium">
                     {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected for this step:
                   </Text>
                   <Card>
@@ -5627,11 +5704,11 @@ export default function ConfigureBundleFlow() {
                                 size="small"
                               />
                               <BlockStack gap="050">
-                                <Text variant="bodyMd" fontWeight="medium">
+                                <Text as="h5" variant="bodyMd" fontWeight="medium">
                                   {product.title || product.name || 'Unnamed Product'}
                                 </Text>
                                 {product.variants && product.variants.length > 0 && (
-                                  <Text variant="bodySm" tone="subdued">
+                                  <Text as="p" variant="bodySm" tone="subdued">
                                     {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
                                   </Text>
                                 )}
@@ -5646,7 +5723,7 @@ export default function ConfigureBundleFlow() {
                 </BlockStack>
               ) : (
                 <BlockStack gap="200" inlineAlign="center">
-                  <Text variant="bodyMd" tone="subdued">
+                  <Text as="p" variant="bodyMd" tone="subdued">
                     No products selected for this step yet.
                   </Text>
                 </BlockStack>
@@ -5673,7 +5750,7 @@ export default function ConfigureBundleFlow() {
 
               return collections.length > 0 ? (
                 <BlockStack gap="300">
-                  <Text variant="bodyMd" fontWeight="medium">
+                  <Text as="h4" variant="bodyMd" fontWeight="medium">
                     {collections.length} collection{collections.length !== 1 ? 's' : ''} selected for this step:
                   </Text>
                   <Card>
@@ -5682,11 +5759,11 @@ export default function ConfigureBundleFlow() {
                         <List.Item key={collection.id || index}>
                           <InlineStack gap="200" align="space-between">
                             <BlockStack gap="050">
-                              <Text variant="bodyMd" fontWeight="medium">
+                              <Text as="h5" variant="bodyMd" fontWeight="medium">
                                 {collection.title || 'Unnamed Collection'}
                               </Text>
                               {collection.handle && (
-                                <Text variant="bodySm" tone="subdued">
+                                <Text as="p" variant="bodySm" tone="subdued">
                                   Handle: {collection.handle}
                                 </Text>
                               )}
@@ -5700,7 +5777,7 @@ export default function ConfigureBundleFlow() {
                 </BlockStack>
               ) : (
                 <BlockStack gap="200" inlineAlign="center">
-                  <Text variant="bodyMd" tone="subdued">
+                  <Text as="p" variant="bodyMd" tone="subdued">
                     No collections selected for this step yet.
                   </Text>
                 </BlockStack>
