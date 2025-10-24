@@ -461,17 +461,43 @@ function createBundleConfigsMap(bundleConfigs: any[]): Record<string, any> {
   return bundleConfigsMap;
 }
 
-// Comprehensive rule evaluation for all condition types
+// Comprehensive rule evaluation for all condition types (updated for nested structure)
 function evaluateRule(rule: any, totalQuantity: number, originalTotal: number): { meetsCondition: boolean; conditionType: string; conditionValue: number } {
-  const conditionType = rule.conditionType || 'quantity'; // Default to quantity for backward compatibility
-  const conditionValue = rule.value || rule.minimumQuantity || rule.numberOfProducts || 0;
+  // Extract condition from nested structure
+  const condition = rule.condition || {};
+  const conditionType = condition.type || rule.conditionType || 'quantity';
+  const conditionValue = condition.value || rule.value || rule.minimumQuantity || rule.numberOfProducts || 0;
+  const conditionOperator = condition.operator || rule.condition || 'gte';
 
+  // Get actual value to compare against
+  const actualValue = conditionType === 'amount' ? originalTotal : totalQuantity;
+
+  // Evaluate based on operator
   let meetsCondition = false;
-
-  if (conditionType === 'quantity') {
-    meetsCondition = totalQuantity >= conditionValue;
-  } else if (conditionType === 'amount') {
-    meetsCondition = originalTotal >= conditionValue;
+  switch (conditionOperator) {
+    case 'gte':
+    case 'greater_than_equal_to':
+      meetsCondition = actualValue >= conditionValue;
+      break;
+    case 'gt':
+    case 'greater_than':
+      meetsCondition = actualValue > conditionValue;
+      break;
+    case 'lte':
+    case 'less_than_equal_to':
+      meetsCondition = actualValue <= conditionValue;
+      break;
+    case 'lt':
+    case 'less_than':
+      meetsCondition = actualValue < conditionValue;
+      break;
+    case 'eq':
+    case 'equal_to':
+      meetsCondition = actualValue === conditionValue;
+      break;
+    default:
+      // Default to greater than or equal
+      meetsCondition = actualValue >= conditionValue;
   }
 
   return {
@@ -645,18 +671,23 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           const appliedRule = appliedRuleResult.rule;
           const evaluation = appliedRuleResult.evaluation;
 
-          if (bundleConfig.pricing.method === 'fixed_bundle_price') {
-            // Support both field naming systems: fixedBundlePrice (primary) or discountValue (fallback)
-            const fixedPrice = appliedRule.fixedBundlePrice || appliedRule.discountValue || 0;
+          // Extract discount value from nested structure
+          const discount = appliedRule.discount || {};
+          const discountMethod = discount.method || bundleConfig.pricing.method;
+          const discountValue = parseFloat(discount.value || appliedRule.discountValue || 0);
+
+          if (discountMethod === 'fixed_bundle_price') {
+            // For fixed price, value is stored in cents, convert to decimal
+            const fixedPrice = discountValue / 100;
             if (originalTotal > 0 && fixedPrice < originalTotal) {
               discountPercentage = ((originalTotal - fixedPrice) / originalTotal) * 100;
             }
-          } else if (bundleConfig.pricing.method === 'percentage_off') {
-            // Support both field naming systems: percentageOff (primary) or discountValue (fallback)
-            discountPercentage = appliedRule.percentageOff || appliedRule.discountValue || 0;
-          } else if (bundleConfig.pricing.method === 'fixed_amount_off') {
-            // Support both field naming systems: fixedAmountOff (primary) or discountValue (fallback)
-            const fixedAmountOff = appliedRule.fixedAmountOff || appliedRule.discountValue || 0;
+          } else if (discountMethod === 'percentage_off') {
+            // Percentage is stored as-is
+            discountPercentage = discountValue;
+          } else if (discountMethod === 'fixed_amount_off') {
+            // For fixed amount off, value is stored in cents, convert to decimal
+            const fixedAmountOff = discountValue / 100;
             if (originalTotal > 0 && fixedAmountOff > 0) {
               discountPercentage = (fixedAmountOff / originalTotal) * 100;
             }
@@ -671,9 +702,8 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
               conditionType: appliedRuleResult.evaluation.conditionType,
               conditionValue: appliedRuleResult.evaluation.conditionValue,
               meetsCondition: appliedRuleResult.evaluation.meetsCondition,
-              ...(bundleConfig.pricing.method === 'percentage_off' && { percentageOff: appliedRuleResult.rule.percentageOff }),
-              ...(bundleConfig.pricing.method === 'fixed_bundle_price' && { fixedPrice: appliedRuleResult.rule.fixedBundlePrice }),
-              ...(bundleConfig.pricing.method === 'fixed_amount_off' && { fixedAmountOff: appliedRuleResult.rule.fixedAmountOff })
+              discountMethod,
+              discountValue: appliedRuleResult.rule.discount?.value || 0
             },
             discountPercentage: discountPercentage.toFixed(2),
             finalPrice: (originalTotal * (1 - discountPercentage / 100)).toFixed(2)
