@@ -4,26 +4,19 @@
  */
 
 // Helper function to extract discount value from rule based on discount method
+// Updated to use new nested pricing structure
 function getDiscountValueFromRule(rule, discountMethod) {
-  if (!rule) return 0;
+  if (!rule || !rule.discount) return 0;
 
-  switch (discountMethod) {
-    case 'fixed_amount_off':
-      // For fixed amount off, return the discount amount
-      return parseFloat(rule.discountValue || 0);
+  const value = parseFloat(rule.discount.value || 0);
 
-    case 'percentage_off':
-      // For percentage off, return the percentage value
-      return parseFloat(rule.discountValue || 0);
-
-    case 'fixed_bundle_price':
-      // For fixed bundle price, return the target bundle price
-      const fixedPrice = parseFloat(rule.fixedBundlePrice || 0);
-      return fixedPrice;
-
-    default:
-      return parseFloat(rule.discountValue || 0);
+  // For percentage, return as-is (already a percentage)
+  if (discountMethod === 'percentage_off' || rule.discount.method === 'percentage_off') {
+    return value;
   }
+
+  // For monetary values, convert from cents to currency amount
+  return value / 100;
 }
 
 function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, formatCurrency) {
@@ -36,8 +29,8 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
 
   const pricing = selectedBundle.pricing;
 
-  // Check if discount is enabled
-  if (!pricing.enableDiscount || pricing.messages?.showDiscountMessaging === false) {
+  // Check if discount is enabled (updated to use new field name)
+  if (!pricing.enabled || pricing.messages?.showDiscountMessaging === false) {
     discountCard.style.display = 'none';
     return;
   }
@@ -48,37 +41,72 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
     return;
   }
 
-  // Find applicable discount rule
+  // Find applicable discount rule (updated for nested structure)
   let applicableRule = null;
   for (const rule of rules) {
-    const ruleQuantity = rule.value || 0;
-    const conditionMet = rule.condition === 'greater_than_equal_to' || rule.condition === 'gte'
-      ? selectedQuantity >= ruleQuantity
-      : selectedQuantity === ruleQuantity;
+    if (!rule.condition) continue;
 
-    if (conditionMet && (!applicableRule || ruleQuantity > (applicableRule.value || 0))) {
+    // Handle both quantity and amount-based conditions
+    const conditionValue = rule.condition.value || 0;
+    const actualValue = rule.condition.type === 'amount' ? totalPrice * 100 : selectedQuantity; // Convert amount to cents
+
+    let conditionMet = false;
+    switch (rule.condition.operator) {
+      case 'gte':
+      case 'greater_than_equal_to':
+        conditionMet = actualValue >= conditionValue;
+        break;
+      case 'gt':
+      case 'greater_than':
+        conditionMet = actualValue > conditionValue;
+        break;
+      case 'lte':
+      case 'less_than_equal_to':
+        conditionMet = actualValue <= conditionValue;
+        break;
+      case 'lt':
+      case 'less_than':
+        conditionMet = actualValue < conditionValue;
+        break;
+      case 'eq':
+      case 'equal_to':
+        conditionMet = actualValue === conditionValue;
+        break;
+      default:
+        conditionMet = actualValue >= conditionValue;
+    }
+
+    if (conditionMet && (!applicableRule || conditionValue > (applicableRule.condition?.value || 0))) {
       applicableRule = rule;
     }
   }
 
-  // Find target quantity for progress
-  const sortedRules = rules.sort((a, b) => (a.value || 0) - (b.value || 0));
-  const nextRule = sortedRules.find(rule => selectedQuantity < (rule.value || 0));
+  // Find target quantity for progress (updated for nested structure)
+  const sortedRules = rules.sort((a, b) => (a.condition?.value || 0) - (b.condition?.value || 0));
+  const nextRule = sortedRules.find(rule => {
+    const conditionValue = rule.condition?.value || 0;
+    const actualValue = rule.condition?.type === 'amount' ? totalPrice * 100 : selectedQuantity;
+    return actualValue < conditionValue;
+  });
   const targetQuantity = nextRule
-    ? (nextRule.value || 0)
-    : (sortedRules[sortedRules.length - 1]?.value || 0);
+    ? (nextRule.condition?.type === 'amount' ? (nextRule.condition.value / 100) : nextRule.condition?.value || 0)
+    : (sortedRules[sortedRules.length - 1]?.condition?.value || 0);
 
-  // Calculate discount
+  // Calculate discount (updated for nested structure)
   let discountAmount = 0;
-  if (applicableRule) {
-    const discountMethod = pricing.method || pricing.discountMethod || 'percentage_off';
+  if (applicableRule && applicableRule.discount) {
+    const discountMethod = applicableRule.discount.method || pricing.method || 'percentage_off';
+    const discountValue = parseFloat(applicableRule.discount.value || 0);
+
     if (discountMethod === 'percentage_off') {
-      const percentage = parseFloat(applicableRule.discountValue || 0);
-      discountAmount = (totalPrice * percentage) / 100;
+      // Percentage is stored as-is
+      discountAmount = (totalPrice * discountValue) / 100;
     } else if (discountMethod === 'fixed_amount_off') {
-      discountAmount = parseFloat(applicableRule.discountValue || 0);
+      // Convert from cents to currency amount
+      discountAmount = discountValue / 100;
     } else if (discountMethod === 'fixed_bundle_price') {
-      const fixedPrice = parseFloat(applicableRule.fixedBundlePrice || 0);
+      // Convert fixed price from cents to currency amount
+      const fixedPrice = discountValue / 100;
       discountAmount = Math.max(0, totalPrice - fixedPrice);
     }
   }
@@ -107,8 +135,8 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
     // Qualified state - show success styling
     discountCard.classList.add('qualified');
 
-    const discountMethod = pricing.method || pricing.discountMethod;
-    const discountValue = applicableRule.discountValue || 0;
+    const discountMethod = applicableRule.discount?.method || pricing.method;
+    const discountValue = applicableRule.discount?.value || 0;
 
     // Custom message if available
     const customMessage = pricing.messages?.successMessage || applicableRule.successMessage;
@@ -136,7 +164,7 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
     discountCard.classList.remove('qualified');
 
     const itemsNeeded = Math.max(0, targetQuantity - selectedQuantity);
-    const discountMethod = pricing.method || pricing.discountMethod;
+    const discountMethod = nextRule.discount?.method || pricing.method;
 
     // Get discount value using helper function
     const discountValue = getDiscountValueFromRule(nextRule, discountMethod);
