@@ -2257,37 +2257,29 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
           enabled: discountData.discountEnabled,
           method: discountData.discountType,
           rules: (discountData.discountRules || []).map((rule: any) => {
-            // Map long-form condition names to shorthand for widget compatibility
-            const conditionMap: Record<string, string> = {
-              'greater_than_equal_to': 'gte',
-              'greater_than': 'gt',
-              'less_than_equal_to': 'lte',
-              'less_than': 'lt',
-              'equal_to': 'eq'
-            };
-            const condition = conditionMap[rule.condition] || rule.condition;
-
-            // Build rule with method-specific fields for cart transform
-            const baseRule: any = {
+            // Use new nested structure - already standardized from form
+            return {
               id: rule.id,
-              condition,
-              conditionType: rule.type,
-              value: rule.value
+              condition: rule.condition || {
+                type: rule.conditionType || 'quantity',
+                operator: rule.operator || 'gte',
+                value: rule.value || 0
+              },
+              discount: rule.discount || {
+                method: discountData.discountType,
+                value: rule.discountValue || rule.value || 0
+              }
             };
-
-            // Add discount fields based on pricing method
-            if (discountData.discountType === 'percentage_off') {
-              baseRule.percentageOff = rule.discountValue; // Cart transform expects percentageOff
-              baseRule.discountValue = rule.discountValue; // Widget expects discountValue
-            } else if (discountData.discountType === 'fixed_amount_off') {
-              baseRule.fixedAmountOff = rule.discountValue; // Cart transform expects fixedAmountOff
-              baseRule.discountValue = rule.discountValue; // Widget expects discountValue
-            } else if (discountData.discountType === 'fixed_bundle_price') {
-              baseRule.fixedBundlePrice = rule.fixedBundlePrice || rule.price; // Both expect this
-            }
-
-            return baseRule;
-          })
+          }),
+          display: {
+            showFooter: discountData.showFooter !== false,
+            showProgressBar: discountData.showProgressBar || false
+          },
+          messages: discountData.messages || {
+            progress: 'Add {conditionText} to get {discountText}',
+            qualified: 'Congratulations! You got {discountText}',
+            showInCart: true
+          }
         },
         // CRITICAL: Include bundle parent variant ID for cart transform merge operations
         bundleParentVariantId: bundleParentVariantId,
