@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { CartTransformService } from "../services/cart-transform-service.server";
+import { AppLogger } from "../lib/logger";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -9,17 +10,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Automatically activate cart transform for new installations
   try {
     const shopDomain = session.shop;
-    console.log(`🔧 [AUTH] Setting up cart transform for shop: ${shopDomain}`);
-    
+    AppLogger.info("Setting up cart transform", { component: "auth.$", operation: "setup", shop: shopDomain });
+
     const result = await CartTransformService.completeSetup(admin, shopDomain);
-    
+
     if (result.success) {
-      console.log(`✅ [AUTH] Cart transform setup completed for ${shopDomain}`);
+      AppLogger.info("Cart transform setup completed", { component: "auth.$", operation: "setup", shop: shopDomain });
     } else {
-      console.error(`❌ [AUTH] Cart transform setup failed for ${shopDomain}:`, result.error);
+      AppLogger.error("Cart transform setup failed", { component: "auth.$", operation: "setup", shop: shopDomain }, new Error(result.error));
     }
   } catch (error) {
-    console.error("❌ [AUTH] Error during cart transform setup:", error);
+    AppLogger.error("Error during cart transform setup", { component: "auth.$", operation: "setup" }, error);
   }
 
   return redirect("/app");

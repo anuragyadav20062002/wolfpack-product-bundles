@@ -1,6 +1,8 @@
 // Metafield Cleanup Service for Bundle Deletion
 // Handles comprehensive cleanup of all bundle-related metafields
 
+import { AppLogger } from "../lib/logger";
+
 export class MetafieldCleanupService {
 
   /**
@@ -16,7 +18,10 @@ export class MetafieldCleanupService {
     shopifyProductId: string,
     componentProductIds: string[] = []
   ) {
-    console.log(`🧹 [CLEANUP] Starting metafield cleanup for bundle ${bundleId}`);
+    AppLogger.info('Starting metafield cleanup for bundle', {
+      component: 'cleanup',
+      operation: 'cleanup-bundle'
+    }, { bundleId, shopifyProductId });
 
     try {
       // 1. Clean up bundle product metafields (both custom and standard)
@@ -30,10 +35,16 @@ export class MetafieldCleanupService {
       // 3. Update shop-level metafields to remove bundle from global list
       await this.updateShopMetafieldsAfterDeletion(admin, bundleId);
 
-      console.log(`✅ [CLEANUP] Completed metafield cleanup for bundle ${bundleId}`);
+      AppLogger.info('Completed metafield cleanup for bundle', {
+        component: 'cleanup',
+        operation: 'cleanup-bundle'
+      }, { bundleId });
 
     } catch (error) {
-      console.error(`❌ [CLEANUP] Failed to cleanup metafields for bundle ${bundleId}:`, error);
+      AppLogger.error('Failed to cleanup metafields for bundle', {
+        component: 'cleanup',
+        operation: 'cleanup-bundle'
+      }, error);
       throw error;
     }
   }
@@ -72,7 +83,10 @@ export class MetafieldCleanupService {
       }
     ];
 
-    console.log(`🧹 [CLEANUP] Deleting ${metafieldsToDelete.length} active metafields from bundle product ${productGid}`);
+    AppLogger.info('Deleting active metafields from bundle product', {
+      component: 'cleanup',
+      operation: 'cleanup-bundle-product'
+    }, { productGid, count: metafieldsToDelete.length });
 
     await this.batchDeleteMetafields(admin, metafieldsToDelete);
   }
@@ -82,14 +96,18 @@ export class MetafieldCleanupService {
    * Simplified - no component product metafields to clean (using $app:bundle_config on bundle product only)
    */
   private static async cleanupComponentProductMetafields(admin: any, componentProductIds: string[]) {
-    console.log(`✅ [CLEANUP] Skipping component product cleanup - no metafields stored on component products`);
+    AppLogger.info('Skipping component product cleanup - no metafields stored on component products', {
+      component: 'cleanup',
+      operation: 'cleanup-component-products'
+    });
     // No metafields on component products in optimized architecture
   }
 
   /**
    * Update shop-level metafields to remove deleted bundle from global bundle list
+   * Public method - can be called independently for soft deletes
    */
-  private static async updateShopMetafieldsAfterDeletion(admin: any, deletedBundleId: string) {
+  static async updateShopMetafieldsAfterDeletion(admin: any, deletedBundleId: string) {
     try {
       // Get shop GID
       const shopResponse = await admin.graphql(`
@@ -104,7 +122,10 @@ export class MetafieldCleanupService {
       const shopGid = shopData.data?.shop?.id;
 
       if (!shopGid) {
-        console.error('❌ [CLEANUP] Could not get shop GID');
+        AppLogger.error('Could not get shop GID', {
+          component: 'cleanup',
+          operation: 'update-shop-metafields'
+        });
         return;
       }
 
@@ -134,7 +155,10 @@ export class MetafieldCleanupService {
           // Filter out the deleted bundle
           const filteredBundles = allBundles.filter((bundle: any) => bundle.id !== deletedBundleId);
 
-          console.log(`🧹 [CLEANUP] Updating shop metafield: ${allBundles.length} → ${filteredBundles.length} bundles`);
+          AppLogger.info('Updating shop metafield', {
+            component: 'cleanup',
+            operation: 'update-shop-metafields'
+          }, { before: allBundles.length, after: filteredBundles.length });
 
           // Update the shop metafield with filtered bundles
           const updateResponse = await admin.graphql(`
@@ -166,20 +190,35 @@ export class MetafieldCleanupService {
           const updateData = await updateResponse.json();
 
           if (updateData.data?.metafieldsSet?.userErrors?.length > 0) {
-            console.error('❌ [CLEANUP] Shop metafield update errors:', updateData.data.metafieldsSet.userErrors);
+            AppLogger.error('Shop metafield update errors', {
+              component: 'cleanup',
+              operation: 'update-shop-metafields'
+            }, updateData.data.metafieldsSet.userErrors);
           } else {
-            console.log('✅ [CLEANUP] Shop metafield updated successfully');
+            AppLogger.info('Shop metafield updated successfully', {
+              component: 'cleanup',
+              operation: 'update-shop-metafields'
+            });
           }
 
         } catch (parseError) {
-          console.error('❌ [CLEANUP] Error parsing shop metafield JSON:', parseError);
+          AppLogger.error('Error parsing shop metafield JSON', {
+            component: 'cleanup',
+            operation: 'update-shop-metafields'
+          }, parseError);
         }
       } else {
-        console.log('ℹ️ [CLEANUP] No shop metafield found to update');
+        AppLogger.info('No shop metafield found to update', {
+          component: 'cleanup',
+          operation: 'update-shop-metafields'
+        });
       }
 
     } catch (error) {
-      console.error('❌ [CLEANUP] Error updating shop metafields:', error);
+      AppLogger.error('Error updating shop metafields', {
+        component: 'cleanup',
+        operation: 'update-shop-metafields'
+      }, error);
     }
   }
 
@@ -215,18 +254,30 @@ export class MetafieldCleanupService {
         const result = await response.json();
 
         if (result.data?.metafieldsDelete?.userErrors?.length > 0) {
-          console.error("🚨 [CLEANUP] Metafield deletion errors:", result.data.metafieldsDelete.userErrors);
+          AppLogger.error('Metafield deletion errors', {
+            component: 'cleanup',
+            operation: 'batch-delete'
+          }, result.data.metafieldsDelete.userErrors);
         } else {
           const deletedCount = result.data?.metafieldsDelete?.deletedMetafields?.length || 0;
           totalDeleted += deletedCount;
-          console.log(`✅ [CLEANUP] Successfully deleted ${deletedCount} metafields in this batch`);
+          AppLogger.info('Successfully deleted metafields in batch', {
+            component: 'cleanup',
+            operation: 'batch-delete'
+          }, { deletedCount });
         }
       } catch (error) {
-        console.error("❌ [CLEANUP] Error in batch metafield deletion:", error);
+        AppLogger.error('Error in batch metafield deletion', {
+          component: 'cleanup',
+          operation: 'batch-delete'
+        }, error);
       }
     }
 
-    console.log(`🎉 [CLEANUP] Total metafields deleted: ${totalDeleted} out of ${metafields.length} requested`);
+    AppLogger.info('Total metafields deleted', {
+      component: 'cleanup',
+      operation: 'batch-delete'
+    }, { totalDeleted, requested: metafields.length });
   }
 
   /**
@@ -257,11 +308,17 @@ export class MetafieldCleanupService {
       const data = await response.json();
       const exists = data.data?.product?.metafield !== null;
 
-      console.log(`🔍 [CLEANUP] Verification: metafield ${namespace}:${key} ${exists ? 'still exists' : 'successfully deleted'}`);
+      AppLogger.info('Metafield verification', {
+        component: 'cleanup',
+        operation: 'verify'
+      }, { namespace, key, exists, status: exists ? 'still exists' : 'successfully deleted' });
 
       return !exists; // Return true if metafield no longer exists
     } catch (error) {
-      console.error('❌ [CLEANUP] Verification error:', error);
+      AppLogger.error('Verification error', {
+        component: 'cleanup',
+        operation: 'verify'
+      }, error);
       return false;
     }
   }
@@ -282,7 +339,10 @@ export class MetafieldCleanupService {
    * Use with caution - this removes ALL bundle-related metafields
    */
   static async emergencyCleanupAllBundleMetafields(admin: any) {
-    console.log('🚨 [EMERGENCY_CLEANUP] Starting emergency cleanup of all bundle metafields');
+    AppLogger.warn('Starting emergency cleanup of all bundle metafields', {
+      component: 'cleanup',
+      operation: 'emergency-cleanup'
+    });
 
     try {
       // Get all metafield definitions for bundle namespaces
@@ -317,14 +377,23 @@ export class MetafieldCleanupService {
             }
           `, { variables: { id: definition.node.id } });
 
-          console.log(`🗑️ [EMERGENCY_CLEANUP] Deleted definition: ${definition.node.namespace}:${definition.node.key}`);
+          AppLogger.info('Deleted definition', {
+            component: 'cleanup',
+            operation: 'emergency-cleanup'
+          }, { namespace: definition.node.namespace, key: definition.node.key });
         }
       }
 
-      console.log('✅ [EMERGENCY_CLEANUP] Emergency cleanup completed');
+      AppLogger.info('Emergency cleanup completed', {
+        component: 'cleanup',
+        operation: 'emergency-cleanup'
+      });
 
     } catch (error) {
-      console.error('❌ [EMERGENCY_CLEANUP] Emergency cleanup failed:', error);
+      AppLogger.error('Emergency cleanup failed', {
+        component: 'cleanup',
+        operation: 'emergency-cleanup'
+      }, error);
       throw error;
     }
   }

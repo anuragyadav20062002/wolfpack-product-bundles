@@ -10,10 +10,11 @@ export interface AppLogContext {
   userId?: string;
   requestId?: string;
   component?: string;
+  [key: string]: any; // Allow additional properties for flexible logging
 }
 
 export class AppLogger {
-  private static enabled = true; // Set to false to disable all logging in production
+  private static enabled = typeof process !== 'undefined' && process.env?.APP_LOGGING_ENABLED !== 'false'; // Can be disabled via APP_LOGGING_ENABLED=false environment variable, disabled on client-side
   
   static info(message: string, context?: AppLogContext, data?: any) {
     if (!this.enabled) return;

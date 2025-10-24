@@ -106,7 +106,11 @@ export class BundleAutoInjectionService {
     bundleProductId: string,
     bundleId: string
   ): Promise<{ success: boolean; injectionMethod?: string; error?: string }> {
-    console.log(`🔍 [AUTO_INJECTION] Verifying bundle injection for product: ${bundleProductId}`);
+    AppLogger.info('Verifying bundle injection for product', {
+      component: 'auto-injection',
+      operation: 'verify',
+      bundleId
+    }, { bundleProductId });
 
     try {
       // Check for product bundle_config metafield and isolation metafields
@@ -140,21 +144,33 @@ export class BundleAutoInjectionService {
         try {
           const bundleConfig = JSON.parse(product.bundleConfig.value);
           if (bundleConfig.id === bundleId) {
-            console.log(`✅ [AUTO_INJECTION] Bundle injection verified via bundle_config metafield`);
+            AppLogger.info('Bundle injection verified via bundle_config metafield', {
+              component: 'auto-injection',
+              operation: 'verify',
+              bundleId
+            });
             return {
               success: true,
               injectionMethod: 'product_bundle_config_metafield'
             };
           }
         } catch (parseError) {
-          console.error(`❌ [AUTO_INJECTION] Error parsing bundle_config:`, parseError);
+          AppLogger.error('Error parsing bundle_config', {
+            component: 'auto-injection',
+            operation: 'verify',
+            bundleId
+          }, parseError);
         }
       }
 
       // Secondary check: isolation metafields (legacy support)
       if (product?.bundleProductType?.value === 'cart_transform_bundle' &&
           product?.ownsBundleId?.value === bundleId) {
-        console.log(`✅ [AUTO_INJECTION] Bundle injection verified via isolation metafields`);
+        AppLogger.info('Bundle injection verified via isolation metafields', {
+          component: 'auto-injection',
+          operation: 'verify',
+          bundleId
+        });
         return {
           success: true,
           injectionMethod: 'isolation_metafields'
@@ -167,7 +183,11 @@ export class BundleAutoInjectionService {
       };
 
     } catch (error) {
-      console.error(`❌ [AUTO_INJECTION] Error verifying bundle injection:`, error);
+      AppLogger.error('Error verifying bundle injection', {
+        component: 'auto-injection',
+        operation: 'verify',
+        bundleId
+      }, error);
       return { success: false, error: (error as Error).message };
     }
   }
@@ -176,7 +196,10 @@ export class BundleAutoInjectionService {
    * Get bundle injection status for all bundle products
    */
   static async getBundleInjectionStatus(admin: any, shopId: string): Promise<any> {
-    console.log(`📊 [AUTO_INJECTION] Getting bundle injection status for shop: ${shopId}`);
+    AppLogger.info('Getting bundle injection status for shop', {
+      component: 'auto-injection',
+      operation: 'get-status'
+    }, { shopId });
 
     try {
       // Get all bundle products from database
@@ -217,11 +240,17 @@ export class BundleAutoInjectionService {
         }
       }
 
-      console.log(`📊 [AUTO_INJECTION] Bundle injection status:`, injectionStatus);
+      AppLogger.info('Bundle injection status retrieved', {
+        component: 'auto-injection',
+        operation: 'get-status'
+      }, { count: injectionStatus.length });
       return injectionStatus;
 
     } catch (error) {
-      console.error(`❌ [AUTO_INJECTION] Error getting injection status:`, error);
+      AppLogger.error('Error getting injection status', {
+        component: 'auto-injection',
+        operation: 'get-status'
+      }, error);
       return [];
     }
   }

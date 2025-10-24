@@ -250,7 +250,11 @@ export class BundleIsolationService {
    * These metafields help the widget identify which bundles belong to which products
    */
   static async createBundleProductIsolationMetafields(admin: any, bundleProductId: string, bundleId: string) {
-    console.log(`🏷️ [ISOLATION_METAFIELDS] Creating isolation metafields for bundle product: ${bundleProductId}`);
+    AppLogger.info('Creating isolation metafields for bundle product', {
+      component: 'isolation',
+      operation: 'create-metafields',
+      bundleId
+    }, { bundleProductId });
 
     try {
       const metafields = [
@@ -300,15 +304,27 @@ export class BundleIsolationService {
       const data = await response.json();
 
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-        console.error('❌ [ISOLATION_METAFIELDS] Metafield errors:', data.data.metafieldsSet.userErrors);
+        AppLogger.error('Metafield errors during isolation metafield creation', {
+          component: 'isolation',
+          operation: 'create-metafields',
+          bundleId
+        }, data.data.metafieldsSet.userErrors);
         return false;
       }
 
-      console.log(`✅ [ISOLATION_METAFIELDS] Created ${data.data?.metafieldsSet?.metafields?.length || 0} isolation metafields`);
+      AppLogger.info('Created isolation metafields', {
+        component: 'isolation',
+        operation: 'create-metafields',
+        bundleId
+      }, { count: data.data?.metafieldsSet?.metafields?.length || 0 });
       return true;
 
     } catch (error) {
-      console.error('❌ [ISOLATION_METAFIELDS] Error creating isolation metafields:', error);
+      AppLogger.error('Error creating isolation metafields', {
+        component: 'isolation',
+        operation: 'create-metafields',
+        bundleId
+      }, error);
       return false;
     }
   }
@@ -317,7 +333,10 @@ export class BundleIsolationService {
    * Clean up isolation metafields when bundle is deleted
    */
   static async cleanupIsolationMetafields(admin: any, bundleProductId: string) {
-    console.log(`🧹 [CLEANUP_ISOLATION] Cleaning up isolation metafields for product: ${bundleProductId}`);
+    AppLogger.info('Cleaning up isolation metafields for product', {
+      component: 'isolation',
+      operation: 'cleanup-metafields'
+    }, { bundleProductId });
 
     try {
       const metafieldsToDelete = [
@@ -361,16 +380,25 @@ export class BundleIsolationService {
       const data = await response.json();
 
       if (data.data?.metafieldsDelete?.userErrors?.length > 0) {
-        console.error('❌ [CLEANUP_ISOLATION] Cleanup errors:', data.data.metafieldsDelete.userErrors);
+        AppLogger.error('Cleanup errors during isolation metafield deletion', {
+          component: 'isolation',
+          operation: 'cleanup-metafields'
+        }, data.data.metafieldsDelete.userErrors);
         return false;
       }
 
       const deletedCount = data.data?.metafieldsDelete?.deletedMetafields?.length || 0;
-      console.log(`✅ [CLEANUP_ISOLATION] Cleaned up ${deletedCount} isolation metafields`);
+      AppLogger.info('Cleaned up isolation metafields', {
+        component: 'isolation',
+        operation: 'cleanup-metafields'
+      }, { deletedCount });
       return true;
 
     } catch (error) {
-      console.error('❌ [CLEANUP_ISOLATION] Error cleaning up isolation metafields:', error);
+      AppLogger.error('Error cleaning up isolation metafields', {
+        component: 'isolation',
+        operation: 'cleanup-metafields'
+      }, error);
       return false;
     }
   }
@@ -380,7 +408,10 @@ export class BundleIsolationService {
    * Returns the bundle configuration stored on this product
    */
   static async getBundleForProduct(admin: any, productId: string, shopId: string): Promise<any> {
-    console.log(`🔍 [GET_BUNDLE] Getting bundle for product: ${productId}`);
+    AppLogger.debug('Getting bundle for product', {
+      component: 'isolation',
+      operation: 'get-bundle-for-product'
+    }, { productId, shopId });
 
     // Simply read bundle_config from product metafield - no filtering needed!
     return await this.getBundleConfigFromProduct(admin, productId);
@@ -391,7 +422,10 @@ export class BundleIsolationService {
    * Checks if bundles have proper product-level metafields
    */
   static async auditBundleIsolation(admin: any, shopId: string) {
-    console.log(`📊 [AUDIT_ISOLATION] Auditing bundle isolation for shop: ${shopId}`);
+    AppLogger.info('Auditing bundle isolation for shop', {
+      component: 'isolation',
+      operation: 'audit'
+    }, { shopId });
 
     try {
       // Get database bundles
@@ -453,12 +487,18 @@ export class BundleIsolationService {
         details: metafieldChecks
       };
 
-      console.log('📊 [AUDIT_ISOLATION] Product Metafield Audit Report:', JSON.stringify(audit, null, 2));
+      AppLogger.info('Product metafield audit report', {
+        component: 'isolation',
+        operation: 'audit'
+      }, audit);
 
       return audit;
 
     } catch (error) {
-      console.error('❌ [AUDIT_ISOLATION] Error auditing bundle isolation:', error);
+      AppLogger.error('Error auditing bundle isolation', {
+        component: 'isolation',
+        operation: 'audit'
+      }, error);
       return null;
     }
   }

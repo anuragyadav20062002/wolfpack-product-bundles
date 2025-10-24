@@ -566,8 +566,8 @@ async function updateCartTransformMetafield(admin: any, shopId: string) {
         steps: stepConfigs,
         // Essential pricing data only
         pricing: bundle.pricing ? {
-          enabled: bundle.pricing.enableDiscount, // Use 'enabled' as expected by cart transform
-          method: bundle.pricing.discountMethod,
+          enabled: bundle.pricing.enabled,
+          method: bundle.pricing.method,
           rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
             id: rule.id,
             // Use clean field structure - NO BACKWARD COMPATIBILITY
@@ -752,8 +752,8 @@ async function updateShopBundlesMetafield(admin: any, shopId: string) {
           name: bundle.name, // Keep for error logging
           bundleParentVariantId: bundleParentVariantId, // CRITICAL: Required for merge operations
           pricing: bundle.pricing ? {
-            enabled: bundle.pricing.enableDiscount,
-            method: bundle.pricing.discountMethod,
+            enabled: bundle.pricing.enabled,
+            method: bundle.pricing.method,
             rules: (Array.isArray(bundle.pricing.rules) ? bundle.pricing.rules : []).map((rule: any) => ({
               condition: rule.condition || 'gte',
               conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
@@ -1729,8 +1729,8 @@ async function updateComponentProductMetafields(admin: any, bundleProductId: str
         bundleParentVariantId: bundleConfig.bundleParentVariantId,
         shopifyProductId: bundleConfig.shopifyProductId,
         pricing: bundleConfig.pricing ? {
-          enabled: bundleConfig.pricing.enabled || bundleConfig.pricing.enableDiscount,
-          method: bundleConfig.pricing.method || bundleConfig.pricing.discountMethod,
+          enabled: bundleConfig.pricing.enabled || bundleConfig.pricing.enabled,
+          method: bundleConfig.pricing.method || bundleConfig.pricing.method,
           rules: bundleConfig.pricing.rules || []
         } : undefined,
         steps: bundleConfig.steps || []
@@ -2178,8 +2178,8 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
           pricing: {
             upsert: {
               create: {
-                enableDiscount: discountData.discountEnabled,
-                discountMethod: mapDiscountMethod(discountData.discountType),
+                enabled: discountData.discountEnabled,
+                method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 messages: {
                   showDiscountDisplay: true, // Enable discount display by default
@@ -2188,8 +2188,8 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
                 }
               },
               update: {
-                enableDiscount: discountData.discountEnabled,
-                discountMethod: mapDiscountMethod(discountData.discountType),
+                enabled: discountData.discountEnabled,
+                method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 messages: {
                   showDiscountDisplay: true, // Enable discount display by default
@@ -2682,7 +2682,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
       }
 
       // Update metafields with current bundle configuration
-      if (bundle.pricing?.enableDiscount) {
+      if (bundle.pricing?.enabled) {
         // Create optimized configuration with only essential data for functions
         const optimizedSteps = bundle.steps.map((step: any) => ({
           id: step.id,
@@ -2714,8 +2714,8 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
           type: "cart_transform",
           steps: optimizedSteps,
           pricing: {
-            enabled: bundle.pricing.enableDiscount,
-            method: bundle.pricing.discountMethod,
+            enabled: bundle.pricing.enabled,
+            method: bundle.pricing.method,
             rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
               id: rule.id,
               conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
@@ -2833,7 +2833,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
   }
 
   // Update metafields with current bundle configuration
-  if (productId && bundle.pricing?.enableDiscount) {
+  if (productId && bundle.pricing?.enabled) {
     // Create optimized configuration with only essential data for functions
     const optimizedSteps = (bundle.steps || []).map((step: any) => ({
       id: step.id,
@@ -2864,8 +2864,8 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
       type: "cart_transform",
       steps: optimizedSteps,
       pricing: {
-        enabled: bundle.pricing.enableDiscount,
-        method: bundle.pricing.discountMethod,
+        enabled: bundle.pricing.enabled,
+        method: bundle.pricing.method,
         rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
           id: rule.id,
           conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
@@ -3884,6 +3884,8 @@ export default function ConfigureBundleFlow() {
             discountEnabled: discountEnabled,
             discountType: discountType,
             discountRules: JSON.stringify(discountRules),
+            showProgressBar: showProgressBar,
+            showFooter: showFooter,
             discountMessagingEnabled: discountMessagingEnabled,
             selectedCollections: JSON.stringify(selectedCollections),
             ruleMessages: JSON.stringify(ruleMessages),
@@ -3955,7 +3957,7 @@ export default function ConfigureBundleFlow() {
       setTemplateName(originalValues.templateName);
       setSteps(JSON.parse(originalValues.steps));
       setDiscountEnabled(originalValues.discountEnabled);
-      setDiscountType(originalValues.discountType as 'percentage_off' | 'fixed_amount_off' | 'fixed_bundle_price' | 'free_shipping');
+      setDiscountType(originalValues.discountType as DiscountMethod);
       setDiscountRules(JSON.parse(originalValues.discountRules));
       setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
       setSelectedCollections(JSON.parse(originalValues.selectedCollections));

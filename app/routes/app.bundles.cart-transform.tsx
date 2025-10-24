@@ -19,6 +19,8 @@ import {
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
+import { AppLogger } from "../lib/logger";
+import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 
@@ -120,9 +122,9 @@ export async function action({ request }: ActionFunctionArgs) {
       });
 
       const productData = await productResponse.json();
-      
+
       if (productData.data?.productCreate?.userErrors?.length > 0) {
-        console.error("Product creation errors:", productData.data.productCreate.userErrors);
+        AppLogger.error("Product creation failed", { component: "app.bundles.cart-transform", operation: "clone-bundle" }, { errors: productData.data.productCreate.userErrors });
         return json({ error: 'Failed to create bundle product in Shopify' }, { status: 500 });
       }
 
@@ -138,6 +140,9 @@ export async function action({ request }: ActionFunctionArgs) {
           status: 'draft',
           active: false,
           shopifyProductId: shopifyProductId,
+          templateName: originalBundle.templateName,
+          settings: originalBundle.settings as any,
+          matching: originalBundle.matching as any,
         },
       });
 
@@ -148,11 +153,18 @@ export async function action({ request }: ActionFunctionArgs) {
             data: {
               bundleId: clonedBundle.id,
               name: step.name,
-              // pageTitle: (step as any).pageTitle, // Non-standard field
               products: step.products || [],
               collections: step.collections || [],
-              // conditions: (step as any).conditions, // Non-standard field
               displayVariantsAsIndividual: step.displayVariantsAsIndividual,
+              icon: step.icon,
+              position: step.position,
+              minQuantity: step.minQuantity,
+              maxQuantity: step.maxQuantity,
+              enabled: step.enabled,
+              productCategory: step.productCategory,
+              conditionType: step.conditionType,
+              conditionOperator: step.conditionOperator,
+              conditionValue: step.conditionValue,
             },
           });
 
@@ -164,11 +176,11 @@ export async function action({ request }: ActionFunctionArgs) {
                   stepId: clonedStep.id,
                   productId: stepProduct.productId,
                   title: stepProduct.title,
-                  // handle: (stepProduct as any).handle, // Non-standard field
-                  // images: (stepProduct as any).images, // Non-standard field
                   variants: stepProduct.variants || [],
-                  // vendor: (stepProduct as any).vendor, // Non-standard field
-                  // productType: stepProduct.productType, // Non-standard field
+                  imageUrl: stepProduct.imageUrl,
+                  minQuantity: stepProduct.minQuantity,
+                  maxQuantity: stepProduct.maxQuantity,
+                  position: stepProduct.position,
                 },
               });
             }
@@ -181,10 +193,13 @@ export async function action({ request }: ActionFunctionArgs) {
         await db.bundlePricing.create({
           data: {
             bundleId: clonedBundle.id,
-            enableDiscount: originalBundle.pricing.enableDiscount,
-            discountMethod: originalBundle.pricing.discountMethod,
+            enabled: originalBundle.pricing.enabled,
+            method: originalBundle.pricing.method,
             rules: originalBundle.pricing.rules || [],
             messages: originalBundle.pricing.messages || [],
+            showFooter: originalBundle.pricing.showFooter,
+            showProgressBar: originalBundle.pricing.showProgressBar,
+            // Don't clone: discountId (Shopify ID), published (should start unpublished)
           },
         });
       }
@@ -196,53 +211,47 @@ export async function action({ request }: ActionFunctionArgs) {
       });
 
     } catch (error) {
-      console.error("Error cloning bundle:", error);
+      AppLogger.error("Failed to clone bundle", { component: "app.bundles.cart-transform", operation: "clone-bundle" }, error);
       return json({ error: 'Failed to clone bundle' }, { status: 500 });
     }
   }
 
   if (intent === "deleteBundle") {
     const bundleId = formData.get("bundleId") as string;
-    
+
     try {
-      // Get the bundle to find the associated Shopify product
+      // Get bundle data before deletion (needed for metafield cleanup)
       const bundle = await db.bundle.findUnique({
         where: { id: bundleId, shopId: shop },
+        include: {
+          steps: {
+            include: {
+              StepProduct: true
+            }
+          }
+        }
       });
 
       if (!bundle) {
         return json({ error: 'Bundle not found' }, { status: 404 });
       }
 
-      // Delete the associated Shopify product first (if it exists)
-      if (bundle.shopifyProductId) {
-        try {
-          const DELETE_PRODUCT = `
-            mutation DeleteProduct($id: ID!) {
-              productDelete(input: {id: $id}) {
-                deletedProductId
-                userErrors {
-                  field
-                  message
-                }
-              }
-            }
-          `;
-          
-          const response = await admin.graphql(DELETE_PRODUCT, {
-            variables: {
-              id: bundle.shopifyProductId
-            }
-          });
+      // Collect component product IDs for metafield cleanup
+      const componentProductIds = Array.from(new Set(
+        bundle.steps
+          .flatMap(step => step.StepProduct || [])
+          .map(sp => sp.productId)
+          .filter(Boolean)
+      ));
 
-          const data = await response.json();
-          if (data.data?.productDelete?.userErrors?.length > 0) {
-            console.error("Error deleting Shopify product:", data.data.productDelete.userErrors);
-          } else {
-          }
-        } catch (error) {
-          console.error("Failed to delete Shopify product:", error);
-        }
+      // Clean up metafields BEFORE deleting from database
+      if (bundle.shopifyProductId) {
+        await MetafieldCleanupService.cleanupBundleMetafields(
+          admin,
+          bundleId,
+          bundle.shopifyProductId,
+          componentProductIds
+        );
       }
 
       // Delete the bundle from database (cascade will handle related records)
@@ -250,13 +259,16 @@ export async function action({ request }: ActionFunctionArgs) {
         where: { id: bundleId, shopId: shop },
       });
 
-      return json({ 
-        success: true, 
-        message: 'Bundle deleted successfully' 
+      AppLogger.info("Bundle deleted successfully",
+        { component: "app.bundles.cart-transform", operation: "delete-bundle", bundleId });
+
+      return json({
+        success: true,
+        message: 'Bundle deleted successfully'
       });
 
     } catch (error) {
-      console.error("Error deleting bundle:", error);
+      AppLogger.error("Failed to delete bundle", { component: "app.bundles.cart-transform", operation: "delete-bundle" }, error);
       return json({ error: 'Failed to delete bundle' }, { status: 500 });
     }
   }
@@ -311,16 +323,16 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     const productData = await productResponse.json();
-    
+
     if (productData.data?.productCreate?.userErrors?.length > 0) {
-      console.error("Product creation errors:", productData.data.productCreate.userErrors);
+      AppLogger.error("Product creation failed", { component: "app.bundles.cart-transform", operation: "create-bundle" }, { errors: productData.data.productCreate.userErrors });
       return json({ error: 'Failed to create bundle product in Shopify' }, { status: 500 });
     }
 
     const shopifyProductId = productData.data?.productCreate?.product?.id;
-    
+
     if (!shopifyProductId) {
-      console.error("No product ID returned from Shopify");
+      AppLogger.error("No product ID returned from Shopify", { component: "app.bundles.cart-transform", operation: "create-bundle" });
       return json({ error: 'Failed to get product ID from Shopify' }, { status: 500 });
     }
 
@@ -347,7 +359,7 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
   } catch (error) {
-    console.error("Error creating cart transform bundle:", error);
+    AppLogger.error("Failed to create cart transform bundle", { component: "app.bundles.cart-transform", operation: "create-bundle" }, error);
     return json({ error: 'Failed to create cart transform bundle' }, { status: 500 });
   }
 }
@@ -419,7 +431,7 @@ export default function CartTransformBundles() {
   }, [fetcher]);
 
   const handleDeleteBundle = useCallback((bundleId: string) => {
-    if (confirm("Are you sure you want to delete this bundle? This action cannot be undone.")) {
+    if (confirm("⚠️ PERMANENTLY DELETE this bundle?\n\nThis action CANNOT be undone!\n\nThis will delete:\n• Bundle configuration & all steps\n• All discount rules\n• Component associations\n\nThis will NOT delete:\n• The Shopify product (delete manually if needed)\n• Analytics data")) {
       const formData = new FormData();
       formData.append("intent", "deleteBundle");
       formData.append("bundleId", bundleId);
@@ -433,7 +445,7 @@ export default function CartTransformBundles() {
       {bundle.status}
     </Badge>,
     bundle.steps.length,
-    bundle.pricing?.enableDiscount ? "Enabled" : "Disabled",
+    bundle.pricing?.enabled ? "Enabled" : "Disabled",
     bundle.createdAt ? new Date(bundle.createdAt).toLocaleDateString() : "",
     <ButtonGroup key={`actions-${bundle.id}`}>
       <Button 

@@ -83,8 +83,11 @@
 .step-box {
   border: 2px dashed #ccc;
   border-radius: 12px;
-  width: var(--step-box-size, 150px);
-  height: var(--step-box-size, 150px);
+  width: 100%;
+  max-width: var(--step-box-size, 150px);
+  height: auto;
+  min-height: var(--step-box-size, 150px);
+  aspect-ratio: 1 / 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -95,8 +98,8 @@
   position: relative;
   background-color: #fafafa;
   box-sizing: border-box;
-  padding: var(--step-card-spacing, 15px);
-  margin: var(--step-card-spacing, 15px);
+  padding: 12px;
+  margin: 0;
 }
 
 .step-box:hover {

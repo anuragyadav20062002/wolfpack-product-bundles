@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { AppLogger } from "../lib/logger";
 
 /**
  * Server-side hosting route for the full bundle widget JavaScript
@@ -60,7 +61,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     });
   } catch (error) {
-    console.error("Error serving bundle widget:", error);
+    AppLogger.error("Error serving bundle widget", { component: "assets.bundle-widget-full", operation: "loader" }, error);
 
     // Return a fallback error response
     return new Response(

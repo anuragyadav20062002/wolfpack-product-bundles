@@ -419,7 +419,7 @@ export async function action({ request }: ActionFunctionArgs) {
             id: bundle.id,
             name: bundle.name,
             shopifyProductId: bundle.shopifyProductId,
-            isolation: bundle.isolation
+            settings: bundle.settings
           },
           message: isValid ? "Bundle is valid for product" : "Bundle should not show on this product"
         });

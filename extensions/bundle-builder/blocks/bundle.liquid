@@ -450,7 +450,8 @@
   // This is much faster than shop-level metafields and naturally isolated
   if (!window.allBundlesData) {
     // Primary source: product's bundle_config metafield
-    const productBundleConfig = {{ product.metafields['$app'].bundle_config.value | json }};
+    // Note: For json metafields, access directly without .value
+    const productBundleConfig = {{ product.metafields['$app'].bundle_config | json }};
 
     // Set as allBundlesData object (widget expects this name)
     // Create an object with the bundle ID as key for compatibility

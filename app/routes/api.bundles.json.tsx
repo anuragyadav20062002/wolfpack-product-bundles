@@ -32,7 +32,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     // Format bundles for theme extension (already filtered for active)
 
-    const bundleData = {};
+    const bundleData: Record<string, any> = {};
     bundles.forEach(bundle => {
       bundleData[bundle.id] = {
         id: bundle.id,
@@ -42,8 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         shopifyProductId: bundle.shopifyProductId,
         steps: bundle.steps || [],
         pricing: bundle.pricing || {},
-        matching: bundle.matching || {},
-        isolation: bundle.isolation || {}
+        matching: bundle.matching || {}
       };
     });
 

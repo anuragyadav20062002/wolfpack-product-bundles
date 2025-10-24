@@ -4,6 +4,8 @@
  * Note: Shopify restricts programmatic theme file creation
  */
 
+import { AppLogger } from "../lib/logger";
+
 export class ThemeTemplateService {
   private admin: any;
   private session: any;
@@ -25,11 +27,11 @@ export class ThemeTemplateService {
     error?: string;
   }> {
     try {
-      console.log(`🎨 [THEME_TEMPLATE] Ensuring template for product: ${productHandle}`);
+      AppLogger.info('Ensuring template for product', { component: 'theme-template', operation: 'ensure-template' }, { productHandle });
 
       // Shopify restricts programmatic theme file creation
       // Return success with theme app extension instructions
-      console.log(`ℹ️ [THEME_TEMPLATE] Shopify restricts theme file creation - using Theme App Extension`);
+      AppLogger.info('Shopify restricts theme file creation - using Theme App Extension', { component: 'theme-template' });
 
       return {
         success: true,
@@ -39,7 +41,7 @@ export class ThemeTemplateService {
       };
 
     } catch (error) {
-      console.error(`🔥 [THEME_TEMPLATE] Error ensuring template for ${productHandle}:`, error);
+      AppLogger.error('Error ensuring template', { component: 'theme-template', operation: 'ensure-template' }, error);
       return {
         success: false,
         created: false,
@@ -56,7 +58,7 @@ export class ThemeTemplateService {
       // Since we use theme app extensions, templates are always "available"
       return true;
     } catch (error) {
-      console.error(`🔥 [THEME_TEMPLATE] Error checking template existence:`, error);
+      AppLogger.error('Error checking template existence', { component: 'theme-template', operation: 'template-exists' }, error);
       return false;
     }
   }

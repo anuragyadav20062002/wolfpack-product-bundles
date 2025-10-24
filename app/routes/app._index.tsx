@@ -11,6 +11,7 @@ import {
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { CartIcon } from "@shopify/polaris-icons";
+import { AppLogger } from "../lib/logger";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { admin } = await authenticate.admin(request);
@@ -33,7 +34,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const shopData = await shopResponse.json();
 
       if (!shopData.data?.shop?.id) {
-        console.error('❌ [APP_INIT] Failed to get shop global ID');
+        AppLogger.error("Failed to get shop global ID", { component: "app._index", operation: "sync-app-url" });
         return json({ message: "Welcome to Bundle Builder" });
       }
 
@@ -72,12 +73,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const data = await response.json();
 
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-        console.error('❌ [APP_INIT] Metafield set error:', data.data.metafieldsSet.userErrors);
+        AppLogger.error("Metafield set error", { component: "app._index", operation: "sync-app-url" }, { errors: data.data.metafieldsSet.userErrors });
       } else {
-        console.log(`✅ [APP_INIT] Synced app URL to shop metafield: ${appUrl}`);
+        AppLogger.info("Synced app URL to shop metafield", { component: "app._index", operation: "sync-app-url", appUrl });
       }
     } catch (error) {
-      console.error('❌ [APP_INIT] Failed to sync app URL to metafield:', error);
+      AppLogger.error("Failed to sync app URL to metafield", { component: "app._index", operation: "sync-app-url" }, error);
     }
   }
 
