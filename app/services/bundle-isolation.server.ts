@@ -36,41 +36,18 @@ export class BundleIsolationService {
       };
 
 
-      // Helper function to transform pricing rules to standardized format
-      // Standardized fields used by both widget and cart transform
-      const transformPricingRules = (rules: any[], discountMethod: string) => {
+      // No transformation needed - pass through standardized nested structure
+      // Rules should already be in the format: { id, condition: { type, operator, value }, discount: { method, value } }
+      const ensureStandardizedRules = (rules: any[]) => {
         if (!rules || !Array.isArray(rules)) return [];
 
-        AppLogger.debug(`Transforming pricing rules`, { 
-          component: 'isolation', 
-          operation: 'transform-rules'
-        }, { ruleCount: rules.length, discountMethod });
+        AppLogger.debug(`Validating pricing rules structure`, {
+          component: 'isolation',
+          operation: 'validate-rules'
+        }, { ruleCount: rules.length });
 
-        return rules.map((rule: any) => {
-          // Create clean rule with standardized field names only
-          const transformedRule: any = {
-            id: rule.id,
-            condition: rule.condition || 'gte',
-            value: rule.numberOfProducts || rule.value || 0,
-          };
-
-          // Handle different discount methods with standardized field names
-          if (discountMethod === 'fixed_bundle_price') {
-            // For fixed bundle price, use 'price' and 'fixedBundlePrice' fields
-            const priceValue = rule.fixedBundlePrice || 0;
-            transformedRule.price = priceValue;
-            transformedRule.fixedBundlePrice = priceValue;
-          } else {
-            // For fixed_amount_off and percentage_off, use 'discountValue' field
-            transformedRule.discountValue = rule.discountValue || "0";
-          }
-
-          AppLogger.debug('Transformed pricing rule', { 
-            component: 'isolation', 
-            operation: 'transform-rules'
-          }, { original: rule, transformed: transformedRule });
-          return transformedRule;
-        });
+        // Simply pass through - validation happens in pricing types
+        return rules;
       };
 
       const steps = bundleConfig.steps.map((step: any) => ({
@@ -99,13 +76,13 @@ export class BundleIsolationService {
         bundleParentVariantId: bundleConfig.bundleParentVariantId || null,
         steps: steps,
         pricing: bundleConfig.pricing ? {
-          enabled: bundleConfig.pricing.enableDiscount, // Widget checks this field
-          method: bundleConfig.pricing.discountMethod,
-          rules: transformPricingRules(
-            safeJsonParse(bundleConfig.pricing.rules, []),
-            bundleConfig.pricing.discountMethod
+          enabled: bundleConfig.pricing.enabled,
+          method: bundleConfig.pricing.method,
+          rules: ensureStandardizedRules(
+            safeJsonParse(bundleConfig.pricing.rules, [])
           ),
           showFooter: bundleConfig.pricing.showFooter,
+          showProgressBar: bundleConfig.pricing.showProgressBar,
           messages: {
             ...safeJsonParse(bundleConfig.pricing.messages, {}),
             showDiscountDisplay: safeJsonParse(bundleConfig.pricing.messages, {}).showDiscountDisplay !== false // Default to true

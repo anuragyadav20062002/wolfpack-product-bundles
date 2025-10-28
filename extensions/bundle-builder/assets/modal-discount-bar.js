@@ -210,7 +210,7 @@ function updateModalDiscountBar(selectedBundle, totalPrice, selectedQuantity, fo
 
     const minRule = sortedRules[0];
     const minQuantity = minRule.value || 0;
-    const discountMethod = pricing.method || pricing.discountMethod;
+    const discountMethod = pricing.method;
 
     // Get discount value using helper function
     const discountValue = getDiscountValueFromRule(minRule, discountMethod);

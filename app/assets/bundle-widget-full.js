@@ -5,6 +5,7 @@
  * 
  * @version 3.0.0
  * @author Wolfpack Team
+ * 
  */
 
 'use strict';
@@ -56,38 +57,6 @@ const BUNDLE_WIDGET = {
 };
 
 // ============================================================================
-// PROFESSIONAL LOGGING SYSTEM
-// ============================================================================
-
-class BundleLogger {
-  static log(level, category, message, data = null) {
-    const timestamp = new Date().toISOString();
-    const prefix = `${BUNDLE_WIDGET.LOG_PREFIX} [${level.toUpperCase()}] [${category}]`;
-
-    if (data !== null) {
-      console.log(`${prefix} ${message}`, data);
-    } else {
-      console.log(`${prefix} ${message}`);
-    }
-  }
-
-  static info(category, message, data = null) {
-    this.log('info', category, message, data);
-  }
-
-  static warn(category, message, data = null) {
-    this.log('warn', category, message, data);
-  }
-
-  static error(category, message, data = null) {
-    this.log('error', category, message, data);
-  }
-
-  static debug(category, message, data = null) {
-    this.log('debug', category, message, data);
-  }
-}
-// ============================================================================
 // CURRENCY MANAGEMENT SYSTEM
 // ============================================================================
 
@@ -101,7 +70,6 @@ class CurrencyManager {
   }
 
   static detectCustomerCurrency() {
-    BundleLogger.debug('CURRENCY', 'Detecting customer currency');
 
     // Priority 1: Shopify Markets active currency
     if (window.Shopify?.currency?.active) {
@@ -110,7 +78,6 @@ class CurrencyManager {
         format: window.Shopify.currency.format || window.shopMoneyFormat,
         rate: window.Shopify.currency.rate || 1
       };
-      BundleLogger.info('CURRENCY', 'Using Shopify Markets currency', currency);
       return currency;
     }
 
@@ -122,7 +89,6 @@ class CurrencyManager {
         format: window.shopMoneyFormat,
         rate: 1
       };
-      BundleLogger.info('CURRENCY', 'Using currency from cookie', currency);
       return currency;
     }
 
@@ -135,7 +101,6 @@ class CurrencyManager {
         format: window.shopMoneyFormat,
         rate: 1
       };
-      BundleLogger.info('CURRENCY', 'Using currency from URL parameter', currency);
       return currency;
     }
 
@@ -148,11 +113,9 @@ class CurrencyManager {
           format: window.shopMoneyFormat,
           rate: 1
         };
-        BundleLogger.info('CURRENCY', 'Using currency from localStorage', currency);
         return currency;
       }
     } catch (e) {
-      BundleLogger.warn('CURRENCY', 'localStorage not available', e);
     }
 
     // Fallback: Shop base currency
@@ -161,7 +124,6 @@ class CurrencyManager {
       format: window.shopMoneyFormat,
       rate: 1
     };
-    BundleLogger.info('CURRENCY', 'Using fallback shop currency', fallbackCurrency);
     return fallbackCurrency;
   }
 
@@ -184,7 +146,6 @@ class CurrencyManager {
       try {
         return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
-        BundleLogger.warn('CURRENCY', 'Shopify conversion failed, using rate', { error: e, rate });
       }
     }
 
@@ -242,33 +203,53 @@ class CurrencyManager {
 
 class BundleDataManager {
   static validateBundleData(bundle) {
+    console.log('[BUNDLE_VALIDATION] Validating bundle:', bundle);
+
     if (!bundle || typeof bundle !== 'object') {
-      BundleLogger.error('VALIDATION', 'Invalid bundle data - not an object', bundle);
+      console.warn('[BUNDLE_VALIDATION] ❌ Bundle is not an object');
       return false;
     }
 
     const required = ['id', 'name', 'status', 'bundleType', 'steps'];
     for (const field of required) {
-      if (!bundle[field]) {
-        BundleLogger.error('VALIDATION', `Missing required field: ${field}`, bundle);
+      if (bundle[field] === undefined || bundle[field] === null) {
+        console.warn(`[BUNDLE_VALIDATION] ❌ Missing required field: ${field}`, {
+          bundleId: bundle.id,
+          bundleName: bundle.name,
+          hasField: bundle.hasOwnProperty(field),
+          fieldValue: bundle[field]
+        });
         return false;
       }
     }
 
-    if (!Array.isArray(bundle.steps) || bundle.steps.length === 0) {
-      BundleLogger.error('VALIDATION', 'Bundle must have at least one step', bundle);
+    if (!Array.isArray(bundle.steps)) {
+      console.warn('[BUNDLE_VALIDATION] ❌ steps is not an array', {
+        bundleId: bundle.id,
+        stepsType: typeof bundle.steps,
+        stepsValue: bundle.steps
+      });
       return false;
     }
 
-    BundleLogger.debug('VALIDATION', 'Bundle data validation passed', { bundleId: bundle.id, bundleName: bundle.name });
+    if (bundle.steps.length === 0) {
+      console.warn('[BUNDLE_VALIDATION] ❌ steps array is empty', {
+        bundleId: bundle.id
+      });
+      return false;
+    }
+
+    console.log('[BUNDLE_VALIDATION] ✅ Bundle is valid', {
+      bundleId: bundle.id,
+      bundleName: bundle.name,
+      stepsCount: bundle.steps.length
+    });
     return true;
   }
 
   static selectBundle(bundlesData, config) {
-    BundleLogger.info('SELECTION', 'Starting bundle selection process', config);
 
     if (!bundlesData || typeof bundlesData !== 'object') {
-      BundleLogger.error('SELECTION', 'No bundle data available');
       return null;
     }
 
@@ -277,24 +258,19 @@ class BundleDataManager {
     );
 
     if (bundles.length === 0) {
-      BundleLogger.warn('SELECTION', 'No active bundles found');
       return null;
     }
-
-    BundleLogger.info('SELECTION', `Found ${bundles.length} active bundles`);
 
     // Selection priority for cart transform bundles
     for (const bundle of bundles) {
       if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.CART_TRANSFORM) {
         // Priority 1: Manual bundle ID
         if (config.bundleId && bundle.id === config.bundleId) {
-          BundleLogger.info('SELECTION', 'Selected bundle by manual ID', { bundleId: config.bundleId, bundleName: bundle.name });
           return bundle;
         }
 
         // Priority 2: Container product bundle ID
         if (config.isContainerProduct && config.containerBundleId && bundle.id === config.containerBundleId) {
-          BundleLogger.info('SELECTION', 'Selected bundle by container ID', { bundleId: config.containerBundleId, bundleName: bundle.name });
           return bundle;
         }
 
@@ -304,14 +280,12 @@ class BundleDataManager {
           const productGid = `gid://shopify/Product/${config.currentProductId}`;
 
           if (bundle.shopifyProductId === productGid || bundle.shopifyProductId === productIdStr) {
-            BundleLogger.info('SELECTION', 'Selected bundle by product ID match', { productId: config.currentProductId, bundleName: bundle.name });
             return bundle;
           }
 
           // Extract numeric ID from GID for comparison
           const bundleProductId = bundle.shopifyProductId ? bundle.shopifyProductId.split('/').pop() : null;
           if (bundleProductId === productIdStr) {
-            BundleLogger.info('SELECTION', 'Selected bundle by extracted product ID match', { productId: config.currentProductId, bundleName: bundle.name });
             return bundle;
           }
         }
@@ -319,7 +293,6 @@ class BundleDataManager {
         // Priority 4: Theme editor context (show any bundle)
         const isThemeEditor = this.isThemeEditorContext();
         if (isThemeEditor) {
-          BundleLogger.info('SELECTION', 'Selected bundle in theme editor context', { bundleName: bundle.name });
           return bundle;
         }
       }
@@ -328,13 +301,11 @@ class BundleDataManager {
       if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.DISCOUNT_FUNCTION) {
         // Priority 1: Manual bundle ID
         if (config.bundleId && bundle.id === config.bundleId) {
-          BundleLogger.info('SELECTION', 'Selected discount function bundle by manual ID', { bundleId: config.bundleId, bundleName: bundle.name });
           return bundle;
         }
 
         // Priority 2: Product/Collection matching
         if (this.matchesDiscountFunctionBundle(bundle, config)) {
-          BundleLogger.info('SELECTION', 'Selected discount function bundle by matching', { bundleName: bundle.name });
           return bundle;
         }
       }
@@ -343,11 +314,8 @@ class BundleDataManager {
     // Fallback: First active bundle
     const fallbackBundle = bundles[0];
     if (fallbackBundle) {
-      BundleLogger.info('SELECTION', 'Using fallback bundle (first active)', { bundleName: fallbackBundle.name });
       return fallbackBundle;
     }
-
-    BundleLogger.warn('SELECTION', 'No suitable bundle found');
     return null;
   }
 
@@ -359,7 +327,6 @@ class BundleDataManager {
         try {
           parsedMatching = JSON.parse(bundle.matching);
         } catch (e) {
-          BundleLogger.error('SELECTION', 'Failed to parse bundle matching data', { bundleId: bundle.id, error: e });
           return false;
         }
       } else if (typeof bundle.matching === 'object') {
@@ -368,7 +335,6 @@ class BundleDataManager {
     }
 
     if (!parsedMatching) {
-      BundleLogger.debug('SELECTION', 'No matching data for discount function bundle', { bundleId: bundle.id });
       return false;
     }
 
@@ -391,8 +357,6 @@ class BundleDataManager {
           productCollection.id.toString() === bundleCollectionIdFromGid
         );
       });
-
-    BundleLogger.debug('SELECTION', 'Discount function bundle matching results', {
       bundleId: bundle.id,
       productMatches,
       collectionMatches
@@ -434,8 +398,6 @@ class PricingCalculator {
     let totalPrice = 0;
     let totalQuantity = 0;
 
-    BundleLogger.debug('PRICING', 'Calculating bundle total', { selectedProducts, stepProductData });
-
     selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -445,8 +407,6 @@ class PricingCalculator {
           const price = parseFloat(product.price) || 0;
           totalPrice += price * quantity;
           totalQuantity += quantity;
-
-          BundleLogger.debug('PRICING', 'Added product to total', {
             variantId,
             quantity,
             price,
@@ -455,13 +415,10 @@ class PricingCalculator {
         }
       });
     });
-
-    BundleLogger.info('PRICING', 'Bundle total calculated', { totalPrice, totalQuantity });
     return { totalPrice, totalQuantity };
   }
 
   static calculateDiscount(bundle, totalPrice, totalQuantity) {
-    BundleLogger.debug('PRICING', 'Calculating discount', {
       bundleId: bundle?.id,
       totalPrice,
       totalQuantity,
@@ -470,7 +427,6 @@ class PricingCalculator {
     });
 
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
-      BundleLogger.debug('PRICING', 'No discount - pricing disabled or no rules');
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -503,8 +459,6 @@ class PricingCalculator {
         conditionMet = this.checkCondition(totalQuantity, rule.condition, ruleValue);
         comparisonText = `${totalQuantity} items ${rule.condition || 'gte'} ${ruleValue} items`;
       }
-
-      BundleLogger.info('PRICING', 'Rule evaluation with detailed comparison', {
         ruleId: rule.id,
         conditionType,
         condition: rule.condition || 'gte',
@@ -518,7 +472,6 @@ class PricingCalculator {
       if (conditionMet) {
         if (!bestRule || ruleValue > (bestRule.value || 0)) {
           bestRule = rule;
-          BundleLogger.info('PRICING', 'New best rule selected', { 
             ruleId: rule.id,
             conditionType,
             qualifiesForDiscount: true
@@ -528,7 +481,6 @@ class PricingCalculator {
     }
 
     if (!bestRule) {
-      BundleLogger.debug('PRICING', 'No applicable discount rule found');
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -550,8 +502,6 @@ class PricingCalculator {
     } else {
       discountValue = parseFloat(bestRule.discountValue || 0);
     }
-
-    BundleLogger.info('PRICING', 'Discount calculation with decimal support', {
       discountMethod,
       discountValue,
       totalPriceInCents: totalPrice,
@@ -575,7 +525,6 @@ class PricingCalculator {
         discountAmount = Math.max(0, totalPrice - fixedPriceInCents);
         break;
       default:
-        BundleLogger.error('PRICING', 'Unknown discount method', { discountMethod });
         discountAmount = 0;
     }
 
@@ -591,8 +540,6 @@ class PricingCalculator {
       applicableRule: bestRule,
       discountMethod
     };
-
-    BundleLogger.info('PRICING', 'Discount calculated', result);
     return result;
   }
 
@@ -657,7 +604,6 @@ class PricingCalculator {
 
       // Return the first rule that is not satisfied (next target)
       if (!isRuleSatisfied) {
-        BundleLogger.debug('PRICING', 'Found next discount rule', {
           ruleId: rule.id,
           conditionType,
           ruleValue,
@@ -668,8 +614,6 @@ class PricingCalculator {
         return rule;
       }
     }
-
-    BundleLogger.debug('PRICING', 'All discount rules satisfied');
     return null; // All rules satisfied
   }
 }
@@ -710,8 +654,6 @@ class ToastManager {
         }
       }, duration);
     }
-
-    BundleLogger.info('TOAST', `Showed ${type} toast: ${message}`);
   }
 
   static ensureStyles() {
@@ -809,13 +751,10 @@ class TemplateManager {
       result = result.replace(singleBrace, value);
       result = result.replace(doubleBrace, value);
     });
-
-    BundleLogger.debug('TEMPLATE', 'Variables replaced', { template, variables, result });
     return result;
   }
 
   static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
-    BundleLogger.debug('VARIABLES', 'Creating discount variables', {
       bundleId: bundle.id,
       totalPrice,
       totalQuantity,
@@ -827,7 +766,6 @@ class TemplateManager {
     const ruleToUse = discountInfo.applicableRule || nextRule;
 
     if (!ruleToUse) {
-      BundleLogger.debug('VARIABLES', 'No applicable rule found, using empty variables');
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
     }
 
@@ -843,8 +781,6 @@ class TemplateManager {
     } else {
       rawDiscountValue = ruleToUse.discountValue;
     }
-
-    BundleLogger.debug('VARIABLES', 'Rule analysis', {
       conditionType,
       targetValue,
       discountMethod,
@@ -896,8 +832,6 @@ class TemplateManager {
       // Status
       isQualified: discountInfo.qualifiesForDiscount ? 'true' : 'false'
     };
-
-    BundleLogger.info('VARIABLES', 'Discount variables created successfully', {
       conditionType,
       conditionText: conditionData.conditionText,
       discountText: discountData.discountText,
@@ -993,7 +927,6 @@ class TemplateManager {
         };
         
       default:
-        BundleLogger.warn('VARIABLES', 'Unknown discount method', { discountMethod });
         return {
           discountText: 'discount'
         };
@@ -1048,8 +981,6 @@ class BundleWidget {
     this.config = {};
     this.elements = {};
 
-    BundleLogger.info('INIT', 'Creating new bundle widget instance', { containerId: containerElement.id });
-
     this.init();
   }
 
@@ -1059,11 +990,9 @@ class BundleWidget {
 
   init() {
     try {
-      BundleLogger.info('INIT', 'Starting widget initialization');
 
       // Check if already initialized
       if (this.container.dataset.initialized === 'true') {
-        BundleLogger.warn('INIT', 'Widget already initialized, skipping');
         return;
       }
 
@@ -1077,7 +1006,6 @@ class BundleWidget {
       this.selectBundle();
 
       if (!this.selectedBundle) {
-        BundleLogger.warn('INIT', 'No bundle selected, showing fallback UI');
         this.showFallbackUI();
         return;
       }
@@ -1097,15 +1025,12 @@ class BundleWidget {
       // Mark as initialized
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
-
-      BundleLogger.info('INIT', 'Widget initialization completed successfully', {
         bundleName: this.selectedBundle.name,
         bundleType: this.selectedBundle.bundleType,
         stepsCount: this.selectedBundle.steps.length
       });
 
     } catch (error) {
-      BundleLogger.error('INIT', 'Widget initialization failed', error);
       this.showErrorUI(error);
     }
   }
@@ -1128,8 +1053,6 @@ class BundleWidget {
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections
     };
-
-    BundleLogger.debug('INIT', 'Configuration parsed', this.config);
   }
 
   normalizeDiscountTemplate(template) {
@@ -1152,7 +1075,6 @@ class BundleWidget {
     const hasOldVariables = oldVariablePatterns.some(pattern => template.includes(pattern));
     
     if (hasOldVariables) {
-      BundleLogger.info('CONFIG', 'Normalizing legacy discount template to modern format', {
         oldTemplate: template,
         newTemplate: modernTemplate
       });
@@ -1173,7 +1095,6 @@ class BundleWidget {
     
     // Check for old patterns in success messages
     if (template.includes('best offer on your bundle') || template.includes('🎉 you have gotten')) {
-      BundleLogger.info('CONFIG', 'Normalizing legacy success template to modern format', {
         oldTemplate: template,
         newTemplate: modernTemplate
       });
@@ -1184,42 +1105,64 @@ class BundleWidget {
   }
 
   loadBundleData() {
+    console.log('[WIDGET_INIT] 🔍 Starting loadBundleData...');
     let bundleData = null;
 
     // Source 1: data-bundle-config attribute
+    console.log('[WIDGET_INIT] Checking data-bundle-config attribute:', {
+      exists: !!this.container.dataset.bundleConfig,
+      value: this.container.dataset.bundleConfig
+    });
+
     if (this.container.dataset.bundleConfig) {
       try {
         const singleBundle = JSON.parse(this.container.dataset.bundleConfig);
         bundleData = { [singleBundle.id]: singleBundle };
-        BundleLogger.info('DATA', 'Loaded bundle data from data-bundle-config');
+        console.log('[WIDGET_INIT] ✅ Loaded from data-bundle-config:', bundleData);
       } catch (error) {
-        BundleLogger.error('DATA', 'Failed to parse data-bundle-config', error);
+        console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error);
       }
     }
 
     // Source 2: window.allBundlesData
+    console.log('[WIDGET_INIT] Checking window.allBundlesData:', {
+      exists: !!window.allBundlesData,
+      value: window.allBundlesData
+    });
+
     if (!bundleData && window.allBundlesData) {
       bundleData = window.allBundlesData;
-      BundleLogger.info('DATA', 'Loaded bundle data from window.allBundlesData');
+      console.log('[WIDGET_INIT] ✅ Loaded from window.allBundlesData:', bundleData);
     }
 
     if (!bundleData) {
+      console.error('[WIDGET_INIT] ❌ No bundle data available from any source!');
       throw new Error('No bundle data available');
     }
 
+    console.log('[WIDGET_INIT] ✅ Final bundleData:', bundleData);
     this.bundleData = bundleData;
-    BundleLogger.debug('DATA', 'Bundle data loaded', { bundleCount: Object.keys(bundleData).length });
   }
 
   selectBundle() {
+    console.log('[WIDGET_INIT] 🔍 Selecting bundle...', {
+      bundleData: this.bundleData,
+      config: this.config
+    });
+
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
 
     if (this.selectedBundle) {
-      BundleLogger.info('SELECTION', 'Bundle selected successfully', {
+      console.log('[WIDGET_INIT] ✅ Bundle selected:', {
         id: this.selectedBundle.id,
         name: this.selectedBundle.name,
-        type: this.selectedBundle.bundleType
+        type: this.selectedBundle.bundleType,
+        status: this.selectedBundle.status,
+        steps: this.selectedBundle.steps,
+        stepsCount: this.selectedBundle.steps?.length
       });
+    } else {
+      console.error('[WIDGET_INIT] ❌ No bundle selected! Bundle selection returned null.');
     }
   }
 
@@ -1231,8 +1174,6 @@ class BundleWidget {
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
-
-    BundleLogger.debug('DATA', 'Data structures initialized', {
       stepsCount,
       selectedProductsLength: this.selectedProducts.length,
       stepProductDataLength: this.stepProductData.length
@@ -1266,8 +1207,6 @@ class BundleWidget {
     if (!this.container.querySelector('.add-bundle-to-cart')) {
       this.container.appendChild(this.elements.addToCartButton);
     }
-
-    BundleLogger.debug('DOM', 'DOM elements setup completed');
   }
 
   createHeader() {
@@ -1363,7 +1302,6 @@ class BundleWidget {
       `;
 
       document.body.appendChild(modal);
-      BundleLogger.debug('DOM', 'Modal created and appended to body');
     }
 
     return modal;
@@ -1377,8 +1315,6 @@ class BundleWidget {
     this.renderSteps();
     this.renderFooter();
     this.updateAddToCartButton();
-
-    BundleLogger.debug('RENDER', 'UI rendering completed');
   }
 
   renderHeader() {
@@ -1391,19 +1327,29 @@ class BundleWidget {
   }
 
   renderSteps() {
-    BundleLogger.info('RENDER', 'Rendering bundle steps', { stepsCount: this.selectedBundle.steps.length });
+    console.log('[WIDGET_RENDER] 🎨 renderSteps called');
+    console.log('[WIDGET_RENDER] Steps container:', this.elements.stepsContainer);
+    console.log('[WIDGET_RENDER] Selected bundle:', this.selectedBundle);
+    console.log('[WIDGET_RENDER] Steps to render:', this.selectedBundle?.steps);
 
     // Clear existing steps
     this.elements.stepsContainer.innerHTML = '';
 
+    if (!this.selectedBundle || !this.selectedBundle.steps) {
+      console.error('[WIDGET_RENDER] ❌ No bundle or steps to render!');
+      return;
+    }
+
+    console.log(`[WIDGET_RENDER] Rendering ${this.selectedBundle.steps.length} steps...`);
+
     this.selectedBundle.steps.forEach((step, index) => {
+      console.log(`[WIDGET_RENDER] Creating step ${index + 1}:`, step);
       const stepElement = this.createStepElement(step, index);
       this.elements.stepsContainer.appendChild(stepElement);
-
-      BundleLogger.debug('RENDER', `Step ${index + 1} rendered`, { stepName: step.name });
+      console.log(`[WIDGET_RENDER] ✅ Step ${index + 1} appended to container`);
     });
 
-    BundleLogger.info('RENDER', 'All steps rendered successfully');
+    console.log('[WIDGET_RENDER] ✅ All steps rendered. Container HTML:', this.elements.stepsContainer.innerHTML.substring(0, 200));
   }
 
   createStepElement(step, index) {
@@ -1558,8 +1504,6 @@ class BundleWidget {
         this.config.discountTextTemplate,
         variables
       );
-      
-      BundleLogger.debug('FOOTER', 'Discount message rendered', {
         template: this.config.discountTextTemplate,
         variables: variables,
         result: progressMessage
@@ -1601,8 +1545,6 @@ class BundleWidget {
     if (targetQuantitySpan) {
       targetQuantitySpan.textContent = targetValue.toString();
     }
-
-    BundleLogger.debug('FOOTER', 'Footer messaging updated', {
       totalQuantity,
       totalPrice,
       targetValue,
@@ -1654,7 +1596,6 @@ class BundleWidget {
   // ========================================================================
 
   openModal(stepIndex) {
-    BundleLogger.info('MODAL', 'Opening modal for step', { stepIndex, stepName: this.selectedBundle.steps[stepIndex].name });
 
     this.currentStepIndex = stepIndex;
     const step = this.selectedBundle.steps[stepIndex];
@@ -1675,16 +1616,12 @@ class BundleWidget {
       modal.style.display = 'block';
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
-
-      BundleLogger.debug('MODAL', 'Modal opened successfully');
     }).catch(error => {
-      BundleLogger.error('MODAL', 'Failed to load step products', error);
       ToastManager.show('Failed to load products for this step', 'error');
     });
   }
 
   closeModal() {
-    BundleLogger.debug('MODAL', 'Closing modal');
 
     this.elements.modal.style.display = 'none';
     this.elements.modal.classList.remove('active');
@@ -1700,11 +1637,8 @@ class BundleWidget {
     const step = this.selectedBundle.steps[stepIndex];
 
     if (this.stepProductData[stepIndex].length > 0) {
-      BundleLogger.debug('MODAL', 'Step products already loaded', { stepIndex, productsCount: this.stepProductData[stepIndex].length });
       return;
     }
-
-    BundleLogger.info('MODAL', 'Loading products for step', {
       stepIndex,
       stepName: step.name,
       hasProducts: !!step.products,
@@ -1719,12 +1653,10 @@ class BundleWidget {
 
     // Process explicit products from both products and StepProduct arrays
     if (step.products && Array.isArray(step.products) && step.products.length > 0) {
-      BundleLogger.debug('MODAL', 'Adding products from step.products', { count: step.products.length });
       allProducts = allProducts.concat(step.products);
     }
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-      BundleLogger.debug('MODAL', 'Adding products from step.StepProduct', { count: step.StepProduct.length });
       const stepProducts = step.StepProduct.map(sp => ({
         id: sp.productId,
         title: sp.title,
@@ -1737,58 +1669,44 @@ class BundleWidget {
 
     // Process collection products
     if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-      BundleLogger.debug('MODAL', 'Loading products from collections', { collectionsCount: step.collections.length });
 
       const collectionPromises = step.collections.map(async (collection) => {
         if (!collection.handle) {
-          BundleLogger.warn('MODAL', 'Collection missing handle', { collection });
           return [];
         }
 
         try {
-          BundleLogger.debug('MODAL', 'Fetching collection products', { handle: collection.handle });
           const response = await fetch(`/collections/${collection.handle}/products.json?limit=250`);
 
           if (!response.ok) {
-            BundleLogger.warn('MODAL', 'Collection fetch failed', { handle: collection.handle, status: response.status });
             return [];
           }
 
           const data = await response.json();
           const products = data.products || [];
-          BundleLogger.debug('MODAL', 'Collection products loaded', { handle: collection.handle, count: products.length });
           return products;
         } catch (error) {
-          BundleLogger.error('MODAL', 'Failed to fetch collection products', { collectionHandle: collection.handle, error });
           return [];
         }
       });
 
       const collectionProducts = (await Promise.all(collectionPromises)).flat();
-      BundleLogger.debug('MODAL', 'Total collection products loaded', { count: collectionProducts.length });
       allProducts = allProducts.concat(collectionProducts);
     }
 
-    BundleLogger.debug('MODAL', 'Total products before processing', { count: allProducts.length });
-
     // Process and normalize product data
     const processedProducts = this.processProductsForStep(allProducts, step);
-
-    BundleLogger.debug('MODAL', 'Products after processing', { count: processedProducts.length });
 
     // Remove duplicates
     const seen = new Set();
     this.stepProductData[stepIndex] = processedProducts.filter(product => {
       const key = product.variantId || product.id;
       if (seen.has(key)) {
-        BundleLogger.debug('MODAL', 'Removing duplicate product', { key, title: product.title });
         return false;
       }
       seen.add(key);
       return true;
     });
-
-    BundleLogger.info('MODAL', 'Step products loaded successfully', {
       stepIndex,
       stepName: step.name,
       finalCount: this.stepProductData[stepIndex].length,
@@ -1797,7 +1715,6 @@ class BundleWidget {
 
     // If no products found, log detailed debug info
     if (this.stepProductData[stepIndex].length === 0) {
-      BundleLogger.warn('MODAL', 'No products found for step', {
         stepIndex,
         stepName: step.name,
         stepConfig: {
@@ -1889,8 +1806,6 @@ class BundleWidget {
           return;
         }
 
-        BundleLogger.info('MODAL_NAV', `Navigating to step ${index + 1}`, { stepName: step.name });
-
         this.currentStepIndex = index;
 
         // Update modal header
@@ -1915,8 +1830,6 @@ class BundleWidget {
     const products = this.stepProductData[stepIndex];
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
-
-    BundleLogger.debug('MODAL', 'Rendering modal products', { stepIndex, productsCount: products.length });
 
     if (products.length === 0) {
       productGrid.innerHTML = '<p style="text-align: center; padding: 20px;">No products configured for this step.</p>';
@@ -2026,7 +1939,6 @@ class BundleWidget {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
-    BundleLogger.debug('SELECTION', 'Updating product selection', { stepIndex, productId, newQuantity });
 
     const quantity = Math.max(0, newQuantity);
 
@@ -2232,8 +2144,6 @@ class BundleWidget {
       messageText = TemplateManager.replaceVariables(this.config.successMessageTemplate, variables);
     } else {
       messageText = TemplateManager.replaceVariables(this.config.discountTextTemplate, variables);
-      
-      BundleLogger.debug('MODAL_FOOTER', 'Discount message rendered', {
         template: this.config.discountTextTemplate,
         variables: variables,
         result: messageText
@@ -2268,8 +2178,6 @@ class BundleWidget {
     // Apply state class
     footerMessaging.className = `modal-footer-discount-messaging ${messageState}`;
     footerMessaging.style.display = 'flex';
-
-    BundleLogger.debug('MODAL_FOOTER', 'Modal footer messaging updated', {
       messageState,
       progressPercentage,
       totalQuantity,
@@ -2284,7 +2192,6 @@ class BundleWidget {
   // ========================================================================
 
   async addToCart() {
-    BundleLogger.info('CART', 'Starting add to cart process');
 
     try {
       const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
@@ -2306,8 +2213,6 @@ class BundleWidget {
 
       const cartItems = this.buildCartItems();
 
-      BundleLogger.debug('CART', 'Cart items prepared', { itemsCount: cartItems.length, totalQuantity });
-
       // Disable button during request
       this.elements.addToCartButton.disabled = true;
       this.elements.addToCartButton.textContent = 'Adding to Cart...';
@@ -2327,8 +2232,6 @@ class BundleWidget {
 
       const result = await response.json();
 
-      BundleLogger.info('CART', 'Bundle added to cart successfully', { itemsAdded: cartItems.length });
-
       // Show success message and redirect
       ToastManager.show('Bundle added to cart successfully!', 'success');
 
@@ -2337,7 +2240,6 @@ class BundleWidget {
       }, 1000);
 
     } catch (error) {
-      BundleLogger.error('CART', 'Failed to add bundle to cart', error);
       ToastManager.show(`Failed to add bundle to cart: ${error.message}`, 'error');
     } finally {
       // Re-enable button
@@ -2348,8 +2250,6 @@ class BundleWidget {
   buildCartItems() {
     const cartItems = [];
     const bundleInstanceId = this.generateBundleInstanceId();
-
-    BundleLogger.info('CART', 'Building cart items', {
       bundleId: this.selectedBundle.id,
       bundleInstanceId,
       selectedProductsCount: this.selectedProducts.length
@@ -2372,8 +2272,6 @@ class BundleWidget {
             };
             
             cartItems.push(cartItem);
-            
-            BundleLogger.debug('CART', 'Added cart item', {
               variantId,
               quantity,
               productTitle: product.title,
@@ -2384,8 +2282,6 @@ class BundleWidget {
         }
       });
     });
-
-    BundleLogger.info('CART', 'Cart items built successfully', {
       totalItems: cartItems.length,
       bundleInstanceId,
       cartProperties: {
@@ -2421,8 +2317,6 @@ class BundleWidget {
     }
 
     const bundleInstanceId = `${this.selectedBundle.id}_${Math.abs(hash)}`;
-
-    BundleLogger.debug('CART', 'Generated bundle instance ID', {
       bundleId: this.selectedBundle.id,
       itemsSignature,
       bundleInstanceId
@@ -2468,8 +2362,6 @@ class BundleWidget {
         this.closeModal();
       }
     });
-
-    BundleLogger.debug('EVENTS', 'Event listeners attached');
   }
 
   async navigateModal(direction) {
@@ -2478,7 +2370,6 @@ class BundleWidget {
     if (direction < 0 && newStepIndex >= 0) {
       // Previous step
       if (this.validateStep(this.currentStepIndex)) {
-        BundleLogger.info('MODAL_NAV', `Navigating to previous step ${newStepIndex + 1}`);
 
         this.currentStepIndex = newStepIndex;
         const step = this.selectedBundle.steps[newStepIndex];
@@ -2501,7 +2392,6 @@ class BundleWidget {
       if (newStepIndex < this.selectedBundle.steps.length) {
         // Next step
         if (this.validateStep(this.currentStepIndex)) {
-          BundleLogger.info('MODAL_NAV', `Navigating to next step ${newStepIndex + 1}`);
 
           this.currentStepIndex = newStepIndex;
           const step = this.selectedBundle.steps[newStepIndex];
@@ -2574,30 +2464,22 @@ class BundleWidgetManager {
   static instances = new Map();
 
   static initialize() {
-    BundleLogger.info('MANAGER', 'Initializing bundle widget manager');
 
     // Find all bundle widget containers
     const containers = document.querySelectorAll(BUNDLE_WIDGET.SELECTORS.WIDGET_CONTAINER);
-
-    BundleLogger.info('MANAGER', `Found ${containers.length} bundle widget containers`);
 
     containers.forEach(container => {
       if (!this.instances.has(container)) {
         try {
           const widget = new BundleWidget(container);
           this.instances.set(container, widget);
-          BundleLogger.debug('MANAGER', 'Widget instance created', { containerId: container.id });
         } catch (error) {
-          BundleLogger.error('MANAGER', 'Failed to create widget instance', { containerId: container.id, error });
         }
       }
     });
-
-    BundleLogger.info('MANAGER', `Initialized ${this.instances.size} widget instances`);
   }
 
   static reinitialize() {
-    BundleLogger.info('MANAGER', 'Reinitializing all widgets');
 
     // Clear existing instances
     this.instances.clear();
@@ -2617,26 +2499,21 @@ class BundleWidgetManager {
 
 // Legacy function for backward compatibility
 function initializeBundleWidget(containerElement) {
-  BundleLogger.info('LEGACY', 'Legacy initializeBundleWidget called');
 
   if (!containerElement) {
-    BundleLogger.error('LEGACY', 'No container element provided');
     return;
   }
 
   try {
     const widget = new BundleWidget(containerElement);
-    BundleLogger.info('LEGACY', 'Legacy widget initialized successfully');
     return widget;
   } catch (error) {
-    BundleLogger.error('LEGACY', 'Legacy widget initialization failed', error);
     return null;
   }
 }
 
 // Legacy function for theme editor
 function reinitializeAllBundleWidgets() {
-  BundleLogger.info('LEGACY', 'Legacy reinitializeAllBundleWidgets called');
   BundleWidgetManager.reinitialize();
 }
 
@@ -2655,7 +2532,6 @@ function handleAutomaticBundleConfiguration() {
   const bundleId = urlParams.get('bundleId');
 
   if (bundleId && (BundleDataManager.isThemeEditorContext())) {
-    BundleLogger.info('CONFIG', `Theme editor detected bundle ID parameter: ${bundleId}`);
 
     // Store for widgets to use
     window.autoDetectedBundleId = bundleId;
@@ -2666,7 +2542,6 @@ function handleAutomaticBundleConfiguration() {
     bundleContainers.forEach(container => {
       if (!container.dataset.bundleId) {
         container.dataset.bundleId = bundleId;
-        BundleLogger.info('CONFIG', `Automatically configured bundle ID: ${bundleId}`);
         ToastManager.show(`Bundle widget configured with ID: ${bundleId}`, 'info', 6000);
       }
     });
@@ -2676,13 +2551,11 @@ function handleAutomaticBundleConfiguration() {
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    BundleLogger.info('INIT', 'DOM loaded, initializing bundle widgets');
     handleAutomaticBundleConfiguration();
     BundleWidgetManager.initialize();
   });
 } else {
   // DOM already loaded
-  BundleLogger.info('INIT', 'DOM already loaded, initializing bundle widgets immediately');
   handleAutomaticBundleConfiguration();
   BundleWidgetManager.initialize();
 }
@@ -2726,5 +2599,3 @@ window.ToastManager = ToastManager;
 window.initializeBundleWidget = initializeBundleWidget;
 window.reinitializeAllBundleWidgets = reinitializeAllBundleWidgets;
 window.showToast = showToast;
-
-BundleLogger.info('SYSTEM', `Bundle Widget System v${BUNDLE_WIDGET.VERSION} loaded successfully`);

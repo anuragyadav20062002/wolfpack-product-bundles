@@ -318,29 +318,29 @@ export function checkCartMeetsBundleConditions(
 
   // Calculate discounted cost if conditions are met
   let totalDiscountedCost = totalOriginalCost;
-  
-  if (meetsConditions && bundleData.pricing?.enableDiscount) {
+
+  if (meetsConditions && bundleData.pricing?.enabled) {
     const applicableRule = getApplicableDiscountRule(bundleData, totalQuantity);
-    
+
     if (applicableRule) {
-      if (bundleData.pricing.discountMethod === "fixed_amount_off") {
+      if (bundleData.pricing.method === "fixed_amount_off") {
         totalDiscountedCost = Math.max(0, totalOriginalCost - applicableRule.fixedAmountOff);
-        Logger.debug('Applied fixed amount discount', context, { 
-          original: totalOriginalCost, 
-          discount: applicableRule.fixedAmountOff, 
-          final: totalDiscountedCost 
+        Logger.debug('Applied fixed amount discount', context, {
+          original: totalOriginalCost,
+          discount: applicableRule.fixedAmountOff,
+          final: totalDiscountedCost
         });
-      } else if (bundleData.pricing.discountMethod === "percentage_off") {
+      } else if (bundleData.pricing.method === "percentage_off") {
         totalDiscountedCost = totalOriginalCost * (1 - applicableRule.percentageOff / 100);
-        Logger.debug('Applied percentage discount', context, { 
-          original: totalOriginalCost, 
-          percentage: applicableRule.percentageOff, 
-          final: totalDiscountedCost 
+        Logger.debug('Applied percentage discount', context, {
+          original: totalOriginalCost,
+          percentage: applicableRule.percentageOff,
+          final: totalDiscountedCost
         });
-      } else if (bundleData.pricing.discountMethod === "fixed_bundle_price" && bundleData.pricing.fixedPrice && bundleData.pricing.fixedPrice > 0) {
+      } else if (bundleData.pricing.method === "fixed_bundle_price" && bundleData.pricing.fixedPrice && bundleData.pricing.fixedPrice > 0) {
         totalDiscountedCost = bundleData.pricing.fixedPrice;
-        Logger.debug('Applied fixed bundle price', context, { 
-          fixedPrice: totalDiscountedCost 
+        Logger.debug('Applied fixed bundle price', context, {
+          fixedPrice: totalDiscountedCost
         });
       }
     }

@@ -353,7 +353,7 @@ function validatePricingConfiguration(pricing: any, bundleId: string): { isValid
     sanitizedPricing.method = 'percentage_off';
   }
 
-  // Validate and sanitize pricing rules
+  // Validate and sanitize pricing rules (NEW nested structure only)
   if (pricing.rules && Array.isArray(pricing.rules)) {
     sanitizedPricing.rules = pricing.rules.filter((rule: any) => {
       if (!rule || typeof rule !== 'object') {
@@ -361,17 +361,36 @@ function validatePricingConfiguration(pricing: any, bundleId: string): { isValid
         return false;
       }
 
-      // Ensure rule has required fields based on method
-      if (sanitizedPricing.method === 'fixed_bundle_price') {
-        if (!rule.fixedBundlePrice || isNaN(parseFloat(rule.fixedBundlePrice))) {
-          Logger.warn('Fixed bundle price rule missing valid price', { bundleId });
-          return false;
-        }
-      } else {
-        if (!rule.discountValue || isNaN(parseFloat(rule.discountValue))) {
-          Logger.warn('Pricing rule missing valid discount value', { bundleId });
-          return false;
-        }
+      // Validate nested condition structure
+      if (!rule.condition || typeof rule.condition !== 'object') {
+        Logger.warn('Pricing rule missing nested condition object', { bundleId });
+        return false;
+      }
+
+      if (rule.condition.value === undefined || isNaN(parseFloat(rule.condition.value))) {
+        Logger.warn('Pricing rule condition missing valid value', { bundleId });
+        return false;
+      }
+
+      if (!rule.condition.type || !rule.condition.operator) {
+        Logger.warn('Pricing rule condition missing type or operator', { bundleId });
+        return false;
+      }
+
+      // Validate nested discount structure
+      if (!rule.discount || typeof rule.discount !== 'object') {
+        Logger.warn('Pricing rule missing nested discount object', { bundleId });
+        return false;
+      }
+
+      if (rule.discount.value === undefined || isNaN(parseFloat(rule.discount.value))) {
+        Logger.warn('Pricing rule discount missing valid value', { bundleId });
+        return false;
+      }
+
+      if (!rule.discount.method) {
+        Logger.warn('Pricing rule discount missing method', { bundleId });
+        return false;
       }
 
       return true;
@@ -461,13 +480,13 @@ function createBundleConfigsMap(bundleConfigs: any[]): Record<string, any> {
   return bundleConfigsMap;
 }
 
-// Comprehensive rule evaluation for all condition types (updated for nested structure)
+// Comprehensive rule evaluation for all condition types (NEW nested structure only)
 function evaluateRule(rule: any, totalQuantity: number, originalTotal: number): { meetsCondition: boolean; conditionType: string; conditionValue: number } {
-  // Extract condition from nested structure
+  // Extract condition from nested structure (no fallbacks to old format)
   const condition = rule.condition || {};
-  const conditionType = condition.type || rule.conditionType || 'quantity';
-  const conditionValue = condition.value || rule.value || rule.minimumQuantity || rule.numberOfProducts || 0;
-  const conditionOperator = condition.operator || rule.condition || 'gte';
+  const conditionType = condition.type || 'quantity';
+  const conditionValue = condition.value || 0;
+  const conditionOperator = condition.operator || 'gte';
 
   // Get actual value to compare against
   const actualValue = conditionType === 'amount' ? originalTotal : totalQuantity;
@@ -671,10 +690,10 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           const appliedRule = appliedRuleResult.rule;
           const evaluation = appliedRuleResult.evaluation;
 
-          // Extract discount value from nested structure
+          // Extract discount value from NEW nested structure only
           const discount = appliedRule.discount || {};
           const discountMethod = discount.method || bundleConfig.pricing.method;
-          const discountValue = parseFloat(discount.value || appliedRule.discountValue || 0);
+          const discountValue = parseFloat(discount.value || 0);
 
           if (discountMethod === 'fixed_bundle_price') {
             // For fixed price, value is stored in cents, convert to decimal
