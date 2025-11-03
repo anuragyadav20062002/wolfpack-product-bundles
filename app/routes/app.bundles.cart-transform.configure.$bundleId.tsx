@@ -56,10 +56,13 @@ import { BundleIsolationService } from "../services/bundle-isolation.server";
 import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
 import {
   updateBundleProductMetafields,
-  updateCartTransformMetafield,
-  updateShopBundlesMetafield,
   updateComponentProductMetafields,
 } from "../services/bundles/metafield-sync.server";
+import {
+  buildCartTransformConfig,
+  updateCartTransformConfigMetafield,
+} from "../services/bundles/cart-transform-metafield.server";
+import { updateBundleIndex } from "../services/bundles/bundle-index.server";
 import {
   calculateBundlePrice,
   updateBundleProductPrice,
@@ -273,8 +276,9 @@ const safeJsonParse = (value: any, defaultValue: any = []) => {
 // - ensureBundleMetafieldDefinitions -> services/bundles/metafield-sync.server.ts
 // - updateBundleProductMetafields -> services/bundles/metafield-sync.server.ts
 // - getBundleProductVariantId -> utils/variant-lookup.server.ts
-// - updateCartTransformMetafield -> services/bundles/metafield-sync.server.ts
-// - updateShopBundlesMetafield -> services/bundles/metafield-sync.server.ts
+// - buildCartTransformConfig -> services/bundles/cart-transform-metafield.server.ts (NEW: Hybrid Architecture)
+// - updateCartTransformConfigMetafield -> services/bundles/cart-transform-metafield.server.ts (NEW: Hybrid Architecture)
+// - updateBundleIndex -> services/bundles/bundle-index.server.ts (NEW: Hybrid Architecture)
 // - mapDiscountMethod -> utils/discount-mappers.ts
 // - isUUID -> utils/shopify-validators.ts
 // - isValidShopifyProductId -> utils/shopify-validators.ts
@@ -619,66 +623,52 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       AppLogger.debug("📏 [METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);
 
       try {
-        // OPTIMIZED: Use SINGLE metafield ($app:bundle_config) for ALL purposes
-        // This metafield is used by:
-        // 1. Widget (storefront) - loads bundle UI
-        // 2. Cart Transform function - applies discounts at checkout
-        // 3. Auto-injection service - identifies bundle products
-        // Memory savings: 66% reduction (15KB → 5KB per bundle)
-        AppLogger.debug("🔧 [METAFIELD] Creating $app:bundle_config (single source of truth)");
+        // WIDGET METAFIELD: $app:bundle_config (3-5KB)
+        // Used by: Widget (storefront) - loads bundle UI
+        // Contains: Step data with product IDs only (widget queries Storefront API for fresh data)
+        AppLogger.debug("🔧 [METAFIELD] Creating $app:bundle_config (widget config)");
         await BundleIsolationService.updateBundleProductMetafield(admin, updatedBundle.shopifyProductId, baseConfiguration);
         AppLogger.debug("✅ [METAFIELD] $app:bundle_config created successfully");
 
-        // ALSO update standard Shopify metafields for cart transform compatibility
-
-
-        AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
-
-
-        try {
-
-
-          const standardMetafields = await convertBundleToStandardMetafields(admin, baseConfiguration);
-
-
-          if (Object.keys(standardMetafields).length > 0) {
-
-
-            await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
-
-
-            AppLogger.debug("🔧 [STANDARD_METAFIELD] Standard metafields updated successfully");
-
-
-          } else {
-
-
-            AppLogger.debug("🔧 [STANDARD_METAFIELD] No standard metafields to update (products may be using UUIDs)");
-
-
-          }
-
-
-        } catch (error) {
-
-
-          AppLogger.debug("🔧 [STANDARD_METAFIELD] Skipping standard metafields (optional feature):", {}, (error as Error).message);
-
-
-          // Don't throw - standard metafields are optional, custom metafields are what actually matter
-
-
+        // CART TRANSFORM METAFIELD: $app:cart_transform_config (~500 bytes)
+        // Used by: Cart Transform function - applies discounts at checkout
+        // Contains: Only minimal data needed for cart transform (bundleId, parentVariantId, pricing)
+        if (bundleParentVariantId) {
+          AppLogger.debug("🔧 [CART_TRANSFORM_CONFIG] Creating lightweight cart transform config");
+          const cartTransformConfig = buildCartTransformConfig(
+            updatedBundle.id,
+            updatedBundle.name,
+            bundleParentVariantId,
+            baseConfiguration.pricing
+          );
+          await updateCartTransformConfigMetafield(admin, updatedBundle.shopifyProductId, cartTransformConfig);
+          AppLogger.debug("✅ [CART_TRANSFORM_CONFIG] Cart transform config created successfully");
+        } else {
+          AppLogger.warn("⚠️ [CART_TRANSFORM_CONFIG] Skipping - bundle parent variant ID not found");
         }
 
-        // CRITICAL: Also update component products with component_parents metafield
+        // STANDARD METAFIELDS: For Shopify cart transform compatibility
+        AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
+        try {
+          const standardMetafields = await convertBundleToStandardMetafields(admin, baseConfiguration);
+          if (Object.keys(standardMetafields).length > 0) {
+            await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
+            AppLogger.debug("✅ [STANDARD_METAFIELD] Standard metafields updated successfully");
+          } else {
+            AppLogger.debug("ℹ️ [STANDARD_METAFIELD] No standard metafields to update");
+          }
+        } catch (error) {
+          AppLogger.debug("⚠️ [STANDARD_METAFIELD] Skipping standard metafields (optional):", {}, (error as Error).message);
+        }
+
+        // COMPONENT METAFIELDS: Update component products with component_parents metafield
         AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
-        // Pass the FULL bundle configuration with StepProduct data from database
         const fullBundleConfig = {
           ...baseConfiguration,
           steps: updatedBundle.steps  // Use database steps with StepProduct array
         };
         await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
-        AppLogger.debug("🔧 [COMPONENT_METAFIELD] Component product metafields updated successfully");
+        AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
 
       } catch (error) {
         AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
@@ -686,30 +676,15 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       }
     }
 
-    // ALWAYS update cart transform metafields (Shopify recommended approach)
-    // This ensures cart transform functions get updated bundle data immediately
+    // BUNDLE INDEX: Update shop-level bundle index (custom:bundle_index)
+    // Used by: Widget for bundle discovery (~50 bytes per bundle, supports 200+ bundles)
     try {
-      await updateCartTransformMetafield(admin, session.shop);
+      AppLogger.debug("🔄 [BUNDLE_INDEX] Updating shop-level bundle index...");
+      await updateBundleIndex(admin, session.shop);
+      AppLogger.debug("✅ [BUNDLE_INDEX] Bundle index updated successfully");
     } catch (error) {
-      AppLogger.error("Failed to update cart transform metafield:", {}, error as any);
+      AppLogger.error("❌ [BUNDLE_INDEX] Failed to update bundle index:", {}, error as any);
       // Don't fail the entire operation - just log the error
-    }
-
-    // ALSO update shop-level all_bundles metafield for cart transform and Liquid extension
-    // This ensures the cart transform and widget get updated bundle data immediately
-    try {
-      AppLogger.debug("🔄 [BUNDLE_SAVE] About to update shop metafield for cart transform...");
-      const metafieldResult = await updateShopBundlesMetafield(admin, session.shop);
-
-      if (metafieldResult) {
-        AppLogger.debug("✅ [BUNDLE_SAVE] Shop metafield update completed successfully");
-      } else {
-        AppLogger.warn("⚠️ [BUNDLE_SAVE] Shop metafield update returned null - check logs above for errors");
-      }
-    } catch (error) {
-      AppLogger.error("❌ [BUNDLE_SAVE] Failed to update shop bundles metafield:", {}, error as any);
-      // Don't fail the entire operation - just log the error
-      // But this is critical for cart transform to work
     }
 
     // Helper function to create bundle product isolation metafields
@@ -1859,6 +1834,7 @@ export default function ConfigureBundleFlow() {
   const [isPageSelectionModalOpen, setIsPageSelectionModalOpen] = useState(false);
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<any>(null);
 
   // State for products/collections view modals
   const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
@@ -2832,8 +2808,9 @@ export default function ConfigureBundleFlow() {
       }
 
     } catch (error) {
-      AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', {}, error as any);
-      shopify.toast.show("Failed to open theme editor", { isError: true });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
+      shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true });
     }
   }, [shop, shopify, bundle.id]);
 
@@ -3613,10 +3590,7 @@ export default function ConfigureBundleFlow() {
                                 <Card background="bg-surface-secondary">
                                   <BlockStack gap="200">
                                     <Text as="h4" variant="bodyMd" fontWeight="medium">
-                                      Rule #{index + 1}
-                                    </Text>
-                                    <Text as="p" variant="bodySm" tone="subdued">
-                                      Discount Text
+                                      Rule #{index + 1} Messages
                                     </Text>
                                     <TextField
                                       label="Discount Text"
@@ -3631,9 +3605,6 @@ export default function ConfigureBundleFlow() {
 
                                 <Card background="bg-surface-secondary">
                                   <BlockStack gap="200">
-                                    <Text as="h4" variant="bodyMd" fontWeight="medium">
-                                      Success Message
-                                    </Text>
                                     <TextField
                                       label="Success Message"
                                       value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}

@@ -113,10 +113,10 @@
     },
     {
       "type": "textarea",
-      "id": "success_message_template", 
+      "id": "success_message_template",
       "label": "Bundle completion message",
-      "default": "Congratulations 🎉 you have gotten the best offer on your bundle!",
-      "info": "Celebratory message displayed when the customer has qualified for the bundle discount"
+      "default": "Congratulations! You got {discountText}!",
+      "info": "Celebratory message displayed when the customer has qualified for the bundle discount. Available variables: {discountText}, {bundleName}, {amountSaved}, {progressPercentage}"
     },
     {
       "type": "text",
@@ -127,21 +127,43 @@
     },
     {
       "type": "header",
-      "content": "Discount colors"
+      "content": "Progress bar styling"
     },
     {
       "type": "color",
       "id": "progress_bar_color",
-      "label": "Progress bar color",
-      "info": "Color for discount progress indicators",
+      "label": "Progress bar fill color",
+      "info": "Primary color for the progress bar fill gradient",
       "default": "#7132FF"
     },
     {
       "type": "color",
       "id": "success_color",
-      "label": "Success color",
-      "info": "Color shown when discount is qualified",
+      "label": "Success state color",
+      "info": "Color shown when discount goal is achieved",
       "default": "#28a745"
+    },
+    {
+      "type": "range",
+      "id": "progress_bar_height",
+      "min": 6,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Progress bar height",
+      "default": 12,
+      "info": "Height of the discount progress bar"
+    },
+    {
+      "type": "range",
+      "id": "progress_bar_border_radius",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Progress bar roundness",
+      "default": 50,
+      "info": "Border radius for the progress bar (50 = fully rounded)"
     },
     {
       "type": "header",
@@ -383,6 +405,8 @@
         --footer-bg-color: #f8f9fa;
         --footer-text-color: {{ block.settings.success_color }};
         --progress-bar-color: {{ block.settings.progress_bar_color }};
+        --progress-bar-height: {{ block.settings.progress_bar_height | default: 12 }}px;
+        --progress-bar-border-radius: {{ block.settings.progress_bar_border_radius | default: 999 }}px;
         --savings-badge-color: {{ block.settings.success_color }};
         --modal-tab-border-radius: {{ block.settings.step_tab_border_radius }}px;
         --modal-tab-active-bg-start: {{ block.settings.step_tab_active_color }};
@@ -421,22 +445,21 @@
       <button class="add-bundle-to-cart">Add Bundle to Cart</button>
 
       <!-- Footer discount messaging with progress bar -->
+      {% if block.settings.show_footer_messaging %}
       <div class="bundle-footer-messaging" style="display: none;">
+        <div class="footer-discount-text"></div>
         <div class="footer-progress-container">
-          <div class="progress-bar-wrapper">
-            <div class="progress-bar">
-              <div class="progress-fill"></div>
-            </div>
-            <div class="progress-text">
-              <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
-            </div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
           </div>
-          <div class="footer-discount-text"></div>
-          <div class="footer-savings-display" style="display: none;">
-            <span class="savings-badge">You save: <span class="savings-amount"></span></span>
+          <div class="progress-details">
+            <span class="progress-text">
+              <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
+            </span>
           </div>
         </div>
       </div>
+      {% endif %}
     </div>
 {% endif %}
 
@@ -639,18 +662,15 @@
 
       <!-- Footer discount messaging with progress bar -->
       <div class="bundle-footer-messaging" style="display: none;">
+        <div class="footer-discount-text"></div>
         <div class="footer-progress-container">
-          <div class="progress-bar-wrapper">
-            <div class="progress-bar">
-              <div class="progress-fill"></div>
-            </div>
-            <div class="progress-text">
-              <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
-            </div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
           </div>
-          <div class="footer-discount-text"></div>
-          <div class="footer-savings-display" style="display: none;">
-            <span class="savings-badge">You save: <span class="savings-amount"></span></span>
+          <div class="progress-details">
+            <span class="progress-text">
+              <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
+            </span>
           </div>
         </div>
       </div>

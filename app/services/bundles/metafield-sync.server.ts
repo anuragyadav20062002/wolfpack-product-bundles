@@ -13,7 +13,7 @@ import { isUUID, isValidShopifyProductId } from "../../utils/shopify-validators"
 import { getFirstVariantId, getBundleProductVariantId } from "../../utils/variant-lookup.server";
 
 // Helper function to safely parse JSON
-function safeJsonParse(json: any, defaultValue: any = []) {
+export function safeJsonParse(json: any, defaultValue: any = []) {
   if (typeof json === 'string') {
     try {
       return JSON.parse(json);
@@ -427,10 +427,10 @@ export async function updateShopBundlesMetafield(admin: any, shopId: string) {
       pricing: bundle.pricing ? {
         enabled: bundle.pricing.enabled,
         method: bundle.pricing.method,
-        rules: bundle.pricing.rules || [],
+        rules: safeJsonParse(bundle.pricing.rules, []),
         showFooter: bundle.pricing.showFooter,
         showProgressBar: bundle.pricing.showProgressBar,
-        messages: bundle.pricing.messages || {}
+        messages: safeJsonParse(bundle.pricing.messages, {})
       } : null,
       // Add matching data for JavaScript bundle selection
       matching: {

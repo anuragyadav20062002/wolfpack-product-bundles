@@ -70,7 +70,6 @@ class CurrencyManager {
   }
 
   static detectCustomerCurrency() {
-
     // Priority 1: Shopify Markets active currency
     if (window.Shopify?.currency?.active) {
       const currency = {
@@ -153,8 +152,8 @@ class CurrencyManager {
   }
 
   static formatMoney(amount, format) {
-    if (typeof Shopify !== 'undefined' && Shopify.formatMoney) {
-      return Shopify.formatMoney(amount, format);
+    if (typeof Shopify !== 'undefined' && window.Shopify.formatMoney) {
+      return window.Shopify.formatMoney(amount, format);
     }
 
     // Fallback formatting
@@ -203,47 +202,25 @@ class CurrencyManager {
 
 class BundleDataManager {
   static validateBundleData(bundle) {
-    console.log('[BUNDLE_VALIDATION] Validating bundle:', bundle);
-
     if (!bundle || typeof bundle !== 'object') {
-      console.warn('[BUNDLE_VALIDATION] ❌ Bundle is not an object');
       return false;
     }
 
     const required = ['id', 'name', 'status', 'bundleType', 'steps'];
     for (const field of required) {
       if (bundle[field] === undefined || bundle[field] === null) {
-        console.warn(`[BUNDLE_VALIDATION] ❌ Missing required field: ${field}`, {
-          bundleId: bundle.id,
-          bundleName: bundle.name,
-          hasField: bundle.hasOwnProperty(field),
-          fieldValue: bundle[field]
-        });
         return false;
       }
     }
 
     if (!Array.isArray(bundle.steps)) {
-      console.warn('[BUNDLE_VALIDATION] ❌ steps is not an array', {
-        bundleId: bundle.id,
-        stepsType: typeof bundle.steps,
-        stepsValue: bundle.steps
-      });
       return false;
     }
 
     if (bundle.steps.length === 0) {
-      console.warn('[BUNDLE_VALIDATION] ❌ steps array is empty', {
-        bundleId: bundle.id
-      });
       return false;
     }
 
-    console.log('[BUNDLE_VALIDATION] ✅ Bundle is valid', {
-      bundleId: bundle.id,
-      bundleName: bundle.name,
-      stepsCount: bundle.steps.length
-    });
     return true;
   }
 
@@ -357,11 +334,6 @@ class BundleDataManager {
           productCollection.id.toString() === bundleCollectionIdFromGid
         );
       });
-      bundleId: bundle.id,
-      productMatches,
-      collectionMatches
-    });
-
     return productMatches || collectionMatches;
   }
 
@@ -398,34 +370,32 @@ class PricingCalculator {
     let totalPrice = 0;
     let totalQuantity = 0;
 
+    console.log('[CALCULATE_TOTAL_DEBUG] Starting calculation', {
+      selectedProductsLength: selectedProducts.length,
+      stepProductDataLength: stepProductData.length,
+      step0Length: stepProductData[0]?.length,
+      step0FirstProduct: stepProductData[0]?.[0]
+    });
+
     selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = stepProductData[stepIndex] || [];
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+
         if (product && quantity > 0) {
-          const price = parseFloat(product.price) || 0;
+          const price = product.price || 0; // Already in cents from processProductsForStep
           totalPrice += price * quantity;
           totalQuantity += quantity;
-            variantId,
-            quantity,
-            price,
-            productTitle: product.title
-          });
         }
       });
     });
+
+    console.log('[CALCULATE_TOTAL_DEBUG] Final:', { totalPrice, totalQuantity, step0Data: stepProductData[0] });
     return { totalPrice, totalQuantity };
   }
 
   static calculateDiscount(bundle, totalPrice, totalQuantity) {
-      bundleId: bundle?.id,
-      totalPrice,
-      totalQuantity,
-      hasPricing: !!bundle?.pricing,
-      pricingEnabled: bundle?.pricing?.enabled
-    });
-
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
       return {
         hasDiscount: false,
@@ -440,42 +410,26 @@ class PricingCalculator {
     const rules = bundle.pricing.rules;
     let bestRule = null;
 
-    // Find the best applicable rule
+    // Find the best applicable rule using nested structure
     for (const rule of rules) {
-      const ruleValue = rule.value || 0;
-      const conditionType = rule.conditionType || 'quantity';
+      // Access nested condition structure
+      const conditionType = rule.condition.type; // 'quantity' or 'amount'
+      const conditionOperator = rule.condition.operator; // 'gte', 'gt', 'lte', 'lt', 'eq'
+      const conditionValue = rule.condition.value; // threshold
 
       let conditionMet = false;
-      let currentValue, comparisonText;
 
       if (conditionType === 'amount') {
-        // Amount-based condition
-        currentValue = totalPrice;
-        conditionMet = this.checkCondition(totalPrice, rule.condition, ruleValue);
-        comparisonText = `Rs. ${totalPrice / 100} ${rule.condition || 'gte'} Rs. ${ruleValue / 100}`;
+        // Amount-based condition (value is in cents)
+        conditionMet = this.checkCondition(totalPrice, conditionOperator, conditionValue);
       } else {
-        // Quantity-based condition (default)
-        currentValue = totalQuantity;
-        conditionMet = this.checkCondition(totalQuantity, rule.condition, ruleValue);
-        comparisonText = `${totalQuantity} items ${rule.condition || 'gte'} ${ruleValue} items`;
+        // Quantity-based condition
+        conditionMet = this.checkCondition(totalQuantity, conditionOperator, conditionValue);
       }
-        ruleId: rule.id,
-        conditionType,
-        condition: rule.condition || 'gte',
-        ruleValue,
-        currentValue,
-        conditionMet,
-        comparisonText,
-        discountValue: rule.discountValue || rule.fixedBundlePrice
-      });
 
       if (conditionMet) {
-        if (!bestRule || ruleValue > (bestRule.value || 0)) {
+        if (!bestRule || conditionValue > bestRule.condition.value) {
           bestRule = rule;
-            ruleId: rule.id,
-            conditionType,
-            qualifiesForDiscount: true
-          });
         }
       }
     }
@@ -491,38 +445,23 @@ class PricingCalculator {
       };
     }
 
-    // Calculate discount amount - Handle decimal values properly
+    // Calculate discount amount using nested discount structure
     let discountAmount = 0;
-    const discountMethod = bundle.pricing.method;
-    
-    // Get discount value using clean field structure
-    let discountValue = 0;
-    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE) {
-      discountValue = parseFloat(bestRule.fixedBundlePrice || 0);
-    } else {
-      discountValue = parseFloat(bestRule.discountValue || 0);
-    }
-      discountMethod,
-      discountValue,
-      totalPriceInCents: totalPrice,
-      totalPriceInDollars: totalPrice / 100,
-      totalQuantity,
-      rule: bestRule
-    });
+    const discountMethod = bestRule.discount.method;
+    const discountValue = bestRule.discount.value; // Already in cents for amount methods
 
     switch (discountMethod) {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
-        // Percentage calculation remains the same
+        // discountValue is percentage (e.g., 50 for 50%)
         discountAmount = Math.round(totalPrice * (discountValue / 100));
         break;
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
-        // Convert decimal amount to cents for calculation
-        discountAmount = Math.round(discountValue * 100);
+        // discountValue is already in cents
+        discountAmount = discountValue;
         break;
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
-        // Convert decimal fixed price to cents, then calculate discount
-        const fixedPriceInCents = Math.round(discountValue * 100);
-        discountAmount = Math.max(0, totalPrice - fixedPriceInCents);
+        // discountValue is fixed bundle price in cents
+        discountAmount = Math.max(0, totalPrice - discountValue);
         break;
       default:
         discountAmount = 0;
@@ -587,30 +526,25 @@ class PricingCalculator {
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
     if (!bundle?.pricing?.rules?.length) return null;
 
-    const rules = bundle.pricing.rules.sort((a, b) => (a.value || 0) - (b.value || 0));
+    // Sort rules by condition value (ascending)
+    const rules = bundle.pricing.rules.sort((a, b) => a.condition.value - b.condition.value);
 
     for (const rule of rules) {
-      const ruleValue = rule.value || 0;
-      const conditionType = rule.conditionType || 'quantity';
+      const conditionType = rule.condition.type;
+      const conditionOperator = rule.condition.operator;
+      const conditionValue = rule.condition.value;
 
       // Check if this rule is not yet satisfied
       let isRuleSatisfied = false;
 
       if (conditionType === 'amount') {
-        isRuleSatisfied = this.checkCondition(currentAmount, rule.condition, ruleValue);
+        isRuleSatisfied = this.checkCondition(currentAmount, conditionOperator, conditionValue);
       } else {
-        isRuleSatisfied = this.checkCondition(currentQuantity, rule.condition, ruleValue);
+        isRuleSatisfied = this.checkCondition(currentQuantity, conditionOperator, conditionValue);
       }
 
       // Return the first rule that is not satisfied (next target)
       if (!isRuleSatisfied) {
-          ruleId: rule.id,
-          conditionType,
-          ruleValue,
-          currentQuantity,
-          currentAmount,
-          condition: rule.condition
-        });
         return rule;
       }
     }
@@ -755,13 +689,6 @@ class TemplateManager {
   }
 
   static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
-      bundleId: bundle.id,
-      totalPrice,
-      totalQuantity,
-      hasDiscount: discountInfo.hasDiscount,
-      discountMethod: bundle.pricing?.method
-    });
-
     const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
     const ruleToUse = discountInfo.applicableRule || nextRule;
 
@@ -769,23 +696,11 @@ class TemplateManager {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
     }
 
-    // Extract rule data using clean field structure - NO BACKWARD COMPATIBILITY
-    const conditionType = ruleToUse.conditionType;
-    const targetValue = ruleToUse.value; // This comes from cart transform mapping
-    const discountMethod = bundle.pricing?.method;
-    
-    // Get discount value using clean field mapping
-    let rawDiscountValue = 0;
-    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE) {
-      rawDiscountValue = ruleToUse.fixedBundlePrice;
-    } else {
-      rawDiscountValue = ruleToUse.discountValue;
-    }
-      conditionType,
-      targetValue,
-      discountMethod,
-      rawDiscountValue
-    });
+    // Extract rule data using nested structure
+    const conditionType = ruleToUse.condition.type;
+    const targetValue = ruleToUse.condition.value;
+    const discountMethod = ruleToUse.discount.method;
+    const rawDiscountValue = ruleToUse.discount.value;
 
     // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo);
@@ -802,51 +717,45 @@ class TemplateManager {
       amountNeeded: conditionData.amountNeeded,
       itemsNeeded: conditionData.itemsNeeded,
       conditionText: conditionData.conditionText,
-      
+
       // Discount-specific variables
       discountText: discountData.discountText,
-      
+
       // Qualification status
       alreadyQualified: conditionData.alreadyQualified || false,
-      
+
       // Progress variables
       currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       currentQuantity: totalQuantity.toString(),
       targetAmount: conditionType === 'amount' ? CurrencyManager.formatMoney(targetValue, currencyInfo.display.format) : '0',
       targetQuantity: conditionType === 'quantity' ? targetValue.toString() : '0',
       progressPercentage: Math.round(progressPercentage).toString(),
-      
+
       // Bundle information
       bundleName: bundle.name || 'Bundle',
-      
+
       // Pricing information
       originalPrice: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       finalPrice: CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format),
       savingsAmount: CurrencyManager.formatMoney(discountInfo.discountAmount, currencyInfo.display.format),
       savingsPercentage: Math.round(discountInfo.discountPercentage).toString(),
-      
+
       // Currency information
       currencySymbol: currencyInfo.display.symbol,
       currencyCode: currencyInfo.display.code,
-      
+
       // Status
       isQualified: discountInfo.qualifiesForDiscount ? 'true' : 'false'
     };
-      conditionType,
-      conditionText: conditionData.conditionText,
-      discountText: discountData.discountText,
-      progressPercentage: Math.round(progressPercentage)
-    });
 
     return variables;
   }
 
   static calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo) {
     if (conditionType === 'amount') {
-      // Amount-based condition - targetValue is decimal, totalPrice is in cents
-      const targetValueInCents = Math.round(targetValue * 100);
-      const amountNeeded = Math.max(0, targetValueInCents - totalPrice);
-      
+      // Amount-based condition - targetValue is already in cents
+      const amountNeeded = Math.max(0, targetValue - totalPrice);
+
       // Convert for display if needed
       const convertedAmountNeeded = CurrencyManager.convertCurrency(
         amountNeeded,
@@ -854,40 +763,40 @@ class TemplateManager {
         currencyInfo.display.code,
         currencyInfo.display.rate
       );
-      
+
       // Format for display (convert from cents to decimal)
       const amountNeededFormatted = (convertedAmountNeeded / 100).toFixed(2);
       const targetValueFormatted = CurrencyManager.convertCurrency(
-        targetValueInCents,
+        targetValue,
         currencyInfo.calculation.code,
         currencyInfo.display.code,
         currencyInfo.display.rate
       );
       const targetValueFormattedDecimal = (targetValueFormatted / 100).toFixed(2);
-      
+
       // Check if already qualified (amount needed is 0)
       const alreadyQualified = amountNeeded <= 0;
-      
+
       return {
         amountNeeded: amountNeededFormatted,
         itemsNeeded: '0',
-        conditionText: alreadyQualified ? 
-          `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met` : 
+        conditionText: alreadyQualified ?
+          `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met` :
           `${currencyInfo.display.symbol}${amountNeededFormatted}`,
         alreadyQualified
       };
     } else {
       // Quantity-based condition
       const itemsNeeded = Math.max(0, targetValue - totalQuantity);
-      
+
       // Check if already qualified (items needed is 0)
       const alreadyQualified = itemsNeeded <= 0;
-      
+
       return {
         amountNeeded: '0',
         itemsNeeded: itemsNeeded.toString(),
-        conditionText: alreadyQualified ? 
-          `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met` : 
+        conditionText: alreadyQualified ?
+          `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met` :
           `${itemsNeeded} ${itemsNeeded === 1 ? 'item' : 'items'}`,
         alreadyQualified
       };
@@ -895,37 +804,42 @@ class TemplateManager {
   }
 
   static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
+    // Add safety check for undefined/null values
+    const safeValue = parseFloat(rawDiscountValue) || 0;
+
     switch (discountMethod) {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
-        const percentage = Math.round(rawDiscountValue);
+        const percentage = Math.round(safeValue);
         return {
           discountText: `${percentage}% off`
         };
-        
+
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
+        // safeValue is already in cents
         const convertedAmount = CurrencyManager.convertCurrency(
-          rawDiscountValue * 100,
+          safeValue,
           currencyInfo.calculation.code,
           currencyInfo.display.code,
           currencyInfo.display.rate
         );
-        const amountOff = Math.round(convertedAmount / 100);
+        const amountOff = (convertedAmount / 100).toFixed(2);
         return {
           discountText: `${currencyInfo.display.symbol}${amountOff} off`
         };
-        
+
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
+        // safeValue is already in cents
         const convertedPrice = CurrencyManager.convertCurrency(
-          rawDiscountValue * 100,
+          safeValue,
           currencyInfo.calculation.code,
           currencyInfo.display.code,
           currencyInfo.display.rate
         );
-        const bundlePrice = Math.round(convertedPrice / 100);
+        const bundlePrice = (convertedPrice / 100).toFixed(2);
         return {
           discountText: `${currencyInfo.display.symbol}${bundlePrice}`
         };
-        
+
       default:
         return {
           discountText: 'discount'
@@ -990,7 +904,6 @@ class BundleWidget {
 
   init() {
     try {
-
       // Check if already initialized
       if (this.container.dataset.initialized === 'true') {
         return;
@@ -1025,10 +938,6 @@ class BundleWidget {
       // Mark as initialized
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
-        bundleName: this.selectedBundle.name,
-        bundleType: this.selectedBundle.bundleType,
-        stepsCount: this.selectedBundle.steps.length
-      });
 
     } catch (error) {
       this.showErrorUI(error);
@@ -1075,9 +984,6 @@ class BundleWidget {
     const hasOldVariables = oldVariablePatterns.some(pattern => template.includes(pattern));
     
     if (hasOldVariables) {
-        oldTemplate: template,
-        newTemplate: modernTemplate
-      });
       return modernTemplate;
     }
     
@@ -1086,84 +992,44 @@ class BundleWidget {
   }
 
   normalizeSuccessTemplate(template) {
-    // Professional success template normalization
+    // Use template as-is, or fall back to modern default
     const modernTemplate = 'Congratulations! You got {discountText}!';
-    
-    if (!template) {
+
+    if (!template || template.trim() === '') {
       return modernTemplate;
     }
-    
-    // Check for old patterns in success messages
-    if (template.includes('best offer on your bundle') || template.includes('🎉 you have gotten')) {
-        oldTemplate: template,
-        newTemplate: modernTemplate
-      });
-      return modernTemplate;
-    }
-    
+
+    // Return the template without modification - let merchants control the message
     return template;
   }
 
   loadBundleData() {
-    console.log('[WIDGET_INIT] 🔍 Starting loadBundleData...');
     let bundleData = null;
 
     // Source 1: data-bundle-config attribute
-    console.log('[WIDGET_INIT] Checking data-bundle-config attribute:', {
-      exists: !!this.container.dataset.bundleConfig,
-      value: this.container.dataset.bundleConfig
-    });
-
     if (this.container.dataset.bundleConfig) {
       try {
         const singleBundle = JSON.parse(this.container.dataset.bundleConfig);
         bundleData = { [singleBundle.id]: singleBundle };
-        console.log('[WIDGET_INIT] ✅ Loaded from data-bundle-config:', bundleData);
       } catch (error) {
-        console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error);
+        console.error('[WIDGET_INIT] Failed to parse data-bundle-config:', error);
       }
     }
 
     // Source 2: window.allBundlesData
-    console.log('[WIDGET_INIT] Checking window.allBundlesData:', {
-      exists: !!window.allBundlesData,
-      value: window.allBundlesData
-    });
-
     if (!bundleData && window.allBundlesData) {
       bundleData = window.allBundlesData;
-      console.log('[WIDGET_INIT] ✅ Loaded from window.allBundlesData:', bundleData);
     }
 
     if (!bundleData) {
-      console.error('[WIDGET_INIT] ❌ No bundle data available from any source!');
       throw new Error('No bundle data available');
     }
 
-    console.log('[WIDGET_INIT] ✅ Final bundleData:', bundleData);
     this.bundleData = bundleData;
   }
 
   selectBundle() {
-    console.log('[WIDGET_INIT] 🔍 Selecting bundle...', {
-      bundleData: this.bundleData,
-      config: this.config
-    });
-
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
-
-    if (this.selectedBundle) {
-      console.log('[WIDGET_INIT] ✅ Bundle selected:', {
-        id: this.selectedBundle.id,
-        name: this.selectedBundle.name,
-        type: this.selectedBundle.bundleType,
-        status: this.selectedBundle.status,
-        steps: this.selectedBundle.steps,
-        stepsCount: this.selectedBundle.steps?.length
-      });
-    } else {
-      console.error('[WIDGET_INIT] ❌ No bundle selected! Bundle selection returned null.');
-    }
   }
 
   initializeDataStructures() {
@@ -1174,10 +1040,6 @@ class BundleWidget {
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
-      stepsCount,
-      selectedProductsLength: this.selectedProducts.length,
-      stepProductDataLength: this.stepProductData.length
-    });
   }
 
   // ========================================================================
@@ -1230,18 +1092,15 @@ class BundleWidget {
     footer.className = 'bundle-footer-messaging';
     footer.style.display = 'none';
     footer.innerHTML = `
+      <div class="footer-discount-text"></div>
       <div class="footer-progress-container">
-        <div class="progress-bar-wrapper">
-          <div class="progress-bar">
-            <div class="progress-fill"></div>
-          </div>
-          <div class="progress-text">
-            <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
-          </div>
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
         </div>
-        <div class="footer-discount-text"></div>
-        <div class="footer-savings-display" style="display: none;">
-          <span class="savings-badge">You save: <span class="savings-amount"></span></span>
+        <div class="progress-details">
+          <span class="progress-text">
+            <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
+          </span>
         </div>
       </div>
     `;
@@ -1327,29 +1186,17 @@ class BundleWidget {
   }
 
   renderSteps() {
-    console.log('[WIDGET_RENDER] 🎨 renderSteps called');
-    console.log('[WIDGET_RENDER] Steps container:', this.elements.stepsContainer);
-    console.log('[WIDGET_RENDER] Selected bundle:', this.selectedBundle);
-    console.log('[WIDGET_RENDER] Steps to render:', this.selectedBundle?.steps);
-
     // Clear existing steps
     this.elements.stepsContainer.innerHTML = '';
 
     if (!this.selectedBundle || !this.selectedBundle.steps) {
-      console.error('[WIDGET_RENDER] ❌ No bundle or steps to render!');
       return;
     }
 
-    console.log(`[WIDGET_RENDER] Rendering ${this.selectedBundle.steps.length} steps...`);
-
     this.selectedBundle.steps.forEach((step, index) => {
-      console.log(`[WIDGET_RENDER] Creating step ${index + 1}:`, step);
       const stepElement = this.createStepElement(step, index);
       this.elements.stepsContainer.appendChild(stepElement);
-      console.log(`[WIDGET_RENDER] ✅ Step ${index + 1} appended to container`);
     });
-
-    console.log('[WIDGET_RENDER] ✅ All steps rendered. Container HTML:', this.elements.stepsContainer.innerHTML.substring(0, 200));
   }
 
   createStepElement(step, index) {
@@ -1445,7 +1292,7 @@ class BundleWidget {
 
   getStepSelectionText(selectedProducts) {
     const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
-    return totalSelected > 0 ? `${totalSelected} selected` : 'Click to select';
+    return totalSelected > 0 ? `${totalSelected} selected` : '';
   }
 
   renderFooter() {
@@ -1497,62 +1344,55 @@ class BundleWidget {
         variables
       );
       footerDiscountText.innerHTML = successMessage;
-      footerDiscountText.style.color = 'var(--footer-success-color, #28a745)';
+      this.elements.footer.classList.add('qualified');
     } else {
       // Progress message
       const progressMessage = TemplateManager.replaceVariables(
         this.config.discountTextTemplate,
         variables
       );
-        template: this.config.discountTextTemplate,
-        variables: variables,
-        result: progressMessage
-      });
-      
       footerDiscountText.innerHTML = progressMessage;
-      footerDiscountText.style.color = 'var(--footer-text-color, #2d3748)';
+      this.elements.footer.classList.remove('qualified');
     }
 
     // Update progress bar based on condition type
     const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
     const ruleToUse = discountInfo.applicableRule || nextRule;
-    
+
     let progressPercentage = 0;
-    let currentValue = 0;
-    let targetValue = 0;
-    
+
     if (ruleToUse) {
-      const conditionType = ruleToUse.conditionType || 'quantity';
-      targetValue = ruleToUse.value || 0;
-      
+      const conditionType = ruleToUse.condition?.type || 'quantity';
+      const targetValue = ruleToUse.condition?.value || 0;
+
       if (conditionType === 'amount') {
-        currentValue = totalPrice;
-        progressPercentage = targetValue > 0 ? Math.min(100, (currentValue / targetValue) * 100) : 0;
+        // Amount-based condition
+        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
+
+        // Update text to show formatted currency values
+        if (currentQuantitySpan && targetQuantitySpan) {
+          const currentFormatted = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+          const targetFormatted = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
+          currentQuantitySpan.textContent = currentFormatted;
+          targetQuantitySpan.textContent = targetFormatted; // No "items" suffix for amount
+        }
       } else {
-        currentValue = totalQuantity;
-        progressPercentage = targetValue > 0 ? Math.min(100, (currentValue / targetValue) * 100) : 0;
+        // Quantity-based condition
+        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
+
+        // Update text to show quantity values
+        if (currentQuantitySpan && targetQuantitySpan) {
+          currentQuantitySpan.textContent = totalQuantity.toString();
+          targetQuantitySpan.textContent = targetValue.toString(); // Remove "items" suffix, add via CSS
+        }
       }
     }
+
+    console.log('[PROGRESS] Progress:', progressPercentage + '%', 'Total:', totalPrice, 'Target:', ruleToUse?.condition?.value);
 
     if (progressFill) {
       progressFill.style.width = `${progressPercentage}%`;
     }
-
-    if (currentQuantitySpan) {
-      currentQuantitySpan.textContent = totalQuantity.toString();
-    }
-
-    if (targetQuantitySpan) {
-      targetQuantitySpan.textContent = targetValue.toString();
-    }
-      totalQuantity,
-      totalPrice,
-      targetValue,
-      currentValue,
-      progressPercentage,
-      conditionType: ruleToUse?.conditionType || 'quantity',
-      qualifiesForDiscount: discountInfo.qualifiesForDiscount
-    });
   }
 
   updateAddToCartButton() {
@@ -1596,7 +1436,6 @@ class BundleWidget {
   // ========================================================================
 
   openModal(stepIndex) {
-
     this.currentStepIndex = stepIndex;
     const step = this.selectedBundle.steps[stepIndex];
 
@@ -1622,7 +1461,6 @@ class BundleWidget {
   }
 
   closeModal() {
-
     this.elements.modal.style.display = 'none';
     this.elements.modal.classList.remove('active');
     document.body.style.overflow = '';
@@ -1639,37 +1477,88 @@ class BundleWidget {
     if (this.stepProductData[stepIndex].length > 0) {
       return;
     }
+
+    console.log('[LOAD_PRODUCTS] Step data:', {
       stepIndex,
-      stepName: step.name,
       hasProducts: !!step.products,
+      productsLength: step.products?.length,
       hasStepProduct: !!step.StepProduct,
+      stepProductLength: step.StepProduct?.length,
       hasCollections: !!step.collections,
-      productsCount: step.products?.length || 0,
-      stepProductCount: step.StepProduct?.length || 0,
-      collectionsCount: step.collections?.length || 0
+      collectionsLength: step.collections?.length,
+      fullStep: step
     });
 
     let allProducts = [];
 
-    // Process explicit products from both products and StepProduct arrays
+    // Process explicit products - fetch using Storefront API via our backend
     if (step.products && Array.isArray(step.products) && step.products.length > 0) {
-      allProducts = allProducts.concat(step.products);
+      const productIds = step.products.map(p => p.id); // Keep full GID format
+      const shop = window.Shopify?.shop || window.location.host;
+
+      // Get app URL from widget data attribute or window global
+      const widgetContainer = document.querySelector('#bundle-builder-app');
+      const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+      const apiBaseUrl = appUrl || window.location.origin;
+
+      console.log('[LOAD_PRODUCTS] Fetching products from Storefront API. IDs:', productIds);
+      console.log('[LOAD_PRODUCTS] Using API base URL:', apiBaseUrl);
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[LOAD_PRODUCTS] API request failed:', response.status, errorText);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('[LOAD_PRODUCTS] API response:', data);
+
+        if (data.products && data.products.length > 0) {
+          allProducts = allProducts.concat(data.products);
+          console.log('[LOAD_PRODUCTS] Added', data.products.length, 'products');
+        } else {
+          console.warn('[LOAD_PRODUCTS] No products returned');
+        }
+      } catch (error) {
+        console.error('[LOAD_PRODUCTS] Error fetching products:', error);
+      }
     }
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-      const stepProducts = step.StepProduct.map(sp => ({
-        id: sp.productId,
-        title: sp.title,
-        images: sp.imageUrl ? [{ originalSrc: sp.imageUrl }] : [],
-        variants: sp.variants || [],
-        handle: sp.handle || null
-      }));
-      allProducts = allProducts.concat(stepProducts);
+      const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
+      const shop = window.Shopify?.shop || window.location.host;
+
+      if (productGids.length > 0) {
+        console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
+
+        // Get app URL (same as above)
+        const widgetContainer = document.querySelector('#bundle-builder-app');
+        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const apiBaseUrl = appUrl || window.location.origin;
+
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
+
+          if (!response.ok) {
+            console.error('[LOAD_PRODUCTS] API request failed for StepProduct:', response.status);
+          } else {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'StepProducts');
+            }
+          }
+        } catch (error) {
+          console.error('[LOAD_PRODUCTS] Error fetching StepProduct:', error);
+        }
+      }
     }
 
     // Process collection products
     if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-
       const collectionPromises = step.collections.map(async (collection) => {
         if (!collection.handle) {
           return [];
@@ -1695,7 +1584,13 @@ class BundleWidget {
     }
 
     // Process and normalize product data
+    console.log('[LOAD_PRODUCTS] Raw products for step', stepIndex, ':', allProducts.length, 'products');
+    console.log('[LOAD_PRODUCTS] First product sample:', allProducts[0]);
+
     const processedProducts = this.processProductsForStep(allProducts, step);
+
+    console.log('[LOAD_PRODUCTS] Processed products:', processedProducts.length);
+    console.log('[LOAD_PRODUCTS] First processed:', processedProducts[0]);
 
     // Remove duplicates
     const seen = new Set();
@@ -1707,59 +1602,51 @@ class BundleWidget {
       seen.add(key);
       return true;
     });
-      stepIndex,
-      stepName: step.name,
-      finalCount: this.stepProductData[stepIndex].length,
-      productTitles: this.stepProductData[stepIndex].map(p => p.title)
-    });
 
-    // If no products found, log detailed debug info
-    if (this.stepProductData[stepIndex].length === 0) {
-        stepIndex,
-        stepName: step.name,
-        stepConfig: {
-          hasProducts: !!step.products,
-          hasStepProduct: !!step.StepProduct,
-          hasCollections: !!step.collections,
-          productsLength: step.products?.length,
-          stepProductLength: step.StepProduct?.length,
-          collectionsLength: step.collections?.length
-        },
-        rawStep: step
-      });
-    }
+    console.log('[LOAD_PRODUCTS] Final stepProductData[' + stepIndex + ']:', this.stepProductData[stepIndex]);
   }
 
   processProductsForStep(products, step) {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product
-        return product.variants.map(variant => ({
-          id: this.extractId(variant.id),
-          title: `${product.title} - ${variant.title}`,
-          imageUrl: product.images?.[0]?.originalSrc || product.images?.[0]?.src || 'https://via.placeholder.com/150',
-          price: parseFloat(variant.price || '0') * 100, // Convert to cents
-          variantId: this.extractId(variant.id)
-        }));
+        return product.variants.map(variant => {
+          const imageUrl = product.imageUrl ||
+                          product.images?.[0]?.originalSrc ||
+                          product.images?.[0]?.src ||
+                          product.image?.src ||
+                          variant.image?.src ||
+                          'https://via.placeholder.com/150';
+
+          return {
+            id: this.extractId(variant.id),
+            title: `${product.title} - ${variant.title}`,
+            imageUrl,
+            price: parseFloat(variant.price || '0') * 100,
+            variantId: this.extractId(variant.id)
+          };
+        });
       } else {
         // Display product with default variant
         const defaultVariant = product.variants?.[0];
+        const imageUrl = product.imageUrl ||
+                        product.images?.[0]?.originalSrc ||
+                        product.images?.[0]?.src ||
+                        product.image?.src ||
+                        defaultVariant?.image?.src ||
+                        'https://via.placeholder.com/150';
+
         return [{
           id: this.extractId(defaultVariant?.id || product.id),
           title: product.title,
-          imageUrl: product.images?.[0]?.originalSrc || product.images?.[0]?.src || product.image?.src || 'https://via.placeholder.com/150',
+          imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-          variantId: this.extractId(defaultVariant?.id || product.id),
-          variants: (product.variants || []).map(v => ({
-            id: this.extractId(v.id),
-            title: v.title,
-            price: parseFloat(v.price || '0') * 100
-          }))
+          variantId: this.extractId(defaultVariant?.id || product.id)
         }];
       }
     });
   }
-
+  
   extractId(idString) {
     if (!idString) return null;
 
@@ -1939,7 +1826,6 @@ class BundleWidget {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
-
     const quantity = Math.max(0, newQuantity);
 
     // Validate step conditions
@@ -2144,10 +2030,6 @@ class BundleWidget {
       messageText = TemplateManager.replaceVariables(this.config.successMessageTemplate, variables);
     } else {
       messageText = TemplateManager.replaceVariables(this.config.discountTextTemplate, variables);
-        template: this.config.discountTextTemplate,
-        variables: variables,
-        result: messageText
-      });
     }
 
     if (discountText) {
@@ -2157,13 +2039,13 @@ class BundleWidget {
     // Update progress bar based on condition type
     const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
     const ruleToUse = discountInfo.applicableRule || nextRule;
-    
+
     let progressPercentage = 0;
-    
+
     if (ruleToUse) {
-      const conditionType = ruleToUse.conditionType || 'quantity';
-      const targetValue = ruleToUse.value || 0;
-      
+      const conditionType = ruleToUse.condition?.type || 'quantity';
+      const targetValue = ruleToUse.condition?.value || 0;
+
       if (conditionType === 'amount') {
         progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
       } else {
@@ -2178,13 +2060,6 @@ class BundleWidget {
     // Apply state class
     footerMessaging.className = `modal-footer-discount-messaging ${messageState}`;
     footerMessaging.style.display = 'flex';
-      messageState,
-      progressPercentage,
-      totalQuantity,
-      totalPrice,
-      conditionType: ruleToUse?.conditionType || 'quantity',
-      targetValue: ruleToUse?.value || 0
-    });
   }
 
   // ========================================================================
@@ -2192,7 +2067,6 @@ class BundleWidget {
   // ========================================================================
 
   async addToCart() {
-
     try {
       const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
         this.selectedProducts,
@@ -2250,10 +2124,6 @@ class BundleWidget {
   buildCartItems() {
     const cartItems = [];
     const bundleInstanceId = this.generateBundleInstanceId();
-      bundleId: this.selectedBundle.id,
-      bundleInstanceId,
-      selectedProductsCount: this.selectedProducts.length
-    });
 
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.stepProductData[stepIndex];
@@ -2272,24 +2142,10 @@ class BundleWidget {
             };
             
             cartItems.push(cartItem);
-              variantId,
-              quantity,
-              productTitle: product.title,
-              bundleProperty: BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_ID,
-              bundleInstanceId
-            });
           }
         }
       });
     });
-      totalItems: cartItems.length,
-      bundleInstanceId,
-      cartProperties: {
-        bundleIdProperty: BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_ID,
-        bundleConfigProperty: BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_CONFIG
-      }
-    });
-
     return cartItems;
   }
 
@@ -2317,10 +2173,6 @@ class BundleWidget {
     }
 
     const bundleInstanceId = `${this.selectedBundle.id}_${Math.abs(hash)}`;
-      bundleId: this.selectedBundle.id,
-      itemsSignature,
-      bundleInstanceId
-    });
 
     return bundleInstanceId;
   }
@@ -2370,7 +2222,6 @@ class BundleWidget {
     if (direction < 0 && newStepIndex >= 0) {
       // Previous step
       if (this.validateStep(this.currentStepIndex)) {
-
         this.currentStepIndex = newStepIndex;
         const step = this.selectedBundle.steps[newStepIndex];
 
@@ -2392,7 +2243,6 @@ class BundleWidget {
       if (newStepIndex < this.selectedBundle.steps.length) {
         // Next step
         if (this.validateStep(this.currentStepIndex)) {
-
           this.currentStepIndex = newStepIndex;
           const step = this.selectedBundle.steps[newStepIndex];
 
@@ -2464,7 +2314,6 @@ class BundleWidgetManager {
   static instances = new Map();
 
   static initialize() {
-
     // Find all bundle widget containers
     const containers = document.querySelectorAll(BUNDLE_WIDGET.SELECTORS.WIDGET_CONTAINER);
 
@@ -2480,7 +2329,6 @@ class BundleWidgetManager {
   }
 
   static reinitialize() {
-
     // Clear existing instances
     this.instances.clear();
 
@@ -2499,7 +2347,6 @@ class BundleWidgetManager {
 
 // Legacy function for backward compatibility
 function initializeBundleWidget(containerElement) {
-
   if (!containerElement) {
     return;
   }
@@ -2532,7 +2379,6 @@ function handleAutomaticBundleConfiguration() {
   const bundleId = urlParams.get('bundleId');
 
   if (bundleId && (BundleDataManager.isThemeEditorContext())) {
-
     // Store for widgets to use
     window.autoDetectedBundleId = bundleId;
     window.isThemeEditorContext = true;
@@ -2576,7 +2422,6 @@ if (BundleDataManager.isThemeEditorContext()) {
   observer.observe(document.body, {
     attributes: true,
     subtree: true,
-    attributeFilter: ['data-show-title', 'data-show-step-numbers', 'data-show-footer-messaging', 'style']
   });
 
   // Shopify theme editor events
@@ -2590,7 +2435,6 @@ if (BundleDataManager.isThemeEditorContext()) {
 // Global access for debugging and legacy compatibility
 window.BundleWidget = BundleWidget;
 window.BundleWidgetManager = BundleWidgetManager;
-window.BundleLogger = BundleLogger;
 window.CurrencyManager = CurrencyManager;
 window.PricingCalculator = PricingCalculator;
 window.ToastManager = ToastManager;

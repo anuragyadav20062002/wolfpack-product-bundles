@@ -584,34 +584,57 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       return { operations: [] };
     }
 
-    // Configuration loading
-    let bundleConfigs: any[] = [];
-    if (input.shop?.all_bundles?.value) {
-      try {
-        const shopBundlesArray = JSON.parse(input.shop.all_bundles.value);
-        if (Array.isArray(shopBundlesArray)) {
-          bundleConfigs = shopBundlesArray;
+    // Configuration loading - NEW: Load from per-product metafields
+    const bundleConfigs: Record<string, any> = {};
+    let configsLoadedCount = 0;
+
+    for (const line of bundleLines) {
+      const configValue = line.merchandise?.product?.cartTransformConfig?.value;
+
+      if (configValue) {
+        try {
+          const config = JSON.parse(configValue);
+
+          // Validate config structure
+          if (!config.id || !config.parentVariantId) {
+            Logger.warn('Invalid config structure', { phase: 'config-loading' }, {
+              hasId: !!config.id,
+              hasParentVariantId: !!config.parentVariantId,
+              lineId: line.id
+            });
+            continue;
+          }
+
+          // Map parentVariantId to bundleParentVariantId for compatibility with existing code
+          bundleConfigs[config.id] = {
+            ...config,
+            bundleParentVariantId: config.parentVariantId
+          };
+
+          configsLoadedCount++;
+        } catch (error) {
+          Logger.error('Failed to parse cart transform config', { phase: 'config-loading' }, {
+            error,
+            lineId: line.id
+          });
         }
-      } catch (error) {
-        Logger.error('Failed to parse shop metafield', { phase: 'config-loading' }, error);
-        return { operations: [] };
       }
     }
 
     Logger.info('Configuration loading completed', { phase: 'config-loading' }, {
-      bundleConfigsFound: bundleConfigs.length
+      bundleConfigsFound: configsLoadedCount,
+      uniqueBundles: Object.keys(bundleConfigs).length
     });
 
-    if (bundleConfigs.length === 0) {
+    if (Object.keys(bundleConfigs).length === 0) {
       Logger.warn('No bundle configurations found', { phase: 'config-loading' });
       return { operations: [] };
     }
 
-    // Create O(1) lookup map for bundle configurations
-    const bundleConfigsMap = createBundleConfigsMap(bundleConfigs);
+    // bundleConfigs is already a map (Record<string, any>), no need to transform
 
     Logger.debug('Bundle configuration map created', { phase: 'config-loading' }, {
-      availableBundleIds: Object.keys(bundleConfigsMap)
+      availableBundleIds: Object.keys(bundleConfigs)
     });
 
     // Process bundles by instance ID (supports multiple bundle instances)
@@ -626,7 +649,7 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       // Normalize bundle ID to find configuration
       const baseBundleId = normalizeBundleId(bundleInstanceId);
-      const bundleConfig = bundleConfigsMap[baseBundleId]; // O(1) lookup
+      const bundleConfig = bundleConfigs[baseBundleId]; // O(1) lookup
 
       Logger.debug('Processing bundle instance', { phase: 'processing' }, {
         instanceId: bundleInstanceId,

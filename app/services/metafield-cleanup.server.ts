@@ -51,7 +51,7 @@ export class MetafieldCleanupService {
 
   /**
    * Clean up metafields on the bundle product itself
-   * Simplified to only clean active metafields ($app namespace)
+   * Updated for Hybrid Architecture (#3)
    */
   private static async cleanupBundleProductMetafields(admin: any, shopifyProductId: string) {
     const productGid = shopifyProductId.startsWith('gid://')
@@ -59,11 +59,17 @@ export class MetafieldCleanupService {
       : `gid://shopify/Product/${shopifyProductId}`;
 
     const metafieldsToDelete = [
-      // Active bundle configuration metafield
+      // Widget configuration metafield
       {
         ownerId: productGid,
         namespace: "$app",
         key: "bundle_config"
+      },
+      // NEW: Cart transform configuration metafield (Hybrid Architecture)
+      {
+        ownerId: productGid,
+        namespace: "$app",
+        key: "cart_transform_config"
       },
       // Bundle isolation metafields
       {
@@ -105,6 +111,7 @@ export class MetafieldCleanupService {
 
   /**
    * Update shop-level metafields to remove deleted bundle from global bundle list
+   * Updated for Hybrid Architecture (#3) - uses bundle index
    * Public method - can be called independently for soft deletes
    */
   static async updateShopMetafieldsAfterDeletion(admin: any, deletedBundleId: string) {
@@ -129,12 +136,12 @@ export class MetafieldCleanupService {
         return;
       }
 
-      // Get current shop metafield with all bundles
+      // NEW: Get current bundle index (Hybrid Architecture)
       const metafieldResponse = await admin.graphql(`
-        query GetShopBundlesMetafield($ownerId: ID!) {
+        query GetBundleIndex($ownerId: ID!) {
           node(id: $ownerId) {
             ... on Shop {
-              allBundles: metafield(namespace: "$app", key: "all_bundles") {
+              bundleIndex: metafield(namespace: "custom", key: "bundle_index") {
                 id
                 value
               }
@@ -146,23 +153,23 @@ export class MetafieldCleanupService {
       });
 
       const metafieldData = await metafieldResponse.json();
-      const currentMetafield = metafieldData.data?.node?.allBundles;
+      const currentMetafield = metafieldData.data?.node?.bundleIndex;
 
       if (currentMetafield?.value) {
         try {
-          const allBundles = JSON.parse(currentMetafield.value);
+          const bundleIndex = JSON.parse(currentMetafield.value);
 
           // Filter out the deleted bundle
-          const filteredBundles = allBundles.filter((bundle: any) => bundle.id !== deletedBundleId);
+          const filteredBundles = bundleIndex.bundles.filter((bundle: any) => bundle.id !== deletedBundleId);
 
-          AppLogger.info('Updating shop metafield', {
+          AppLogger.info('Updating bundle index', {
             component: 'cleanup',
             operation: 'update-shop-metafields'
-          }, { before: allBundles.length, after: filteredBundles.length });
+          }, { before: bundleIndex.bundles.length, after: filteredBundles.length });
 
           // Update the shop metafield with filtered bundles
           const updateResponse = await admin.graphql(`
-            mutation UpdateShopBundlesMetafield($metafields: [MetafieldsSetInput!]!) {
+            mutation UpdateBundleIndex($metafields: [MetafieldsSetInput!]!) {
               metafieldsSet(metafields: $metafields) {
                 metafields {
                   id
@@ -179,10 +186,13 @@ export class MetafieldCleanupService {
             variables: {
               metafields: [{
                 ownerId: shopGid,
-                namespace: "$app",
-                key: "all_bundles",
+                namespace: "custom",
+                key: "bundle_index",
                 type: "json",
-                value: JSON.stringify(filteredBundles)
+                value: JSON.stringify({
+                  bundles: filteredBundles,
+                  updatedAt: new Date().toISOString()
+                })
               }]
             }
           });
@@ -190,25 +200,25 @@ export class MetafieldCleanupService {
           const updateData = await updateResponse.json();
 
           if (updateData.data?.metafieldsSet?.userErrors?.length > 0) {
-            AppLogger.error('Shop metafield update errors', {
+            AppLogger.error('Bundle index update errors', {
               component: 'cleanup',
               operation: 'update-shop-metafields'
             }, updateData.data.metafieldsSet.userErrors);
           } else {
-            AppLogger.info('Shop metafield updated successfully', {
+            AppLogger.info('Bundle index updated successfully', {
               component: 'cleanup',
               operation: 'update-shop-metafields'
             });
           }
 
         } catch (parseError) {
-          AppLogger.error('Error parsing shop metafield JSON', {
+          AppLogger.error('Error parsing bundle index JSON', {
             component: 'cleanup',
             operation: 'update-shop-metafields'
           }, parseError);
         }
       } else {
-        AppLogger.info('No shop metafield found to update', {
+        AppLogger.info('No bundle index found to update', {
           component: 'cleanup',
           operation: 'update-shop-metafields'
         });
