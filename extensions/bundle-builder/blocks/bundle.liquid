@@ -464,8 +464,8 @@
 {% endif %}
 
 <script>
-  // Inject app URL from shop metafield (auto-updated by app server)
-  window.__BUNDLE_APP_URL__ = {{ shop.metafields.app_config.server_url.value | json }};
+  // Inject app URL from shop metafield (auto-synced when merchant accesses app admin)
+  window.__BUNDLE_APP_URL__ = {{ shop.metafields.app_config.server_url | json }};
 </script>
 
 <script>
@@ -473,8 +473,9 @@
   // This is much faster than shop-level metafields and naturally isolated
   if (!window.allBundlesData) {
     // Primary source: product's bundle_config metafield
-    // Note: For json metafields, access directly without .value
-    const productBundleConfig = {{ product.metafields['$app'].bundle_config | json }};
+    // Note: Shopify automatically scopes app metafields - use 'app' namespace in Liquid
+    // The '$app' namespace in Admin API translates to 'app' in Liquid
+    const productBundleConfig = {{ product.metafields.app.bundle_config | json }};
 
     // Set as allBundlesData object (widget expects this name)
     // Create an object with the bundle ID as key for compatibility
