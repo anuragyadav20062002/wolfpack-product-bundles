@@ -3,7 +3,7 @@
 client_id = "bfda5624970c7ada838998eb951e9e85"
 name = "bundle-discount-functions"
 handle = "bundle-discount-functions-1"
-application_url = "https://wolfpack-product-bundle-app.onrender.com"
+application_url = "https://forward-geographical-arabia-arcade.trycloudflare.com"
 embedded = true
 
 [build]
@@ -14,10 +14,10 @@ api_version = "2025-04"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes"
+scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes,unauthenticated_read_product_listings"
 
 [auth]
-redirect_urls = ["https://wolfpack-product-bundle-app.onrender.com/auth/callback", "https://wolfpack-product-bundle-app.onrender.com/auth/shopify/callback", "https://wolfpack-product-bundle-app.onrender.com/api/auth/callback"]
+redirect_urls = ["https://forward-geographical-arabia-arcade.trycloudflare.com"]
 
 [pos]
 embedded = false

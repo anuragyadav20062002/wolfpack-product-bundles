@@ -15,9 +15,8 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "target": "ES2022",
-    "baseUrl": ".",
     "paths": {
-      "~/*": ["app/*"]
+      "~/*": ["./app/*"]
     },
     "types": ["node"]
   }

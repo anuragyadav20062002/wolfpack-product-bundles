@@ -2,6 +2,7 @@ import { json } from "@remix-run/node";
 import type { LoaderFunction } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
+import { AppLogger } from "../lib/logger";
 
 /**
  * Public API endpoint to fetch fresh bundle data
@@ -18,7 +19,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       return json({ error: "Shop not found" }, { status: 400 });
     }
 
-    console.log("📡 [BUNDLE_API] Fetching fresh bundle data for shop:", session.shop);
+    AppLogger.info("Fetching fresh bundle data", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", shop: session.shop });
 
     // Get all active cart transform bundles from database
     const allBundles = await db.bundle.findMany({
@@ -40,7 +41,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     });
 
-    console.log("📦 [BUNDLE_API] Found active bundles:", allBundles.length);
+    AppLogger.info("Found active bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", count: allBundles.length });
 
     // Format bundles for JavaScript widget
     const formattedBundles = allBundles.map(bundle => ({
@@ -66,8 +67,8 @@ export const loader: LoaderFunction = async ({ request }) => {
         conditionValue: step.conditionValue
       })),
       pricing: bundle.pricing ? {
-        enabled: bundle.pricing.enableDiscount,
-        method: bundle.pricing.discountMethod,
+        enabled: bundle.pricing.enabled,
+        method: bundle.pricing.method,
         rules: bundle.pricing.rules || [],
         showFooter: bundle.pricing.showFooter,
         messages: bundle.pricing.messages || {}
@@ -80,7 +81,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       bundlesObject[bundle.id] = bundle;
     });
 
-    console.log("✅ [BUNDLE_API] Returning bundles:", Object.keys(bundlesObject));
+    AppLogger.info("Returning bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", bundleIds: Object.keys(bundlesObject) });
 
     return json({
       success: true,
@@ -96,7 +97,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
 
   } catch (error) {
-    console.error("❌ [BUNDLE_API] Error fetching bundles:", error);
+    AppLogger.error("Error fetching bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader" }, error);
     return json({
       success: false,
       error: (error as Error).message,

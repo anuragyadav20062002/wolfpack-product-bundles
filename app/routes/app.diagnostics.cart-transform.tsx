@@ -14,6 +14,7 @@ import {
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { CartTransformService } from "../services/cart-transform-service.server";
+import { AppLogger } from "../lib/logger";
 
 interface CartTransformStatus {
   isActivated: boolean;
@@ -82,7 +83,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (intent === "activate") {
     try {
-      console.log(`🔧 [DIAGNOSTICS] Manually activating cart transform for shop: ${session.shop}`);
+      AppLogger.info("Manually activating cart transform", { component: "app.diagnostics.cart-transform", operation: "activate", shop: session.shop });
       
       const result = await CartTransformService.completeSetup(admin, session.shop);
       
@@ -100,9 +101,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         });
       }
     } catch (error) {
-      console.error("❌ [DIAGNOSTICS] Error during manual activation:", error);
-      return json({ 
-        success: false, 
+      AppLogger.error("Error during manual activation", { component: "app.diagnostics.cart-transform", operation: "activate" }, error);
+      return json({
+        success: false,
         error: error instanceof Error ? error.message : "Unknown error during activation"
       }, { status: 500 });
     }
@@ -110,10 +111,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (intent === "test_logs") {
     try {
-      console.log("🔍 [DIAGNOSTICS] Testing cart transform function logs...");
-      console.log("🔍 [DIAGNOSTICS] Function ID:", process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID);
-      console.log("🔍 [DIAGNOSTICS] Shop Domain:", session.shop);
-      console.log("🔍 [DIAGNOSTICS] Timestamp:", new Date().toISOString());
+      AppLogger.info("Testing cart transform function logs", { component: "app.diagnostics.cart-transform", operation: "test-logs" }, {
+        functionId: process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID,
+        shop: session.shop,
+        timestamp: new Date().toISOString()
+      });
       
       return json({ 
         success: true, 

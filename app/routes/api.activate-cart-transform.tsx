@@ -1,13 +1,14 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { CartTransformService } from "../services/cart-transform-service.server";
+import { AppLogger } from "../lib/logger";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { admin, session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
   try {
-    console.log(`🚀 Activating cart transform for shop: ${shopDomain}`);
+    AppLogger.info('Activating cart transform', { operation: 'activate-cart-transform', shopId: shopDomain });
     
     const result = await CartTransformService.completeSetup(admin, shopDomain);
 
@@ -20,7 +21,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
   } catch (error) {
-    console.error("❌ Cart transform activation failed:", error);
+    AppLogger.error('Cart transform activation failed', { operation: 'activate-cart-transform' }, error);
     return json({ 
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

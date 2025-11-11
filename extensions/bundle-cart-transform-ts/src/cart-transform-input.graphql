@@ -3,40 +3,17 @@ query Input {
     lines {
       id
       quantity
-      # CRITICAL: Cart line attributes for bundle detection
-      # Line item properties (added via properties in cart add) become accessible as attributes
-      attribute(key: "_wolfpack_bundle_id") {
+      bundleId: attribute(key: "_bundle_id") {
         value
       }
       merchandise {
         __typename
         ... on ProductVariant {
           id
-          title
-          # Standard Shopify bundle metafields for cart transform (app-reserved namespace)
-          component_reference: metafield(namespace: "$app", key: "component_reference") {
-            value
-          }
-          component_quantities: metafield(namespace: "$app", key: "component_quantities") {
-            value
-          }
-          component_parents: metafield(namespace: "$app", key: "component_parents") {
-            value
-          }
-          price_adjustment: metafield(namespace: "$app", key: "price_adjustment") {
-            value
-          }
-          # Access product itself for additional bundle configuration data
           product {
             id
-            title
-            # Bundle configuration metafields on the product level
-            bundle_config: metafield(namespace: "bundle_discounts", key: "cart_transform_config") {
-              value
-              jsonValue
-            }
-            # Fallback: All bundles data stored on products for cart transform access
-            all_bundles_data: metafield(namespace: "custom", key: "all_bundles_data") {
+            # NEW: Read lightweight cart transform config (~500 bytes)
+            cartTransformConfig: metafield(namespace: "$app", key: "cart_transform_config") {
               value
             }
           }
@@ -45,14 +22,11 @@ query Input {
       cost {
         amountPerQuantity {
           amount
-          currencyCode
         }
         totalAmount {
           amount
-          currencyCode
         }
       }
     }
-    # CRITICAL: Cart-level bundle configurations from CartTransform metafield
   }
 }

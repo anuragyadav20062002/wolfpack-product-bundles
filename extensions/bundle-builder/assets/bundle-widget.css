@@ -63,6 +63,7 @@
   gap: var(--step-card-spacing, 15px);
   margin-bottom: var(--element-spacing, 15px);
   padding: var(--element-spacing, 15px);
+  justify-items: center;
 }
 
 /* Responsive adjustments for step cards */
@@ -81,63 +82,127 @@
 
 
 .step-box {
-  border: 2px dashed #ccc;
-  border-radius: 12px;
-  width: var(--step-box-size, 150px);
-  height: var(--step-box-size, 150px);
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  width: 100%;
+  max-width: var(--step-box-size, 150px);
+  height: auto;
+  min-height: var(--step-box-size, 150px);
+  aspect-ratio: 1 / 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  background-color: #fafafa;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
   box-sizing: border-box;
-  padding: var(--step-card-spacing, 15px);
-  margin: var(--step-card-spacing, 15px);
+  padding: 16px;
+  margin: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.step-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #7132FF 0%, #9b6bff 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .step-box:hover {
-  border-color: #333;
-  background-color: #f0f0f0;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #7132FF;
+  background: linear-gradient(135deg, #faf8ff 0%, #f5f3ff 100%);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(113, 50, 255, 0.12), 0 6px 12px rgba(113, 50, 255, 0.08);
 }
 
-.step-box.has-selections {
-  border-style: solid;
-  border-color: #28a745;
-  background-color: #f8fff8;
+.step-box:hover::before {
+  opacity: 1;
 }
 
-.step-box.has-selections:hover {
-  border-color: #1e7e34;
-  background-color: #f0fff0;
+.step-box.step-completed {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.1), 0 1px 2px rgba(16, 185, 129, 0.06);
+}
+
+.step-box.step-completed::before {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  opacity: 1;
+}
+
+.step-box.step-completed:hover {
+  border-color: #059669;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15), 0 6px 12px rgba(16, 185, 129, 0.1);
 }
 
 .plus-icon {
-  font-size: 3em;
-  color: #ccc;
-  margin-bottom: 10px;
-  transition: color 0.3s ease;
+  font-size: 3.5em;
+  font-weight: 300;
+  color: #d1d5db;
+  margin-bottom: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1;
 }
 
 .step-box:hover .plus-icon {
-  color: #666;
+  color: #7132FF;
+  transform: rotate(90deg) scale(1.1);
 }
 
-.step-box.has-selections .plus-icon {
+.step-box.step-completed .plus-icon {
   display: none;
 }
 
+.check-icon {
+  font-size: 2.5em;
+  color: #10b981;
+  margin-bottom: 8px;
+  animation: checkmarkPop 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+@keyframes checkmarkPop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .step-name {
-  font-size: 0.9em;
-  color: #555;
-  font-weight: 500;
+  font-size: 0.875em;
+  color: #374151;
+  font-weight: 600;
   margin: 0;
   padding: 0 8px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.step-box.step-completed .step-name {
+  color: #059669;
+}
+
+.step-selection-count {
+  font-size: 0.75em;
+  color: #9ca3af;
+  font-weight: 500;
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.step-box.step-completed .step-selection-count {
+  color: #10b981;
+  font-weight: 600;
 }
 
 /* Step images container */
@@ -146,54 +211,62 @@
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 4px;
-  max-width: 120px;
-  max-height: 80px;
-  margin-bottom: 8px;
+  gap: 6px;
+  max-width: 100px;
+  max-height: 70px;
+  margin-bottom: 12px;
   overflow: hidden;
 }
 
 .step-image {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   object-fit: cover;
-  border: 1px solid #e0e0e0;
-  transition: transform 0.2s ease;
+  border: 2px solid #e5e7eb;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .step-image:hover {
-  transform: scale(1.1);
+  transform: scale(1.15) rotate(2deg);
+  border-color: #10b981;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.2);
+  z-index: 1;
 }
 
 /* Handle multiple images layout */
 .step-images.two-images .step-image {
-  width: 45px;
-  height: 45px;
+  width: 42px;
+  height: 42px;
 }
 
 .step-images.three-images .step-image {
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
 }
 
 .step-images.four-plus-images .step-image {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
 }
 
 /* Show count badge for many images */
-.step-images .image-count-badge {
+.image-count-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #28a745;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   font-size: 0.7em;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-weight: bold;
-  z-index: 1;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  border: 2px solid white;
+  min-width: 24px;
+  text-align: center;
 }
 
 .bundle-includes {
@@ -385,77 +458,227 @@
 }
 
 .modal-step-title {
-  font-size: 1.4em;
-  font-weight: 600;
-  color: #333;
+  font-size: 1.5em;
+  font-weight: 700;
+  color: var(--modal-step-title-color, #2c5530);
   text-align: center;
-  margin-bottom: 15px;
+  margin-bottom: 8px;
   padding: 0 20px;
+  line-height: 1.2;
 }
 
 .modal-step-subtitle {
-  font-size: 0.9em;
-  color: #666;
+  font-size: 0.95em;
+  color: #555;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 0 20px;
+  font-weight: 500;
 }
 
 .modal-tabs {
   display: flex;
   justify-content: center;
-  gap: 8px; /* Slightly reduced gap between tabs */
+  align-items: flex-start;
   width: 100%;
   margin-bottom: 20px;
-  border-bottom: none;
-  padding: 0 20px; /* Adjusted padding for tabs bar */
+  padding: 0 30px;
   box-sizing: border-box;
-  flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
 }
 
-.modal-tab {
-  padding: 12px 28px; /* Adjusted padding for a wider button look */
+/* Milestone Step Container */
+.milestone-step-container {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  position: relative;
+}
+
+.milestone-step-container:last-child {
+  flex: 0;
+  flex-shrink: 0;
+}
+
+/* Milestone Step */
+.milestone-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
-  border: 1px solid #dcdcdc; /* Lighter border color */
-  background-color: #f8f8f8; /* Lighter background for inactive */
-  border-radius: 6px; /* More rounded corners */
-  font-weight: 600; /* Slightly bolder text for better readability */
-  color: #555;
-  flex-grow: 0;
+  transition: all 0.25s ease;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.milestone-step.locked {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Milestone Circle */
+.milestone-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  border: 2px solid #d1d5db;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.milestone-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #9ca3af;
+  transition: all 0.25s ease;
+}
+
+/* Active Step */
+.milestone-step.active .milestone-circle {
+  background: var(--modal-tab-active-bg-start, #111827);
+  border-color: var(--modal-tab-active-border-color, #111827);
+  border-width: 2px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.milestone-step.active .milestone-number {
+  color: #ffffff;
+}
+
+/* Completed Step */
+.milestone-step.completed .milestone-circle {
+  background-color: var(--modal-tab-completed-border-color, #10b981);
+  border-color: var(--modal-tab-completed-border-color, #10b981);
+  border-width: 2px;
+}
+
+.milestone-step.completed .milestone-number {
+  color: #ffffff;
+}
+
+/* In-Progress Step */
+.milestone-step.in-progress .milestone-circle {
+  background-color: #ffffff;
+  border-color: var(--modal-tab-progress-fill-start, #7132FF);
+  border-width: 2px;
+}
+
+.milestone-step.in-progress .milestone-number {
+  color: var(--modal-tab-progress-fill-start, #7132FF);
+}
+
+/* Milestone Label */
+.milestone-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
   text-align: center;
+  max-width: 90px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-right: 0;
-  transition: all 0.2s ease;
-  min-width: 130px; /* Increased min-width */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle shadow */
+  transition: all 0.25s ease;
 }
 
-.modal-tab:hover:not(.active) {
-  background-color: #eee; /* Slight hover effect */
-  border-color: #c0c0c0;
+.milestone-step.active .milestone-label {
+  color: var(--modal-tab-active-border-color, #111827);
+  font-weight: 700;
 }
 
-/* Remove specific first/last child radius as all corners are now rounded */
-.modal-tab:first-child,
-.modal-tab:last-child {
-  border-radius: 6px;
+.milestone-step.completed .milestone-label {
+  color: var(--modal-tab-completed-border-color, #10b981);
+  font-weight: 600;
 }
 
-.modal-tab.active {
-  background-color: #222; /* Darker background for active tab */
-  border-color: #222; /* Darker border */
-  color: #fff;
-  font-weight: bold;
-  border-bottom: 1px solid #222; /* Consistent border for active */
+.milestone-step.in-progress .milestone-label {
+  color: var(--modal-tab-progress-fill-start, #7132FF);
+}
+
+/* Milestone Connector (Progress Bar between steps) */
+.milestone-connector {
+  flex: 1;
+  height: 3px;
+  background-color: #d1d5db;
+  margin: 0 8px;
+  margin-top: 19px;
   z-index: 1;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 30px;
+  border-radius: 2px;
   position: relative;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* More pronounced shadow for active */
+  overflow: hidden;
 }
 
-.modal-tab.active + .modal-tab {
-  border-left: 1px solid #dcdcdc; /* Maintain separation */
+.milestone-connector.completed {
+  background: var(--modal-tab-completed-progress-fill-start, #10b981);
+}
+
+.milestone-connector.in-progress {
+  background: linear-gradient(90deg, var(--modal-tab-completed-progress-fill-start, #10b981) 0%, #d1d5db 50%);
+}
+
+/* Ensure connectors are always visible */
+.milestone-step-container:not(:last-child) .milestone-connector {
+  display: block !important;
+}
+
+/* Hover Effects */
+.milestone-step:not(.locked):not(.active):hover .milestone-circle {
+  border-color: #9ca3af;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transform: scale(1.05);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .modal-tabs {
+    padding: 0 20px;
+  }
+
+  .milestone-circle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .milestone-number {
+    font-size: 14px;
+  }
+
+  .milestone-label {
+    font-size: 11px;
+    max-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-tabs {
+    padding: 0 15px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .milestone-step-container {
+    flex-direction: column;
+    flex: none;
+    width: 100%;
+  }
+
+  .milestone-connector {
+    width: 3px;
+    height: 24px;
+    margin: 0;
+  }
+
+  .milestone-circle {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 .close-button {
@@ -516,48 +739,148 @@
   max-height: none;
 }
 
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px; /* slightly smaller gap */
-  padding: 10px 0;
+/* Modal product cards - compact design with proper sizing */
+/* Modal-specific product grid - fit 3 cards per row on desktop */
+.modal-body .product-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  max-width: 100%;
 }
 
-@media (max-width: 1024px) {
-  .product-grid {
-    grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
+@media (min-width: 769px) {
+  .modal-body .product-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
+  .modal-body .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-body .product-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+/* Modal product cards - professional design with proper proportions */
+.modal-body .product-card {
+  aspect-ratio: auto;
+  height: var(--modal-product-card-height, 280px);
+  min-height: var(--modal-product-card-height, 280px);
+  max-height: var(--modal-product-card-height, 280px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-body .product-card .image-wrapper {
+  position: relative;
+  height: 160px;
+  max-height: 160px;
+  min-height: 160px;
+  padding: 0;
+  padding-bottom: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.modal-body .product-card .image-wrapper img {
+  position: static;
+  object-fit: contain;
+  width: auto;
+  height: 100%;
+  max-height: 150px;
+  max-width: 100%;
+}
+
+.modal-body .product-card .product-info {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+}
+
+.modal-body .product-card .product-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  color: #1a1a1a;
+  text-align: center;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 34px;
+  max-height: 34px;
+}
+
+.modal-body .product-card .product-price {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+  text-align: left;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 10px 0;
+  max-width: 100%;
+}
+
+@media (max-width: 1200px) {
   .product-grid {
-    grid-template-columns: repeat(2, 1fr); /* 2 columns on small screens */
-    gap: 15px; /* Smaller gap on small screens */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
   }
 }
 
 @media (max-width: 480px) {
   .product-grid {
-    grid-template-columns: repeat(1, 1fr); /* 1 column on extra small screens */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
   }
 }
 
 .product-card {
   border: 1px solid #e0e0e0;
-  padding: 4px; /* slightly reduced */
+  padding: 8px;
   text-align: center;
   position: relative;
   cursor: pointer;
   transition: all 0.2s ease;
   border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06); /* Lighter shadow */
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%; /* Ensure full height of grid cell */
-  aspect-ratio: 1 / 1; /* Keep it square */
-  max-height: none; /* Remove max-height to allow flexibility within grid */
-  overflow: hidden; /* Important for containing absolutely positioned quantity controls */
+  height: 100%;
+  aspect-ratio: auto;
+  max-height: none;
+  overflow: hidden;
+  background: #fff;
 }
 
 .product-card:hover {
@@ -590,11 +913,18 @@
 }
 
 .product-card .product-title {
-  font-size: 0.85em;
+  font-size: var(--modal-product-title-size, 0.9em);
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   color: #333;
   text-align: center;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
 }
 
 /* Quantity Controls Styling */
@@ -661,46 +991,116 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+/* Modal Footer - Integrated Design with Discount Messaging */
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 15px;
-  padding: 20px 30px;
-  border-top: 1px solid #eee;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-top: 1px solid #e8e8e8;
   margin-top: 0;
-  background-color: #fdfdfd;
+  background-color: var(--modal-footer-bg-color, #ffffff);
+  min-height: 64px;
 }
 
-.modal-nav-button {
-  padding: 12px 30px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1.05em;
+/* Footer Discount Messaging - Integrated Between Buttons */
+.modal-footer-discount-messaging {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 16px;
+  min-width: 200px;
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-footer-discount-text {
+  font-size: 13px;
   font-weight: 600;
-  transition: background-color 0.2s ease;
+  color: var(--modal-footer-text-color, #2d3748);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.modal-footer-discount-messaging.success .modal-footer-discount-text {
+  color: var(--modal-footer-success-color, #28a745);
+}
+
+.modal-footer-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-footer-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(113, 50, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(113, 50, 255, 0.2);
+}
+
+.modal-footer-progress-fill {
+  height: 100% !important;
+  background: linear-gradient(90deg, #7132FF 0%, #9b6bff 100%) !important;
+  border-radius: 8px;
+  transition: width 0.3s ease;
+  display: block !important;
+  width: 0%;
+}
+
+.modal-footer-discount-messaging.success .modal-footer-progress-fill {
+  background: linear-gradient(90deg, var(--modal-footer-success-color, #28a745) 0%, #34ce57 100%);
+}
+
+/* Navigation Buttons - Compact Design */
+.modal-nav-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.modal-nav-button svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .modal-nav-button.prev-button {
-  background-color: #e0e0e0;
-  color: #555;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
 }
 
 .modal-nav-button.prev-button:hover {
-  background-color: #d0d0d0;
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 .modal-nav-button.next-button {
-  background-color: #222;
+  background-color: #111827;
   color: white;
+  border: 1px solid #111827;
 }
 
 .modal-nav-button.next-button:hover {
-  background-color: #000;
+  background-color: #000000;
 }
 
 .modal-nav-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -730,11 +1130,15 @@
 
 /* Added product price */
 .product-price {
-  font-size: 0.8em;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #111;
+  font-size: var(--modal-product-price-size, 0.85em);
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--modal-product-price-color, #2c5530);
   text-align: center;
+  background: var(--modal-product-price-bg, #f0f8f0);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e0f0e0;
 }
 
 /* Variant selector */
@@ -822,58 +1226,82 @@
   font-size: 0.9em;
 }
 
-/* Bundle footer messaging with progress bars */
+/* Bundle footer messaging with progress bars - Modern Design */
 .bundle-footer-messaging {
-  background: linear-gradient(135deg, var(--footer-bg-color, #f8f9fa) 0%, #e9ecef 100%);
-  border: 2px solid #dee2e6;
-  border-radius: 12px;
-  padding: var(--element-spacing, 15px);
-  margin: var(--element-spacing, 15px) auto 0 auto;
+  padding: 20px;
+  margin: 20px 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.bundle-footer-messaging.active {
-  border-color: var(--progress-bar-color, #28a745);
-  background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(40, 167, 69, 0.15);
+.footer-discount-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.bundle-footer-messaging.qualified {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.bundle-footer-messaging.qualified .footer-discount-text {
+  color: #065f46;
+  font-size: 16px;
 }
 
 .footer-progress-container {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--element-spacing, 15px) * 0.6);
+  gap: 8px;
+  width: 100%;
 }
 
-.progress-bar-wrapper {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--element-spacing, 15px) * 0.6);
-}
-
+/* Progress bar styling - Modern minimal design */
 .progress-bar {
-  flex: 1;
-  height: 12px;
-  background-color: var(--progress-bar-bg, #e9ecef);
-  border-radius: 6px;
+  width: 100%;
+  height: var(--progress-bar-height, 12px);
+  background: #f3f4f6;
+  border-radius: var(--progress-bar-border-radius, 999px);
   overflow: hidden;
   position: relative;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: none;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--progress-bar-color, #28a745) 0%, #20c997 50%, #17a2b8 100%);
-  border-radius: 6px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  border-radius: var(--progress-bar-border-radius, 999px);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 0%;
   position: relative;
-  overflow: hidden;
+  display: block !important;
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
+/* Progress details below the bar */
+.progress-details {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Animated shimmer effect */
 .progress-fill::after {
   content: '';
   position: absolute;
@@ -884,56 +1312,73 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.4) 50%,
     transparent 100%
   );
-  animation: progressShimmer 2s infinite;
+  animation: progressShimmer 2.5s ease-in-out infinite;
 }
 
 @keyframes progressShimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% { transform: translateX(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
 }
 
 .progress-text {
-  font-size: 0.85em;
+  font-size: 11px;
   font-weight: 600;
-  color: #495057;
+  color: #6b7280;
   white-space: nowrap;
-  min-width: 80px;
-  text-align: center;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  padding: 4px 10px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
 }
 
-.footer-discount-text {
-  font-size: 1.05em;
-  font-weight: 600;
-  color: var(--footer-text-color, #2e7d32);
-  text-align: center;
-  margin: 4px 0;
-  line-height: 1.4;
+/* Qualified state - green theme */
+.bundle-footer-messaging.qualified .progress-fill {
+  background: linear-gradient(90deg, #10b981 0%, #059669 50%, #047857 100%);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.bundle-footer-messaging.qualified .progress-text {
+  color: #059669;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.bundle-footer-messaging.qualified .progress-fill::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
 }
 
 .footer-savings-display {
-  text-align: center;
-  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
 }
 
 .savings-badge {
   display: inline-flex;
   align-items: center;
-  background: linear-gradient(135deg, var(--savings-badge-color, #28a745) 0%, #20c997 100%);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 0.9em;
+  gap: 4px;
+  color: var(--savings-badge-color, #10b981);
+  font-size: 14px;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-  animation: savingsPulse 2s infinite;
 }
 
-@keyframes savingsPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+.savings-badge::before {
+  content: "•";
+  color: var(--savings-badge-color, #10b981);
+  font-size: 18px;
 }
 
 .savings-badge .savings-amount {
@@ -953,19 +1398,9 @@
   100% { transform: scale(1); }
 }
 
-/* Milestone indicators on progress bar */
+/* Milestone indicators on progress bar - REMOVED for clean design */
 .progress-bar::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 4px;
-  height: 16px;
-  background-color: #6c757d;
-  transform: translate(-50%, -50%);
-  border-radius: 2px;
-  z-index: 1;
-  opacity: 0.7;
+  display: none;
 }
 
 /* Responsive adjustments for mobile */
@@ -1029,14 +1464,43 @@
   }
   
   .modal-footer {
-    padding: 15px 20px;
+    padding: 12px 16px;
+    gap: 12px;
+    flex-wrap: wrap;
   }
+
+  .modal-footer-discount-messaging {
+    order: -1;
+    width: 100%;
+    padding: 0;
+    margin-bottom: 8px;
+  }
+
+  .modal-footer-discount-text {
+    font-size: 12px;
+  }
+
+  .modal-footer-progress-bar {
+    height: 5px;
+  }
+
+  .modal-nav-button {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 13px;
+    justify-content: center;
+  }
+
+  .modal-nav-button svg {
+    width: 14px;
+    height: 14px;
+  }
+}
   
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-}
 
 /* Enhanced visual feedback for different discount states */
 .bundle-footer-messaging.nearly-qualified {

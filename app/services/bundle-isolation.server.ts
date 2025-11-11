@@ -1,115 +1,118 @@
 // Bundle Isolation Service
 // Ensures cart transform bundles only appear on their designated bundle products
+// Uses product-level metafields for optimal performance
+
+import { AppLogger } from "../lib/logger";
 
 export class BundleIsolationService {
 
   /**
-   * Update shop metafield with proper bundle isolation data
-   * Only includes bundles with their designated product mappings
+   * Update bundle product metafield with bundle configuration
+   * Stores bundle config on the bundle product itself for fast, isolated access
    */
-  static async updateShopBundlesWithIsolation(admin: any, shopId: string) {
-    console.log(`🔒 [ISOLATION] Updating shop bundles with isolation rules for shop: ${shopId}`);
+  static async updateBundleProductMetafield(admin: any, bundleProductId: string, bundleConfig: any) {
+    AppLogger.info('Updating bundle product metafield', { 
+      component: 'isolation', 
+      operation: 'update-metafield'
+    }, { bundleProductId });
 
     try {
-      // Get all active bundles from database with their product relationships
-      const db = (await import("../db.server")).default;
-
-      const activeBundles = await db.bundle.findMany({
-        where: {
-          shopId: shopId,
-          status: 'active'
-        },
-        include: {
-          steps: {
-            include: {
-              StepProduct: true
-            }
-          },
-          pricing: true
-        }
-      });
-
-      console.log(`🔒 [ISOLATION] Found ${activeBundles.length} active bundles to process`);
-
-      // Get shop GID
-      const shopResponse = await admin.graphql(`
-        query GetShopId {
-          shop {
-            id
+      // Helper function to safely parse JSON
+      const safeJsonParse = (value: any, defaultValue: any = []) => {
+        if (!value) return defaultValue;
+        if (typeof value === "object") return value;
+        if (typeof value === "string") {
+          try {
+            return JSON.parse(value);
+          } catch (error) {
+            AppLogger.error("JSON parse error in bundle isolation", { 
+              component: 'isolation', 
+              operation: 'parse-json'
+            }, error);
+            return defaultValue;
           }
         }
-      `);
+        return defaultValue;
+      };
 
-      const shopData = await shopResponse.json();
-      const shopGid = shopData.data?.shop?.id;
 
-      if (!shopGid) {
-        console.error('❌ [ISOLATION] Could not get shop GID');
-        return false;
-      }
+      // No transformation needed - pass through standardized nested structure
+      // Rules should already be in the format: { id, condition: { type, operator, value }, discount: { method, value } }
+      const ensureStandardizedRules = (rules: any[]) => {
+        if (!rules || !Array.isArray(rules)) return [];
 
-      // Process bundles with isolation rules
-      const isolatedBundles = activeBundles.map(bundle => {
-        // Helper function to safely parse JSON
-        const safeJsonParse = (value: any, defaultValue: any = []) => {
-          if (!value) return defaultValue;
-          if (typeof value === "object") return value;
-          if (typeof value === "string") {
-            try {
-              return JSON.parse(value);
-            } catch (error) {
-              console.error("JSON parse error:", error);
-              return defaultValue;
-            }
+        AppLogger.debug(`Validating pricing rules structure`, {
+          component: 'isolation',
+          operation: 'validate-rules'
+        }, { ruleCount: rules.length });
+
+        // Simply pass through - validation happens in pricing types
+        return rules;
+      };
+
+      const steps = bundleConfig.steps.map((step: any) => ({
+        id: step.id,
+        name: step.name,
+        position: step.position,
+        minQuantity: step.minQuantity,
+        maxQuantity: step.maxQuantity,
+        enabled: step.enabled,
+        displayVariantsAsIndividual: step.displayVariantsAsIndividual,
+        products: safeJsonParse(step.products, []),
+        collections: safeJsonParse(step.collections, []),
+        StepProduct: step.StepProduct || [],
+        conditionType: step.conditionType,
+        conditionOperator: step.conditionOperator,
+        conditionValue: step.conditionValue
+      }));
+
+      const bundleMetafieldData = {
+        id: bundleConfig.id,
+        name: bundleConfig.name,
+        description: bundleConfig.description,
+        status: bundleConfig.status,
+        bundleType: bundleConfig.bundleType,
+        shopifyProductId: bundleProductId,
+        bundleParentVariantId: bundleConfig.bundleParentVariantId || null,
+        steps: steps,
+        pricing: bundleConfig.pricing ? {
+          enabled: bundleConfig.pricing.enabled,
+          method: bundleConfig.pricing.method,
+          rules: ensureStandardizedRules(
+            safeJsonParse(bundleConfig.pricing.rules, [])
+          ),
+          showFooter: bundleConfig.pricing.showFooter,
+          showProgressBar: bundleConfig.pricing.showProgressBar,
+          messages: {
+            ...safeJsonParse(bundleConfig.pricing.messages, {}),
+            showDiscountDisplay: safeJsonParse(bundleConfig.pricing.messages, {}).showDiscountDisplay !== false // Default to true
           }
-          return defaultValue;
-        };
+        } : null,
+        // Store both product IDs (for reference) and variant IDs (for cart transform)
+        componentProductIds: Array.from(new Set(
+          steps.flatMap((step: any) =>
+            step.StepProduct?.map((sp: any) => sp.productId) || []
+          )
+        )),
+        // Store component variant IDs from step products' variant data
+        componentVariantIds: Array.from(new Set(
+          steps.flatMap((step: any) =>
+            step.StepProduct?.flatMap((sp: any) => {
+              // Extract variant IDs from variants field if available
+              if (sp.variants) {
+                const variants = safeJsonParse(sp.variants, []);
+                if (Array.isArray(variants) && variants.length > 0) {
+                  return variants.map((v: any) => v.id).filter((id: any) => id && id.includes('gid://shopify/ProductVariant/'));
+                }
+              }
+              return [];
+            }) || []
+          )
+        ))
+      };
 
-        const steps = bundle.steps.map(step => ({
-          id: step.id,
-          name: step.name,
-          position: step.position,
-          minQuantity: step.minQuantity,
-          maxQuantity: step.maxQuantity,
-          enabled: step.enabled,
-          displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-          products: safeJsonParse(step.products, []),
-          collections: safeJsonParse(step.collections, []),
-          StepProduct: step.StepProduct || [],
-          conditionType: step.conditionType,
-          conditionOperator: step.conditionOperator,
-          conditionValue: step.conditionValue
-        }));
-
-        return {
-          id: bundle.id,
-          name: bundle.name,
-          description: bundle.description,
-          status: bundle.status,
-          bundleType: bundle.bundleType,
-          shopifyProductId: bundle.shopifyProductId, // Key for isolation!
-          steps: steps,
-          pricing: bundle.pricing ? {
-            enabled: bundle.pricing.enableDiscount,
-            method: bundle.pricing.discountMethod,
-            rules: safeJsonParse(bundle.pricing.rules, []),
-            showFooter: bundle.pricing.showFooter,
-            messages: safeJsonParse(bundle.pricing.messages, {})
-          } : null,
-          // ISOLATION: Only show this bundle on its designated product
-          isolation: {
-            restrictToProductId: bundle.shopifyProductId, // Bundle only shows on this specific product
-            bundleProductOnly: true, // Flag to indicate this bundle is isolated to its bundle product
-            componentProductIds: steps.flatMap(step =>
-              step.StepProduct?.map((sp: any) => sp.productId) || []
-            )
-          }
-        };
-      });
-
-      // Update shop metafield with isolated bundles
-      const SET_SHOP_METAFIELD = `
-        mutation SetShopBundlesMetafield($metafields: [MetafieldsSetInput!]!) {
+      const SET_BUNDLE_CONFIG_METAFIELD = `
+        mutation SetBundleConfigMetafield($metafields: [MetafieldsSetInput!]!) {
           metafieldsSet(metafields: $metafields) {
             metafields {
               id
@@ -126,15 +129,15 @@ export class BundleIsolationService {
         }
       `;
 
-      const response = await admin.graphql(SET_SHOP_METAFIELD, {
+      const response = await admin.graphql(SET_BUNDLE_CONFIG_METAFIELD, {
         variables: {
           metafields: [
             {
-              ownerId: shopGid,
+              ownerId: bundleProductId,
               namespace: "$app",
-              key: "all_bundles",
+              key: "bundle_config",
               type: "json",
-              value: JSON.stringify(isolatedBundles)
+              value: JSON.stringify(bundleMetafieldData)
             }
           ]
         }
@@ -144,60 +147,79 @@ export class BundleIsolationService {
 
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
         const error = data.data.metafieldsSet.userErrors[0];
-        console.error("❌ [ISOLATION] Set error:", error);
+        AppLogger.error('Set bundle_config error', { 
+          component: 'isolation', 
+          operation: 'update-metafield'
+        }, error);
         return false;
       }
 
-      console.log(`✅ [ISOLATION] Successfully updated shop metafield with ${isolatedBundles.length} isolated bundles`);
+      AppLogger.info('Successfully updated bundle_config metafield', { 
+        component: 'isolation', 
+        operation: 'update-metafield'
+      }, { bundleProductId });
       return true;
 
     } catch (error) {
-      console.error("❌ [ISOLATION] Error updating isolated bundles metafield:", error);
+      AppLogger.error('Error updating bundle_config metafield', { 
+        component: 'isolation', 
+        operation: 'update-metafield'
+      }, error);
       return false;
     }
   }
 
   /**
-   * Validate bundle should show on current product
-   * This function is used by the widget to determine if a bundle should display
+   * Get bundle configuration from product metafield
+   * Each bundle product stores its own configuration
    */
-  static validateBundleForProduct(bundle: any, currentProductId: string): boolean {
-    console.log(`🔍 [VALIDATION] Checking if bundle ${bundle.id} should show on product ${currentProductId}`);
+  static async getBundleConfigFromProduct(admin: any, productId: string): Promise<any> {
+    AppLogger.debug('Getting bundle config from product', { 
+      component: 'isolation', 
+      operation: 'get-bundle-config'
+    }, { productId });
 
-    // Extract product ID from GID format if needed
-    const normalizeProductId = (id: string): string => {
-      if (id.includes('gid://shopify/Product/')) {
-        return id.replace('gid://shopify/Product/', '');
+    try {
+      const GET_BUNDLE_CONFIG = `
+        query GetBundleConfig($id: ID!) {
+          product(id: $id) {
+            id
+            bundleConfig: metafield(namespace: "$app", key: "bundle_config") {
+              value
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(GET_BUNDLE_CONFIG, {
+        variables: { id: productId }
+      });
+
+      const data = await response.json();
+      const bundleConfigValue = data.data?.product?.bundleConfig?.value;
+
+      if (!bundleConfigValue) {
+        AppLogger.info('No bundle config found for product', { 
+          component: 'isolation', 
+          operation: 'get-bundle-config'
+        }, { productId });
+        return null;
       }
-      return id.toString();
-    };
 
-    const normalizedCurrentProductId = normalizeProductId(currentProductId);
+      const bundleConfig = JSON.parse(bundleConfigValue);
+      AppLogger.info('Found bundle config', { 
+        component: 'isolation', 
+        operation: 'get-bundle-config'
+      }, { bundleName: bundleConfig.name, productId });
+      return bundleConfig;
 
-    // Check if bundle has isolation rules
-    if (bundle.isolation && bundle.isolation.restrictToProductId) {
-      const normalizedBundleProductId = normalizeProductId(bundle.isolation.restrictToProductId);
-
-      const isAllowed = normalizedBundleProductId === normalizedCurrentProductId;
-
-      console.log(`🔒 [VALIDATION] Bundle ${bundle.id} isolated to product ${normalizedBundleProductId}, current: ${normalizedCurrentProductId}, allowed: ${isAllowed}`);
-
-      return isAllowed;
+    } catch (error) {
+      AppLogger.error('Error getting bundle config', { 
+        component: 'isolation', 
+        operation: 'get-bundle-config'
+      }, error);
+      return null;
     }
-
-    // Fallback: Check if bundle product ID matches (legacy support)
-    if (bundle.shopifyProductId) {
-      const normalizedBundleProductId = normalizeProductId(bundle.shopifyProductId);
-      const isAllowed = normalizedBundleProductId === normalizedCurrentProductId;
-
-      console.log(`🔒 [VALIDATION] Bundle ${bundle.id} legacy check - bundle product: ${normalizedBundleProductId}, current: ${normalizedCurrentProductId}, allowed: ${isAllowed}`);
-
-      return isAllowed;
-    }
-
-    // If no isolation rules, allow (for backward compatibility)
-    console.log(`⚠️ [VALIDATION] Bundle ${bundle.id} has no isolation rules - allowing for backward compatibility`);
-    return true;
   }
 
   /**
@@ -205,7 +227,11 @@ export class BundleIsolationService {
    * These metafields help the widget identify which bundles belong to which products
    */
   static async createBundleProductIsolationMetafields(admin: any, bundleProductId: string, bundleId: string) {
-    console.log(`🏷️ [ISOLATION_METAFIELDS] Creating isolation metafields for bundle product: ${bundleProductId}`);
+    AppLogger.info('Creating isolation metafields for bundle product', {
+      component: 'isolation',
+      operation: 'create-metafields',
+      bundleId
+    }, { bundleProductId });
 
     try {
       const metafields = [
@@ -255,15 +281,27 @@ export class BundleIsolationService {
       const data = await response.json();
 
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-        console.error('❌ [ISOLATION_METAFIELDS] Metafield errors:', data.data.metafieldsSet.userErrors);
+        AppLogger.error('Metafield errors during isolation metafield creation', {
+          component: 'isolation',
+          operation: 'create-metafields',
+          bundleId
+        }, data.data.metafieldsSet.userErrors);
         return false;
       }
 
-      console.log(`✅ [ISOLATION_METAFIELDS] Created ${data.data?.metafieldsSet?.metafields?.length || 0} isolation metafields`);
+      AppLogger.info('Created isolation metafields', {
+        component: 'isolation',
+        operation: 'create-metafields',
+        bundleId
+      }, { count: data.data?.metafieldsSet?.metafields?.length || 0 });
       return true;
 
     } catch (error) {
-      console.error('❌ [ISOLATION_METAFIELDS] Error creating isolation metafields:', error);
+      AppLogger.error('Error creating isolation metafields', {
+        component: 'isolation',
+        operation: 'create-metafields',
+        bundleId
+      }, error);
       return false;
     }
   }
@@ -272,7 +310,10 @@ export class BundleIsolationService {
    * Clean up isolation metafields when bundle is deleted
    */
   static async cleanupIsolationMetafields(admin: any, bundleProductId: string) {
-    console.log(`🧹 [CLEANUP_ISOLATION] Cleaning up isolation metafields for product: ${bundleProductId}`);
+    AppLogger.info('Cleaning up isolation metafields for product', {
+      component: 'isolation',
+      operation: 'cleanup-metafields'
+    }, { bundleProductId });
 
     try {
       const metafieldsToDelete = [
@@ -316,75 +357,52 @@ export class BundleIsolationService {
       const data = await response.json();
 
       if (data.data?.metafieldsDelete?.userErrors?.length > 0) {
-        console.error('❌ [CLEANUP_ISOLATION] Cleanup errors:', data.data.metafieldsDelete.userErrors);
+        AppLogger.error('Cleanup errors during isolation metafield deletion', {
+          component: 'isolation',
+          operation: 'cleanup-metafields'
+        }, data.data.metafieldsDelete.userErrors);
         return false;
       }
 
       const deletedCount = data.data?.metafieldsDelete?.deletedMetafields?.length || 0;
-      console.log(`✅ [CLEANUP_ISOLATION] Cleaned up ${deletedCount} isolation metafields`);
+      AppLogger.info('Cleaned up isolation metafields', {
+        component: 'isolation',
+        operation: 'cleanup-metafields'
+      }, { deletedCount });
       return true;
 
     } catch (error) {
-      console.error('❌ [CLEANUP_ISOLATION] Error cleaning up isolation metafields:', error);
+      AppLogger.error('Error cleaning up isolation metafields', {
+        component: 'isolation',
+        operation: 'cleanup-metafields'
+      }, error);
       return false;
     }
   }
 
   /**
    * Get bundle for specific product (used by widget)
-   * Returns only the bundle that should show on the current product
+   * Returns the bundle configuration stored on this product
    */
   static async getBundleForProduct(admin: any, productId: string, shopId: string): Promise<any> {
-    console.log(`🔍 [GET_BUNDLE] Getting bundle for product: ${productId}`);
+    AppLogger.debug('Getting bundle for product', {
+      component: 'isolation',
+      operation: 'get-bundle-for-product'
+    }, { productId, shopId });
 
-    try {
-      // Get shop bundles metafield
-      const shopResponse = await admin.graphql(`
-        query GetShopBundlesMetafield {
-          shop {
-            id
-            allBundles: metafield(namespace: "$app", key: "all_bundles") {
-              value
-            }
-          }
-        }
-      `);
-
-      const shopData = await shopResponse.json();
-      const metafieldValue = shopData.data?.shop?.allBundles?.value;
-
-      if (!metafieldValue) {
-        console.log('ℹ️ [GET_BUNDLE] No shop bundles metafield found');
-        return null;
-      }
-
-      const allBundles = JSON.parse(metafieldValue);
-
-      // Find bundle that should show on this product
-      const bundleForProduct = allBundles.find((bundle: any) =>
-        this.validateBundleForProduct(bundle, productId)
-      );
-
-      if (bundleForProduct) {
-        console.log(`✅ [GET_BUNDLE] Found bundle for product ${productId}: ${bundleForProduct.name}`);
-      } else {
-        console.log(`ℹ️ [GET_BUNDLE] No bundle found for product ${productId}`);
-      }
-
-      return bundleForProduct;
-
-    } catch (error) {
-      console.error('❌ [GET_BUNDLE] Error getting bundle for product:', error);
-      return null;
-    }
+    // Simply read bundle_config from product metafield - no filtering needed!
+    return await this.getBundleConfigFromProduct(admin, productId);
   }
 
   /**
    * Audit bundle isolation consistency
-   * Checks if bundles are properly isolated and identifies issues
+   * Checks if bundles have proper product-level metafields
    */
   static async auditBundleIsolation(admin: any, shopId: string) {
-    console.log(`📊 [AUDIT_ISOLATION] Auditing bundle isolation for shop: ${shopId}`);
+    AppLogger.info('Auditing bundle isolation for shop', {
+      component: 'isolation',
+      operation: 'audit'
+    }, { shopId });
 
     try {
       // Get database bundles
@@ -400,21 +418,32 @@ export class BundleIsolationService {
         }
       });
 
-      // Get metafield bundles
-      const shopResponse = await admin.graphql(`
-        query GetShopBundlesMetafield {
-          shop {
-            allBundles: metafield(namespace: "$app", key: "all_bundles") {
-              value
+      // Check each bundle product for bundle_config metafield
+      const metafieldChecks = await Promise.all(
+        dbBundles
+          .filter(b => b.shopifyProductId)
+          .map(async (bundle) => {
+            try {
+              const bundleConfig = await this.getBundleConfigFromProduct(admin, bundle.shopifyProductId!);
+              return {
+                bundleId: bundle.id,
+                bundleName: bundle.name,
+                productId: bundle.shopifyProductId,
+                hasMetafield: !!bundleConfig,
+                metafieldValid: bundleConfig?.id === bundle.id
+              };
+            } catch (error) {
+              return {
+                bundleId: bundle.id,
+                bundleName: bundle.name,
+                productId: bundle.shopifyProductId,
+                hasMetafield: false,
+                metafieldValid: false,
+                error: (error as Error).message
+              };
             }
-          }
-        }
-      `);
-
-      const shopData = await shopResponse.json();
-      const metafieldBundles = shopData.data?.shop?.allBundles?.value
-        ? JSON.parse(shopData.data.shop.allBundles.value)
-        : [];
+          })
+      );
 
       // Analyze isolation
       const audit = {
@@ -426,26 +455,27 @@ export class BundleIsolationService {
           bundlesWithoutProducts: dbBundles.filter(b => !b.shopifyProductId).length
         },
         metafields: {
-          totalBundles: metafieldBundles.length,
-          bundlesWithIsolation: metafieldBundles.filter((b: any) => b.isolation?.restrictToProductId).length,
-          bundlesWithoutIsolation: metafieldBundles.filter((b: any) => !b.isolation?.restrictToProductId).length
+          totalChecked: metafieldChecks.length,
+          bundlesWithMetafield: metafieldChecks.filter(c => c.hasMetafield).length,
+          bundlesWithoutMetafield: metafieldChecks.filter(c => !c.hasMetafield).length,
+          metafieldsValid: metafieldChecks.filter(c => c.metafieldValid).length,
+          metafieldsInvalid: metafieldChecks.filter(c => c.hasMetafield && !c.metafieldValid).length
         },
-        isolation: {
-          properlyIsolatedBundles: metafieldBundles.filter((b: any) =>
-            b.isolation?.restrictToProductId && b.shopifyProductId
-          ).length,
-          potentialConflicts: metafieldBundles.filter((b: any) =>
-            !b.isolation?.restrictToProductId && b.bundleType === 'cart_transform'
-          ).map((b: any) => ({ id: b.id, name: b.name }))
-        }
+        details: metafieldChecks
       };
 
-      console.log('📊 [AUDIT_ISOLATION] Isolation Audit Report:', JSON.stringify(audit, null, 2));
+      AppLogger.info('Product metafield audit report', {
+        component: 'isolation',
+        operation: 'audit'
+      }, audit);
 
       return audit;
 
     } catch (error) {
-      console.error('❌ [AUDIT_ISOLATION] Error auditing bundle isolation:', error);
+      AppLogger.error('Error auditing bundle isolation', {
+        component: 'isolation',
+        operation: 'audit'
+      }, error);
       return null;
     }
   }

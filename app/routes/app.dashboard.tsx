@@ -14,8 +14,9 @@ import {
   Thumbnail,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { EditIcon, PlusIcon, ProductIcon } from "@shopify/polaris-icons";
 import db from "../db.server";
+import { AppLogger } from "../lib/logger";
+import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 
 // Define a type for the bundle
 interface Bundle {
@@ -61,7 +62,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
 
@@ -69,7 +70,54 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const bundleId = formData.get("bundleId") as string;
 
     try {
-      // Soft delete by setting status to archived instead of hard deleting
+      // Get bundle data before archiving (needed for metafield cleanup)
+      const bundle = await db.bundle.findUnique({
+        where: { id: bundleId, shopId: session.shop }
+      });
+
+      if (!bundle) {
+        return json({ success: false, error: "Bundle not found" }, { status: 404 });
+      }
+
+      // 1. Update shop metafield to remove bundle from storefront immediately
+      if (bundle.shopifyProductId) {
+        await MetafieldCleanupService.updateShopMetafieldsAfterDeletion(admin, bundleId);
+
+        // 2. Set Shopify product to DRAFT status
+        try {
+          const UPDATE_PRODUCT_STATUS = `
+            mutation UpdateProductStatus($id: ID!) {
+              productUpdate(input: {id: $id, status: DRAFT}) {
+                product {
+                  id
+                  status
+                }
+                userErrors {
+                  field
+                  message
+                }
+              }
+            }
+          `;
+
+          const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
+            variables: { id: bundle.shopifyProductId }
+          });
+
+          const data = await response.json();
+          if (data.data?.productUpdate?.userErrors?.length > 0) {
+            AppLogger.warn("Failed to update Shopify product status",
+              { component: "app.dashboard", operation: "archive-bundle" },
+              { errors: data.data.productUpdate.userErrors });
+          }
+        } catch (productError) {
+          AppLogger.error("Error updating Shopify product status",
+            { component: "app.dashboard", operation: "archive-bundle" },
+            productError);
+        }
+      }
+
+      // 3. Soft delete by setting status to archived
       await db.bundle.update({
         where: { id: bundleId, shopId: session.shop },
         data: {
@@ -79,9 +127,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
       });
 
+      AppLogger.info("Bundle archived successfully",
+        { component: "app.dashboard", operation: "archive-bundle", bundleId });
+
       return json({ success: true, message: "Bundle archived successfully" });
     } catch (error) {
-      console.error("Error archiving bundle:", error);
+      AppLogger.error("Failed to archive bundle", { component: "app.dashboard", operation: "archive-bundle" }, error);
       return json({ success: false, error: "Failed to archive bundle" }, { status: 500 });
     }
   }
@@ -113,12 +164,12 @@ export default function Dashboard() {
     navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
   };
 
-  const handleBundleRowClick = (_bundle: Bundle) => {
-    navigate("/app/bundles/cart-transform");
+  const handleBundleRowClick = (bundle: Bundle) => {
+    navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
   };
 
   const handleDeleteBundle = (bundleId: string) => {
-    if (confirm("Are you sure you want to delete this bundle?")) {
+    if (confirm("Archive this bundle?\n\nThis will:\n• Remove the bundle from your storefront immediately\n• Hide it from customers\n• Preserve all data (you can restore later)\n\nArchived bundles can be permanently deleted later.")) {
       const formData = new FormData();
       formData.append("intent", "deleteBundle");
       formData.append("bundleId", bundleId);
@@ -144,22 +195,30 @@ export default function Dashboard() {
   };
 
   const bundleRows = bundles.map((bundle) => [
-    bundle.name,
+    <div
+      key={`name-${bundle.id}`}
+      onClick={() => handleBundleRowClick(bundle)}
+      style={{ cursor: 'pointer', textDecoration: 'underline' }}
+    >
+      {bundle.name}
+    </div>,
     getBundleTypeDisplay(bundle.bundleType),
     getStatusDisplay(bundle.status),
     bundle.steps?.length || 0,
-    bundle.pricing?.enableDiscount ? "Enabled" : "Disabled",
+    bundle.pricing?.enabled ? "Enabled" : "Disabled",
     bundle.createdAt ? new Date(bundle.createdAt).toLocaleDateString() : "",
     <ButtonGroup key={bundle.id}>
-      <Button size="micro" onClick={() => {
+      <Button size="micro" onClick={(e) => {
+        e.stopPropagation();
         handleEditBundle(bundle);
       }}>
         Edit
       </Button>
-      <Button 
-        size="micro" 
-        tone="critical" 
-        onClick={() => {
+      <Button
+        size="micro"
+        tone="critical"
+        onClick={(e) => {
+          e.stopPropagation();
           handleDeleteBundle(bundle.id);
         }}
       >
@@ -208,33 +267,11 @@ export default function Dashboard() {
                   </BlockStack>
                 </Card>
               ) : (
-                <div style={{ cursor: 'default' }}>
-                  <DataTable
-                    columnContentTypes={["text", "text", "text", "numeric", "text", "text", "text"]}
-                    headings={["Bundle Name", "Type", "Status", "Steps", "Discount", "Created", "Actions"]}
-                    rows={bundleRows.map((row, index) => 
-                      row.map((cell, cellIndex) => {
-                        if (cellIndex === row.length - 1) {
-                          // Actions column - keep as is
-                          return cell;
-                        }
-                        return (
-                          <div
-                            key={`${index}-${cellIndex}`}
-                            style={{ 
-                              cursor: 'pointer',
-                              width: '100%',
-                              padding: '8px 0'
-                            }}
-                            onClick={() => handleBundleRowClick(bundles[index])}
-                          >
-                            {cell}
-                          </div>
-                        );
-                      })
-                    )}
-                  />
-                </div>
+                <DataTable
+                  columnContentTypes={["text", "text", "text", "numeric", "text", "text", "text"]}
+                  headings={["Bundle Name", "Type", "Status", "Steps", "Discount", "Created", "Actions"]}
+                  rows={bundleRows}
+                />
               )}
             </BlockStack>
           </Card>
@@ -290,7 +327,7 @@ export default function Dashboard() {
                         </div>
                         <div style={{ textAlign: 'center', padding: '0.5rem' }}>
                           <Text variant="headingLg" as="p" fontWeight="bold">
-                            {bundles.filter(b => b.pricing?.enableDiscount).length}
+                            {bundles.filter(b => b.pricing?.enabled).length}
                           </Text>
                           <Text as="span" variant="bodyMd" tone="subdued">With Discounts</Text>
                         </div>

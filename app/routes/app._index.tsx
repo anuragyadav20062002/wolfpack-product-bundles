@@ -11,10 +11,77 @@ import {
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { CartIcon } from "@shopify/polaris-icons";
+import { AppLogger } from "../lib/logger";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await authenticate.admin(request);
-  
+  const { admin } = await authenticate.admin(request);
+
+  // Sync app URL to shop metafield for theme extension access
+  const appUrl = process.env.SHOPIFY_APP_URL;
+
+  if (appUrl) {
+    try {
+      // Get shop GID
+      const GET_SHOP_ID = `
+        query getShopId {
+          shop {
+            id
+          }
+        }
+      `;
+
+      const shopResponse = await admin.graphql(GET_SHOP_ID);
+      const shopData = await shopResponse.json();
+
+      if (!shopData.data?.shop?.id) {
+        AppLogger.error("Failed to get shop global ID", { component: "app._index", operation: "sync-app-url" });
+        return json({ message: "Welcome to Bundle Builder" });
+      }
+
+      const shopGlobalId = shopData.data.shop.id;
+
+      // Update shop metafield with app URL
+      const UPDATE_APP_URL_METAFIELD = `
+        mutation UpdateAppUrlMetafield($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              namespace
+              key
+              value
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(UPDATE_APP_URL_METAFIELD, {
+        variables: {
+          metafields: [{
+            ownerId: shopGlobalId,
+            namespace: "app_config",
+            key: "server_url",
+            type: "single_line_text_field",
+            value: appUrl
+          }]
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.data?.metafieldsSet?.userErrors?.length > 0) {
+        AppLogger.error("Metafield set error", { component: "app._index", operation: "sync-app-url" }, { errors: data.data.metafieldsSet.userErrors });
+      } else {
+        AppLogger.info("Synced app URL to shop metafield", { component: "app._index", operation: "sync-app-url", appUrl });
+      }
+    } catch (error) {
+      AppLogger.error("Failed to sync app URL to metafield", { component: "app._index", operation: "sync-app-url" }, error);
+    }
+  }
+
   return json({
     message: "Welcome to Bundle Builder",
   });
