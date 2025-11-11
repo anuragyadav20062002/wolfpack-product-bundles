@@ -236,11 +236,6 @@ export class MetafieldValidationService {
           },
           {
             ownerId: productGid,
-            namespace: "bundle_discounts",
-            key: "discount_function_config"
-          },
-          {
-            ownerId: productGid,
             namespace: "custom",
             key: "component_reference"
           },

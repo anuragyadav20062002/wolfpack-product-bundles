@@ -35,8 +35,7 @@ const BUNDLE_WIDGET = {
 
   // Bundle Types
   BUNDLE_TYPES: {
-    CART_TRANSFORM: 'cart_transform',
-    DISCOUNT_FUNCTION: 'discount_function'
+    CART_TRANSFORM: 'cart_transform'
   },
 
   // Step Condition Operators
@@ -273,19 +272,6 @@ class BundleDataManager {
           return bundle;
         }
       }
-
-      // Selection logic for discount function bundles
-      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.DISCOUNT_FUNCTION) {
-        // Priority 1: Manual bundle ID
-        if (config.bundleId && bundle.id === config.bundleId) {
-          return bundle;
-        }
-
-        // Priority 2: Product/Collection matching
-        if (this.matchesDiscountFunctionBundle(bundle, config)) {
-          return bundle;
-        }
-      }
     }
 
     // Fallback: First active bundle
@@ -294,47 +280,6 @@ class BundleDataManager {
       return fallbackBundle;
     }
     return null;
-  }
-
-  static matchesDiscountFunctionBundle(bundle, config) {
-    let parsedMatching = null;
-
-    if (bundle.matching) {
-      if (typeof bundle.matching === 'string') {
-        try {
-          parsedMatching = JSON.parse(bundle.matching);
-        } catch (e) {
-          return false;
-        }
-      } else if (typeof bundle.matching === 'object') {
-        parsedMatching = bundle.matching;
-      }
-    }
-
-    if (!parsedMatching) {
-      return false;
-    }
-
-    // Check product matches
-    const productMatches = parsedMatching.selectedVisibilityProducts &&
-      Array.isArray(parsedMatching.selectedVisibilityProducts) &&
-      parsedMatching.selectedVisibilityProducts.some(p => {
-        const productIdFromGid = p.id.split('/').pop();
-        return productIdFromGid === config.currentProductId.toString();
-      });
-
-    // Check collection matches
-    const collectionMatches = parsedMatching.selectedVisibilityCollections &&
-      Array.isArray(parsedMatching.selectedVisibilityCollections) &&
-      config.currentProductCollections &&
-      Array.isArray(config.currentProductCollections) &&
-      parsedMatching.selectedVisibilityCollections.some(bundleCollection => {
-        const bundleCollectionIdFromGid = bundleCollection.id.split('/').pop();
-        return config.currentProductCollections.some(productCollection =>
-          productCollection.id.toString() === bundleCollectionIdFromGid
-        );
-      });
-    return productMatches || collectionMatches;
   }
 
   static isThemeEditorContext() {

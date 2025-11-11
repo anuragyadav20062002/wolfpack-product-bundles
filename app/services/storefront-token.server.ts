@@ -6,6 +6,31 @@
  */
 
 import db from "../db.server";
+import type { authenticate } from "~/shopify.server";
+
+type AdminApiContext = Awaited<ReturnType<typeof authenticate.admin>>['admin'];
+
+// GraphQL response types
+interface StorefrontAccessTokenCreateResponse {
+  data?: {
+    storefrontAccessTokenCreate?: {
+      storefrontAccessToken?: {
+        accessToken: string;
+        title: string;
+        accessScopes?: Array<{ handle: string }>;
+      };
+      userErrors?: Array<{
+        field?: string[];
+        message: string;
+      }>;
+    };
+  };
+  errors?: Array<{
+    message: string;
+    locations?: Array<{ line: number; column: number }>;
+    path?: string[];
+  }>;
+}
 
 const CREATE_STOREFRONT_TOKEN_MUTATION = `
   mutation storefrontAccessTokenCreate($input: StorefrontAccessTokenInput!) {
@@ -29,7 +54,7 @@ const CREATE_STOREFRONT_TOKEN_MUTATION = `
  * Creates a delegated Storefront Access Token for a shop
  * This token allows the app to query the Storefront API on behalf of the shop
  */
-export async function createStorefrontAccessToken(admin: any, shop: string) {
+export async function createStorefrontAccessToken(admin: AdminApiContext, shop: string) {
   console.log(`[STOREFRONT_TOKEN] Creating storefront access token for shop: ${shop}`);
 
   try {
@@ -41,7 +66,7 @@ export async function createStorefrontAccessToken(admin: any, shop: string) {
       }
     });
 
-    const data = await response.json();
+    const data = await response.json() as StorefrontAccessTokenCreateResponse;
 
     if (data.errors) {
       console.error("[STOREFRONT_TOKEN] GraphQL errors:", data.errors);
@@ -83,7 +108,7 @@ export async function createStorefrontAccessToken(admin: any, shop: string) {
  * Gets the storefront access token for a shop
  * Creates one if it doesn't exist
  */
-export async function getStorefrontAccessToken(admin: any, shop: string): Promise<string> {
+export async function getStorefrontAccessToken(admin: AdminApiContext, shop: string): Promise<string> {
   // Try to get existing token from database
   const session = await db.session.findFirst({
     where: { shop },

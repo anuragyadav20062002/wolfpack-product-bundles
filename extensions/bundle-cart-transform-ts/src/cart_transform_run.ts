@@ -489,40 +489,45 @@ function evaluateRule(rule: any, totalQuantity: number, originalTotal: number): 
   const conditionOperator = condition.operator || 'gte';
 
   // Get actual value to compare against
+  // IMPORTANT: Shopify cart amounts are in decimal format (e.g., "74.99")
+  // but condition values for 'amount' are stored in cents/minor units (e.g., 15500 = 155.00)
+  // Convert condition value from cents to decimal amount for 'amount' type comparisons
+  const conditionValueNormalized = conditionType === 'amount' ? conditionValue / 100 : conditionValue;
   const actualValue = conditionType === 'amount' ? originalTotal : totalQuantity;
 
   // Evaluate based on operator
+  // Use conditionValueNormalized for amount comparisons to match Shopify's cart API format
   let meetsCondition = false;
   switch (conditionOperator) {
     case 'gte':
     case 'greater_than_equal_to':
-      meetsCondition = actualValue >= conditionValue;
+      meetsCondition = actualValue >= conditionValueNormalized;
       break;
     case 'gt':
     case 'greater_than':
-      meetsCondition = actualValue > conditionValue;
+      meetsCondition = actualValue > conditionValueNormalized;
       break;
     case 'lte':
     case 'less_than_equal_to':
-      meetsCondition = actualValue <= conditionValue;
+      meetsCondition = actualValue <= conditionValueNormalized;
       break;
     case 'lt':
     case 'less_than':
-      meetsCondition = actualValue < conditionValue;
+      meetsCondition = actualValue < conditionValueNormalized;
       break;
     case 'eq':
     case 'equal_to':
-      meetsCondition = actualValue === conditionValue;
+      meetsCondition = actualValue === conditionValueNormalized;
       break;
     default:
       // Default to greater than or equal
-      meetsCondition = actualValue >= conditionValue;
+      meetsCondition = actualValue >= conditionValueNormalized;
   }
 
   return {
     meetsCondition,
     conditionType,
-    conditionValue
+    conditionValue: conditionValueNormalized  // Return converted value for logging
   };
 }
 

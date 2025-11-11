@@ -47,21 +47,13 @@ export async function ensureBundleMetafieldDefinitions(admin: any) {
     }
   `;
 
-  // Define both metafield definitions
+  // Define metafield definition for cart transform bundles
   const definitions = [
     {
       name: "Cart Transform Bundle Config",
       namespace: "bundle_discounts",
       key: "cart_transform_config",
       description: "Cart transform bundle configuration data",
-      type: "json",
-      ownerType: "PRODUCT"
-    },
-    {
-      name: "Discount Function Bundle Config",
-      namespace: "bundle_discounts",
-      key: "discount_function_config",
-      description: "Discount function bundle configuration data",
       type: "json",
       ownerType: "PRODUCT"
     }
@@ -97,12 +89,10 @@ export async function ensureBundleMetafieldDefinitions(admin: any) {
 export async function updateBundleProductMetafields(
   admin: any,
   bundleProductId: string,
-  bundleConfiguration: any,
-  bundleType: 'cart_transform' | 'discount_function' = 'cart_transform'
+  bundleConfiguration: any
 ) {
   console.log("🔧 [METAFIELD] Starting bundle product metafield update");
   console.log("📦 [METAFIELD] Bundle Product ID:", bundleProductId);
-  console.log("📋 [METAFIELD] Bundle Type:", bundleType);
   console.log("⚙️ [METAFIELD] Configuration size:", JSON.stringify(bundleConfiguration).length, "chars");
 
   await ensureBundleMetafieldDefinitions(admin);
@@ -127,15 +117,13 @@ export async function updateBundleProductMetafields(
     }
   `;
 
-  const metafieldKey = bundleType === 'cart_transform' ? 'cart_transform_config' : 'discount_function_config';
-
   const response = await admin.graphql(SET_METAFIELDS, {
     variables: {
       metafields: [
         {
           ownerId: bundleProductId,
           namespace: "bundle_discounts",
-          key: metafieldKey,
+          key: 'cart_transform_config',
           type: "json",
           value: JSON.stringify(bundleConfiguration)
         }
@@ -634,12 +622,11 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
       console.log(`🔧 [COMPONENT_METAFIELD] Updating product: ${productId}`);
 
       // Create minimal bundle config for all_bundles_data (to avoid instruction count limit)
+      // IMPORTANT: Use parentVariantId (not bundleParentVariantId) to match cart transform expectations
       const minimalBundleConfig = {
-        bundleId: bundleConfig.bundleId || bundleConfig.id,
         id: bundleConfig.id || bundleConfig.bundleId,
         name: bundleConfig.name,
-        bundleParentVariantId: bundleConfig.bundleParentVariantId,
-        shopifyProductId: bundleConfig.shopifyProductId,
+        parentVariantId: bundleVariantId, // Use the resolved variant ID, match cart transform field name
         pricing: bundleConfig.pricing // Include pricing for discounts
       };
 
@@ -653,9 +640,10 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
           type: "json"
         },
         // CRITICAL: Also add bundle_config so cart transform can access it from component products
+        // MUST use $app namespace to match cart-transform-input.graphql query
         {
           ownerId: productId,
-          namespace: "bundle_discounts",
+          namespace: "$app",
           key: "cart_transform_config",
           value: JSON.stringify(minimalBundleConfig),
           type: "json"

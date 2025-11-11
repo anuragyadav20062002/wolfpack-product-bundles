@@ -31,7 +31,7 @@ const shopify = shopifyApp({
       // Create storefront access token after successful auth
       try {
         console.log("[SHOPIFY] Creating storefront access token...");
-        const token = await createStorefrontAccessToken(admin.graphql, session.shop);
+        const token = await createStorefrontAccessToken(admin, session.shop);
         console.log("[SHOPIFY] ✅ Storefront access token created:", token.substring(0, 20) + "...");
       } catch (error) {
         console.error("[SHOPIFY] ❌ Failed to create storefront access token:", error);
