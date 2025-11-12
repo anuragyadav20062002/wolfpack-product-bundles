@@ -343,6 +343,9 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
   try {
     const checkResponse = await admin.graphql(CHECK_DEFINITIONS);
     const checkData = await checkResponse.json();
+
+    console.log(`🔧 [STANDARD_METAFIELD] Check definitions response:`, JSON.stringify(checkData, null, 2));
+
     const existingKeys = checkData.data?.metafieldDefinitions?.edges?.map((edge: any) => edge.node.key) || [];
 
     console.log(`🔧 [STANDARD_METAFIELD] Found ${existingKeys.length} existing definitions:`, existingKeys);
@@ -375,20 +378,28 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
           }
         `;
 
+        console.log(`🔧 [STANDARD_METAFIELD] Creating definition for ${definition.key}:`, JSON.stringify(definition, null, 2));
+
         const response = await admin.graphql(CREATE_METAFIELD_DEFINITION, {
           variables: { definition }
         });
 
         const data = await response.json();
+        console.log(`🔧 [STANDARD_METAFIELD] Response for ${definition.key}:`, JSON.stringify(data, null, 2));
+
         if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
           const errors = data.data.metafieldDefinitionCreate.userErrors;
           // Only log if it's not a "already exists" error
           const isAlreadyExistsError = errors.some((e: any) => e.message.includes("in use"));
           if (!isAlreadyExistsError) {
             console.log(`🔧 [STANDARD_METAFIELD] Definition error for ${definition.key}:`, errors);
+          } else {
+            console.log(`🔧 [STANDARD_METAFIELD] Definition for ${definition.key} already exists (expected)`);
           }
         } else {
+          const createdDef = data.data?.metafieldDefinitionCreate?.createdDefinition;
           console.log(`🔧 [STANDARD_METAFIELD] ✅ Created definition for ${definition.key} in $app namespace`);
+          console.log(`🔧 [STANDARD_METAFIELD] Definition ID: ${createdDef?.id}`);
         }
       } catch (error) {
         console.log(`🔧 [STANDARD_METAFIELD] Error creating definition for ${definition.key}:`, error);

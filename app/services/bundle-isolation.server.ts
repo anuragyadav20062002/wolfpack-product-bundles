@@ -132,6 +132,16 @@ export class BundleIsolationService {
         }
       `;
 
+      AppLogger.info('Setting bundle_config metafield', {
+        component: 'isolation',
+        operation: 'set-metafield'
+      }, {
+        bundleProductId,
+        bundleId: bundleMetafieldData.id,
+        bundleName: bundleMetafieldData.name,
+        valuePreview: JSON.stringify(bundleMetafieldData).substring(0, 200)
+      });
+
       const response = await admin.graphql(SET_BUNDLE_CONFIG_METAFIELD, {
         variables: {
           metafields: [
@@ -149,6 +159,15 @@ export class BundleIsolationService {
       });
 
       const data = await response.json();
+
+      AppLogger.info('Set bundle_config metafield response', {
+        component: 'isolation',
+        operation: 'set-metafield-response'
+      }, {
+        success: !data.data?.metafieldsSet?.userErrors?.length,
+        metafieldId: data.data?.metafieldsSet?.metafields?.[0]?.id,
+        userErrors: data.data?.metafieldsSet?.userErrors || []
+      });
 
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
         const error = data.data.metafieldsSet.userErrors[0];
