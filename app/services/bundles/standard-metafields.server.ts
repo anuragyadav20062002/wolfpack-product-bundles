@@ -334,6 +334,10 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
             id
             key
             namespace
+            access {
+              admin
+              storefront
+            }
           }
         }
       }
@@ -343,17 +347,82 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
   try {
     const checkResponse = await admin.graphql(CHECK_DEFINITIONS);
     const checkData = await checkResponse.json();
+
+    console.log(`🔧 [STANDARD_METAFIELD] Check definitions response:`, JSON.stringify(checkData, null, 2));
+
     const existingKeys = checkData.data?.metafieldDefinitions?.edges?.map((edge: any) => edge.node.key) || [];
 
     console.log(`🔧 [STANDARD_METAFIELD] Found ${existingKeys.length} existing definitions:`, existingKeys);
 
-    // Only create definitions that don't exist
+    // Create or update definitions as needed
     for (const definition of standardDefinitions) {
-      if (existingKeys.includes(definition.key)) {
-        console.log(`🔧 [STANDARD_METAFIELD] Definition for ${definition.key} already exists, skipping`);
+      // Check if this definition already exists
+      const existingDef = checkData.data?.metafieldDefinitions?.edges?.find(
+        (edge: any) => edge.node.key === definition.key
+      )?.node;
+
+      if (existingDef) {
+        // Check if existing definition has the correct storefront access
+        const hasCorrectAccess = definition.access?.storefront
+          ? existingDef.access?.storefront === definition.access.storefront
+          : true; // No access requirement, existing def is fine
+
+        if (hasCorrectAccess) {
+          console.log(`🔧 [STANDARD_METAFIELD] Definition for ${definition.key} already exists with correct access, skipping`);
+          continue;
+        }
+
+        // Need to update the definition to add storefront access
+        console.log(`🔧 [STANDARD_METAFIELD] Updating definition for ${definition.key} to add storefront access`);
+
+        try {
+          const UPDATE_METAFIELD_DEFINITION = `
+            mutation updateMetafieldDefinition($definition: MetafieldDefinitionUpdateInput!) {
+              metafieldDefinitionUpdate(definition: $definition) {
+                updatedDefinition {
+                  id
+                  name
+                  namespace
+                  key
+                  access {
+                    admin
+                    storefront
+                  }
+                }
+                userErrors {
+                  field
+                  message
+                }
+              }
+            }
+          `;
+
+          const updateResponse = await admin.graphql(UPDATE_METAFIELD_DEFINITION, {
+            variables: {
+              definition: {
+                id: existingDef.id,
+                access: definition.access
+              }
+            }
+          });
+
+          const updateData = await updateResponse.json();
+          console.log(`🔧 [STANDARD_METAFIELD] Update response for ${definition.key}:`, JSON.stringify(updateData, null, 2));
+
+          if (updateData.data?.metafieldDefinitionUpdate?.userErrors?.length > 0) {
+            console.log(`🔧 [STANDARD_METAFIELD] Error updating definition for ${definition.key}:`,
+              updateData.data.metafieldDefinitionUpdate.userErrors);
+          } else {
+            console.log(`🔧 [STANDARD_METAFIELD] ✅ Updated definition for ${definition.key} with storefront access`);
+          }
+        } catch (error) {
+          console.log(`🔧 [STANDARD_METAFIELD] Error updating definition for ${definition.key}:`, error);
+        }
+
         continue;
       }
 
+      // Definition doesn't exist, create it
       try {
         const CREATE_METAFIELD_DEFINITION = `
           mutation createMetafieldDefinition($definition: MetafieldDefinitionInput!) {
@@ -366,6 +435,10 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
                 type {
                   name
                 }
+                access {
+                  admin
+                  storefront
+                }
               }
               userErrors {
                 field
@@ -375,20 +448,28 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
           }
         `;
 
+        console.log(`🔧 [STANDARD_METAFIELD] Creating definition for ${definition.key}:`, JSON.stringify(definition, null, 2));
+
         const response = await admin.graphql(CREATE_METAFIELD_DEFINITION, {
           variables: { definition }
         });
 
         const data = await response.json();
+        console.log(`🔧 [STANDARD_METAFIELD] Response for ${definition.key}:`, JSON.stringify(data, null, 2));
+
         if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
           const errors = data.data.metafieldDefinitionCreate.userErrors;
           // Only log if it's not a "already exists" error
           const isAlreadyExistsError = errors.some((e: any) => e.message.includes("in use"));
           if (!isAlreadyExistsError) {
             console.log(`🔧 [STANDARD_METAFIELD] Definition error for ${definition.key}:`, errors);
+          } else {
+            console.log(`🔧 [STANDARD_METAFIELD] Definition for ${definition.key} already exists (expected)`);
           }
         } else {
+          const createdDef = data.data?.metafieldDefinitionCreate?.createdDefinition;
           console.log(`🔧 [STANDARD_METAFIELD] ✅ Created definition for ${definition.key} in $app namespace`);
+          console.log(`🔧 [STANDARD_METAFIELD] Definition ID: ${createdDef?.id}, Storefront Access: ${createdDef?.access?.storefront}`);
         }
       } catch (error) {
         console.log(`🔧 [STANDARD_METAFIELD] Error creating definition for ${definition.key}:`, error);
