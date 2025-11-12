@@ -14,17 +14,43 @@ export interface CartTransformActivationResult {
 export class CartTransformService {
   /**
    * Get the deployed function ID for the cart transform
-   * This queries Shopify to find the function by handle
+   * Uses the UID from environment to directly construct the function ID
    */
   private static async getDeployedFunctionId(admin: AdminApiContext): Promise<string | null> {
+    // First, try to use the UID from environment (most reliable method)
+    const functionUid = process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID;
+
+    if (functionUid) {
+      // Construct the function ID from the UID
+      // Format: gid://shopify/ShopifyFunction/{uid}
+      const functionId = `gid://shopify/ShopifyFunction/${functionUid}`;
+
+      AppLogger.info('Using function ID from environment UID', {
+        component: 'cart-transform',
+        operation: 'get-function-id'
+      }, { functionId, uid: functionUid });
+
+      return functionId;
+    }
+
+    // Fallback: Query for cart transform functions if UID not in environment
+    AppLogger.warn('SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID not set, querying for functions', {
+      component: 'cart-transform',
+      operation: 'get-function-id'
+    });
+
     const QUERY_FUNCTIONS = `
-      query {
-        shopifyFunctions(first: 50) {
+      query GetCartTransformFunction {
+        shopifyFunctions(first: 25, apiType: "cart_transform") {
           nodes {
             id
             apiType
             title
-            appTitle
+            apiVersion
+            app {
+              id
+              title
+            }
           }
         }
       }
@@ -35,34 +61,66 @@ export class CartTransformService {
       const data = await response.json() as any;
 
       if (data.errors) {
-        AppLogger.warn('Error querying functions', {
+        AppLogger.error('GraphQL errors querying functions', {
           component: 'cart-transform',
           operation: 'get-function-id'
-        }, data.errors);
+        }, { errors: data.errors });
         return null;
       }
 
-      // Find cart transform function
-      const cartTransformFunction = data.data?.shopifyFunctions?.nodes?.find(
-        (fn: any) => fn.apiType === "cart_transform" || fn.title?.includes("Bundle Cart Transform")
+      const functions = data.data?.shopifyFunctions?.nodes || [];
+
+      AppLogger.info('Queried shopifyFunctions', {
+        component: 'cart-transform',
+        operation: 'get-function-id'
+      }, {
+        totalFound: functions.length,
+        functions: functions.map((f: any) => ({
+          id: f.id,
+          title: f.title,
+          apiType: f.apiType,
+          appTitle: f.app?.title
+        }))
+      });
+
+      // Find cart transform function - prioritize by title match
+      let cartTransformFunction = functions.find(
+        (fn: any) => fn.title?.toLowerCase().includes("bundle") &&
+                     fn.title?.toLowerCase().includes("cart")
       );
 
-      if (cartTransformFunction) {
-        AppLogger.info('Found deployed cart transform function', {
+      // Fallback: just get the first cart_transform function
+      if (!cartTransformFunction && functions.length > 0) {
+        cartTransformFunction = functions[0];
+        AppLogger.info('Using first available cart_transform function', {
           component: 'cart-transform',
           operation: 'get-function-id'
         }, { functionId: cartTransformFunction.id, title: cartTransformFunction.title });
+      }
+
+      if (cartTransformFunction) {
+        AppLogger.info('Found cart transform function via query', {
+          component: 'cart-transform',
+          operation: 'get-function-id'
+        }, {
+          functionId: cartTransformFunction.id,
+          title: cartTransformFunction.title,
+          apiVersion: cartTransformFunction.apiVersion
+        });
         return cartTransformFunction.id;
       }
 
-      AppLogger.warn('No cart transform function found in deployed functions', {
+      AppLogger.warn('No cart_transform functions found for this app', {
         component: 'cart-transform',
         operation: 'get-function-id'
+      }, {
+        message: 'Set SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID in environment or ensure extension is deployed',
+        queriedFunctionCount: functions.length
       });
       return null;
 
     } catch (error) {
-      AppLogger.warn('Error querying deployed functions', {
+      AppLogger.error('Exception querying deployed functions', {
         component: 'cart-transform',
         operation: 'get-function-id'
       }, error);
