@@ -137,7 +137,10 @@ export class BundleIsolationService {
               namespace: "$app",
               key: "bundle_config",
               type: "json",
-              value: JSON.stringify(bundleMetafieldData)
+              value: JSON.stringify(bundleMetafieldData),
+              access: {
+                storefront: "PUBLIC_READ"
+              }
             }
           ]
         }
