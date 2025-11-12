@@ -473,9 +473,9 @@
   // This is much faster than shop-level metafields and naturally isolated
   if (!window.allBundlesData) {
     // Primary source: product's bundle_config metafield
-    // Note: Shopify automatically scopes app metafields - use 'app' namespace in Liquid
-    // The '$app' namespace in Admin API translates to 'app' in Liquid
-    const productBundleConfig = {{ product.metafields.app.bundle_config | json }};
+    // Note: App-scoped metafields ($app namespace) require bracket notation in theme app extensions
+    // Reference: https://shopify.dev/changelog/metafields-and-metaobjects-reserved-prefixes-now-supported-in-theme-app-extensions
+    const productBundleConfig = {{ product.metafields['$app']['bundle_config'] | json }};
 
     // Set as allBundlesData object (widget expects this name)
     // Create an object with the bundle ID as key for compatibility
