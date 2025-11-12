@@ -281,6 +281,17 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
   // Use app-reserved namespace to avoid type conflicts with existing custom namespace definitions
   const standardDefinitions = [
     {
+      namespace: "$app",
+      key: "bundle_config",
+      name: "Bundle Configuration",
+      description: "Complete bundle configuration for storefront display",
+      type: "json",
+      ownerType: "PRODUCT",
+      access: {
+        storefront: "PUBLIC_READ"
+      }
+    },
+    {
       namespace: "$app", // App-reserved namespace avoids conflicts
       key: "component_reference",
       name: "Component Reference",

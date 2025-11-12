@@ -3,6 +3,7 @@
 // Uses product-level metafields for optimal performance
 
 import { AppLogger } from "../lib/logger";
+import { ensureStandardMetafieldDefinitions } from "./bundles/standard-metafields.server";
 
 export class BundleIsolationService {
 
@@ -11,12 +12,14 @@ export class BundleIsolationService {
    * Stores bundle config on the bundle product itself for fast, isolated access
    */
   static async updateBundleProductMetafield(admin: any, bundleProductId: string, bundleConfig: any) {
-    AppLogger.info('Updating bundle product metafield', { 
-      component: 'isolation', 
+    AppLogger.info('Updating bundle product metafield', {
+      component: 'isolation',
       operation: 'update-metafield'
     }, { bundleProductId });
 
     try {
+      // Ensure bundle_config metafield definition exists with storefront access
+      await ensureStandardMetafieldDefinitions(admin);
       // Helper function to safely parse JSON
       const safeJsonParse = (value: any, defaultValue: any = []) => {
         if (!value) return defaultValue;
@@ -137,10 +140,9 @@ export class BundleIsolationService {
               namespace: "$app",
               key: "bundle_config",
               type: "json",
-              value: JSON.stringify(bundleMetafieldData),
-              access: {
-                storefront: "PUBLIC_READ"
-              }
+              value: JSON.stringify(bundleMetafieldData)
+              // Note: access/storefront visibility must be configured on the metafield DEFINITION,
+              // not on individual metafield values. See ensureStandardMetafieldDefinitions()
             }
           ]
         }
