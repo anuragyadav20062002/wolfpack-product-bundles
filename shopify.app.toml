@@ -1,23 +1,32 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "bfda5624970c7ada838998eb951e9e85"
-name = "bundle-discount-functions"
-handle = "bundle-discount-functions-1"
-application_url = "https://forward-geographical-arabia-arcade.trycloudflare.com"
+client_id = "a383172f42c2ab283901a663d485a03d"
+name = "Wolfpack: Product Bundles"
+handle = "wolfpack-product-bundles-4"
+application_url = "https://wolfpack-product-bundle-app.onrender.com"
 embedded = true
 
 [build]
-automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+automatically_update_urls_on_dev = false
 
 [webhooks]
 api_version = "2025-04"
 
+  [[webhooks.subscriptions]]
+  uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes,unauthenticated_read_product_listings"
+scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes,unauthenticated_read_product_listings,unauthenticated_read_products"
 
 [auth]
-redirect_urls = ["https://forward-geographical-arabia-arcade.trycloudflare.com"]
+redirect_urls = [
+  "https://wolfpack-product-bundle-app.onrender.com/auth/callback",
+  "https://wolfpack-product-bundle-app.onrender.com/auth/shopify/callback",
+  "https://wolfpack-product-bundle-app.onrender.com/api/auth/callback"
+]
 
 [pos]
 embedded = false

@@ -29,12 +29,16 @@ const shopify = shopifyApp({
       console.log("[SHOPIFY] afterAuth hook triggered for shop:", session.shop);
 
       // Create storefront access token after successful auth
+      // This is optional - the app will work without it, but product fetching will be slower
       try {
         console.log("[SHOPIFY] Creating storefront access token...");
         const token = await createStorefrontAccessToken(admin, session.shop);
         console.log("[SHOPIFY] ✅ Storefront access token created:", token.substring(0, 20) + "...");
-      } catch (error) {
-        console.error("[SHOPIFY] ❌ Failed to create storefront access token:", error);
+      } catch (error: any) {
+        // Log detailed error but don't fail the installation
+        console.error("[SHOPIFY] ⚠️ Failed to create storefront access token:", error?.message || error);
+        console.error("[SHOPIFY] ⚠️ This is non-critical. App will use Admin API fallback for product fetching.");
+        console.error("[SHOPIFY] ℹ️ To enable storefront tokens, ensure app has 'unauthenticated_read_products' scope and reinstall.");
       }
 
       // Automatically activate cart transform for new installations
@@ -49,10 +53,12 @@ const shopify = shopifyApp({
             console.log("[SHOPIFY] ✅ Cart transform activated:", result.cartTransformId);
           }
         } else {
-          console.error("[SHOPIFY] ❌ Cart transform setup failed:", result.error);
+          console.error("[SHOPIFY] ⚠️ Cart transform setup failed:", result.error);
+          console.error("[SHOPIFY] ℹ️ This is non-critical. Cart transform can be activated manually later.");
         }
-      } catch (error) {
-        console.error("[SHOPIFY] ❌ Error during cart transform setup:", error);
+      } catch (error: any) {
+        console.error("[SHOPIFY] ⚠️ Error during cart transform setup:", error?.message || error);
+        console.error("[SHOPIFY] ℹ️ This is non-critical. Cart transform can be activated manually later.");
       }
     },
   },
