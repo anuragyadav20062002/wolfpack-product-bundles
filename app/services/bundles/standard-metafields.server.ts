@@ -371,10 +371,23 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
     }
   ];
 
-  // First, check if definitions already exist
+  // First, check if definitions already exist in BOTH namespaces
   const CHECK_DEFINITIONS = `
     query checkMetafieldDefinitions {
-      metafieldDefinitions(first: 20, ownerType: PRODUCT, namespace: "$app") {
+      appDefinitions: metafieldDefinitions(first: 20, ownerType: PRODUCT, namespace: "$app") {
+        edges {
+          node {
+            id
+            key
+            namespace
+            access {
+              admin
+              storefront
+            }
+          }
+        }
+      }
+      isolationDefinitions: metafieldDefinitions(first: 20, ownerType: PRODUCT, namespace: "$app:bundle_isolation") {
         edges {
           node {
             id
@@ -396,15 +409,21 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
 
     console.log(`🔧 [STANDARD_METAFIELD] Check definitions response:`, JSON.stringify(checkData, null, 2));
 
-    const existingKeys = checkData.data?.metafieldDefinitions?.edges?.map((edge: any) => edge.node.key) || [];
+    // Combine definitions from both namespaces
+    const allExistingDefinitions = [
+      ...(checkData.data?.appDefinitions?.edges || []),
+      ...(checkData.data?.isolationDefinitions?.edges || [])
+    ];
 
-    console.log(`🔧 [STANDARD_METAFIELD] Found ${existingKeys.length} existing definitions:`, existingKeys);
+    const existingKeys = allExistingDefinitions.map((edge: any) => `${edge.node.namespace}:${edge.node.key}`);
+
+    console.log(`🔧 [STANDARD_METAFIELD] Found ${allExistingDefinitions.length} existing definitions:`, existingKeys);
 
     // Create or update definitions as needed
     for (const definition of standardDefinitions) {
-      // Check if this definition already exists
-      const existingDef = checkData.data?.metafieldDefinitions?.edges?.find(
-        (edge: any) => edge.node.key === definition.key
+      // Check if this definition already exists (match by BOTH namespace AND key)
+      const existingDef = allExistingDefinitions.find(
+        (edge: any) => edge.node.key === definition.key && edge.node.namespace === definition.namespace
       )?.node;
 
       if (existingDef) {
