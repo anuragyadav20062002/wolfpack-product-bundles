@@ -1,6 +1,22 @@
 /**
  * API Route to cleanup unstructured metafields and recreate with definitions
+ *
+ * Purpose: Fixes the issue where metafields were created BEFORE definitions,
+ * resulting in "unstructured" metafields that lack storefront access.
+ *
+ * Usage:
  * GET /api/cleanup-metafields?productId=gid://shopify/Product/10305816199462
+ *
+ * Process:
+ * 1. Ensure metafield definitions exist FIRST (with storefront access)
+ * 2. Delete existing unstructured metafield values
+ * 3. Return instructions to re-save bundle (which writes values to proper definitions)
+ *
+ * When to use:
+ * - After deploying metafield definition changes
+ * - When metafields show as "Unstructured" in Shopify Admin
+ * - When Liquid templates can't access metafields on storefront
+ * - Before re-saving a bundle configuration
  */
 
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
