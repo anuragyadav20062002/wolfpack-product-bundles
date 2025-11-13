@@ -291,6 +291,40 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
         storefront: "PUBLIC_READ"
       }
     },
+    // Bundle isolation metafields - MUST have storefront access for Liquid template to read them
+    {
+      namespace: "$app:bundle_isolation",
+      key: "bundle_product_type",
+      name: "Bundle Product Type",
+      description: "Identifies the type of bundle product (cart_transform_bundle)",
+      type: "single_line_text_field",
+      ownerType: "PRODUCT",
+      access: {
+        storefront: "PUBLIC_READ"
+      }
+    },
+    {
+      namespace: "$app:bundle_isolation",
+      key: "owns_bundle_id",
+      name: "Owns Bundle ID",
+      description: "The ID of the bundle this product owns/contains",
+      type: "single_line_text_field",
+      ownerType: "PRODUCT",
+      access: {
+        storefront: "PUBLIC_READ"
+      }
+    },
+    {
+      namespace: "$app:bundle_isolation",
+      key: "isolation_created",
+      name: "Isolation Created Timestamp",
+      description: "Timestamp when bundle isolation was set up",
+      type: "single_line_text_field",
+      ownerType: "PRODUCT",
+      access: {
+        storefront: "PUBLIC_READ"
+      }
+    },
     {
       namespace: "$app", // App-reserved namespace avoids conflicts
       key: "component_reference",
