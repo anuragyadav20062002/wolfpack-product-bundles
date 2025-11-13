@@ -129,37 +129,83 @@ export class BundleIsolationService {
         }
       `;
 
+      const mutationVariables = {
+        metafields: [
+          {
+            ownerId: bundleProductId,
+            namespace: "$app",
+            key: "bundleConfig",
+            type: "json",
+            value: JSON.stringify(bundleMetafieldData)
+            // Note: access.storefront is set in metafield definition (shopify.app.toml)
+            // [product.metafields.app.bundleConfig] in TOML = namespace "$app", key "bundleConfig"
+          }
+        ]
+      };
+
+      // Log mutation details for debugging
+      console.log('=== METAFIELD MUTATION DEBUG ===');
+      console.log('bundleProductId:', bundleProductId);
+      console.log('namespace:', "$app");
+      console.log('key:', "bundleConfig");
+      console.log('value length:', JSON.stringify(bundleMetafieldData).length);
+      console.log('================================');
+
       const response = await admin.graphql(SET_BUNDLE_CONFIG_METAFIELD, {
-        variables: {
-          metafields: [
-            {
-              ownerId: bundleProductId,
-              namespace: "$app",
-              key: "bundleConfig",
-              type: "json",
-              value: JSON.stringify(bundleMetafieldData)
-              // Note: access.storefront is set in metafield definition (shopify.app.toml)
-              // [product.metafields.app.bundleConfig] in TOML = namespace "$app", key "bundleConfig"
-            }
-          ]
-        }
+        variables: mutationVariables
       });
 
       const data = await response.json();
 
-      if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-        const error = data.data.metafieldsSet.userErrors[0];
-        AppLogger.error('Set bundle_config error', { 
-          component: 'isolation', 
+      // Log full response for debugging
+      console.log('=== METAFIELD RESPONSE ===');
+      console.log('Full response:', JSON.stringify(data, null, 2));
+      console.log('Has errors:', !!data.errors);
+      console.log('Has userErrors:', !!data.data?.metafieldsSet?.userErrors?.length);
+      console.log('Created metafields count:', data.data?.metafieldsSet?.metafields?.length || 0);
+      console.log('========================');
+
+      // Check for GraphQL-level errors
+      if (data.errors) {
+        AppLogger.error('GraphQL errors in metafieldsSet', {
+          component: 'isolation',
           operation: 'update-metafield'
-        }, error);
+        }, data.errors);
+        console.error('GraphQL ERRORS:', JSON.stringify(data.errors, null, 2));
         return false;
       }
 
-      AppLogger.info('Successfully updated bundle_config metafield', { 
-        component: 'isolation', 
+      if (data.data?.metafieldsSet?.userErrors?.length > 0) {
+        const error = data.data.metafieldsSet.userErrors[0];
+        AppLogger.error('Set bundle_config error', {
+          component: 'isolation',
+          operation: 'update-metafield'
+        }, error);
+        console.error('USER ERRORS:', JSON.stringify(data.data.metafieldsSet.userErrors, null, 2));
+        return false;
+      }
+
+      // Verify metafields were created
+      const createdMetafields = data.data?.metafieldsSet?.metafields || [];
+      if (createdMetafields.length === 0) {
+        AppLogger.error('No metafields created - mutation succeeded but returned no metafields', {
+          component: 'isolation',
+          operation: 'update-metafield'
+        });
+        console.error('NO METAFIELDS CREATED despite no errors!');
+        return false;
+      }
+
+      AppLogger.info('Successfully updated bundle_config metafield', {
+        component: 'isolation',
         operation: 'update-metafield'
-      }, { bundleProductId });
+      }, {
+        bundleProductId,
+        metafieldId: createdMetafields[0]?.id,
+        namespace: createdMetafields[0]?.namespace,
+        key: createdMetafields[0]?.key
+      });
+      console.log('✅ Metafield created successfully:', createdMetafields[0]?.id);
       return true;
 
     } catch (error) {
@@ -276,11 +322,26 @@ export class BundleIsolationService {
         }
       `;
 
+      console.log('=== ISOLATION METAFIELDS DEBUG ===');
+      console.log('bundleProductId:', bundleProductId);
+      console.log('bundleId:', bundleId);
+      console.log('metafields to create:', metafields.length);
+      console.log('==================================');
+
       const response = await admin.graphql(SET_METAFIELDS_MUTATION, {
         variables: { metafields }
       });
 
       const data = await response.json();
+
+      console.log('=== ISOLATION METAFIELDS RESPONSE ===');
+      console.log('Full response:', JSON.stringify(data, null, 2));
+      console.log('====================================');
+
+      if (data.errors) {
+        console.error('GraphQL ERRORS in isolation metafields:', JSON.stringify(data.errors, null, 2));
+        return false;
+      }
 
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
         AppLogger.error('Metafield errors during isolation metafield creation', {
@@ -288,14 +349,17 @@ export class BundleIsolationService {
           operation: 'create-metafields',
           bundleId
         }, data.data.metafieldsSet.userErrors);
+        console.error('USER ERRORS in isolation metafields:', JSON.stringify(data.data.metafieldsSet.userErrors, null, 2));
         return false;
       }
 
+      const createdCount = data.data?.metafieldsSet?.metafields?.length || 0;
       AppLogger.info('Created isolation metafields', {
         component: 'isolation',
         operation: 'create-metafields',
         bundleId
-      }, { count: data.data?.metafieldsSet?.metafields?.length || 0 });
+      }, { count: createdCount });
+      console.log(`✅ Created ${createdCount} isolation metafields`);
       return true;
 
     } catch (error) {

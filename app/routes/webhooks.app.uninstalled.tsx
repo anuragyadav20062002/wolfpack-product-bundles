@@ -176,17 +176,17 @@ async function cleanupShopMetafields(admin: any) {
       {
         ownerId: shopGid,
         namespace: "custom",
-        key: "bundle_index"
+        key: "bundleIndex"
       },
       {
         ownerId: shopGid,
-        namespace: "app_config",
-        key: "server_url"
+        namespace: "appconfig",
+        key: "serverUrl"
       },
       {
         ownerId: shopGid,
-        namespace: "app_config",
-        key: "last_sync"
+        namespace: "appconfig",
+        key: "lastSync"
       }
       // Add any other shop-level metafields your app creates
     ];
