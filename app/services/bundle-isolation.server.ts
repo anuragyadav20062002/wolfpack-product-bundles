@@ -66,49 +66,32 @@ export class BundleIsolationService {
         conditionValue: step.conditionValue
       }));
 
+      // MINIMAL bundleConfig for widget - only what widget needs
+      // Widget fetches full product data via Storefront API (/api/storefront-products)
+      // So we only store: bundle ID, name, step structure, pricing display settings
+      // This reduces metafield size from ~5KB to ~500 bytes
       const bundleMetafieldData = {
         id: bundleConfig.id,
         name: bundleConfig.name,
-        description: bundleConfig.description,
-        status: bundleConfig.status,
-        bundleType: bundleConfig.bundleType,
-        shopifyProductId: bundleProductId,
-        bundleParentVariantId: bundleConfig.bundleParentVariantId || null,
-        steps: steps,
+        steps: steps.map((step: any) => ({
+          id: step.id,
+          name: step.name,
+          icon: step.icon,
+          position: step.position,
+          minQuantity: step.minQuantity,
+          maxQuantity: step.maxQuantity,
+          // Only store product IDs - widget will fetch full product data via Storefront API
+          StepProduct: (step.StepProduct || []).map((sp: any) => ({
+            productId: sp.productId
+          }))
+        })),
+        // Pricing display settings only (rules stored in cartTransformConfig)
         pricing: bundleConfig.pricing ? {
           enabled: bundleConfig.pricing.enabled,
-          method: bundleConfig.pricing.method,
-          rules: ensureStandardizedRules(
-            safeJsonParse(bundleConfig.pricing.rules, [])
-          ),
           showFooter: bundleConfig.pricing.showFooter,
           showProgressBar: bundleConfig.pricing.showProgressBar,
-          messages: {
-            ...safeJsonParse(bundleConfig.pricing.messages, {}),
-            showDiscountDisplay: safeJsonParse(bundleConfig.pricing.messages, {}).showDiscountDisplay !== false // Default to true
-          }
-        } : null,
-        // Store both product IDs (for reference) and variant IDs (for cart transform)
-        componentProductIds: Array.from(new Set(
-          steps.flatMap((step: any) =>
-            step.StepProduct?.map((sp: any) => sp.productId) || []
-          )
-        )),
-        // Store component variant IDs from step products' variant data
-        componentVariantIds: Array.from(new Set(
-          steps.flatMap((step: any) =>
-            step.StepProduct?.flatMap((sp: any) => {
-              // Extract variant IDs from variants field if available
-              if (sp.variants) {
-                const variants = safeJsonParse(sp.variants, []);
-                if (Array.isArray(variants) && variants.length > 0) {
-                  return variants.map((v: any) => v.id).filter((id: any) => id && id.includes('gid://shopify/ProductVariant/'));
-                }
-              }
-              return [];
-            }) || []
-          )
-        ))
+          messages: safeJsonParse(bundleConfig.pricing.messages, {})
+        } : null
       };
 
       const SET_BUNDLE_CONFIG_METAFIELD = `
