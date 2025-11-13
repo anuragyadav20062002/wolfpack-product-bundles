@@ -279,7 +279,7 @@
   {% assign auto_display_mode = true %}
   {% comment %} Load bundle configuration from container metafields {% endcomment %}
   {% if product.metafields['$app'].bundle_config %}
-    {% assign bundle_config = product.metafields['$app'].bundle_config %}
+    {% assign bundle_config = product.metafields['$app'].bundle_config.value %}
   {% endif %}
 {% endif %}
 
@@ -381,7 +381,7 @@
       data-is-container-product="{{ is_container_product }}"
       data-container-bundle-id="{{ container_bundle_id }}"
       data-auto-display-mode="{{ auto_display_mode }}"
-      data-bundle-config="{{ bundle_config | escape }}"
+      data-bundle-config="{{ bundle_config | json | escape }}"
       data-hide-default-buttons="{{ hide_default_buttons }}"
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
