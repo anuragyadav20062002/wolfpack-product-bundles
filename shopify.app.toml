@@ -29,3 +29,114 @@ redirect_urls = [
 
 [pos]
 embedded = false
+
+# ==============================================================================
+# METAFIELD DEFINITIONS - Declarative Custom Data
+# ==============================================================================
+# These definitions ensure metafields have proper structure, validation,
+# and access controls. Declared in app-reserved namespace ($app).
+# See: https://shopify.dev/docs/apps/build/custom-data/declarative-custom-data-definitions
+
+[metafields]
+api_version = "2025-01"
+
+# Bundle Widget Configuration
+# Primary metafield that stores complete bundle configuration for storefront widget
+[product.metafields.app.bundleConfig]
+type = "json"
+name = "Bundle Configuration"
+description = "Complete bundle configuration data for widget display on storefront"
+access.admin = "merchant_read"
+access.storefront = "public_read"  # CRITICAL: Enable Liquid template access
+capabilities.admin_filterable = false
+
+# Cart Transform Configuration
+# Stores bundle configuration for cart transform function
+[product.metafields.app.cartTransformConfig]
+type = "json"
+name = "Cart Transform Configuration"
+description = "Bundle configuration for cart transform discount function"
+access.admin = "merchant_read"
+access.storefront = "none"
+capabilities.admin_filterable = false
+
+# Bundle Isolation Tracking
+# Metafields that track bundle ownership and product type
+[product.metafields.app.ownsBundleId]
+type = "single_line_text_field"
+name = "Bundle Owner ID"
+description = "ID of the bundle that owns this container product"
+access.admin = "merchant_read"
+access.storefront = "public_read"
+capabilities.admin_filterable = true
+
+[product.metafields.app.bundleProductType]
+type = "single_line_text_field"
+name = "Bundle Product Type"
+description = "Type marker for bundle product (cart_transform_bundle)"
+access.admin = "merchant_read"
+access.storefront = "public_read"
+capabilities.admin_filterable = true
+validations.choices = ["cart_transform_bundle", "standalone_bundle"]
+
+[product.metafields.app.isolationCreated]
+type = "single_line_text_field"
+name = "Isolation Created Timestamp"
+description = "ISO timestamp when bundle isolation was created"
+access.admin = "merchant_read"
+access.storefront = "none"
+capabilities.admin_filterable = false
+
+# Standard Shopify Metafields (for Shopify-native bundle features)
+[product.metafields.app.componentReference]
+type = "list.product_reference"
+name = "Bundle Component Products"
+description = "List of product variant IDs that make up this bundle"
+access.admin = "merchant_read"
+access.storefront = "public_read"
+capabilities.admin_filterable = false
+
+[product.metafields.app.componentQuantities]
+type = "list.number_integer"
+name = "Component Quantities"
+description = "Quantity of each component in the bundle (matches component_reference order)"
+access.admin = "merchant_read"
+access.storefront = "public_read"
+capabilities.admin_filterable = false
+validations.min = 1
+validations.max = 100
+
+[product.metafields.app.componentParents]
+type = "json"
+name = "Component Parent Configuration"
+description = "Parent bundle configuration for component products"
+access.admin = "merchant_read"
+access.storefront = "none"
+capabilities.admin_filterable = false
+
+[product.metafields.app.priceAdjustment]
+type = "number_decimal"
+name = "Bundle Price Adjustment"
+description = "Price adjustment/discount for this bundle"
+access.admin = "merchant_read"
+access.storefront = "public_read"
+capabilities.admin_filterable = false
+
+# Shop-Level Bundle Index
+# Global list of all bundles for cart transform function
+[shop.metafields.custom.bundleIndex]
+type = "json"
+name = "Bundle Index"
+description = "Global index of all active bundles for cart transform lookups"
+
+# App Configuration
+# Shop-level app settings
+[shop.metafields.appconfig.serverUrl]
+type = "single_line_text_field"
+name = "App Server URL"
+description = "URL of the app server for widget API calls"
+
+[shop.metafields.appconfig.lastSync]
+type = "single_line_text_field"
+name = "Last Sync Timestamp"
+description = "ISO timestamp of last successful sync with app server"

@@ -273,18 +273,14 @@
 {% assign auto_display_mode = false %}
 
 {% comment %} PRIMARY CHECK: Is this product a designated bundle container? {% endcomment %}
-{% comment %} Access app-owned metafields using $app:namespace syntax (Shopify best practice for theme app extensions) {% endcomment %}
-{% comment %} Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration {% endcomment %}
-{% comment %} IMPORTANT: Use bracket notation for both namespace AND key, then chain .value accessor {% endcomment %}
-{% assign bundle_product_type = product.metafields["$app:bundle_isolation"]["bundle_product_type"].value %}
-{% assign owns_bundle_id = product.metafields["$app:bundle_isolation"]["owns_bundle_id"].value %}
-
-{% if bundle_product_type == 'cart_transform_bundle' %}
+{% if product.metafields.app.bundleProductType == 'cart_transform_bundle' %}
   {% assign is_container_product = true %}
-  {% assign container_bundle_id = owns_bundle_id %}
+  {% assign container_bundle_id = product.metafields.app.ownsBundleId %}
   {% assign auto_display_mode = true %}
-  {% comment %} Load bundle configuration from $app namespace (JSON type requires .value) {% endcomment %}
-  {% assign bundle_config = product.metafields["$app"]["bundle_config"].value %}
+  {% comment %} Load bundle configuration from container metafields {% endcomment %}
+  {% if product.metafields.app.bundleConfig %}
+    {% assign bundle_config = product.metafields.app.bundleConfig %}
+  {% endif %}
 {% endif %}
 
 {% comment %} SECONDARY CHECK: Widget configured with specific bundle ID (theme editor) {% endcomment %}
@@ -328,18 +324,11 @@
         urlParams: new URLSearchParams(window.location.search).toString()
       });
 
-      // 🔍 Enhanced debugging for metafield access
+      // 🔍 Enhanced debugging for custom template pages
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        // App-owned metafields with $app:namespace syntax (using bracket notation)
-        bundleProductType: {{ bundle_product_type | json }},
-        ownsBundleId: {{ owns_bundle_id | json }},
-        // Bundle config from $app namespace
-        bundleConfigRaw: {{ product.metafields["$app"]["bundle_config"] | json }},
-        bundleConfigValue: {{ product.metafields["$app"]["bundle_config"].value | json }},
-        bundleConfigVariable: {{ bundle_config | json }},
-        // Check if metafield objects exist
-        hasIsolationMetafield: {{ product.metafields["$app:bundle_isolation"] | json }},
-        hasBundleConfigMetafield: {{ product.metafields["$app"]["bundle_config"] | json }}
+        bundleIsolationType: {{ product.metafields.app.bundleProductType | json }},
+        ownsBundleId: {{ product.metafields.app.ownsBundleId | json }},
+        cartTransformConfig: {{ product.metafields.app.bundleConfig | json }}
       });
 
       // 🔍 Debug the Liquid template bundle ID selection logic
@@ -392,7 +381,7 @@
       data-is-container-product="{{ is_container_product }}"
       data-container-bundle-id="{{ container_bundle_id }}"
       data-auto-display-mode="{{ auto_display_mode }}"
-      data-bundle-config="{{ bundle_config | json | escape }}"
+      data-bundle-config="{{ bundle_config | escape }}"
       data-hide-default-buttons="{{ hide_default_buttons }}"
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
@@ -472,47 +461,23 @@
       </div>
       {% endif %}
     </div>
-
-    <script>
-      // Debug: Check data attributes on widget container
-      (function() {
-        const container = document.getElementById('bundle-builder-app');
-        if (container) {
-          console.log('📋 [DATA_ATTRIBUTES] Widget container found:', {
-            bundleId: container.dataset.bundleId,
-            isContainerProduct: container.dataset.isContainerProduct,
-            containerBundleId: container.dataset.containerBundleId,
-            bundleConfigExists: !!container.dataset.bundleConfig,
-            bundleConfigLength: container.dataset.bundleConfig?.length || 0,
-            bundleConfigPreview: container.dataset.bundleConfig?.substring(0, 100)
-          });
-        } else {
-          console.error('❌ [DATA_ATTRIBUTES] Widget container not found!');
-        }
-      })();
-    </script>
 {% endif %}
 
 <script>
   // Inject app URL from shop metafield (auto-synced when merchant accesses app admin)
-  window.__BUNDLE_APP_URL__ = {{ shop.metafields.app_config.server_url | json }};
+  window.__BUNDLE_APP_URL__ = {{ shop.metafields.appconfig.serverUrl | json }};
 </script>
 
 <script>
   // Load bundle configuration directly from product metafield
   // This is much faster than shop-level metafields and naturally isolated
   if (!window.allBundlesData) {
-    // Primary source: product's bundle_config metafield
-    // Note: App-scoped metafields ($app namespace) use bracket notation for both namespace AND key
+    // Primary source: product's bundleConfig metafield
+    // Note: App-scoped metafields declared in shopify.app.toml are accessed via .app namespace
+    // The metafield.app.bundleConfig syntax accesses metafields defined as [product.metafields.app.bundleConfig]
     // JSON metafields require .value accessor to retrieve the parsed JSON object
-    // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
-    const productBundleConfig = {{ product.metafields["$app"]["bundle_config"].value | json }};
-
-    console.log('📦 [BUNDLE_DATA] Loading bundle config:', {
-      productBundleConfig,
-      hasId: !!(productBundleConfig && productBundleConfig.id),
-      bundleId: productBundleConfig?.id
-    });
+    // Reference: https://shopify.dev/docs/storefronts/themes/architecture/settings/input-settings#access-app-owned-metafields
+    const productBundleConfig = {{ product.metafields.app.bundleConfig.value | json }};
 
     // Set as allBundlesData object (widget expects this name)
     // Create an object with the bundle ID as key for compatibility
@@ -520,10 +485,8 @@
       window.allBundlesData = {
         [productBundleConfig.id]: productBundleConfig
       };
-      console.log('✅ [BUNDLE_DATA] window.allBundlesData set successfully');
     } else {
       window.allBundlesData = null;
-      console.error('❌ [BUNDLE_DATA] No valid bundle config found - window.allBundlesData set to null');
     }
 
     window.currentProductId = {{ product.id | json }};
