@@ -275,15 +275,16 @@
 {% comment %} PRIMARY CHECK: Is this product a designated bundle container? {% endcomment %}
 {% comment %} Access app-owned metafields using $app:namespace syntax (Shopify best practice for theme app extensions) {% endcomment %}
 {% comment %} Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration {% endcomment %}
-{% assign bundle_product_type = product.metafields["$app:bundle_isolation"].bundle_product_type.value %}
-{% assign owns_bundle_id = product.metafields["$app:bundle_isolation"].owns_bundle_id.value %}
+{% comment %} IMPORTANT: Use bracket notation for both namespace AND key, then chain .value accessor {% endcomment %}
+{% assign bundle_product_type = product.metafields["$app:bundle_isolation"]["bundle_product_type"].value %}
+{% assign owns_bundle_id = product.metafields["$app:bundle_isolation"]["owns_bundle_id"].value %}
 
 {% if bundle_product_type == 'cart_transform_bundle' %}
   {% assign is_container_product = true %}
   {% assign container_bundle_id = owns_bundle_id %}
   {% assign auto_display_mode = true %}
   {% comment %} Load bundle configuration from $app namespace (JSON type requires .value) {% endcomment %}
-  {% assign bundle_config = product.metafields["$app"].bundle_config.value %}
+  {% assign bundle_config = product.metafields["$app"]["bundle_config"].value %}
 {% endif %}
 
 {% comment %} SECONDARY CHECK: Widget configured with specific bundle ID (theme editor) {% endcomment %}
@@ -329,16 +330,16 @@
 
       // 🔍 Enhanced debugging for metafield access
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        // App-owned metafields with $app:namespace syntax
+        // App-owned metafields with $app:namespace syntax (using bracket notation)
         bundleProductType: {{ bundle_product_type | json }},
         ownsBundleId: {{ owns_bundle_id | json }},
         // Bundle config from $app namespace
-        bundleConfigRaw: {{ product.metafields["$app"].bundle_config | json }},
-        bundleConfigValue: {{ product.metafields["$app"].bundle_config.value | json }},
+        bundleConfigRaw: {{ product.metafields["$app"]["bundle_config"] | json }},
+        bundleConfigValue: {{ product.metafields["$app"]["bundle_config"].value | json }},
         bundleConfigVariable: {{ bundle_config | json }},
         // Check if metafield objects exist
         hasIsolationMetafield: {{ product.metafields["$app:bundle_isolation"] | json }},
-        hasBundleConfigMetafield: {{ product.metafields["$app"].bundle_config | json }}
+        hasBundleConfigMetafield: {{ product.metafields["$app"]["bundle_config"] | json }}
       });
 
       // 🔍 Debug the Liquid template bundle ID selection logic
@@ -502,10 +503,10 @@
   // This is much faster than shop-level metafields and naturally isolated
   if (!window.allBundlesData) {
     // Primary source: product's bundle_config metafield
-    // Note: App-scoped metafields ($app namespace) use dot notation for keys
+    // Note: App-scoped metafields ($app namespace) use bracket notation for both namespace AND key
     // JSON metafields require .value accessor to retrieve the parsed JSON object
     // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
-    const productBundleConfig = {{ product.metafields["$app"].bundle_config.value | json }};
+    const productBundleConfig = {{ product.metafields["$app"]["bundle_config"].value | json }};
 
     console.log('📦 [BUNDLE_DATA] Loading bundle config:', {
       productBundleConfig,
