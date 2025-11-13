@@ -273,9 +273,19 @@
 {% assign auto_display_mode = false %}
 
 {% comment %} PRIMARY CHECK: Is this product a designated bundle container? {% endcomment %}
-{% if product.metafields['$app:bundle_isolation'].bundle_product_type == 'cart_transform_bundle' %}
+{% comment %} Try $app:bundle_isolation prefix (should work in theme app extensions) {% endcomment %}
+{% assign bundle_product_type = product.metafields['$app:bundle_isolation'].bundle_product_type %}
+{% assign owns_bundle_id = product.metafields['$app:bundle_isolation'].owns_bundle_id %}
+
+{% comment %} Fallback: Try expanded namespace if $app: prefix doesn't work {% endcomment %}
+{% unless bundle_product_type %}
+  {% assign bundle_product_type = product.metafields['app--261615583233--bundle_isolation'].bundle_product_type %}
+  {% assign owns_bundle_id = product.metafields['app--261615583233--bundle_isolation'].owns_bundle_id %}
+{% endunless %}
+
+{% if bundle_product_type == 'cart_transform_bundle' %}
   {% assign is_container_product = true %}
-  {% assign container_bundle_id = product.metafields['$app:bundle_isolation'].owns_bundle_id %}
+  {% assign container_bundle_id = owns_bundle_id %}
   {% assign auto_display_mode = true %}
   {% comment %} Load bundle configuration from container metafields {% endcomment %}
   {% if product.metafields['$app']['bundle_config'] %}
@@ -326,8 +336,16 @@
 
       // 🔍 Enhanced debugging for custom template pages
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        bundleIsolationType: {{ product.metafields['$app:bundle_isolation'].bundle_product_type | json }},
-        ownsBundleId: {{ product.metafields['$app:bundle_isolation'].owns_bundle_id | json }},
+        // Test $app:bundle_isolation prefix
+        bundleIsolationType_shortPrefix: {{ product.metafields['$app:bundle_isolation'].bundle_product_type | json }},
+        ownsBundleId_shortPrefix: {{ product.metafields['$app:bundle_isolation'].owns_bundle_id | json }},
+        // Test expanded namespace
+        bundleIsolationType_expanded: {{ product.metafields['app--261615583233--bundle_isolation'].bundle_product_type | json }},
+        ownsBundleId_expanded: {{ product.metafields['app--261615583233--bundle_isolation'].owns_bundle_id | json }},
+        // Final resolved values
+        bundleProductType_resolved: {{ bundle_product_type | json }},
+        ownsBundleId_resolved: {{ owns_bundle_id | json }},
+        // Bundle config
         cartTransformConfigRaw: {{ product.metafields['$app']['bundle_config'] | json }},
         cartTransformConfigValue: {{ product.metafields['$app']['bundle_config'].value | json }},
         bundleConfigVariable: {{ bundle_config | json }}
