@@ -278,8 +278,8 @@
   {% assign container_bundle_id = product.metafields['$app:bundle_isolation'].owns_bundle_id %}
   {% assign auto_display_mode = true %}
   {% comment %} Load bundle configuration from container metafields {% endcomment %}
-  {% if product.metafields['$app'].bundle_config %}
-    {% assign bundle_config = product.metafields['$app'].bundle_config.value %}
+  {% if product.metafields['$app']['bundle_config'] %}
+    {% assign bundle_config = product.metafields['$app']['bundle_config'].value %}
   {% endif %}
 {% endif %}
 
