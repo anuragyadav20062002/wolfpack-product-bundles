@@ -328,7 +328,9 @@
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
         bundleIsolationType: {{ product.metafields['$app:bundle_isolation'].bundle_product_type | json }},
         ownsBundleId: {{ product.metafields['$app:bundle_isolation'].owns_bundle_id | json }},
-        cartTransformConfig: {{ product.metafields['$app']['bundle_config'].value | json }}
+        cartTransformConfigRaw: {{ product.metafields['$app']['bundle_config'] | json }},
+        cartTransformConfigValue: {{ product.metafields['$app']['bundle_config'].value | json }},
+        bundleConfigVariable: {{ bundle_config | json }}
       });
 
       // 🔍 Debug the Liquid template bundle ID selection logic
@@ -461,6 +463,25 @@
       </div>
       {% endif %}
     </div>
+
+    <script>
+      // Debug: Check data attributes on widget container
+      (function() {
+        const container = document.getElementById('bundle-builder-app');
+        if (container) {
+          console.log('📋 [DATA_ATTRIBUTES] Widget container found:', {
+            bundleId: container.dataset.bundleId,
+            isContainerProduct: container.dataset.isContainerProduct,
+            containerBundleId: container.dataset.containerBundleId,
+            bundleConfigExists: !!container.dataset.bundleConfig,
+            bundleConfigLength: container.dataset.bundleConfig?.length || 0,
+            bundleConfigPreview: container.dataset.bundleConfig?.substring(0, 100)
+          });
+        } else {
+          console.error('❌ [DATA_ATTRIBUTES] Widget container not found!');
+        }
+      })();
+    </script>
 {% endif %}
 
 <script>
@@ -478,14 +499,22 @@
     // Reference: https://shopify.dev/changelog/metafields-and-metaobjects-reserved-prefixes-now-supported-in-theme-app-extensions
     const productBundleConfig = {{ product.metafields['$app']['bundle_config'].value | json }};
 
+    console.log('📦 [BUNDLE_DATA] Loading bundle config:', {
+      productBundleConfig,
+      hasId: !!(productBundleConfig && productBundleConfig.id),
+      bundleId: productBundleConfig?.id
+    });
+
     // Set as allBundlesData object (widget expects this name)
     // Create an object with the bundle ID as key for compatibility
     if (productBundleConfig && productBundleConfig.id) {
       window.allBundlesData = {
         [productBundleConfig.id]: productBundleConfig
       };
+      console.log('✅ [BUNDLE_DATA] window.allBundlesData set successfully');
     } else {
       window.allBundlesData = null;
+      console.error('❌ [BUNDLE_DATA] No valid bundle config found - window.allBundlesData set to null');
     }
 
     window.currentProductId = {{ product.id | json }};
