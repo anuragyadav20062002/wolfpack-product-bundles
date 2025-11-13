@@ -59,33 +59,33 @@ export class MetafieldCleanupService {
       : `gid://shopify/Product/${shopifyProductId}`;
 
     const metafieldsToDelete = [
-      // Widget configuration metafield
+      // Widget configuration metafield (defined in shopify.app.toml)
       {
         ownerId: productGid,
         namespace: "$app",
-        key: "bundle_config"
+        key: "bundleConfig"
       },
-      // NEW: Cart transform configuration metafield (Hybrid Architecture)
+      // Cart transform configuration metafield
       {
         ownerId: productGid,
         namespace: "$app",
-        key: "cart_transform_config"
+        key: "cartTransformConfig"
       },
       // Bundle isolation metafields
       {
         ownerId: productGid,
-        namespace: "$app:bundle_isolation",
-        key: "owns_bundle_id"
+        namespace: "$app",
+        key: "ownsBundleId"
       },
       {
         ownerId: productGid,
-        namespace: "$app:bundle_isolation",
-        key: "bundle_product_type"
+        namespace: "$app",
+        key: "bundleProductType"
       },
       {
         ownerId: productGid,
-        namespace: "$app:bundle_isolation",
-        key: "isolation_created"
+        namespace: "$app",
+        key: "isolationCreated"
       }
     ];
 

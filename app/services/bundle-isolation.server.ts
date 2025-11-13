@@ -3,7 +3,6 @@
 // Uses product-level metafields for optimal performance
 
 import { AppLogger } from "../lib/logger";
-import { ensureStandardMetafieldDefinitions } from "./bundles/standard-metafields.server";
 
 export class BundleIsolationService {
 
@@ -12,14 +11,12 @@ export class BundleIsolationService {
    * Stores bundle config on the bundle product itself for fast, isolated access
    */
   static async updateBundleProductMetafield(admin: any, bundleProductId: string, bundleConfig: any) {
-    AppLogger.info('Updating bundle product metafield', {
-      component: 'isolation',
+    AppLogger.info('Updating bundle product metafield', { 
+      component: 'isolation', 
       operation: 'update-metafield'
     }, { bundleProductId });
 
     try {
-      // Ensure bundle_config metafield definition exists with storefront access
-      await ensureStandardMetafieldDefinitions(admin);
       // Helper function to safely parse JSON
       const safeJsonParse = (value: any, defaultValue: any = []) => {
         if (!value) return defaultValue;
@@ -132,42 +129,23 @@ export class BundleIsolationService {
         }
       `;
 
-      AppLogger.info('Setting bundle_config metafield', {
-        component: 'isolation',
-        operation: 'set-metafield'
-      }, {
-        bundleProductId,
-        bundleId: bundleMetafieldData.id,
-        bundleName: bundleMetafieldData.name,
-        valuePreview: JSON.stringify(bundleMetafieldData).substring(0, 200)
-      });
-
       const response = await admin.graphql(SET_BUNDLE_CONFIG_METAFIELD, {
         variables: {
           metafields: [
             {
               ownerId: bundleProductId,
               namespace: "$app",
-              key: "bundle_config",
+              key: "bundleConfig",
               type: "json",
               value: JSON.stringify(bundleMetafieldData)
-              // Note: access/storefront visibility must be configured on the metafield DEFINITION,
-              // not on individual metafield values. See ensureStandardMetafieldDefinitions()
+              // Note: access.storefront is set in metafield definition (shopify.app.toml)
+              // [product.metafields.app.bundleConfig] in TOML = namespace "$app", key "bundleConfig"
             }
           ]
         }
       });
 
       const data = await response.json();
-
-      AppLogger.info('Set bundle_config metafield response', {
-        component: 'isolation',
-        operation: 'set-metafield-response'
-      }, {
-        success: !data.data?.metafieldsSet?.userErrors?.length,
-        metafieldId: data.data?.metafieldsSet?.metafields?.[0]?.id,
-        userErrors: data.data?.metafieldsSet?.userErrors || []
-      });
 
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
         const error = data.data.metafieldsSet.userErrors[0];
@@ -208,7 +186,7 @@ export class BundleIsolationService {
         query GetBundleConfig($id: ID!) {
           product(id: $id) {
             id
-            bundleConfig: metafield(namespace: "$app", key: "bundle_config") {
+            bundleConfig: metafield(namespace: "$app", key: "bundleConfig") {
               value
             }
           }
@@ -261,22 +239,22 @@ export class BundleIsolationService {
       const metafields = [
         {
           ownerId: bundleProductId,
-          namespace: "$app:bundle_isolation",
-          key: "owns_bundle_id",
+          namespace: "$app",
+          key: "ownsBundleId",
           type: "single_line_text_field",
           value: bundleId
         },
         {
           ownerId: bundleProductId,
-          namespace: "$app:bundle_isolation",
-          key: "bundle_product_type",
+          namespace: "$app",
+          key: "bundleProductType",
           type: "single_line_text_field",
           value: "cart_transform_bundle"
         },
         {
           ownerId: bundleProductId,
-          namespace: "$app:bundle_isolation",
-          key: "isolation_created",
+          namespace: "$app",
+          key: "isolationCreated",
           type: "single_line_text_field",
           value: new Date().toISOString()
         }
@@ -343,18 +321,18 @@ export class BundleIsolationService {
       const metafieldsToDelete = [
         {
           ownerId: bundleProductId,
-          namespace: "$app:bundle_isolation",
-          key: "owns_bundle_id"
+          namespace: "$app",
+          key: "ownsBundleId"
         },
         {
           ownerId: bundleProductId,
-          namespace: "$app:bundle_isolation",
-          key: "bundle_product_type"
+          namespace: "$app",
+          key: "bundleProductType"
         },
         {
           ownerId: bundleProductId,
-          namespace: "$app:bundle_isolation",
-          key: "isolation_created"
+          namespace: "$app",
+          key: "isolationCreated"
         }
       ];
 
