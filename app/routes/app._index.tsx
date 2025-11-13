@@ -62,8 +62,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         variables: {
           metafields: [{
             ownerId: shopGlobalId,
-            namespace: "app_config",
-            key: "server_url",
+            namespace: "appconfig",
+            key: "serverUrl",
             type: "single_line_text_field",
             value: appUrl
           }]
