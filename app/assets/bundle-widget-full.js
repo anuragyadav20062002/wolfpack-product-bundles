@@ -952,25 +952,43 @@ class BundleWidget {
     let bundleData = null;
 
     // Source 1: data-bundle-config attribute
-    if (this.container.dataset.bundleConfig) {
+    const configValue = this.container.dataset.bundleConfig;
+    if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
       try {
-        const singleBundle = JSON.parse(this.container.dataset.bundleConfig);
-        bundleData = { [singleBundle.id]: singleBundle };
+        const singleBundle = JSON.parse(configValue);
+        // Additional validation: ensure parsed result is a valid object with an id
+        if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
+          bundleData = { [singleBundle.id]: singleBundle };
+          console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
+        } else {
+          console.warn('[WIDGET_INIT] ⚠️ Parsed bundle config is invalid (missing id):', singleBundle);
+        }
       } catch (error) {
-        console.error('[WIDGET_INIT] Failed to parse data-bundle-config:', error);
+        console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error, 'Value:', configValue.substring(0, 100));
       }
+    } else {
+      console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
     }
 
     // Source 2: window.allBundlesData
-    if (!bundleData && window.allBundlesData) {
+    if (!bundleData && window.allBundlesData && typeof window.allBundlesData === 'object') {
       bundleData = window.allBundlesData;
+      console.log('[WIDGET_INIT] ✅ Loaded bundle data from window.allBundlesData:', Object.keys(bundleData));
     }
 
-    if (!bundleData) {
-      throw new Error('No bundle data available');
+    if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+      const errorMsg = 'No valid bundle data available. Ensure bundle is saved in admin and metafields have storefront access.';
+      console.error('[WIDGET_INIT] ❌', errorMsg);
+      console.error('[WIDGET_INIT] 🔍 Debug info:', {
+        configValue: configValue?.substring(0, 100),
+        windowData: window.allBundlesData,
+        containerDataset: this.container.dataset
+      });
+      throw new Error(errorMsg);
     }
 
     this.bundleData = bundleData;
+    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully');
   }
 
   selectBundle() {

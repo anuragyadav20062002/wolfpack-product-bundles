@@ -331,7 +331,10 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
       name: "Component Reference",
       description: "Bundle component variant IDs",
       type: "list.product_reference",
-      ownerType: "PRODUCT"
+      ownerType: "PRODUCT",
+      access: {
+        storefront: "PUBLIC_READ"
+      }
     },
     {
       namespace: "$app",
@@ -339,7 +342,10 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
       name: "Component Quantities",
       description: "Bundle component quantities",
       type: "list.number_integer",
-      ownerType: "PRODUCT"
+      ownerType: "PRODUCT",
+      access: {
+        storefront: "PUBLIC_READ"
+      }
     },
     {
       namespace: "$app",
@@ -347,7 +353,10 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
       name: "Component Parents",
       description: "Bundle parent configurations",
       type: "json",
-      ownerType: "PRODUCT"
+      ownerType: "PRODUCT",
+      access: {
+        storefront: "PUBLIC_READ"
+      }
     },
     {
       namespace: "$app",
@@ -355,7 +364,10 @@ export async function ensureStandardMetafieldDefinitions(admin: any) {
       name: "Price Adjustment",
       description: "Bundle price adjustment configuration",
       type: "number_decimal",
-      ownerType: "PRODUCT"
+      ownerType: "PRODUCT",
+      access: {
+        storefront: "PUBLIC_READ"
+      }
     }
   ];
 
