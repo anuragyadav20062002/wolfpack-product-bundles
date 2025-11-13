@@ -328,7 +328,7 @@
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
         bundleIsolationType: {{ product.metafields['$app:bundle_isolation'].bundle_product_type | json }},
         ownsBundleId: {{ product.metafields['$app:bundle_isolation'].owns_bundle_id | json }},
-        cartTransformConfig: {{ product.metafields['$app'].bundle_config | json }}
+        cartTransformConfig: {{ product.metafields['$app']['bundle_config'].value | json }}
       });
 
       // 🔍 Debug the Liquid template bundle ID selection logic
