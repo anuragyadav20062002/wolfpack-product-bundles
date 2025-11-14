@@ -10,7 +10,6 @@ import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prism
 import prisma from "./db.server";
 import { createStorefrontAccessToken } from "./services/storefront-token.server";
 import { CartTransformService } from "./services/cart-transform-service.server";
-import { ensureStandardMetafieldDefinitions } from "./services/bundles/standard-metafields.server";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -29,15 +28,8 @@ const shopify = shopifyApp({
     afterAuth: async ({ session, admin }) => {
       console.log("[SHOPIFY] afterAuth hook triggered for shop:", session.shop);
 
-      // Ensure metafield definitions exist with proper storefront access
-      try {
-        console.log("[SHOPIFY] Ensuring metafield definitions...");
-        await ensureStandardMetafieldDefinitions(admin);
-        console.log("[SHOPIFY] ✅ Metafield definitions verified");
-      } catch (error: any) {
-        console.error("[SHOPIFY] ⚠️ Failed to ensure metafield definitions:", error?.message || error);
-        console.error("[SHOPIFY] ℹ️ This is non-critical. Definitions will be created when bundles are saved.");
-      }
+      // Metafield definitions are managed declaratively in shopify.app.toml
+      console.log("[SHOPIFY] Metafield definitions managed via shopify.app.toml");
 
       // Create storefront access token after successful auth
       // This is optional - the app will work without it, but product fetching will be slower
