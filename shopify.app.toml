@@ -88,9 +88,11 @@ access.storefront = "none"
 capabilities.admin_filterable = false
 
 # Standard Shopify Metafields (for Shopify-native bundle features)
-[product.metafields.app.componentReference]
-type = "list.product_reference"
-name = "Bundle Component Products"
+# NOTE: Using 'componentVariants' key instead of 'componentReference' to avoid
+# type change conflict (cannot change existing metafield definition type)
+[product.metafields.app.componentVariants]
+type = "list.variant_reference"
+name = "Bundle Component Variants"
 description = "List of product variant IDs that make up this bundle"
 access.admin = "merchant_read_write"
 access.storefront = "public_read"
