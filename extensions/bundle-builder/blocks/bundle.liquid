@@ -273,13 +273,13 @@
 {% assign auto_display_mode = false %}
 
 {% comment %} PRIMARY CHECK: Is this product a designated bundle container? {% endcomment %}
-{% if product.metafields.app.bundleProductType == 'cart_transform_bundle' %}
+{% if product.metafields.app.bundleProductType.value == 'cart_transform_bundle' %}
   {% assign is_container_product = true %}
-  {% assign container_bundle_id = product.metafields.app.ownsBundleId %}
+  {% assign container_bundle_id = product.metafields.app.ownsBundleId.value %}
   {% assign auto_display_mode = true %}
   {% comment %} Load bundle configuration from container metafields {% endcomment %}
   {% if product.metafields.app.bundleConfig %}
-    {% assign bundle_config = product.metafields.app.bundleConfig %}
+    {% assign bundle_config = product.metafields.app.bundleConfig.value %}
   {% endif %}
 {% endif %}
 
@@ -326,9 +326,9 @@
 
       // 🔍 Enhanced debugging for custom template pages
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        bundleIsolationType: {{ product.metafields.app.bundleProductType | json }},
-        ownsBundleId: {{ product.metafields.app.ownsBundleId | json }},
-        cartTransformConfig: {{ product.metafields.app.bundleConfig | json }}
+        bundleIsolationType: {{ product.metafields.app.bundleProductType.value | json }},
+        ownsBundleId: {{ product.metafields.app.ownsBundleId.value | json }},
+        cartTransformConfig: {{ product.metafields.app.bundleConfig.value | json }}
       });
 
       // 🔍 Debug the Liquid template bundle ID selection logic
@@ -465,7 +465,9 @@
 
 <script>
   // Inject app URL from shop metafield (auto-synced when merchant accesses app admin)
-  window.__BUNDLE_APP_URL__ = {{ shop.metafields.appconfig.serverUrl | json }};
+  // Note: Changed from appconfig namespace to $app namespace per TOML definition
+  // single_line_text_field metafields require .value accessor per Shopify docs
+  window.__BUNDLE_APP_URL__ = {{ shop.metafields.app.serverUrl.value | json }};
 </script>
 
 <script>
