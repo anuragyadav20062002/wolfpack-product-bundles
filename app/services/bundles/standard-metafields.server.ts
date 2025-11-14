@@ -10,9 +10,6 @@
 import { isUUID } from "../../utils/shopify-validators";
 import { getFirstVariantId } from "../../utils/variant-lookup.server";
 
-// Cache to prevent redundant definition checks
-let metafieldDefinitionsChecked = false;
-
 type MetafieldError = {
   productId: string;
   title: string;
@@ -115,8 +112,8 @@ export async function convertBundleToStandardMetafields(
     }
 
     if (componentReferences.length > 0) {
-      standardMetafields.component_reference = componentReferences; // Array of GIDs for list.product_reference
-      standardMetafields.component_quantities = componentQuantities; // Array of integers for list.number_integer
+      standardMetafields.componentReference = componentReferences; // Array of GIDs for list.product_reference (camelCase to match TOML)
+      standardMetafields.componentQuantities = componentQuantities; // Array of integers for list.number_integer (camelCase to match TOML)
       console.log("✅ [STANDARD_METAFIELD] Component references:", componentReferences);
       console.log("✅ [STANDARD_METAFIELD] Component quantities:", componentQuantities);
     } else if (totalProductsProcessed > 0) {
@@ -132,7 +129,7 @@ export async function convertBundleToStandardMetafields(
       if (bundle.pricing.method === 'percentage_off' && rule.discount?.value) {
         // For number_decimal metafield type, store as number (not string)
         // Value is already 0-100 percentage in the new structure
-        standardMetafields.price_adjustment = parseFloat(rule.discount.value) || 0;
+        standardMetafields.priceAdjustment = parseFloat(rule.discount.value) || 0; // camelCase to match TOML
       }
     }
   }
@@ -151,8 +148,8 @@ export async function updateProductStandardMetafields(
   console.log("🔧 [STANDARD_METAFIELD] Setting standard Shopify metafields on product:", productId);
   console.log("📋 [STANDARD_METAFIELD] Metafields:", standardMetafields);
 
-  // Ensure metafield definitions exist for the custom namespace
-  await ensureStandardMetafieldDefinitions(admin);
+  // Metafield definitions are now managed via shopify.app.toml
+  // No need to programmatically create definitions
 
   const metafieldsToSet: any[] = [];
 
@@ -164,8 +161,9 @@ export async function updateProductStandardMetafields(
       let type = 'json'; // Default fallback
 
       // Use proper types for each metafield with correct value formats
+      // CRITICAL: Keys must match TOML definitions (camelCase)
       switch(key) {
-        case 'component_reference':
+        case 'componentReference':
           type = 'list.product_reference';
           // For list.product_reference, Shopify expects a JSON array string of GIDs
           // BUT the GIDs must be valid product variant references
@@ -175,26 +173,26 @@ export async function updateProductStandardMetafields(
               typeof gid === 'string' && gid.startsWith('gid://shopify/ProductVariant/')
             );
             if (validGids.length === 0) {
-              console.warn(`⚠️ [STANDARD_METAFIELD] Skipping component_reference - no valid GIDs found`);
+              console.warn(`⚠️ [STANDARD_METAFIELD] Skipping componentReference - no valid GIDs found`);
               return; // Skip this metafield entirely
             }
             value = JSON.stringify(validGids);
           } else {
-            console.warn(`⚠️ [STANDARD_METAFIELD] Skipping component_reference - invalid value type`);
+            console.warn(`⚠️ [STANDARD_METAFIELD] Skipping componentReference - invalid value type`);
             return;
           }
           break;
-        case 'component_quantities':
+        case 'componentQuantities':
           type = 'list.number_integer';
           // For list types, value must be JSON-encoded array string
           value = JSON.stringify(Array.isArray(value) ? value : []);
           break;
-        case 'component_parents':
+        case 'componentParents':
           type = 'json';
           // Ensure it's a JSON string
           value = typeof value === 'string' ? value : JSON.stringify(value);
           break;
-        case 'price_adjustment':
+        case 'priceAdjustment':
           type = 'number_decimal';
           // Numbers must be strings
           value = typeof value === 'number' ? value.toString() : parseFloat(value || '0').toString();
@@ -266,284 +264,5 @@ export async function updateProductStandardMetafields(
   return data.data?.metafieldsSet?.metafields;
 }
 
-/**
- * Ensure standard metafield definitions exist
- */
-export async function ensureStandardMetafieldDefinitions(admin: any) {
-  // Skip if we've already checked/created definitions in this session
-  if (metafieldDefinitionsChecked) {
-    console.log("🔧 [STANDARD_METAFIELD] Definitions already verified this session, skipping");
-    return;
-  }
-
-  console.log("🔧 [STANDARD_METAFIELD] Checking if definitions exist in app-reserved namespace");
-
-  // Use app-reserved namespace to avoid type conflicts with existing custom namespace definitions
-  const standardDefinitions = [
-    {
-      namespace: "$app",
-      key: "bundle_config",
-      name: "Bundle Configuration",
-      description: "Complete bundle configuration for storefront display",
-      type: "json",
-      ownerType: "PRODUCT",
-      access: {
-        storefront: "PUBLIC_READ"
-      }
-    },
-    // Bundle isolation metafields - MUST have storefront access for Liquid template to read them
-    {
-      namespace: "$app:bundle_isolation",
-      key: "bundle_product_type",
-      name: "Bundle Product Type",
-      description: "Identifies the type of bundle product (cart_transform_bundle)",
-      type: "single_line_text_field",
-      ownerType: "PRODUCT",
-      access: {
-        storefront: "PUBLIC_READ"
-      }
-    },
-    {
-      namespace: "$app:bundle_isolation",
-      key: "owns_bundle_id",
-      name: "Owns Bundle ID",
-      description: "The ID of the bundle this product owns/contains",
-      type: "single_line_text_field",
-      ownerType: "PRODUCT",
-      access: {
-        storefront: "PUBLIC_READ"
-      }
-    },
-    {
-      namespace: "$app:bundle_isolation",
-      key: "isolation_created",
-      name: "Isolation Created Timestamp",
-      description: "Timestamp when bundle isolation was set up",
-      type: "single_line_text_field",
-      ownerType: "PRODUCT",
-      access: {
-        storefront: "PUBLIC_READ"
-      }
-    },
-    {
-      namespace: "$app", // App-reserved namespace avoids conflicts
-      key: "component_reference",
-      name: "Component Reference",
-      description: "Bundle component variant IDs",
-      type: "list.product_reference",
-      ownerType: "PRODUCT",
-      access: {
-        storefront: "PUBLIC_READ"
-      }
-    },
-    {
-      namespace: "$app",
-      key: "component_quantities",
-      name: "Component Quantities",
-      description: "Bundle component quantities",
-      type: "list.number_integer",
-      ownerType: "PRODUCT",
-      access: {
-        storefront: "PUBLIC_READ"
-      }
-    },
-    {
-      namespace: "$app",
-      key: "component_parents",
-      name: "Component Parents",
-      description: "Bundle parent configurations",
-      type: "json",
-      ownerType: "PRODUCT",
-      access: {
-        storefront: "PUBLIC_READ"
-      }
-    },
-    {
-      namespace: "$app",
-      key: "price_adjustment",
-      name: "Price Adjustment",
-      description: "Bundle price adjustment configuration",
-      type: "number_decimal",
-      ownerType: "PRODUCT",
-      access: {
-        storefront: "PUBLIC_READ"
-      }
-    }
-  ];
-
-  // First, check if definitions already exist in BOTH namespaces
-  const CHECK_DEFINITIONS = `
-    query checkMetafieldDefinitions {
-      appDefinitions: metafieldDefinitions(first: 20, ownerType: PRODUCT, namespace: "$app") {
-        edges {
-          node {
-            id
-            key
-            namespace
-            access {
-              admin
-              storefront
-            }
-          }
-        }
-      }
-      isolationDefinitions: metafieldDefinitions(first: 20, ownerType: PRODUCT, namespace: "$app:bundle_isolation") {
-        edges {
-          node {
-            id
-            key
-            namespace
-            access {
-              admin
-              storefront
-            }
-          }
-        }
-      }
-    }
-  `;
-
-  try {
-    const checkResponse = await admin.graphql(CHECK_DEFINITIONS);
-    const checkData = await checkResponse.json();
-
-    console.log(`🔧 [STANDARD_METAFIELD] Check definitions response:`, JSON.stringify(checkData, null, 2));
-
-    // Combine definitions from both namespaces
-    const allExistingDefinitions = [
-      ...(checkData.data?.appDefinitions?.edges || []),
-      ...(checkData.data?.isolationDefinitions?.edges || [])
-    ];
-
-    const existingKeys = allExistingDefinitions.map((edge: any) => `${edge.node.namespace}:${edge.node.key}`);
-
-    console.log(`🔧 [STANDARD_METAFIELD] Found ${allExistingDefinitions.length} existing definitions:`, existingKeys);
-
-    // Create or update definitions as needed
-    for (const definition of standardDefinitions) {
-      // Check if this definition already exists (match by BOTH namespace AND key)
-      const existingDef = allExistingDefinitions.find(
-        (edge: any) => edge.node.key === definition.key && edge.node.namespace === definition.namespace
-      )?.node;
-
-      if (existingDef) {
-        // Check if existing definition has the correct storefront access
-        const hasCorrectAccess = definition.access?.storefront
-          ? existingDef.access?.storefront === definition.access.storefront
-          : true; // No access requirement, existing def is fine
-
-        if (hasCorrectAccess) {
-          console.log(`🔧 [STANDARD_METAFIELD] Definition for ${definition.key} already exists with correct access, skipping`);
-          continue;
-        }
-
-        // Need to update the definition to add storefront access
-        console.log(`🔧 [STANDARD_METAFIELD] Updating definition for ${definition.key} to add storefront access`);
-
-        try {
-          const UPDATE_METAFIELD_DEFINITION = `
-            mutation updateMetafieldDefinition($definition: MetafieldDefinitionUpdateInput!) {
-              metafieldDefinitionUpdate(definition: $definition) {
-                updatedDefinition {
-                  id
-                  name
-                  namespace
-                  key
-                  access {
-                    admin
-                    storefront
-                  }
-                }
-                userErrors {
-                  field
-                  message
-                }
-              }
-            }
-          `;
-
-          const updateResponse = await admin.graphql(UPDATE_METAFIELD_DEFINITION, {
-            variables: {
-              definition: {
-                id: existingDef.id,
-                access: definition.access
-              }
-            }
-          });
-
-          const updateData = await updateResponse.json();
-          console.log(`🔧 [STANDARD_METAFIELD] Update response for ${definition.key}:`, JSON.stringify(updateData, null, 2));
-
-          if (updateData.data?.metafieldDefinitionUpdate?.userErrors?.length > 0) {
-            console.log(`🔧 [STANDARD_METAFIELD] Error updating definition for ${definition.key}:`,
-              updateData.data.metafieldDefinitionUpdate.userErrors);
-          } else {
-            console.log(`🔧 [STANDARD_METAFIELD] ✅ Updated definition for ${definition.key} with storefront access`);
-          }
-        } catch (error) {
-          console.log(`🔧 [STANDARD_METAFIELD] Error updating definition for ${definition.key}:`, error);
-        }
-
-        continue;
-      }
-
-      // Definition doesn't exist, create it
-      try {
-        const CREATE_METAFIELD_DEFINITION = `
-          mutation createMetafieldDefinition($definition: MetafieldDefinitionInput!) {
-            metafieldDefinitionCreate(definition: $definition) {
-              createdDefinition {
-                id
-                name
-                namespace
-                key
-                type {
-                  name
-                }
-                access {
-                  admin
-                  storefront
-                }
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
-
-        console.log(`🔧 [STANDARD_METAFIELD] Creating definition for ${definition.key}:`, JSON.stringify(definition, null, 2));
-
-        const response = await admin.graphql(CREATE_METAFIELD_DEFINITION, {
-          variables: { definition }
-        });
-
-        const data = await response.json();
-        console.log(`🔧 [STANDARD_METAFIELD] Response for ${definition.key}:`, JSON.stringify(data, null, 2));
-
-        if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
-          const errors = data.data.metafieldDefinitionCreate.userErrors;
-          // Only log if it's not a "already exists" error
-          const isAlreadyExistsError = errors.some((e: any) => e.message.includes("in use"));
-          if (!isAlreadyExistsError) {
-            console.log(`🔧 [STANDARD_METAFIELD] Definition error for ${definition.key}:`, errors);
-          } else {
-            console.log(`🔧 [STANDARD_METAFIELD] Definition for ${definition.key} already exists (expected)`);
-          }
-        } else {
-          const createdDef = data.data?.metafieldDefinitionCreate?.createdDefinition;
-          console.log(`🔧 [STANDARD_METAFIELD] ✅ Created definition for ${definition.key} in $app namespace`);
-          console.log(`🔧 [STANDARD_METAFIELD] Definition ID: ${createdDef?.id}, Storefront Access: ${createdDef?.access?.storefront}`);
-        }
-      } catch (error) {
-        console.log(`🔧 [STANDARD_METAFIELD] Error creating definition for ${definition.key}:`, error);
-      }
-    }
-
-    // Mark as checked so we don't repeat this on every save
-    metafieldDefinitionsChecked = true;
-  } catch (error) {
-    console.error("🔧 [STANDARD_METAFIELD] Error checking definitions:", error);
-  }
-}
+// NOTE: Metafield definitions are now managed declaratively via shopify.app.toml
+// The ensureStandardMetafieldDefinitions() function has been removed as it's no longer needed
