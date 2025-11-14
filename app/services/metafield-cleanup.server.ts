@@ -141,7 +141,7 @@ export class MetafieldCleanupService {
         query GetBundleIndex($ownerId: ID!) {
           node(id: $ownerId) {
             ... on Shop {
-              bundleIndex: metafield(namespace: "custom", key: "bundleIndex") {
+              bundleIndex: metafield(namespace: "$app", key: "bundleIndex") {
                 id
                 value
               }
@@ -186,7 +186,7 @@ export class MetafieldCleanupService {
             variables: {
               metafields: [{
                 ownerId: shopGid,
-                namespace: "custom",
+                namespace: "$app",
                 key: "bundleIndex",
                 type: "json",
                 value: JSON.stringify({

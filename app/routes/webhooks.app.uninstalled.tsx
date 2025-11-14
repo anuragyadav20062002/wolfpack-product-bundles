@@ -175,17 +175,17 @@ async function cleanupShopMetafields(admin: any) {
     const shopMetafieldsToDelete = [
       {
         ownerId: shopGid,
-        namespace: "custom",
+        namespace: "$app",
         key: "bundleIndex"
       },
       {
         ownerId: shopGid,
-        namespace: "appconfig",
+        namespace: "$app",
         key: "serverUrl"
       },
       {
         ownerId: shopGid,
-        namespace: "appconfig",
+        namespace: "$app",
         key: "lastSync"
       }
       // Add any other shop-level metafields your app creates
