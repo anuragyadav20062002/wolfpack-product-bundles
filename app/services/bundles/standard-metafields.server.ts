@@ -112,7 +112,7 @@ export async function convertBundleToStandardMetafields(
     }
 
     if (componentReferences.length > 0) {
-      standardMetafields.componentReference = componentReferences; // Array of GIDs for list.product_reference (camelCase to match TOML)
+      standardMetafields.componentReference = componentReferences; // Array of GIDs for list.variant_reference (camelCase to match TOML)
       standardMetafields.componentQuantities = componentQuantities; // Array of integers for list.number_integer (camelCase to match TOML)
       console.log("✅ [STANDARD_METAFIELD] Component references:", componentReferences);
       console.log("✅ [STANDARD_METAFIELD] Component quantities:", componentQuantities);
@@ -164,16 +164,15 @@ export async function updateProductStandardMetafields(
       // CRITICAL: Keys must match TOML definitions (camelCase)
       switch(key) {
         case 'componentReference':
-          type = 'list.product_reference';
-          // For list.product_reference, Shopify expects a JSON array string of GIDs
-          // BUT the GIDs must be valid product variant references
+          type = 'list.variant_reference';
+          // For list.variant_reference, Shopify expects a JSON array string of ProductVariant GIDs
           if (Array.isArray(value)) {
-            // Validate that all entries are proper Shopify GIDs
+            // Validate that all entries are proper Shopify ProductVariant GIDs
             const validGids = value.filter(gid =>
               typeof gid === 'string' && gid.startsWith('gid://shopify/ProductVariant/')
             );
             if (validGids.length === 0) {
-              console.warn(`⚠️ [STANDARD_METAFIELD] Skipping componentReference - no valid GIDs found`);
+              console.warn(`⚠️ [STANDARD_METAFIELD] Skipping componentReference - no valid ProductVariant GIDs found`);
               return; // Skip this metafield entirely
             }
             value = JSON.stringify(validGids);
