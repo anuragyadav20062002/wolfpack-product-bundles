@@ -116,7 +116,7 @@ export async function updateBundleIndex(
         metafields: [
           {
             ownerId: shopGlobalId,
-            namespace: "custom",
+            namespace: "$app",
             key: "bundleIndex",
             type: "json",
             value: indexJson
@@ -155,7 +155,7 @@ export async function deleteBundleIndex(
     query GetBundleIndex {
       shop {
         id
-        metafield(namespace: "custom", key: "bundleIndex") {
+        metafield(namespace: "$app", key: "bundleIndex") {
           id
         }
       }

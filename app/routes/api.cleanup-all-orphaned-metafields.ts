@@ -226,9 +226,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
       if (shopGid) {
         const shopMetafieldsToDelete = [
-          { ownerId: shopGid, namespace: "custom", key: "bundleIndex" },
-          { ownerId: shopGid, namespace: "appconfig", key: "serverUrl" },
-          { ownerId: shopGid, namespace: "appconfig", key: "lastSync" }
+          { ownerId: shopGid, namespace: "$app", key: "bundleIndex" },
+          { ownerId: shopGid, namespace: "$app", key: "serverUrl" },
+          { ownerId: shopGid, namespace: "$app", key: "lastSync" }
         ];
 
         const DELETE_METAFIELDS = `

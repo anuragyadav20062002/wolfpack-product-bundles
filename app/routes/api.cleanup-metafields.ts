@@ -22,7 +22,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { AppLogger } from "../lib/logger";
-import { ensureStandardMetafieldDefinitions } from "../services/bundles/standard-metafields.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -40,15 +39,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }, { productId });
 
   try {
-    // Step 1: Ensure metafield definitions exist FIRST
-    AppLogger.info('Creating metafield definitions...', {
-      component: 'metafield-cleanup',
-      operation: 'create-definitions'
-    });
-
-    await ensureStandardMetafieldDefinitions(admin);
-
-    // Step 2: Delete existing unstructured metafields
+    // Metafield definitions are managed declaratively in shopify.app.toml
+    // Delete existing unstructured metafields
     AppLogger.info('Deleting unstructured metafields...', {
       component: 'metafield-cleanup',
       operation: 'delete-metafields'
