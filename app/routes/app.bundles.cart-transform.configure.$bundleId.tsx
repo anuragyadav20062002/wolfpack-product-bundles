@@ -650,7 +650,10 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         // STANDARD METAFIELDS: For Shopify cart transform compatibility
         AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
         try {
-          const standardMetafields = await convertBundleToStandardMetafields(admin, baseConfiguration);
+          const { metafields: standardMetafields, errors: conversionErrors } = await convertBundleToStandardMetafields(admin, baseConfiguration);
+          if (conversionErrors.length > 0) {
+            AppLogger.warn("⚠️ [STANDARD_METAFIELD] Some products could not be processed:", conversionErrors);
+          }
           if (Object.keys(standardMetafields).length > 0) {
             await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
             AppLogger.debug("✅ [STANDARD_METAFIELD] Standard metafields updated successfully");
