@@ -81,7 +81,7 @@ export async function updateCartTransformConfigMetafield(
         {
           ownerId: bundleProductId,
           namespace: "$app",
-          key: "cart_transform_config",
+          key: "cartTransformConfig",
           type: "json",
           value: configJson
         }
