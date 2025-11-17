@@ -698,43 +698,22 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         const metafields = [
           {
             ownerId: bundleProductId,
-            namespace: "$app:bundle_isolation",
-            key: "bundle_id",
+            namespace: "$app",
+            key: "ownsBundleId",
             type: "single_line_text_field",
             value: bundleId
           },
           {
             ownerId: bundleProductId,
-            namespace: "$app:bundle_isolation",
-            key: "bundle_type",
-            type: "single_line_text_field",
-            value: "cart_transform"
-          },
-          {
-            ownerId: bundleProductId,
-            namespace: "$app:bundle_isolation",
-            key: "owns_bundle_id",
-            type: "single_line_text_field",
-            value: bundleId
-          },
-          {
-            ownerId: bundleProductId,
-            namespace: "$app:bundle_isolation",
-            key: "bundle_product_type",
+            namespace: "$app",
+            key: "bundleProductType",
             type: "single_line_text_field",
             value: "cart_transform_bundle"
           },
           {
             ownerId: bundleProductId,
-            namespace: "$app:bundle_isolation",
-            key: "auto_injection_enabled",
-            type: "single_line_text_field",
-            value: "true"
-          },
-          {
-            ownerId: bundleProductId,
-            namespace: "$app:bundle_isolation",
-            key: "created_at",
+            namespace: "$app",
+            key: "isolationCreated",
             type: "single_line_text_field",
             value: new Date().toISOString()
           }

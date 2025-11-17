@@ -113,7 +113,7 @@ export async function deleteCartTransformConfigMetafield(
   const GET_METAFIELD = `
     query GetCartTransformConfig($ownerId: ID!) {
       product(id: $ownerId) {
-        metafield(namespace: "$app", key: "cart_transform_config") {
+        metafield(namespace: "$app", key: "cartTransformConfig") {
           id
         }
       }

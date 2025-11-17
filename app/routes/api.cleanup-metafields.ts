@@ -66,22 +66,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       {
         ownerId: productId,
         namespace: "$app",
-        key: "bundle_config"
+        key: "bundleConfig"
       },
       {
         ownerId: productId,
-        namespace: "$app:bundle_isolation",
-        key: "bundle_product_type"
+        namespace: "$app",
+        key: "bundleProductType"
       },
       {
         ownerId: productId,
-        namespace: "$app:bundle_isolation",
-        key: "owns_bundle_id"
+        namespace: "$app",
+        key: "ownsBundleId"
       },
       {
         ownerId: productId,
-        namespace: "$app:bundle_isolation",
-        key: "isolation_created"
+        namespace: "$app",
+        key: "isolationCreated"
       }
     ];
 
