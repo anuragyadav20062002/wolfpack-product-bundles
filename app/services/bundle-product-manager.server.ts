@@ -415,43 +415,22 @@ export class BundleProductManagerService {
       const metafields = [
         {
           ownerId: productId,
-          namespace: "$app:bundle_isolation",
-          key: "bundle_id",
+          namespace: "$app",
+          key: "ownsBundleId",
           type: "single_line_text_field",
           value: bundle.id
         },
         {
           ownerId: productId,
-          namespace: "$app:bundle_isolation",
-          key: "bundle_type",
-          type: "single_line_text_field",
-          value: "cart_transform"
-        },
-        {
-          ownerId: productId,
-          namespace: "$app:bundle_isolation",
-          key: "owns_bundle_id",
-          type: "single_line_text_field",
-          value: bundle.id
-        },
-        {
-          ownerId: productId,
-          namespace: "$app:bundle_isolation",
-          key: "bundle_product_type",
+          namespace: "$app",
+          key: "bundleProductType",
           type: "single_line_text_field",
           value: "cart_transform_bundle"
         },
         {
           ownerId: productId,
-          namespace: "$app:bundle_isolation",
-          key: "auto_injection_enabled",
-          type: "single_line_text_field",
-          value: "true"
-        },
-        {
-          ownerId: productId,
-          namespace: "$app:bundle_isolation",
-          key: "created_at",
+          namespace: "$app",
+          key: "isolationCreated",
           type: "single_line_text_field",
           value: new Date().toISOString()
         }

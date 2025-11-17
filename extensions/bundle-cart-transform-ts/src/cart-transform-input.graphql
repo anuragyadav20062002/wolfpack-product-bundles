@@ -13,7 +13,7 @@ query Input {
           product {
             id
             # NEW: Read lightweight cart transform config (~500 bytes)
-            cartTransformConfig: metafield(namespace: "$app", key: "cart_transform_config") {
+            cartTransformConfig: metafield(namespace: "$app", key: "cartTransformConfig") {
               value
             }
           }

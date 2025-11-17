@@ -177,7 +177,7 @@ describe('Complete Bundle Flow E2E Tests', () => {
         .mockResolvedValueOnce(createMockGraphQLResponse({
           metafieldsSet: {
             metafields: [
-              { id: 'gid://shopify/Metafield/1', key: 'bundle_id', namespace: '$app:bundle_isolation' }
+              { id: 'gid://shopify/Metafield/1', key: 'ownsBundleId', namespace: '$app' }
             ],
             userErrors: []
           }

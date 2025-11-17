@@ -48,11 +48,13 @@ export async function ensureBundleMetafieldDefinitions(admin: any) {
   `;
 
   // Define metafield definition for cart transform bundles
+  // NOTE: Metafield definitions are now managed via shopify.app.toml
+  // This function is kept for backwards compatibility but definitions should be in TOML
   const definitions = [
     {
       name: "Cart Transform Bundle Config",
-      namespace: "bundle_discounts",
-      key: "cart_transform_config",
+      namespace: "$app",
+      key: "cartTransformConfig",
       description: "Cart transform bundle configuration data",
       type: "json",
       ownerType: "PRODUCT"
@@ -122,8 +124,8 @@ export async function updateBundleProductMetafields(
       metafields: [
         {
           ownerId: bundleProductId,
-          namespace: "bundle_discounts",
-          key: 'cart_transform_config',
+          namespace: "$app",
+          key: 'cartTransformConfig',
           type: "json",
           value: JSON.stringify(bundleConfiguration)
         }
@@ -644,7 +646,7 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
         {
           ownerId: productId,
           namespace: "$app",
-          key: "cart_transform_config",
+          key: "cartTransformConfig",
           value: JSON.stringify(minimalBundleConfig),
           type: "json"
         },
