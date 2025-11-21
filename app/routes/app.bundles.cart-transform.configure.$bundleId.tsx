@@ -2762,9 +2762,9 @@ export default function ConfigureBundleFlow() {
         }
       }
 
-      // Use correct extension UUID - this should match your shopify.extension.toml
-      const extensionUuid = 'b8292d0c-3be5-4416-8a0d-4f6490e5e271'; // From SHOPIFY_BUNDLE_BUILDER_ID
-      const blockHandle = 'bundle';
+      // Use correct extension UUID from environment variable
+      const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
+      const blockHandle = 'bundle-builder'; // Match the extension handle
       const appBlockId = `${extensionUuid}/${blockHandle}`;
 
       AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
