@@ -2769,34 +2769,26 @@ export default function ConfigureBundleFlow() {
 
       AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
 
-      // Generate Smart Deep Link with auto-placement parameters (Shopify Option B)
-      const previewPath = template.bundleProduct ? `/products/${template.bundleProduct.handle}` : '';
-      const blockContext = `apps/${extensionUuid}/blocks/${blockHandle}`;
+      // Generate simple deep link following Shopify's official documentation
+      // Official format: template + addAppBlockId + target
+      // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
+      //
+      // Note: activate=true and previewPath are NOT in official docs and don't work reliably
+      // This simple format opens the theme editor with the block ready to add
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
 
-      // Smart Deep Link Parameters:
-      // - template: Product template to open (e.g., "product.my-bundle")
-      // - addAppBlockId: App block to auto-place (extensionUuid/blockHandle)
-      // - target: Section group to target (sectionGroup-product-template for product form)
-      // - context: Full block context path for settings pre-configuration
-      // - activate: Auto-place the block (Shopify shows confirmation prompt to merchant)
-      // - previewPath: Product page to preview (must be container product)
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=sectionGroup-product-template&context=${encodeURIComponent(blockContext)}&activate=true${previewPath ? `&previewPath=${encodeURIComponent(previewPath)}` : ''}`;
-
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated Smart Deep Link with auto-placement:`, {}, themeEditorUrl);
+      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link:`, {}, themeEditorUrl);
 
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
-      // Open theme editor in new tab with enhanced debugging
-      const editorWindow = window.open(themeEditorUrl, '_blank', 'noopener,noreferrer');
+      // Use App Bridge redirect (not window.open) to avoid popup blockers
+      // This navigates the entire app frame to the theme editor
+      shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
+      AppLogger.debug(`✅ [THEME_EDITOR] Navigating to theme editor via App Bridge`);
 
-      if (editorWindow) {
-        shopify.toast.show(`Theme editor opened for "${template.title}". The bundle widget will be automatically placed on the product page. Please confirm placement when prompted.`, { isError: false, duration: 10000 });
-        AppLogger.debug(`✅ [THEME_EDITOR] Successfully opened theme editor window with auto-placement`);
-      } else {
-        shopify.toast.show("Theme editor popup was blocked. Please allow popups and try again.", { isError: true });
-        AppLogger.error('🚨 [THEME_EDITOR] Popup was blocked', {});
-      }
+      // Use App Bridge redirect - this avoids popup blockers
+      window.open(themeEditorUrl, '_top');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3044,17 +3036,29 @@ export default function ConfigureBundleFlow() {
                     />
                   </BlockStack>
 
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text variant="bodyMd" as="p">
-                      Place on theme
+                  <BlockStack gap="200">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <Text variant="bodyMd" as="p">
+                        Place on theme
+                      </Text>
+                      <Button
+                        icon={SettingsIcon}
+                        onClick={handlePlaceWidget}
+                      >
+                        Place Widget
+                      </Button>
+                    </InlineStack>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Need help? Check out our{" "}
+                      <Button
+                        variant="plain"
+                        onClick={() => window.open('/app/onboarding', '_blank')}
+                      >
+                        setup guide
+                      </Button>
+                      {" "}for step-by-step instructions
                     </Text>
-                    <Button
-                      icon={SettingsIcon}
-                      onClick={handlePlaceWidget}
-                    >
-                      Place Widget
-                    </Button>
-                  </InlineStack>
+                  </BlockStack>
                 </BlockStack>
               </Card>
             </BlockStack>
