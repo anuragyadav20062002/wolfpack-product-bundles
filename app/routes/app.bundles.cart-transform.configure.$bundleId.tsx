@@ -47,7 +47,7 @@ import {
   DiscountIcon,
   RefreshIcon,
 } from "@shopify/polaris-icons";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge contextual save bar with data-save-bar attribute on form
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
@@ -549,6 +549,38 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
+      // SYNC_PRODUCT_STATUS: Sync bundle status to Shopify product
+      try {
+        const shopifyStatus = finalStatus.toUpperCase();
+        AppLogger.debug(`🔄 [PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
+
+        const UPDATE_PRODUCT_STATUS = `
+          mutation UpdateProductStatus($input: ProductInput!) {
+            productUpdate(input: $input) {
+              product {
+                id
+                status
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        await admin.graphql(UPDATE_PRODUCT_STATUS, {
+          variables: {
+            input: {
+              id: updatedBundle.shopifyProductId,
+              status: shopifyStatus
+            }
+          }
+        });
+      } catch (error) {
+        AppLogger.error("❌ [PRODUCT_SYNC] Failed to sync product status:", {}, error as any);
+      }
+
       // Create optimized configuration with only essential data for functions
       const optimizedSteps = (stepsData || []).map((step: any) => ({
         id: step.id,
@@ -816,7 +848,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 }
 
 // Handle updating bundle status
-async function handleUpdateBundleStatus(_admin: any, session: any, bundleId: string, formData: FormData) {
+async function handleUpdateBundleStatus(admin: any, session: any, bundleId: string, formData: FormData) {
   const status = formData.get("status") as string;
 
   const updatedBundle = await db.bundle.update({
@@ -830,6 +862,40 @@ async function handleUpdateBundleStatus(_admin: any, session: any, bundleId: str
       pricing: true
     }
   });
+
+  // SYNC_PRODUCT_STATUS: Sync bundle status to Shopify product
+  if (updatedBundle.shopifyProductId) {
+    try {
+      const shopifyStatus = status.toUpperCase();
+      AppLogger.debug(`🔄 [PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
+
+      const UPDATE_PRODUCT_STATUS = `
+        mutation UpdateProductStatus($input: ProductInput!) {
+          productUpdate(input: $input) {
+            product {
+              id
+              status
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      await admin.graphql(UPDATE_PRODUCT_STATUS, {
+        variables: {
+          input: {
+            id: updatedBundle.shopifyProductId,
+            status: shopifyStatus
+          }
+        }
+      });
+    } catch (error) {
+      AppLogger.error("❌ [PRODUCT_SYNC] Failed to sync product status:", {}, error as any);
+    }
+  }
 
   return json({
     success: true,
@@ -1917,11 +1983,12 @@ export default function ConfigureBundleFlow() {
     setHasUnsavedChanges(hasChanges);
 
     // Simplified save bar management - no timeout
-    if (hasChanges) {
-      formState.triggerSaveBar();
-    } else {
-      formState.dismissSaveBar();
-    }
+    // Note: SaveBar visibility is now controlled by hasUnsavedChanges state in render
+    // if (hasChanges) {
+    //   formState.triggerSaveBar();
+    // } else {
+    //   formState.dismissSaveBar();
+    // }
   }, [
     formState.bundleStatus,
     formState.bundleName,
@@ -2809,7 +2876,7 @@ export default function ConfigureBundleFlow() {
   const statusOptions = [
     { label: "Active", value: "active" },
     { label: "Draft", value: "draft" },
-    { label: "Archived", value: "archived" },
+    { label: "Unlisted", value: "archived" },
   ];
 
 
@@ -2830,7 +2897,6 @@ export default function ConfigureBundleFlow() {
     >
       {/* Modern App Bridge contextual save bar using form with data-save-bar */}
       <form
-        data-save-bar
         onSubmit={(e) => {
           e.preventDefault();
           handleSave();
@@ -2840,6 +2906,25 @@ export default function ConfigureBundleFlow() {
           handleDiscard();
         }}
       >
+        {/* SaveBar component for manual control over loading state */}
+        {(hasUnsavedChanges || fetcher.state !== "idle") && (
+          <SaveBar id="bundle-save-bar">
+            <button
+              variant="primary"
+              onClick={handleSave}
+              loading={fetcher.state !== "idle"}
+              disabled={fetcher.state !== "idle"}
+            >
+              Save
+            </button>
+            <button
+              onClick={handleDiscard}
+              disabled={fetcher.state !== "idle"}
+            >
+              Discard
+            </button>
+          </SaveBar>
+        )}
         {/* Hidden inputs for form submission - values will be updated by React state changes */}
         <input type="hidden" name="bundleName" value={formState.bundleName} />
         <input type="hidden" name="bundleDescription" value={formState.bundleDescription} />
@@ -2858,22 +2943,7 @@ export default function ConfigureBundleFlow() {
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
 
-        {/* Invisible trigger input for App Bridge save bar - required for proper change detection */}
-        <input
-          type="text"
-          name="changeDetector"
-          value={hasUnsavedChanges ? "changed" : "unchanged"}
-          style={{
-            position: 'absolute',
-            left: '-9999px',
-            opacity: 0,
-            width: '1px',
-            height: '1px',
-            pointerEvents: 'none'
-          }}
-          tabIndex={-1}
-          readOnly
-        />
+
 
         <Layout>
           {/* Left Sidebar */}
@@ -3474,12 +3544,12 @@ export default function ConfigureBundleFlow() {
                                 <TextField
                                   label={
                                     rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
-                                    rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
-                                    'Bundle Price'
+                                      rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
+                                        'Bundle Price'
                                   }
                                   value={String(
                                     rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
-                                    centsToAmount(rule.discount.value)
+                                      centsToAmount(rule.discount.value)
                                   )}
                                   onChange={(value) => {
                                     const numValue = Number(value) || 0;
@@ -3545,33 +3615,33 @@ export default function ConfigureBundleFlow() {
                           <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '13px' }}>
                             {/* Essential Variables */}
                             <div style={{ marginBottom: '12px' }}>
-                              <strong>Essential (Most Used):</strong><br/>
-                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br/>
-                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br/>
+                              <strong>Essential (Most Used):</strong><br />
+                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
+                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
                               <code>{'{{bundleName}}'}</code> - Bundle name
                             </div>
-                            
+
                             {/* Specific Variables */}
                             <div style={{ marginBottom: '12px' }}>
-                              <strong>Specific:</strong><br/>
-                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br/>
-                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br/>
+                              <strong>Specific:</strong><br />
+                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
+                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
                               <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
                             </div>
-                            
+
                             {/* Pricing Variables */}
                             <div style={{ marginBottom: '12px' }}>
-                              <strong>Pricing:</strong><br/>
-                              <code>{'{{currentAmount}}'}</code> - Current total<br/>
-                              <code>{'{{finalPrice}}'}</code> - Price after discount<br/>
+                              <strong>Pricing:</strong><br />
+                              <code>{'{{currentAmount}}'}</code> - Current total<br />
+                              <code>{'{{finalPrice}}'}</code> - Price after discount<br />
                               <code>{'{{savingsAmount}}'}</code> - Amount saved
                             </div>
-                            
+
                             {/* Quick Examples */}
                             <div style={{ borderTop: '1px solid #e1e3e5', paddingTop: '8px', fontSize: '12px', color: '#6c757d' }}>
-                              <strong>Quick Examples:</strong><br/>
-                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br/>
-                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br/>
+                              <strong>Quick Examples:</strong><br />
+                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
+                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
                               🎉 <em>"You saved {'{{savingsAmount}}'} on {'{{bundleName}}'}"</em>
                             </div>
                           </div>
