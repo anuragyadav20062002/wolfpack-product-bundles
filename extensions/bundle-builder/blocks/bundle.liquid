@@ -375,6 +375,7 @@
     {% endif %}
 
     <div
+      {{ block.shopify_attributes }}
       id="bundle-builder-app"
       data-bundle-id="{% if block.settings.bundle_id and block.settings.bundle_id != blank %}{{ block.settings.bundle_id }}{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}{{ container_bundle_id }}{% endif %}"
       data-app-url="{{ block.settings.app_url | default: '' }}"
