@@ -297,8 +297,8 @@
   {% assign should_show_widget = true %}
   {% comment %} Hide default buy buttons automatically {% endcomment %}
   {% assign hide_default_buttons = true %}
-{% comment %} 2. THEME EDITOR: Show if bundle ID is manually configured {% endcomment %}
-{% elsif widget_has_bundle_id and block.settings.enabled %}
+{% comment %} 2. THEME EDITOR: Show if bundle ID is manually configured OR if enabled (to allow block placement) {% endcomment %}
+{% elsif block.settings.enabled %}
   {% assign should_show_widget = true %}
 {% comment %} 3. ALL OTHER CASES: Don't show to avoid confusion {% endcomment %}
 {% else %}
@@ -306,74 +306,6 @@
   {% endif %}
 
 {% if should_show_widget %}
-    <!-- 🔧 [THEME_DEBUG] Bundle Widget Debugging Information -->
-    <script>
-      console.log('🎯 [THEME_DEBUG] Bundle Container Widget Loading:', {
-        enabled: {{ block.settings.enabled | json }},
-        bundleId: {{ block.settings.bundle_id | json }},
-        productId: {{ product.id | json }},
-        productHandle: {{ product.handle | json }},
-        productTemplate: {{ product.template_suffix | json }},
-        isContainerProduct: {{ is_container_product | json }},
-        containerBundleId: {{ container_bundle_id | json }},
-        widgetHasBundleId: {{ widget_has_bundle_id | json }},
-        shouldShowWidget: {{ should_show_widget | json }},
-        hideDefaultButtons: {{ hide_default_buttons | json }},
-        autoDisplayMode: {{ auto_display_mode | json }},
-        isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
-        urlParams: new URLSearchParams(window.location.search).toString()
-      });
-
-      // 🔍 Enhanced debugging for custom template pages
-      console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        bundleIsolationType: {{ product.metafields.app.bundleProductType.value | json }},
-        ownsBundleId: {{ product.metafields.app.ownsBundleId.value | json }},
-        cartTransformConfig: {{ product.metafields.app.bundleConfig.value | json }}
-      });
-
-      // 🔍 Debug the Liquid template bundle ID selection logic
-      console.log('🔍 [LIQUID_DEBUG] Bundle ID Selection:', {
-        blockSettingsBundleId: {{ block.settings.bundle_id | json }},
-        isContainerProduct: {{ is_container_product | json }},
-        containerBundleId: {{ container_bundle_id | json }},
-        finalBundleIdValue: {% if block.settings.bundle_id and block.settings.bundle_id != blank %}'{{ block.settings.bundle_id }}'{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}'{{ container_bundle_id }}'{% else %}''{% endif %}
-      });
-    </script>
-
-    {% comment %} Hide default buy buttons if this is a container product {% endcomment %}
-    {% if hide_default_buttons %}
-    <style>
-      /* Hide default Shopify buy buttons on container products */
-      .product-form__cart-submit,
-      .product-form__buttons button[name="add"],
-      .btn.product-form__cart-submit,
-      button[name="add"]:not(.bundle-add-to-cart),
-      input[name="add"]:not(.bundle-add-to-cart),
-      form[action*="/cart/add"] button[type="submit"]:not(.bundle-add-to-cart),
-      form[action*="/cart/add"] input[type="submit"]:not(.bundle-add-to-cart),
-      .shopify-payment-button,
-      .dynamic-checkout__content,
-      .additional-checkout-buttons,
-      .payment-button-container,
-      [data-testid="AddToCartButton"]:not(.bundle-add-to-cart),
-      .add-to-cart-button:not(.bundle-add-to-cart),
-      .btn-addtocart:not(.bundle-add-to-cart),
-      .product-add-to-cart:not(.bundle-add-to-cart) {
-        display: none !important;
-      }
-
-      /* Show bundle widget prominently */
-      #bundle-builder-app {
-        background: #f8f9fa;
-        border: 2px solid #007ace;
-        border-radius: 12px;
-        padding: 24px;
-        margin: 20px 0;
-        box-shadow: 0 4px 12px rgba(0, 122, 206, 0.1);
-      }
-    </style>
-    {% endif %}
-
     <div
       {{ block.shopify_attributes }}
       id="bundle-builder-app"
@@ -462,6 +394,74 @@
       </div>
       {% endif %}
     </div>
+
+    <!-- 🔧 [THEME_DEBUG] Bundle Widget Debugging Information -->
+    <script>
+      console.log('🎯 [THEME_DEBUG] Bundle Container Widget Loading:', {
+        enabled: {{ block.settings.enabled | json }},
+        bundleId: {{ block.settings.bundle_id | json }},
+        productId: {{ product.id | json }},
+        productHandle: {{ product.handle | json }},
+        productTemplate: {{ product.template_suffix | json }},
+        isContainerProduct: {{ is_container_product | json }},
+        containerBundleId: {{ container_bundle_id | json }},
+        widgetHasBundleId: {{ widget_has_bundle_id | json }},
+        shouldShowWidget: {{ should_show_widget | json }},
+        hideDefaultButtons: {{ hide_default_buttons | json }},
+        autoDisplayMode: {{ auto_display_mode | json }},
+        isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
+        urlParams: new URLSearchParams(window.location.search).toString()
+      });
+
+      // 🔍 Enhanced debugging for custom template pages
+      console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
+        bundleIsolationType: {{ product.metafields.app.bundleProductType.value | json }},
+        ownsBundleId: {{ product.metafields.app.ownsBundleId.value | json }},
+        cartTransformConfig: {{ product.metafields.app.bundleConfig.value | json }}
+      });
+
+      // 🔍 Debug the Liquid template bundle ID selection logic
+      console.log('🔍 [LIQUID_DEBUG] Bundle ID Selection:', {
+        blockSettingsBundleId: {{ block.settings.bundle_id | json }},
+        isContainerProduct: {{ is_container_product | json }},
+        containerBundleId: {{ container_bundle_id | json }},
+        finalBundleIdValue: {% if block.settings.bundle_id and block.settings.bundle_id != blank %}'{{ block.settings.bundle_id }}'{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}'{{ container_bundle_id }}'{% else %}''{% endif %}
+      });
+    </script>
+
+    {% comment %} Hide default buy buttons if this is a container product {% endcomment %}
+    {% if hide_default_buttons %}
+    <style>
+      /* Hide default Shopify buy buttons on container products */
+      .product-form__cart-submit,
+      .product-form__buttons button[name="add"],
+      .btn.product-form__cart-submit,
+      button[name="add"]:not(.bundle-add-to-cart),
+      input[name="add"]:not(.bundle-add-to-cart),
+      form[action*="/cart/add"] button[type="submit"]:not(.bundle-add-to-cart),
+      form[action*="/cart/add"] input[type="submit"]:not(.bundle-add-to-cart),
+      .shopify-payment-button,
+      .dynamic-checkout__content,
+      .additional-checkout-buttons,
+      .payment-button-container,
+      [data-testid="AddToCartButton"]:not(.bundle-add-to-cart),
+      .add-to-cart-button:not(.bundle-add-to-cart),
+      .btn-addtocart:not(.bundle-add-to-cart),
+      .product-add-to-cart:not(.bundle-add-to-cart) {
+        display: none !important;
+      }
+
+      /* Show bundle widget prominently */
+      #bundle-builder-app {
+        background: #f8f9fa;
+        border: 2px solid #007ace;
+        border-radius: 12px;
+        padding: 24px;
+        margin: 20px 0;
+        box-shadow: 0 4px 12px rgba(0, 122, 206, 0.1);
+      }
+    </style>
+    {% endif %}
 {% endif %}
 
 <script>
