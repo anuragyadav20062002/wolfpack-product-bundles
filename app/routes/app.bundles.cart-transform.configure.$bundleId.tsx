@@ -2769,11 +2769,20 @@ export default function ConfigureBundleFlow() {
 
       AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
 
-      // Generate optimized theme editor deep link
+      // Generate Smart Deep Link with auto-placement parameters (Shopify Option B)
       const previewPath = template.bundleProduct ? `/products/${template.bundleProduct.handle}` : '';
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}${previewPath ? `&previewPath=${encodeURIComponent(previewPath)}` : ''}`;
+      const blockContext = `apps/${extensionUuid}/blocks/${blockHandle}`;
 
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link:`, {}, themeEditorUrl);
+      // Smart Deep Link Parameters:
+      // - template: Product template to open (e.g., "product.my-bundle")
+      // - addAppBlockId: App block to auto-place (extensionUuid/blockHandle)
+      // - target: Section group to target (sectionGroup-product-template for product form)
+      // - context: Full block context path for settings pre-configuration
+      // - activate: Auto-place the block (Shopify shows confirmation prompt to merchant)
+      // - previewPath: Product page to preview (must be container product)
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=sectionGroup-product-template&context=${encodeURIComponent(blockContext)}&activate=true${previewPath ? `&previewPath=${encodeURIComponent(previewPath)}` : ''}`;
+
+      AppLogger.debug(`🔗 [THEME_EDITOR] Generated Smart Deep Link with auto-placement:`, {}, themeEditorUrl);
 
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
@@ -2782,8 +2791,8 @@ export default function ConfigureBundleFlow() {
       const editorWindow = window.open(themeEditorUrl, '_blank', 'noopener,noreferrer');
 
       if (editorWindow) {
-        shopify.toast.show(`Theme editor opened for "${template.title}". Widget will be automatically placed with Bundle ID ${bundle.id}.`, { isError: false, duration: 8000 });
-        AppLogger.debug(`✅ [THEME_EDITOR] Successfully opened theme editor window`);
+        shopify.toast.show(`Theme editor opened for "${template.title}". The bundle widget will be automatically placed on the product page. Please confirm placement when prompted.`, { isError: false, duration: 10000 });
+        AppLogger.debug(`✅ [THEME_EDITOR] Successfully opened theme editor window with auto-placement`);
       } else {
         shopify.toast.show("Theme editor popup was blocked. Please allow popups and try again.", { isError: true });
         AppLogger.error('🚨 [THEME_EDITOR] Popup was blocked', {});

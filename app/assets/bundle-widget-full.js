@@ -955,12 +955,12 @@ class BundleWidget {
   async loadBundleData() {
     let bundleData = null;
 
-    // Source 1: data-bundle-config attribute
+    // Single source: data-bundle-config attribute (from product metafield)
     const configValue = this.container.dataset.bundleConfig;
     if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
       try {
         const singleBundle = JSON.parse(configValue);
-        // Additional validation: ensure parsed result is a valid object with an id
+        // Validate parsed result is a valid object with an id
         if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
           bundleData = { [singleBundle.id]: singleBundle };
           console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
@@ -974,62 +974,21 @@ class BundleWidget {
       console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
     }
 
-    // Source 2: window.allBundlesData
-    if (!bundleData && window.allBundlesData && typeof window.allBundlesData === 'object') {
-      bundleData = window.allBundlesData;
-      console.log('[WIDGET_INIT] ✅ Loaded bundle data from window.allBundlesData:', Object.keys(bundleData));
-    }
-
-    // Source 3: Fetch from app proxy (fallback for theme editor / non-container products)
+    // Widget only works on container products with bundleConfig metafield
     if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
-      const bundleId = this.container.dataset.bundleId || window.autoDetectedBundleId;
-
-      if (bundleId && bundleId.trim() !== '') {
-        console.log('[WIDGET_INIT] 📡 Attempting to fetch bundle data from API for bundle:', bundleId);
-
-        try {
-          const shopDomain = window.Shopify?.shop || window.location.hostname.replace('www.', '');
-          const response = await fetch(`https://${shopDomain}/apps/product-bundles/api/bundle/${bundleId}.json`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.bundle) {
-              bundleData = { [data.bundle.id]: data.bundle };
-              console.log('[WIDGET_INIT] ✅ Loaded bundle data from API:', data.bundle.id);
-            } else {
-              console.warn('[WIDGET_INIT] ⚠️ API returned unsuccessful response:', data);
-            }
-          } else {
-            console.error('[WIDGET_INIT] ❌ API fetch failed with status:', response.status);
-          }
-        } catch (error) {
-          console.error('[WIDGET_INIT] ❌ Failed to fetch bundle data from API:', error);
-        }
-      } else {
-        console.warn('[WIDGET_INIT] ⚠️ No bundle ID available to fetch from API');
-      }
-    }
-
-    if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
-      const errorMsg = 'No valid bundle data available. Ensure bundle is saved in admin and metafields have storefront access.';
+      const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
       console.error('[WIDGET_INIT] ❌', errorMsg);
       console.error('[WIDGET_INIT] 🔍 Debug info:', {
+        isContainerProduct: !!configValue,
         configValue: configValue?.substring(0, 100),
-        windowData: window.allBundlesData,
         containerDataset: this.container.dataset,
-        bundleIdFromDataset: this.container.dataset.bundleId,
-        bundleIdFromWindow: window.autoDetectedBundleId
+        bundleIdFromDataset: this.container.dataset.bundleId
       });
       throw new Error(errorMsg);
     }
 
     this.bundleData = bundleData;
-    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully');
+    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully from container product metafield');
   }
 
   selectBundle() {
