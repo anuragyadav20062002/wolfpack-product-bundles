@@ -47,7 +47,7 @@ import {
   DiscountIcon,
   RefreshIcon,
 } from "@shopify/polaris-icons";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge contextual save bar with data-save-bar attribute on form
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
@@ -549,6 +549,38 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
+      // SYNC_PRODUCT_STATUS: Sync bundle status to Shopify product
+      try {
+        const shopifyStatus = finalStatus.toUpperCase();
+        AppLogger.debug(`🔄 [PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
+
+        const UPDATE_PRODUCT_STATUS = `
+          mutation UpdateProductStatus($input: ProductInput!) {
+            productUpdate(input: $input) {
+              product {
+                id
+                status
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        await admin.graphql(UPDATE_PRODUCT_STATUS, {
+          variables: {
+            input: {
+              id: updatedBundle.shopifyProductId,
+              status: shopifyStatus
+            }
+          }
+        });
+      } catch (error) {
+        AppLogger.error("❌ [PRODUCT_SYNC] Failed to sync product status:", {}, error as any);
+      }
+
       // Create optimized configuration with only essential data for functions
       const optimizedSteps = (stepsData || []).map((step: any) => ({
         id: step.id,
@@ -816,7 +848,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 }
 
 // Handle updating bundle status
-async function handleUpdateBundleStatus(_admin: any, session: any, bundleId: string, formData: FormData) {
+async function handleUpdateBundleStatus(admin: any, session: any, bundleId: string, formData: FormData) {
   const status = formData.get("status") as string;
 
   const updatedBundle = await db.bundle.update({
@@ -830,6 +862,40 @@ async function handleUpdateBundleStatus(_admin: any, session: any, bundleId: str
       pricing: true
     }
   });
+
+  // SYNC_PRODUCT_STATUS: Sync bundle status to Shopify product
+  if (updatedBundle.shopifyProductId) {
+    try {
+      const shopifyStatus = status.toUpperCase();
+      AppLogger.debug(`🔄 [PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
+
+      const UPDATE_PRODUCT_STATUS = `
+        mutation UpdateProductStatus($input: ProductInput!) {
+          productUpdate(input: $input) {
+            product {
+              id
+              status
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      await admin.graphql(UPDATE_PRODUCT_STATUS, {
+        variables: {
+          input: {
+            id: updatedBundle.shopifyProductId,
+            status: shopifyStatus
+          }
+        }
+      });
+    } catch (error) {
+      AppLogger.error("❌ [PRODUCT_SYNC] Failed to sync product status:", {}, error as any);
+    }
+  }
 
   return json({
     success: true,
@@ -1917,11 +1983,12 @@ export default function ConfigureBundleFlow() {
     setHasUnsavedChanges(hasChanges);
 
     // Simplified save bar management - no timeout
-    if (hasChanges) {
-      formState.triggerSaveBar();
-    } else {
-      formState.dismissSaveBar();
-    }
+    // Note: SaveBar visibility is now controlled by hasUnsavedChanges state in render
+    // if (hasChanges) {
+    //   formState.triggerSaveBar();
+    // } else {
+    //   formState.dismissSaveBar();
+    // }
   }, [
     formState.bundleStatus,
     formState.bundleName,
@@ -2769,34 +2836,26 @@ export default function ConfigureBundleFlow() {
 
       AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
 
-      // Generate Smart Deep Link with auto-placement parameters (Shopify Option B)
-      const previewPath = template.bundleProduct ? `/products/${template.bundleProduct.handle}` : '';
-      const blockContext = `apps/${extensionUuid}/blocks/${blockHandle}`;
+      // Generate simple deep link following Shopify's official documentation
+      // Official format: template + addAppBlockId + target
+      // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
+      //
+      // Note: activate=true and previewPath are NOT in official docs and don't work reliably
+      // This simple format opens the theme editor with the block ready to add
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
 
-      // Smart Deep Link Parameters:
-      // - template: Product template to open (e.g., "product.my-bundle")
-      // - addAppBlockId: App block to auto-place (extensionUuid/blockHandle)
-      // - target: Section group to target (sectionGroup-product-template for product form)
-      // - context: Full block context path for settings pre-configuration
-      // - activate: Auto-place the block (Shopify shows confirmation prompt to merchant)
-      // - previewPath: Product page to preview (must be container product)
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=sectionGroup-product-template&context=${encodeURIComponent(blockContext)}&activate=true${previewPath ? `&previewPath=${encodeURIComponent(previewPath)}` : ''}`;
-
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated Smart Deep Link with auto-placement:`, {}, themeEditorUrl);
+      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link:`, {}, themeEditorUrl);
 
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
-      // Open theme editor in new tab with enhanced debugging
-      const editorWindow = window.open(themeEditorUrl, '_blank', 'noopener,noreferrer');
+      // Use App Bridge redirect (not window.open) to avoid popup blockers
+      // This navigates the entire app frame to the theme editor
+      shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
+      AppLogger.debug(`✅ [THEME_EDITOR] Navigating to theme editor via App Bridge`);
 
-      if (editorWindow) {
-        shopify.toast.show(`Theme editor opened for "${template.title}". The bundle widget will be automatically placed on the product page. Please confirm placement when prompted.`, { isError: false, duration: 10000 });
-        AppLogger.debug(`✅ [THEME_EDITOR] Successfully opened theme editor window with auto-placement`);
-      } else {
-        shopify.toast.show("Theme editor popup was blocked. Please allow popups and try again.", { isError: true });
-        AppLogger.error('🚨 [THEME_EDITOR] Popup was blocked', {});
-      }
+      // Use App Bridge redirect - this avoids popup blockers
+      window.open(themeEditorUrl, '_top');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -2817,7 +2876,7 @@ export default function ConfigureBundleFlow() {
   const statusOptions = [
     { label: "Active", value: "active" },
     { label: "Draft", value: "draft" },
-    { label: "Archived", value: "archived" },
+    { label: "Unlisted", value: "archived" },
   ];
 
 
@@ -2838,7 +2897,6 @@ export default function ConfigureBundleFlow() {
     >
       {/* Modern App Bridge contextual save bar using form with data-save-bar */}
       <form
-        data-save-bar
         onSubmit={(e) => {
           e.preventDefault();
           handleSave();
@@ -2848,6 +2906,25 @@ export default function ConfigureBundleFlow() {
           handleDiscard();
         }}
       >
+        {/* SaveBar component for manual control over loading state */}
+        {(hasUnsavedChanges || fetcher.state !== "idle") && (
+          <SaveBar id="bundle-save-bar">
+            <button
+              variant="primary"
+              onClick={handleSave}
+              loading={fetcher.state !== "idle"}
+              disabled={fetcher.state !== "idle"}
+            >
+              Save
+            </button>
+            <button
+              onClick={handleDiscard}
+              disabled={fetcher.state !== "idle"}
+            >
+              Discard
+            </button>
+          </SaveBar>
+        )}
         {/* Hidden inputs for form submission - values will be updated by React state changes */}
         <input type="hidden" name="bundleName" value={formState.bundleName} />
         <input type="hidden" name="bundleDescription" value={formState.bundleDescription} />
@@ -2866,22 +2943,7 @@ export default function ConfigureBundleFlow() {
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
 
-        {/* Invisible trigger input for App Bridge save bar - required for proper change detection */}
-        <input
-          type="text"
-          name="changeDetector"
-          value={hasUnsavedChanges ? "changed" : "unchanged"}
-          style={{
-            position: 'absolute',
-            left: '-9999px',
-            opacity: 0,
-            width: '1px',
-            height: '1px',
-            pointerEvents: 'none'
-          }}
-          tabIndex={-1}
-          readOnly
-        />
+
 
         <Layout>
           {/* Left Sidebar */}
@@ -3044,17 +3106,29 @@ export default function ConfigureBundleFlow() {
                     />
                   </BlockStack>
 
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text variant="bodyMd" as="p">
-                      Place on theme
+                  <BlockStack gap="200">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <Text variant="bodyMd" as="p">
+                        Place on theme
+                      </Text>
+                      <Button
+                        icon={SettingsIcon}
+                        onClick={handlePlaceWidget}
+                      >
+                        Place Widget
+                      </Button>
+                    </InlineStack>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Need help? Check out our{" "}
+                      <Button
+                        variant="plain"
+                        onClick={() => window.open('/app/onboarding', '_blank')}
+                      >
+                        setup guide
+                      </Button>
+                      {" "}for step-by-step instructions
                     </Text>
-                    <Button
-                      icon={SettingsIcon}
-                      onClick={handlePlaceWidget}
-                    >
-                      Place Widget
-                    </Button>
-                  </InlineStack>
+                  </BlockStack>
                 </BlockStack>
               </Card>
             </BlockStack>
@@ -3470,12 +3544,12 @@ export default function ConfigureBundleFlow() {
                                 <TextField
                                   label={
                                     rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
-                                    rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
-                                    'Bundle Price'
+                                      rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
+                                        'Bundle Price'
                                   }
                                   value={String(
                                     rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
-                                    centsToAmount(rule.discount.value)
+                                      centsToAmount(rule.discount.value)
                                   )}
                                   onChange={(value) => {
                                     const numValue = Number(value) || 0;
@@ -3541,33 +3615,33 @@ export default function ConfigureBundleFlow() {
                           <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '13px' }}>
                             {/* Essential Variables */}
                             <div style={{ marginBottom: '12px' }}>
-                              <strong>Essential (Most Used):</strong><br/>
-                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br/>
-                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br/>
+                              <strong>Essential (Most Used):</strong><br />
+                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
+                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
                               <code>{'{{bundleName}}'}</code> - Bundle name
                             </div>
-                            
+
                             {/* Specific Variables */}
                             <div style={{ marginBottom: '12px' }}>
-                              <strong>Specific:</strong><br/>
-                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br/>
-                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br/>
+                              <strong>Specific:</strong><br />
+                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
+                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
                               <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
                             </div>
-                            
+
                             {/* Pricing Variables */}
                             <div style={{ marginBottom: '12px' }}>
-                              <strong>Pricing:</strong><br/>
-                              <code>{'{{currentAmount}}'}</code> - Current total<br/>
-                              <code>{'{{finalPrice}}'}</code> - Price after discount<br/>
+                              <strong>Pricing:</strong><br />
+                              <code>{'{{currentAmount}}'}</code> - Current total<br />
+                              <code>{'{{finalPrice}}'}</code> - Price after discount<br />
                               <code>{'{{savingsAmount}}'}</code> - Amount saved
                             </div>
-                            
+
                             {/* Quick Examples */}
                             <div style={{ borderTop: '1px solid #e1e3e5', paddingTop: '8px', fontSize: '12px', color: '#6c757d' }}>
-                              <strong>Quick Examples:</strong><br/>
-                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br/>
-                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br/>
+                              <strong>Quick Examples:</strong><br />
+                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
+                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
                               🎉 <em>"You saved {'{{savingsAmount}}'} on {'{{bundleName}}'}"</em>
                             </div>
                           </div>

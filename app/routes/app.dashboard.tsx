@@ -240,9 +240,14 @@ export default function Dashboard() {
                 <Text variant="headingSm" as="h3">
                   All Bundles ({bundles.length})
                 </Text>
-                <Button variant="primary" onClick={handleCreateBundle}>
-                  Create Bundle
-                </Button>
+                <InlineStack gap="200">
+                  <Button onClick={() => navigate("/app/onboarding")}>
+                    Setup Guide
+                  </Button>
+                  <Button variant="primary" onClick={handleCreateBundle}>
+                    Create Bundle
+                  </Button>
+                </InlineStack>
             </InlineStack>
               
               {bundles.length === 0 ? (

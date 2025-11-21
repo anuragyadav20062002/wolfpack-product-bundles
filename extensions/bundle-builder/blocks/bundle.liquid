@@ -273,13 +273,14 @@
 {% assign auto_display_mode = false %}
 
 {% comment %} PRIMARY CHECK: Is this product a designated bundle container? {% endcomment %}
-{% if product.metafields.app.bundleProductType.value == 'cart_transform_bundle' %}
+{% assign app_namespace = 'app--' | append: app.id %}
+{% if product.metafields[app_namespace].bundleProductType.value == 'cart_transform_bundle' %}
   {% assign is_container_product = true %}
-  {% assign container_bundle_id = product.metafields.app.ownsBundleId.value %}
+  {% assign container_bundle_id = product.metafields[app_namespace].ownsBundleId.value %}
   {% assign auto_display_mode = true %}
   {% comment %} Load bundle configuration from container metafields {% endcomment %}
-  {% if product.metafields.app.bundleConfig %}
-    {% assign bundle_config = product.metafields.app.bundleConfig.value %}
+  {% if product.metafields[app_namespace].bundleConfig %}
+    {% assign bundle_config = product.metafields[app_namespace].bundleConfig.value %}
   {% endif %}
 {% endif %}
 
@@ -417,9 +418,9 @@
 
       // 🔍 Enhanced debugging for custom template pages
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        bundleIsolationType: {{ product.metafields.app.bundleProductType.value | json }},
-        ownsBundleId: {{ product.metafields.app.ownsBundleId.value | json }},
-        cartTransformConfig: {{ product.metafields.app.bundleConfig.value | json }}
+        bundleIsolationType: {{ product.metafields[app_namespace].bundleProductType.value | json }},
+        ownsBundleId: {{ product.metafields[app_namespace].ownsBundleId.value | json }},
+        cartTransformConfig: {{ product.metafields[app_namespace].bundleConfig.value | json }}
       });
 
       // 🔍 Debug the Liquid template bundle ID selection logic
@@ -470,7 +471,7 @@
   // Inject app URL from shop metafield (auto-synced when merchant accesses app admin)
   // Note: Changed from appconfig namespace to $app namespace per TOML definition
   // single_line_text_field metafields require .value accessor per Shopify docs
-  window.__BUNDLE_APP_URL__ = {{ shop.metafields.app.serverUrl.value | json }};
+  window.__BUNDLE_APP_URL__ = {{ shop.metafields[app_namespace].serverUrl.value | json }};
 </script>
 
 <script>
@@ -496,7 +497,7 @@
     window.bundleWidgetContext = true;
 
     // Enhanced debugging for bundle data loading
-    const productBundleConfig = {{ product.metafields.app.bundleConfig.value | json }};
+    const productBundleConfig = {{ product.metafields[app_namespace].bundleConfig.value | json }};
     console.log('🎯 [BUNDLE_DATA] Product ID:', {{ product.id | json }});
     console.log('🎯 [BUNDLE_DATA] Has bundle config metafield:', !!productBundleConfig);
 
