@@ -268,19 +268,28 @@
 {% endschema %}
 {% comment %} Bundle Container Product Detection - ENHANCED LOGIC {% endcomment %}
 {% assign is_container_product = false %}
-{% assign container_bundle_id = null %}
-{% assign bundle_config = null %}
+{% assign container_bundle_id = nil %}
+{% assign bundle_config = nil %}
 {% assign auto_display_mode = false %}
 
 {% comment %} PRIMARY CHECK: Is this product a designated bundle container? {% endcomment %}
 {% assign app_namespace = 'app--' | append: app.id %}
-{% if product.metafields[app_namespace].bundleProductType.value == 'cart_transform_bundle' %}
-  {% assign is_container_product = true %}
-  {% assign container_bundle_id = product.metafields[app_namespace].ownsBundleId.value %}
-  {% assign auto_display_mode = true %}
-  {% comment %} Load bundle configuration from container metafields {% endcomment %}
-  {% if product.metafields[app_namespace].bundleConfig %}
-    {% assign bundle_config = product.metafields[app_namespace].bundleConfig.value %}
+{% comment %} Get app metafields object first, then access properties {% endcomment %}
+{% assign app_metafields = product.metafields[app_namespace] %}
+{% if app_metafields %}
+  {% assign bundle_product_type = app_metafields['bundleProductType'] %}
+  {% if bundle_product_type and bundle_product_type.value == 'cart_transform_bundle' %}
+    {% assign is_container_product = true %}
+    {% assign owns_bundle_id = app_metafields['ownsBundleId'] %}
+    {% if owns_bundle_id %}
+      {% assign container_bundle_id = owns_bundle_id.value %}
+    {% endif %}
+    {% assign auto_display_mode = true %}
+    {% comment %} Load bundle configuration from container metafields {% endcomment %}
+    {% assign bundle_config_field = app_metafields['bundleConfig'] %}
+    {% if bundle_config_field %}
+      {% assign bundle_config = bundle_config_field.value %}
+    {% endif %}
   {% endif %}
 {% endif %}
 
@@ -317,7 +326,7 @@
       data-is-container-product="{{ is_container_product }}"
       data-container-bundle-id="{{ container_bundle_id }}"
       data-auto-display-mode="{{ auto_display_mode }}"
-      data-bundle-config="{{ bundle_config | escape }}"
+      data-bundle-config="{{ bundle_config | json | escape }}"
       data-hide-default-buttons="{{ hide_default_buttons }}"
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
@@ -418,9 +427,9 @@
 
       // 🔍 Enhanced debugging for custom template pages
       console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        bundleIsolationType: {{ product.metafields[app_namespace].bundleProductType.value | json }},
-        ownsBundleId: {{ product.metafields[app_namespace].ownsBundleId.value | json }},
-        cartTransformConfig: {{ product.metafields[app_namespace].bundleConfig.value | json }}
+        bundleIsolationType: {{ bundle_product_type.value | json }},
+        ownsBundleId: {{ owns_bundle_id.value | json }},
+        cartTransformConfig: {{ bundle_config | json }}
       });
 
       // 🔍 Debug the Liquid template bundle ID selection logic
@@ -471,7 +480,12 @@
   // Inject app URL from shop metafield (auto-synced when merchant accesses app admin)
   // Note: Changed from appconfig namespace to $app namespace per TOML definition
   // single_line_text_field metafields require .value accessor per Shopify docs
-  window.__BUNDLE_APP_URL__ = {{ shop.metafields[app_namespace].serverUrl.value | json }};
+  {% assign shop_app_metafields = shop.metafields[app_namespace] %}
+  {% assign server_url_field = nil %}
+  {% if shop_app_metafields %}
+    {% assign server_url_field = shop_app_metafields['serverUrl'] %}
+  {% endif %}
+  window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
 </script>
 
 <script>
@@ -497,7 +511,7 @@
     window.bundleWidgetContext = true;
 
     // Enhanced debugging for bundle data loading
-    const productBundleConfig = {{ product.metafields[app_namespace].bundleConfig.value | json }};
+    const productBundleConfig = {{ bundle_config | json }};
     console.log('🎯 [BUNDLE_DATA] Product ID:', {{ product.id | json }});
     console.log('🎯 [BUNDLE_DATA] Has bundle config metafield:', !!productBundleConfig);
 

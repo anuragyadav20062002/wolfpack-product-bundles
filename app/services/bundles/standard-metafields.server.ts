@@ -48,19 +48,6 @@ export async function convertBundleToStandardMetafields(
         for (const stepProduct of step.StepProduct) {
           totalProductsProcessed++;
 
-          // Check if this is a UUID (old data that needs migration)
-          if (isUUID(stepProduct.productId)) {
-            const error = `Legacy UUID product ID (needs data migration to Shopify product ID)`;
-            console.warn(`⚠️ [STANDARD_METAFIELD] ${error}: ${stepProduct.productId} - Product: ${stepProduct.title}`);
-            errors.push({
-              productId: stepProduct.productId,
-              title: stepProduct.title || 'Unknown Product',
-              error,
-              step: stepName
-            });
-            continue; // Skip UUID products entirely
-          }
-
           // Get the actual first variant ID
           const result = await getFirstVariantId(admin, stepProduct.productId);
           if (result.success && result.variantId) {
@@ -162,7 +149,7 @@ export async function updateProductStandardMetafields(
 
       // Use proper types for each metafield with correct value formats
       // CRITICAL: Keys must match TOML definitions (camelCase)
-      switch(key) {
+      switch (key) {
         case 'componentVariants':
           type = 'list.variant_reference';
           // For list.variant_reference, Shopify expects a JSON array string of ProductVariant GIDs
