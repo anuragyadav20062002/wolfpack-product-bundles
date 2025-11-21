@@ -5,25 +5,37 @@ import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 
 /**
- * Public API endpoint to fetch fresh bundle data
- * This bypasses Shopify's metafield cache and returns the latest data from database
+ * Public API endpoint to fetch a single bundle by ID
+ * Used by theme app extension when metafield data is not available
  *
- * GET /apps/bundle-discounts/api/bundles.json
+ * GET /apps/product-bundles/api/bundle/:bundleId.json
  */
-export const loader: LoaderFunction = async ({ request }) => {
+export const loader: LoaderFunction = async ({ request, params }) => {
   try {
-    // Authenticate the request
+    const { bundleId } = params;
+
+    if (!bundleId) {
+      return json({ error: "Bundle ID is required" }, { status: 400 });
+    }
+
+    // Authenticate the request via app proxy
     const { session } = await authenticate.public.appProxy(request);
 
     if (!session?.shop) {
       return json({ error: "Shop not found" }, { status: 400 });
     }
 
-    AppLogger.info("Fetching fresh bundle data", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", shop: session.shop });
+    AppLogger.info("Fetching single bundle data", {
+      component: "apps.product-bundles.api.bundle",
+      operation: "loader",
+      shop: session.shop,
+      bundleId
+    });
 
-    // Get all active cart transform bundles from database
-    const allBundles = await db.bundle.findMany({
+    // Get the bundle from database
+    const bundle = await db.bundle.findFirst({
       where: {
+        id: bundleId,
         shopId: session.shop,
         bundleType: 'cart_transform',
         status: 'active'
@@ -41,10 +53,27 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     });
 
-    AppLogger.info("Found active bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", count: allBundles.length });
+    if (!bundle) {
+      AppLogger.warn("Bundle not found", {
+        component: "apps.product-bundles.api.bundle",
+        operation: "loader",
+        bundleId
+      });
+      return json({
+        success: false,
+        error: "Bundle not found or not active"
+      }, { status: 404 });
+    }
 
-    // Format bundles for JavaScript widget
-    const formattedBundles = allBundles.map(bundle => ({
+    AppLogger.info("Found bundle", {
+      component: "apps.product-bundles.api.bundle",
+      operation: "loader",
+      bundleId: bundle.id,
+      bundleName: bundle.name
+    });
+
+    // Format bundle for JavaScript widget
+    const formattedBundle = {
       id: bundle.id,
       name: bundle.name,
       description: bundle.description,
@@ -73,20 +102,11 @@ export const loader: LoaderFunction = async ({ request }) => {
         showFooter: bundle.pricing.showFooter,
         messages: bundle.pricing.messages || {}
       } : null
-    }));
-
-    // Convert to object with bundle IDs as keys (same format as shop metafield)
-    const bundlesObject: Record<string, any> = {};
-    formattedBundles.forEach(bundle => {
-      bundlesObject[bundle.id] = bundle;
-    });
-
-    AppLogger.info("Returning bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", bundleIds: Object.keys(bundlesObject) });
+    };
 
     return json({
       success: true,
-      bundles: bundlesObject,
-      bundleCount: allBundles.length,
+      bundle: formattedBundle,
       timestamp: new Date().toISOString()
     }, {
       headers: {
@@ -97,11 +117,14 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
 
   } catch (error) {
-    AppLogger.error("Error fetching bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader" }, error);
+    AppLogger.error("Error fetching bundle", {
+      component: "apps.product-bundles.api.bundle",
+      operation: "loader",
+      bundleId: params.bundleId
+    }, error);
     return json({
       success: false,
-      error: (error as Error).message,
-      bundles: {}
+      error: (error as Error).message
     }, { status: 500 });
   }
 };

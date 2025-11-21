@@ -30,6 +30,11 @@ redirect_urls = [
 [pos]
 embedded = false
 
+[app_proxy]
+url = "https://wolfpack-product-bundle-app.onrender.com"
+subpath = "product-bundles"
+prefix = "apps"
+
 # ==============================================================================
 # METAFIELD DEFINITIONS - Declarative Custom Data
 # ==============================================================================
