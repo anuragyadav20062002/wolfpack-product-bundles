@@ -61,11 +61,6 @@ export interface CartTransformInput {
       value: string;
     };
   };
-  shop?: {
-    all_bundles?: {
-      value: string;
-    };
-  };
 }
 
 export interface CartTransformOperation {
@@ -563,8 +558,7 @@ function findBestApplicableRule(rules: any[], totalQuantity: number, originalTot
 export function cartTransformRun(input: CartTransformInput): CartTransformResult {
   try {
     Logger.info('Cart transform started', { phase: 'init' }, {
-      cartLines: input?.cart?.lines?.length || 0,
-      hasShopMetafield: !!input?.shop?.all_bundles?.value
+      cartLines: input?.cart?.lines?.length || 0
     });
 
     // Edge case handling
@@ -684,7 +678,7 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       // Check if bundle has pricing rules (but don't require them to be met for merging)
       const hasPricingRules = bundleConfig.pricing?.enabled && bundleConfig.pricing?.rules?.length > 0;
-      
+
       Logger.debug('Bundle pricing analysis', { phase: 'processing' }, {
         baseBundleId,
         totalQuantity,

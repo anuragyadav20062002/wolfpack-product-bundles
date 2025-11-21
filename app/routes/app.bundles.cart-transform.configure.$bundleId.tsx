@@ -235,8 +235,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleGetThemeTemplates(admin, session);
       case "getCurrentTheme":
         return await handleGetCurrentTheme(admin, session);
-      case "cleanupDeletedBundles":
-        return await handleCleanupDeletedBundles(admin, session);
       case "ensureBundleTemplates":
         return await handleEnsureBundleTemplates(admin, session);
       default:
@@ -1582,173 +1580,51 @@ async function handleGetCurrentTheme(admin: any, _session: any) {
       error: "Failed to fetch current theme"
     });
   }
-}
 
-// Handle cleanup of deleted bundle metafields
-async function handleCleanupDeletedBundles(admin: any, session: any) {
-  try {
-    AppLogger.debug("🧹 [CLEANUP] Starting cleanup of deleted bundle metafields");
+  // Handle ensuring bundle templates exist
+  async function handleEnsureBundleTemplates(admin: any, session: any) {
+    try {
+      AppLogger.debug("🎨 [TEMPLATE_HANDLER] Ensuring bundle templates exist");
 
-    // Get all active bundles from database
-    const activeBundles = await db.bundle.findMany({
-      where: {
-        shopId: session.shop
-      },
-      select: {
-        id: true,
-        name: true,
-        status: true
-      }
-    });
+      const templateService = new ThemeTemplateService(admin, session);
 
-    AppLogger.debug(`🧹 [CLEANUP] Found ${activeBundles.length} active bundles in database`);
-
-    // Get current shop metafield data
-    const SHOP_METAFIELD_QUERY = `
-      query getShopBundleMetafield {
-        shop {
-          metafield(namespace: "custom", key: "all_bundles") {
-            id
-            value
-          }
+      // Get all active bundles with container products
+      const activeBundles = await db.bundle.findMany({
+        where: {
+          shopId: session.shop,
+          status: 'active'
+        },
+        select: {
+          id: true,
+          name: true,
+          shopifyProductId: true
         }
-      }
-    `;
-
-    const metafieldResponse = await admin.graphql(SHOP_METAFIELD_QUERY);
-    const metafieldData = await metafieldResponse.json();
-
-    let currentBundleData = {};
-    if (metafieldData.data?.shop?.metafield?.value) {
-      try {
-        currentBundleData = JSON.parse(metafieldData.data.shop.metafield.value);
-        AppLogger.debug(`🧹 [CLEANUP] Current metafield contains ${Object.keys(currentBundleData).length} bundle entries`);
-      } catch (error) {
-        AppLogger.error("🧹 [CLEANUP] Error parsing current metafield data:", {}, error as any);
-      }
-    }
-
-    // Create cleaned bundle data with only active bundles
-    const cleanedBundleData: Record<string, any> = {};
-    const activeBundleIds = new Set(activeBundles.map(b => b.id));
-
-    for (const [bundleId, bundleConfig] of Object.entries(currentBundleData)) {
-      if (activeBundleIds.has(bundleId)) {
-        cleanedBundleData[bundleId] = bundleConfig;
-        AppLogger.debug(`🧹 [CLEANUP] Keeping bundle: ${bundleId}`);
-      } else {
-        AppLogger.debug(`🧹 [CLEANUP] Removing deleted bundle: ${bundleId}`);
-      }
-    }
-
-    const removedCount = Object.keys(currentBundleData).length - Object.keys(cleanedBundleData).length;
-    AppLogger.debug(`🧹 [CLEANUP] Removed ${removedCount} deleted bundle entries`);
-
-    // Update shop metafield with cleaned data if needed
-    if (removedCount > 0) {
-      const UPDATE_SHOP_METAFIELD = `
-        mutation updateShopMetafield($metafields: [MetafieldInput!]!) {
-          metafieldsSet(metafields: $metafields) {
-            metafields {
-              id
-              namespace
-              key
-              value
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
-      const metafieldInput = [{
-        namespace: "custom",
-        key: "all_bundles",
-        type: "json",
-        value: JSON.stringify(cleanedBundleData),
-        ownerId: `gid://shopify/Shop/${session.shop.split('.')[0]}`
-      }];
-
-      const updateResponse = await admin.graphql(UPDATE_SHOP_METAFIELD, {
-        variables: { metafields: metafieldInput }
       });
 
-      const updateData = await updateResponse.json();
+      AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Found ${activeBundles.length} active bundles`);
 
-      if (updateData.data?.metafieldsSet?.userErrors?.length > 0) {
-        AppLogger.error("🧹 [CLEANUP] Error updating shop metafield:", {}, updateData.data.metafieldsSet.userErrors);
+      if (activeBundles.length === 0) {
         return json({
-          success: false,
-          error: "Failed to update shop metafield",
-          details: updateData.data.metafieldsSet.userErrors
-        }, { status: 500 });
+          success: true,
+          message: "No active bundles found - no templates to create",
+          results: []
+        });
       }
 
-      AppLogger.debug("🧹 [CLEANUP] Shop metafield updated successfully");
-    }
+      // Get product handles from Shopify
+      const productIds = activeBundles
+        .filter(bundle => bundle.shopifyProductId)
+        .map(bundle => bundle.shopifyProductId);
 
-    return json({
-      success: true,
-      message: `Cleanup completed. Removed ${removedCount} deleted bundle entries.`,
-      activeBundlesCount: activeBundles.length,
-      removedBundlesCount: removedCount
-    });
-
-  } catch (error) {
-    AppLogger.error("🧹 [CLEANUP] Error during cleanup:", {}, error as any);
-    return json({
-      success: false,
-      error: (error as Error).message || "Cleanup failed"
-    }, { status: 500 });
-  }
-}
-
-// Handle ensuring bundle templates exist
-async function handleEnsureBundleTemplates(admin: any, session: any) {
-  try {
-    AppLogger.debug("🎨 [TEMPLATE_HANDLER] Ensuring bundle templates exist");
-
-    const templateService = new ThemeTemplateService(admin, session);
-
-    // Get all active bundles with container products
-    const activeBundles = await db.bundle.findMany({
-      where: {
-        shopId: session.shop,
-        status: 'active'
-      },
-      select: {
-        id: true,
-        name: true,
-        shopifyProductId: true
+      if (productIds.length === 0) {
+        return json({
+          success: true,
+          message: "No bundle container products found",
+          results: []
+        });
       }
-    });
 
-    AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Found ${activeBundles.length} active bundles`);
-
-    if (activeBundles.length === 0) {
-      return json({
-        success: true,
-        message: "No active bundles found - no templates to create",
-        results: []
-      });
-    }
-
-    // Get product handles from Shopify
-    const productIds = activeBundles
-      .filter(bundle => bundle.shopifyProductId)
-      .map(bundle => bundle.shopifyProductId);
-
-    if (productIds.length === 0) {
-      return json({
-        success: true,
-        message: "No bundle container products found",
-        results: []
-      });
-    }
-
-    const GET_BUNDLE_PRODUCTS = `
+      const GET_BUNDLE_PRODUCTS = `
       query getBundleContainerProducts($ids: [ID!]!) {
         nodes(ids: $ids) {
           ... on Product {
@@ -1761,2140 +1637,2140 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
       }
     `;
 
-    const response = await admin.graphql(GET_BUNDLE_PRODUCTS, {
-      variables: { ids: productIds }
-    });
-    const data = await response.json();
-    const products = data.data?.nodes?.filter((node: any) => node) || [];
+      const response = await admin.graphql(GET_BUNDLE_PRODUCTS, {
+        variables: { ids: productIds }
+      });
+      const data = await response.json();
+      const products = data.data?.nodes?.filter((node: any) => node) || [];
 
-    AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Found ${products.length} bundle container products`);
+      AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Found ${products.length} bundle container products`);
 
-    // Create templates for each bundle container product
-    const results = [];
-    for (const product of products) {
-      AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Processing product: ${product.title} (${product.handle})`);
+      // Create templates for each bundle container product
+      const results = [];
+      for (const product of products) {
+        AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Processing product: ${product.title} (${product.handle})`);
 
-      const result = await templateService.ensureProductTemplate(product.handle);
-      results.push({
-        productId: product.id,
-        productHandle: product.handle,
-        productTitle: product.title,
-        templatePath: result.templatePath,
-        created: result.created || false,
-        success: result.success,
-        error: result.error
+        const result = await templateService.ensureProductTemplate(product.handle);
+        results.push({
+          productId: product.id,
+          productHandle: product.handle,
+          productTitle: product.title,
+          templatePath: result.templatePath,
+          created: result.created || false,
+          success: result.success,
+          error: result.error
+        });
+
+        AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Product ${product.handle}: ${result.success ? 'SUCCESS' : 'FAILED'} ${result.created ? '(CREATED)' : '(EXISTS)'}`);
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      const createdCount = results.filter(r => r.created).length;
+
+      AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Template creation completed: ${successCount}/${results.length} successful, ${createdCount} created`);
+
+      return json({
+        success: true,
+        message: `Template creation completed: ${successCount}/${results.length} successful, ${createdCount} new templates created`,
+        results,
+        summary: {
+          totalProducts: products.length,
+          successCount,
+          createdCount,
+          failedCount: results.length - successCount
+        }
       });
 
-      AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Product ${product.handle}: ${result.success ? 'SUCCESS' : 'FAILED'} ${result.created ? '(CREATED)' : '(EXISTS)'}`);
+    } catch (error) {
+      AppLogger.error("🔥 [TEMPLATE_HANDLER] Error during template creation:", {}, error as any);
+      return json({
+        success: false,
+        error: (error as Error).message || "Template creation failed"
+      }, { status: 500 });
     }
-
-    const successCount = results.filter(r => r.success).length;
-    const createdCount = results.filter(r => r.created).length;
-
-    AppLogger.debug(`🎨 [TEMPLATE_HANDLER] Template creation completed: ${successCount}/${results.length} successful, ${createdCount} created`);
-
-    return json({
-      success: true,
-      message: `Template creation completed: ${successCount}/${results.length} successful, ${createdCount} new templates created`,
-      results,
-      summary: {
-        totalProducts: products.length,
-        successCount,
-        createdCount,
-        failedCount: results.length - successCount
-      }
-    });
-
-  } catch (error) {
-    AppLogger.error("🔥 [TEMPLATE_HANDLER] Error during template creation:", {}, error as any);
-    return json({
-      success: false,
-      error: (error as Error).message || "Template creation failed"
-    }, { status: 500 });
   }
-}
 
-export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<LoaderData>();
-  const navigate = useNavigate();
-  const shopify = useAppBridge();
-  const fetcher = useFetcher<typeof action>();
+  export default function ConfigureBundleFlow() {
+    const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<LoaderData>();
+    const navigate = useNavigate();
+    const shopify = useAppBridge();
+    const fetcher = useFetcher<typeof action>();
 
-  // ===== CUSTOM HOOKS =====
-  // Form state management
-  const formState = useBundleForm({
-    initialData: {
-      name: bundle.name,
-      description: bundle.description || "",
-      status: bundle.status,
-      templateName: bundle.templateName || ""
-    }
-  });
-
-  // Step conditions initialization
-  const initializeStepConditions = () => {
-    const initialConditions: Record<string, any[]> = {};
-    (bundle.steps || []).forEach((step: any) => {
-      if (step.conditionType && step.conditionOperator && step.conditionValue !== null) {
-        initialConditions[step.id] = [{
-          id: `condition_${step.id}_${Date.now()}`,
-          type: step.conditionType,
-          operator: step.conditionOperator,
-          value: step.conditionValue.toString()
-        }];
+    // ===== CUSTOM HOOKS =====
+    // Form state management
+    const formState = useBundleForm({
+      initialData: {
+        name: bundle.name,
+        description: bundle.description || "",
+        status: bundle.status,
+        templateName: bundle.templateName || ""
       }
     });
-    return initialConditions;
-  };
 
-  // Condition rules management
-  const conditionsState = useBundleConditions({
-    initialStepConditions: initializeStepConditions(),
-    onTriggerSaveBar: formState.triggerSaveBar
-  });
-
-  AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
-
-  // Transform StepProduct to use productId as id (not the database UUID)
-  const transformedSteps = (bundle.steps || []).map((step: any) => ({
-    ...step,
-    StepProduct: (step.StepProduct || []).map((sp: any) => ({
-      ...sp,
-      id: sp.productId,  // Use productId (Shopify GID) as id, not database UUID
-    }))
-  }));
-
-  // Steps management
-  const stepsState = useBundleSteps({
-    initialSteps: transformedSteps,
-    onTriggerSaveBar: formState.triggerSaveBar,
-    shopify
-  });
-
-  // Pricing management
-  const pricingState = useBundlePricing({
-    initialPricing: bundle.pricing,
-    onTriggerSaveBar: formState.triggerSaveBar
-  });
-
-
-  // State for page selection modal
-  const [isPageSelectionModalOpen, setIsPageSelectionModalOpen] = useState(false);
-  const [availablePages, setAvailablePages] = useState<any[]>([]);
-  const [isLoadingPages, setIsLoadingPages] = useState(false);
-  const [selectedPage, setSelectedPage] = useState<any>(null);
-
-  // State for products/collections view modals
-  const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
-  const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
-  const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
-
-  // State for bundle product - initialize with loaded data
-  const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct || null);
-  const [productStatus, setProductStatus] = useState(loadedBundleProduct?.status || "ACTIVE");
-
-  // State for collections - initialize with data from loaded bundle steps
-  const [selectedCollections, setSelectedCollections] = useState<Record<string, any[]>>(() => {
-    const collections: Record<string, any[]> = {};
-    bundle.steps?.forEach(step => {
-      if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-        collections[step.id] = step.collections;
-      }
-    });
-    return collections;
-  });
-
-  // NOTE: Discount & pricing state now managed by pricingState hook above
-  // NOTE: Rule-specific messaging still uses local state (not extracted to hook yet)
-  const [ruleMessages, setRuleMessages] = useState<Record<string, { discountText: string; successMessage: string }>>({});
-
-  // UI state for section navigation (expandedSteps and selectedTab now from stepsState hook)
-  const [activeSection, setActiveSection] = useState('step_setup');
-
-  // Track original values for change detection - initialize with loaded data to prevent false positives
-  const [originalValues, setOriginalValues] = useState({
-    status: formState.bundleStatus,
-    name: formState.bundleName,
-    description: formState.bundleDescription,
-    templateName: formState.templateName,
-    steps: JSON.stringify(
-      (bundle.steps || []).map((step: any) => ({
-        ...step,
-        StepProduct: (step.StepProduct || []).map((sp: any) => ({
-          ...sp,
-          id: sp.productId,  // Transform to use Shopify GID, not database UUID
-        }))
-      }))
-    ),
-    discountEnabled: pricingState.discountEnabled,
-    discountType: pricingState.discountType,
-    discountRules: JSON.stringify(pricingState.discountRules),
-    showProgressBar: pricingState.showProgressBar,
-    showFooter: pricingState.showFooter,
-    discountMessagingEnabled: pricingState.discountMessagingEnabled,
-    selectedCollections: JSON.stringify({}),
-    ruleMessages: JSON.stringify({}),
-    stepConditions: JSON.stringify(conditionsState.stepConditions),
-    bundleProduct: loadedBundleProduct || null,
-    productStatus: loadedBundleProduct?.status || "ACTIVE",
-  });
-
-  // Track if there are unsaved changes
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // NOTE: triggerSaveBar and dismissSaveBar are now provided by formState hook
-
-  // Check for changes whenever form values change
-  useEffect(() => {
-    // Helper function to safely compare bundle products
-    const compareBundleProducts = (current: any, original: any) => {
-      if (!current && !original) return true;
-      if (!current || !original) return false;
-      return current.id === original.id;
+    // Step conditions initialization
+    const initializeStepConditions = () => {
+      const initialConditions: Record<string, any[]> = {};
+      (bundle.steps || []).forEach((step: any) => {
+        if (step.conditionType && step.conditionOperator && step.conditionValue !== null) {
+          initialConditions[step.id] = [{
+            id: `condition_${step.id}_${Date.now()}`,
+            type: step.conditionType,
+            operator: step.conditionOperator,
+            value: step.conditionValue.toString()
+          }];
+        }
+      });
+      return initialConditions;
     };
 
-    const stepSetupChanges = (
-      formState.bundleName !== originalValues.name ||
-      formState.bundleDescription !== originalValues.description ||
-      formState.templateName !== originalValues.templateName ||
-      JSON.stringify(stepsState.steps) !== originalValues.steps ||
-      JSON.stringify(selectedCollections) !== originalValues.selectedCollections ||
-      JSON.stringify(conditionsState.stepConditions) !== originalValues.stepConditions ||
-      !compareBundleProducts(bundleProduct, originalValues.bundleProduct) ||
-      productStatus !== originalValues.productStatus
-    );
-
-    const discountPricingChanges = (
-      pricingState.discountEnabled !== originalValues.discountEnabled ||
-      pricingState.discountType !== originalValues.discountType ||
-      JSON.stringify(pricingState.discountRules) !== originalValues.discountRules ||
-      pricingState.showProgressBar !== originalValues.showProgressBar ||
-      pricingState.showFooter !== originalValues.showFooter ||
-      pricingState.discountMessagingEnabled !== originalValues.discountMessagingEnabled ||
-      JSON.stringify(ruleMessages) !== originalValues.ruleMessages
-    );
-
-    const bundleStatusChanges = (
-      formState.bundleStatus !== originalValues.status
-    );
-
-    const hasChanges = stepSetupChanges || discountPricingChanges || bundleStatusChanges;
-
-    setHasUnsavedChanges(hasChanges);
-
-    // Simplified save bar management - no timeout
-    // Note: SaveBar visibility is now controlled by hasUnsavedChanges state in render
-    // if (hasChanges) {
-    //   formState.triggerSaveBar();
-    // } else {
-    //   formState.dismissSaveBar();
-    // }
-  }, [
-    formState.bundleStatus,
-    formState.bundleName,
-    formState.bundleDescription,
-    formState.templateName,
-    formState.triggerSaveBar,
-    formState.dismissSaveBar,
-    stepsState.steps,
-    pricingState.discountEnabled,
-    pricingState.discountType,
-    pricingState.discountRules,
-    pricingState.showProgressBar,
-    pricingState.showFooter,
-    pricingState.discountMessagingEnabled,
-    ruleMessages,
-    selectedCollections,
-    conditionsState.stepConditions,
-    bundleProduct,
-    productStatus,
-    originalValues
-  ]);
-
-  // Save handler
-  const handleSave = useCallback(async () => {
-    try {
-      // Prepare form data for submission
-      const formData = new FormData();
-      formData.append("intent", "saveBundle");
-      formData.append("bundleName", formState.bundleName);
-      formData.append("bundleDescription", formState.bundleDescription);
-      formData.append("templateName", formState.templateName);
-      formData.append("bundleStatus", formState.bundleStatus);
-      // Merge collections data into steps before saving
-      const stepsWithCollections = stepsState.steps.map(step => ({
-        ...step,
-        collections: selectedCollections[step.id] || step.collections || []
-      }));
-
-      formData.append("stepsData", JSON.stringify(stepsWithCollections));
-      formData.append("discountData", JSON.stringify({
-        discountEnabled: pricingState.discountEnabled,
-        discountType: pricingState.discountType,
-        discountRules: pricingState.discountRules,
-        discountMessagingEnabled: pricingState.discountMessagingEnabled,
-        ruleMessages
-      }));
-      formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
-      formData.append("bundleProduct", JSON.stringify(bundleProduct));
-      AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
-      AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
-
-      // Submit to server action using fetcher
-
-      fetcher.submit(formData, { method: "post" });
-
-      // Note: With useFetcher, we need to handle the response via useEffect
-      // The immediate return here will be handled by the fetcher response
-      return;
-    } catch (error) {
-      AppLogger.error("Save failed:", {}, error as any);
-      shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true });
-    }
-  }, [
-    formState.bundleStatus,
-    formState.bundleName,
-    formState.bundleDescription,
-    formState.templateName,
-    stepsState.steps,
-    pricingState.discountEnabled,
-    pricingState.discountType,
-    pricingState.discountRules,
-    pricingState.showProgressBar,
-    pricingState.showFooter,
-    pricingState.discountMessagingEnabled,
-    ruleMessages,
-    selectedCollections,
-    conditionsState.stepConditions,
-    bundleProduct,
-    productStatus,
-    shopify
-  ]);
-
-  // Function to enhance template list with user's selected template
-  const enhanceTemplateListWithUserSelection = useCallback((templates: any[]) => {
-    if (!formState.templateName || formState.templateName.trim() === '') {
-      return templates;
-    }
-
-    const userTemplateHandle = formState.templateName.startsWith('product.') ? formState.templateName : `product.${formState.templateName}`;
-
-    // Check if user's template already exists in the list
-    const templateExists = templates.some(t => t.handle === userTemplateHandle || t.handle === formState.templateName);
-
-    if (!templateExists) {
-      // Add user's selected template at the top of the list
-      const userTemplate = {
-        id: userTemplateHandle,
-        title: `🎯 ${formState.templateName} (Your Selection)`,
-        handle: userTemplateHandle,
-        description: `Custom template "${formState.templateName}" - your selected bundle container template`,
-        recommended: true,
-        bundleRelevant: true,
-        fileType: 'User Selected',
-        fullKey: `templates/${userTemplateHandle}.liquid`,
-        isBundleContainer: true,
-        isUserSelected: true
-      };
-
-      return [userTemplate, ...templates];
-    }
-
-    // If template exists, mark it as user selected
-    return templates.map(t => {
-      if (t.handle === userTemplateHandle || t.handle === formState.templateName) {
-        return {
-          ...t,
-          title: `🎯 ${t.title} (Your Selection)`,
-          recommended: true,
-          isUserSelected: true
-        };
-      }
-      return t;
-    });
-  }, [formState.templateName]);
-
-  // Handle fetcher response
-  useEffect(() => {
-    if (fetcher.data && fetcher.state === 'idle') {
-      const result = fetcher.data;
-
-      // Handle different action types based on the response or form data
-      if (result.success) {
-        // Check if this was a save bundle action by looking for bundle data in response
-        if ('bundle' in result && result.bundle) {
-          // This is a save bundle response
-          setOriginalValues({
-            status: formState.bundleStatus,
-            name: formState.bundleName,
-            description: formState.bundleDescription,
-            templateName: formState.templateName,
-            steps: JSON.stringify(stepsState.steps),
-            discountEnabled: pricingState.discountEnabled,
-            discountType: pricingState.discountType,
-            discountRules: JSON.stringify(pricingState.discountRules),
-            showProgressBar: pricingState.showProgressBar,
-            showFooter: pricingState.showFooter,
-            discountMessagingEnabled: pricingState.discountMessagingEnabled,
-            selectedCollections: JSON.stringify(selectedCollections),
-            ruleMessages: JSON.stringify(ruleMessages),
-            stepConditions: JSON.stringify(conditionsState.stepConditions),
-            bundleProduct: bundleProduct || null,
-            productStatus: productStatus,
-          });
-
-          shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
-        } else if ('productId' in result && result.productId) {
-          // This is a sync product response
-          const syncMessage = ('message' in result ? result.message : null) || "Product synced successfully";
-          shopify.toast.show(syncMessage, { isError: false });
-
-          // Show detailed sync information if available
-          if ('syncedData' in result && result.syncedData) {
-            const syncedData = result.syncedData as any;
-            const { title, status, lastUpdated, changesDetected } = syncedData;
-            AppLogger.debug('Sync data:', { title, status, lastUpdated, changesDetected });
-
-            // If changes were detected and applied, show additional notification
-            if (changesDetected) {
-              setTimeout(() => {
-                shopify.toast.show("Bundle data updated with changes from Shopify product", { isError: false });
-              }, 2000);
-            }
-          }
-
-          // Note: Removed forced page reload to preserve unsaved UI changes
-          // The sync updates metafields but doesn't affect the current UI state
-        } else if ('templates' in result && result.templates) {
-          // This is a get theme templates response
-          const rawTemplates = (result as any).templates || [];
-          const enhancedTemplates = enhanceTemplateListWithUserSelection(rawTemplates);
-          setAvailablePages(enhancedTemplates);
-          setIsLoadingPages(false);
-        } else if ('themeId' in result && result.themeId) {
-          // This is a get current theme response - handled by individual callbacks
-        } else {
-          // Generic success response
-          shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });
-        }
-      } else {
-        // Handle errors based on action type
-        const errorMessage = ('error' in result ? result.error : null) || "Operation failed";
-        shopify.toast.show(errorMessage, { isError: true });
-
-        // Handle specific error cases
-        if (errorMessage.includes("pages") || errorMessage.includes("templates")) {
-          setIsLoadingPages(false);
-        }
-      }
-    }
-  }, [
-    fetcher.data,
-    fetcher.state,
-    formState.bundleStatus,
-    formState.bundleName,
-    formState.bundleDescription,
-    formState.templateName,
-    stepsState.steps,
-    pricingState.discountEnabled,
-    pricingState.discountType,
-    pricingState.discountRules,
-    pricingState.showProgressBar,
-    pricingState.showFooter,
-    pricingState.discountMessagingEnabled,
-    selectedCollections,
-    ruleMessages,
-    conditionsState.stepConditions,
-    bundleProduct,
-    productStatus,
-    shopify,
-    enhanceTemplateListWithUserSelection
-  ]);
-
-  // Discard handler
-  const handleDiscard = useCallback(() => {
-    try {
-      // Reset to original values using hook setters
-      formState.setBundleStatus(originalValues.status);
-      formState.setBundleName(originalValues.name);
-      formState.setBundleDescription(originalValues.description);
-      formState.setTemplateName(originalValues.templateName);
-      stepsState.setSteps(JSON.parse(originalValues.steps));
-      pricingState.setDiscountEnabled(originalValues.discountEnabled);
-      pricingState.setDiscountType(originalValues.discountType as DiscountMethod);
-      pricingState.setDiscountRules(JSON.parse(originalValues.discountRules));
-      pricingState.setShowProgressBar(originalValues.showProgressBar);
-      pricingState.setShowFooter(originalValues.showFooter);
-      pricingState.setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
-      setSelectedCollections(JSON.parse(originalValues.selectedCollections));
-      setRuleMessages(JSON.parse(originalValues.ruleMessages));
-      conditionsState.setStepConditions(JSON.parse(originalValues.stepConditions));
-      // Keep the loaded bundle product instead of resetting to null
-      setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
-      setProductStatus(originalValues.productStatus);
-
-      shopify.toast.show("Changes discarded", { isError: false });
-    } catch (error) {
-      AppLogger.error("Error discarding changes:", {}, error as any);
-      shopify.toast.show("Error discarding changes", { isError: true });
-    }
-  }, [originalValues, loadedBundleProduct, shopify]);
-
-  // Emergency force navigation state for escape hatch
-  const [forceNavigation, setForceNavigation] = useState(false);
-
-  // Navigation handlers with unsaved changes check
-  const handleBackClick = useCallback(() => {
-    if (hasUnsavedChanges && !forceNavigation) {
-      // Show user-friendly message about unsaved changes with force option
-      const proceed = confirm(
-        "You have unsaved changes. Are you sure you want to leave this page?\n\n" +
-        "Click 'OK' to leave anyway (changes will be lost)\n" +
-        "Click 'Cancel' to stay and save your changes"
-      );
-
-      if (proceed) {
-        setForceNavigation(true);
-        // Force navigation even with unsaved changes
-        navigate("/app/bundles/cart-transform");
-      } else {
-        shopify.toast.show("Save or discard your changes to continue", {
-          isError: true,
-          duration: 4000
-        });
-      }
-      return;
-    }
-    navigate("/app/bundles/cart-transform");
-  }, [hasUnsavedChanges, forceNavigation, navigate, shopify]);
-
-  const handlePreviewBundle = useCallback(() => {
-    if (hasUnsavedChanges) {
-      // Show user-friendly message about unsaved changes
-      shopify.toast.show("Please save your changes before previewing the bundle", {
-        isError: true,
-        duration: 4000
-      });
-      return;
-    }
-
-    // Check if bundle product exists
-    if (!bundleProduct) {
-      shopify.toast.show("Bundle product not found. Please select a bundle product first.", {
-        isError: true,
-        duration: 4000
-      });
-      return;
-    }
-
-    // Try different URL construction methods
-    let productUrl = null;
-
-    AppLogger.debug('Bundle product data for preview:', {
-      id: bundleProduct.id,
-      handle: bundleProduct.handle,
-      status: bundleProduct.status,
-      publishedOnCurrentPublication: bundleProduct.status === 'ACTIVE',
-      onlineStoreUrl: bundleProduct.onlineStoreUrl,
-      onlineStorePreviewUrl: bundleProduct.onlineStorePreviewUrl,
-      shop: shop
+    // Condition rules management
+    const conditionsState = useBundleConditions({
+      initialStepConditions: initializeStepConditions(),
+      onTriggerSaveBar: formState.triggerSaveBar
     });
 
-    // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
-    if (bundleProduct.onlineStorePreviewUrl) {
-      productUrl = bundleProduct.onlineStorePreviewUrl;
-    }
-    // Method 2: Fallback to onlineStoreUrl if preview URL not available
-    else if (bundleProduct.onlineStoreUrl) {
-      productUrl = bundleProduct.onlineStoreUrl;
-    }
-    // Method 3: Construct URL based on shop type (development vs live store)
-    else if (bundleProduct.handle) {
-      if (shop.includes('shopifypreview.com')) {
-        // For development stores with shopifypreview.com domain
-        productUrl = `https://${shop}/products/${bundleProduct.handle}`;
-      } else {
-        // For live stores or development stores with myshopify.com
-        const shopDomain = shop.includes('.myshopify.com')
-          ? shop.replace('.myshopify.com', '')
-          : shop;
-        productUrl = `https://${shopDomain}.myshopify.com/products/${bundleProduct.handle}`;
-      }
-    }
-    // Method 4: Fallback - Extract ID and use admin URL
-    else if (bundleProduct.id) {
-      const productId = bundleProduct.id.includes('gid://shopify/Product/')
-        ? bundleProduct.id.split('/').pop()
-        : bundleProduct.id;
-
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop.split('.')[0]; // Extract first part of domain
-
-      productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
-    }
-
-    if (productUrl) {
-      window.open(productUrl, '_blank');
-
-      // Show appropriate success message based on the URL type used
-      const isPreviewUrl = productUrl === bundleProduct.onlineStorePreviewUrl;
-      const message = isPreviewUrl
-        ? "Bundle product preview opened in new tab"
-        : "Bundle product opened in new tab";
-
-      shopify.toast.show(message, { isError: false });
-    } else {
-      AppLogger.error('Bundle product data:', {}, bundleProduct);
-      shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
-        isError: true,
-        duration: 5000
-      });
-    }
-  }, [hasUnsavedChanges, bundleProduct, shop, shopify]);
-
-  const handleSectionChange = useCallback((section: string) => {
-    if (hasUnsavedChanges) {
-      // Show user-friendly message about unsaved changes
-      shopify.toast.show("Please save or discard your changes before switching sections", {
-        isError: true,
-        duration: 4000
-      });
-      return;
-    }
-
-    setActiveSection(section);
-  }, [hasUnsavedChanges, activeSection, shopify]);
-
-  // Modal handlers for products and collections view
-  // handleShowProducts and handleShowCollections removed - modals managed inline
-
-  const handleCloseProductsModal = useCallback(() => {
-    setIsProductsModalOpen(false);
-    setCurrentModalStepId('');
-  }, []);
-
-  const handleCloseCollectionsModal = useCallback(() => {
-    setIsCollectionsModalOpen(false);
-    setCurrentModalStepId('');
-  }, []);
-
-  // Step management functions
-
-
-  // NOTE: toggleStepExpansion, getUniqueProductCount, updateStepField, addConditionRule,
-  // removeConditionRule, updateConditionRule are now provided by stepsState and conditionsState hooks
-
-  // Product selection handlers
-  const handleProductSelection = useCallback(async (stepId: string) => {
-    try {
-      const step = stepsState.steps.find(s => s.id === stepId);
-      const currentProducts = step?.StepProduct || [];
-
-      // Build selectionIds from StepProduct
-      // When loaded from DB: use productId field
-      // When from resource picker: use id field
-      // If variants exist and are selected, include them in the format needed by resource picker
-      const selectionIds = currentProducts.map((p: any) => {
-        const productGid = p.productId || p.id; // productId from DB, id from picker
-        AppLogger.debug(`🔍 [SELECTION_ID] Product: ${p.title}, productId: ${p.productId}, id: ${p.id}, using: ${productGid}`);
-
-        // Check if this product has specific variants selected
-        // If variants array exists and has items, include them in selectionIds
-        if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
-          const variantIds = p.variants.map((v: any) => ({ id: v.id }));
-          AppLogger.debug(`🔍 [SELECTION_ID] Product ${p.title} has ${p.variants.length} variants:`, variantIds);
-          return {
-            id: productGid,
-            variants: variantIds
-          };
-        }
-
-        return { id: productGid };
-      });
-
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] Total items in StepProduct:", {}, `${currentProducts.length}`);
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] Selection IDs being sent to picker:", {}, `${selectionIds.length}`);
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] StepProduct data structure:", {}, currentProducts.length > 0 ? Object.keys(currentProducts[0]) : 'empty');
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] StepProduct sample:", {}, JSON.stringify(currentProducts.slice(0, 2), null, 2));
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] Selection IDs being sent to resource picker:", {}, JSON.stringify(selectionIds, null, 2));
-
-      AppLogger.debug("🚀 [RESOURCE_PICKER] Opening resource picker with config:", {
-        type: "product",
-        multiple: true,
-        selectionIds: selectionIds
-      });
-
-      const products = await shopify.resourcePicker({
-        type: "product",
-        multiple: true,
-        selectionIds: selectionIds,
-      });
-
-      AppLogger.debug("✅ [RESOURCE_PICKER] Resource picker closed. Received selection:", {}, products ? "YES" : "NO");
-
-      if (products && products.selection) {
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] Previous products count:", {}, currentProducts.length);
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] New products count:", {}, products.selection.length);
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] Full response from picker:", {}, JSON.stringify(products, null, 2));
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] Raw products from resource picker:", {}, JSON.stringify(products.selection.slice(0, 2), null, 2));
-
-        // Transform products to include imageUrl from images array
-        const transformedProducts = products.selection.map((product: any) => {
-          const imageUrl = product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null;
-          AppLogger.debug(`📸 [PRODUCT_SELECTION] Transforming ${product.title}: images array =`, {}, `${JSON.stringify(product.images)} → imageUrl = ${imageUrl}`);
-          return {
-            ...product,
-            imageUrl: imageUrl
-          };
-        });
-
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] Transformed products with imageUrl:", {}, JSON.stringify(transformedProducts.slice(0, 2), null, 2));
-
-        // Update the step with selected products (this replaces the entire selection)
-        // Deselected products will not be in the selection array, so they're automatically removed
-        stepsState.setSteps(stepsState.steps.map(step =>
-          step.id === stepId
-            ? { ...step, StepProduct: transformedProducts }
-            : step
-        ) as any);
-
-        // Trigger save bar for product selection changes
-        formState.triggerSaveBar();
-
-        const addedCount = transformedProducts.length - currentProducts.length;
-        const message = addedCount > 0
-          ? `Added ${addedCount} product${addedCount !== 1 ? 's' : ''}!`
-          : addedCount < 0
-            ? `Removed ${Math.abs(addedCount)} product${Math.abs(addedCount) !== 1 ? 's' : ''}!`
-            : transformedProducts.length === 0
-              ? "All products removed"
-              : "Products updated successfully!";
-
-        shopify.toast.show(message);
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      AppLogger.debug("Product selection cancelled or failed:", {}, error as any);
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select products", { isError: true });
-      }
-    }
-  }, [stepsState.steps, stepsState.setSteps, shopify, formState.triggerSaveBar]);
-
-  const handleSyncProduct = useCallback(() => {
-    try {
-
-      // Show loading toast
-      shopify.toast.show("Syncing bundle product with Shopify...", { isError: false });
-
-      // Prepare form data for sync operation
-      const formData = new FormData();
-      formData.append("intent", "syncProduct");
-
-      // Submit to server action using fetcher
-      fetcher.submit(formData, { method: "post" });
-
-      // Response will be handled by the existing useEffect
-    } catch (error) {
-      AppLogger.error("Product sync failed:", {}, error as any);
-      shopify.toast.show((error as Error).message || "Failed to sync product", { isError: true });
-    }
-  }, [fetcher, shopify]);
-
-  const handleBundleProductSelect = useCallback(async () => {
-    try {
-      const products = await shopify.resourcePicker({
-        type: "product",
-        multiple: false,
-      });
-
-      if (products && products.length > 0) {
-        const selectedProduct = products[0];
-        setBundleProduct(selectedProduct);
-
-        // Trigger save bar immediately after bundle product selection
-        formState.triggerSaveBar();
-
-        shopify.toast.show("Bundle product updated successfully", { isError: false });
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      AppLogger.debug("Bundle product selection cancelled or failed:", {}, error as any);
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select bundle product", { isError: true });
-      }
-    }
-  }, [shopify]);
-
-
-  // Step management handlers
-  const cloneStep = useCallback((stepId: string) => {
-    const stepToClone = stepsState.steps.find(step => step.id === stepId);
-    if (stepToClone) {
-      const newStep = {
-        ...stepToClone,
-        id: `step-${Date.now()}`,
-        name: `${stepToClone.name} (Copy)`,
-        StepProduct: stepToClone.StepProduct || []
-      };
-      stepsState.setSteps(prev => {
-        const stepIndex = prev.findIndex(step => step.id === stepId);
-        const newSteps = [...prev];
-        newSteps.splice(stepIndex + 1, 0, newStep);
-
-        // Update the hidden form input immediately to trigger save bar
-        setTimeout(() => {
-          const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
-          if (stepsInput) {
-            stepsInput.value = JSON.stringify(newSteps);
-            // Trigger an input event to notify App Bridge of the change
-            const event = new Event('input', { bubbles: true });
-            stepsInput.dispatchEvent(event);
-          }
-        }, 0);
-
-        return newSteps;
-      });
-      shopify.toast.show("Step cloned successfully", { isError: false });
-    }
-  }, [stepsState.steps, stepsState.setSteps, shopify]);
-
-  const deleteStep = useCallback((stepId: string) => {
-    if (stepsState.steps.length <= 1) {
-      shopify.toast.show("Cannot delete the last step", { isError: true });
-      return;
-    }
-
-    // Use hook's removeStep which handles expandedSteps cleanup
-    stepsState.removeStep(stepId);
-
-    // Manual DOM manipulation for immediate save bar trigger
-    setTimeout(() => {
-      const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
-      if (stepsInput) {
-        stepsInput.value = JSON.stringify(stepsState.steps.filter(s => s.id !== stepId));
-        const event = new Event('input', { bubbles: true });
-        stepsInput.dispatchEvent(event);
-      }
-    }, 0);
-  }, [stepsState]);
-
-  // Drag and drop state
-  const [draggedStep, setDraggedStep] = useState<string | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  // Drag and drop handlers
-  const handleDragStart = useCallback((e: React.DragEvent, stepId: string, _index: number) => {
-    setDraggedStep(stepId);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/html", stepId);
-
-    // Add visual feedback by setting drag image
-    const dragElement = e.currentTarget as HTMLElement;
-    dragElement.style.opacity = "0.5";
-  }, []);
-
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    setDraggedStep(null);
-    setDragOverIndex(null);
-
-    // Reset visual feedback
-    const dragElement = e.currentTarget as HTMLElement;
-    dragElement.style.opacity = "1";
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverIndex(index);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only clear if we're leaving the container entirely
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setDragOverIndex(null);
-    }
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-
-    if (!draggedStep) return;
-
-    const dragIndex = stepsState.steps.findIndex(step => step.id === draggedStep);
-
-    if (dragIndex !== -1 && dragIndex !== dropIndex) {
-      stepsState.setSteps(prev => {
-        const newSteps = [...prev];
-        const draggedStepData = newSteps[dragIndex];
-        newSteps.splice(dragIndex, 1);
-        newSteps.splice(dropIndex, 0, draggedStepData);
-
-        // Update the hidden form input immediately to trigger save bar
-        setTimeout(() => {
-          const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
-          if (stepsInput) {
-            stepsInput.value = JSON.stringify(newSteps);
-            // Trigger an input event to notify App Bridge of the change
-            const event = new Event('input', { bubbles: true });
-            stepsInput.dispatchEvent(event);
-          }
-        }, 0);
-
-        return newSteps;
-      });
-
-      shopify.toast.show("Step reordered successfully", { isError: false });
-    }
-
-    setDraggedStep(null);
-    setDragOverIndex(null);
-  }, [draggedStep, stepsState.steps, stepsState.setSteps, shopify]);
-
-  // NOTE: addStep is now provided by stepsState hook
-
-  // Collection management handlers
-  const handleCollectionSelection = useCallback(async (stepId: string) => {
-    try {
-      const currentCollections = selectedCollections[stepId] || [];
-
-      const collections = await shopify.resourcePicker({
-        type: "collection",
-        multiple: true,
-        selectionIds: currentCollections.map((c: any) => ({ id: c.id })),
-      });
-
-      if (collections && collections.length > 0) {
-        AppLogger.debug("🔍 [COLLECTION_SELECTION] Previous collections count:", {}, currentCollections.length);
-        AppLogger.debug("🔍 [COLLECTION_SELECTION] New collections count:", {}, collections.length);
-
-        setSelectedCollections(prev => ({
-          ...prev,
-          [stepId]: collections as any
-        }));
-
-        // Trigger save bar for collection selection changes
-        formState.triggerSaveBar();
-
-        const addedCount = collections.length - currentCollections.length;
-        const message = addedCount > 0
-          ? `Added ${addedCount} collection${addedCount !== 1 ? 's' : ''}!`
-          : addedCount < 0
-            ? `Removed ${Math.abs(addedCount)} collection${Math.abs(addedCount) !== 1 ? 's' : ''}!`
-            : "Collections updated successfully!";
-
-        shopify.toast.show(message, { isError: false });
-      } else if (collections && collections.length === 0) {
-        // User deselected all collections
-        setSelectedCollections(prev => ({
-          ...prev,
-          [stepId]: []
-        }));
-        formState.triggerSaveBar();
-        shopify.toast.show("All collections removed", { isError: false });
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      AppLogger.debug("Collection selection cancelled or failed:", {}, error as any);
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select collections", { isError: true });
-      }
-    }
-  }, [shopify, formState.triggerSaveBar, selectedCollections]);
-
-  // NOTE: Discount rule management (addDiscountRule, removeDiscountRule, updateDiscountRule)
-  // is now provided by pricingState hook
-
-  // Rule message management
-  const updateRuleMessage = useCallback((ruleId: string, field: 'discountText' | 'successMessage', value: string) => {
-    setRuleMessages(prev => ({
-      ...prev,
-      [ruleId]: {
-        ...prev[ruleId],
-        [field]: value
-      }
+    AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
+
+    // Transform StepProduct to use productId as id (not the database UUID)
+    const transformedSteps = (bundle.steps || []).map((step: any) => ({
+      ...step,
+      StepProduct: (step.StepProduct || []).map((sp: any) => ({
+        ...sp,
+        id: sp.productId,  // Use productId (Shopify GID) as id, not database UUID
+      }))
     }));
 
-    // Trigger save bar for rule message changes
-    formState.triggerSaveBar();
-  }, [formState.triggerSaveBar]);
+    // Steps management
+    const stepsState = useBundleSteps({
+      initialSteps: transformedSteps,
+      onTriggerSaveBar: formState.triggerSaveBar,
+      shopify
+    });
 
-  // Function to load available theme templates
-  const loadAvailablePages = useCallback(() => {
-    setIsLoadingPages(true);
-    try {
-      const formData = new FormData();
-      formData.append("intent", "getThemeTemplates");
+    // Pricing management
+    const pricingState = useBundlePricing({
+      initialPricing: bundle.pricing,
+      onTriggerSaveBar: formState.triggerSaveBar
+    });
 
-      fetcher.submit(formData, { method: "post" });
-      // Response will be handled by the existing useEffect
-    } catch (error) {
-      AppLogger.error("Failed to load theme templates:", {}, error as any);
-      shopify.toast.show("Failed to load theme templates", { isError: true });
-      setIsLoadingPages(false);
-    }
-  }, [fetcher, shopify]);
 
-  // Place widget handlers with page selection modal
-  const handlePlaceWidget = useCallback(() => {
-    try {
-      setIsPageSelectionModalOpen(true);
-      loadAvailablePages();
-    } catch (error) {
-      AppLogger.error('Error opening page selection:', {}, error as any);
-      shopify.toast.show("Failed to open page selection", { isError: true });
-    }
-  }, [loadAvailablePages, shopify]);
+    // State for page selection modal
+    const [isPageSelectionModalOpen, setIsPageSelectionModalOpen] = useState(false);
+    const [availablePages, setAvailablePages] = useState<any[]>([]);
+    const [isLoadingPages, setIsLoadingPages] = useState(false);
+    const [selectedPage, setSelectedPage] = useState<any>(null);
 
-  const handlePageSelection = useCallback(async (template: any) => {
-    try {
-      if (!template || !template.handle) {
-        AppLogger.error('🚨 [THEME_EDITOR] Invalid template object:', {}, template);
-        shopify.toast.show("Template data is invalid", { isError: true });
-        return;
-      }
+    // State for products/collections view modals
+    const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
+    const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
+    const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
 
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop;
+    // State for bundle product - initialize with loaded data
+    const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct || null);
+    const [productStatus, setProductStatus] = useState(loadedBundleProduct?.status || "ACTIVE");
 
-      shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
-      AppLogger.debug(`🎯 [THEME_EDITOR] Starting widget placement for template: ${template.handle}`);
-
-      // Create a theme template service instance
-      // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
-      // For now, we'll use the existing approach but add template creation via API call
-
-      // Check if this is a bundle-specific template that needs to be created
-      if (template.isBundleContainer && template.bundleProduct) {
-        AppLogger.debug(`🏗️ [THEME_EDITOR] Ensuring template exists for bundle product: ${template.bundleProduct.handle}`);
-
-        // Make API call to create template if needed
-        const createTemplateResponse = await fetch(`/api/ensure-product-template`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            productHandle: template.bundleProduct.handle,
-            bundleId: bundle.id
-          })
-        });
-
-        if (!createTemplateResponse.ok) {
-          AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
-          shopify.toast.show("Failed to prepare product template", { isError: true });
-          return;
+    // State for collections - initialize with data from loaded bundle steps
+    const [selectedCollections, setSelectedCollections] = useState<Record<string, any[]>>(() => {
+      const collections: Record<string, any[]> = {};
+      bundle.steps?.forEach(step => {
+        if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
+          collections[step.id] = step.collections;
         }
+      });
+      return collections;
+    });
 
-        const templateResult = await createTemplateResponse.json();
-        AppLogger.debug(`✅ [THEME_EDITOR] Template preparation result:`, templateResult);
+    // NOTE: Discount & pricing state now managed by pricingState hook above
+    // NOTE: Rule-specific messaging still uses local state (not extracted to hook yet)
+    const [ruleMessages, setRuleMessages] = useState<Record<string, { discountText: string; successMessage: string }>>({});
 
-        if (templateResult.created) {
-          shopify.toast.show(`Created new template for ${template.bundleProduct.handle}`, { isError: false, duration: 4000 });
-        }
-      }
+    // UI state for section navigation (expandedSteps and selectedTab now from stepsState hook)
+    const [activeSection, setActiveSection] = useState('step_setup');
 
-      // Use correct extension UUID from environment variable
-      const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
-      const blockHandle = 'bundle-builder'; // Match the extension handle
-      const appBlockId = `${extensionUuid}/${blockHandle}`;
+    // Track original values for change detection - initialize with loaded data to prevent false positives
+    const [originalValues, setOriginalValues] = useState({
+      status: formState.bundleStatus,
+      name: formState.bundleName,
+      description: formState.bundleDescription,
+      templateName: formState.templateName,
+      steps: JSON.stringify(
+        (bundle.steps || []).map((step: any) => ({
+          ...step,
+          StepProduct: (step.StepProduct || []).map((sp: any) => ({
+            ...sp,
+            id: sp.productId,  // Transform to use Shopify GID, not database UUID
+          }))
+        }))
+      ),
+      discountEnabled: pricingState.discountEnabled,
+      discountType: pricingState.discountType,
+      discountRules: JSON.stringify(pricingState.discountRules),
+      showProgressBar: pricingState.showProgressBar,
+      showFooter: pricingState.showFooter,
+      discountMessagingEnabled: pricingState.discountMessagingEnabled,
+      selectedCollections: JSON.stringify({}),
+      ruleMessages: JSON.stringify({}),
+      stepConditions: JSON.stringify(conditionsState.stepConditions),
+      bundleProduct: loadedBundleProduct || null,
+      productStatus: loadedBundleProduct?.status || "ACTIVE",
+    });
 
-      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
+    // Track if there are unsaved changes
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-      // Generate simple deep link following Shopify's official documentation
-      // Official format: template + addAppBlockId + target
-      // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
-      //
-      // Note: activate=true and previewPath are NOT in official docs and don't work reliably
-      // This simple format opens the theme editor with the block ready to add
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
+    // NOTE: triggerSaveBar and dismissSaveBar are now provided by formState hook
 
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link:`, {}, themeEditorUrl);
+    // Check for changes whenever form values change
+    useEffect(() => {
+      // Helper function to safely compare bundle products
+      const compareBundleProducts = (current: any, original: any) => {
+        if (!current && !original) return true;
+        if (!current || !original) return false;
+        return current.id === original.id;
+      };
 
-      setSelectedPage(template);
-      setIsPageSelectionModalOpen(false);
+      const stepSetupChanges = (
+        formState.bundleName !== originalValues.name ||
+        formState.bundleDescription !== originalValues.description ||
+        formState.templateName !== originalValues.templateName ||
+        JSON.stringify(stepsState.steps) !== originalValues.steps ||
+        JSON.stringify(selectedCollections) !== originalValues.selectedCollections ||
+        JSON.stringify(conditionsState.stepConditions) !== originalValues.stepConditions ||
+        !compareBundleProducts(bundleProduct, originalValues.bundleProduct) ||
+        productStatus !== originalValues.productStatus
+      );
 
-      // Use App Bridge redirect (not window.open) to avoid popup blockers
-      // This navigates the entire app frame to the theme editor
-      shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
-      AppLogger.debug(`✅ [THEME_EDITOR] Navigating to theme editor via App Bridge`);
+      const discountPricingChanges = (
+        pricingState.discountEnabled !== originalValues.discountEnabled ||
+        pricingState.discountType !== originalValues.discountType ||
+        JSON.stringify(pricingState.discountRules) !== originalValues.discountRules ||
+        pricingState.showProgressBar !== originalValues.showProgressBar ||
+        pricingState.showFooter !== originalValues.showFooter ||
+        pricingState.discountMessagingEnabled !== originalValues.discountMessagingEnabled ||
+        JSON.stringify(ruleMessages) !== originalValues.ruleMessages
+      );
 
-      // Use App Bridge redirect - this avoids popup blockers
-      window.open(themeEditorUrl, '_top');
+      const bundleStatusChanges = (
+        formState.bundleStatus !== originalValues.status
+      );
 
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
-      shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true });
-    }
-  }, [shop, shopify, bundle.id]);
+      const hasChanges = stepSetupChanges || discountPricingChanges || bundleStatusChanges;
 
-  // Bundle setup navigation items
-  const bundleSetupItems = [
-    { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
-    { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
-    // Bundle Upsell and Bundle Settings disabled for later release
-    // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
-    // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
-  ];
+      setHasUnsavedChanges(hasChanges);
 
-  const statusOptions = [
-    { label: "Active", value: "active" },
-    { label: "Draft", value: "draft" },
-    { label: "Unlisted", value: "archived" },
-  ];
+      // Simplified save bar management - no timeout
+      // Note: SaveBar visibility is now controlled by hasUnsavedChanges state in render
+      // if (hasChanges) {
+      //   formState.triggerSaveBar();
+      // } else {
+      //   formState.dismissSaveBar();
+      // }
+    }, [
+      formState.bundleStatus,
+      formState.bundleName,
+      formState.bundleDescription,
+      formState.templateName,
+      formState.triggerSaveBar,
+      formState.dismissSaveBar,
+      stepsState.steps,
+      pricingState.discountEnabled,
+      pricingState.discountType,
+      pricingState.discountRules,
+      pricingState.showProgressBar,
+      pricingState.showFooter,
+      pricingState.discountMessagingEnabled,
+      ruleMessages,
+      selectedCollections,
+      conditionsState.stepConditions,
+      bundleProduct,
+      productStatus,
+      originalValues
+    ]);
 
+    // Save handler
+    const handleSave = useCallback(async () => {
+      try {
+        // Prepare form data for submission
+        const formData = new FormData();
+        formData.append("intent", "saveBundle");
+        formData.append("bundleName", formState.bundleName);
+        formData.append("bundleDescription", formState.bundleDescription);
+        formData.append("templateName", formState.templateName);
+        formData.append("bundleStatus", formState.bundleStatus);
+        // Merge collections data into steps before saving
+        const stepsWithCollections = stepsState.steps.map(step => ({
+          ...step,
+          collections: selectedCollections[step.id] || step.collections || []
+        }));
 
-  return (
-    <Page
-      title={`Configure: ${formState.bundleName}`}
-      subtitle="Set up your cart transform bundle configuration"
-      backAction={{
-        content: "Cart Transform Bundles",
-        onAction: handleBackClick,
-      }}
-      primaryAction={{
-        content: "Preview Bundle",
-        onAction: handlePreviewBundle,
-        icon: ViewIcon,
-        disabled: !bundleProduct || stepsState.steps.length === 0,
-      }}
-    >
-      {/* Modern App Bridge contextual save bar using form with data-save-bar */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSave();
-        }}
-        onReset={(e) => {
-          e.preventDefault();
-          handleDiscard();
-        }}
-      >
-        {/* SaveBar component for manual control over loading state */}
-        {(hasUnsavedChanges || fetcher.state !== "idle") && (
-          <SaveBar id="bundle-save-bar">
-            <button
-              variant="primary"
-              onClick={handleSave}
-              loading={fetcher.state !== "idle"}
-              disabled={fetcher.state !== "idle"}
-            >
-              Save
-            </button>
-            <button
-              onClick={handleDiscard}
-              disabled={fetcher.state !== "idle"}
-            >
-              Discard
-            </button>
-          </SaveBar>
-        )}
-        {/* Hidden inputs for form submission - values will be updated by React state changes */}
-        <input type="hidden" name="bundleName" value={formState.bundleName} />
-        <input type="hidden" name="bundleDescription" value={formState.bundleDescription} />
-        <input type="hidden" name="templateName" value={formState.templateName} />
-        <input type="hidden" name="bundleStatus" value={formState.bundleStatus} />
-        <input type="hidden" name="bundleProduct" value={JSON.stringify(bundleProduct)} />
-        <input type="hidden" name="stepsData" value={JSON.stringify(stepsState.steps)} />
-        <input type="hidden" name="discountData" value={JSON.stringify({
+        formData.append("stepsData", JSON.stringify(stepsWithCollections));
+        formData.append("discountData", JSON.stringify({
           discountEnabled: pricingState.discountEnabled,
           discountType: pricingState.discountType,
           discountRules: pricingState.discountRules,
-          showFooter: pricingState.showFooter,
-          showProgressBar: pricingState.showProgressBar,
           discountMessagingEnabled: pricingState.discountMessagingEnabled,
           ruleMessages
-        })} />
-        <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
+        }));
+        formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
+        formData.append("bundleProduct", JSON.stringify(bundleProduct));
+        AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
+        AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
+
+        // Submit to server action using fetcher
+
+        fetcher.submit(formData, { method: "post" });
+
+        // Note: With useFetcher, we need to handle the response via useEffect
+        // The immediate return here will be handled by the fetcher response
+        return;
+      } catch (error) {
+        AppLogger.error("Save failed:", {}, error as any);
+        shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true });
+      }
+    }, [
+      formState.bundleStatus,
+      formState.bundleName,
+      formState.bundleDescription,
+      formState.templateName,
+      stepsState.steps,
+      pricingState.discountEnabled,
+      pricingState.discountType,
+      pricingState.discountRules,
+      pricingState.showProgressBar,
+      pricingState.showFooter,
+      pricingState.discountMessagingEnabled,
+      ruleMessages,
+      selectedCollections,
+      conditionsState.stepConditions,
+      bundleProduct,
+      productStatus,
+      shopify
+    ]);
+
+    // Function to enhance template list with user's selected template
+    const enhanceTemplateListWithUserSelection = useCallback((templates: any[]) => {
+      if (!formState.templateName || formState.templateName.trim() === '') {
+        return templates;
+      }
+
+      const userTemplateHandle = formState.templateName.startsWith('product.') ? formState.templateName : `product.${formState.templateName}`;
+
+      // Check if user's template already exists in the list
+      const templateExists = templates.some(t => t.handle === userTemplateHandle || t.handle === formState.templateName);
+
+      if (!templateExists) {
+        // Add user's selected template at the top of the list
+        const userTemplate = {
+          id: userTemplateHandle,
+          title: `🎯 ${formState.templateName} (Your Selection)`,
+          handle: userTemplateHandle,
+          description: `Custom template "${formState.templateName}" - your selected bundle container template`,
+          recommended: true,
+          bundleRelevant: true,
+          fileType: 'User Selected',
+          fullKey: `templates/${userTemplateHandle}.liquid`,
+          isBundleContainer: true,
+          isUserSelected: true
+        };
+
+        return [userTemplate, ...templates];
+      }
+
+      // If template exists, mark it as user selected
+      return templates.map(t => {
+        if (t.handle === userTemplateHandle || t.handle === formState.templateName) {
+          return {
+            ...t,
+            title: `🎯 ${t.title} (Your Selection)`,
+            recommended: true,
+            isUserSelected: true
+          };
+        }
+        return t;
+      });
+    }, [formState.templateName]);
+
+    // Handle fetcher response
+    useEffect(() => {
+      if (fetcher.data && fetcher.state === 'idle') {
+        const result = fetcher.data;
+
+        // Handle different action types based on the response or form data
+        if (result.success) {
+          // Check if this was a save bundle action by looking for bundle data in response
+          if ('bundle' in result && result.bundle) {
+            // This is a save bundle response
+            setOriginalValues({
+              status: formState.bundleStatus,
+              name: formState.bundleName,
+              description: formState.bundleDescription,
+              templateName: formState.templateName,
+              steps: JSON.stringify(stepsState.steps),
+              discountEnabled: pricingState.discountEnabled,
+              discountType: pricingState.discountType,
+              discountRules: JSON.stringify(pricingState.discountRules),
+              showProgressBar: pricingState.showProgressBar,
+              showFooter: pricingState.showFooter,
+              discountMessagingEnabled: pricingState.discountMessagingEnabled,
+              selectedCollections: JSON.stringify(selectedCollections),
+              ruleMessages: JSON.stringify(ruleMessages),
+              stepConditions: JSON.stringify(conditionsState.stepConditions),
+              bundleProduct: bundleProduct || null,
+              productStatus: productStatus,
+            });
+
+            shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
+          } else if ('productId' in result && result.productId) {
+            // This is a sync product response
+            const syncMessage = ('message' in result ? result.message : null) || "Product synced successfully";
+            shopify.toast.show(syncMessage, { isError: false });
+
+            // Show detailed sync information if available
+            if ('syncedData' in result && result.syncedData) {
+              const syncedData = result.syncedData as any;
+              const { title, status, lastUpdated, changesDetected } = syncedData;
+              AppLogger.debug('Sync data:', { title, status, lastUpdated, changesDetected });
+
+              // If changes were detected and applied, show additional notification
+              if (changesDetected) {
+                setTimeout(() => {
+                  shopify.toast.show("Bundle data updated with changes from Shopify product", { isError: false });
+                }, 2000);
+              }
+            }
+
+            // Note: Removed forced page reload to preserve unsaved UI changes
+            // The sync updates metafields but doesn't affect the current UI state
+          } else if ('templates' in result && result.templates) {
+            // This is a get theme templates response
+            const rawTemplates = (result as any).templates || [];
+            const enhancedTemplates = enhanceTemplateListWithUserSelection(rawTemplates);
+            setAvailablePages(enhancedTemplates);
+            setIsLoadingPages(false);
+          } else if ('themeId' in result && result.themeId) {
+            // This is a get current theme response - handled by individual callbacks
+          } else {
+            // Generic success response
+            shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });
+          }
+        } else {
+          // Handle errors based on action type
+          const errorMessage = ('error' in result ? result.error : null) || "Operation failed";
+          shopify.toast.show(errorMessage, { isError: true });
+
+          // Handle specific error cases
+          if (errorMessage.includes("pages") || errorMessage.includes("templates")) {
+            setIsLoadingPages(false);
+          }
+        }
+      }
+    }, [
+      fetcher.data,
+      fetcher.state,
+      formState.bundleStatus,
+      formState.bundleName,
+      formState.bundleDescription,
+      formState.templateName,
+      stepsState.steps,
+      pricingState.discountEnabled,
+      pricingState.discountType,
+      pricingState.discountRules,
+      pricingState.showProgressBar,
+      pricingState.showFooter,
+      pricingState.discountMessagingEnabled,
+      selectedCollections,
+      ruleMessages,
+      conditionsState.stepConditions,
+      bundleProduct,
+      productStatus,
+      shopify,
+      enhanceTemplateListWithUserSelection
+    ]);
+
+    // Discard handler
+    const handleDiscard = useCallback(() => {
+      try {
+        // Reset to original values using hook setters
+        formState.setBundleStatus(originalValues.status);
+        formState.setBundleName(originalValues.name);
+        formState.setBundleDescription(originalValues.description);
+        formState.setTemplateName(originalValues.templateName);
+        stepsState.setSteps(JSON.parse(originalValues.steps));
+        pricingState.setDiscountEnabled(originalValues.discountEnabled);
+        pricingState.setDiscountType(originalValues.discountType as DiscountMethod);
+        pricingState.setDiscountRules(JSON.parse(originalValues.discountRules));
+        pricingState.setShowProgressBar(originalValues.showProgressBar);
+        pricingState.setShowFooter(originalValues.showFooter);
+        pricingState.setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
+        setSelectedCollections(JSON.parse(originalValues.selectedCollections));
+        setRuleMessages(JSON.parse(originalValues.ruleMessages));
+        conditionsState.setStepConditions(JSON.parse(originalValues.stepConditions));
+        // Keep the loaded bundle product instead of resetting to null
+        setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
+        setProductStatus(originalValues.productStatus);
+
+        shopify.toast.show("Changes discarded", { isError: false });
+      } catch (error) {
+        AppLogger.error("Error discarding changes:", {}, error as any);
+        shopify.toast.show("Error discarding changes", { isError: true });
+      }
+    }, [originalValues, loadedBundleProduct, shopify]);
+
+    // Emergency force navigation state for escape hatch
+    const [forceNavigation, setForceNavigation] = useState(false);
+
+    // Navigation handlers with unsaved changes check
+    const handleBackClick = useCallback(() => {
+      if (hasUnsavedChanges && !forceNavigation) {
+        // Show user-friendly message about unsaved changes with force option
+        const proceed = confirm(
+          "You have unsaved changes. Are you sure you want to leave this page?\n\n" +
+          "Click 'OK' to leave anyway (changes will be lost)\n" +
+          "Click 'Cancel' to stay and save your changes"
+        );
+
+        if (proceed) {
+          setForceNavigation(true);
+          // Force navigation even with unsaved changes
+          navigate("/app/bundles/cart-transform");
+        } else {
+          shopify.toast.show("Save or discard your changes to continue", {
+            isError: true,
+            duration: 4000
+          });
+        }
+        return;
+      }
+      navigate("/app/bundles/cart-transform");
+    }, [hasUnsavedChanges, forceNavigation, navigate, shopify]);
+
+    const handlePreviewBundle = useCallback(() => {
+      if (hasUnsavedChanges) {
+        // Show user-friendly message about unsaved changes
+        shopify.toast.show("Please save your changes before previewing the bundle", {
+          isError: true,
+          duration: 4000
+        });
+        return;
+      }
+
+      // Check if bundle product exists
+      if (!bundleProduct) {
+        shopify.toast.show("Bundle product not found. Please select a bundle product first.", {
+          isError: true,
+          duration: 4000
+        });
+        return;
+      }
+
+      // Try different URL construction methods
+      let productUrl = null;
+
+      AppLogger.debug('Bundle product data for preview:', {
+        id: bundleProduct.id,
+        handle: bundleProduct.handle,
+        status: bundleProduct.status,
+        publishedOnCurrentPublication: bundleProduct.status === 'ACTIVE',
+        onlineStoreUrl: bundleProduct.onlineStoreUrl,
+        onlineStorePreviewUrl: bundleProduct.onlineStorePreviewUrl,
+        shop: shop
+      });
+
+      // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
+      if (bundleProduct.onlineStorePreviewUrl) {
+        productUrl = bundleProduct.onlineStorePreviewUrl;
+      }
+      // Method 2: Fallback to onlineStoreUrl if preview URL not available
+      else if (bundleProduct.onlineStoreUrl) {
+        productUrl = bundleProduct.onlineStoreUrl;
+      }
+      // Method 3: Construct URL based on shop type (development vs live store)
+      else if (bundleProduct.handle) {
+        if (shop.includes('shopifypreview.com')) {
+          // For development stores with shopifypreview.com domain
+          productUrl = `https://${shop}/products/${bundleProduct.handle}`;
+        } else {
+          // For live stores or development stores with myshopify.com
+          const shopDomain = shop.includes('.myshopify.com')
+            ? shop.replace('.myshopify.com', '')
+            : shop;
+          productUrl = `https://${shopDomain}.myshopify.com/products/${bundleProduct.handle}`;
+        }
+      }
+      // Method 4: Fallback - Extract ID and use admin URL
+      else if (bundleProduct.id) {
+        const productId = bundleProduct.id.includes('gid://shopify/Product/')
+          ? bundleProduct.id.split('/').pop()
+          : bundleProduct.id;
+
+        const shopDomain = shop.includes('.myshopify.com')
+          ? shop.replace('.myshopify.com', '')
+          : shop.split('.')[0]; // Extract first part of domain
+
+        productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
+      }
+
+      if (productUrl) {
+        window.open(productUrl, '_blank');
+
+        // Show appropriate success message based on the URL type used
+        const isPreviewUrl = productUrl === bundleProduct.onlineStorePreviewUrl;
+        const message = isPreviewUrl
+          ? "Bundle product preview opened in new tab"
+          : "Bundle product opened in new tab";
+
+        shopify.toast.show(message, { isError: false });
+      } else {
+        AppLogger.error('Bundle product data:', {}, bundleProduct);
+        shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
+          isError: true,
+          duration: 5000
+        });
+      }
+    }, [hasUnsavedChanges, bundleProduct, shop, shopify]);
+
+    const handleSectionChange = useCallback((section: string) => {
+      if (hasUnsavedChanges) {
+        // Show user-friendly message about unsaved changes
+        shopify.toast.show("Please save or discard your changes before switching sections", {
+          isError: true,
+          duration: 4000
+        });
+        return;
+      }
+
+      setActiveSection(section);
+    }, [hasUnsavedChanges, activeSection, shopify]);
+
+    // Modal handlers for products and collections view
+    // handleShowProducts and handleShowCollections removed - modals managed inline
+
+    const handleCloseProductsModal = useCallback(() => {
+      setIsProductsModalOpen(false);
+      setCurrentModalStepId('');
+    }, []);
+
+    const handleCloseCollectionsModal = useCallback(() => {
+      setIsCollectionsModalOpen(false);
+      setCurrentModalStepId('');
+    }, []);
+
+    // Step management functions
+
+
+    // NOTE: toggleStepExpansion, getUniqueProductCount, updateStepField, addConditionRule,
+    // removeConditionRule, updateConditionRule are now provided by stepsState and conditionsState hooks
+
+    // Product selection handlers
+    const handleProductSelection = useCallback(async (stepId: string) => {
+      try {
+        const step = stepsState.steps.find(s => s.id === stepId);
+        const currentProducts = step?.StepProduct || [];
+
+        // Build selectionIds from StepProduct
+        // When loaded from DB: use productId field
+        // When from resource picker: use id field
+        // If variants exist and are selected, include them in the format needed by resource picker
+        const selectionIds = currentProducts.map((p: any) => {
+          const productGid = p.productId || p.id; // productId from DB, id from picker
+          AppLogger.debug(`🔍 [SELECTION_ID] Product: ${p.title}, productId: ${p.productId}, id: ${p.id}, using: ${productGid}`);
+
+          // Check if this product has specific variants selected
+          // If variants array exists and has items, include them in selectionIds
+          if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
+            const variantIds = p.variants.map((v: any) => ({ id: v.id }));
+            AppLogger.debug(`🔍 [SELECTION_ID] Product ${p.title} has ${p.variants.length} variants:`, variantIds);
+            return {
+              id: productGid,
+              variants: variantIds
+            };
+          }
+
+          return { id: productGid };
+        });
+
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] Total items in StepProduct:", {}, `${currentProducts.length}`);
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] Selection IDs being sent to picker:", {}, `${selectionIds.length}`);
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] StepProduct data structure:", {}, currentProducts.length > 0 ? Object.keys(currentProducts[0]) : 'empty');
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] StepProduct sample:", {}, JSON.stringify(currentProducts.slice(0, 2), null, 2));
+        AppLogger.debug("🔍 [PRODUCT_SELECTION] Selection IDs being sent to resource picker:", {}, JSON.stringify(selectionIds, null, 2));
+
+        AppLogger.debug("🚀 [RESOURCE_PICKER] Opening resource picker with config:", {
+          type: "product",
+          multiple: true,
+          selectionIds: selectionIds
+        });
+
+        const products = await shopify.resourcePicker({
+          type: "product",
+          multiple: true,
+          selectionIds: selectionIds,
+        });
+
+        AppLogger.debug("✅ [RESOURCE_PICKER] Resource picker closed. Received selection:", {}, products ? "YES" : "NO");
+
+        if (products && products.selection) {
+          AppLogger.debug("🔍 [PRODUCT_SELECTION] Previous products count:", {}, currentProducts.length);
+          AppLogger.debug("🔍 [PRODUCT_SELECTION] New products count:", {}, products.selection.length);
+          AppLogger.debug("🔍 [PRODUCT_SELECTION] Full response from picker:", {}, JSON.stringify(products, null, 2));
+          AppLogger.debug("🔍 [PRODUCT_SELECTION] Raw products from resource picker:", {}, JSON.stringify(products.selection.slice(0, 2), null, 2));
+
+          // Transform products to include imageUrl from images array
+          const transformedProducts = products.selection.map((product: any) => {
+            const imageUrl = product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null;
+            AppLogger.debug(`📸 [PRODUCT_SELECTION] Transforming ${product.title}: images array =`, {}, `${JSON.stringify(product.images)} → imageUrl = ${imageUrl}`);
+            return {
+              ...product,
+              imageUrl: imageUrl
+            };
+          });
+
+          AppLogger.debug("🔍 [PRODUCT_SELECTION] Transformed products with imageUrl:", {}, JSON.stringify(transformedProducts.slice(0, 2), null, 2));
+
+          // Update the step with selected products (this replaces the entire selection)
+          // Deselected products will not be in the selection array, so they're automatically removed
+          stepsState.setSteps(stepsState.steps.map(step =>
+            step.id === stepId
+              ? { ...step, StepProduct: transformedProducts }
+              : step
+          ) as any);
+
+          // Trigger save bar for product selection changes
+          formState.triggerSaveBar();
+
+          const addedCount = transformedProducts.length - currentProducts.length;
+          const message = addedCount > 0
+            ? `Added ${addedCount} product${addedCount !== 1 ? 's' : ''}!`
+            : addedCount < 0
+              ? `Removed ${Math.abs(addedCount)} product${Math.abs(addedCount) !== 1 ? 's' : ''}!`
+              : transformedProducts.length === 0
+                ? "All products removed"
+                : "Products updated successfully!";
+
+          shopify.toast.show(message);
+        }
+      } catch (error) {
+        // Resource picker throws an error when user cancels - this is expected behavior
+        AppLogger.debug("Product selection cancelled or failed:", {}, error as any);
+        // Enhanced error detection to catch more cancellation patterns
+        const errorMessage = typeof error === 'string' ? error :
+          (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
+
+        const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
+          errorMessage?.toLowerCase().includes('abort') ||
+          errorMessage?.toLowerCase().includes('dismiss') ||
+          errorMessage?.toLowerCase().includes('close') ||
+          error === null || error === undefined;
+
+        // Only show error toast for actual errors, not user cancellations
+        if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
+          shopify.toast.show("Failed to select products", { isError: true });
+        }
+      }
+    }, [stepsState.steps, stepsState.setSteps, shopify, formState.triggerSaveBar]);
+
+    const handleSyncProduct = useCallback(() => {
+      try {
+
+        // Show loading toast
+        shopify.toast.show("Syncing bundle product with Shopify...", { isError: false });
+
+        // Prepare form data for sync operation
+        const formData = new FormData();
+        formData.append("intent", "syncProduct");
+
+        // Submit to server action using fetcher
+        fetcher.submit(formData, { method: "post" });
+
+        // Response will be handled by the existing useEffect
+      } catch (error) {
+        AppLogger.error("Product sync failed:", {}, error as any);
+        shopify.toast.show((error as Error).message || "Failed to sync product", { isError: true });
+      }
+    }, [fetcher, shopify]);
+
+    const handleBundleProductSelect = useCallback(async () => {
+      try {
+        const products = await shopify.resourcePicker({
+          type: "product",
+          multiple: false,
+        });
+
+        if (products && products.length > 0) {
+          const selectedProduct = products[0];
+          setBundleProduct(selectedProduct);
+
+          // Trigger save bar immediately after bundle product selection
+          formState.triggerSaveBar();
+
+          shopify.toast.show("Bundle product updated successfully", { isError: false });
+        }
+      } catch (error) {
+        // Resource picker throws an error when user cancels - this is expected behavior
+        AppLogger.debug("Bundle product selection cancelled or failed:", {}, error as any);
+        // Enhanced error detection to catch more cancellation patterns
+        const errorMessage = typeof error === 'string' ? error :
+          (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
+
+        const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
+          errorMessage?.toLowerCase().includes('abort') ||
+          errorMessage?.toLowerCase().includes('dismiss') ||
+          errorMessage?.toLowerCase().includes('close') ||
+          error === null || error === undefined;
+
+        // Only show error toast for actual errors, not user cancellations
+        if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
+          shopify.toast.show("Failed to select bundle product", { isError: true });
+        }
+      }
+    }, [shopify]);
+
+
+    // Step management handlers
+    const cloneStep = useCallback((stepId: string) => {
+      const stepToClone = stepsState.steps.find(step => step.id === stepId);
+      if (stepToClone) {
+        const newStep = {
+          ...stepToClone,
+          id: `step-${Date.now()}`,
+          name: `${stepToClone.name} (Copy)`,
+          StepProduct: stepToClone.StepProduct || []
+        };
+        stepsState.setSteps(prev => {
+          const stepIndex = prev.findIndex(step => step.id === stepId);
+          const newSteps = [...prev];
+          newSteps.splice(stepIndex + 1, 0, newStep);
+
+          // Update the hidden form input immediately to trigger save bar
+          setTimeout(() => {
+            const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
+            if (stepsInput) {
+              stepsInput.value = JSON.stringify(newSteps);
+              // Trigger an input event to notify App Bridge of the change
+              const event = new Event('input', { bubbles: true });
+              stepsInput.dispatchEvent(event);
+            }
+          }, 0);
+
+          return newSteps;
+        });
+        shopify.toast.show("Step cloned successfully", { isError: false });
+      }
+    }, [stepsState.steps, stepsState.setSteps, shopify]);
+
+    const deleteStep = useCallback((stepId: string) => {
+      if (stepsState.steps.length <= 1) {
+        shopify.toast.show("Cannot delete the last step", { isError: true });
+        return;
+      }
+
+      // Use hook's removeStep which handles expandedSteps cleanup
+      stepsState.removeStep(stepId);
+
+      // Manual DOM manipulation for immediate save bar trigger
+      setTimeout(() => {
+        const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
+        if (stepsInput) {
+          stepsInput.value = JSON.stringify(stepsState.steps.filter(s => s.id !== stepId));
+          const event = new Event('input', { bubbles: true });
+          stepsInput.dispatchEvent(event);
+        }
+      }, 0);
+    }, [stepsState]);
+
+    // Drag and drop state
+    const [draggedStep, setDraggedStep] = useState<string | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+    // Drag and drop handlers
+    const handleDragStart = useCallback((e: React.DragEvent, stepId: string, _index: number) => {
+      setDraggedStep(stepId);
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/html", stepId);
+
+      // Add visual feedback by setting drag image
+      const dragElement = e.currentTarget as HTMLElement;
+      dragElement.style.opacity = "0.5";
+    }, []);
+
+    const handleDragEnd = useCallback((e: React.DragEvent) => {
+      setDraggedStep(null);
+      setDragOverIndex(null);
+
+      // Reset visual feedback
+      const dragElement = e.currentTarget as HTMLElement;
+      dragElement.style.opacity = "1";
+    }, []);
+
+    const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDragOverIndex(index);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+      // Only clear if we're leaving the container entirely
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        setDragOverIndex(null);
+      }
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
+      e.preventDefault();
+
+      if (!draggedStep) return;
+
+      const dragIndex = stepsState.steps.findIndex(step => step.id === draggedStep);
+
+      if (dragIndex !== -1 && dragIndex !== dropIndex) {
+        stepsState.setSteps(prev => {
+          const newSteps = [...prev];
+          const draggedStepData = newSteps[dragIndex];
+          newSteps.splice(dragIndex, 1);
+          newSteps.splice(dropIndex, 0, draggedStepData);
+
+          // Update the hidden form input immediately to trigger save bar
+          setTimeout(() => {
+            const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
+            if (stepsInput) {
+              stepsInput.value = JSON.stringify(newSteps);
+              // Trigger an input event to notify App Bridge of the change
+              const event = new Event('input', { bubbles: true });
+              stepsInput.dispatchEvent(event);
+            }
+          }, 0);
+
+          return newSteps;
+        });
+
+        shopify.toast.show("Step reordered successfully", { isError: false });
+      }
+
+      setDraggedStep(null);
+      setDragOverIndex(null);
+    }, [draggedStep, stepsState.steps, stepsState.setSteps, shopify]);
+
+    // NOTE: addStep is now provided by stepsState hook
+
+    // Collection management handlers
+    const handleCollectionSelection = useCallback(async (stepId: string) => {
+      try {
+        const currentCollections = selectedCollections[stepId] || [];
+
+        const collections = await shopify.resourcePicker({
+          type: "collection",
+          multiple: true,
+          selectionIds: currentCollections.map((c: any) => ({ id: c.id })),
+        });
+
+        if (collections && collections.length > 0) {
+          AppLogger.debug("🔍 [COLLECTION_SELECTION] Previous collections count:", {}, currentCollections.length);
+          AppLogger.debug("🔍 [COLLECTION_SELECTION] New collections count:", {}, collections.length);
+
+          setSelectedCollections(prev => ({
+            ...prev,
+            [stepId]: collections as any
+          }));
+
+          // Trigger save bar for collection selection changes
+          formState.triggerSaveBar();
+
+          const addedCount = collections.length - currentCollections.length;
+          const message = addedCount > 0
+            ? `Added ${addedCount} collection${addedCount !== 1 ? 's' : ''}!`
+            : addedCount < 0
+              ? `Removed ${Math.abs(addedCount)} collection${Math.abs(addedCount) !== 1 ? 's' : ''}!`
+              : "Collections updated successfully!";
+
+          shopify.toast.show(message, { isError: false });
+        } else if (collections && collections.length === 0) {
+          // User deselected all collections
+          setSelectedCollections(prev => ({
+            ...prev,
+            [stepId]: []
+          }));
+          formState.triggerSaveBar();
+          shopify.toast.show("All collections removed", { isError: false });
+        }
+      } catch (error) {
+        // Resource picker throws an error when user cancels - this is expected behavior
+        AppLogger.debug("Collection selection cancelled or failed:", {}, error as any);
+        // Enhanced error detection to catch more cancellation patterns
+        const errorMessage = typeof error === 'string' ? error :
+          (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
+
+        const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
+          errorMessage?.toLowerCase().includes('abort') ||
+          errorMessage?.toLowerCase().includes('dismiss') ||
+          errorMessage?.toLowerCase().includes('close') ||
+          error === null || error === undefined;
+
+        // Only show error toast for actual errors, not user cancellations
+        if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
+          shopify.toast.show("Failed to select collections", { isError: true });
+        }
+      }
+    }, [shopify, formState.triggerSaveBar, selectedCollections]);
+
+    // NOTE: Discount rule management (addDiscountRule, removeDiscountRule, updateDiscountRule)
+    // is now provided by pricingState hook
+
+    // Rule message management
+    const updateRuleMessage = useCallback((ruleId: string, field: 'discountText' | 'successMessage', value: string) => {
+      setRuleMessages(prev => ({
+        ...prev,
+        [ruleId]: {
+          ...prev[ruleId],
+          [field]: value
+        }
+      }));
+
+      // Trigger save bar for rule message changes
+      formState.triggerSaveBar();
+    }, [formState.triggerSaveBar]);
+
+    // Function to load available theme templates
+    const loadAvailablePages = useCallback(() => {
+      setIsLoadingPages(true);
+      try {
+        const formData = new FormData();
+        formData.append("intent", "getThemeTemplates");
+
+        fetcher.submit(formData, { method: "post" });
+        // Response will be handled by the existing useEffect
+      } catch (error) {
+        AppLogger.error("Failed to load theme templates:", {}, error as any);
+        shopify.toast.show("Failed to load theme templates", { isError: true });
+        setIsLoadingPages(false);
+      }
+    }, [fetcher, shopify]);
+
+    // Place widget handlers with page selection modal
+    const handlePlaceWidget = useCallback(() => {
+      try {
+        setIsPageSelectionModalOpen(true);
+        loadAvailablePages();
+      } catch (error) {
+        AppLogger.error('Error opening page selection:', {}, error as any);
+        shopify.toast.show("Failed to open page selection", { isError: true });
+      }
+    }, [loadAvailablePages, shopify]);
+
+    const handlePageSelection = useCallback(async (template: any) => {
+      try {
+        if (!template || !template.handle) {
+          AppLogger.error('🚨 [THEME_EDITOR] Invalid template object:', {}, template);
+          shopify.toast.show("Template data is invalid", { isError: true });
+          return;
+        }
+
+        const shopDomain = shop.includes('.myshopify.com')
+          ? shop.replace('.myshopify.com', '')
+          : shop;
+
+        shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
+        AppLogger.debug(`🎯 [THEME_EDITOR] Starting widget placement for template: ${template.handle}`);
+
+        // Create a theme template service instance
+        // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
+        // For now, we'll use the existing approach but add template creation via API call
+
+        // Check if this is a bundle-specific template that needs to be created
+        if (template.isBundleContainer && template.bundleProduct) {
+          AppLogger.debug(`🏗️ [THEME_EDITOR] Ensuring template exists for bundle product: ${template.bundleProduct.handle}`);
+
+          // Make API call to create template if needed
+          const createTemplateResponse = await fetch(`/api/ensure-product-template`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              productHandle: template.bundleProduct.handle,
+              bundleId: bundle.id
+            })
+          });
+
+          if (!createTemplateResponse.ok) {
+            AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
+            shopify.toast.show("Failed to prepare product template", { isError: true });
+            return;
+          }
+
+          const templateResult = await createTemplateResponse.json();
+          AppLogger.debug(`✅ [THEME_EDITOR] Template preparation result:`, templateResult);
+
+          if (templateResult.created) {
+            shopify.toast.show(`Created new template for ${template.bundleProduct.handle}`, { isError: false, duration: 4000 });
+          }
+        }
+
+        // Use correct extension UUID from environment variable
+        const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
+        const blockHandle = 'bundle-builder'; // Match the extension handle
+        const appBlockId = `${extensionUuid}/${blockHandle}`;
+
+        AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
+
+        // Generate simple deep link following Shopify's official documentation
+        // Official format: template + addAppBlockId + target
+        // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
+        //
+        // Note: activate=true and previewPath are NOT in official docs and don't work reliably
+        // This simple format opens the theme editor with the block ready to add
+        const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
+
+        AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link:`, {}, themeEditorUrl);
+
+        setSelectedPage(template);
+        setIsPageSelectionModalOpen(false);
+
+        // Use App Bridge redirect (not window.open) to avoid popup blockers
+        // This navigates the entire app frame to the theme editor
+        shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
+        AppLogger.debug(`✅ [THEME_EDITOR] Navigating to theme editor via App Bridge`);
+
+        // Use App Bridge redirect - this avoids popup blockers
+        window.open(themeEditorUrl, '_top');
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
+        shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true });
+      }
+    }, [shop, shopify, bundle.id]);
+
+    // Bundle setup navigation items
+    const bundleSetupItems = [
+      { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
+      { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
+      // Bundle Upsell and Bundle Settings disabled for later release
+      // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
+      // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
+    ];
+
+    const statusOptions = [
+      { label: "Active", value: "active" },
+      { label: "Draft", value: "draft" },
+      { label: "Unlisted", value: "archived" },
+    ];
+
+
+    return (
+      <Page
+        title={`Configure: ${formState.bundleName}`}
+        subtitle="Set up your cart transform bundle configuration"
+        backAction={{
+          content: "Cart Transform Bundles",
+          onAction: handleBackClick,
+        }}
+        primaryAction={{
+          content: "Preview Bundle",
+          onAction: handlePreviewBundle,
+          icon: ViewIcon,
+          disabled: !bundleProduct || stepsState.steps.length === 0,
+        }}
+      >
+        {/* Modern App Bridge contextual save bar using form with data-save-bar */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+          onReset={(e) => {
+            e.preventDefault();
+            handleDiscard();
+          }}
+        >
+          {/* SaveBar component for manual control over loading state */}
+          {(hasUnsavedChanges || fetcher.state !== "idle") && (
+            <SaveBar id="bundle-save-bar">
+              <button
+                variant="primary"
+                onClick={handleSave}
+                loading={fetcher.state !== "idle"}
+                disabled={fetcher.state !== "idle"}
+              >
+                Save
+              </button>
+              <button
+                onClick={handleDiscard}
+                disabled={fetcher.state !== "idle"}
+              >
+                Discard
+              </button>
+            </SaveBar>
+          )}
+          {/* Hidden inputs for form submission - values will be updated by React state changes */}
+          <input type="hidden" name="bundleName" value={formState.bundleName} />
+          <input type="hidden" name="bundleDescription" value={formState.bundleDescription} />
+          <input type="hidden" name="templateName" value={formState.templateName} />
+          <input type="hidden" name="bundleStatus" value={formState.bundleStatus} />
+          <input type="hidden" name="bundleProduct" value={JSON.stringify(bundleProduct)} />
+          <input type="hidden" name="stepsData" value={JSON.stringify(stepsState.steps)} />
+          <input type="hidden" name="discountData" value={JSON.stringify({
+            discountEnabled: pricingState.discountEnabled,
+            discountType: pricingState.discountType,
+            discountRules: pricingState.discountRules,
+            showFooter: pricingState.showFooter,
+            showProgressBar: pricingState.showProgressBar,
+            discountMessagingEnabled: pricingState.discountMessagingEnabled,
+            ruleMessages
+          })} />
+          <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
 
 
 
-        <Layout>
-          {/* Left Sidebar */}
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="400">
-              {/* Bundle Setup Navigation Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">
-                    Bundle Setup
-                  </Text>
-                  <Text variant="bodySm" tone="subdued" as="p">
-                    Set-up your bundle builder
-                  </Text>
-
-                  <BlockStack gap="100">
-                    {bundleSetupItems.map((item) => (
-                      <Button
-                        key={item.id}
-                        variant={activeSection === item.id ? "primary" : "tertiary"}
-                        fullWidth
-                        textAlign="start"
-                        icon={item.icon}
-                        disabled={false}
-                        onClick={() => handleSectionChange(item.id)}
-                      >
-                        {item.label}
-                      </Button>
-                    ))}
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-
-              {/* Bundle Product Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
+          <Layout>
+            {/* Left Sidebar */}
+            <Layout.Section variant="oneThird">
+              <BlockStack gap="400">
+                {/* Bundle Setup Navigation Card */}
+                <Card>
+                  <BlockStack gap="300">
                     <Text variant="headingSm" as="h3">
-                      Bundle Product
+                      Bundle Setup
                     </Text>
-                    <Button
-                      variant="plain"
-                      tone="critical"
-                      onClick={handleSyncProduct}
-                    >
-                      Sync Product
-                    </Button>
-                  </InlineStack>
-
-                  {bundleProduct ? (
-                    <InlineStack gap="300" blockAlign="center">
-                      <Thumbnail
-                        source={bundleProduct.featuredImage?.url || bundleProduct.images?.[0]?.originalSrc || "/bundle.png"}
-                        alt={bundleProduct.title || "Bundle Product"}
-                        size="small"
-                      />
-                      <InlineStack gap="200" blockAlign="center">
-                        <Button
-                          variant="plain"
-                          url={`https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`}
-                          external
-                          icon={ExternalIcon}
-                        >
-                          {bundleProduct.title || "Untitled Product"}
-                        </Button>
-                        <Button
-                          variant="tertiary"
-                          size="micro"
-                          icon={RefreshIcon}
-                          onClick={handleBundleProductSelect}
-                          accessibilityLabel="Change bundle product"
-                        />
-                      </InlineStack>
-                    </InlineStack>
-                  ) : (
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: '80px',
-                      border: '1px dashed #ccc',
-                      borderRadius: '8px'
-                    }}>
-                      <BlockStack gap="100" inlineAlign="center">
-                        <Icon source={ProductIcon} />
-                        <Button
-                          variant="plain"
-                          onClick={handleBundleProductSelect}
-                        >
-                          Select Bundle Product
-                        </Button>
-                      </BlockStack>
-                    </div>
-                  )}
-
-                  {/* Bundle Status Dropdown */}
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h4">
-                      Bundle Status
+                    <Text variant="bodySm" tone="subdued" as="p">
+                      Set-up your bundle builder
                     </Text>
-                    <Select
-                      label="Bundle Status"
-                      options={statusOptions}
-                      value={formState.bundleStatus}
-                      onChange={(selected: string) => formState.setBundleStatus(selected as 'active' | 'draft' | 'archived')}
-                      labelHidden
-                    />
-                  </BlockStack>
-                </BlockStack>
-              </Card>
 
-              {/* Take your bundle live Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">
-                    Take your bundle live
-                  </Text>
-
-                  {/* Green recommendation banner for manual template creation */}
-                  <div style={{
-                    padding: '12px 16px',
-                    backgroundColor: '#e8f5e8',
-                    border: '1px solid #4caf50',
-                    borderRadius: '8px'
-                  }}>
-                    <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={RefreshIcon} tone="success" />
-                        <Text as="span" variant="bodyMd" fontWeight="medium" tone="success">
-                          💡 Pro Tip: Manual Template Creation
-                        </Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        For optimal bundle widget placement, manually create a product template named "cart-transform"
-                        in your theme's templates folder. This allows precise control over bundle widget positioning
-                        and ensures consistent styling across your store.
-                      </Text>
-                      <Text as="p" variant="bodyXs" tone="subdued">
-                        <strong>Video Tutorial:</strong> See our detailed video guide for step-by-step template creation instructions.
-                      </Text>
+                    <BlockStack gap="100">
+                      {bundleSetupItems.map((item) => (
+                        <Button
+                          key={item.id}
+                          variant={activeSection === item.id ? "primary" : "tertiary"}
+                          fullWidth
+                          textAlign="start"
+                          icon={item.icon}
+                          disabled={false}
+                          onClick={() => handleSectionChange(item.id)}
+                        >
+                          {item.label}
+                        </Button>
+                      ))}
                     </BlockStack>
-                  </div>
-
-                  {/* Template Selection */}
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h4">
-                      Bundle Container Template
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Select which product template will display this bundle widget
-                    </Text>
-                    <TextField
-                      label="Template Name"
-                      value={formState.templateName}
-                      onChange={formState.setTemplateName}
-                      placeholder="e.g., cart-transform, product, bundle-special"
-                      helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
-                      labelHidden
-                      autoComplete="off"
-                    />
                   </BlockStack>
+                </Card>
 
-                  <BlockStack gap="200">
+                {/* Bundle Product Card */}
+                <Card>
+                  <BlockStack gap="300">
                     <InlineStack align="space-between" blockAlign="center">
-                      <Text variant="bodyMd" as="p">
-                        Place on theme
+                      <Text variant="headingSm" as="h3">
+                        Bundle Product
                       </Text>
-                      <Button
-                        icon={SettingsIcon}
-                        onClick={handlePlaceWidget}
-                      >
-                        Place Widget
-                      </Button>
-                    </InlineStack>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Need help? Check out our{" "}
                       <Button
                         variant="plain"
-                        onClick={() => window.open('/app/onboarding', '_blank')}
+                        tone="critical"
+                        onClick={handleSyncProduct}
                       >
-                        setup guide
+                        Sync Product
                       </Button>
-                      {" "}for step-by-step instructions
-                    </Text>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-            </BlockStack>
-          </Layout.Section>
+                    </InlineStack>
 
-          {/* Main Content Area */}
-          <Layout.Section>
-            {activeSection === "step_setup" && (
-              <Card>
-                <BlockStack gap="400">
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h3">
-                      Bundle Steps
-                    </Text>
-                    <Text variant="bodyMd" tone="subdued" as="p">
-                      Create steps for your multi-step bundle here. Select product options for each step below
-                    </Text>
-                  </BlockStack>
+                    {bundleProduct ? (
+                      <InlineStack gap="300" blockAlign="center">
+                        <Thumbnail
+                          source={bundleProduct.featuredImage?.url || bundleProduct.images?.[0]?.originalSrc || "/bundle.png"}
+                          alt={bundleProduct.title || "Bundle Product"}
+                          size="small"
+                        />
+                        <InlineStack gap="200" blockAlign="center">
+                          <Button
+                            variant="plain"
+                            url={`https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`}
+                            external
+                            icon={ExternalIcon}
+                          >
+                            {bundleProduct.title || "Untitled Product"}
+                          </Button>
+                          <Button
+                            variant="tertiary"
+                            size="micro"
+                            icon={RefreshIcon}
+                            onClick={handleBundleProductSelect}
+                            accessibilityLabel="Change bundle product"
+                          />
+                        </InlineStack>
+                      </InlineStack>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '80px',
+                        border: '1px dashed #ccc',
+                        borderRadius: '8px'
+                      }}>
+                        <BlockStack gap="100" inlineAlign="center">
+                          <Icon source={ProductIcon} />
+                          <Button
+                            variant="plain"
+                            onClick={handleBundleProductSelect}
+                          >
+                            Select Bundle Product
+                          </Button>
+                        </BlockStack>
+                      </div>
+                    )}
 
-                  {/* Steps List */}
+                    {/* Bundle Status Dropdown */}
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h4">
+                        Bundle Status
+                      </Text>
+                      <Select
+                        label="Bundle Status"
+                        options={statusOptions}
+                        value={formState.bundleStatus}
+                        onChange={(selected: string) => formState.setBundleStatus(selected as 'active' | 'draft' | 'archived')}
+                        labelHidden
+                      />
+                    </BlockStack>
+                  </BlockStack>
+                </Card>
+
+                {/* Take your bundle live Card */}
+                <Card>
                   <BlockStack gap="300">
-                    {stepsState.steps.map((step, index) => (
-                      <Card
-                        key={step.id}
-                        background="bg-surface-secondary"
-                      >
-                        <div
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, step.id, index)}
-                          onDragEnd={handleDragEnd}
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, index)}
-                          style={{
-                            cursor: draggedStep === step.id ? 'grabbing' : 'grab',
-                            transition: 'all 0.2s ease',
-                            transform: dragOverIndex === index && draggedStep !== step.id ? 'translateY(-4px)' : 'translateY(0)',
-                            boxShadow: dragOverIndex === index && draggedStep !== step.id
-                              ? '0 8px 16px rgba(0,0,0,0.15), 0 0 0 2px rgba(33, 150, 243, 0.3)'
-                              : draggedStep === step.id
-                                ? '0 4px 12px rgba(0,0,0,0.2)'
-                                : 'none',
-                            opacity: draggedStep === step.id ? 0.6 : 1,
-                            border: dragOverIndex === index && draggedStep !== step.id
-                              ? '2px dashed rgba(33, 150, 243, 0.5)'
-                              : '2px solid transparent',
-                            borderRadius: '8px',
-                            position: 'relative' as const,
-                            zIndex: draggedStep === step.id ? 1000 : 1,
-                            background: dragOverIndex === index && draggedStep !== step.id
-                              ? 'rgba(33, 150, 243, 0.05)'
-                              : undefined
-                          }}
+                    <Text variant="headingSm" as="h3">
+                      Take your bundle live
+                    </Text>
+
+                    {/* Green recommendation banner for manual template creation */}
+                    <div style={{
+                      padding: '12px 16px',
+                      backgroundColor: '#e8f5e8',
+                      border: '1px solid #4caf50',
+                      borderRadius: '8px'
+                    }}>
+                      <BlockStack gap="200">
+                        <InlineStack gap="200" blockAlign="center">
+                          <Icon source={RefreshIcon} tone="success" />
+                          <Text as="span" variant="bodyMd" fontWeight="medium" tone="success">
+                            💡 Pro Tip: Manual Template Creation
+                          </Text>
+                        </InlineStack>
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          For optimal bundle widget placement, manually create a product template named "cart-transform"
+                          in your theme's templates folder. This allows precise control over bundle widget positioning
+                          and ensures consistent styling across your store.
+                        </Text>
+                        <Text as="p" variant="bodyXs" tone="subdued">
+                          <strong>Video Tutorial:</strong> See our detailed video guide for step-by-step template creation instructions.
+                        </Text>
+                      </BlockStack>
+                    </div>
+
+                    {/* Template Selection */}
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h4">
+                        Bundle Container Template
+                      </Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Select which product template will display this bundle widget
+                      </Text>
+                      <TextField
+                        label="Template Name"
+                        value={formState.templateName}
+                        onChange={formState.setTemplateName}
+                        placeholder="e.g., cart-transform, product, bundle-special"
+                        helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
+                        labelHidden
+                        autoComplete="off"
+                      />
+                    </BlockStack>
+
+                    <BlockStack gap="200">
+                      <InlineStack align="space-between" blockAlign="center">
+                        <Text variant="bodyMd" as="p">
+                          Place on theme
+                        </Text>
+                        <Button
+                          icon={SettingsIcon}
+                          onClick={handlePlaceWidget}
                         >
-                          <BlockStack gap="300">
-                            {/* Step Header */}
-                            <InlineStack align="space-between" blockAlign="center" gap="300">
-                              <InlineStack gap="200" blockAlign="center">
-                                <Icon source={DragHandleIcon} tone="subdued" />
-                                <Text variant="bodyMd" fontWeight="medium" as="p">
-                                  Step {index + 1}
-                                </Text>
-                              </InlineStack>
+                          Place Widget
+                        </Button>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Need help? Check out our{" "}
+                        <Button
+                          variant="plain"
+                          onClick={() => window.open('/app/onboarding', '_blank')}
+                        >
+                          setup guide
+                        </Button>
+                        {" "}for step-by-step instructions
+                      </Text>
+                    </BlockStack>
+                  </BlockStack>
+                </Card>
+              </BlockStack>
+            </Layout.Section>
 
-                              <InlineStack gap="100">
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  icon={DuplicateIcon}
-                                  onClick={() => cloneStep(step.id)}
-                                  accessibilityLabel="Clone step"
-                                />
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  tone="critical"
-                                  icon={DeleteIcon}
-                                  onClick={() => deleteStep(step.id)}
-                                  accessibilityLabel="Delete step"
-                                />
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  icon={stepsState.expandedSteps.has(step.id) ? ChevronUpIcon : ChevronDownIcon}
-                                  onClick={() => stepsState.toggleStepExpansion(step.id)}
-                                  accessibilityLabel={stepsState.expandedSteps.has(step.id) ? "Collapse step" : "Expand step"}
-                                />
-                              </InlineStack>
-                            </InlineStack>
+            {/* Main Content Area */}
+            <Layout.Section>
+              {activeSection === "step_setup" && (
+                <Card>
+                  <BlockStack gap="400">
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h3">
+                        Bundle Steps
+                      </Text>
+                      <Text variant="bodyMd" tone="subdued" as="p">
+                        Create steps for your multi-step bundle here. Select product options for each step below
+                      </Text>
+                    </BlockStack>
 
-                            {/* Expanded Step Content */}
-                            <Collapsible id={`step-${step.id}`} open={stepsState.expandedSteps.has(step.id)}>
-                              <BlockStack gap="400">
-                                {/* Step Name and Page Title */}
-                                <FormLayout>
-                                  <TextField
-                                    label="Step Name"
-                                    value={step.name}
-                                    onChange={(value) => stepsState.updateStepField(step.id, 'name', value)}
-                                    autoComplete="off"
-                                  />
-                                </FormLayout>
+                    {/* Steps List */}
+                    <BlockStack gap="300">
+                      {stepsState.steps.map((step, index) => (
+                        <Card
+                          key={step.id}
+                          background="bg-surface-secondary"
+                        >
+                          <div
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, step.id, index)}
+                            onDragEnd={handleDragEnd}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, index)}
+                            style={{
+                              cursor: draggedStep === step.id ? 'grabbing' : 'grab',
+                              transition: 'all 0.2s ease',
+                              transform: dragOverIndex === index && draggedStep !== step.id ? 'translateY(-4px)' : 'translateY(0)',
+                              boxShadow: dragOverIndex === index && draggedStep !== step.id
+                                ? '0 8px 16px rgba(0,0,0,0.15), 0 0 0 2px rgba(33, 150, 243, 0.3)'
+                                : draggedStep === step.id
+                                  ? '0 4px 12px rgba(0,0,0,0.2)'
+                                  : 'none',
+                              opacity: draggedStep === step.id ? 0.6 : 1,
+                              border: dragOverIndex === index && draggedStep !== step.id
+                                ? '2px dashed rgba(33, 150, 243, 0.5)'
+                                : '2px solid transparent',
+                              borderRadius: '8px',
+                              position: 'relative' as const,
+                              zIndex: draggedStep === step.id ? 1000 : 1,
+                              background: dragOverIndex === index && draggedStep !== step.id
+                                ? 'rgba(33, 150, 243, 0.05)'
+                                : undefined
+                            }}
+                          >
+                            <BlockStack gap="300">
+                              {/* Step Header */}
+                              <InlineStack align="space-between" blockAlign="center" gap="300">
+                                <InlineStack gap="200" blockAlign="center">
+                                  <Icon source={DragHandleIcon} tone="subdued" />
+                                  <Text variant="bodyMd" fontWeight="medium" as="p">
+                                    Step {index + 1}
+                                  </Text>
+                                </InlineStack>
 
-                                {/* Products/Collections Tabs */}
-                                <BlockStack gap="300">
-                                  <Tabs
-                                    tabs={[
-                                      {
-                                        id: 'products',
-                                        content: 'Products',
-                                        badge: step.StepProduct && step.StepProduct.length > 0 ? stepsState.getUniqueProductCount(step.StepProduct).toString() : undefined,
-                                      },
-                                      {
-                                        id: 'collections',
-                                        content: 'Collections',
-                                      },
-                                    ]}
-                                    selected={stepsState.selectedTab}
-                                    onSelect={stepsState.setSelectedTab}
-                                  />
-
-                                  {stepsState.selectedTab === 0 && (
-                                    <BlockStack gap="200">
-                                      <Text as="p" variant="bodyMd" tone="subdued">
-                                        Products selected here will be displayed on this step
-                                      </Text>
-                                      <InlineStack gap="200" align="start">
-                                        <Button
-                                          variant="primary"
-                                          size="medium"
-                                          onClick={() => handleProductSelection(step.id)}
-                                        >
-                                          Add Products
-                                        </Button>
-                                        {step.StepProduct && step.StepProduct.length > 0 && (
-                                          <Badge tone="info">
-                                            {`${stepsState.getUniqueProductCount(step.StepProduct)} Selected`}
-                                          </Badge>
-                                        )}
-                                      </InlineStack>
-                                      <Checkbox
-                                        label="Display variants as individual products"
-                                        checked={step.displayVariantsAsIndividual || false}
-                                        onChange={(checked) => stepsState.updateStepField(step.id, 'displayVariantsAsIndividual', checked)}
-                                      />
-                                    </BlockStack>
-                                  )}
-
-                                  {stepsState.selectedTab === 1 && (
-                                    <BlockStack gap="200">
-                                      <Text as="p" variant="bodyMd" tone="subdued">
-                                        Collections selected here will be displayed on this step
-                                      </Text>
-                                      <InlineStack gap="200" align="start">
-                                        <Button
-                                          variant="primary"
-                                          size="medium"
-                                          icon={CollectionIcon}
-                                          onClick={() => handleCollectionSelection(step.id)}
-                                        >
-                                          Add Collections
-                                        </Button>
-                                        {selectedCollections[step.id]?.length > 0 && (
-                                          <Badge tone="info">
-                                            {`${selectedCollections[step.id].length} Selected`}
-                                          </Badge>
-                                        )}
-                                      </InlineStack>
-
-                                      {/* Display selected collections */}
-                                      {selectedCollections[step.id]?.length > 0 && (
-                                        <BlockStack gap="100">
-                                          <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                            Selected Collections:
-                                          </Text>
-                                          <BlockStack gap="100">
-                                            {selectedCollections[step.id].map((collection: any) => (
-                                              <InlineStack key={collection.id} gap="200" blockAlign="center">
-                                                <Thumbnail
-                                                  source={collection.image?.url || "/bundle.png"}
-                                                  alt={collection.title}
-                                                  size="small"
-                                                />
-                                                <Text as="span" variant="bodyMd">{collection.title}</Text>
-                                                <Button
-                                                  variant="plain"
-                                                  size="micro"
-                                                  tone="critical"
-                                                  onClick={() => {
-                                                    setSelectedCollections(prev => ({
-                                                      ...prev,
-                                                      [step.id]: prev[step.id]?.filter(c => c.id !== collection.id) || []
-                                                    }));
-                                                  }}
-                                                >
-                                                  Remove
-                                                </Button>
-                                              </InlineStack>
-                                            ))}
-                                          </BlockStack>
-                                        </BlockStack>
-                                      )}
-                                    </BlockStack>
-                                  )}
-                                </BlockStack>
-
-                                {/* Conditions Section */}
-                                <BlockStack gap="300">
-                                  <BlockStack gap="100">
-                                    <Text variant="headingSm" as="h4">
-                                      Conditions
-                                    </Text>
-                                    <Text as="p" variant="bodyMd" tone="subdued">
-                                      Create Conditions based on amount or quantity of products added on this step.
-                                    </Text>
-                                    <Text as="p" variant="bodySm" tone="subdued">
-                                      Note: Conditions are only valid on this step
-                                    </Text>
-                                  </BlockStack>
-
-                                  {/* Existing Condition Rules */}
-                                  {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: any) => (
-                                    <Card key={rule.id} background="bg-surface-secondary">
-                                      <BlockStack gap="200">
-                                        <InlineStack align="space-between" blockAlign="center">
-                                          <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                            Condition #{ruleIndex + 1}
-                                          </Text>
-                                          <Button
-                                            variant="plain"
-                                            tone="critical"
-                                            onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
-                                          >
-                                            Remove
-                                          </Button>
-                                        </InlineStack>
-
-                                        <InlineStack gap="200" align="start">
-                                          <Select
-                                            label="Condition Type"
-                                            options={[
-                                              { label: 'Quantity', value: 'quantity' },
-                                              { label: 'Amount', value: 'amount' },
-                                            ]}
-                                            value={rule.type}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'type', value)}
-                                          />
-                                          <Select
-                                            label="Operator"
-                                            options={[
-                                              { label: 'is equal to', value: 'equal_to' },
-                                              { label: 'is greater than', value: 'greater_than' },
-                                              { label: 'is less than', value: 'less_than' },
-                                              { label: 'is greater than or equal to', value: 'greater_than_or_equal_to' },
-                                              { label: 'is less than or equal to', value: 'less_than_or_equal_to' },
-                                            ]}
-                                            value={rule.operator}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', value)}
-                                          />
-                                          <TextField
-                                            label="Value"
-                                            value={rule.value}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'value', value)}
-                                            autoComplete="off"
-                                            type="number"
-                                            min="0"
-                                          />
-                                        </InlineStack>
-                                      </BlockStack>
-                                    </Card>
-                                  ))}
-
+                                <InlineStack gap="100">
                                   <Button
                                     variant="tertiary"
-                                    fullWidth
-                                    icon={PlusIcon}
-                                    onClick={() => conditionsState.addConditionRule(step.id)}
-                                  >
-                                    Add Rule
-                                  </Button>
-                                </BlockStack>
-                              </BlockStack>
-                            </Collapsible>
-                          </BlockStack>
-                        </div>
-                      </Card>
-                    ))}
-
-                    {/* Add Step Button */}
-                    <Button
-                      variant="plain"
-                      fullWidth
-                      icon={PlusIcon}
-                      onClick={stepsState.addStep}
-                    >
-                      Add Step
-                    </Button>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-            )}
-
-            {activeSection === "discount_pricing" && (
-              <Card>
-                <BlockStack gap="400">
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h3">
-                      Discount & Pricing
-                    </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Set up to 4 discount rules, applied from lowest to highest.
-                    </Text>
-                  </BlockStack>
-
-                  {/* Discount Enable Toggle */}
-                  <FormLayout>
-                    <Checkbox
-                      label="Discount & Pricing"
-                      checked={pricingState.discountEnabled}
-                      onChange={pricingState.setDiscountEnabled}
-                    />
-                  </FormLayout>
-
-                  {pricingState.discountEnabled && (
-                    <BlockStack gap="400">
-                      {/* Discount Type */}
-                      <Select
-                        label="Discount Type"
-                        options={[
-                          { label: 'Percentage Off', value: DiscountMethod.PERCENTAGE_OFF },
-                          { label: 'Fixed Amount Off', value: DiscountMethod.FIXED_AMOUNT_OFF },
-                          { label: 'Fixed Bundle Price', value: DiscountMethod.FIXED_BUNDLE_PRICE },
-                        ]}
-                        value={pricingState.discountType}
-                        onChange={(value) => {
-                          pricingState.setDiscountType(value as DiscountMethod);
-                          // Clear existing rules when discount type changes
-                          pricingState.setDiscountRules([]);
-                          // Clear rule messages when discount type changes
-                          setRuleMessages({});
-                        }}
-                      />
-
-                      {/* Discount Rules - New Standardized Structure */}
-                      <BlockStack gap="300">
-                        {pricingState.discountRules.map((rule, index) => (
-                          <Card key={rule.id} background="bg-surface-secondary">
-                            <BlockStack gap="300">
-                              <InlineStack align="space-between" blockAlign="center">
-                                <Text as="h4" variant="bodyMd" fontWeight="medium">
-                                  Rule #{index + 1}
-                                </Text>
-                                <Button
-                                  variant="plain"
-                                  tone="critical"
-                                  onClick={() => pricingState.removeDiscountRule(rule.id)}
-                                >
-                                  Remove
-                                </Button>
+                                    size="micro"
+                                    icon={DuplicateIcon}
+                                    onClick={() => cloneStep(step.id)}
+                                    accessibilityLabel="Clone step"
+                                  />
+                                  <Button
+                                    variant="tertiary"
+                                    size="micro"
+                                    tone="critical"
+                                    icon={DeleteIcon}
+                                    onClick={() => deleteStep(step.id)}
+                                    accessibilityLabel="Delete step"
+                                  />
+                                  <Button
+                                    variant="tertiary"
+                                    size="micro"
+                                    icon={stepsState.expandedSteps.has(step.id) ? ChevronUpIcon : ChevronDownIcon}
+                                    onClick={() => stepsState.toggleStepExpansion(step.id)}
+                                    accessibilityLabel={stepsState.expandedSteps.has(step.id) ? "Collapse step" : "Expand step"}
+                                  />
+                                </InlineStack>
                               </InlineStack>
 
-                              {/* Condition Section */}
-                              <BlockStack gap="200">
-                                <Text as="p" variant="bodyMd" fontWeight="semibold">When:</Text>
-                                <InlineStack gap="200" align="start">
-                                  <Select
-                                    label="Type"
-                                    options={[
-                                      { label: 'Quantity', value: ConditionType.QUANTITY },
-                                      { label: 'Amount', value: ConditionType.AMOUNT },
-                                    ]}
-                                    value={rule.condition.type}
-                                    onChange={(value) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, type: value as any }
-                                    })}
-                                  />
-                                  <Select
-                                    label="Operator"
-                                    options={[
-                                      { label: 'Greater than or equal (≥)', value: ConditionOperator.GTE },
-                                      { label: 'Greater than (>)', value: ConditionOperator.GT },
-                                      { label: 'Less than or equal (≤)', value: ConditionOperator.LTE },
-                                      { label: 'Less than (<)', value: ConditionOperator.LT },
-                                      { label: 'Equal to (=)', value: ConditionOperator.EQ },
-                                    ]}
-                                    value={rule.condition.operator}
-                                    onChange={(value) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, operator: value as any }
-                                    })}
-                                  />
+                              {/* Expanded Step Content */}
+                              <Collapsible id={`step-${step.id}`} open={stepsState.expandedSteps.has(step.id)}>
+                                <BlockStack gap="400">
+                                  {/* Step Name and Page Title */}
+                                  <FormLayout>
+                                    <TextField
+                                      label="Step Name"
+                                      value={step.name}
+                                      onChange={(value) => stepsState.updateStepField(step.id, 'name', value)}
+                                      autoComplete="off"
+                                    />
+                                  </FormLayout>
+
+                                  {/* Products/Collections Tabs */}
+                                  <BlockStack gap="300">
+                                    <Tabs
+                                      tabs={[
+                                        {
+                                          id: 'products',
+                                          content: 'Products',
+                                          badge: step.StepProduct && step.StepProduct.length > 0 ? stepsState.getUniqueProductCount(step.StepProduct).toString() : undefined,
+                                        },
+                                        {
+                                          id: 'collections',
+                                          content: 'Collections',
+                                        },
+                                      ]}
+                                      selected={stepsState.selectedTab}
+                                      onSelect={stepsState.setSelectedTab}
+                                    />
+
+                                    {stepsState.selectedTab === 0 && (
+                                      <BlockStack gap="200">
+                                        <Text as="p" variant="bodyMd" tone="subdued">
+                                          Products selected here will be displayed on this step
+                                        </Text>
+                                        <InlineStack gap="200" align="start">
+                                          <Button
+                                            variant="primary"
+                                            size="medium"
+                                            onClick={() => handleProductSelection(step.id)}
+                                          >
+                                            Add Products
+                                          </Button>
+                                          {step.StepProduct && step.StepProduct.length > 0 && (
+                                            <Badge tone="info">
+                                              {`${stepsState.getUniqueProductCount(step.StepProduct)} Selected`}
+                                            </Badge>
+                                          )}
+                                        </InlineStack>
+                                        <Checkbox
+                                          label="Display variants as individual products"
+                                          checked={step.displayVariantsAsIndividual || false}
+                                          onChange={(checked) => stepsState.updateStepField(step.id, 'displayVariantsAsIndividual', checked)}
+                                        />
+                                      </BlockStack>
+                                    )}
+
+                                    {stepsState.selectedTab === 1 && (
+                                      <BlockStack gap="200">
+                                        <Text as="p" variant="bodyMd" tone="subdued">
+                                          Collections selected here will be displayed on this step
+                                        </Text>
+                                        <InlineStack gap="200" align="start">
+                                          <Button
+                                            variant="primary"
+                                            size="medium"
+                                            icon={CollectionIcon}
+                                            onClick={() => handleCollectionSelection(step.id)}
+                                          >
+                                            Add Collections
+                                          </Button>
+                                          {selectedCollections[step.id]?.length > 0 && (
+                                            <Badge tone="info">
+                                              {`${selectedCollections[step.id].length} Selected`}
+                                            </Badge>
+                                          )}
+                                        </InlineStack>
+
+                                        {/* Display selected collections */}
+                                        {selectedCollections[step.id]?.length > 0 && (
+                                          <BlockStack gap="100">
+                                            <Text as="h5" variant="bodyMd" fontWeight="medium">
+                                              Selected Collections:
+                                            </Text>
+                                            <BlockStack gap="100">
+                                              {selectedCollections[step.id].map((collection: any) => (
+                                                <InlineStack key={collection.id} gap="200" blockAlign="center">
+                                                  <Thumbnail
+                                                    source={collection.image?.url || "/bundle.png"}
+                                                    alt={collection.title}
+                                                    size="small"
+                                                  />
+                                                  <Text as="span" variant="bodyMd">{collection.title}</Text>
+                                                  <Button
+                                                    variant="plain"
+                                                    size="micro"
+                                                    tone="critical"
+                                                    onClick={() => {
+                                                      setSelectedCollections(prev => ({
+                                                        ...prev,
+                                                        [step.id]: prev[step.id]?.filter(c => c.id !== collection.id) || []
+                                                      }));
+                                                    }}
+                                                  >
+                                                    Remove
+                                                  </Button>
+                                                </InlineStack>
+                                              ))}
+                                            </BlockStack>
+                                          </BlockStack>
+                                        )}
+                                      </BlockStack>
+                                    )}
+                                  </BlockStack>
+
+                                  {/* Conditions Section */}
+                                  <BlockStack gap="300">
+                                    <BlockStack gap="100">
+                                      <Text variant="headingSm" as="h4">
+                                        Conditions
+                                      </Text>
+                                      <Text as="p" variant="bodyMd" tone="subdued">
+                                        Create Conditions based on amount or quantity of products added on this step.
+                                      </Text>
+                                      <Text as="p" variant="bodySm" tone="subdued">
+                                        Note: Conditions are only valid on this step
+                                      </Text>
+                                    </BlockStack>
+
+                                    {/* Existing Condition Rules */}
+                                    {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: any) => (
+                                      <Card key={rule.id} background="bg-surface-secondary">
+                                        <BlockStack gap="200">
+                                          <InlineStack align="space-between" blockAlign="center">
+                                            <Text as="h5" variant="bodyMd" fontWeight="medium">
+                                              Condition #{ruleIndex + 1}
+                                            </Text>
+                                            <Button
+                                              variant="plain"
+                                              tone="critical"
+                                              onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
+                                            >
+                                              Remove
+                                            </Button>
+                                          </InlineStack>
+
+                                          <InlineStack gap="200" align="start">
+                                            <Select
+                                              label="Condition Type"
+                                              options={[
+                                                { label: 'Quantity', value: 'quantity' },
+                                                { label: 'Amount', value: 'amount' },
+                                              ]}
+                                              value={rule.type}
+                                              onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'type', value)}
+                                            />
+                                            <Select
+                                              label="Operator"
+                                              options={[
+                                                { label: 'is equal to', value: 'equal_to' },
+                                                { label: 'is greater than', value: 'greater_than' },
+                                                { label: 'is less than', value: 'less_than' },
+                                                { label: 'is greater than or equal to', value: 'greater_than_or_equal_to' },
+                                                { label: 'is less than or equal to', value: 'less_than_or_equal_to' },
+                                              ]}
+                                              value={rule.operator}
+                                              onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', value)}
+                                            />
+                                            <TextField
+                                              label="Value"
+                                              value={rule.value}
+                                              onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'value', value)}
+                                              autoComplete="off"
+                                              type="number"
+                                              min="0"
+                                            />
+                                          </InlineStack>
+                                        </BlockStack>
+                                      </Card>
+                                    ))}
+
+                                    <Button
+                                      variant="tertiary"
+                                      fullWidth
+                                      icon={PlusIcon}
+                                      onClick={() => conditionsState.addConditionRule(step.id)}
+                                    >
+                                      Add Rule
+                                    </Button>
+                                  </BlockStack>
+                                </BlockStack>
+                              </Collapsible>
+                            </BlockStack>
+                          </div>
+                        </Card>
+                      ))}
+
+                      {/* Add Step Button */}
+                      <Button
+                        variant="plain"
+                        fullWidth
+                        icon={PlusIcon}
+                        onClick={stepsState.addStep}
+                      >
+                        Add Step
+                      </Button>
+                    </BlockStack>
+                  </BlockStack>
+                </Card>
+              )}
+
+              {activeSection === "discount_pricing" && (
+                <Card>
+                  <BlockStack gap="400">
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h3">
+                        Discount & Pricing
+                      </Text>
+                      <Text as="p" variant="bodyMd" tone="subdued">
+                        Set up to 4 discount rules, applied from lowest to highest.
+                      </Text>
+                    </BlockStack>
+
+                    {/* Discount Enable Toggle */}
+                    <FormLayout>
+                      <Checkbox
+                        label="Discount & Pricing"
+                        checked={pricingState.discountEnabled}
+                        onChange={pricingState.setDiscountEnabled}
+                      />
+                    </FormLayout>
+
+                    {pricingState.discountEnabled && (
+                      <BlockStack gap="400">
+                        {/* Discount Type */}
+                        <Select
+                          label="Discount Type"
+                          options={[
+                            { label: 'Percentage Off', value: DiscountMethod.PERCENTAGE_OFF },
+                            { label: 'Fixed Amount Off', value: DiscountMethod.FIXED_AMOUNT_OFF },
+                            { label: 'Fixed Bundle Price', value: DiscountMethod.FIXED_BUNDLE_PRICE },
+                          ]}
+                          value={pricingState.discountType}
+                          onChange={(value) => {
+                            pricingState.setDiscountType(value as DiscountMethod);
+                            // Clear existing rules when discount type changes
+                            pricingState.setDiscountRules([]);
+                            // Clear rule messages when discount type changes
+                            setRuleMessages({});
+                          }}
+                        />
+
+                        {/* Discount Rules - New Standardized Structure */}
+                        <BlockStack gap="300">
+                          {pricingState.discountRules.map((rule, index) => (
+                            <Card key={rule.id} background="bg-surface-secondary">
+                              <BlockStack gap="300">
+                                <InlineStack align="space-between" blockAlign="center">
+                                  <Text as="h4" variant="bodyMd" fontWeight="medium">
+                                    Rule #{index + 1}
+                                  </Text>
+                                  <Button
+                                    variant="plain"
+                                    tone="critical"
+                                    onClick={() => pricingState.removeDiscountRule(rule.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </InlineStack>
+
+                                {/* Condition Section */}
+                                <BlockStack gap="200">
+                                  <Text as="p" variant="bodyMd" fontWeight="semibold">When:</Text>
+                                  <InlineStack gap="200" align="start">
+                                    <Select
+                                      label="Type"
+                                      options={[
+                                        { label: 'Quantity', value: ConditionType.QUANTITY },
+                                        { label: 'Amount', value: ConditionType.AMOUNT },
+                                      ]}
+                                      value={rule.condition.type}
+                                      onChange={(value) => pricingState.updateDiscountRule(rule.id, {
+                                        condition: { ...rule.condition, type: value as any }
+                                      })}
+                                    />
+                                    <Select
+                                      label="Operator"
+                                      options={[
+                                        { label: 'Greater than or equal (≥)', value: ConditionOperator.GTE },
+                                        { label: 'Greater than (>)', value: ConditionOperator.GT },
+                                        { label: 'Less than or equal (≤)', value: ConditionOperator.LTE },
+                                        { label: 'Less than (<)', value: ConditionOperator.LT },
+                                        { label: 'Equal to (=)', value: ConditionOperator.EQ },
+                                      ]}
+                                      value={rule.condition.operator}
+                                      onChange={(value) => pricingState.updateDiscountRule(rule.id, {
+                                        condition: { ...rule.condition, operator: value as any }
+                                      })}
+                                    />
+                                    <TextField
+                                      label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
+                                      value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
+                                      onChange={(value) => {
+                                        const numValue = Number(value) || 0;
+                                        const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
+                                        pricingState.updateDiscountRule(rule.id, {
+                                          condition: { ...rule.condition, value: finalValue }
+                                        });
+                                      }}
+                                      type="number"
+                                      min="0"
+                                      step={rule.condition.type === ConditionType.AMOUNT ? 0.01 : 1}
+                                      helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
+                                      autoComplete="off"
+                                    />
+                                  </InlineStack>
+                                </BlockStack>
+
+                                {/* Discount Section */}
+                                <BlockStack gap="200">
+                                  <Text as="p" variant="bodyMd" fontWeight="semibold">Apply:</Text>
                                   <TextField
-                                    label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
-                                    value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
+                                    label={
+                                      rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
+                                        rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
+                                          'Bundle Price'
+                                    }
+                                    value={String(
+                                      rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
+                                        centsToAmount(rule.discount.value)
+                                    )}
                                     onChange={(value) => {
                                       const numValue = Number(value) || 0;
-                                      const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
+                                      const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
                                       pricingState.updateDiscountRule(rule.id, {
-                                        condition: { ...rule.condition, value: finalValue }
+                                        discount: { ...rule.discount, value: finalValue }
                                       });
                                     }}
                                     type="number"
                                     min="0"
-                                    step={rule.condition.type === ConditionType.AMOUNT ? 0.01 : 1}
-                                    helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
+                                    max={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
+                                    step={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 1 : 0.01}
+                                    suffix={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
+                                    helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
                                     autoComplete="off"
                                   />
-                                </InlineStack>
-                              </BlockStack>
+                                </BlockStack>
 
-                              {/* Discount Section */}
-                              <BlockStack gap="200">
-                                <Text as="p" variant="bodyMd" fontWeight="semibold">Apply:</Text>
-                                <TextField
-                                  label={
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
-                                      rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
-                                        'Bundle Price'
-                                  }
-                                  value={String(
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
-                                      centsToAmount(rule.discount.value)
-                                  )}
-                                  onChange={(value) => {
-                                    const numValue = Number(value) || 0;
-                                    const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
-                                    pricingState.updateDiscountRule(rule.id, {
-                                      discount: { ...rule.discount, value: finalValue }
-                                    });
-                                  }}
-                                  type="number"
-                                  min="0"
-                                  max={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
-                                  step={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 1 : 0.01}
-                                  suffix={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
-                                  helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
-                                  autoComplete="off"
-                                />
+                                {/* Preview */}
+                                <Text as="p" variant="bodySm" tone="subdued">
+                                  Preview: {generateRulePreview(rule)}
+                                </Text>
                               </BlockStack>
+                            </Card>
+                          ))}
 
-                              {/* Preview */}
-                              <Text as="p" variant="bodySm" tone="subdued">
-                                Preview: {generateRulePreview(rule)}
+                          {pricingState.discountRules.length < 4 && (
+                            <Button
+                              variant="tertiary"
+                              fullWidth
+                              icon={PlusIcon}
+                              onClick={pricingState.addDiscountRule}
+                            >
+                              Add rule
+                            </Button>
+                          )}
+                        </BlockStack>
+
+
+                        {/* Discount Messaging */}
+                        <BlockStack gap="300">
+                          <InlineStack align="space-between" blockAlign="center">
+                            <BlockStack gap="100">
+                              <Text variant="headingSm" as="h4">
+                                Discount Messaging
+                              </Text>
+                              <Text as="p" variant="bodyMd" tone="subdued">
+                                Edit how discount messages appear above the subtotal.
                               </Text>
                             </BlockStack>
-                          </Card>
-                        ))}
+                            <Checkbox
+                              label="Discount Messaging"
+                              checked={pricingState.discountMessagingEnabled}
+                              onChange={pricingState.setDiscountMessagingEnabled}
+                            />
+                          </InlineStack>
 
-                        {pricingState.discountRules.length < 4 && (
-                          <Button
-                            variant="tertiary"
-                            fullWidth
-                            icon={PlusIcon}
-                            onClick={pricingState.addDiscountRule}
-                          >
-                            Add rule
-                          </Button>
-                        )}
-                      </BlockStack>
+                          {/* Integrated Variables Helper */}
+                          <details>
+                            <summary style={{ cursor: 'pointer', color: '#007ace', fontSize: '14px', fontWeight: '500' }}>
+                              Show Variables
+                            </summary>
+                            <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '13px' }}>
+                              {/* Essential Variables */}
+                              <div style={{ marginBottom: '12px' }}>
+                                <strong>Essential (Most Used):</strong><br />
+                                <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
+                                <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
+                                <code>{'{{bundleName}}'}</code> - Bundle name
+                              </div>
 
+                              {/* Specific Variables */}
+                              <div style={{ marginBottom: '12px' }}>
+                                <strong>Specific:</strong><br />
+                                <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
+                                <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
+                                <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
+                              </div>
 
-                      {/* Discount Messaging */}
-                      <BlockStack gap="300">
-                        <InlineStack align="space-between" blockAlign="center">
-                          <BlockStack gap="100">
-                            <Text variant="headingSm" as="h4">
-                              Discount Messaging
-                            </Text>
-                            <Text as="p" variant="bodyMd" tone="subdued">
-                              Edit how discount messages appear above the subtotal.
-                            </Text>
-                          </BlockStack>
-                          <Checkbox
-                            label="Discount Messaging"
-                            checked={pricingState.discountMessagingEnabled}
-                            onChange={pricingState.setDiscountMessagingEnabled}
-                          />
-                        </InlineStack>
+                              {/* Pricing Variables */}
+                              <div style={{ marginBottom: '12px' }}>
+                                <strong>Pricing:</strong><br />
+                                <code>{'{{currentAmount}}'}</code> - Current total<br />
+                                <code>{'{{finalPrice}}'}</code> - Price after discount<br />
+                                <code>{'{{savingsAmount}}'}</code> - Amount saved
+                              </div>
 
-                        {/* Integrated Variables Helper */}
-                        <details>
-                          <summary style={{ cursor: 'pointer', color: '#007ace', fontSize: '14px', fontWeight: '500' }}>
-                            Show Variables
-                          </summary>
-                          <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '13px' }}>
-                            {/* Essential Variables */}
-                            <div style={{ marginBottom: '12px' }}>
-                              <strong>Essential (Most Used):</strong><br />
-                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
-                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
-                              <code>{'{{bundleName}}'}</code> - Bundle name
+                              {/* Quick Examples */}
+                              <div style={{ borderTop: '1px solid #e1e3e5', paddingTop: '8px', fontSize: '12px', color: '#6c757d' }}>
+                                <strong>Quick Examples:</strong><br />
+                                💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
+                                📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
+                                🎉 <em>"You saved {'{{savingsAmount}}'} on {'{{bundleName}}'}"</em>
+                              </div>
                             </div>
+                          </details>
 
-                            {/* Specific Variables */}
-                            <div style={{ marginBottom: '12px' }}>
-                              <strong>Specific:</strong><br />
-                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
-                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
-                              <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
-                            </div>
+                          {/* Dynamic rule-based messaging */}
+                          {pricingState.discountMessagingEnabled && (Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 && (
+                            <BlockStack gap="300">
+                              {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
+                                <BlockStack key={rule.id} gap="300">
+                                  <Card background="bg-surface-secondary">
+                                    <BlockStack gap="200">
+                                      <Text as="h4" variant="bodyMd" fontWeight="medium">
+                                        Rule #{index + 1} Messages
+                                      </Text>
+                                      <TextField
+                                        label="Discount Text"
+                                        value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
+                                        onChange={(value) => updateRuleMessage(rule.id, 'discountText', value)}
+                                        multiline={2}
+                                        autoComplete="off"
+                                        helpText="This message appears when the customer is close to qualifying for the discount"
+                                      />
+                                    </BlockStack>
+                                  </Card>
 
-                            {/* Pricing Variables */}
-                            <div style={{ marginBottom: '12px' }}>
-                              <strong>Pricing:</strong><br />
-                              <code>{'{{currentAmount}}'}</code> - Current total<br />
-                              <code>{'{{finalPrice}}'}</code> - Price after discount<br />
-                              <code>{'{{savingsAmount}}'}</code> - Amount saved
-                            </div>
-
-                            {/* Quick Examples */}
-                            <div style={{ borderTop: '1px solid #e1e3e5', paddingTop: '8px', fontSize: '12px', color: '#6c757d' }}>
-                              <strong>Quick Examples:</strong><br />
-                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
-                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
-                              🎉 <em>"You saved {'{{savingsAmount}}'} on {'{{bundleName}}'}"</em>
-                            </div>
-                          </div>
-                        </details>
-
-                        {/* Dynamic rule-based messaging */}
-                        {pricingState.discountMessagingEnabled && (Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 && (
-                          <BlockStack gap="300">
-                            {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
-                              <BlockStack key={rule.id} gap="300">
-                                <Card background="bg-surface-secondary">
-                                  <BlockStack gap="200">
-                                    <Text as="h4" variant="bodyMd" fontWeight="medium">
-                                      Rule #{index + 1} Messages
-                                    </Text>
-                                    <TextField
-                                      label="Discount Text"
-                                      value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
-                                      onChange={(value) => updateRuleMessage(rule.id, 'discountText', value)}
-                                      multiline={2}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer is close to qualifying for the discount"
-                                    />
-                                  </BlockStack>
-                                </Card>
-
-                                <Card background="bg-surface-secondary">
-                                  <BlockStack gap="200">
-                                    <TextField
-                                      label="Success Message"
-                                      value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
-                                      onChange={(value) => updateRuleMessage(rule.id, 'successMessage', value)}
-                                      multiline={2}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer qualifies for the discount"
-                                    />
-                                  </BlockStack>
-                                </Card>
-                              </BlockStack>
-                            ))}
-                          </BlockStack>
-                        )}
-
-                        {/* Show message when no rules exist */}
-                        {pricingState.discountMessagingEnabled && pricingState.discountRules.length === 0 && (
-                          <Card background="bg-surface-secondary">
-                            <BlockStack gap="200" inlineAlign="center">
-                              <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                                Add discount rules to configure messaging
-                              </Text>
+                                  <Card background="bg-surface-secondary">
+                                    <BlockStack gap="200">
+                                      <TextField
+                                        label="Success Message"
+                                        value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
+                                        onChange={(value) => updateRuleMessage(rule.id, 'successMessage', value)}
+                                        multiline={2}
+                                        autoComplete="off"
+                                        helpText="This message appears when the customer qualifies for the discount"
+                                      />
+                                    </BlockStack>
+                                  </Card>
+                                </BlockStack>
+                              ))}
                             </BlockStack>
-                          </Card>
-                        )}
-                      </BlockStack>
-                    </BlockStack>
-                  )}
-                </BlockStack>
-              </Card>
-            )}
-          </Layout.Section>
-        </Layout>
-      </form>
-
-      {/* Page Selection Modal */}
-      <Modal
-        open={isPageSelectionModalOpen}
-        onClose={() => setIsPageSelectionModalOpen(false)}
-        title="Select Template for Widget Placement"
-        primaryAction={{
-          content: "Cancel",
-          onAction: () => setIsPageSelectionModalOpen(false),
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="400">
-            <Text as="p" variant="bodyMd">
-              Choose a page template where you want to place the Bundle Builder widget. The theme editor will open with automatic widget placement and configuration. Bundle container products are highlighted as recommended templates for optimal bundle widget placement.
-            </Text>
-
-            {isLoadingPages ? (
-              <BlockStack gap="200" inlineAlign="center">
-                <Text as="p" variant="bodyMd" tone="subdued">Loading templates...</Text>
-              </BlockStack>
-            ) : availablePages.length > 0 ? (
-              <BlockStack gap="200">
-                {availablePages.map((template) => (
-                  <Card key={template.id}>
-                    <InlineStack wrap={false} gap="300" align="space-between">
-                      <BlockStack gap="100">
-                        <InlineStack gap="200" blockAlign="center">
-                          <Text as="h4" variant="bodyMd" fontWeight="medium">
-                            {template.title}
-                          </Text>
-                          {template.recommended && (
-                            <Badge tone="success">Recommended</Badge>
                           )}
-                          {template.fileType && (
-                            <Badge tone="info">{template.fileType}</Badge>
+
+                          {/* Show message when no rules exist */}
+                          {pricingState.discountMessagingEnabled && pricingState.discountRules.length === 0 && (
+                            <Card background="bg-surface-secondary">
+                              <BlockStack gap="200" inlineAlign="center">
+                                <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
+                                  Add discount rules to configure messaging
+                                </Text>
+                              </BlockStack>
+                            </Card>
                           )}
-                        </InlineStack>
-                        <Text as="p" variant="bodySm" tone="subdued">
-                          {template.description}
-                        </Text>
-                        <Text as="p" variant="bodyXs" tone="subdued">
-                          Template: {template.handle}
-                        </Text>
+                        </BlockStack>
                       </BlockStack>
-                      <Button
-                        onClick={() => handlePageSelection(template)}
-                        variant="primary"
-                        icon={ExternalIcon}
-                      >
-                        Select Template
-                      </Button>
-                    </InlineStack>
-                  </Card>
-                ))}
-              </BlockStack>
-            ) : (
-              <Card>
+                    )}
+                  </BlockStack>
+                </Card>
+              )}
+            </Layout.Section>
+          </Layout>
+        </form>
+
+        {/* Page Selection Modal */}
+        <Modal
+          open={isPageSelectionModalOpen}
+          onClose={() => setIsPageSelectionModalOpen(false)}
+          title="Select Template for Widget Placement"
+          primaryAction={{
+            content: "Cancel",
+            onAction: () => setIsPageSelectionModalOpen(false),
+          }}
+        >
+          <Modal.Section>
+            <BlockStack gap="400">
+              <Text as="p" variant="bodyMd">
+                Choose a page template where you want to place the Bundle Builder widget. The theme editor will open with automatic widget placement and configuration. Bundle container products are highlighted as recommended templates for optimal bundle widget placement.
+              </Text>
+
+              {isLoadingPages ? (
                 <BlockStack gap="200" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                    No pages found in your store. You can create pages in your Shopify admin and return here to place the widget.
-                  </Text>
-                  <Button
-                    url="https://admin.shopify.com/admin/pages"
-                    external
-                  >
-                    Create Page
-                  </Button>
+                  <Text as="p" variant="bodyMd" tone="subdued">Loading templates...</Text>
                 </BlockStack>
-              </Card>
-            )}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+              ) : availablePages.length > 0 ? (
+                <BlockStack gap="200">
+                  {availablePages.map((template) => (
+                    <Card key={template.id}>
+                      <InlineStack wrap={false} gap="300" align="space-between">
+                        <BlockStack gap="100">
+                          <InlineStack gap="200" blockAlign="center">
+                            <Text as="h4" variant="bodyMd" fontWeight="medium">
+                              {template.title}
+                            </Text>
+                            {template.recommended && (
+                              <Badge tone="success">Recommended</Badge>
+                            )}
+                            {template.fileType && (
+                              <Badge tone="info">{template.fileType}</Badge>
+                            )}
+                          </InlineStack>
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            {template.description}
+                          </Text>
+                          <Text as="p" variant="bodyXs" tone="subdued">
+                            Template: {template.handle}
+                          </Text>
+                        </BlockStack>
+                        <Button
+                          onClick={() => handlePageSelection(template)}
+                          variant="primary"
+                          icon={ExternalIcon}
+                        >
+                          Select Template
+                        </Button>
+                      </InlineStack>
+                    </Card>
+                  ))}
+                </BlockStack>
+              ) : (
+                <Card>
+                  <BlockStack gap="200" inlineAlign="center">
+                    <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
+                      No pages found in your store. You can create pages in your Shopify admin and return here to place the widget.
+                    </Text>
+                    <Button
+                      url="https://admin.shopify.com/admin/pages"
+                      external
+                    >
+                      Create Page
+                    </Button>
+                  </BlockStack>
+                </Card>
+              )}
+            </BlockStack>
+          </Modal.Section>
+        </Modal>
 
-      {/* Selected Products Modal */}
-      <Modal
-        open={isProductsModalOpen}
-        onClose={handleCloseProductsModal}
-        title="Selected Products"
-        primaryAction={{
-          content: "Close",
-          onAction: handleCloseProductsModal,
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="400">
-            {(() => {
-              const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
-              const selectedProducts = currentStep?.StepProduct || [];
+        {/* Selected Products Modal */}
+        <Modal
+          open={isProductsModalOpen}
+          onClose={handleCloseProductsModal}
+          title="Selected Products"
+          primaryAction={{
+            content: "Close",
+            onAction: handleCloseProductsModal,
+          }}
+        >
+          <Modal.Section>
+            <BlockStack gap="400">
+              {(() => {
+                const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
+                const selectedProducts = currentStep?.StepProduct || [];
 
-              return selectedProducts.length > 0 ? (
-                <BlockStack gap="300">
-                  <Text as="h4" variant="bodyMd" fontWeight="medium">
-                    {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected for this step:
-                  </Text>
-                  <Card>
-                    <List type="bullet">
-                      {selectedProducts.map((product: any, index: number) => (
-                        <List.Item key={product.id || index}>
-                          <InlineStack gap="200" align="space-between" blockAlign="center">
-                            <InlineStack gap="300" blockAlign="center">
-                              <Thumbnail
-                                source={product.imageUrl || product.image?.url || "/bundle.png"}
-                                alt={product.title || product.name || 'Product'}
-                                size="small"
-                              />
+                return selectedProducts.length > 0 ? (
+                  <BlockStack gap="300">
+                    <Text as="h4" variant="bodyMd" fontWeight="medium">
+                      {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected for this step:
+                    </Text>
+                    <Card>
+                      <List type="bullet">
+                        {selectedProducts.map((product: any, index: number) => (
+                          <List.Item key={product.id || index}>
+                            <InlineStack gap="200" align="space-between" blockAlign="center">
+                              <InlineStack gap="300" blockAlign="center">
+                                <Thumbnail
+                                  source={product.imageUrl || product.image?.url || "/bundle.png"}
+                                  alt={product.title || product.name || 'Product'}
+                                  size="small"
+                                />
+                                <BlockStack gap="050">
+                                  <Text as="h5" variant="bodyMd" fontWeight="medium">
+                                    {product.title || product.name || 'Unnamed Product'}
+                                  </Text>
+                                  {product.variants && product.variants.length > 0 && (
+                                    <Text as="p" variant="bodySm" tone="subdued">
+                                      {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                                    </Text>
+                                  )}
+                                </BlockStack>
+                              </InlineStack>
+                              <Badge tone="info">Product</Badge>
+                            </InlineStack>
+                          </List.Item>
+                        ))}
+                      </List>
+                    </Card>
+                  </BlockStack>
+                ) : (
+                  <BlockStack gap="200" inlineAlign="center">
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      No products selected for this step yet.
+                    </Text>
+                  </BlockStack>
+                );
+              })()}
+            </BlockStack>
+          </Modal.Section>
+        </Modal>
+
+        {/* Selected Collections Modal */}
+        <Modal
+          open={isCollectionsModalOpen}
+          onClose={handleCloseCollectionsModal}
+          title="Selected Collections"
+          primaryAction={{
+            content: "Close",
+            onAction: handleCloseCollectionsModal,
+          }}
+        >
+          <Modal.Section>
+            <BlockStack gap="400">
+              {(() => {
+                const collections = selectedCollections[currentModalStepId] || [];
+
+                return collections.length > 0 ? (
+                  <BlockStack gap="300">
+                    <Text as="h4" variant="bodyMd" fontWeight="medium">
+                      {collections.length} collection{collections.length !== 1 ? 's' : ''} selected for this step:
+                    </Text>
+                    <Card>
+                      <List type="bullet">
+                        {collections.map((collection: any, index: number) => (
+                          <List.Item key={collection.id || index}>
+                            <InlineStack gap="200" align="space-between">
                               <BlockStack gap="050">
                                 <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                  {product.title || product.name || 'Unnamed Product'}
+                                  {collection.title || 'Unnamed Collection'}
                                 </Text>
-                                {product.variants && product.variants.length > 0 && (
+                                {collection.handle && (
                                   <Text as="p" variant="bodySm" tone="subdued">
-                                    {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                                    Handle: {collection.handle}
                                   </Text>
                                 )}
                               </BlockStack>
+                              <Badge tone="success">Collection</Badge>
                             </InlineStack>
-                            <Badge tone="info">Product</Badge>
-                          </InlineStack>
-                        </List.Item>
-                      ))}
-                    </List>
-                  </Card>
-                </BlockStack>
-              ) : (
-                <BlockStack gap="200" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    No products selected for this step yet.
-                  </Text>
-                </BlockStack>
-              );
-            })()}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+                          </List.Item>
+                        ))}
+                      </List>
+                    </Card>
+                  </BlockStack>
+                ) : (
+                  <BlockStack gap="200" inlineAlign="center">
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      No collections selected for this step yet.
+                    </Text>
+                  </BlockStack>
+                );
+              })()}
+            </BlockStack>
+          </Modal.Section>
+        </Modal>
 
-      {/* Selected Collections Modal */}
-      <Modal
-        open={isCollectionsModalOpen}
-        onClose={handleCloseCollectionsModal}
-        title="Selected Collections"
-        primaryAction={{
-          content: "Close",
-          onAction: handleCloseCollectionsModal,
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="400">
-            {(() => {
-              const collections = selectedCollections[currentModalStepId] || [];
-
-              return collections.length > 0 ? (
-                <BlockStack gap="300">
-                  <Text as="h4" variant="bodyMd" fontWeight="medium">
-                    {collections.length} collection{collections.length !== 1 ? 's' : ''} selected for this step:
-                  </Text>
-                  <Card>
-                    <List type="bullet">
-                      {collections.map((collection: any, index: number) => (
-                        <List.Item key={collection.id || index}>
-                          <InlineStack gap="200" align="space-between">
-                            <BlockStack gap="050">
-                              <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                {collection.title || 'Unnamed Collection'}
-                              </Text>
-                              {collection.handle && (
-                                <Text as="p" variant="bodySm" tone="subdued">
-                                  Handle: {collection.handle}
-                                </Text>
-                              )}
-                            </BlockStack>
-                            <Badge tone="success">Collection</Badge>
-                          </InlineStack>
-                        </List.Item>
-                      ))}
-                    </List>
-                  </Card>
-                </BlockStack>
-              ) : (
-                <BlockStack gap="200" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    No collections selected for this step yet.
-                  </Text>
-                </BlockStack>
-              );
-            })()}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
-
-    </Page>
-  );
-}
+      </Page>
+    );
+  }

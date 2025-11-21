@@ -273,7 +273,7 @@ export async function updateCartTransformMetafield(admin: any, shopId: string) {
 
     const originalSize = JSON.stringify(allPublishedBundles).length;
     const optimizedSize = JSON.stringify(optimizedBundleConfigs).length;
-    console.log(`📏 [CART_TRANSFORM_METAFIELD] Size optimization: ${originalSize} → ${optimizedSize} chars (${Math.round((1 - optimizedSize/originalSize) * 100)}% reduction)`);
+    console.log(`📏 [CART_TRANSFORM_METAFIELD] Size optimization: ${originalSize} → ${optimizedSize} chars (${Math.round((1 - optimizedSize / originalSize) * 100)}% reduction)`);
     console.log(`🎯 [CART_TRANSFORM_METAFIELD] Optimized bundle configs:`, JSON.stringify(optimizedBundleConfigs, null, 2));
 
     // Update cart transform metafield using metafieldsSet
@@ -330,161 +330,6 @@ export async function updateCartTransformMetafield(admin: any, shopId: string) {
 }
 
 /**
- * Updates shop-level all_bundles metafield for Liquid extension (legacy)
- */
-export async function updateShopBundlesMetafield(admin: any, shopId: string) {
-  console.log("🏪 [SHOP_METAFIELD] Starting shop bundles metafield update");
-  console.log("🆔 [SHOP_METAFIELD] Shop ID:", shopId);
-
-  try {
-    // First get the shop's global ID
-    const GET_SHOP_ID = `
-      query getShopId {
-        shop {
-          id
-        }
-      }
-    `;
-
-    const shopResponse = await admin.graphql(GET_SHOP_ID);
-    const shopData = await shopResponse.json();
-
-    if (!shopData.data?.shop?.id) {
-      console.error('Failed to get shop global ID');
-      return null;
-    }
-
-    const shopGlobalId = shopData.data.shop.id;
-
-    // Get all published cart transform bundles from database
-    // Force refresh by including even draft bundles with steps for debugging
-    console.log("📊 [SHOP_METAFIELD] Querying database for all cart transform bundles");
-    const allBundles = await db.bundle.findMany({
-      where: {
-        shopId: shopId,
-        bundleType: 'cart_transform'
-        // Temporarily remove status filter to see all cart transform bundles
-      },
-      include: {
-        steps: {
-          include: {
-            StepProduct: true
-          }
-        },
-        pricing: true
-      }
-    });
-
-    console.log("📦 [SHOP_METAFIELD] Found bundles in database:", allBundles.length);
-
-    // Format bundles for Liquid extension
-    const formattedBundles = allBundles.map(bundle => ({
-      id: bundle.id,
-      name: bundle.name,
-      description: bundle.description,
-      status: bundle.status, // Include status for JavaScript filtering
-      bundleType: bundle.bundleType, // Include bundle type for debugging
-      shopifyProductId: bundle.shopifyProductId, // Include configured Bundle Product ID for matching
-      steps: bundle.steps.map(step => ({
-        id: step.id,
-        name: step.name,
-        position: step.position,
-        minQuantity: step.minQuantity,
-        maxQuantity: step.maxQuantity,
-        enabled: step.enabled,
-        displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-        products: step.products || [],
-        collections: step.collections || [],
-        StepProduct: (step.StepProduct || []).map((sp: any) => {
-          const stepProductData = {
-            id: sp.id,
-            productId: sp.productId,
-            title: sp.title,
-            imageUrl: sp.imageUrl,
-            variants: sp.variants,
-            minQuantity: sp.minQuantity,
-            maxQuantity: sp.maxQuantity,
-            position: sp.position
-          };
-          console.log(`📸 [METAFIELD] StepProduct imageUrl for ${sp.title}:`, sp.imageUrl);
-          return stepProductData;
-        }),
-        // Add condition data if needed
-        conditionType: step.conditionType,
-        conditionOperator: step.conditionOperator,
-        conditionValue: step.conditionValue
-      })),
-      pricing: bundle.pricing ? {
-        enabled: bundle.pricing.enabled,
-        method: bundle.pricing.method,
-        rules: safeJsonParse(bundle.pricing.rules, []),
-        showFooter: bundle.pricing.showFooter,
-        showProgressBar: bundle.pricing.showProgressBar,
-        messages: safeJsonParse(bundle.pricing.messages, {})
-      } : null,
-      // Add matching data for JavaScript bundle selection
-      matching: {
-        // For cart transform bundles, we can match based on step products/collections
-        products: bundle.steps.flatMap(step => step.StepProduct?.map(p => ({ id: p.productId })) || []),
-        collections: bundle.steps.flatMap(step => (step.collections as any[]) || [])
-      }
-    }));
-
-    const SET_SHOP_METAFIELD = `
-      mutation SetShopBundlesMetafield($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) {
-          metafields {
-            id
-            key
-            namespace
-            value
-          }
-          userErrors {
-            field
-            message
-            code
-          }
-        }
-      }
-    `;
-
-    const response = await admin.graphql(SET_SHOP_METAFIELD, {
-      variables: {
-        metafields: [
-          {
-            ownerId: shopGlobalId,
-            namespace: "custom",
-            key: "all_bundles",
-            type: "json",
-            value: JSON.stringify(formattedBundles)
-          }
-        ]
-      }
-    });
-
-    const data = await response.json();
-
-    console.log("📡 [SHOP_METAFIELD] GraphQL response received");
-    console.log("✅ [SHOP_METAFIELD] Metafields set:", data.data?.metafieldsSet?.metafields?.length || 0);
-
-    if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-      const error = data.data.metafieldsSet.userErrors[0];
-      console.error("❌ [SHOP_METAFIELD] Set error:", error);
-      // Don't throw error as this is not critical for bundle functionality
-      return null;
-    }
-
-    console.log("🎉 [SHOP_METAFIELD] Shop bundles metafield updated successfully");
-    console.log("📋 [SHOP_METAFIELD] Total bundles in metafield:", allBundles.length);
-    return data.data?.metafieldsSet?.metafields?.[0];
-
-  } catch (error) {
-    console.error("❌ [SHOP_METAFIELD] Error updating shop bundles metafield:", error);
-    return null;
-  }
-}
-
-/**
  * Updates component products with component_parents metafield
  */
 export async function updateComponentProductMetafields(admin: any, bundleProductId: string, bundleConfig: any) {
@@ -503,12 +348,6 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
     if (step.StepProduct && Array.isArray(step.StepProduct)) {
       for (const stepProduct of step.StepProduct) {
         if (stepProduct.productId) {
-          // Check if this is a UUID (old data that needs migration)
-          if (isUUID(stepProduct.productId)) {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID (needs migration): ${stepProduct.productId} - Product: ${stepProduct.title}`);
-            continue; // Skip UUID products entirely
-          }
-
           // Ensure we have a proper product GID
           const productId = stepProduct.productId.startsWith('gid://')
             ? stepProduct.productId
@@ -648,14 +487,6 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
           namespace: "$app",
           key: "cartTransformConfig",
           value: JSON.stringify(minimalBundleConfig),
-          type: "json"
-        },
-        // CRITICAL: Add all_bundles_data metafield for cart transform to access ALL bundles
-        {
-          ownerId: productId,
-          namespace: "custom",
-          key: "all_bundles_data",
-          value: JSON.stringify([minimalBundleConfig]), // Store minimal config to avoid exceeding instruction limit
           type: "json"
         }
       ];

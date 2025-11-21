@@ -430,7 +430,7 @@ class PricingCalculator {
   static checkCondition(value, condition, targetValue) {
     // Handle different condition formats
     const normalizedCondition = this.normalizeCondition(condition);
-    
+
     switch (normalizedCondition) {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
         return value === targetValue;
@@ -464,7 +464,7 @@ class PricingCalculator {
       'less_than_or_equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO,
       'less_than_equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO
     };
-    
+
     return conditionMap[condition] || condition || BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO;
   }
 
@@ -649,10 +649,10 @@ class TemplateManager {
 
     // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo);
-    
+
     // Calculate discount-specific values  
     const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
-    
+
     // Calculate progress
     const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
     const progressPercentage = targetValue > 0 ? Math.min(100, (currentProgress / targetValue) * 100) : 0;
@@ -916,26 +916,26 @@ class BundleWidget {
   normalizeDiscountTemplate(template) {
     // Professional template normalization with comprehensive old variable detection
     const modernTemplate = 'Add {conditionText} to get {discountText}';
-    
+
     // If no template provided, use modern default
     if (!template) {
       return modernTemplate;
     }
-    
+
     // Detect old variable patterns and normalize to modern format
     const oldVariablePatterns = [
       'discountConditionDiff',
-      'discountUnit', 
+      'discountUnit',
       'discountValue',
       'discountValueUnit'
     ];
-    
+
     const hasOldVariables = oldVariablePatterns.some(pattern => template.includes(pattern));
-    
+
     if (hasOldVariables) {
       return modernTemplate;
     }
-    
+
     // Template is already modern, return as-is
     return template;
   }
@@ -1575,11 +1575,11 @@ class BundleWidget {
         // Display each variant as separate product
         return product.variants.map(variant => {
           const imageUrl = product.imageUrl ||
-                          product.images?.[0]?.originalSrc ||
-                          product.images?.[0]?.src ||
-                          product.image?.src ||
-                          variant.image?.src ||
-                          'https://via.placeholder.com/150';
+            product.images?.[0]?.originalSrc ||
+            product.images?.[0]?.src ||
+            product.image?.src ||
+            variant.image?.src ||
+            'https://via.placeholder.com/150';
 
           return {
             id: this.extractId(variant.id),
@@ -1593,11 +1593,11 @@ class BundleWidget {
         // Display product with default variant
         const defaultVariant = product.variants?.[0];
         const imageUrl = product.imageUrl ||
-                        product.images?.[0]?.originalSrc ||
-                        product.images?.[0]?.src ||
-                        product.image?.src ||
-                        defaultVariant?.image?.src ||
-                        'https://via.placeholder.com/150';
+          product.images?.[0]?.originalSrc ||
+          product.images?.[0]?.src ||
+          product.image?.src ||
+          defaultVariant?.image?.src ||
+          'https://via.placeholder.com/150';
 
         return [{
           id: this.extractId(defaultVariant?.id || product.id),
@@ -1609,7 +1609,7 @@ class BundleWidget {
       }
     });
   }
-  
+
   extractId(idString) {
     if (!idString) return null;
 
@@ -1733,7 +1733,7 @@ class BundleWidget {
     // Remove existing event listeners to prevent duplicates
     const newProductGrid = productGrid.cloneNode(true);
     productGrid.parentNode.replaceChild(newProductGrid, productGrid);
-    
+
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('quantity-control-button')) {
@@ -1818,11 +1818,11 @@ class BundleWidget {
     if (productCard) {
       const quantityDisplay = productCard.querySelector('.quantity-display');
       const selectedOverlay = productCard.querySelector('.selected-overlay');
-      
+
       if (quantityDisplay) {
         quantityDisplay.textContent = quantity;
       }
-      
+
       if (selectedOverlay) {
         if (quantity > 0) {
           selectedOverlay.textContent = quantity;
@@ -1831,7 +1831,7 @@ class BundleWidget {
           selectedOverlay.style.display = 'none';
         }
       }
-      
+
       // Update card visual state
       if (quantity > 0) {
         productCard.classList.add('selected');
@@ -2103,7 +2103,7 @@ class BundleWidget {
                 [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_CONFIG]: JSON.stringify(this.selectedBundle)
               }
             };
-            
+
             cartItems.push(cartItem);
           }
         }
@@ -2304,33 +2304,7 @@ class BundleWidgetManager {
   }
 }
 
-// ============================================================================
-// LEGACY COMPATIBILITY FUNCTIONS
-// ============================================================================
 
-// Legacy function for backward compatibility
-function initializeBundleWidget(containerElement) {
-  if (!containerElement) {
-    return;
-  }
-
-  try {
-    const widget = new BundleWidget(containerElement);
-    return widget;
-  } catch (error) {
-    return null;
-  }
-}
-
-// Legacy function for theme editor
-function reinitializeAllBundleWidgets() {
-  BundleWidgetManager.reinitialize();
-}
-
-// Legacy toast function
-function showToast(message, type = 'info', duration = 4000) {
-  ToastManager.show(message, type, duration);
-}
 
 // ============================================================================
 // AUTO-INITIALIZATION AND THEME EDITOR SUPPORT
@@ -2401,8 +2375,3 @@ window.BundleWidgetManager = BundleWidgetManager;
 window.CurrencyManager = CurrencyManager;
 window.PricingCalculator = PricingCalculator;
 window.ToastManager = ToastManager;
-
-// Legacy global functions
-window.initializeBundleWidget = initializeBundleWidget;
-window.reinitializeAllBundleWidgets = reinitializeAllBundleWidgets;
-window.showToast = showToast;
