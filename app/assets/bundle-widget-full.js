@@ -840,14 +840,18 @@ class BundleWidget {
     this.config = {};
     this.elements = {};
 
-    this.init();
+    // Call async init but don't block constructor
+    this.init().catch(error => {
+      console.error('[WIDGET_INIT] ❌ Initialization failed:', error);
+      this.showError(error.message);
+    });
   }
 
   // ========================================================================
   // INITIALIZATION
   // ========================================================================
 
-  init() {
+  async init() {
     try {
       // Check if already initialized
       if (this.container.dataset.initialized === 'true') {
@@ -858,7 +862,7 @@ class BundleWidget {
       this.parseConfiguration();
 
       // Load and validate bundle data
-      this.loadBundleData();
+      await this.loadBundleData();
 
       // Select appropriate bundle
       this.selectBundle();
@@ -948,7 +952,7 @@ class BundleWidget {
     return template;
   }
 
-  loadBundleData() {
+  async loadBundleData() {
     let bundleData = null;
 
     // Source 1: data-bundle-config attribute
@@ -976,13 +980,50 @@ class BundleWidget {
       console.log('[WIDGET_INIT] ✅ Loaded bundle data from window.allBundlesData:', Object.keys(bundleData));
     }
 
+    // Source 3: Fetch from app proxy (fallback for theme editor / non-container products)
+    if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+      const bundleId = this.container.dataset.bundleId || window.autoDetectedBundleId;
+
+      if (bundleId && bundleId.trim() !== '') {
+        console.log('[WIDGET_INIT] 📡 Attempting to fetch bundle data from API for bundle:', bundleId);
+
+        try {
+          const shopDomain = window.Shopify?.shop || window.location.hostname.replace('www.', '');
+          const response = await fetch(`https://${shopDomain}/apps/product-bundles/api/bundle/${bundleId}.json`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.bundle) {
+              bundleData = { [data.bundle.id]: data.bundle };
+              console.log('[WIDGET_INIT] ✅ Loaded bundle data from API:', data.bundle.id);
+            } else {
+              console.warn('[WIDGET_INIT] ⚠️ API returned unsuccessful response:', data);
+            }
+          } else {
+            console.error('[WIDGET_INIT] ❌ API fetch failed with status:', response.status);
+          }
+        } catch (error) {
+          console.error('[WIDGET_INIT] ❌ Failed to fetch bundle data from API:', error);
+        }
+      } else {
+        console.warn('[WIDGET_INIT] ⚠️ No bundle ID available to fetch from API');
+      }
+    }
+
     if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
       const errorMsg = 'No valid bundle data available. Ensure bundle is saved in admin and metafields have storefront access.';
       console.error('[WIDGET_INIT] ❌', errorMsg);
       console.error('[WIDGET_INIT] 🔍 Debug info:', {
         configValue: configValue?.substring(0, 100),
         windowData: window.allBundlesData,
-        containerDataset: this.container.dataset
+        containerDataset: this.container.dataset,
+        bundleIdFromDataset: this.container.dataset.bundleId,
+        bundleIdFromWindow: window.autoDetectedBundleId
       });
       throw new Error(errorMsg);
     }
