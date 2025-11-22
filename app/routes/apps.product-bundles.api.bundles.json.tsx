@@ -21,11 +21,11 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     AppLogger.info("Fetching fresh bundle data", { component: "apps.product-bundles.api.bundles.json", operation: "loader", shop: session.shop });
 
-    // Get all active cart transform bundles from database
+    // Get all active bundles from database
     const allBundles = await db.bundle.findMany({
       where: {
         shopId: session.shop,
-        bundleType: 'cart_transform',
+        // Note: bundleType filter removed - returning all active bundles regardless of display mode
         status: 'active'
       },
       include: {

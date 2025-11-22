@@ -37,7 +37,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       where: {
         id: bundleId,
         shopId: session.shop,
-        bundleType: 'cart_transform',
+        // Note: bundleType filter removed - not needed for single bundle lookup
         status: 'active'
       },
       include: {

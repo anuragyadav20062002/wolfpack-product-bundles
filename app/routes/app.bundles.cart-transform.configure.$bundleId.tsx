@@ -128,7 +128,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     where: {
       id: bundleId,
       shopId: session.shop,
-      bundleType: 'cart_transform'
+      // Note: bundleType filter removed - not needed for single bundle lookup
     },
     include: {
       steps: {
@@ -1859,20 +1859,17 @@ export default function ConfigureBundleFlow() {
 
     setHasUnsavedChanges(hasChanges);
 
-    // Simplified save bar management - no timeout
-    // Note: SaveBar visibility is now controlled by hasUnsavedChanges state in render
-    // if (hasChanges) {
-    //   formState.triggerSaveBar();
-    // } else {
-    //   formState.dismissSaveBar();
-    // }
+    // Control SaveBar visibility using App Bridge API
+    if (hasChanges) {
+      shopify.saveBar.show('bundle-save-bar');
+    } else {
+      shopify.saveBar.hide('bundle-save-bar');
+    }
   }, [
     formState.bundleStatus,
     formState.bundleName,
     formState.bundleDescription,
     formState.templateName,
-    formState.triggerSaveBar,
-    formState.dismissSaveBar,
     stepsState.steps,
     pricingState.discountEnabled,
     pricingState.discountType,
@@ -1885,7 +1882,8 @@ export default function ConfigureBundleFlow() {
     conditionsState.stepConditions,
     bundleProduct,
     productStatus,
-    originalValues
+    originalValues,
+    shopify
   ]);
 
   // Save handler
@@ -2020,6 +2018,8 @@ export default function ConfigureBundleFlow() {
             productStatus: productStatus,
           });
 
+          // Hide the save bar after successful save
+          shopify.saveBar.hide('bundle-save-bar');
           shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
         } else if ('productId' in result && result.productId) {
           // This is a sync product response
@@ -2110,6 +2110,8 @@ export default function ConfigureBundleFlow() {
       setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
       setProductStatus(originalValues.productStatus);
 
+      // Hide the save bar after discarding
+      shopify.saveBar.hide('bundle-save-bar');
       shopify.toast.show("Changes discarded", { isError: false });
     } catch (error) {
       AppLogger.error("Error discarding changes:", {}, error as any);
@@ -2783,25 +2785,23 @@ export default function ConfigureBundleFlow() {
           handleDiscard();
         }}
       >
-        {/* SaveBar component for manual control over loading state */}
-        {(hasUnsavedChanges || fetcher.state !== "idle") && (
-          <SaveBar id="bundle-save-bar">
-            <button
-              variant="primary"
-              onClick={handleSave}
-              loading={fetcher.state !== "idle"}
-              disabled={fetcher.state !== "idle"}
-            >
-              Save
-            </button>
-            <button
-              onClick={handleDiscard}
-              disabled={fetcher.state !== "idle"}
-            >
-              Discard
-            </button>
-          </SaveBar>
-        )}
+        {/* SaveBar component - controlled via App Bridge API show/hide methods */}
+        <SaveBar id="bundle-save-bar">
+          <button
+            variant="primary"
+            onClick={handleSave}
+            loading={fetcher.state !== "idle" ? "" : undefined}
+            disabled={fetcher.state !== "idle"}
+          >
+            Save
+          </button>
+          <button
+            onClick={handleDiscard}
+            disabled={fetcher.state !== "idle"}
+          >
+            Discard
+          </button>
+        </SaveBar>
         {/* Hidden inputs for form submission - values will be updated by React state changes */}
         <input type="hidden" name="bundleName" value={formState.bundleName} />
         <input type="hidden" name="bundleDescription" value={formState.bundleDescription} />

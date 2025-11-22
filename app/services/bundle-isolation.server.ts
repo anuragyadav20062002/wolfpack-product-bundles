@@ -66,13 +66,15 @@ export class BundleIsolationService {
         conditionValue: step.conditionValue
       }));
 
-      // MINIMAL bundleConfig for widget - only what widget needs
+      // bundleConfig for widget - includes all required fields for validation and rendering
       // Widget fetches full product data via Storefront API (/api/storefront-products)
-      // So we only store: bundle ID, name, step structure, pricing display settings
-      // This reduces metafield size from ~5KB to ~500 bytes
+      // Must include: id, name, status, bundleType, steps (required by widget validation)
+      // Must include: pricing.method and pricing.rules (required for price calculations)
       const bundleMetafieldData = {
         id: bundleConfig.id,
         name: bundleConfig.name,
+        status: bundleConfig.status,           // Required by widget validation
+        bundleType: bundleConfig.bundleType,   // Required by widget validation
         steps: steps.map((step: any) => ({
           id: step.id,
           name: step.name,
@@ -85,9 +87,11 @@ export class BundleIsolationService {
             productId: sp.productId
           }))
         })),
-        // Pricing display settings only (rules stored in cartTransformConfig)
+        // Complete pricing configuration including rules for price calculations
         pricing: bundleConfig.pricing ? {
           enabled: bundleConfig.pricing.enabled,
+          method: bundleConfig.pricing.method,                           // Required for price calculations
+          rules: ensureStandardizedRules(safeJsonParse(bundleConfig.pricing.rules, [])), // Required for price calculations
           showFooter: bundleConfig.pricing.showFooter,
           showProgressBar: bundleConfig.pricing.showProgressBar,
           messages: safeJsonParse(bundleConfig.pricing.messages, {})
@@ -499,7 +503,8 @@ export class BundleIsolationService {
         timestamp: new Date().toISOString(),
         database: {
           totalBundles: dbBundles.length,
-          cartTransformBundles: dbBundles.filter(b => b.bundleType === 'cart_transform').length,
+          productPageBundles: dbBundles.filter(b => b.bundleType === 'product_page').length,
+          fullPageBundles: dbBundles.filter(b => b.bundleType === 'full_page').length,
           bundlesWithProducts: dbBundles.filter(b => b.shopifyProductId).length,
           bundlesWithoutProducts: dbBundles.filter(b => !b.shopifyProductId).length
         },
