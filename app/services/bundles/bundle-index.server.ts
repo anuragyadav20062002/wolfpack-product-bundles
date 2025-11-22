@@ -52,11 +52,11 @@ export async function updateBundleIndex(
       throw new Error('Failed to get shop global ID');
     }
 
-    // Get all cart_transform bundles with shopifyProductId
+    // Get all bundles with shopifyProductId
     const bundles = await db.bundle.findMany({
       where: {
         shopId: shopId,
-        bundleType: 'cart_transform',
+        // Note: bundleType filter removed - all bundles use cart transform implementation
         shopifyProductId: { not: null }  // Only bundles with products
       },
       select: {

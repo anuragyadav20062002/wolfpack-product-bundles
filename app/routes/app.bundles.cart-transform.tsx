@@ -27,11 +27,11 @@ import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
   
-  // Get cart transform bundles only (exclude archived)
+  // Get all bundles (exclude archived)
   const cartTransformBundles = await db.bundle.findMany({
     where: {
       shopId: session.shop,
-      bundleType: "cart_transform",
+      // Note: bundleType filter removed - showing all bundle display types
       status: {
         in: ['active', 'draft'] // Only show active and draft bundles, exclude archived
       }
@@ -45,7 +45,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   return json({
     bundles: cartTransformBundles,
-    bundleType: "cart_transform",
+    bundleType: "product_page", // Default display mode
   });
 }
 
@@ -136,7 +136,7 @@ export async function action({ request }: ActionFunctionArgs) {
           name: clonedBundleName,
           description: originalBundle.description,
           shopId: shop,
-          bundleType: 'cart_transform',
+          bundleType: 'product_page', // Default to product-page bundle
           status: 'draft',
           active: false,
           shopifyProductId: shopifyProductId,
@@ -342,7 +342,7 @@ export async function action({ request }: ActionFunctionArgs) {
         name: bundleName,
         description: typeof description === 'string' ? description : null,
         shopId: shop,
-        bundleType: 'cart_transform',
+        bundleType: 'product_page', // Default to product-page bundle
         status: 'draft',
         active: false,
         shopifyProductId: shopifyProductId, // Link the Shopify product

@@ -25,7 +25,7 @@ interface Bundle {
   description?: string | null;
   shopId: string;
   shopifyProductId?: string | null;
-  bundleType: 'cart_transform';
+  bundleType: 'product_page' | 'full_page'; // Display mode
   status: 'draft' | 'active' | 'archived';
   active: boolean;
   publishedAt?: Date | string | null;

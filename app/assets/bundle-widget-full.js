@@ -33,9 +33,10 @@ const BUNDLE_WIDGET = {
     BUNDLE_CONFIG: '_bundle_config'
   },
 
-  // Bundle Types
+  // Bundle Types (Display Modes)
   BUNDLE_TYPES: {
-    CART_TRANSFORM: 'cart_transform'
+    PRODUCT_PAGE: 'product_page',  // Widget embedded in product page
+    FULL_PAGE: 'full_page'         // Dedicated bundle page (future)
   },
 
   // Step Condition Operators
@@ -237,9 +238,10 @@ class BundleDataManager {
       return null;
     }
 
-    // Selection priority for cart transform bundles
+    // Selection priority for bundles (both product-page and full-page types)
     for (const bundle of bundles) {
-      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.CART_TRANSFORM) {
+      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
         // Priority 1: Manual bundle ID
         if (config.bundleId && bundle.id === config.bundleId) {
           return bundle;

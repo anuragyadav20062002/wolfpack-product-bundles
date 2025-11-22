@@ -195,7 +195,8 @@ export class BundleAutoInjectionService {
         where: {
           shopId: shopId,
           status: 'active',
-          bundleType: 'cart_transform',
+          // Note: bundleType filter removed - all bundles use cart transform implementation
+          // bundleType only indicates display mode (product_page vs full_page)
           shopifyProductId: { not: null }
         },
         select: {
