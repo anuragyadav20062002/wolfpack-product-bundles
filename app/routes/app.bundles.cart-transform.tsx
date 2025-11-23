@@ -309,15 +309,25 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     `;
 
+    // Get app URL for default bundle image
+    const appUrl = process.env.SHOPIFY_APP_URL || `https://${shop}`;
+    const defaultBundleImageUrl = `${appUrl}/bundle.png`;
+
     const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
       variables: {
         input: {
           title: bundleName,
-          descriptionHtml: description || `${bundleName} - Bundle Product`,
+          descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
           productType: "Bundle",
           vendor: "Bundle Builder",
           status: "ACTIVE",
-          tags: ["bundle", "cart-transform"]
+          tags: ["bundle", "cart-transform"],
+          images: [
+            {
+              src: defaultBundleImageUrl,
+              altText: `${bundleName} - Bundle`
+            }
+          ]
         }
       }
     });

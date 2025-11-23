@@ -38,6 +38,20 @@ export class BundleProductManagerService {
       // 5. Set up automatic bundle extension injection
       await this.setupBundleAutoInjection(admin, bundleProduct.id, bundle.id);
 
+      // 6. Add product to Bundles collection
+      try {
+        const collectionId = await this.ensureBundlesCollection(admin);
+        if (collectionId) {
+          await this.addProductToCollection(admin, bundleProduct.id, collectionId);
+        }
+      } catch (error) {
+        // Don't fail the entire operation if collection management fails
+        AppLogger.warn('Failed to add product to Bundles collection', {
+          component: 'bundle-product',
+          operation: 'create-and-publish'
+        }, error);
+      }
+
       AppLogger.info('Successfully created and published bundle product', {
         component: 'bundle-product',
         operation: 'create-and-publish'
@@ -197,20 +211,32 @@ export class BundleProductManagerService {
       }
     `;
 
+    // Get app URL for default bundle image
+    const appUrl = process.env.SHOPIFY_APP_URL || 'https://your-app-url.com';
+    const defaultBundleImageUrl = `${appUrl}/bundle.png`;
+
     const productInput = {
-      title: `${bundle.name} - Bundle`,
+      title: `${bundle.name}`,
       handle: `${bundle.name.toLowerCase().replace(/\s+/g, '-')}-bundle-${Date.now()}`,
+      descriptionHtml: `<h2>${bundle.name}</h2><p>${bundle.description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
       productType: "Bundle",
-      vendor: "Bundle App",
+      vendor: "Bundle Builder",
       tags: ["bundle", "cart-transform", `bundle-id-${bundle.id}`],
-      status: "ACTIVE", // Make sure product is active
+      status: "ACTIVE",
       variants: [{
+        title: "Bundle Package",  // Custom variant title instead of "Default Title"
         price: price,
-        inventoryPolicy: "CONTINUE", // Allow selling when out of stock
-        inventoryManagement: null, // Don't track inventory
-        requiresShipping: false, // Digital bundle product
+        inventoryPolicy: "CONTINUE",
+        inventoryManagement: null,
+        requiresShipping: false,
         taxable: true
       }],
+      images: [
+        {
+          src: defaultBundleImageUrl,
+          altText: `${bundle.name} - Bundle`
+        }
+      ],
       seo: {
         title: `${bundle.name} - Complete Bundle`,
         description: `Complete bundle package: ${bundle.description || bundle.name}`
@@ -699,6 +725,164 @@ export class BundleProductManagerService {
       AppLogger.error('Error deleting bundle product', {
         component: 'bundle-product',
         operation: 'delete'
+      }, error);
+      return false;
+    }
+  }
+
+  /**
+   * Ensure "Bundles" collection exists, create if not
+   */
+  private static async ensureBundlesCollection(admin: any): Promise<string | null> {
+    AppLogger.info('Ensuring Bundles collection exists', {
+      component: 'bundle-product',
+      operation: 'ensure-collection'
+    });
+
+    try {
+      // Check if Bundles collection exists
+      const GET_COLLECTION_QUERY = `
+        query GetBundlesCollection {
+          collections(first: 1, query: "title:'Bundles'") {
+            nodes {
+              id
+              title
+              handle
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(GET_COLLECTION_QUERY);
+      const data = await response.json();
+
+      // If collection exists, return its ID
+      if (data.data?.collections?.nodes?.length > 0) {
+        const collectionId = data.data.collections.nodes[0].id;
+        AppLogger.info('Bundles collection already exists', {
+          component: 'bundle-product',
+          operation: 'ensure-collection'
+        }, { collectionId });
+        return collectionId;
+      }
+
+      // Create Bundles collection
+      const CREATE_COLLECTION_MUTATION = `
+        mutation CreateBundlesCollection($input: CollectionInput!) {
+          collectionCreate(input: $input) {
+            collection {
+              id
+              title
+              handle
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const createResponse = await admin.graphql(CREATE_COLLECTION_MUTATION, {
+        variables: {
+          input: {
+            title: "Bundles",
+            handle: "bundles",
+            descriptionHtml: "<p>All product bundles created with Bundle Builder</p>",
+            ruleSet: {
+              appliedDisjunctively: false,
+              rules: [
+                {
+                  column: "TAG",
+                  relation: "EQUALS",
+                  condition: "bundle"
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const createData = await createResponse.json();
+
+      if (createData.data?.collectionCreate?.userErrors?.length > 0) {
+        AppLogger.error('Collection creation errors', {
+          component: 'bundle-product',
+          operation: 'ensure-collection'
+        }, createData.data.collectionCreate.userErrors);
+        return null;
+      }
+
+      const collectionId = createData.data?.collectionCreate?.collection?.id;
+      AppLogger.info('Created Bundles collection', {
+        component: 'bundle-product',
+        operation: 'ensure-collection'
+      }, { collectionId });
+
+      return collectionId;
+
+    } catch (error) {
+      AppLogger.error('Error ensuring Bundles collection', {
+        component: 'bundle-product',
+        operation: 'ensure-collection'
+      }, error);
+      return null;
+    }
+  }
+
+  /**
+   * Add product to collection
+   */
+  private static async addProductToCollection(admin: any, productId: string, collectionId: string): Promise<boolean> {
+    AppLogger.info('Adding product to collection', {
+      component: 'bundle-product',
+      operation: 'add-to-collection'
+    }, { productId, collectionId });
+
+    try {
+      const ADD_PRODUCT_MUTATION = `
+        mutation AddProductToCollection($productId: ID!, $collectionId: ID!) {
+          collectionAddProducts(id: $collectionId, productIds: [$productId]) {
+            collection {
+              id
+              productsCount
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(ADD_PRODUCT_MUTATION, {
+        variables: {
+          productId,
+          collectionId
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.data?.collectionAddProducts?.userErrors?.length > 0) {
+        AppLogger.error('Error adding product to collection', {
+          component: 'bundle-product',
+          operation: 'add-to-collection'
+        }, data.data.collectionAddProducts.userErrors);
+        return false;
+      }
+
+      AppLogger.info('Successfully added product to Bundles collection', {
+        component: 'bundle-product',
+        operation: 'add-to-collection'
+      }, { productsCount: data.data?.collectionAddProducts?.collection?.productsCount });
+
+      return true;
+
+    } catch (error) {
+      AppLogger.error('Error adding product to collection', {
+        component: 'bundle-product',
+        operation: 'add-to-collection'
       }, error);
       return false;
     }

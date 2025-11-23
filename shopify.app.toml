@@ -78,11 +78,11 @@ capabilities.admin_filterable = true
 [product.metafields.app.bundleProductType]
 type = "single_line_text_field"
 name = "Bundle Product Type"
-description = "Type marker for bundle product (cart_transform_bundle)"
+description = "Type of bundle product (product_page or full_page)"
 access.admin = "merchant_read_write"
 access.storefront = "public_read"
 capabilities.admin_filterable = true
-validations.choices = ["cart_transform_bundle", "standalone_bundle"]
+validations.choices = ["product_page", "full_page"]
 
 [product.metafields.app.isolationCreated]
 type = "single_line_text_field"
