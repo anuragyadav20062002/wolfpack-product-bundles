@@ -55,7 +55,6 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ThemeTemplateService } from "../services/theme-template.server";
-import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -697,28 +696,23 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     // Shop-level bundle index has been removed for better performance and simplicity
 
     // Helper function to set up automatic bundle extension injection
+    // Note: Auto-injection happens via JavaScript in bundle.liquid widget
+    // The widget detects bundle products via variant metafields (bundle_ui_config)
     async function setupBundleAutoInjection(admin: any, bundleProductId: string, bundleId: string) {
-      AppLogger.debug(`🎯 [AUTO_INJECTION] Setting up automatic bundle extension injection for product: ${bundleProductId}`);
+      AppLogger.debug(`🎯 [AUTO_INJECTION] Automatic bundle widget injection configured for product: ${bundleProductId}`);
 
       try {
-        // Use the auto-injection service
-        const result = await BundleAutoInjectionService.injectBundleExtensionIntoProduct(
-          admin,
-          bundleProductId,
-          bundleId
-        );
+        // The actual auto-injection is handled by JavaScript in bundle.liquid (widget)
+        // It detects bundle products via:
+        // 1. Variant metafield: bundle_ui_config (Shopify Standard)
+        // 2. Product tags: 'bundle' or 'cart-transform'
+        // 3. Automatically injects widget if not manually placed in theme
 
-        if (result.success) {
-          AppLogger.debug(`✅ [AUTO_INJECTION] Successfully set up automatic bundle extension injection`);
-        } else {
-          AppLogger.debug(`⚠️ [AUTO_INJECTION] Auto-injection setup warning: ${result.error}`);
-          // Note: This is not a fatal error - the bundle widget will still work via JavaScript detection
-        }
-
-        return result.success;
+        AppLogger.debug(`✅ [AUTO_INJECTION] Widget will auto-display via JavaScript detection`);
+        return true;
 
       } catch (error) {
-        AppLogger.error(`❌ [AUTO_INJECTION] Error setting up auto-injection:`, {}, error as any);
+        AppLogger.error(`❌ [AUTO_INJECTION] Error logging auto-injection setup:`, {}, error as any);
         // Don't throw - this is not critical for bundle functionality
         return false;
       }
