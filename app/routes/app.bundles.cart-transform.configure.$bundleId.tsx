@@ -30,6 +30,7 @@ import {
   Modal,
   Thumbnail,
   List,
+  Spinner,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -46,6 +47,8 @@ import {
   ListNumberedIcon,
   DiscountIcon,
   RefreshIcon,
+  EditIcon,
+  ImageIcon,
 } from "@shopify/polaris-icons";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge contextual save bar with data-save-bar attribute on form
@@ -229,6 +232,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleUpdateBundleStatus(admin, session, bundleId, formData);
       case "syncProduct":
         return await handleSyncProduct(admin, session, bundleId, formData);
+      case "updateBundleProduct":
+        return await handleUpdateBundleProduct(admin, session, bundleId, formData);
       case "getPages":
         return await handleGetPages(admin, session);
       case "getThemeTemplates":
@@ -1235,6 +1240,117 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
   });
 }
 
+// Handle updating bundle product details (title and image)
+async function handleUpdateBundleProduct(admin: any, session: any, bundleId: string, formData: FormData) {
+  try {
+    const productId = formData.get("productId") as string;
+    const productTitle = formData.get("productTitle") as string;
+    const productImageUrl = formData.get("productImageUrl") as string;
+
+    if (!productId) {
+      return json({ success: false, error: "Product ID is required" }, { status: 400 });
+    }
+
+    AppLogger.debug("🔄 [PRODUCT_UPDATE] Updating product details", {
+      productId,
+      productTitle,
+      hasImageUrl: !!productImageUrl
+    });
+
+    // Update product title
+    const UPDATE_PRODUCT = `
+      mutation UpdateProduct($input: ProductInput!) {
+        productUpdate(input: $input) {
+          product {
+            id
+            title
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const updateResponse = await admin.graphql(UPDATE_PRODUCT, {
+      variables: {
+        input: {
+          id: productId,
+          title: productTitle
+        }
+      }
+    });
+
+    const updateData = await updateResponse.json();
+
+    if (updateData.data?.productUpdate?.userErrors?.length > 0) {
+      const error = updateData.data.productUpdate.userErrors[0];
+      throw new Error(`Failed to update product: ${error.message}`);
+    }
+
+    // Update product image if provided
+    if (productImageUrl) {
+      const UPDATE_IMAGE = `
+        mutation UpdateProductImage($productId: ID!, $images: [ImageInput!]!) {
+          productUpdate(input: {
+            id: $productId,
+            images: $images
+          }) {
+            product {
+              id
+              images(first: 1) {
+                nodes {
+                  id
+                  url
+                }
+              }
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const imageResponse = await admin.graphql(UPDATE_IMAGE, {
+        variables: {
+          productId: productId,
+          images: [
+            {
+              src: productImageUrl,
+              altText: `${productTitle} - Bundle`
+            }
+          ]
+        }
+      });
+
+      const imageData = await imageResponse.json();
+
+      if (imageData.data?.productUpdate?.userErrors?.length > 0) {
+        const error = imageData.data.productUpdate.userErrors[0];
+        AppLogger.error("❌ [PRODUCT_UPDATE] Image update failed:", {}, error);
+        // Don't fail the entire operation for image update errors
+      }
+    }
+
+    AppLogger.info("✅ [PRODUCT_UPDATE] Product details updated successfully");
+
+    return json({
+      success: true,
+      message: "Product details updated successfully"
+    });
+
+  } catch (error) {
+    AppLogger.error("❌ [PRODUCT_UPDATE] Error updating product:", {}, error as any);
+    return json({
+      success: false,
+      error: (error as Error).message || "Failed to update product"
+    }, { status: 500 });
+  }
+}
+
 // Handle getting available pages for widget placement
 async function handleGetPages(admin: any, _session: any) {
   const GET_PAGES = `
@@ -1769,6 +1885,11 @@ export default function ConfigureBundleFlow() {
   // State for bundle product - initialize with loaded data
   const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct || null);
   const [productStatus, setProductStatus] = useState(loadedBundleProduct?.status || "ACTIVE");
+
+  // State for bundle product editing
+  const [isEditingProductDetails, setIsEditingProductDetails] = useState(false);
+  const [productTitle, setProductTitle] = useState(loadedBundleProduct?.title || "");
+  const [productImageUrl, setProductImageUrl] = useState(loadedBundleProduct?.featuredImage?.url || loadedBundleProduct?.images?.[0]?.originalSrc || "");
 
   // State for collections - initialize with data from loaded bundle steps
   const [selectedCollections, setSelectedCollections] = useState<Record<string, any[]>>(() => {
@@ -2402,6 +2523,8 @@ export default function ConfigureBundleFlow() {
       if (products && products.length > 0) {
         const selectedProduct = products[0];
         setBundleProduct(selectedProduct);
+        setProductTitle(selectedProduct.title || "");
+        setProductImageUrl(selectedProduct.featuredImage?.url || selectedProduct.images?.[0]?.originalSrc || "");
 
         // Trigger save bar immediately after bundle product selection
         formState.triggerSaveBar();
@@ -2428,6 +2551,51 @@ export default function ConfigureBundleFlow() {
     }
   }, [shopify]);
 
+  // Handle product image upload
+  const handleProductImageUpload = useCallback(async () => {
+    try {
+      if (!bundleProduct?.id) {
+        shopify.toast.show("Please select a bundle product first", { isError: true });
+        return;
+      }
+
+      // Use Shopify's resource picker to select an image or upload new one
+      const imageUrl = window.prompt("Enter image URL (or we'll add file upload in next version):");
+
+      if (imageUrl) {
+        setProductImageUrl(imageUrl);
+        shopify.toast.show("Image will be updated when you save changes", { isError: false });
+        formState.triggerSaveBar();
+      }
+    } catch (error) {
+      AppLogger.error("Image upload failed:", {}, error as any);
+      shopify.toast.show("Failed to upload image", { isError: true });
+    }
+  }, [bundleProduct, shopify, formState.triggerSaveBar]);
+
+  // Handle product title update
+  const handleSaveProductDetails = useCallback(async () => {
+    try {
+      if (!bundleProduct?.id) {
+        shopify.toast.show("No bundle product to update", { isError: true });
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("intent", "updateBundleProduct");
+      formData.append("productId", bundleProduct.id);
+      formData.append("productTitle", productTitle);
+      formData.append("productImageUrl", productImageUrl);
+
+      fetcher.submit(formData, { method: "post" });
+      setIsEditingProductDetails(false);
+
+      shopify.toast.show("Updating product details...", { isError: false });
+    } catch (error) {
+      AppLogger.error("Product update failed:", {}, error as any);
+      shopify.toast.show("Failed to update product details", { isError: true });
+    }
+  }, [bundleProduct, productTitle, productImageUrl, fetcher, shopify]);
 
   // Step management handlers
   const cloneStep = useCallback((stepId: string) => {
@@ -2871,30 +3039,83 @@ export default function ConfigureBundleFlow() {
                   </InlineStack>
 
                   {bundleProduct ? (
-                    <InlineStack gap="300" blockAlign="center">
-                      <Thumbnail
-                        source={bundleProduct.featuredImage?.url || bundleProduct.images?.[0]?.originalSrc || "/bundle.png"}
-                        alt={bundleProduct.title || "Bundle Product"}
-                        size="small"
-                      />
-                      <InlineStack gap="200" blockAlign="center">
-                        <Button
-                          variant="plain"
-                          url={`https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`}
-                          external
-                          icon={ExternalIcon}
-                        >
-                          {bundleProduct.title || "Untitled Product"}
-                        </Button>
-                        <Button
-                          variant="tertiary"
-                          size="micro"
-                          icon={RefreshIcon}
-                          onClick={handleBundleProductSelect}
-                          accessibilityLabel="Change bundle product"
+                    <BlockStack gap="300">
+                      <InlineStack gap="300" blockAlign="center">
+                        <Thumbnail
+                          source={productImageUrl || "/bundle.png"}
+                          alt={productTitle || "Bundle Product"}
+                          size="medium"
                         />
+                        <BlockStack gap="200">
+                          {isEditingProductDetails ? (
+                            <>
+                              <TextField
+                                label="Product Title"
+                                value={productTitle}
+                                onChange={setProductTitle}
+                                autoComplete="off"
+                                labelHidden
+                              />
+                              <InlineStack gap="200">
+                                <Button
+                                  size="slim"
+                                  onClick={handleSaveProductDetails}
+                                  variant="primary"
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  size="slim"
+                                  onClick={() => {
+                                    setIsEditingProductDetails(false);
+                                    setProductTitle(bundleProduct.title || "");
+                                    setProductImageUrl(bundleProduct.featuredImage?.url || bundleProduct.images?.[0]?.originalSrc || "");
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </InlineStack>
+                            </>
+                          ) : (
+                            <>
+                              <InlineStack gap="200" blockAlign="center">
+                                <Button
+                                  variant="plain"
+                                  url={`https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`}
+                                  external
+                                  icon={ExternalIcon}
+                                >
+                                  {productTitle || bundleProduct.title || "Untitled Product"}
+                                </Button>
+                              </InlineStack>
+                              <InlineStack gap="200">
+                                <Button
+                                  size="slim"
+                                  onClick={() => setIsEditingProductDetails(true)}
+                                  icon={EditIcon}
+                                >
+                                  Edit Details
+                                </Button>
+                                <Button
+                                  size="slim"
+                                  onClick={handleProductImageUpload}
+                                  icon={ImageIcon}
+                                >
+                                  Change Image
+                                </Button>
+                                <Button
+                                  variant="tertiary"
+                                  size="slim"
+                                  icon={RefreshIcon}
+                                  onClick={handleBundleProductSelect}
+                                  accessibilityLabel="Change bundle product"
+                                />
+                              </InlineStack>
+                            </>
+                          )}
+                        </BlockStack>
                       </InlineStack>
-                    </InlineStack>
+                    </BlockStack>
                   ) : (
                     <div style={{
                       display: 'flex',
@@ -3586,62 +3807,60 @@ export default function ConfigureBundleFlow() {
       <Modal
         open={isPageSelectionModalOpen}
         onClose={() => setIsPageSelectionModalOpen(false)}
-        title="Select Template for Widget Placement"
+        title="Place Widget"
         primaryAction={{
           content: "Cancel",
           onAction: () => setIsPageSelectionModalOpen(false),
         }}
       >
         <Modal.Section>
-          <BlockStack gap="400">
-            <Text as="p" variant="bodyMd">
-              Choose a page template where you want to place the Bundle Builder widget. The theme editor will open with automatic widget placement and configuration. Bundle container products are highlighted as recommended templates for optimal bundle widget placement.
+          <BlockStack gap="300">
+            <Text as="p" variant="bodySm" tone="subdued">
+              Select a template to open the theme editor with widget placement.
             </Text>
 
             {isLoadingPages ? (
-              <BlockStack gap="200" inlineAlign="center">
-                <Text as="p" variant="bodyMd" tone="subdued">Loading templates...</Text>
+              <BlockStack gap="300" inlineAlign="center">
+                <Spinner size="small" />
+                <Text as="p" variant="bodySm" tone="subdued">Loading templates...</Text>
               </BlockStack>
             ) : availablePages.length > 0 ? (
               <BlockStack gap="200">
                 {availablePages.map((template) => (
-                  <Card key={template.id}>
-                    <InlineStack wrap={false} gap="300" align="space-between">
+                  <Card key={template.id} padding="300">
+                    <InlineStack wrap={false} gap="300" align="space-between" blockAlign="center">
                       <BlockStack gap="100">
                         <InlineStack gap="200" blockAlign="center">
-                          <Text as="h4" variant="bodyMd" fontWeight="medium">
+                          <Text as="span" variant="bodyMd" fontWeight="medium">
                             {template.title}
                           </Text>
                           {template.recommended && (
-                            <Badge tone="success">Recommended</Badge>
-                          )}
-                          {template.fileType && (
-                            <Badge tone="info">{template.fileType}</Badge>
+                            <Badge tone="success">Bundle Product</Badge>
                           )}
                         </InlineStack>
-                        <Text as="p" variant="bodySm" tone="subdued">
-                          {template.description}
-                        </Text>
-                        <Text as="p" variant="bodyXs" tone="subdued">
-                          Template: {template.handle}
-                        </Text>
+                        {template.description && (
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            {template.description}
+                          </Text>
+                        )}
                       </BlockStack>
                       <Button
                         onClick={() => handlePageSelection(template)}
-                        variant="primary"
+                        variant={template.recommended ? "primary" : "secondary"}
                         icon={ExternalIcon}
+                        size="slim"
                       >
-                        Select Template
+                        Select
                       </Button>
                     </InlineStack>
                   </Card>
                 ))}
               </BlockStack>
             ) : (
-              <Card>
-                <BlockStack gap="200" inlineAlign="center">
+              <Card padding="400">
+                <BlockStack gap="300" inlineAlign="center">
                   <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                    No pages found in your store. You can create pages in your Shopify admin and return here to place the widget.
+                    No templates available
                   </Text>
                   <Button
                     url="https://admin.shopify.com/admin/pages"
