@@ -28,12 +28,19 @@ export function safeJsonParse(json: any, defaultValue: any = []) {
  * Ensures variant-level bundle metafield definitions exist in Shopify
  * (Shopify Standard - Approach 1: Hybrid)
  *
- * Creates 5 metafield definitions for ProductVariant owner type:
- * - component_reference (list.variant_reference)
- * - component_quantities (list.number_integer)
- * - price_adjustment (json)
- * - bundle_ui_config (json)
- * - component_parents (json)
+ * Creates 5 metafield definitions for ProductVariant owner type with access controls:
+ * - component_reference (list.variant_reference) - PUBLIC_READ for cart transform
+ * - component_quantities (list.number_integer) - PUBLIC_READ for cart transform
+ * - price_adjustment (json) - NONE (Functions API only)
+ * - bundle_ui_config (json) - PUBLIC_READ for Liquid widget
+ * - component_parents (json) - PUBLIC_READ for cart transform
+ *
+ * All definitions use:
+ * - Namespace: $app (app-reserved)
+ * - Admin access: MERCHANT_READ_WRITE
+ * - API Version: 2025-04
+ *
+ * Reference: https://shopify.dev/docs/apps/build/custom-data/metafields/definitions/use-access-controls-metafields
  */
 export async function ensureVariantBundleMetafieldDefinitions(admin: any) {
   const CREATE_METAFIELD_DEFINITION = `
@@ -56,6 +63,8 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any) {
   `;
 
   // Define metafield definitions for variant-level bundle data (Shopify Standard)
+  // API Version: 2025-04
+  // Access controls added per: https://shopify.dev/docs/apps/build/custom-data/metafields/definitions/use-access-controls-metafields
   const definitions = [
     {
       name: "Bundle Component Variants",
@@ -63,7 +72,11 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any) {
       key: "component_reference",
       description: "Product variants included in this bundle (Shopify standard)",
       type: "list.variant_reference",
-      ownerType: "PRODUCTVARIANT"
+      ownerType: "PRODUCTVARIANT",
+      access: {
+        admin: "MERCHANT_READ_WRITE",
+        storefront: "PUBLIC_READ"  // Required for cart transform to read component references
+      }
     },
     {
       name: "Component Quantities",
@@ -81,7 +94,11 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any) {
           name: "max",
           value: "100"
         }
-      ]
+      ],
+      access: {
+        admin: "MERCHANT_READ_WRITE",
+        storefront: "PUBLIC_READ"  // Required for cart transform to read quantities
+      }
     },
     {
       name: "Bundle Price Adjustment",
@@ -89,7 +106,11 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any) {
       key: "price_adjustment",
       description: "Discount configuration for cart transform (method, value, conditions)",
       type: "json",
-      ownerType: "PRODUCTVARIANT"
+      ownerType: "PRODUCTVARIANT",
+      access: {
+        admin: "MERCHANT_READ_WRITE",
+        storefront: "NONE"  // Cart transform only (Functions API), not needed in Liquid
+      }
     },
     {
       name: "Bundle Widget Configuration",
@@ -97,7 +118,11 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any) {
       key: "bundle_ui_config",
       description: "UI configuration for storefront widget (steps, messaging, display settings)",
       type: "json",
-      ownerType: "PRODUCTVARIANT"
+      ownerType: "PRODUCTVARIANT",
+      access: {
+        admin: "MERCHANT_READ_WRITE",
+        storefront: "PUBLIC_READ"  // CRITICAL: Required for Liquid widget to read configuration
+      }
     },
     {
       name: "Component Parent Bundles",
@@ -105,7 +130,11 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any) {
       key: "component_parents",
       description: "Parent bundles this component belongs to (Shopify standard)",
       type: "json",
-      ownerType: "PRODUCTVARIANT"
+      ownerType: "PRODUCTVARIANT",
+      access: {
+        admin: "MERCHANT_READ_WRITE",
+        storefront: "PUBLIC_READ"  // Required for cart transform MERGE operation
+      }
     }
   ];
 

@@ -266,67 +266,65 @@
   ]
 }
 {% endschema %}
-{% comment %} Bundle Container Product Detection - ENHANCED LOGIC {% endcomment %}
-{% assign is_container_product = false %}
-{% assign container_bundle_id = nil %}
-{% assign bundle_config = nil %}
-{% assign auto_display_mode = false %}
+{% comment %}
+  Bundle Widget - Shopify Standard Architecture (Approach 1: Hybrid)
+  Reads bundle configuration from variant-level metafields.
+  See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+{% endcomment %}
 
-{% comment %} PRIMARY CHECK: Is this product a designated bundle container? {% endcomment %}
+{% assign is_bundle_product = false %}
+{% assign bundle_ui_config = nil %}
+{% assign bundle_id = nil %}
+{% assign should_show_widget = false %}
+{% assign hide_default_buttons = false %}
+
+{% comment %} Build app namespace for metafield access {% endcomment %}
 {% assign app_namespace = 'app--' | append: app.id %}
-{% comment %} Get app metafields object first, then access properties {% endcomment %}
-{% assign app_metafields = product.metafields[app_namespace] %}
-{% if app_metafields %}
-  {% assign bundle_product_type = app_metafields['bundleProductType'] %}
-  {% if bundle_product_type and bundle_product_type.value == 'cart_transform_bundle' %}
-    {% assign is_container_product = true %}
-    {% assign owns_bundle_id = app_metafields['ownsBundleId'] %}
-    {% if owns_bundle_id %}
-      {% assign container_bundle_id = owns_bundle_id.value %}
-    {% endif %}
-    {% assign auto_display_mode = true %}
-    {% comment %} Load bundle configuration from container metafields {% endcomment %}
-    {% assign bundle_config_field = app_metafields['bundleConfig'] %}
-    {% if bundle_config_field %}
-      {% assign bundle_config = bundle_config_field.value %}
+
+{% comment %}
+  SHOPIFY STANDARD: Bundle metafields are stored on ProductVariant (not Product)
+  Access the first variant where bundle configuration is stored
+  Reference: https://shopify.dev/docs/api/liquid/objects/product#product-variants
+{% endcomment %}
+{% assign bundle_variant = product.variants.first %}
+
+{% if bundle_variant %}
+  {% comment %} Access variant metafields per Shopify Liquid documentation {% endcomment %}
+  {% assign variant_metafields = bundle_variant.metafields[app_namespace] %}
+
+  {% if variant_metafields %}
+    {% comment %} Check for bundle_ui_config metafield (Approach 1: Hybrid) {% endcomment %}
+    {% assign bundle_ui_config_field = variant_metafields['bundle_ui_config'] %}
+
+    {% if bundle_ui_config_field and bundle_ui_config_field.value %}
+      {% comment %} Parse JSON metafield value {% endcomment %}
+      {% assign bundle_ui_config = bundle_ui_config_field.value %}
+      {% assign is_bundle_product = true %}
+      {% assign should_show_widget = true %}
+      {% assign hide_default_buttons = true %}
+
+      {% comment %} Extract bundle ID from UI config {% endcomment %}
+      {% if bundle_ui_config.bundleId %}
+        {% assign bundle_id = bundle_ui_config.bundleId %}
+      {% endif %}
     {% endif %}
   {% endif %}
 {% endif %}
 
-{% comment %} SECONDARY CHECK: Widget configured with specific bundle ID (theme editor) {% endcomment %}
-{% assign widget_has_bundle_id = false %}
-{% if block.settings.bundle_id and block.settings.bundle_id != blank %}
-  {% assign widget_has_bundle_id = true %}
-{% endif %}
-
-{% comment %} WIDGET DISPLAY LOGIC - CONTAINER PRODUCTS ONLY {% endcomment %}
-{% assign should_show_widget = false %}
-
-{% comment %} 1. CONTAINER PRODUCT: Show if this product has bundleConfig metafield {% endcomment %}
-{% if is_container_product and bundle_config and bundle_config != blank %}
+{% comment %} THEME EDITOR: Allow manual bundle ID override for preview {% endcomment %}
+{% if request.design_mode and block.settings.bundle_id and block.settings.bundle_id != blank %}
   {% assign should_show_widget = true %}
-  {% comment %} Hide default buy buttons automatically {% endcomment %}
-  {% assign hide_default_buttons = true %}
-{% comment %} 2. THEME EDITOR PREVIEW: Show placeholder in theme editor if bundle ID configured {% endcomment %}
-{% elsif request.design_mode and block.settings.bundle_id and block.settings.bundle_id != blank %}
-  {% assign should_show_widget = true %}
-  {% comment %} In theme editor, show instructional message if not a container product {% endcomment %}
-  {% assign is_theme_editor_preview = true %}
-{% comment %} 3. ALL OTHER CASES: Don't show (not a container product) {% endcomment %}
-{% else %}
-  {% assign should_show_widget = false %}
+  {% assign bundle_id = block.settings.bundle_id %}
 {% endif %}
 
 {% if should_show_widget %}
     <div
       {{ block.shopify_attributes }}
       id="bundle-builder-app"
-      data-bundle-id="{% if block.settings.bundle_id and block.settings.bundle_id != blank %}{{ block.settings.bundle_id }}{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}{{ container_bundle_id }}{% endif %}"
+      data-bundle-id="{{ bundle_id }}"
       data-app-url="{{ block.settings.app_url | default: '' }}"
-      data-is-container-product="{{ is_container_product }}"
-      data-container-bundle-id="{{ container_bundle_id }}"
-      data-auto-display-mode="{{ auto_display_mode }}"
-      data-bundle-config="{{ bundle_config | json | escape }}"
+      data-is-bundle-product="{{ is_bundle_product }}"
+      data-bundle-config="{{ bundle_ui_config | json | escape }}"
       data-hide-default-buttons="{{ hide_default_buttons }}"
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
@@ -409,35 +407,24 @@
 
     <!-- 🔧 [THEME_DEBUG] Bundle Widget Debugging Information -->
     <script>
-      console.log('🎯 [THEME_DEBUG] Bundle Container Widget Loading:', {
+      console.log('🎯 [THEME_DEBUG] Bundle Widget Loading (Shopify Standard):', {
         enabled: {{ block.settings.enabled | json }},
-        bundleId: {{ block.settings.bundle_id | json }},
+        bundleId: {{ bundle_id | json }},
         productId: {{ product.id | json }},
         productHandle: {{ product.handle | json }},
         productTemplate: {{ product.template_suffix | json }},
-        isContainerProduct: {{ is_container_product | json }},
-        containerBundleId: {{ container_bundle_id | json }},
-        widgetHasBundleId: {{ widget_has_bundle_id | json }},
+        isBundleProduct: {{ is_bundle_product | json }},
         shouldShowWidget: {{ should_show_widget | json }},
         hideDefaultButtons: {{ hide_default_buttons | json }},
-        autoDisplayMode: {{ auto_display_mode | json }},
         isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
         urlParams: new URLSearchParams(window.location.search).toString()
       });
 
-      // 🔍 Enhanced debugging for custom template pages
-      console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        bundleIsolationType: {{ bundle_product_type.value | json }},
-        ownsBundleId: {{ owns_bundle_id.value | json }},
-        cartTransformConfig: {{ bundle_config | json }}
-      });
-
-      // 🔍 Debug the Liquid template bundle ID selection logic
-      console.log('🔍 [LIQUID_DEBUG] Bundle ID Selection:', {
-        blockSettingsBundleId: {{ block.settings.bundle_id | json }},
-        isContainerProduct: {{ is_container_product | json }},
-        containerBundleId: {{ container_bundle_id | json }},
-        finalBundleIdValue: {% if block.settings.bundle_id and block.settings.bundle_id != blank %}'{{ block.settings.bundle_id }}'{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}'{{ container_bundle_id }}'{% else %}''{% endif %}
+      // 🔍 Variant metafield debugging (Shopify Standard Architecture)
+      console.log('🔍 [THEME_DEBUG] Variant Metafields:', {
+        bundleUiConfig: {{ bundle_ui_config | json }},
+        variantId: {{ bundle_variant.id | json }},
+        appNamespace: {{ app_namespace | json }}
       });
     </script>
 
