@@ -24,7 +24,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Get extension UUID from environment
   const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
-  const blockHandle = 'bundle-builder';
+  // Block handle must match the liquid filename (without .liquid extension)
+  // File: extensions/bundle-builder/blocks/bundle.liquid
+  const blockHandle = 'bundle';
 
   return {
     shop: session.shop,
