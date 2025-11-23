@@ -309,34 +309,40 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     `;
 
-    // Get app URL for default bundle image
-    const appUrl = process.env.SHOPIFY_APP_URL || `https://${shop}`;
-    const defaultBundleImageUrl = `${appUrl}/bundle.png`;
+    // Get app URL for default bundle image (optional - only if accessible)
+    const appUrl = process.env.SHOPIFY_APP_URL;
+    const productInput: any = {
+      title: bundleName,
+      descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
+      productType: "Bundle",
+      vendor: "Bundle Builder",
+      status: "ACTIVE",
+      tags: ["bundle", "cart-transform"],
+    };
+
+    // Only add image if app URL is configured (optional to avoid errors in dev)
+    if (appUrl) {
+      productInput.images = [
+        {
+          src: `${appUrl}/bundle.png`,
+          altText: `${bundleName} - Bundle`
+        }
+      ];
+    }
 
     const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
       variables: {
-        input: {
-          title: bundleName,
-          descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
-          productType: "Bundle",
-          vendor: "Bundle Builder",
-          status: "ACTIVE",
-          tags: ["bundle", "cart-transform"],
-          images: [
-            {
-              src: defaultBundleImageUrl,
-              altText: `${bundleName} - Bundle`
-            }
-          ]
-        }
+        input: productInput
       }
     });
 
     const productData = await productResponse.json();
 
     if (productData.data?.productCreate?.userErrors?.length > 0) {
-      AppLogger.error("Product creation failed", { component: "app.bundles.cart-transform", operation: "create-bundle" }, { errors: productData.data.productCreate.userErrors });
-      return json({ error: 'Failed to create bundle product in Shopify' }, { status: 500 });
+      const errors = productData.data.productCreate.userErrors;
+      const errorMessages = errors.map((e: any) => e.message).join(', ');
+      AppLogger.error("Product creation failed", { component: "app.bundles.cart-transform", operation: "create-bundle" }, { errors });
+      return json({ error: `Shopify API error: ${errorMessages}` }, { status: 500 });
     }
 
     const shopifyProductId = productData.data?.productCreate?.product?.id;
@@ -369,8 +375,9 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     AppLogger.error("Failed to create cart transform bundle", { component: "app.bundles.cart-transform", operation: "create-bundle" }, error);
-    return json({ error: 'Failed to create cart transform bundle' }, { status: 500 });
+    return json({ error: `Failed to create bundle: ${errorMessage}` }, { status: 500 });
   }
 }
 
