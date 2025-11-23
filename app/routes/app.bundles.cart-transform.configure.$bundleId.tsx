@@ -55,7 +55,6 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ThemeTemplateService } from "../services/theme-template.server";
-import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -696,49 +695,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
     // Cart transform now queries variant metafields directly (Shopify Standard)
     // Shop-level bundle index has been removed for better performance and simplicity
 
-    // Helper function to set up automatic bundle extension injection
-    async function setupBundleAutoInjection(admin: any, bundleProductId: string, bundleId: string) {
-      AppLogger.debug(`🎯 [AUTO_INJECTION] Setting up automatic bundle extension injection for product: ${bundleProductId}`);
-
-      try {
-        // Use the auto-injection service
-        const result = await BundleAutoInjectionService.injectBundleExtensionIntoProduct(
-          admin,
-          bundleProductId,
-          bundleId
-        );
-
-        if (result.success) {
-          AppLogger.debug(`✅ [AUTO_INJECTION] Successfully set up automatic bundle extension injection`);
-        } else {
-          AppLogger.debug(`⚠️ [AUTO_INJECTION] Auto-injection setup warning: ${result.error}`);
-          // Note: This is not a fatal error - the bundle widget will still work via JavaScript detection
-        }
-
-        return result.success;
-
-      } catch (error) {
-        AppLogger.error(`❌ [AUTO_INJECTION] Error setting up auto-injection:`, {}, error as any);
-        // Don't throw - this is not critical for bundle functionality
-        return false;
-      }
-    }
-
-    // 🎯 BUNDLE PRODUCT ISOLATION SETUP: Set up automatic bundle extension injection
-    if (bundleProductData?.id && updatedBundle.id) {
-      AppLogger.debug("🎯 [BUNDLE_INJECTION] Setting up bundle auto-injection");
-      try {
-        // Set up automatic bundle extension injection
-        // Note: Isolation metafields (ownsBundleId, bundleProductType) are no longer needed
-        // Bundle detection now uses variant metafields (bundle_ui_config)
-        await setupBundleAutoInjection(admin, bundleProductData.id, updatedBundle.id);
-
-        AppLogger.debug("✅ [BUNDLE_ISOLATION] Bundle product isolation setup completed successfully");
-      } catch (error) {
-        AppLogger.error("❌ [BUNDLE_ISOLATION] Bundle product isolation setup failed:", {}, error as any);
-        // Don't fail the entire operation - this is not critical for core functionality
-      }
-    }
+    // Note: Widget now only displays when manually added to theme via app blocks
+    // Merchants add the bundle-builder block through the theme editor (guided by onboarding flow)
+    // Auto-injection removed to comply with Shopify App Store requirements
 
     return json({
       success: true,
