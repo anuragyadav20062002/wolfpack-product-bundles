@@ -55,17 +55,11 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ThemeTemplateService } from "../services/theme-template.server";
-import { BundleIsolationService } from "../services/bundle-isolation.server";
 import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
 } from "../services/bundles/metafield-sync.server";
-import {
-  buildCartTransformConfig,
-  updateCartTransformConfigMetafield,
-} from "../services/bundles/cart-transform-metafield.server";
-import { updateBundleIndex } from "../services/bundles/bundle-index.server";
 import {
   calculateBundlePrice,
   updateBundleProductPrice,
@@ -658,29 +652,13 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       AppLogger.debug("📏 [METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);
 
       try {
-        // WIDGET METAFIELD: $app:bundle_config (3-5KB)
-        // Used by: Widget (storefront) - loads bundle UI
-        // Contains: Step data with product IDs only (widget queries Storefront API for fresh data)
-        AppLogger.debug("🔧 [METAFIELD] Creating $app:bundle_config (widget config)");
-        await BundleIsolationService.updateBundleProductMetafield(admin, updatedBundle.shopifyProductId, baseConfiguration);
-        AppLogger.debug("✅ [METAFIELD] $app:bundle_config created successfully");
-
-        // CART TRANSFORM METAFIELD: $app:cart_transform_config (~500 bytes)
-        // Used by: Cart Transform function - applies discounts at checkout
-        // Contains: Only minimal data needed for cart transform (bundleId, parentVariantId, pricing)
-        if (bundleParentVariantId) {
-          AppLogger.debug("🔧 [CART_TRANSFORM_CONFIG] Creating lightweight cart transform config");
-          const cartTransformConfig = buildCartTransformConfig(
-            updatedBundle.id,
-            updatedBundle.name,
-            bundleParentVariantId,
-            baseConfiguration.pricing
-          );
-          await updateCartTransformConfigMetafield(admin, updatedBundle.shopifyProductId, cartTransformConfig);
-          AppLogger.debug("✅ [CART_TRANSFORM_CONFIG] Cart transform config created successfully");
-        } else {
-          AppLogger.warn("⚠️ [CART_TRANSFORM_CONFIG] Skipping - bundle parent variant ID not found");
-        }
+        // VARIANT METAFIELDS: Shopify Standard (Approach 1: Hybrid)
+        // Sets 4 variant-level metafields using the new architecture:
+        // - component_reference (list.variant_reference) - Component variant GIDs
+        // - component_quantities (list.number_integer) - Quantities
+        // - price_adjustment (json) - Discount config for cart transform
+        // - bundle_ui_config (json) - Widget configuration
+        // Handled by updateBundleProductMetafields() below (lines 1086, 1233)
 
         // STANDARD METAFIELDS: For Shopify cart transform compatibility
         AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
@@ -714,81 +692,9 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       }
     }
 
-    // BUNDLE INDEX: Update shop-level bundle index (custom:bundle_index)
-    // Used by: Widget for bundle discovery (~50 bytes per bundle, supports 200+ bundles)
-    try {
-      AppLogger.debug("🔄 [BUNDLE_INDEX] Updating shop-level bundle index...");
-      await updateBundleIndex(admin, session.shop);
-      AppLogger.debug("✅ [BUNDLE_INDEX] Bundle index updated successfully");
-    } catch (error) {
-      AppLogger.error("❌ [BUNDLE_INDEX] Failed to update bundle index:", {}, error as any);
-      // Don't fail the entire operation - just log the error
-    }
-
-    // Helper function to create bundle product isolation metafields
-    async function createBundleProductIsolationMetafields(admin: any, bundleProductId: string, bundleId: string) {
-      AppLogger.debug(`🏷️ [ISOLATION_METAFIELDS] Creating isolation metafields for bundle product: ${bundleProductId}`);
-
-      try {
-        const metafields = [
-          {
-            ownerId: bundleProductId,
-            namespace: "$app",
-            key: "ownsBundleId",
-            type: "single_line_text_field",
-            value: bundleId
-          },
-          {
-            ownerId: bundleProductId,
-            namespace: "$app",
-            key: "bundleProductType",
-            type: "single_line_text_field",
-            value: "cart_transform_bundle"
-          },
-          {
-            ownerId: bundleProductId,
-            namespace: "$app",
-            key: "isolationCreated",
-            type: "single_line_text_field",
-            value: new Date().toISOString()
-          }
-        ];
-
-        const SET_METAFIELDS_MUTATION = `
-        mutation SetIsolationMetafields($metafields: [MetafieldsSetInput!]!) {
-          metafieldsSet(metafields: $metafields) {
-            metafields {
-              id
-              key
-              namespace
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
-        const response = await admin.graphql(SET_METAFIELDS_MUTATION, {
-          variables: { metafields }
-        });
-
-        const data = await response.json();
-
-        if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-          AppLogger.error('❌ [ISOLATION_METAFIELDS] Metafield errors:', {}, data.data.metafieldsSet.userErrors);
-          return false;
-        }
-
-        AppLogger.debug(`✅ [ISOLATION_METAFIELDS] Created ${data.data?.metafieldsSet?.metafields?.length || 0} isolation metafields`);
-        return true;
-
-      } catch (error) {
-        AppLogger.error('❌ [ISOLATION_METAFIELDS] Error creating isolation metafields:', {}, error as any);
-        return false;
-      }
-    }
+    // BUNDLE INDEX: No longer needed
+    // Cart transform now queries variant metafields directly (Shopify Standard)
+    // Shop-level bundle index has been removed for better performance and simplicity
 
     // Helper function to set up automatic bundle extension injection
     async function setupBundleAutoInjection(admin: any, bundleProductId: string, bundleId: string) {
@@ -820,12 +726,11 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
 
     // 🎯 BUNDLE PRODUCT ISOLATION SETUP: Set up automatic bundle extension injection
     if (bundleProductData?.id && updatedBundle.id) {
-      AppLogger.debug("🎯 [BUNDLE_ISOLATION] Setting up bundle product isolation for automatic extension display");
+      AppLogger.debug("🎯 [BUNDLE_INJECTION] Setting up bundle auto-injection");
       try {
-        // Create isolation metafields for automatic bundle detection
-        await createBundleProductIsolationMetafields(admin, bundleProductData.id, updatedBundle.id);
-
         // Set up automatic bundle extension injection
+        // Note: Isolation metafields (ownsBundleId, bundleProductType) are no longer needed
+        // Bundle detection now uses variant metafields (bundle_ui_config)
         await setupBundleAutoInjection(admin, bundleProductData.id, updatedBundle.id);
 
         AppLogger.debug("✅ [BUNDLE_ISOLATION] Bundle product isolation setup completed successfully");
