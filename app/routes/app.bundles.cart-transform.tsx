@@ -309,8 +309,9 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     `;
 
-    // Get app URL for default bundle image (optional - only if accessible)
-    const appUrl = process.env.SHOPIFY_APP_URL;
+    // Product input for bundle creation
+    // Note: Images are not supported in ProductInput for API version 2025-04
+    // Images can be added later via productCreateMedia mutation if needed
     const productInput: any = {
       title: bundleName,
       descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
@@ -319,16 +320,6 @@ export async function action({ request }: ActionFunctionArgs) {
       status: "ACTIVE",
       tags: ["bundle", "cart-transform"],
     };
-
-    // Only add image if app URL is configured (optional to avoid errors in dev)
-    if (appUrl) {
-      productInput.images = [
-        {
-          src: `${appUrl}/bundle.png`,
-          altText: `${bundleName} - Bundle`
-        }
-      ];
-    }
 
     const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
       variables: {
