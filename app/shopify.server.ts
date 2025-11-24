@@ -10,6 +10,7 @@ import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prism
 import prisma from "./db.server";
 import { createStorefrontAccessToken } from "./services/storefront-token.server";
 import { CartTransformService } from "./services/cart-transform-service.server";
+import { ensureVariantBundleMetafieldDefinitions } from "./services/bundles/metafield-sync.server";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -28,8 +29,16 @@ const shopify = shopifyApp({
     afterAuth: async ({ session, admin }) => {
       console.log("[SHOPIFY] afterAuth hook triggered for shop:", session.shop);
 
-      // Metafield definitions are managed declaratively in shopify.app.toml
-      console.log("[SHOPIFY] Metafield definitions managed via shopify.app.toml");
+      // CRITICAL: Create variant-level metafield definitions with storefront access
+      // These definitions enable Liquid widget to read bundle_ui_config and other metafields
+      try {
+        console.log("[SHOPIFY] Creating variant-level metafield definitions...");
+        await ensureVariantBundleMetafieldDefinitions(admin);
+        console.log("[SHOPIFY] ✅ Metafield definitions created with storefront access");
+      } catch (error: any) {
+        console.error("[SHOPIFY] ⚠️ Failed to create metafield definitions:", error?.message || error);
+        console.error("[SHOPIFY] ℹ️ This may prevent the widget from loading. Definitions can be created manually.");
+      }
 
       // Create storefront access token after successful auth
       // This is optional - the app will work without it, but product fetching will be slower
