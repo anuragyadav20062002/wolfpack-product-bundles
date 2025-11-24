@@ -292,7 +292,7 @@ export async function updateBundleProductMetafields(
       position: step.position || 0,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
-      productIds: (step.StepProduct || []).map((sp: any) => sp.productId).filter(Boolean),
+      products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter(p => p.id),
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue
