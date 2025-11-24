@@ -345,9 +345,9 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     // Create bundle product in Shopify with optional media
-    // API 2025-04 supports passing media parameter alongside product input
+    // API 2025-04 uses ProductCreateInput (ProductInput is deprecated)
     const CREATE_BUNDLE_PRODUCT = `
-      mutation CreateBundleProduct($product: ProductInput!, $media: [CreateMediaInput!]) {
+      mutation CreateBundleProduct($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
         productCreate(product: $product, media: $media) {
           product {
             id
