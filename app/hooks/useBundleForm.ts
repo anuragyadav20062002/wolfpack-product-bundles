@@ -98,10 +98,18 @@ export function useBundleForm({ initialData }: UseBundleFormProps) {
 
   // Auto-detect changes and trigger save bar
   useEffect(() => {
-    if (hasFormChanges()) {
-      markSectionChanged('step_setup');
+    const hasChanges = (
+      bundleName !== originalValues.bundleName ||
+      bundleDescription !== originalValues.bundleDescription ||
+      bundleStatus !== originalValues.bundleStatus ||
+      templateName !== originalValues.templateName
+    );
+
+    if (hasChanges) {
+      setHasUnsavedChanges(true);
     }
-  }, [bundleName, bundleDescription, bundleStatus, templateName, hasFormChanges, markSectionChanged]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bundleName, bundleDescription, bundleStatus, templateName]);
 
   return {
     // State

@@ -303,6 +303,19 @@ export async function updateBundleProductMetafields(
 
   console.log("🎨 [METAFIELD] UI config size:", JSON.stringify(bundleUiConfig).length, "chars");
 
+  // DEBUG: Log the stringified value we're about to send
+  const stringifiedValue = JSON.stringify(bundleUiConfig);
+  console.log("🔍 [METAFIELD_DEBUG] Stringified value type:", typeof stringifiedValue);
+  console.log("🔍 [METAFIELD_DEBUG] Stringified value (first 200 chars):", stringifiedValue.substring(0, 200));
+  console.log("🔍 [METAFIELD_DEBUG] Is valid JSON string?", (() => {
+    try {
+      JSON.parse(stringifiedValue);
+      return "YES ✅";
+    } catch (e) {
+      return `NO ❌ - ${e}`;
+    }
+  })());
+
   // Set all 4 metafields on the bundle variant
   const SET_METAFIELDS = `
     mutation SetBundleVariantMetafields($metafields: [MetafieldsSetInput!]!) {
@@ -363,6 +376,21 @@ export async function updateBundleProductMetafields(
 
   console.log("📡 [METAFIELD] GraphQL response received");
   console.log("✅ [METAFIELD] Metafields set:", data.data?.metafieldsSet?.metafields?.length || 0);
+
+  // DEBUG: Log the actual value returned for bundle_ui_config
+  const bundleConfigMetafield = data.data?.metafieldsSet?.metafields?.find((m: any) => m.key === 'bundle_ui_config');
+  if (bundleConfigMetafield) {
+    console.log("🔍 [METAFIELD_DEBUG] bundle_ui_config value type:", typeof bundleConfigMetafield.value);
+    console.log("🔍 [METAFIELD_DEBUG] bundle_ui_config value (first 200 chars):", bundleConfigMetafield.value.substring(0, 200));
+    console.log("🔍 [METAFIELD_DEBUG] Is valid JSON?", (() => {
+      try {
+        JSON.parse(bundleConfigMetafield.value);
+        return "YES ✅";
+      } catch (e) {
+        return `NO ❌ - ${e}`;
+      }
+    })());
+  }
 
   if (data.data?.metafieldsSet?.userErrors?.length > 0) {
     const error = data.data.metafieldsSet.userErrors[0];

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
@@ -1812,6 +1812,9 @@ export default function ConfigureBundleFlow() {
   // Track if there are unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Track previous state to prevent unnecessary SaveBar API calls (prevents flickering)
+  const prevHasUnsavedChanges = useRef(false);
+
   // NOTE: triggerSaveBar and dismissSaveBar are now provided by formState hook
 
   // Check for changes whenever form values change
@@ -1871,13 +1874,19 @@ export default function ConfigureBundleFlow() {
     originalValues
   ]);
 
-  // Separate useEffect to control SaveBar visibility only when hasUnsavedChanges changes
-  // This prevents flickering by not calling show/hide on every field change
+  // Separate useEffect to control SaveBar visibility only when hasUnsavedChanges actually toggles
+  // Per Shopify App Bridge docs: only call show/hide when state transitions, not on every render
+  // Reference: https://shopify.dev/docs/api/app-bridge-library/apis/save-bar
   useEffect(() => {
-    if (hasUnsavedChanges) {
-      shopify.saveBar.show('bundle-save-bar');
-    } else {
-      shopify.saveBar.hide('bundle-save-bar');
+    // Only call API if state actually changed
+    if (hasUnsavedChanges !== prevHasUnsavedChanges.current) {
+      if (hasUnsavedChanges) {
+        shopify.saveBar.show('bundle-save-bar');
+      } else {
+        shopify.saveBar.hide('bundle-save-bar');
+      }
+      // Update ref for next comparison
+      prevHasUnsavedChanges.current = hasUnsavedChanges;
     }
   }, [hasUnsavedChanges, shopify]);
 
@@ -2781,13 +2790,12 @@ export default function ConfigureBundleFlow() {
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
-      // Use App Bridge redirect (not window.open) to avoid popup blockers
-      // This navigates the entire app frame to the theme editor
+      // Open theme editor in new window/tab for better workflow
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
-      AppLogger.debug(`✅ [THEME_EDITOR] Navigating to theme editor via App Bridge`);
+      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor in new window`);
 
-      // Use App Bridge redirect - this avoids popup blockers
-      window.open(themeEditorUrl, '_top');
+      // Open in new window so merchant can keep bundle configuration open
+      window.open(themeEditorUrl, '_blank');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
