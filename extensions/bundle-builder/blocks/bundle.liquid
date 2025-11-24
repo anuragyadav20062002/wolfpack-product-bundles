@@ -512,21 +512,23 @@
     console.log('🎯 [BUNDLE_DATA] Is bundle product flag:', {{ is_bundle_product | json }});
     console.log('🎯 [BUNDLE_DATA] Should show widget:', {{ should_show_widget | json }});
 
-    // Debug all variant metafields
+    // Debug app namespace metafields (checking specific keys only - cannot serialize entire metafields collection)
     {% if bundle_variant %}
-      console.log('🔍 [METAFIELD_DEBUG] Checking variant metafields...');
-      const variantMetafields = {{ bundle_variant.metafields | json }};
-      console.log('🔍 [METAFIELD_DEBUG] All variant metafields:', variantMetafields);
+      console.log('🔍 [METAFIELD_DEBUG] Checking variant metafields in namespace:', {{ app_namespace | json }});
 
-      {% assign app_metafields = bundle_variant.metafields[app_namespace] %}
-      console.log('🔍 [METAFIELD_DEBUG] App namespace metafields:', {{ app_metafields | json }});
+      {% comment %}Check each expected metafield individually{% endcomment %}
+      {% assign bundle_ui_config_check = bundle_variant.metafields[app_namespace]['bundle_ui_config'] %}
+      {% assign component_reference_check = bundle_variant.metafields[app_namespace]['component_reference'] %}
 
-      {% if app_metafields %}
-        {% for metafield_key in app_metafields %}
-          console.log('🔍 [METAFIELD_DEBUG] Found metafield key:', '{{ metafield_key[0] }}');
-        {% endfor %}
-      {% else %}
-        console.log('⚠️ [METAFIELD_DEBUG] No metafields found in app namespace:', {{ app_namespace | json }});
+      console.log('🔍 [METAFIELD_DEBUG] bundle_ui_config exists:', {{ bundle_ui_config_check | json }} !== null);
+      console.log('🔍 [METAFIELD_DEBUG] component_reference exists:', {{ component_reference_check | json }} !== null);
+
+      {% if bundle_ui_config_check == null and component_reference_check == null %}
+        console.log('⚠️ [METAFIELD_DEBUG] No bundle metafields found in namespace:', {{ app_namespace | json }});
+        console.log('⚠️ [METAFIELD_DEBUG] This means either:');
+        console.log('   1. Metafield definitions not created (need fresh install after latest deploy)');
+        console.log('   2. Metafield values not set on this variant');
+        console.log('   3. Wrong namespace being used');
       {% endif %}
     {% endif %}
 
