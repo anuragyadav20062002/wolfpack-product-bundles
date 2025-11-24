@@ -31,6 +31,8 @@ import {
   Thumbnail,
   List,
   Spinner,
+  Divider,
+  Banner,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -108,6 +110,8 @@ interface LoaderData {
   };
   bundleProduct?: any;
   shop: string;
+  extensionUuid: string;
+  blockHandle: string;
 }
 
 
@@ -194,10 +198,18 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     }
   }
 
+  // Get extension UUID from environment for theme editor deep links
+  const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
+  // Block handle must match the liquid filename (without .liquid extension)
+  // File: extensions/bundle-builder/blocks/bundle.liquid
+  const blockHandle = 'bundle';
+
   return json({
     bundle,
     bundleProduct,
     shop: session.shop,
+    extensionUuid,
+    blockHandle,
   });
 };
 
@@ -1668,7 +1680,7 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
 }
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<LoaderData>();
+  const { bundle, bundleProduct: loadedBundleProduct, shop, extensionUuid, blockHandle } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -2381,7 +2393,7 @@ export default function ConfigureBundleFlow() {
       });
 
       if (products && products.length > 0) {
-        const selectedProduct = products[0];
+        const selectedProduct = products[0] as any;
         setBundleProduct(selectedProduct);
         setProductTitle(selectedProduct.title || "");
         setProductImageUrl(selectedProduct.featuredImage?.url || selectedProduct.images?.[0]?.originalSrc || "");
@@ -2736,22 +2748,34 @@ export default function ConfigureBundleFlow() {
         }
       }
 
-      // Use correct extension UUID from environment variable
-      const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
-      const blockHandle = 'bundle-builder'; // Match the extension handle
+      // Use extension UUID and block handle from loader data (passed from server)
+      if (!extensionUuid || !blockHandle) {
+        AppLogger.error('🚨 [THEME_EDITOR] Missing extension configuration');
+        shopify.toast.show("Extension configuration missing. Please check app setup.", { isError: true });
+        return;
+      }
+
       const appBlockId = `${extensionUuid}/${blockHandle}`;
 
-      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
+      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`, {
+        extensionUuid,
+        blockHandle,
+        bundleId: bundle.id
+      });
 
-      // Generate simple deep link following Shopify's official documentation
-      // Official format: template + addAppBlockId + target
+      // Generate deep link following Shopify's official documentation with bundle ID
+      // Official format: template + addAppBlockId + target + bundleId (for auto-population)
       // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
       //
-      // Note: activate=true and previewPath are NOT in official docs and don't work reliably
-      // This simple format opens the theme editor with the block ready to add
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
+      // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
+      // the bundle_id setting in the theme editor, making setup seamless for merchants
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
 
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link:`, {}, themeEditorUrl);
+      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
+        template: template.handle,
+        bundleId: bundle.id,
+        url: themeEditorUrl
+      });
 
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
@@ -3020,30 +3044,23 @@ export default function ConfigureBundleFlow() {
                     Take your bundle live
                   </Text>
 
-                  {/* Green recommendation banner for manual template creation */}
-                  <div style={{
-                    padding: '12px 16px',
-                    backgroundColor: '#e8f5e8',
-                    border: '1px solid #4caf50',
-                    borderRadius: '8px'
-                  }}>
+                  {/* Installation Guide Banner */}
+                  <Banner tone="info">
                     <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={RefreshIcon} tone="success" />
-                        <Text as="span" variant="bodyMd" fontWeight="medium" tone="success">
-                          💡 Pro Tip: Manual Template Creation
-                        </Text>
+                      <Text as="p" variant="bodyMd">
+                        <strong>New to installing bundles?</strong> Check out our comprehensive installation guide
+                        with step-by-step instructions, screenshots, and troubleshooting tips.
+                      </Text>
+                      <InlineStack gap="200">
+                        <Button
+                          onClick={() => navigate('/app/installation-guide')}
+                          icon={ExternalIcon}
+                        >
+                          View Installation Guide
+                        </Button>
                       </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        For optimal bundle widget placement, manually create a product template named "cart-transform"
-                        in your theme's templates folder. This allows precise control over bundle widget positioning
-                        and ensures consistent styling across your store.
-                      </Text>
-                      <Text as="p" variant="bodyXs" tone="subdued">
-                        <strong>Video Tutorial:</strong> See our detailed video guide for step-by-step template creation instructions.
-                      </Text>
                     </BlockStack>
-                  </div>
+                  </Banner>
 
                   {/* Template Selection */}
                   <BlockStack gap="200">
@@ -3064,29 +3081,45 @@ export default function ConfigureBundleFlow() {
                     />
                   </BlockStack>
 
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <Text variant="bodyMd" as="p">
-                        Place on theme
-                      </Text>
+                  {/* Quick Setup Action */}
+                  <BlockStack gap="300">
+                    <Divider />
+
+                    <InlineStack align="space-between" blockAlign="center" gap="400">
+                      <BlockStack gap="100">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          Install Widget in Theme
+                        </Text>
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          Opens theme editor with bundle widget pre-selected. Simply drag & drop to position.
+                        </Text>
+                      </BlockStack>
                       <Button
+                        variant="primary"
                         icon={SettingsIcon}
                         onClick={handlePlaceWidget}
+                        size="large"
                       >
                         Place Widget
                       </Button>
                     </InlineStack>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Need help? Check out our{" "}
-                      <Button
-                        variant="plain"
-                        onClick={() => window.open('/app/onboarding', '_blank')}
-                      >
-                        setup guide
-                      </Button>
-                      {" "}for step-by-step instructions
-                    </Text>
                   </BlockStack>
+
+                  {/* Pro Tip */}
+                  <Banner tone="success">
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={RefreshIcon} />
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">
+                          💡 Pro Tip: Custom Templates
+                        </Text>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm">
+                        Create a custom product template named "cart-transform" specifically for bundle products.
+                        This gives you better control and keeps bundle products separate from regular products.
+                      </Text>
+                    </BlockStack>
+                  </Banner>
                 </BlockStack>
               </Card>
             </BlockStack>

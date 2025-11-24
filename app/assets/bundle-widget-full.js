@@ -1374,10 +1374,22 @@ class BundleWidget {
 
     const button = this.elements.addToCartButton;
 
-    if (totalQuantity === 0) {
-      button.textContent = 'Add Bundle to Cart';
+    // Check if all steps are complete (required)
+    const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+
+    // Disable button if no products selected OR if not all steps are complete
+    if (totalQuantity === 0 || !allStepsValid) {
+      if (totalQuantity === 0) {
+        button.textContent = 'Add Bundle to Cart';
+      } else {
+        // Some products selected but not all steps complete
+        button.textContent = 'Complete All Steps to Continue';
+      }
       button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
     } else {
+      // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
       const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
 
@@ -1394,6 +1406,8 @@ class BundleWidget {
       }
 
       button.disabled = false;
+      button.style.opacity = '1';
+      button.style.cursor = 'pointer';
     }
   }
   // ========================================================================
