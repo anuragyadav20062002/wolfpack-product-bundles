@@ -328,7 +328,7 @@
       data-bundle-id="{{ bundle_id }}"
       data-app-url="{{ block.settings.app_url | default: '' }}"
       data-is-bundle-product="{{ is_bundle_product }}"
-      data-bundle-config='{{ bundle_ui_config }}'
+      data-bundle-config='{{ bundle_ui_config | json }}'
       data-hide-default-buttons="{{ hide_default_buttons }}"
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
