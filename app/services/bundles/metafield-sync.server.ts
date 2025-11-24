@@ -283,6 +283,9 @@ export async function updateBundleProductMetafields(
     bundleId: bundleConfiguration.id || bundleConfiguration.bundleId, // Keep for backwards compatibility
     name: bundleConfiguration.name,
     description: bundleConfiguration.description || '',
+    status: bundleConfiguration.status || 'active', // Widget needs this for filtering
+    bundleType: bundleConfiguration.bundleType || 'product_page', // Widget needs this for selection
+    shopifyProductId: bundleConfiguration.shopifyProductId || null, // Product ID for matching
     steps: (bundleConfiguration.steps || []).map((step: any) => ({
       id: step.id,
       name: step.name,
