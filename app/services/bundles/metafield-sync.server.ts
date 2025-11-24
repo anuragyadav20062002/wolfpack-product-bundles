@@ -279,7 +279,8 @@ export async function updateBundleProductMetafields(
 
   // Build bundle_ui_config for widget
   const bundleUiConfig = {
-    bundleId: bundleConfiguration.id || bundleConfiguration.bundleId,
+    id: bundleConfiguration.id || bundleConfiguration.bundleId, // Widget expects 'id' field
+    bundleId: bundleConfiguration.id || bundleConfiguration.bundleId, // Keep for backwards compatibility
     name: bundleConfiguration.name,
     description: bundleConfiguration.description || '',
     steps: (bundleConfiguration.steps || []).map((step: any) => ({
