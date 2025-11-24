@@ -24,6 +24,68 @@ import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 
+/**
+ * Add image to a product using productCreateMedia mutation
+ * This is the recommended approach for API version 2025-04+
+ */
+async function addProductImage(admin: any, productId: string, imageUrl: string, altText?: string) {
+  const CREATE_MEDIA = `
+    mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+      productCreateMedia(productId: $productId, media: $media) {
+        media {
+          alt
+          mediaContentType
+          status
+        }
+        mediaUserErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(CREATE_MEDIA, {
+      variables: {
+        productId: productId,
+        media: [
+          {
+            originalSource: imageUrl,
+            alt: altText || "Bundle product image",
+            mediaContentType: "IMAGE"
+          }
+        ]
+      }
+    });
+
+    const data = await response.json();
+
+    if (data.data?.productCreateMedia?.mediaUserErrors?.length > 0) {
+      const errors = data.data.productCreateMedia.mediaUserErrors;
+      AppLogger.error("Failed to add product image", {
+        component: "app.bundles.cart-transform",
+        operation: "add-product-image"
+      }, { errors, productId, imageUrl });
+      return { success: false, errors };
+    }
+
+    AppLogger.info("Product image added successfully", {
+      component: "app.bundles.cart-transform",
+      productId,
+      imageUrl
+    });
+
+    return { success: true };
+  } catch (error) {
+    AppLogger.error("Error adding product image", {
+      component: "app.bundles.cart-transform",
+      operation: "add-product-image"
+    }, error);
+    return { success: false, error };
+  }
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
   
@@ -282,10 +344,11 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    // Create bundle product in Shopify first
+    // Create bundle product in Shopify with optional media
+    // API 2025-04 supports passing media parameter alongside product input
     const CREATE_BUNDLE_PRODUCT = `
-      mutation CreateBundleProduct($input: ProductInput!) {
-        productCreate(input: $input) {
+      mutation CreateBundleProduct($product: ProductInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product {
             id
             title
@@ -309,8 +372,7 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     `;
 
-    // Get app URL for default bundle image (optional - only if accessible)
-    const appUrl = process.env.SHOPIFY_APP_URL;
+    // Product input for bundle creation
     const productInput: any = {
       title: bundleName,
       descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
@@ -320,19 +382,20 @@ export async function action({ request }: ActionFunctionArgs) {
       tags: ["bundle", "cart-transform"],
     };
 
-    // Only add image if app URL is configured (optional to avoid errors in dev)
-    if (appUrl) {
-      productInput.images = [
-        {
-          src: `${appUrl}/bundle.png`,
-          altText: `${bundleName} - Bundle`
-        }
-      ];
-    }
+    // Prepare media input if app URL is configured
+    const appUrl = process.env.SHOPIFY_APP_URL;
+    const mediaInput = appUrl ? [
+      {
+        originalSource: `${appUrl}/bundle.png`,
+        alt: `${bundleName} - Bundle`,
+        mediaContentType: "IMAGE"
+      }
+    ] : undefined;
 
     const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
       variables: {
-        input: productInput
+        product: productInput,
+        ...(mediaInput && { media: mediaInput })
       }
     });
 
@@ -367,8 +430,8 @@ export async function action({ request }: ActionFunctionArgs) {
 
 
     // Return success with the bundle ID to allow client-side navigation
-    return json({ 
-      success: true, 
+    return json({
+      success: true,
       bundleId: newBundle.id,
       bundleProductId: shopifyProductId,
       redirectTo: `/app/bundles/cart-transform/configure/${newBundle.id}`
