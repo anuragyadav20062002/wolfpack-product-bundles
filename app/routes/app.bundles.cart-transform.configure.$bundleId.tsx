@@ -110,7 +110,7 @@ interface LoaderData {
   };
   bundleProduct?: any;
   shop: string;
-  extensionUuid: string;
+  apiKey: string;
   blockHandle: string;
 }
 
@@ -198,8 +198,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     }
   }
 
-  // Get extension UUID from environment for theme editor deep links
-  const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
+  // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
+  // Per Shopify docs: addAppBlockId={api_key}/{handle}
+  // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
+  const apiKey = process.env.SHOPIFY_API_KEY;
   // Block handle must match the liquid filename (without .liquid extension)
   // File: extensions/bundle-builder/blocks/bundle.liquid
   const blockHandle = 'bundle';
@@ -208,7 +210,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     bundle,
     bundleProduct,
     shop: session.shop,
-    extensionUuid,
+    apiKey,
     blockHandle,
   });
 };
@@ -1678,7 +1680,7 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
 }
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop, extensionUuid, blockHandle } = useLoaderData<LoaderData>();
+  const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -2746,17 +2748,18 @@ export default function ConfigureBundleFlow() {
         }
       }
 
-      // Use extension UUID and block handle from loader data (passed from server)
-      if (!extensionUuid || !blockHandle) {
-        AppLogger.error('🚨 [THEME_EDITOR] Missing extension configuration');
-        shopify.toast.show("Extension configuration missing. Please check app setup.", { isError: true });
+      // Use app API key and block handle from loader data (passed from server)
+      // CRITICAL: Must use app's API key (client_id), not extension UUID
+      if (!apiKey || !blockHandle) {
+        AppLogger.error('🚨 [THEME_EDITOR] Missing app configuration');
+        shopify.toast.show("App configuration missing. Please check app setup.", { isError: true });
         return;
       }
 
-      const appBlockId = `${extensionUuid}/${blockHandle}`;
+      const appBlockId = `${apiKey}/${blockHandle}`;
 
       AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`, {
-        extensionUuid,
+        apiKey,
         blockHandle,
         bundleId: bundle.id
       });

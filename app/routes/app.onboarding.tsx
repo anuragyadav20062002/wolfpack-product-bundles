@@ -22,21 +22,23 @@ import { AppLogger } from "../lib/logger";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
 
-  // Get extension UUID from environment
-  const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
+  // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
+  // Per Shopify docs: addAppBlockId={api_key}/{handle}
+  // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
+  const apiKey = process.env.SHOPIFY_API_KEY;
   // Block handle must match the liquid filename (without .liquid extension)
   // File: extensions/bundle-builder/blocks/bundle.liquid
   const blockHandle = 'bundle';
 
   return {
     shop: session.shop,
-    extensionUuid,
+    apiKey,
     blockHandle,
   };
 };
 
 export default function Onboarding() {
-  const { shop, extensionUuid, blockHandle } = useLoaderData<typeof loader>();
+  const { shop, apiKey, blockHandle } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState('product');
@@ -55,7 +57,8 @@ export default function Onboarding() {
    * @param target - Where to add the block (newAppsSection, mainSection, sectionGroup:header, etc.)
    */
   const generateThemeEditorLink = (template: string = 'product', target: string = 'newAppsSection') => {
-    const appBlockId = `${extensionUuid}/${blockHandle}`;
+    // CRITICAL: Use app's API key (client_id), not extension UUID
+    const appBlockId = `${apiKey}/${blockHandle}`;
 
     // Construct deep link with proper parameters
     const params = new URLSearchParams({
@@ -71,6 +74,7 @@ export default function Onboarding() {
       template,
       target,
       appBlockId,
+      apiKey,
       deepLink
     });
 

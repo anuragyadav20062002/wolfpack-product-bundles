@@ -30,20 +30,22 @@ import { useState } from "react";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
 
-  // Get extension UUID from environment
-  const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
+  // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
+  // Per Shopify docs: addAppBlockId={api_key}/{handle}
+  // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
+  const apiKey = process.env.SHOPIFY_API_KEY;
   // Block handle must match the liquid filename (without .liquid extension)
   const blockHandle = 'bundle';
 
   return json({
     shop: session.shop,
-    extensionUuid,
+    apiKey,
     blockHandle,
   });
 };
 
 export default function InstallationGuide() {
-  const { shop, extensionUuid, blockHandle } = useLoaderData<typeof loader>();
+  const { shop, apiKey, blockHandle } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
   // Collapsible sections state
@@ -63,13 +65,15 @@ export default function InstallationGuide() {
 
   /**
    * Generate theme editor deep link
+   * Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
    */
   const openThemeEditor = () => {
     const shopDomain = shop.includes('.myshopify.com')
       ? shop.replace('.myshopify.com', '')
       : shop;
 
-    const appBlockId = `${extensionUuid}/${blockHandle}`;
+    // CRITICAL: Use app's API key (client_id), not extension UUID
+    const appBlockId = `${apiKey}/${blockHandle}`;
     const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=product&addAppBlockId=${appBlockId}&target=newAppsSection`;
 
     window.open(themeEditorUrl, '_top');
