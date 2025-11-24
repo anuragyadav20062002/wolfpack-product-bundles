@@ -344,10 +344,11 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    // Create bundle product in Shopify first
+    // Create bundle product in Shopify with optional media
+    // API 2025-04 supports passing media parameter alongside product input
     const CREATE_BUNDLE_PRODUCT = `
-      mutation CreateBundleProduct($input: ProductInput!) {
-        productCreate(input: $input) {
+      mutation CreateBundleProduct($product: ProductInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product {
             id
             title
@@ -372,8 +373,6 @@ export async function action({ request }: ActionFunctionArgs) {
     `;
 
     // Product input for bundle creation
-    // Note: Images are not supported in ProductInput for API version 2025-04
-    // Images can be added later via productCreateMedia mutation if needed
     const productInput: any = {
       title: bundleName,
       descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
@@ -383,9 +382,20 @@ export async function action({ request }: ActionFunctionArgs) {
       tags: ["bundle", "cart-transform"],
     };
 
+    // Prepare media input if app URL is configured
+    const appUrl = process.env.SHOPIFY_APP_URL;
+    const mediaInput = appUrl ? [
+      {
+        originalSource: `${appUrl}/bundle.png`,
+        alt: `${bundleName} - Bundle`,
+        mediaContentType: "IMAGE"
+      }
+    ] : undefined;
+
     const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
       variables: {
-        input: productInput
+        product: productInput,
+        ...(mediaInput && { media: mediaInput })
       }
     });
 
@@ -403,18 +413,6 @@ export async function action({ request }: ActionFunctionArgs) {
     if (!shopifyProductId) {
       AppLogger.error("No product ID returned from Shopify", { component: "app.bundles.cart-transform", operation: "create-bundle" });
       return json({ error: 'Failed to get product ID from Shopify' }, { status: 500 });
-    }
-
-    // Add default bundle image if app URL is configured
-    const appUrl = process.env.SHOPIFY_APP_URL;
-    if (appUrl) {
-      await addProductImage(
-        admin,
-        shopifyProductId,
-        `${appUrl}/bundle.png`,
-        `${bundleName} - Bundle`
-      );
-      // Note: Image addition is non-blocking - we don't fail bundle creation if it fails
     }
 
     // Create bundle in database with linked Shopify product
