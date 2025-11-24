@@ -500,13 +500,37 @@
     // Enhanced debugging for bundle data loading
     const productBundleConfig = {{ bundle_ui_config | json }};
     console.log('🎯 [BUNDLE_DATA] Product ID:', {{ product.id | json }});
+    console.log('🎯 [BUNDLE_DATA] Product Handle:', {{ product.handle | json }});
     console.log('🎯 [BUNDLE_DATA] Has bundle config metafield:', !!productBundleConfig);
+    console.log('🎯 [BUNDLE_DATA] Bundle config value:', productBundleConfig);
+    console.log('🎯 [BUNDLE_DATA] App namespace:', {{ app_namespace | json }});
+    console.log('🎯 [BUNDLE_DATA] First variant ID:', {{ bundle_variant.id | json }});
+    console.log('🎯 [BUNDLE_DATA] Is bundle product flag:', {{ is_bundle_product | json }});
+    console.log('🎯 [BUNDLE_DATA] Should show widget:', {{ should_show_widget | json }});
 
-    if (productBundleConfig && productBundleConfig.id) {
+    // Debug all variant metafields
+    {% if bundle_variant %}
+      console.log('🔍 [METAFIELD_DEBUG] Checking variant metafields...');
+      const variantMetafields = {{ bundle_variant.metafields | json }};
+      console.log('🔍 [METAFIELD_DEBUG] All variant metafields:', variantMetafields);
+
+      {% assign app_metafields = bundle_variant.metafields[app_namespace] %}
+      console.log('🔍 [METAFIELD_DEBUG] App namespace metafields:', {{ app_metafields | json }});
+
+      {% if app_metafields %}
+        {% for metafield_key in app_metafields %}
+          console.log('🔍 [METAFIELD_DEBUG] Found metafield key:', '{{ metafield_key[0] }}');
+        {% endfor %}
+      {% else %}
+        console.log('⚠️ [METAFIELD_DEBUG] No metafields found in app namespace:', {{ app_namespace | json }});
+      {% endif %}
+    {% endif %}
+
+    if (productBundleConfig && productBundleConfig.bundleId) {
       console.log('✅ [BUNDLE_DATA] Container product detected:', productBundleConfig.name);
-      console.log('✅ [BUNDLE_DATA] Bundle ID:', productBundleConfig.id);
+      console.log('✅ [BUNDLE_DATA] Bundle ID:', productBundleConfig.bundleId);
     } else {
-      console.log('ℹ️ [BUNDLE_DATA] Not a bundle container product');
+      console.log('ℹ️ [BUNDLE_DATA] Not a bundle container product - no bundle_ui_config metafield found');
     }
   }
   
