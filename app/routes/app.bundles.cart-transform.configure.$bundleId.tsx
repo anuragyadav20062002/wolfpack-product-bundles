@@ -1851,13 +1851,6 @@ export default function ConfigureBundleFlow() {
     const hasChanges = stepSetupChanges || discountPricingChanges || bundleStatusChanges;
 
     setHasUnsavedChanges(hasChanges);
-
-    // Control SaveBar visibility using App Bridge API
-    if (hasChanges) {
-      shopify.saveBar.show('bundle-save-bar');
-    } else {
-      shopify.saveBar.hide('bundle-save-bar');
-    }
   }, [
     formState.bundleStatus,
     formState.bundleName,
@@ -1875,9 +1868,18 @@ export default function ConfigureBundleFlow() {
     conditionsState.stepConditions,
     bundleProduct,
     productStatus,
-    originalValues,
-    shopify // Required for saveBar.show() and .hide() calls
+    originalValues
   ]);
+
+  // Separate useEffect to control SaveBar visibility only when hasUnsavedChanges changes
+  // This prevents flickering by not calling show/hide on every field change
+  useEffect(() => {
+    if (hasUnsavedChanges) {
+      shopify.saveBar.show('bundle-save-bar');
+    } else {
+      shopify.saveBar.hide('bundle-save-bar');
+    }
+  }, [hasUnsavedChanges, shopify]);
 
   // Save handler
   const handleSave = useCallback(async () => {
