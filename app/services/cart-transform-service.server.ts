@@ -13,119 +13,22 @@ export interface CartTransformActivationResult {
 
 export class CartTransformService {
   /**
-   * Get the deployed function ID for the cart transform
-   * Uses the UID from environment to directly construct the function ID
+   * Get the function handle for the cart transform
+   * Uses stable handle from shopify.extension.toml (Shopify 2025-10+ best practice)
+   * Falls back to UID-based function ID for compatibility
    */
-  private static async getDeployedFunctionId(admin: AdminApiContext): Promise<string | null> {
-    // First, try to use the UID from environment (most reliable method)
-    const functionUid = process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID;
+  private static async getDeployedFunctionHandle(admin: AdminApiContext): Promise<{ handle?: string; id?: string }> {
+    // MODERN APPROACH (2025-10+): Use stable function handle from shopify.extension.toml
+    // Handle: bundle-cart-transform-ts (defined in extensions/bundle-cart-transform-ts/shopify.extension.toml)
+    // Reference: https://shopify.dev/changelog/introducing-functionhandle
+    const functionHandle = 'bundle-cart-transform-ts';
 
-    if (functionUid) {
-      // Construct the function ID from the UID
-      // Format: gid://shopify/ShopifyFunction/{uid}
-      const functionId = `gid://shopify/ShopifyFunction/${functionUid}`;
-
-      AppLogger.info('Using function ID from environment UID', {
-        component: 'cart-transform',
-        operation: 'get-function-id'
-      }, { functionId, uid: functionUid });
-
-      return functionId;
-    }
-
-    // Fallback: Query for cart transform functions if UID not in environment
-    AppLogger.warn('SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID not set, querying for functions', {
+    AppLogger.info('Using stable function handle (2025-10+ best practice)', {
       component: 'cart-transform',
-      operation: 'get-function-id'
-    });
+      operation: 'get-function-handle'
+    }, { functionHandle });
 
-    const QUERY_FUNCTIONS = `
-      query GetCartTransformFunction {
-        shopifyFunctions(first: 25, apiType: "cart_transform") {
-          nodes {
-            id
-            apiType
-            title
-            apiVersion
-            app {
-              id
-              title
-            }
-          }
-        }
-      }
-    `;
-
-    try {
-      const response = await admin.graphql(QUERY_FUNCTIONS);
-      const data = await response.json() as any;
-
-      if (data.errors) {
-        AppLogger.error('GraphQL errors querying functions', {
-          component: 'cart-transform',
-          operation: 'get-function-id'
-        }, { errors: data.errors });
-        return null;
-      }
-
-      const functions = data.data?.shopifyFunctions?.nodes || [];
-
-      AppLogger.info('Queried shopifyFunctions', {
-        component: 'cart-transform',
-        operation: 'get-function-id'
-      }, {
-        totalFound: functions.length,
-        functions: functions.map((f: any) => ({
-          id: f.id,
-          title: f.title,
-          apiType: f.apiType,
-          appTitle: f.app?.title
-        }))
-      });
-
-      // Find cart transform function - prioritize by title match
-      let cartTransformFunction = functions.find(
-        (fn: any) => fn.title?.toLowerCase().includes("bundle") &&
-                     fn.title?.toLowerCase().includes("cart")
-      );
-
-      // Fallback: just get the first cart_transform function
-      if (!cartTransformFunction && functions.length > 0) {
-        cartTransformFunction = functions[0];
-        AppLogger.info('Using first available cart_transform function', {
-          component: 'cart-transform',
-          operation: 'get-function-id'
-        }, { functionId: cartTransformFunction.id, title: cartTransformFunction.title });
-      }
-
-      if (cartTransformFunction) {
-        AppLogger.info('Found cart transform function via query', {
-          component: 'cart-transform',
-          operation: 'get-function-id'
-        }, {
-          functionId: cartTransformFunction.id,
-          title: cartTransformFunction.title,
-          apiVersion: cartTransformFunction.apiVersion
-        });
-        return cartTransformFunction.id;
-      }
-
-      AppLogger.warn('No cart_transform functions found for this app', {
-        component: 'cart-transform',
-        operation: 'get-function-id'
-      }, {
-        message: 'Set SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID in environment or ensure extension is deployed',
-        queriedFunctionCount: functions.length
-      });
-      return null;
-
-    } catch (error) {
-      AppLogger.error('Exception querying deployed functions', {
-        component: 'cart-transform',
-        operation: 'get-function-id'
-      }, error);
-      return null;
-    }
+    return { handle: functionHandle };
   }
 
   /**
@@ -157,11 +60,11 @@ export class CartTransformService {
         };
       }
 
-      // Get the deployed function ID dynamically
-      const functionId = await this.getDeployedFunctionId(admin);
+      // Get the function handle (2025-10+ stable identifier)
+      const functionInfo = await this.getDeployedFunctionHandle(admin);
 
-      if (!functionId) {
-        const errorMsg = 'Cart transform function not found. Please deploy the extension first using "shopify app deploy"';
+      if (!functionInfo.handle) {
+        const errorMsg = 'Cart transform function handle not configured. Please check shopify.extension.toml';
         AppLogger.error(errorMsg, {
           component: 'cart-transform',
           operation: 'activate'
@@ -172,8 +75,8 @@ export class CartTransformService {
         };
       }
 
-      // Create new cart transform
-      const result = await this.createCartTransform(admin, functionId);
+      // Create new cart transform using stable function handle
+      const result = await this.createCartTransform(admin, functionInfo.handle);
 
       if (result.success) {
         AppLogger.info('Successfully activated cart transform', {
@@ -249,12 +152,13 @@ export class CartTransformService {
   }
   
   /**
-   * Create cart transform object
+   * Create cart transform object using functionHandle (2025-10+ API)
+   * Reference: https://shopify.dev/changelog/introducing-functionhandle
    */
-  private static async createCartTransform(admin: AdminApiContext, functionId: string): Promise<CartTransformActivationResult> {
+  private static async createCartTransform(admin: AdminApiContext, functionHandle: string): Promise<CartTransformActivationResult> {
     const CREATE_CART_TRANSFORM_MUTATION = `
-      mutation CreateCartTransform($functionId: String!) {
-        cartTransformCreate(functionId: $functionId) {
+      mutation CreateCartTransform($functionHandle: String!) {
+        cartTransformCreate(functionHandle: $functionHandle) {
           cartTransform {
             id
             functionId
@@ -270,7 +174,7 @@ export class CartTransformService {
     try {
       const response = await admin.graphql(CREATE_CART_TRANSFORM_MUTATION, {
         variables: {
-          functionId: functionId
+          functionHandle: functionHandle
         }
       });
       
