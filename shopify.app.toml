@@ -10,7 +10,7 @@ embedded = true
 automatically_update_urls_on_dev = false
 
 [webhooks]
-api_version = "2025-04"
+api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
@@ -43,7 +43,7 @@ prefix = "apps"
 # See: https://shopify.dev/docs/apps/build/custom-data/declarative-custom-data-definitions
 
 [metafields]
-api_version = "2025-01"
+api_version = "2025-10"
 
 # ==============================================================================
 # VARIANT-LEVEL BUNDLE METAFIELDS (Shopify Standard - Approach 1: Hybrid)
