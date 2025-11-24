@@ -328,7 +328,7 @@
       data-bundle-id="{{ bundle_id }}"
       data-app-url="{{ block.settings.app_url | default: '' }}"
       data-is-bundle-product="{{ is_bundle_product }}"
-      data-bundle-config='{{ bundle_ui_config | json }}'
+      data-bundle-config="{{ bundle_ui_config_field | json }}"
       data-hide-default-buttons="{{ hide_default_buttons }}"
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
@@ -426,7 +426,7 @@
 
       // 🔍 Variant metafield debugging (Shopify Standard Architecture)
       console.log('🔍 [THEME_DEBUG] Variant Metafields:', {
-        bundleUiConfig: {{ bundle_ui_config | json }},
+        bundleUiConfig: {{ bundle_ui_config_field | json }},
         variantId: {{ bundle_variant.id | json }},
         appNamespace: {{ app_namespace | json }}
       });
@@ -502,7 +502,7 @@
     window.bundleWidgetContext = true;
 
     // Enhanced debugging for bundle data loading
-    const productBundleConfig = {{ bundle_ui_config | json }};
+    const productBundleConfig = {{ bundle_ui_config_field | json }};
     console.log('🎯 [BUNDLE_DATA] Product ID:', {{ product.id | json }});
     console.log('🎯 [BUNDLE_DATA] Product Handle:', {{ product.handle | json }});
     console.log('🎯 [BUNDLE_DATA] Has bundle config metafield:', !!productBundleConfig);
