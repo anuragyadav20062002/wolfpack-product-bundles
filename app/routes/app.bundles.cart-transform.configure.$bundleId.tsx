@@ -31,6 +31,8 @@ import {
   Thumbnail,
   List,
   Spinner,
+  Divider,
+  Banner,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -2391,7 +2393,7 @@ export default function ConfigureBundleFlow() {
       });
 
       if (products && products.length > 0) {
-        const selectedProduct = products[0];
+        const selectedProduct = products[0] as any;
         setBundleProduct(selectedProduct);
         setProductTitle(selectedProduct.title || "");
         setProductImageUrl(selectedProduct.featuredImage?.url || selectedProduct.images?.[0]?.originalSrc || "");
