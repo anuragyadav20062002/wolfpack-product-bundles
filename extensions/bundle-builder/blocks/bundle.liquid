@@ -565,9 +565,18 @@
       // Also update any existing widget instances with the bundle ID
       const existingWidgets = document.querySelectorAll('#bundle-builder-app');
       existingWidgets.forEach(widget => {
-        if (!widget.dataset.bundleId) {
+        if (!widget.dataset.bundleId || widget.dataset.bundleId === '') {
           widget.dataset.bundleId = bundleIdFromUrl;
-          console.log('[BUNDLE_WIDGET] Updated existing widget with bundle ID');
+          console.log('[BUNDLE_WIDGET] Updated existing widget with bundle ID:', bundleIdFromUrl);
+
+          // Mark for theme editor preview mode
+          widget.setAttribute('data-theme-editor-preview', 'true');
+
+          // Trigger widget re-initialization if it already tried to load
+          if (window.__bundleWidgetLoaded || window.__bundleWidgetLoading) {
+            console.log('[BUNDLE_WIDGET] Triggering widget re-initialization with bundleId');
+            window.dispatchEvent(new CustomEvent('bundleWidgetReload'));
+          }
         }
       });
 

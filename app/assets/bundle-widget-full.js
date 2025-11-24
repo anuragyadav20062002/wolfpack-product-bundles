@@ -978,13 +978,29 @@ class BundleWidget {
 
     // Widget only works on container products with bundleConfig metafield
     if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+      // Check if we're in theme editor mode
+      const isThemeEditor = window.Shopify?.designMode ||
+                           window.isThemeEditorContext ||
+                           window.location.pathname.includes('/editor') ||
+                           window.location.search.includes('preview_theme_id');
+
+      const bundleIdFromDataset = this.container.dataset.bundleId;
+
+      // Show helpful preview in theme editor instead of error
+      if (isThemeEditor && bundleIdFromDataset) {
+        console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
+        this.showThemeEditorPreview(bundleIdFromDataset);
+        return; // Don't throw error, just show preview
+      }
+
+      // For production/storefront: show proper error
       const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
       console.error('[WIDGET_INIT] ❌', errorMsg);
       console.error('[WIDGET_INIT] 🔍 Debug info:', {
         isContainerProduct: !!configValue,
         configValue: configValue?.substring(0, 100),
         containerDataset: this.container.dataset,
-        bundleIdFromDataset: this.container.dataset.bundleId
+        bundleIdFromDataset: bundleIdFromDataset
       });
       throw new Error(errorMsg);
     }
@@ -1005,6 +1021,63 @@ class BundleWidget {
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
+  }
+
+  /**
+   * Show a helpful preview in theme editor when testing on non-bundle products
+   */
+  showThemeEditorPreview(bundleId) {
+    console.log('[WIDGET_PREVIEW] Showing theme editor preview for bundle:', bundleId);
+
+    this.container.innerHTML = `
+      <div style="
+        padding: 32px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 2px dashed #667eea;
+        border-radius: 12px;
+        text-align: center;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      ">
+        <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+        <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
+        <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
+          Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
+        </p>
+        <div style="
+          margin: 20px auto 0;
+          padding: 16px;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 8px;
+          max-width: 400px;
+          text-align: left;
+          font-size: 13px;
+          line-height: 1.6;
+        ">
+          <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
+          <div style="opacity: 0.9;">
+            This widget will automatically display on <strong>bundle container products</strong>.
+            <br><br>
+            <strong>To see it in action:</strong>
+            <ol style="margin: 8px 0; padding-left: 20px;">
+              <li>Save your theme</li>
+              <li>Navigate to a bundle product page</li>
+              <li>The widget will appear with product selection steps</li>
+            </ol>
+          </div>
+        </div>
+        <div style="
+          margin-top: 20px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          font-size: 12px;
+          opacity: 0.8;
+        ">
+          💡 <strong>Tip:</strong> You're currently previewing on a regular product. The widget only activates on products configured as bundle containers.
+        </div>
+      </div>
+    `;
   }
 
   // ========================================================================
@@ -2358,6 +2431,12 @@ if (document.readyState === 'loading') {
   handleAutomaticBundleConfiguration();
   BundleWidgetManager.initialize();
 }
+
+// Listen for reload requests from theme editor when bundleId is auto-populated
+window.addEventListener('bundleWidgetReload', () => {
+  console.log('[BUNDLE_WIDGET] Received reload request, reinitializing widgets...');
+  BundleWidgetManager.reinitialize();
+});
 
 // Shopify theme editor support
 if (BundleDataManager.isThemeEditorContext()) {
