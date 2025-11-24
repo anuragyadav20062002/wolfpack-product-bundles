@@ -1852,12 +1852,8 @@ export default function ConfigureBundleFlow() {
 
     setHasUnsavedChanges(hasChanges);
 
-    // Control SaveBar visibility using App Bridge API
-    if (hasChanges) {
-      shopify.saveBar.show('bundle-save-bar');
-    } else {
-      shopify.saveBar.hide('bundle-save-bar');
-    }
+    // Note: SaveBar visibility is now controlled declaratively via the component
+    // No need for imperative show/hide calls which cause flashing
   }, [
     formState.bundleStatus,
     formState.bundleName,
@@ -1875,8 +1871,8 @@ export default function ConfigureBundleFlow() {
     conditionsState.stepConditions,
     bundleProduct,
     productStatus,
-    originalValues,
-    shopify
+    originalValues
+    // Removed 'shopify' from dependencies - it's stable and doesn't need to trigger re-runs
   ]);
 
   // Save handler
@@ -2011,8 +2007,7 @@ export default function ConfigureBundleFlow() {
             productStatus: productStatus,
           });
 
-          // Hide the save bar after successful save
-          shopify.saveBar.hide('bundle-save-bar');
+          // SaveBar will hide automatically when hasUnsavedChanges becomes false
           shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
         } else if ('productId' in result && result.productId) {
           // This is a sync product response
@@ -2103,8 +2098,7 @@ export default function ConfigureBundleFlow() {
       setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
       setProductStatus(originalValues.productStatus);
 
-      // Hide the save bar after discarding
-      shopify.saveBar.hide('bundle-save-bar');
+      // SaveBar will hide automatically when hasUnsavedChanges becomes false
       shopify.toast.show("Changes discarded", { isError: false });
     } catch (error) {
       AppLogger.error("Error discarding changes:", {}, error as any);
@@ -2838,23 +2832,25 @@ export default function ConfigureBundleFlow() {
           handleDiscard();
         }}
       >
-        {/* SaveBar component - controlled via App Bridge API show/hide methods */}
-        <SaveBar id="bundle-save-bar">
-          <button
-            variant="primary"
-            onClick={handleSave}
-            loading={fetcher.state !== "idle" ? "" : undefined}
-            disabled={fetcher.state !== "idle"}
-          >
-            Save
-          </button>
-          <button
-            onClick={handleDiscard}
-            disabled={fetcher.state !== "idle"}
-          >
-            Discard
-          </button>
-        </SaveBar>
+        {/* SaveBar component - controlled declaratively via hasUnsavedChanges state */}
+        {hasUnsavedChanges && (
+          <SaveBar id="bundle-save-bar">
+            <button
+              variant="primary"
+              onClick={handleSave}
+              loading={fetcher.state !== "idle" ? "" : undefined}
+              disabled={fetcher.state !== "idle"}
+            >
+              Save
+            </button>
+            <button
+              onClick={handleDiscard}
+              disabled={fetcher.state !== "idle"}
+            >
+              Discard
+            </button>
+          </SaveBar>
+        )}
         {/* Hidden inputs for form submission - values will be updated by React state changes */}
         <input type="hidden" name="bundleName" value={formState.bundleName} />
         <input type="hidden" name="bundleDescription" value={formState.bundleDescription} />

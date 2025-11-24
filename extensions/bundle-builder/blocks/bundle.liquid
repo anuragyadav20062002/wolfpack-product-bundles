@@ -278,8 +278,12 @@
 {% assign should_show_widget = false %}
 {% assign hide_default_buttons = false %}
 
-{% comment %} Build app namespace for metafield access {% endcomment %}
-{% assign app_namespace = 'app--' | append: app.id %}
+{% comment %}
+  Use $app reserved namespace for app-owned metafields
+  This matches the namespace: "$app" used when setting metafields via GraphQL
+  Reference: https://shopify.dev/docs/apps/build/custom-data/metafields/manage-metafields
+{% endcomment %}
+{% assign app_namespace = '$app' %}
 
 {% comment %}
   SHOPIFY STANDARD: Bundle metafields are stored on ProductVariant (not Product)
