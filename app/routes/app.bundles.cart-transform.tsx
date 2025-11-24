@@ -24,6 +24,68 @@ import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 
+/**
+ * Add image to a product using productCreateMedia mutation
+ * This is the recommended approach for API version 2025-04+
+ */
+async function addProductImage(admin: any, productId: string, imageUrl: string, altText?: string) {
+  const CREATE_MEDIA = `
+    mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+      productCreateMedia(productId: $productId, media: $media) {
+        media {
+          alt
+          mediaContentType
+          status
+        }
+        mediaUserErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(CREATE_MEDIA, {
+      variables: {
+        productId: productId,
+        media: [
+          {
+            originalSource: imageUrl,
+            alt: altText || "Bundle product image",
+            mediaContentType: "IMAGE"
+          }
+        ]
+      }
+    });
+
+    const data = await response.json();
+
+    if (data.data?.productCreateMedia?.mediaUserErrors?.length > 0) {
+      const errors = data.data.productCreateMedia.mediaUserErrors;
+      AppLogger.error("Failed to add product image", {
+        component: "app.bundles.cart-transform",
+        operation: "add-product-image"
+      }, { errors, productId, imageUrl });
+      return { success: false, errors };
+    }
+
+    AppLogger.info("Product image added successfully", {
+      component: "app.bundles.cart-transform",
+      productId,
+      imageUrl
+    });
+
+    return { success: true };
+  } catch (error) {
+    AppLogger.error("Error adding product image", {
+      component: "app.bundles.cart-transform",
+      operation: "add-product-image"
+    }, error);
+    return { success: false, error };
+  }
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
   
@@ -343,6 +405,18 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ error: 'Failed to get product ID from Shopify' }, { status: 500 });
     }
 
+    // Add default bundle image if app URL is configured
+    const appUrl = process.env.SHOPIFY_APP_URL;
+    if (appUrl) {
+      await addProductImage(
+        admin,
+        shopifyProductId,
+        `${appUrl}/bundle.png`,
+        `${bundleName} - Bundle`
+      );
+      // Note: Image addition is non-blocking - we don't fail bundle creation if it fails
+    }
+
     // Create bundle in database with linked Shopify product
     const newBundle = await db.bundle.create({
       data: {
@@ -358,8 +432,8 @@ export async function action({ request }: ActionFunctionArgs) {
 
 
     // Return success with the bundle ID to allow client-side navigation
-    return json({ 
-      success: true, 
+    return json({
+      success: true,
       bundleId: newBundle.id,
       bundleProductId: shopifyProductId,
       redirectTo: `/app/bundles/cart-transform/configure/${newBundle.id}`

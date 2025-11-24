@@ -1153,24 +1153,17 @@ async function handleUpdateBundleProduct(admin: any, session: any, bundleId: str
       throw new Error(`Failed to update product: ${error.message}`);
     }
 
-    // Update product image if provided
+    // Add/update product image if provided (using productCreateMedia - API 2025-04+)
     if (productImageUrl) {
-      const UPDATE_IMAGE = `
-        mutation UpdateProductImage($productId: ID!, $images: [ImageInput!]!) {
-          productUpdate(input: {
-            id: $productId,
-            images: $images
-          }) {
-            product {
-              id
-              images(first: 1) {
-                nodes {
-                  id
-                  url
-                }
-              }
+      const CREATE_MEDIA = `
+        mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+          productCreateMedia(productId: $productId, media: $media) {
+            media {
+              alt
+              mediaContentType
+              status
             }
-            userErrors {
+            mediaUserErrors {
               field
               message
             }
@@ -1178,13 +1171,14 @@ async function handleUpdateBundleProduct(admin: any, session: any, bundleId: str
         }
       `;
 
-      const imageResponse = await admin.graphql(UPDATE_IMAGE, {
+      const imageResponse = await admin.graphql(CREATE_MEDIA, {
         variables: {
           productId: productId,
-          images: [
+          media: [
             {
-              src: productImageUrl,
-              altText: `${productTitle} - Bundle`
+              originalSource: productImageUrl,
+              alt: `${productTitle} - Bundle`,
+              mediaContentType: "IMAGE"
             }
           ]
         }
@@ -1192,10 +1186,12 @@ async function handleUpdateBundleProduct(admin: any, session: any, bundleId: str
 
       const imageData = await imageResponse.json();
 
-      if (imageData.data?.productUpdate?.userErrors?.length > 0) {
-        const error = imageData.data.productUpdate.userErrors[0];
+      if (imageData.data?.productCreateMedia?.mediaUserErrors?.length > 0) {
+        const error = imageData.data.productCreateMedia.mediaUserErrors[0];
         AppLogger.error("❌ [PRODUCT_UPDATE] Image update failed:", {}, error);
         // Don't fail the entire operation for image update errors
+      } else {
+        AppLogger.debug("✅ [PRODUCT_UPDATE] Image added successfully");
       }
     }
 
