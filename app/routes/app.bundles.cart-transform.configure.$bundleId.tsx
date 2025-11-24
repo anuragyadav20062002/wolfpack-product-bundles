@@ -663,14 +663,6 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       AppLogger.debug("📏 [METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);
 
       try {
-        // VARIANT METAFIELDS: Shopify Standard (Approach 1: Hybrid)
-        // Sets 4 variant-level metafields using the new architecture:
-        // - component_reference (list.variant_reference) - Component variant GIDs
-        // - component_quantities (list.number_integer) - Quantities
-        // - price_adjustment (json) - Discount config for cart transform
-        // - bundle_ui_config (json) - Widget configuration
-        // Handled by updateBundleProductMetafields() below (lines 1086, 1233)
-
         // STANDARD METAFIELDS: For Shopify cart transform compatibility
         AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
         try {
@@ -696,6 +688,12 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         };
         await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
         AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
+
+        // BUNDLE VARIANT METAFIELDS: Set bundle_ui_config and other variant-level metafields
+        // This is CRITICAL - without this, the widget cannot load on the storefront
+        AppLogger.debug("🔧 [BUNDLE_VARIANT_METAFIELD] Updating bundle variant metafields (bundle_ui_config, component_reference, etc.)");
+        await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
+        AppLogger.debug("✅ [BUNDLE_VARIANT_METAFIELD] Bundle variant metafields updated successfully");
 
       } catch (error) {
         AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
