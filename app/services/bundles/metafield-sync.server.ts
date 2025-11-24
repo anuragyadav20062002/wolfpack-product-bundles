@@ -297,6 +297,20 @@ export async function updateBundleProductMetafields(
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue
     })),
+    pricing: bundleConfiguration.pricing ? {
+      enabled: bundleConfiguration.pricing.enabled || false,
+      method: bundleConfiguration.pricing.method || 'percentage_off',
+      rules: (bundleConfiguration.pricing.rules || []).map((rule: any) => ({
+        condition: rule.condition ? {
+          type: rule.condition.type || 'quantity',
+          operator: rule.condition.operator || 'gte',
+          value: parseFloat(rule.condition.value) || 0
+        } : null,
+        discount: rule.discount ? {
+          value: parseFloat(rule.discount.value) || 0
+        } : { value: parseFloat(rule.discountValue) || 0 }
+      }))
+    } : null,
     messaging: {
       progressTemplate: bundleConfiguration.messaging?.progressTemplate || 'Add {items} more items',
       successTemplate: bundleConfiguration.messaging?.successTemplate || 'Discount unlocked!',
