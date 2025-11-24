@@ -105,9 +105,13 @@ export function useBundleForm({ initialData }: UseBundleFormProps) {
       templateName !== originalValues.templateName
     );
 
-    if (hasChanges) {
-      setHasUnsavedChanges(true);
-    }
+    // Only update state if it actually changed to prevent unnecessary re-renders
+    setHasUnsavedChanges(prev => {
+      if (prev !== hasChanges) {
+        return hasChanges;
+      }
+      return prev;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundleName, bundleDescription, bundleStatus, templateName]);
 

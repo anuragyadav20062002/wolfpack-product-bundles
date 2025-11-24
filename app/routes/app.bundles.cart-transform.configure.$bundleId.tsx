@@ -1853,7 +1853,8 @@ export default function ConfigureBundleFlow() {
 
     const hasChanges = stepSetupChanges || discountPricingChanges || bundleStatusChanges;
 
-    setHasUnsavedChanges(hasChanges);
+    // Only update state if it actually changed to prevent unnecessary re-renders and SaveBar flickering
+    setHasUnsavedChanges(prev => prev !== hasChanges ? hasChanges : prev);
   }, [
     formState.bundleStatus,
     formState.bundleName,
