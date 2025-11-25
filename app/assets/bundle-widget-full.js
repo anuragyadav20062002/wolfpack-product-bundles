@@ -2253,30 +2253,26 @@ class BundleWidget {
   }
 
   generateBundleInstanceId() {
-    // Create deterministic ID based on bundle + selected products
-    const itemsSignature = this.selectedProducts
-      .map((stepSelections, stepIndex) => {
-        const sortedItems = Object.entries(stepSelections)
-          .filter(([_, qty]) => qty > 0)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([variantId, quantity]) => `${variantId}:${quantity}`)
-          .join('|');
-        return `step${stepIndex}:${sortedItems}`;
-      })
-      .filter(step => step !== `step${this.selectedProducts.indexOf(step)}:`)
-      .join('||');
+    // Generate unique bundle instance ID using UUID (recommended by Shopify)
+    // This prevents hash collisions and ensures each bundle instance is truly unique
+    // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
 
-    // Simple hash function
-    let hash = 0;
-    const str = `${this.selectedBundle.id}_${itemsSignature}`;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
+    // Use crypto.randomUUID() if available (modern browsers)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      const uuid = crypto.randomUUID();
+      const bundleInstanceId = `${this.selectedBundle.id}_${uuid}`;
+
+      console.log('[CART] Generated UUID-based bundle instance ID:', bundleInstanceId);
+      return bundleInstanceId;
     }
 
-    const bundleInstanceId = `${this.selectedBundle.id}_${Math.abs(hash)}`;
+    // Fallback for older browsers: use timestamp + random number
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000000);
+    const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
 
+    console.warn('[CART] crypto.randomUUID() not available, using fallback ID generation');
+    console.log('[CART] Generated fallback bundle instance ID:', bundleInstanceId);
     return bundleInstanceId;
   }
   // ========================================================================
