@@ -53,7 +53,7 @@ import {
   ImageIcon,
 } from "@shopify/polaris-icons";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
-// Using modern App Bridge contextual save bar with data-save-bar attribute on form
+// Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ThemeTemplateService } from "../services/theme-template.server";
@@ -1809,13 +1809,8 @@ export default function ConfigureBundleFlow() {
     productStatus: loadedBundleProduct?.status || "ACTIVE",
   });
 
-  // Track if there are unsaved changes
+  // Track if there are unsaved changes (controls SaveBar visibility via 'open' prop)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // Track previous state to prevent unnecessary SaveBar API calls (prevents flickering)
-  const prevHasUnsavedChanges = useRef(false);
-
-  // NOTE: triggerSaveBar and dismissSaveBar are now provided by formState hook
 
   // Check for changes whenever form values change
   useEffect(() => {
@@ -1875,21 +1870,8 @@ export default function ConfigureBundleFlow() {
     originalValues
   ]);
 
-  // Separate useEffect to control SaveBar visibility only when hasUnsavedChanges actually toggles
-  // Per Shopify App Bridge docs: only call show/hide when state transitions, not on every render
-  // Reference: https://shopify.dev/docs/api/app-bridge-library/apis/save-bar
-  useEffect(() => {
-    // Only call API if state actually changed
-    if (hasUnsavedChanges !== prevHasUnsavedChanges.current) {
-      if (hasUnsavedChanges) {
-        shopify.saveBar.show('bundle-save-bar');
-      } else {
-        shopify.saveBar.hide('bundle-save-bar');
-      }
-      // Update ref for next comparison
-      prevHasUnsavedChanges.current = hasUnsavedChanges;
-    }
-  }, [hasUnsavedChanges, shopify]);
+  // SaveBar visibility is now controlled declaratively via the 'open' prop
+  // No need for manual show/hide API calls - React handles it automatically
 
   // Save handler
   const handleSave = useCallback(async () => {
@@ -2836,7 +2818,7 @@ export default function ConfigureBundleFlow() {
         disabled: !bundleProduct || stepsState.steps.length === 0,
       }}
     >
-      {/* Modern App Bridge contextual save bar using form with data-save-bar */}
+      {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -2847,12 +2829,16 @@ export default function ConfigureBundleFlow() {
           handleDiscard();
         }}
       >
-        {/* SaveBar component - always rendered, visibility controlled by shopify.saveBar.show/hide API */}
-        <SaveBar id="bundle-save-bar">
+        {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
+        <SaveBar
+          id="bundle-save-bar"
+          open={hasUnsavedChanges}
+          discardConfirmation={true}
+        >
           <button
             variant="primary"
             onClick={handleSave}
-            loading={fetcher.state !== "idle" ? "" : undefined}
+            loading={fetcher.state !== "idle"}
             disabled={fetcher.state !== "idle"}
           >
             Save

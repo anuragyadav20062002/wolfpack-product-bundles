@@ -2174,30 +2174,60 @@ class BundleWidget {
   }
 
   buildCartItems() {
+    // Shopify Standard Bundle approach: Add the bundle parent variant to cart
+    // Cart transform will EXPAND it into individual components with discount applied
+    // See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+
     const cartItems = [];
-    const bundleInstanceId = this.generateBundleInstanceId();
 
-    this.selectedProducts.forEach((stepSelections, stepIndex) => {
-      const productsInStep = this.stepProductData[stepIndex];
+    // Extract numeric variant ID from GID format
+    const bundleVariantId = this.selectedBundle.bundleVariantId;
+    if (!bundleVariantId) {
+      console.error('[CART] Bundle variant ID not found in configuration');
+      console.error('[CART] Bundle config:', this.selectedBundle);
+      throw new Error('Bundle variant ID not available. Please ensure bundle metafields are synced.');
+    }
 
-      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        if (quantity > 0) {
-          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
-          if (product) {
-            const cartItem = {
-              id: parseInt(variantId),
-              quantity: quantity,
-              properties: {
-                [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_ID]: bundleInstanceId,
-                [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_CONFIG]: JSON.stringify(this.selectedBundle)
-              }
-            };
+    // Extract numeric ID from GID if needed (e.g., "gid://shopify/ProductVariant/123456" -> 123456)
+    let numericVariantId;
+    if (typeof bundleVariantId === 'string' && bundleVariantId.includes('gid://')) {
+      const match = bundleVariantId.match(/ProductVariant\/(\d+)/);
+      numericVariantId = match ? parseInt(match[1], 10) : null;
+    } else {
+      numericVariantId = parseInt(bundleVariantId, 10);
+    }
 
-            cartItems.push(cartItem);
-          }
-        }
-      });
+    if (!numericVariantId || isNaN(numericVariantId)) {
+      console.error('[CART] Invalid bundle variant ID:', bundleVariantId);
+      throw new Error('Invalid bundle variant ID format');
+    }
+
+    console.log('[CART] Adding bundle parent variant to cart:', {
+      bundleId: this.selectedBundle.id,
+      bundleName: this.selectedBundle.name,
+      bundleVariantId: numericVariantId,
+      originalVariantId: bundleVariantId
     });
+
+    // Add the bundle parent product (quantity = 1)
+    // Cart transform will read component_reference, component_quantities, and price_adjustment metafields
+    // and expand this into individual components with discount applied
+    const cartItem = {
+      id: numericVariantId,
+      quantity: 1,
+      properties: {
+        [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_ID]: this.selectedBundle.id,
+        [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_CONFIG]: JSON.stringify({
+          bundleId: this.selectedBundle.id,
+          bundleName: this.selectedBundle.name,
+          selectedProducts: this.selectedProducts
+        })
+      }
+    };
+
+    cartItems.push(cartItem);
+
+    console.log('[CART] Cart items to add:', cartItems);
     return cartItems;
   }
 
