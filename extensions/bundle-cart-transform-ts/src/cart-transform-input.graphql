@@ -6,6 +6,9 @@ query Input {
       bundleId: attribute(key: "_bundle_id") {
         value
       }
+      bundleName: attribute(key: "_bundle_name") {
+        value
+      }
       merchandise {
         __typename
         ... on ProductVariant {

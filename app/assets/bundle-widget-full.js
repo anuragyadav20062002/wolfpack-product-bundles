@@ -344,6 +344,10 @@ class PricingCalculator {
 
   static calculateDiscount(bundle, totalPrice, totalQuantity) {
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
+      console.log('[DISCOUNT] No pricing enabled or no rules', {
+        enabled: bundle?.pricing?.enabled,
+        rulesLength: bundle?.pricing?.rules?.length
+      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -382,6 +386,11 @@ class PricingCalculator {
     }
 
     if (!bestRule) {
+      console.log('[DISCOUNT] No rule matched conditions', {
+        totalPrice,
+        totalQuantity,
+        rulesChecked: rules.length
+      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -426,6 +435,16 @@ class PricingCalculator {
       applicableRule: bestRule,
       discountMethod
     };
+
+    console.log('[DISCOUNT] Calculated discount:', {
+      hasDiscount: result.hasDiscount,
+      discountAmount: result.discountAmount,
+      finalPrice: result.finalPrice,
+      originalPrice: totalPrice,
+      discountPercentage: result.discountPercentage.toFixed(2) + '%',
+      method: discountMethod
+    });
+
     return result;
   }
 
@@ -1466,8 +1485,15 @@ class BundleWidget {
       const currencyInfo = CurrencyManager.getCurrencyInfo();
       const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
 
+      console.log('[ADD_TO_CART_BUTTON] Discount info:', {
+        hasDiscount: discountInfo.hasDiscount,
+        showDiscountDisplay: this.selectedBundle.pricing?.messages?.showDiscountDisplay,
+        shouldShowStrikethrough: discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false
+      });
+
       if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
         const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+        console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
         button.innerHTML = `
           <span style="display: flex; flex-direction: column; align-items: center;">
             <span style="text-decoration: line-through; font-size: 0.8em; opacity: 0.7;">${originalPrice}</span>
@@ -1475,6 +1501,7 @@ class BundleWidget {
           </span>
         `;
       } else {
+        console.log('[ADD_TO_CART_BUTTON] No strikethrough shown');
         button.textContent = `Add Bundle to Cart • ${formattedPrice}`;
       }
 
@@ -2174,8 +2201,9 @@ class BundleWidget {
   }
 
   buildCartItems() {
-    // Shopify Standard Bundle approach: Add individual component products to cart
-    // Cart transform MERGE will combine them into bundle parent with discount applied
+    // Shopify Standard Bundle approach for configurable bundles:
+    // Add ACTUAL selected component products to cart with _bundle_id attribute
+    // Cart transform MERGE groups by _bundle_id and combines into bundle parent
     // See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
 
     const cartItems = [];
@@ -2188,7 +2216,7 @@ class BundleWidget {
     });
 
     // Add ACTUAL selected component products to cart
-    // Cart transform will detect these via component_parents metafield and MERGE them
+    // Each component gets _bundle_id attribute for grouping in cart transform
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.stepProductData[stepIndex];
 
@@ -2200,19 +2228,17 @@ class BundleWidget {
               stepIndex,
               variantId,
               quantity,
-              productTitle: product.title
+              productTitle: product.title,
+              bundleInstanceId
             });
 
             const cartItem = {
               id: parseInt(variantId),
               quantity: quantity,
-              properties: {
-                [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_ID]: bundleInstanceId,
-                [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_CONFIG]: JSON.stringify({
-                  bundleId: this.selectedBundle.id,
-                  bundleName: this.selectedBundle.name,
-                  stepIndex: stepIndex
-                })
+              attributes: {
+                '_bundle_id': bundleInstanceId,
+                '_bundle_name': this.selectedBundle.name,
+                '_step_index': stepIndex.toString()
               }
             };
 
@@ -2222,7 +2248,7 @@ class BundleWidget {
       });
     });
 
-    console.log('[CART] Cart items to add (components for MERGE):', cartItems);
+    console.log('[CART] Cart items to add (components with _bundle_id attribute):', cartItems);
     return cartItems;
   }
 
