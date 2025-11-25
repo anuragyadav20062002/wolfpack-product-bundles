@@ -208,8 +208,11 @@ export async function updateBundleProductMetafields(
 
   if (bundleConfiguration.steps && Array.isArray(bundleConfiguration.steps)) {
     for (const step of bundleConfiguration.steps) {
-      // Handle StepProduct entries
-      if (step.StepProduct && Array.isArray(step.StepProduct)) {
+      // CRITICAL FIX: Process ONLY ONE source to prevent duplicates
+      // Priority: StepProduct (database relation) > products array (UI config)
+
+      if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+        // Use StepProduct entries from database
         for (const stepProduct of step.StepProduct) {
           if (stepProduct.productId) {
             // Skip UUID products
@@ -223,26 +226,28 @@ export async function updateBundleProductMetafields(
             if (result.success && result.variantId) {
               componentReferences.push(result.variantId);
               componentQuantities.push(step.minQuantity || 1);
+              console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${step.minQuantity || 1}`);
             } else {
               console.warn(`⚠️ [METAFIELD] Could not get variant: ${result.error}`);
             }
           }
         }
-      }
-
-      // Handle products array if it exists
-      if (step.products && Array.isArray(step.products)) {
+      } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
+        // Fallback: Use products array from UI config (only if StepProduct is empty)
         for (const product of step.products) {
           if (product.id) {
             const result = await getFirstVariantId(admin, product.id);
             if (result.success && result.variantId) {
               componentReferences.push(result.variantId);
               componentQuantities.push(step.minQuantity || 1);
+              console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${step.minQuantity || 1} (from products array)`);
             } else {
               console.warn(`⚠️ [METAFIELD] Could not get variant: ${result.error}`);
             }
           }
         }
+      } else {
+        console.warn(`⚠️ [METAFIELD] Step "${step.name}" has no products defined`);
       }
     }
   }
@@ -639,8 +644,11 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
   const componentVariantIds = new Set<string>();
 
   for (const step of bundleConfig.steps) {
-    // Handle StepProduct entries
-    if (step.StepProduct && Array.isArray(step.StepProduct)) {
+    // CRITICAL FIX: Process ONLY ONE source to prevent duplicates
+    // Priority: StepProduct (database relation) > products array (UI config)
+
+    if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+      // Use StepProduct entries from database
       for (const stepProduct of step.StepProduct) {
         if (stepProduct.productId) {
           // Skip UUID products
@@ -660,10 +668,8 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
           }
         }
       }
-    }
-
-    // Handle products array if it exists
-    if (step.products && Array.isArray(step.products)) {
+    } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
+      // Fallback: Use products array from UI config (only if StepProduct is empty)
       for (const product of step.products) {
         if (product.id) {
           const result = await getFirstVariantId(admin, product.id);
@@ -681,7 +687,35 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
 
   console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentVariantIds.size} component variants to update`);
 
-  // Create component_parents data in Shopify standard format
+  // Build price_adjustment config for MERGE discount calculation
+  const priceAdjustment: any = {
+    method: bundleConfig.pricing?.method || 'percentage_off',
+    value: 0
+  };
+
+  if (bundleConfig.pricing?.enabled && bundleConfig.pricing?.rules?.length > 0) {
+    const rule = bundleConfig.pricing.rules[0];
+
+    // Extract value from nested discount structure
+    if (rule.discount && typeof rule.discount.value !== 'undefined') {
+      priceAdjustment.value = parseFloat(rule.discount.value) || 0;
+    } else if (typeof rule.discountValue !== 'undefined') {
+      priceAdjustment.value = parseFloat(rule.discountValue) || 0;
+    }
+
+    // Add conditions if present
+    if (rule.condition) {
+      priceAdjustment.conditions = {
+        type: rule.condition.type || 'quantity',
+        operator: rule.condition.operator || 'gte',
+        value: parseFloat(rule.condition.value) || 0
+      };
+    }
+  }
+
+  console.log("🔧 [COMPONENT_METAFIELD] Price adjustment for components:", JSON.stringify(priceAdjustment));
+
+  // Create component_parents data in Shopify standard format with pricing info
   const componentParentsData = [{
     id: bundleVariantId,
     component_reference: {
@@ -689,7 +723,8 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
     },
     component_quantities: {
       value: componentQuantities
-    }
+    },
+    price_adjustment: priceAdjustment // Include pricing for cart transform MERGE discount calculation
   }];
 
   console.log("🔧 [COMPONENT_METAFIELD] Component parents data:", JSON.stringify(componentParentsData, null, 2));

@@ -108,6 +108,7 @@ export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): P
 
 /**
  * Calculate bundle product price based on component products
+ * Customers select ONE product per step, so we calculate average price per step
  */
 export async function calculateBundlePrice(admin: any, bundle: any): Promise<string> {
   try {
@@ -117,35 +118,54 @@ export async function calculateBundlePrice(admin: any, bundle: any): Promise<str
     }
 
     let totalPrice = 0;
-    let productCount = 0;
+    let stepCount = 0;
 
-    // Get prices from all component products
+    // Calculate average price per step (customer selects ONE product per step)
     for (const step of bundle.steps) {
-      if (step.StepProduct && Array.isArray(step.StepProduct)) {
+      if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+        let stepTotalPrice = 0;
+        let validProductCount = 0;
+
+        // Get prices for all products in this step
         for (const stepProduct of step.StepProduct) {
           try {
             const productPrice = await getProductPrice(admin, stepProduct.productId);
-            const quantity = step.minQuantity || 1;
-            totalPrice += parseFloat(productPrice) * quantity;
-            productCount++;
+            stepTotalPrice += parseFloat(productPrice);
+            validProductCount++;
           } catch (error) {
             console.error(`🔧 [BUNDLE_PRICING] Error getting price for product ${stepProduct.productId}:`, error);
           }
         }
+
+        // Calculate average price for this step (customer picks ONE)
+        if (validProductCount > 0) {
+          const stepAveragePrice = stepTotalPrice / validProductCount;
+          const quantity = step.minQuantity || 1;
+          const stepContribution = stepAveragePrice * quantity;
+
+          totalPrice += stepContribution;
+          stepCount++;
+
+          console.log(`🔧 [BUNDLE_PRICING] Step ${stepCount}: avg $${stepAveragePrice.toFixed(2)} x ${quantity} = $${stepContribution.toFixed(2)} (from ${validProductCount} products)`);
+        }
       }
     }
+
+    console.log(`🔧 [BUNDLE_PRICING] Pre-discount total: $${totalPrice.toFixed(2)} (${stepCount} steps)`);
 
     // Apply discount if configured (NEW nested structure)
     if (bundle.pricing && bundle.pricing.enabled && bundle.pricing.rules) {
       const rules = Array.isArray(bundle.pricing.rules) ? bundle.pricing.rules : [];
       if (rules.length > 0 && bundle.pricing.method === 'percentage_off') {
         const discountPercent = parseFloat(rules[0].discount?.value) || 0;
-        totalPrice = totalPrice * (1 - discountPercent / 100);
+        const discountAmount = totalPrice * (discountPercent / 100);
+        totalPrice = totalPrice - discountAmount;
+        console.log(`🔧 [BUNDLE_PRICING] Applied ${discountPercent}% discount: -$${discountAmount.toFixed(2)}, final: $${totalPrice.toFixed(2)}`);
       }
     }
 
     const finalPrice = Math.max(totalPrice, MINIMUM_BUNDLE_PRICE);
-    console.log(`🔧 [BUNDLE_PRICING] Calculated bundle price: $${finalPrice.toFixed(2)} (${productCount} products)`);
+    console.log(`🔧 [BUNDLE_PRICING] Final bundle price: $${finalPrice.toFixed(2)}`);
 
     return finalPrice.toFixed(2);
   } catch (error) {
