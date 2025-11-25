@@ -687,7 +687,35 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
 
   console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentVariantIds.size} component variants to update`);
 
-  // Create component_parents data in Shopify standard format
+  // Build price_adjustment config for MERGE discount calculation
+  const priceAdjustment: any = {
+    method: bundleConfig.pricing?.method || 'percentage_off',
+    value: 0
+  };
+
+  if (bundleConfig.pricing?.enabled && bundleConfig.pricing?.rules?.length > 0) {
+    const rule = bundleConfig.pricing.rules[0];
+
+    // Extract value from nested discount structure
+    if (rule.discount && typeof rule.discount.value !== 'undefined') {
+      priceAdjustment.value = parseFloat(rule.discount.value) || 0;
+    } else if (typeof rule.discountValue !== 'undefined') {
+      priceAdjustment.value = parseFloat(rule.discountValue) || 0;
+    }
+
+    // Add conditions if present
+    if (rule.condition) {
+      priceAdjustment.conditions = {
+        type: rule.condition.type || 'quantity',
+        operator: rule.condition.operator || 'gte',
+        value: parseFloat(rule.condition.value) || 0
+      };
+    }
+  }
+
+  console.log("🔧 [COMPONENT_METAFIELD] Price adjustment for components:", JSON.stringify(priceAdjustment));
+
+  // Create component_parents data in Shopify standard format with pricing info
   const componentParentsData = [{
     id: bundleVariantId,
     component_reference: {
@@ -695,7 +723,8 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
     },
     component_quantities: {
       value: componentQuantities
-    }
+    },
+    price_adjustment: priceAdjustment // Include pricing for cart transform MERGE discount calculation
   }];
 
   console.log("🔧 [COMPONENT_METAFIELD] Component parents data:", JSON.stringify(componentParentsData, null, 2));

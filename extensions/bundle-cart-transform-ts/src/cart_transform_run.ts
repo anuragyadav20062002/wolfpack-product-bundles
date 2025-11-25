@@ -99,6 +99,7 @@ interface ComponentParent {
   component_quantities: {
     value: number[];
   };
+  price_adjustment?: PriceAdjustmentConfig; // Pricing info for discount calculation
 }
 
 // ============================================================================
@@ -295,21 +296,31 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           continue;
         }
 
-        // Calculate bundle totals
+        // Calculate bundle totals from ACTUAL selected component prices
         const totalQuantity = bundleComponentLines.reduce((sum, l) => sum + l.quantity, 0);
         const originalTotal = bundleComponentLines.reduce(
           (sum, l) => sum + parseFloat(l.cost.totalAmount.amount),
           0
         );
 
-        // Get price adjustment from one of the component lines (they all reference the same parent)
-        // In practice, we should fetch the parent variant's price_adjustment
-        // For now, we'll check if any component has pricing info
+        // Get price adjustment from component_parents (includes pricing info)
         let discountPercentage = 0;
+        if (parent.price_adjustment) {
+          const priceAdjustment = parent.price_adjustment;
+          discountPercentage = calculateDiscountPercentage(
+            priceAdjustment,
+            originalTotal,
+            totalQuantity
+          );
 
-        // Try to find price adjustment on the parent variant
-        // Note: In this MERGE operation, we don't have direct access to parent variant metafields
-        // The discount will be applied during EXPAND operation instead
+          Logger.debug('Price adjustment from component_parents', { phase: 'merge' }, {
+            method: priceAdjustment.method,
+            value: priceAdjustment.value,
+            originalTotal,
+            totalQuantity,
+            discountPercentage
+          });
+        }
 
         Logger.info('Creating merge operation', { phase: 'merge' }, {
           parentVariantId,
