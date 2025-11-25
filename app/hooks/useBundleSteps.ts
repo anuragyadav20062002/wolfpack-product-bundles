@@ -25,11 +25,10 @@ interface BundleStep {
 
 interface UseBundleStepsProps {
   initialSteps: BundleStep[];
-  onTriggerSaveBar: () => void;
   shopify: any;
 }
 
-export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseBundleStepsProps) {
+export function useBundleSteps({ initialSteps, shopify }: UseBundleStepsProps) {
   const [steps, setSteps] = useState<BundleStep[]>(initialSteps);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState(0);
@@ -55,9 +54,8 @@ export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseB
     };
     setSteps(prev => [...prev, newStep]);
     setExpandedSteps(prev => new Set([...prev, newStep.id]));
-    onTriggerSaveBar();
     shopify.toast.show("Step added successfully", { isError: false });
-  }, [steps.length, shopify, onTriggerSaveBar]);
+  }, [steps.length, shopify]);
 
   // Update a step field
   const updateStepField = useCallback((stepId: string, field: string, value: any) => {
@@ -66,8 +64,7 @@ export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseB
         step.id === stepId ? { ...step, [field]: value } : step
       )
     );
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Remove a step
   const removeStep = useCallback((stepId: string) => {
@@ -77,9 +74,8 @@ export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseB
       newSet.delete(stepId);
       return newSet;
     });
-    onTriggerSaveBar();
     shopify.toast.show("Step removed", { isError: false });
-  }, [shopify, onTriggerSaveBar]);
+  }, [shopify]);
 
   // Toggle step expansion
   const toggleStepExpansion = useCallback((stepId: string) => {
@@ -105,10 +101,9 @@ export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseB
       };
       setSteps(prev => [...prev, duplicatedStep]);
       setExpandedSteps(prev => new Set([...prev, duplicatedStep.id]));
-      onTriggerSaveBar();
       shopify.toast.show("Step duplicated successfully", { isError: false });
     }
-  }, [steps, shopify, onTriggerSaveBar]);
+  }, [steps, shopify]);
 
   // Collection selection handler
   const handleCollectionSelection = useCallback(async (stepId: string) => {
@@ -126,7 +121,6 @@ export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseB
           ...prev,
           [stepId]: collections as any
         }));
-        onTriggerSaveBar();
 
         const addedCount = collections.length - currentCollections.length;
         const message = addedCount > 0
@@ -141,7 +135,6 @@ export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseB
           ...prev,
           [stepId]: []
         }));
-        onTriggerSaveBar();
         shopify.toast.show("All collections removed", { isError: false });
       }
     } catch (error) {
@@ -158,7 +151,7 @@ export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseB
         shopify.toast.show("Failed to select collections", { isError: true });
       }
     }
-  }, [selectedCollections, shopify, onTriggerSaveBar]);
+  }, [selectedCollections, shopify]);
 
   // Get unique product count
   const getUniqueProductCount = useCallback((stepProducts: any[]) => {
@@ -175,8 +168,7 @@ export function useBundleSteps({ initialSteps, onTriggerSaveBar, shopify }: UseB
       newSteps.splice(toIndex, 0, movedStep);
       return newSteps;
     });
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   return {
     // State

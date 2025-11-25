@@ -282,7 +282,18 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // Get component_parents from first line to get parent variant and pricing
       const componentParentsValue = line.merchandise.component_parents?.value;
       if (!componentParentsValue) {
-        Logger.debug('No component_parents metafield', { phase: 'merge' }, { bundleId });
+        Logger.error(
+          'Missing component_parents metafield - cart transform MERGE will fail',
+          { phase: 'merge' },
+          {
+            bundleId,
+            lineId: line.id,
+            variantId: line.merchandise.id,
+            productTitle: line.merchandise.product?.title,
+            error: 'MISSING_COMPONENT_PARENTS_METAFIELD',
+            resolution: 'Ensure component products have component_parents metafield set when bundle is saved'
+          }
+        );
         continue;
       }
 
@@ -293,7 +304,18 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       );
 
       if (componentParents.length === 0) {
-        Logger.debug('Empty component_parents', { phase: 'merge' }, { bundleId });
+        Logger.error(
+          'Empty component_parents array - cart transform MERGE will fail',
+          { phase: 'merge' },
+          {
+            bundleId,
+            lineId: line.id,
+            variantId: line.merchandise.id,
+            productTitle: line.merchandise.product?.title,
+            error: 'EMPTY_COMPONENT_PARENTS_ARRAY',
+            resolution: 'Ensure component_parents metafield contains valid parent bundle data'
+          }
+        );
         continue;
       }
 

@@ -683,11 +683,31 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         }
 
         // COMPONENT METAFIELDS: Update component products with component_parents metafield
+        // CRITICAL: This metafield is required for cart transform MERGE operation
         AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
+
+        // Validate bundle has steps and products before setting metafields
         const fullBundleConfig = {
           ...baseConfiguration,
           steps: updatedBundle.steps  // Use database steps with StepProduct array
         };
+
+        if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {
+          AppLogger.error("❌ [COMPONENT_METAFIELD] Cannot set component_parents: No steps defined in bundle");
+          throw new Error("Bundle must have at least one step with products to set component metafields");
+        }
+
+        // Validate at least one step has products
+        const hasProducts = fullBundleConfig.steps.some((step: any) =>
+          (step.StepProduct && step.StepProduct.length > 0) ||
+          (step.products && step.products.length > 0)
+        );
+
+        if (!hasProducts) {
+          AppLogger.error("❌ [COMPONENT_METAFIELD] Cannot set component_parents: No products found in any step");
+          throw new Error("Bundle must have at least one product in steps to set component metafields");
+        }
+
         await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
         AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
 
@@ -1714,8 +1734,7 @@ export default function ConfigureBundleFlow() {
 
   // Condition rules management
   const conditionsState = useBundleConditions({
-    initialStepConditions: initializeStepConditions(),
-    onTriggerSaveBar: formState.triggerSaveBar
+    initialStepConditions: initializeStepConditions()
   });
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
@@ -1732,14 +1751,12 @@ export default function ConfigureBundleFlow() {
   // Steps management
   const stepsState = useBundleSteps({
     initialSteps: transformedSteps,
-    onTriggerSaveBar: formState.triggerSaveBar,
     shopify
   });
 
   // Pricing management
   const pricingState = useBundlePricing({
-    initialPricing: bundle.pricing,
-    onTriggerSaveBar: formState.triggerSaveBar
+    initialPricing: bundle.pricing
   });
 
 
@@ -2323,9 +2340,6 @@ export default function ConfigureBundleFlow() {
             : step
         ) as any);
 
-        // Trigger save bar for product selection changes
-        formState.triggerSaveBar();
-
         const addedCount = transformedProducts.length - currentProducts.length;
         const message = addedCount > 0
           ? `Added ${addedCount} product${addedCount !== 1 ? 's' : ''}!`
@@ -2355,7 +2369,7 @@ export default function ConfigureBundleFlow() {
         shopify.toast.show("Failed to select products", { isError: true });
       }
     }
-  }, [stepsState.steps, stepsState.setSteps, shopify, formState.triggerSaveBar]);
+  }, [stepsState.steps, stepsState.setSteps, shopify]);
 
   const handleSyncProduct = useCallback(() => {
     try {
@@ -2389,9 +2403,6 @@ export default function ConfigureBundleFlow() {
         setBundleProduct(selectedProduct);
         setProductTitle(selectedProduct.title || "");
         setProductImageUrl(selectedProduct.featuredImage?.url || selectedProduct.images?.[0]?.originalSrc || "");
-
-        // Trigger save bar immediately after bundle product selection
-        formState.triggerSaveBar();
 
         shopify.toast.show("Bundle product updated successfully", { isError: false });
       }
@@ -2429,13 +2440,12 @@ export default function ConfigureBundleFlow() {
       if (imageUrl) {
         setProductImageUrl(imageUrl);
         shopify.toast.show("Image will be updated when you save changes", { isError: false });
-        formState.triggerSaveBar();
       }
     } catch (error) {
       AppLogger.error("Image upload failed:", {}, error as any);
       shopify.toast.show("Failed to upload image", { isError: true });
     }
-  }, [bundleProduct, shopify, formState.triggerSaveBar]);
+  }, [bundleProduct, shopify]);
 
   // Handle product title update
   const handleSaveProductDetails = useCallback(async () => {
@@ -2607,9 +2617,6 @@ export default function ConfigureBundleFlow() {
           [stepId]: collections as any
         }));
 
-        // Trigger save bar for collection selection changes
-        formState.triggerSaveBar();
-
         const addedCount = collections.length - currentCollections.length;
         const message = addedCount > 0
           ? `Added ${addedCount} collection${addedCount !== 1 ? 's' : ''}!`
@@ -2624,7 +2631,6 @@ export default function ConfigureBundleFlow() {
           ...prev,
           [stepId]: []
         }));
-        formState.triggerSaveBar();
         shopify.toast.show("All collections removed", { isError: false });
       }
     } catch (error) {
@@ -2645,7 +2651,7 @@ export default function ConfigureBundleFlow() {
         shopify.toast.show("Failed to select collections", { isError: true });
       }
     }
-  }, [shopify, formState.triggerSaveBar, selectedCollections]);
+  }, [shopify, selectedCollections]);
 
   // NOTE: Discount rule management (addDiscountRule, removeDiscountRule, updateDiscountRule)
   // is now provided by pricingState hook
@@ -2659,10 +2665,7 @@ export default function ConfigureBundleFlow() {
         [field]: value
       }
     }));
-
-    // Trigger save bar for rule message changes
-    formState.triggerSaveBar();
-  }, [formState.triggerSaveBar]);
+  }, []);
 
   // Function to load available theme templates
   const loadAvailablePages = useCallback(() => {
