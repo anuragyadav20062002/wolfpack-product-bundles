@@ -263,8 +263,10 @@ export async function updateBundleProductMetafields(
   if (bundleConfiguration.pricing?.enabled && bundleConfiguration.pricing?.rules?.length > 0) {
     const rule = bundleConfiguration.pricing.rules[0];
 
-    // Extract value from nested discount structure
-    if (rule.discount && typeof rule.discount.value !== 'undefined') {
+    // Extract method and value from nested discount structure
+    if (rule.discount) {
+      // Use discount.method if available, otherwise fall back to pricing.method
+      priceAdjustment.method = rule.discount.method || bundleConfiguration.pricing.method;
       priceAdjustment.value = parseFloat(rule.discount.value) || 0;
     } else if (typeof rule.discountValue !== 'undefined') {
       priceAdjustment.value = parseFloat(rule.discountValue) || 0;
@@ -313,8 +315,12 @@ export async function updateBundleProductMetafields(
           value: parseFloat(rule.condition.value) || 0
         } : null,
         discount: rule.discount ? {
+          method: rule.discount.method || bundleConfiguration.pricing.method,
           value: parseFloat(rule.discount.value) || 0
-        } : { value: parseFloat(rule.discountValue) || 0 }
+        } : {
+          method: bundleConfiguration.pricing.method,
+          value: parseFloat(rule.discountValue) || 0
+        }
       }))
     } : null,
     messaging: {
