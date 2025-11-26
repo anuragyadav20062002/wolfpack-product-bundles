@@ -241,6 +241,22 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       cartLines: input?.cart?.lines?.length || 0
     });
 
+    // Log cart line details for debugging
+    if (input?.cart?.lines && input.cart.lines.length > 0) {
+      Logger.debug('Cart lines details', { phase: 'init' }, {
+        lines: input.cart.lines.map(line => ({
+          id: line.id,
+          quantity: line.quantity,
+          bundleId: line.bundleId?.value || null,
+          bundleName: line.bundleName?.value || null,
+          variantId: line.merchandise.id,
+          productTitle: line.merchandise.product?.title || 'Unknown',
+          hasComponentParents: !!line.merchandise.component_parents,
+          hasComponentReference: !!line.merchandise.component_reference
+        }))
+      });
+    }
+
     // Edge case: empty cart
     if (!input?.cart?.lines || input.cart.lines.length === 0) {
       Logger.info('Empty cart', { phase: 'init' });
@@ -281,6 +297,16 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       // Get component_parents from first line to get parent variant and pricing
       const componentParentsValue = line.merchandise.component_parents?.value;
+
+      Logger.debug('Checking component_parents metafield', { phase: 'merge' }, {
+        bundleId,
+        lineId: line.id,
+        variantId: line.merchandise.id,
+        hasMetafield: !!componentParentsValue,
+        metafieldType: typeof componentParentsValue,
+        metafieldPreview: componentParentsValue ? componentParentsValue.substring(0, 200) : 'null'
+      });
+
       if (!componentParentsValue) {
         Logger.error(
           'Missing component_parents metafield - cart transform MERGE will fail',
@@ -303,6 +329,18 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         'component_parents'
       );
 
+      Logger.debug('Parsed component_parents', { phase: 'merge' }, {
+        bundleId,
+        parentsCount: componentParents.length,
+        firstParent: componentParents[0] ? {
+          id: componentParents[0].id,
+          hasComponentReference: !!componentParents[0].component_reference,
+          hasComponentQuantities: !!componentParents[0].component_quantities,
+          hasPriceAdjustment: !!componentParents[0].price_adjustment,
+          priceAdjustment: componentParents[0].price_adjustment
+        } : null
+      });
+
       if (componentParents.length === 0) {
         Logger.error(
           'Empty component_parents array - cart transform MERGE will fail',
@@ -322,6 +360,12 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // Get parent variant ID and pricing from first parent config
       const parent = componentParents[0];
       const parentVariantId = parent.id;
+
+      Logger.debug('Retrieved parent variant', { phase: 'merge' }, {
+        bundleId,
+        parentVariantId,
+        hasPriceAdjustment: !!parent.price_adjustment
+      });
 
       // Calculate bundle totals from ACTUAL selected component prices
       const totalQuantity = bundleComponentLines.reduce((sum, l) => sum + l.quantity, 0);
