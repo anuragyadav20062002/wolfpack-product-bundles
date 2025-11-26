@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
@@ -1798,8 +1798,9 @@ export default function ConfigureBundleFlow() {
   // UI state for section navigation (expandedSteps and selectedTab now from stepsState hook)
   const [activeSection, setActiveSection] = useState('step_setup');
 
-  // Track original values for change detection - initialize with loaded data to prevent false positives
-  const [originalValues, setOriginalValues] = useState({
+  // Track original values for change detection using useRef to prevent re-renders
+  // This approach prevents SaveBar flickering by keeping originalValues stable
+  const originalValuesRef = useRef({
     status: formState.bundleStatus,
     name: formState.bundleName,
     description: formState.bundleDescription,
@@ -1829,7 +1830,16 @@ export default function ConfigureBundleFlow() {
   // Track if there are unsaved changes (controls SaveBar visibility via 'open' prop)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Memoize stringified values to prevent unnecessary re-computations
+  // This is critical for preventing SaveBar flickering
+  const currentStepsString = useMemo(() => JSON.stringify(stepsState.steps), [stepsState.steps]);
+  const currentSelectedCollectionsString = useMemo(() => JSON.stringify(selectedCollections), [selectedCollections]);
+  const currentStepConditionsString = useMemo(() => JSON.stringify(conditionsState.stepConditions), [conditionsState.stepConditions]);
+  const currentDiscountRulesString = useMemo(() => JSON.stringify(pricingState.discountRules), [pricingState.discountRules]);
+  const currentRuleMessagesString = useMemo(() => JSON.stringify(ruleMessages), [ruleMessages]);
+
   // Check for changes whenever form values change
+  // Using memoized values and ref-based original values to prevent flickering
   useEffect(() => {
     // Helper function to safely compare bundle products
     const compareBundleProducts = (current: any, original: any) => {
@@ -1838,13 +1848,15 @@ export default function ConfigureBundleFlow() {
       return current.id === original.id;
     };
 
+    const originalValues = originalValuesRef.current;
+
     const stepSetupChanges = (
       formState.bundleName !== originalValues.name ||
       formState.bundleDescription !== originalValues.description ||
       formState.templateName !== originalValues.templateName ||
-      JSON.stringify(stepsState.steps) !== originalValues.steps ||
-      JSON.stringify(selectedCollections) !== originalValues.selectedCollections ||
-      JSON.stringify(conditionsState.stepConditions) !== originalValues.stepConditions ||
+      currentStepsString !== originalValues.steps ||
+      currentSelectedCollectionsString !== originalValues.selectedCollections ||
+      currentStepConditionsString !== originalValues.stepConditions ||
       !compareBundleProducts(bundleProduct, originalValues.bundleProduct) ||
       productStatus !== originalValues.productStatus
     );
@@ -1852,11 +1864,11 @@ export default function ConfigureBundleFlow() {
     const discountPricingChanges = (
       pricingState.discountEnabled !== originalValues.discountEnabled ||
       pricingState.discountType !== originalValues.discountType ||
-      JSON.stringify(pricingState.discountRules) !== originalValues.discountRules ||
+      currentDiscountRulesString !== originalValues.discountRules ||
       pricingState.showProgressBar !== originalValues.showProgressBar ||
       pricingState.showFooter !== originalValues.showFooter ||
       pricingState.discountMessagingEnabled !== originalValues.discountMessagingEnabled ||
-      JSON.stringify(ruleMessages) !== originalValues.ruleMessages
+      currentRuleMessagesString !== originalValues.ruleMessages
     );
 
     const bundleStatusChanges = (
@@ -1872,19 +1884,18 @@ export default function ConfigureBundleFlow() {
     formState.bundleName,
     formState.bundleDescription,
     formState.templateName,
-    stepsState.steps,
+    currentStepsString,
     pricingState.discountEnabled,
     pricingState.discountType,
-    pricingState.discountRules,
+    currentDiscountRulesString,
     pricingState.showProgressBar,
     pricingState.showFooter,
     pricingState.discountMessagingEnabled,
-    ruleMessages,
-    selectedCollections,
-    conditionsState.stepConditions,
+    currentRuleMessagesString,
+    currentSelectedCollectionsString,
+    currentStepConditionsString,
     bundleProduct,
     productStatus,
-    originalValues
   ]);
 
   // SaveBar visibility is now controlled declaratively via the 'open' prop
@@ -2003,24 +2014,28 @@ export default function ConfigureBundleFlow() {
         // Check if this was a save bundle action by looking for bundle data in response
         if ('bundle' in result && result.bundle) {
           // This is a save bundle response
-          setOriginalValues({
+          // Update the ref directly to avoid re-renders and prevent SaveBar flickering
+          originalValuesRef.current = {
             status: formState.bundleStatus,
             name: formState.bundleName,
             description: formState.bundleDescription,
             templateName: formState.templateName,
-            steps: JSON.stringify(stepsState.steps),
+            steps: currentStepsString,
             discountEnabled: pricingState.discountEnabled,
             discountType: pricingState.discountType,
-            discountRules: JSON.stringify(pricingState.discountRules),
+            discountRules: currentDiscountRulesString,
             showProgressBar: pricingState.showProgressBar,
             showFooter: pricingState.showFooter,
             discountMessagingEnabled: pricingState.discountMessagingEnabled,
-            selectedCollections: JSON.stringify(selectedCollections),
-            ruleMessages: JSON.stringify(ruleMessages),
-            stepConditions: JSON.stringify(conditionsState.stepConditions),
+            selectedCollections: currentSelectedCollectionsString,
+            ruleMessages: currentRuleMessagesString,
+            stepConditions: currentStepConditionsString,
             bundleProduct: bundleProduct || null,
             productStatus: productStatus,
-          });
+          };
+
+          // Force a check to hide the SaveBar by setting hasUnsavedChanges to false
+          setHasUnsavedChanges(false);
 
           // SaveBar will hide automatically when hasUnsavedChanges becomes false
           shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
@@ -2094,6 +2109,8 @@ export default function ConfigureBundleFlow() {
   // Discard handler
   const handleDiscard = useCallback(() => {
     try {
+      const originalValues = originalValuesRef.current;
+
       // Reset to original values using hook setters
       formState.setBundleStatus(originalValues.status);
       formState.setBundleName(originalValues.name);
@@ -2113,13 +2130,16 @@ export default function ConfigureBundleFlow() {
       setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
       setProductStatus(originalValues.productStatus);
 
+      // Force a check to hide the SaveBar
+      setHasUnsavedChanges(false);
+
       // SaveBar will hide automatically when hasUnsavedChanges becomes false
       shopify.toast.show("Changes discarded", { isError: false });
     } catch (error) {
       AppLogger.error("Error discarding changes:", {}, error as any);
       shopify.toast.show("Error discarding changes", { isError: true });
     }
-  }, [originalValues, loadedBundleProduct, shopify]);
+  }, [loadedBundleProduct, shopify, formState, stepsState, pricingState, conditionsState]);
 
   // Emergency force navigation state for escape hatch
   const [forceNavigation, setForceNavigation] = useState(false);
