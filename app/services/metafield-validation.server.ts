@@ -2,6 +2,7 @@
 // Ensures only active bundles are processed and filters out deleted/inactive bundles
 
 import db from "../db.server";
+import { AppLogger } from "../lib/logger";
 
 export class MetafieldValidationService {
 
@@ -11,7 +12,10 @@ export class MetafieldValidationService {
    * @param shopId - Shop ID for database filtering
    */
   static async validateAndCleanShopMetafields(admin: any, shopId: string) {
-    console.log(`🔍 [VALIDATION] Starting metafield validation for shop ${shopId}`);
+    AppLogger.info('Starting metafield validation for shop', {
+      component: 'validation',
+      operation: 'validate-shop'
+    }, { shopId });
 
     try {
       // 1. Get all active bundles from database
@@ -31,7 +35,10 @@ export class MetafieldValidationService {
       });
 
       const activeBundleIds = new Set(activeBundles.map(b => b.id));
-      console.log(`✅ [VALIDATION] Found ${activeBundles.length} active bundles in database`);
+      AppLogger.info('Found active bundles in database', {
+        component: 'validation',
+        operation: 'validate-shop'
+      }, { count: activeBundles.length });
 
       // 2. Get shop GID
       const shopResponse = await admin.graphql(`
@@ -46,7 +53,10 @@ export class MetafieldValidationService {
       const shopGid = shopData.data?.shop?.id;
 
       if (!shopGid) {
-        console.error('❌ [VALIDATION] Could not get shop GID');
+        AppLogger.error('Could not get shop GID', {
+          component: 'validation',
+          operation: 'validate-shop'
+        });
         return false;
       }
 
@@ -70,7 +80,10 @@ export class MetafieldValidationService {
       const currentMetafield = metafieldData.data?.node?.allBundles;
 
       if (!currentMetafield?.value) {
-        console.log('ℹ️ [VALIDATION] No shop metafield found to validate');
+        AppLogger.info('No shop metafield found to validate', {
+          component: 'validation',
+          operation: 'validate-shop'
+        });
         return false;
       }
 
@@ -83,16 +96,25 @@ export class MetafieldValidationService {
         const validBundles = metafieldBundles.filter((bundle: any) => {
           const isActive = activeBundleIds.has(bundle.id);
           if (!isActive) {
-            console.log(`🗑️ [VALIDATION] Removing inactive bundle from metafield: ${bundle.id} - ${bundle.name}`);
+            AppLogger.info('Removing inactive bundle from metafield', {
+              component: 'validation',
+              operation: 'validate-shop'
+            }, { bundleId: bundle.id, bundleName: bundle.name });
           }
           return isActive;
         });
 
-        console.log(`🔄 [VALIDATION] Metafield validation: ${originalCount} → ${validBundles.length} bundles`);
+        AppLogger.info('Metafield validation complete', {
+          component: 'validation',
+          operation: 'validate-shop'
+        }, { before: originalCount, after: validBundles.length });
 
         // 5. Update shop metafield if changes were made
         if (validBundles.length !== originalCount) {
-          console.log(`📝 [VALIDATION] Updating shop metafield to remove ${originalCount - validBundles.length} inactive bundles`);
+          AppLogger.info('Updating shop metafield to remove inactive bundles', {
+            component: 'validation',
+            operation: 'validate-shop'
+          }, { removedCount: originalCount - validBundles.length });
 
           const updateResponse = await admin.graphql(`
             mutation UpdateShopBundlesMetafield($metafields: [MetafieldsSetInput!]!) {
@@ -123,24 +145,39 @@ export class MetafieldValidationService {
           const updateData = await updateResponse.json();
 
           if (updateData.data?.metafieldsSet?.userErrors?.length > 0) {
-            console.error('❌ [VALIDATION] Shop metafield update errors:', updateData.data.metafieldsSet.userErrors);
+            AppLogger.error('Shop metafield update errors', {
+              component: 'validation',
+              operation: 'validate-shop'
+            }, updateData.data.metafieldsSet.userErrors);
             return false;
           } else {
-            console.log('✅ [VALIDATION] Shop metafield updated successfully');
+            AppLogger.info('Shop metafield updated successfully', {
+              component: 'validation',
+              operation: 'validate-shop'
+            });
             return true;
           }
         } else {
-          console.log('✅ [VALIDATION] All metafield bundles are valid - no update needed');
+          AppLogger.info('All metafield bundles are valid - no update needed', {
+            component: 'validation',
+            operation: 'validate-shop'
+          });
           return true;
         }
 
       } catch (parseError) {
-        console.error('❌ [VALIDATION] Error parsing shop metafield JSON:', parseError);
+        AppLogger.error('Error parsing shop metafield JSON', {
+          component: 'validation',
+          operation: 'validate-shop'
+        }, parseError);
         return false;
       }
 
     } catch (error) {
-      console.error('❌ [VALIDATION] Error validating metafields:', error);
+      AppLogger.error('Error validating metafields', {
+        component: 'validation',
+        operation: 'validate-shop'
+      }, error);
       return false;
     }
   }
@@ -152,7 +189,10 @@ export class MetafieldValidationService {
    * @param shopId - Shop ID for database filtering
    */
   static async validateProductMetafields(admin: any, productId: string, shopId: string) {
-    console.log(`🔍 [VALIDATION] Validating product metafields for ${productId}`);
+    AppLogger.info('Validating product metafields', {
+      component: 'validation',
+      operation: 'validate-product'
+    }, { productId });
 
     try {
       // Get active bundles that should reference this product
@@ -183,18 +223,16 @@ export class MetafieldValidationService {
 
       // If product shouldn't have bundle metafields, clean them up
       if (!shouldHaveBundleMetafields) {
-        console.log(`🧹 [VALIDATION] Product ${productId} should not have bundle metafields - cleaning up`);
+        AppLogger.info('Product should not have bundle metafields - cleaning up', {
+          component: 'validation',
+          operation: 'validate-product'
+        }, { productId });
 
         const metafieldsToDelete = [
           {
             ownerId: productGid,
             namespace: "bundle_discounts",
             key: "cart_transform_config"
-          },
-          {
-            ownerId: productGid,
-            namespace: "bundle_discounts",
-            key: "discount_function_config"
           },
           {
             ownerId: productGid,
@@ -240,19 +278,31 @@ export class MetafieldValidationService {
         const result = await response.json();
 
         if (result.data?.metafieldsDelete?.userErrors?.length > 0) {
-          console.error("❌ [VALIDATION] Product metafield cleanup errors:", result.data.metafieldsDelete.userErrors);
+          AppLogger.error('Product metafield cleanup errors', {
+            component: 'validation',
+            operation: 'validate-product'
+          }, result.data.metafieldsDelete.userErrors);
         } else {
           const deletedCount = result.data?.metafieldsDelete?.deletedMetafields?.length || 0;
-          console.log(`✅ [VALIDATION] Cleaned up ${deletedCount} invalid metafields from product ${productId}`);
+          AppLogger.info('Cleaned up invalid metafields from product', {
+            component: 'validation',
+            operation: 'validate-product'
+          }, { productId, deletedCount });
         }
       } else {
-        console.log(`✅ [VALIDATION] Product ${productId} should have bundle metafields - keeping existing ones`);
+        AppLogger.info('Product should have bundle metafields - keeping existing ones', {
+          component: 'validation',
+          operation: 'validate-product'
+        }, { productId });
       }
 
       return true;
 
     } catch (error) {
-      console.error(`❌ [VALIDATION] Error validating product ${productId} metafields:`, error);
+      AppLogger.error('Error validating product metafields', {
+        component: 'validation',
+        operation: 'validate-product'
+      }, error);
       return false;
     }
   }
@@ -262,7 +312,10 @@ export class MetafieldValidationService {
    * This is useful for maintenance or after bulk bundle deletions
    */
   static async bulkValidateAllProductMetafields(admin: any, shopId: string) {
-    console.log(`🔍 [BULK_VALIDATION] Starting bulk validation for shop ${shopId}`);
+    AppLogger.info('Starting bulk validation for shop', {
+      component: 'validation',
+      operation: 'bulk-validate'
+    }, { shopId });
 
     try {
       // Get all products that have bundle metafields
@@ -300,7 +353,10 @@ export class MetafieldValidationService {
       const productsData = await productsWithMetafieldsResponse.json();
       const products = productsData.data?.products?.edges || [];
 
-      console.log(`🔍 [BULK_VALIDATION] Found ${products.length} products with bundle metafields`);
+      AppLogger.info('Found products with bundle metafields', {
+        component: 'validation',
+        operation: 'bulk-validate'
+      }, { count: products.length });
 
       let validatedCount = 0;
       let cleanedCount = 0;
@@ -322,12 +378,18 @@ export class MetafieldValidationService {
         }
       }
 
-      console.log(`✅ [BULK_VALIDATION] Completed: ${validatedCount} products validated, ${cleanedCount} products cleaned up`);
+      AppLogger.info('Bulk validation completed', {
+        component: 'validation',
+        operation: 'bulk-validate'
+      }, { validatedCount, cleanedCount });
 
       return { validatedCount, cleanedCount };
 
     } catch (error) {
-      console.error('❌ [BULK_VALIDATION] Error in bulk validation:', error);
+      AppLogger.error('Error in bulk validation', {
+        component: 'validation',
+        operation: 'bulk-validate'
+      }, error);
       return { validatedCount: 0, cleanedCount: 0 };
     }
   }
@@ -336,7 +398,10 @@ export class MetafieldValidationService {
    * Emergency function to audit and report metafield inconsistencies
    */
   static async auditMetafieldConsistency(admin: any, shopId: string) {
-    console.log(`📊 [AUDIT] Starting metafield consistency audit for shop ${shopId}`);
+    AppLogger.info('Starting metafield consistency audit for shop', {
+      component: 'validation',
+      operation: 'audit'
+    }, { shopId });
 
     try {
       // Get database state
@@ -388,12 +453,18 @@ export class MetafieldValidationService {
         }
       };
 
-      console.log('📊 [AUDIT] Consistency Report:', JSON.stringify(audit, null, 2));
+      AppLogger.info('Consistency audit report', {
+        component: 'validation',
+        operation: 'audit'
+      }, audit);
 
       return audit;
 
     } catch (error) {
-      console.error('❌ [AUDIT] Error in consistency audit:', error);
+      AppLogger.error('Error in consistency audit', {
+        component: 'validation',
+        operation: 'audit'
+      }, error);
       return null;
     }
   }

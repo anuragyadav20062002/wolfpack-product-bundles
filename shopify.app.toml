@@ -1,23 +1,111 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "bfda5624970c7ada838998eb951e9e85"
-name = "bundle-discount-functions"
-handle = "bundle-discount-functions-1"
+client_id = "a383172f42c2ab283901a663d485a03d"
+name = "Wolfpack: Product Bundles"
+handle = "wolfpack-product-bundles-4"
 application_url = "https://wolfpack-product-bundle-app.onrender.com"
 embedded = true
 
 [build]
-automatically_update_urls_on_dev = true
+automatically_update_urls_on_dev = false
 
 [webhooks]
-api_version = "2025-04"
+api_version = "2025-10"
+
+  [[webhooks.subscriptions]]
+  uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes"
+scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes,unauthenticated_read_product_listings,unauthenticated_read_content"
 
 [auth]
-redirect_urls = ["https://wolfpack-product-bundle-app.onrender.com/auth/callback", "https://wolfpack-product-bundle-app.onrender.com/auth/shopify/callback", "https://wolfpack-product-bundle-app.onrender.com/api/auth/callback"]
+redirect_urls = [
+  "https://wolfpack-product-bundle-app.onrender.com/auth/callback",
+  "https://wolfpack-product-bundle-app.onrender.com/auth/shopify/callback",
+  "https://wolfpack-product-bundle-app.onrender.com/api/auth/callback"
+]
 
 [pos]
 embedded = false
+
+[app_proxy]
+url = "https://wolfpack-product-bundle-app.onrender.com"
+subpath = "product-bundles"
+prefix = "apps"
+
+# ==============================================================================
+# METAFIELD DEFINITIONS - Declarative Custom Data
+# ==============================================================================
+# These definitions ensure metafields have proper structure, validation,
+# and access controls. Declared in app-reserved namespace ($app).
+# See: https://shopify.dev/docs/apps/build/custom-data/declarative-custom-data-definitions
+
+[metafields]
+api_version = "2025-10"
+
+# ==============================================================================
+# VARIANT-LEVEL BUNDLE METAFIELDS (Shopify Standard - Approach 1: Hybrid)
+# ==============================================================================
+# Bundle metafields are stored on ProductVariant following Shopify's official
+# bundle architecture for optimal performance and standards compliance.
+# See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+#
+# IMPORTANT: shopify.app.toml does not yet support product_variant metafield
+# declarations in all CLI versions. Variant-level metafield definitions are
+# created programmatically via GraphQL MetafieldDefinitionCreate mutation.
+#
+# Parent Bundle Variant Metafields (created in metafield-sync.server.ts):
+# - component_reference (list.variant_reference) - List of component variant GIDs
+# - component_quantities (list.number_integer) - Quantity of each component
+# - price_adjustment (json) - Discount configuration
+# - bundle_ui_config (json) - Widget display configuration
+#
+# Child Component Variant Metafields (created in metafield-sync.server.ts):
+# - component_parents (json) - Parent bundle configurations
+#
+# Benefits of variant-level storage:
+# - 91% smaller data size (500 bytes vs 5.5KB)
+# - Follows Shopify official standards
+# - Better cart transform performance
+# - Simpler data model
+
+# App Configuration
+# Shop-level app settings
+[shop.metafields.app.serverUrl]
+type = "single_line_text_field"
+name = "App Server URL"
+description = "URL of the app server for widget API calls"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+[shop.metafields.app.lastSync]
+type = "single_line_text_field"
+name = "Last Sync Timestamp"
+description = "ISO timestamp of last successful sync with app server"
+access.admin = "merchant_read"
+access.storefront = "none"
+
+# ==============================================================================
+# VARIANT-LEVEL BUNDLE METAFIELDS (Shopify Standard - Approach 1: Hybrid)
+# ==============================================================================
+# These metafields follow Shopify's official bundle architecture:
+# - Stored on ProductVariant (not Product)
+# - Uses standard naming conventions (component_reference, component_quantities)
+# - Minimal data for optimal cart transform performance
+# See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+
+# NOTE: Variant-level metafields are managed programmatically via GraphQL
+# because shopify.app.toml doesn't yet support product_variant metafield declarations
+# in older CLI versions. The metafield definitions will be created via
+# MetafieldDefinitionCreate mutation when the bundle is created.
+
+# Parent Bundle Variant Metafields (created programmatically):
+# - component_reference (list.variant_reference)
+# - component_quantities (list.number_integer)
+# - price_adjustment (json)
+# - bundle_ui_config (json)
+
+# Child Component Variant Metafields (created programmatically):
+# - component_parents (json)

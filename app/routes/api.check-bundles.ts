@@ -1,6 +1,7 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
+import { AppLogger } from "../lib/logger";
 
 export async function loader({ request }: any) {
   const { session } = await authenticate.admin(request);
@@ -38,7 +39,7 @@ export async function loader({ request }: any) {
       shop: session.shop,
       totalBundles: allBundles.length,
       activeBundles: allBundles.filter(b => b.status === 'active').length,
-      bundlesWithPricing: allBundles.filter(b => b.pricing?.enableDiscount).length,
+      bundlesWithPricing: allBundles.filter(b => b.pricing?.enabled).length,
       bundlesWithProducts: 0,
       bundles: allBundles.map(bundle => {
         const steps = bundle.steps.map((s: any) => ({
@@ -61,8 +62,8 @@ export async function loader({ request }: any) {
           stepCount: steps.length,
           totalProducts,
           hasPricing: !!bundle.pricing,
-          pricingEnabled: bundle.pricing?.enableDiscount || false,
-          discountMethod: bundle.pricing?.discountMethod || null,
+          pricingEnabled: bundle.pricing?.enabled || false,
+          discountMethod: bundle.pricing?.method || null,
           rulesCount: bundle.pricing?.rules ? safeJsonParse(bundle.pricing.rules, []).length : 0,
           steps: steps.map((step: any) => ({
             id: step.id,
@@ -83,7 +84,7 @@ export async function loader({ request }: any) {
     return json(bundleReport);
 
   } catch (error: any) {
-    console.error("Bundle check error:", error);
+    AppLogger.error("Bundle check failed", { component: "api.check-bundles", operation: "loader" }, error);
     return json(
       {
         error: error.message || "Failed to check bundles",

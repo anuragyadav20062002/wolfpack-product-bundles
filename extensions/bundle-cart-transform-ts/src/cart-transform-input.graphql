@@ -3,56 +3,54 @@ query Input {
     lines {
       id
       quantity
-      # CRITICAL: Cart line attributes for bundle detection
-      # Line item properties (added via properties in cart add) become accessible as attributes
-      attribute(key: "_wolfpack_bundle_id") {
+      bundleId: attribute(key: "_bundle_id") {
+        value
+      }
+      bundleName: attribute(key: "_bundle_name") {
         value
       }
       merchandise {
         __typename
         ... on ProductVariant {
           id
-          title
-          # Standard Shopify bundle metafields for cart transform (app-reserved namespace)
-          component_reference: metafield(namespace: "$app", key: "component_reference") {
-            value
-          }
-          component_quantities: metafield(namespace: "$app", key: "component_quantities") {
-            value
-          }
+
+          # SHOPIFY STANDARD BUNDLE METAFIELDS (Approach 1: Hybrid)
+          # These metafields follow Shopify's official bundle architecture
+          # See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+
+          # For MERGE: Check if this variant is a component in a bundle
           component_parents: metafield(namespace: "$app", key: "component_parents") {
             value
           }
+
+          # For EXPAND: Check if this variant is a bundle parent
+          component_reference: metafield(namespace: "$app", key: "component_reference") {
+            value
+          }
+
+          component_quantities: metafield(namespace: "$app", key: "component_quantities") {
+            value
+          }
+
+          # Price adjustment configuration for discounting
           price_adjustment: metafield(namespace: "$app", key: "price_adjustment") {
             value
           }
-          # Access product itself for additional bundle configuration data
+
           product {
             id
             title
-            # Bundle configuration metafields on the product level
-            bundle_config: metafield(namespace: "bundle_discounts", key: "cart_transform_config") {
-              value
-              jsonValue
-            }
-            # Fallback: All bundles data stored on products for cart transform access
-            all_bundles_data: metafield(namespace: "custom", key: "all_bundles_data") {
-              value
-            }
           }
         }
       }
       cost {
         amountPerQuantity {
           amount
-          currencyCode
         }
         totalAmount {
           amount
-          currencyCode
         }
       }
     }
-    # CRITICAL: Cart-level bundle configurations from CartTransform metafield
   }
 }

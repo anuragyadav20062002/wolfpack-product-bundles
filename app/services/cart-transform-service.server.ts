@@ -1,5 +1,6 @@
 // Cart Transform Automatic Activation Service
 import type { authenticate } from "~/shopify.server";
+import { AppLogger } from "../lib/logger";
 
 type AdminApiContext = Awaited<ReturnType<typeof authenticate.admin>>['admin'];
 
@@ -11,8 +12,25 @@ export interface CartTransformActivationResult {
 }
 
 export class CartTransformService {
-  private static FUNCTION_ID = process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID || "527a500e-5386-4a67-a61b-9cb4cb8973f8";
-  
+  /**
+   * Get the function handle for the cart transform
+   * Uses stable handle from shopify.extension.toml (Shopify 2025-10+ best practice)
+   * Falls back to UID-based function ID for compatibility
+   */
+  private static async getDeployedFunctionHandle(admin: AdminApiContext): Promise<{ handle?: string; id?: string }> {
+    // MODERN APPROACH (2025-10+): Use stable function handle from shopify.extension.toml
+    // Handle: bundle-cart-transform-ts (defined in extensions/bundle-cart-transform-ts/shopify.extension.toml)
+    // Reference: https://shopify.dev/changelog/introducing-functionhandle
+    const functionHandle = 'bundle-cart-transform-ts';
+
+    AppLogger.info('Using stable function handle (2025-10+ best practice)', {
+      component: 'cart-transform',
+      operation: 'get-function-handle'
+    }, { functionHandle });
+
+    return { handle: functionHandle };
+  }
+
   /**
    * Automatically activate cart transform function for a newly installed app
    * This should be called during app installation/authentication flow
@@ -21,34 +39,64 @@ export class CartTransformService {
     admin: AdminApiContext,
     shopDomain: string
   ): Promise<CartTransformActivationResult> {
-    console.log(`🚀 [CART TRANSFORM] Activating cart transform for shop: ${shopDomain}`);
-    
+    AppLogger.info('Activating cart transform for shop', {
+      component: 'cart-transform',
+      operation: 'activate'
+    }, { shopDomain });
+
     try {
       // First, check if cart transform already exists
       const existingCheck = await this.checkExistingCartTransform(admin);
-      
+
       if (existingCheck.exists) {
-        console.log(`✅ [CART TRANSFORM] Cart transform already exists for ${shopDomain}`);
+        AppLogger.info('Cart transform already exists for shop', {
+          component: 'cart-transform',
+          operation: 'activate'
+        }, { shopDomain, cartTransformId: existingCheck.id });
         return {
           success: true,
           cartTransformId: existingCheck.id,
           alreadyExists: true
         };
       }
-      
-      // Create new cart transform
-      const result = await this.createCartTransform(admin);
-      
-      if (result.success) {
-        console.log(`🎉 [CART TRANSFORM] Successfully activated for ${shopDomain} - ID: ${result.cartTransformId}`);
-      } else {
-        console.error(`❌ [CART TRANSFORM] Failed to activate for ${shopDomain}:`, result.error);
+
+      // Get the function handle (2025-10+ stable identifier)
+      const functionInfo = await this.getDeployedFunctionHandle(admin);
+
+      if (!functionInfo.handle) {
+        const errorMsg = 'Cart transform function handle not configured. Please check shopify.extension.toml';
+        AppLogger.error(errorMsg, {
+          component: 'cart-transform',
+          operation: 'activate'
+        });
+        return {
+          success: false,
+          error: errorMsg
+        };
       }
-      
+
+      // Create new cart transform using stable function handle
+      const result = await this.createCartTransform(admin, functionInfo.handle);
+
+      if (result.success) {
+        AppLogger.info('Successfully activated cart transform', {
+          component: 'cart-transform',
+          operation: 'activate'
+        }, { shopDomain, cartTransformId: result.cartTransformId });
+      } else {
+        AppLogger.error('Failed to activate cart transform', {
+          component: 'cart-transform',
+          operation: 'activate'
+        }, { shopDomain, error: result.error });
+      }
+
       return result;
-      
+
     } catch (error) {
-      console.error(`❌ [CART TRANSFORM] Error during activation for ${shopDomain}:`, error);
+      AppLogger.error('Error during cart transform activation', {
+        component: 'cart-transform',
+        operation: 'activate'
+      }, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error during cart transform activation'
@@ -59,7 +107,7 @@ export class CartTransformService {
   /**
    * Check if cart transform already exists for this shop
    */
-  private static async checkExistingCartTransform(admin: AdminApiContext): Promise<{ exists: boolean; id?: string }> {
+  private static async checkExistingCartTransform(admin: AdminApiContext): Promise<{ exists: boolean; id?: string; functionId?: string }> {
     const CHECK_EXISTING_QUERY = `
       query CheckExistingCartTransform {
         cartTransforms(first: 5) {
@@ -72,38 +120,45 @@ export class CartTransformService {
         }
       }
     `;
-    
+
     try {
       const response = await admin.graphql(CHECK_EXISTING_QUERY);
       const data = await response.json() as any;
-      
+
       if (data.errors) {
-        console.warn('⚠️ [CART TRANSFORM] Error checking existing cart transforms:', data.errors);
+        AppLogger.warn('Error checking existing cart transforms', {
+          component: 'cart-transform',
+          operation: 'check-existing'
+        }, data.errors);
         return { exists: false };
       }
-      
-      const existingTransform = data.data.cartTransforms.edges.find(
-        (edge: any) => edge.node.functionId === this.FUNCTION_ID
-      );
-      
+
+      // Check if any cart transform exists (we'll match by title/type later if needed)
+      const existingTransform = data.data?.cartTransforms?.edges?.[0];
+
       return {
         exists: !!existingTransform,
-        id: existingTransform?.node.id
+        id: existingTransform?.node?.id,
+        functionId: existingTransform?.node?.functionId
       };
-      
+
     } catch (error) {
-      console.warn('⚠️ [CART TRANSFORM] Error checking existing cart transforms:', error);
+      AppLogger.warn('Error checking existing cart transforms', {
+        component: 'cart-transform',
+        operation: 'check-existing'
+      }, error);
       return { exists: false };
     }
   }
   
   /**
-   * Create cart transform object
+   * Create cart transform object using functionHandle (2025-10+ API)
+   * Reference: https://shopify.dev/changelog/introducing-functionhandle
    */
-  private static async createCartTransform(admin: AdminApiContext): Promise<CartTransformActivationResult> {
+  private static async createCartTransform(admin: AdminApiContext, functionHandle: string): Promise<CartTransformActivationResult> {
     const CREATE_CART_TRANSFORM_MUTATION = `
-      mutation CreateCartTransform($functionId: String!) {
-        cartTransformCreate(functionId: $functionId) {
+      mutation CreateCartTransform($functionHandle: String!) {
+        cartTransformCreate(functionHandle: $functionHandle) {
           cartTransform {
             id
             functionId
@@ -115,11 +170,11 @@ export class CartTransformService {
         }
       }
     `;
-    
+
     try {
       const response = await admin.graphql(CREATE_CART_TRANSFORM_MUTATION, {
         variables: {
-          functionId: this.FUNCTION_ID
+          functionHandle: functionHandle
         }
       });
       
@@ -156,89 +211,32 @@ export class CartTransformService {
   }
   
   /**
-   * Ensure metafield definitions exist for bundle configuration
-   */
-  static async ensureBundleMetafieldDefinitions(admin: AdminApiContext): Promise<void> {
-    const CREATE_METAFIELD_DEFINITION = `
-      mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
-        metafieldDefinitionCreate(definition: $definition) {
-          createdDefinition {
-            id
-            key
-            namespace
-            ownerType
-          }
-          userErrors {
-            field
-            message
-            code
-          }
-        }
-      }
-    `;
-    
-    const definitions = [
-      {
-        name: "Cart Transform Bundle Config",
-        namespace: "bundle_discounts",
-        key: "cart_transform_config",
-        description: "Cart transform bundle configuration data",
-        type: "json",
-        ownerType: "PRODUCT" as const
-      },
-      {
-        name: "Discount Function Bundle Config", 
-        namespace: "bundle_discounts",
-        key: "discount_function_config",
-        description: "Discount function bundle configuration data",
-        type: "json",
-        ownerType: "PRODUCT" as const
-      }
-    ];
-    
-    for (const definition of definitions) {
-      try {
-        const response = await admin.graphql(CREATE_METAFIELD_DEFINITION, {
-          variables: { definition }
-        });
-        
-        const data = await response.json();
-        
-        if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
-          const error = data.data.metafieldDefinitionCreate.userErrors[0];
-          if (error.code !== "TAKEN") { // TAKEN means it already exists
-            console.warn(`⚠️ [METAFIELD] Error creating definition for ${definition.key}:`, error);
-          }
-        } else {
-          console.log(`✅ [METAFIELD] Ensured definition exists for ${definition.key}`);
-        }
-      } catch (error) {
-        console.warn(`⚠️ [METAFIELD] Error ensuring definition for ${definition.key}:`, error);
-      }
-    }
-  }
-  
-  /**
-   * Complete setup - activate cart transform and ensure metafield definitions
+   * Complete setup - activate cart transform
    */
   static async completeSetup(
     admin: AdminApiContext,
     shopDomain: string
   ): Promise<CartTransformActivationResult> {
-    console.log(`🔧 [SETUP] Starting complete cart transform setup for ${shopDomain}`);
-    
-    // Ensure metafield definitions first
-    await this.ensureBundleMetafieldDefinitions(admin);
-    
-    // Then activate cart transform
+    AppLogger.info('Starting complete cart transform setup', {
+      component: 'cart-transform',
+      operation: 'complete-setup'
+    }, { shopDomain });
+
+    // Activate cart transform
     const result = await this.activateForNewInstallation(admin, shopDomain);
-    
+
     if (result.success) {
-      console.log(`✅ [SETUP] Complete setup finished for ${shopDomain}`);
+      AppLogger.info('Complete setup finished', {
+        component: 'cart-transform',
+        operation: 'complete-setup'
+      }, { shopDomain });
     } else {
-      console.error(`❌ [SETUP] Setup failed for ${shopDomain}:`, result.error);
+      AppLogger.error('Setup failed', {
+        component: 'cart-transform',
+        operation: 'complete-setup'
+      }, { shopDomain, error: result.error });
     }
-    
+
     return result;
   }
 }

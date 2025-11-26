@@ -1,5 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { AppLogger } from "../lib/logger";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { admin } = await authenticate.admin(request);
@@ -39,7 +40,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ error: "Function not found" }, { status: 404 });
     }
   } catch (error) {
-    console.error("Error fetching function ID:", error);
+    AppLogger.error("Failed to fetch function ID", { component: "api.get-function-id", operation: "loader" }, error);
     return json({ error: "Failed to fetch function ID" }, { status: 500 });
   }
 }
