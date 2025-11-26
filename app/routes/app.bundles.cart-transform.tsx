@@ -21,12 +21,15 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
+import { SubscriptionGuard } from "../services/subscription-guard.server";
+import { BillingService } from "../services/billing.server";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
+import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
-  
+
   // Get all bundles (exclude archived)
   const cartTransformBundles = await db.bundle.findMany({
     where: {
@@ -43,9 +46,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     orderBy: { createdAt: "desc" },
   });
 
+  // Get subscription info for upgrade prompt
+  const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
+
   return json({
     bundles: cartTransformBundles,
     bundleType: "product_page", // Default display mode
+    subscription: subscriptionInfo ? {
+      plan: subscriptionInfo.plan,
+      currentBundleCount: subscriptionInfo.currentBundleCount,
+      bundleLimit: subscriptionInfo.bundleLimit,
+      canCreateBundle: subscriptionInfo.canCreateBundle,
+    } : null,
   });
 }
 
@@ -58,8 +70,14 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Handle different actions
   if (intent === "cloneBundle") {
+    // Check subscription limits before cloning
+    const limitCheck = await SubscriptionGuard.enforceBundleLimit(shop);
+    if (limitCheck) {
+      return limitCheck; // Return 403 response if limit reached
+    }
+
     const bundleId = formData.get("bundleId") as string;
-    
+
     try {
       // Fetch the original bundle with all related data
       const originalBundle = await db.bundle.findUnique({
@@ -274,6 +292,12 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // Original create bundle logic
+  // Check subscription limits before creating new bundle
+  const limitCheck = await SubscriptionGuard.enforceBundleLimit(shop);
+  if (limitCheck) {
+    return limitCheck; // Return 403 response if limit reached
+  }
+
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
 
@@ -375,7 +399,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function CartTransformBundles() {
-  const { bundles } = useLoaderData<typeof loader>();
+  const { bundles, subscription } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -560,6 +584,18 @@ export default function CartTransformBundles() {
         ]}
       >
       <Layout>
+        {/* Upgrade Prompt Banner for Free Users */}
+        {subscription && (
+          <Layout.Section>
+            <UpgradePromptBanner
+              plan={subscription.plan}
+              currentBundleCount={subscription.currentBundleCount}
+              bundleLimit={subscription.bundleLimit}
+              canCreateBundle={subscription.canCreateBundle}
+            />
+          </Layout.Section>
+        )}
+
         <Layout.Section>
           <Card>
             <BlockStack gap="300">

@@ -4,12 +4,12 @@ import {
   AppDistribution,
   shopifyApp,
   LATEST_API_VERSION,
-  DeliveryMethod,
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 import { createStorefrontAccessToken } from "./services/storefront-token.server";
 import { CartTransformService } from "./services/cart-transform-service.server";
+import { BillingService } from "./services/billing.server";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -30,6 +30,19 @@ const shopify = shopifyApp({
 
       // Metafield definitions are managed declaratively in shopify.app.toml
       console.log("[SHOPIFY] Metafield definitions managed via shopify.app.toml");
+
+      // Create or get shop record with free plan subscription
+      try {
+        console.log("[SHOPIFY] Ensuring shop record with subscription...");
+        await BillingService.ensureShop(
+          session.shop,
+          session.shop // Use shop domain as name if not provided
+        );
+        console.log("[SHOPIFY] ✅ Shop record created/retrieved with free plan");
+      } catch (error: any) {
+        console.error("[SHOPIFY] ⚠️ Failed to create shop record:", error?.message || error);
+        console.error("[SHOPIFY] ⚠️ This may affect subscription billing. Please check logs.");
+      }
 
       // Create storefront access token after successful auth
       // This is optional - the app will work without it, but product fetching will be slower
@@ -63,16 +76,6 @@ const shopify = shopifyApp({
         console.error("[SHOPIFY] ⚠️ Error during cart transform setup:", error?.message || error);
         console.error("[SHOPIFY] ℹ️ This is non-critical. Cart transform can be activated manually later.");
       }
-    },
-  },
-  webhooks: {
-    PRODUCTS_UPDATE: {
-      deliveryMethod: DeliveryMethod.Http,
-      callbackUrl: "/webhooks/products/update",
-    },
-    PRODUCTS_DELETE: {
-      deliveryMethod: DeliveryMethod.Http,
-      callbackUrl: "/webhooks/products/delete",
     },
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
