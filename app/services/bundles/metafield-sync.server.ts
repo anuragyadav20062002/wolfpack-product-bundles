@@ -695,14 +695,14 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
 
   // Build price_adjustment config for MERGE discount calculation
   const priceAdjustment: any = {
-    method: bundleConfig.pricing?.method || 'percentage_off',
+    method: bundleConfig.pricing?.method, // Use global method as primary source
     value: 0
   };
 
   if (bundleConfig.pricing?.enabled && bundleConfig.pricing?.rules?.length > 0) {
     const rule = bundleConfig.pricing.rules[0];
 
-    // Extract value from nested discount structure
+    // Extract value from discount structure
     if (rule.discount && typeof rule.discount.value !== 'undefined') {
       priceAdjustment.value = parseFloat(rule.discount.value) || 0;
     } else if (typeof rule.discountValue !== 'undefined') {
@@ -720,6 +720,9 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
   }
 
   console.log("🔧 [COMPONENT_METAFIELD] Price adjustment for components:", JSON.stringify(priceAdjustment));
+  console.log("🔧 [COMPONENT_METAFIELD] Pricing method:", priceAdjustment.method);
+  console.log("🔧 [COMPONENT_METAFIELD] Pricing value:", priceAdjustment.value);
+  console.log("🔧 [COMPONENT_METAFIELD] Has conditions:", !!priceAdjustment.conditions);
 
   // Create component_parents data in Shopify standard format with pricing info
   const componentParentsData = [{
@@ -733,7 +736,12 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
     price_adjustment: priceAdjustment // Include pricing for cart transform MERGE discount calculation
   }];
 
-  console.log("🔧 [COMPONENT_METAFIELD] Component parents data:", JSON.stringify(componentParentsData, null, 2));
+  console.log("🔧 [COMPONENT_METAFIELD] Component parents data structure:");
+  console.log("   - Bundle variant ID:", bundleVariantId);
+  console.log("   - Component references:", componentReferences.length);
+  console.log("   - Component quantities:", componentQuantities);
+  console.log("   - Price adjustment:", JSON.stringify(priceAdjustment));
+  console.log("🔧 [COMPONENT_METAFIELD] Full component_parents JSON:", JSON.stringify(componentParentsData, null, 2));
 
   // Update each component variant
   for (const variantId of componentVariantIds) {
