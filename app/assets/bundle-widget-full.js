@@ -2202,7 +2202,7 @@ class BundleWidget {
 
   buildCartItems() {
     // Shopify Standard Bundle approach for configurable bundles:
-    // Add ACTUAL selected component products to cart with _bundle_id attribute
+    // Add ACTUAL selected component products to cart with _bundle_id property
     // Cart transform MERGE groups by _bundle_id and combines into bundle parent
     // See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
 
@@ -2216,7 +2216,7 @@ class BundleWidget {
     });
 
     // Add ACTUAL selected component products to cart
-    // Each component gets _bundle_id attribute for grouping in cart transform
+    // Each component gets _bundle_id property for grouping in cart transform
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.stepProductData[stepIndex];
 
@@ -2235,7 +2235,7 @@ class BundleWidget {
             const cartItem = {
               id: parseInt(variantId),
               quantity: quantity,
-              attributes: {
+              properties: {
                 '_bundle_id': bundleInstanceId,
                 '_bundle_name': this.selectedBundle.name,
                 '_step_index': stepIndex.toString()
@@ -2248,7 +2248,7 @@ class BundleWidget {
       });
     });
 
-    console.log('[CART] Cart items to add (components with _bundle_id attribute):', cartItems);
+    console.log('[CART] Cart items to add (components with _bundle_id property):', cartItems);
     return cartItems;
   }
 
