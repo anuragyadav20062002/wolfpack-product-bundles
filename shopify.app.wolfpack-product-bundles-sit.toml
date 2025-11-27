@@ -1,0 +1,51 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "63077bb0483a6ce08a2d6139b14d170b"
+name = "Wolfpack: Product Bundles -SIT"
+application_url = "https://wolfpack-product-bundle-app-sit.onrender.com"
+embedded = true
+
+[webhooks]
+api_version = "2025-10"
+
+[[webhooks.subscriptions]]
+  uri = "pubsub://light-quest-455608-i3:wolfpack-product-bundles-staging"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  topics = [
+    "app/subscriptions_update",
+    "app/purchases_one_time_update",
+    "products/update",
+    "products/delete"
+  ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_cart_transforms,write_discounts,read_product_listings,read_products,write_products,read_content,read_themes,write_themes,unauthenticated_read_product_listings,unauthenticated_read_content"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://wolfpack-product-bundle-app-sit.onrender.com/auth/callback",
+  "https://wolfpack-product-bundle-app-sit.onrender.com/auth/shopify/callback",
+  "https://wolfpack-product-bundle-app-sit.onrender.com/api/auth/callback"
+]
+
+[metafields]
+api_version = "2025-10"
+
+# App Configuration
+# Shop-level app settings
+[shop.metafields.app.serverUrl]
+type = "single_line_text_field"
+name = "App Server URL"
+description = "URL of the app server for widget API calls"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+[shop.metafields.app.lastSync]
+type = "single_line_text_field"
+name = "Last Sync Timestamp"
+description = "ISO timestamp of last successful sync with app server"
+access.admin = "merchant_read"
+access.storefront = "none"
