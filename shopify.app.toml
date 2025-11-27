@@ -13,12 +13,18 @@ automatically_update_urls_on_dev = false
 api_version = "2025-10"
 
   [[webhooks.subscriptions]]
-  uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
+  uri = "pubsub://light-quest-455608-i3:wolfpack-product-bundles"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  topics = [
+    "app/subscriptions_update",
+    "app/purchases_one_time_update",
+    "products/update",
+    "products/delete"
+  ]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes,unauthenticated_read_product_listings,unauthenticated_read_content"
+scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes,unauthenticated_read_product_listings,unauthenticated_read_content,write_subscriptions"
 
 [auth]
 redirect_urls = [
