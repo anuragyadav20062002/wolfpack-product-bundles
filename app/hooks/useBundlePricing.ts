@@ -20,10 +20,9 @@ interface UseBundlePricingProps {
     showProgressBar?: boolean;
     showFooter?: boolean;
   } | null;
-  onTriggerSaveBar: () => void;
 }
 
-export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundlePricingProps) {
+export function useBundlePricing({ initialPricing }: UseBundlePricingProps) {
   // Pricing state
   const [discountEnabled, setDiscountEnabled] = useState(initialPricing?.enabled || false);
   const [discountType, setDiscountType] = useState<DiscountMethod>(
@@ -53,9 +52,7 @@ export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundle
         successMessage: 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'
       }
     }));
-
-    onTriggerSaveBar();
-  }, [discountType, onTriggerSaveBar]);
+  }, [discountType]);
 
   // Remove a discount rule
   const removeDiscountRule = useCallback((ruleId: string) => {
@@ -67,9 +64,7 @@ export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundle
       delete updated[ruleId];
       return updated;
     });
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Update a discount rule
   const updateDiscountRule = useCallback((ruleId: string, updates: Partial<PricingRule>) => {
@@ -78,9 +73,7 @@ export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundle
         rule.id === ruleId ? { ...rule, ...updates } : rule
       )
     );
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Update rule message
   const updateRuleMessage = useCallback((ruleId: string, field: 'discountText' | 'successMessage', value: string) => {
@@ -91,33 +84,27 @@ export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundle
         [field]: value
       }
     }));
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Toggle discount enabled
   const toggleDiscountEnabled = useCallback((enabled: boolean) => {
     setDiscountEnabled(enabled);
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Change discount type
   const changeDiscountType = useCallback((type: DiscountMethod) => {
     setDiscountType(type);
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Toggle progress bar
   const toggleProgressBar = useCallback((show: boolean) => {
     setShowProgressBar(show);
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Toggle footer
   const toggleFooter = useCallback((show: boolean) => {
     setShowFooter(show);
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Toggle variables panel
   const toggleVariablesPanel = useCallback(() => {

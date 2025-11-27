@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
@@ -31,6 +31,8 @@ import {
   Thumbnail,
   List,
   Spinner,
+  Divider,
+  Banner,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -51,21 +53,14 @@ import {
   ImageIcon,
 } from "@shopify/polaris-icons";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
-// Using modern App Bridge contextual save bar with data-save-bar attribute on form
+// Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ThemeTemplateService } from "../services/theme-template.server";
-import { BundleIsolationService } from "../services/bundle-isolation.server";
-import { BundleAutoInjectionService } from "../services/bundle-auto-injection.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
 } from "../services/bundles/metafield-sync.server";
-import {
-  buildCartTransformConfig,
-  updateCartTransformConfigMetafield,
-} from "../services/bundles/cart-transform-metafield.server";
-import { updateBundleIndex } from "../services/bundles/bundle-index.server";
 import {
   calculateBundlePrice,
   updateBundleProductPrice,
@@ -115,6 +110,8 @@ interface LoaderData {
   };
   bundleProduct?: any;
   shop: string;
+  apiKey: string;
+  blockHandle: string;
 }
 
 
@@ -201,10 +198,20 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     }
   }
 
+  // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
+  // Per Shopify docs: addAppBlockId={api_key}/{handle}
+  // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
+  const apiKey = process.env.SHOPIFY_API_KEY;
+  // Block handle must match the liquid filename (without .liquid extension)
+  // File: extensions/bundle-builder/blocks/bundle.liquid
+  const blockHandle = 'bundle';
+
   return json({
     bundle,
     bundleProduct,
     shop: session.shop,
+    apiKey,
+    blockHandle,
   });
 };
 
@@ -658,30 +665,6 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       AppLogger.debug("📏 [METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);
 
       try {
-        // WIDGET METAFIELD: $app:bundle_config (3-5KB)
-        // Used by: Widget (storefront) - loads bundle UI
-        // Contains: Step data with product IDs only (widget queries Storefront API for fresh data)
-        AppLogger.debug("🔧 [METAFIELD] Creating $app:bundle_config (widget config)");
-        await BundleIsolationService.updateBundleProductMetafield(admin, updatedBundle.shopifyProductId, baseConfiguration);
-        AppLogger.debug("✅ [METAFIELD] $app:bundle_config created successfully");
-
-        // CART TRANSFORM METAFIELD: $app:cart_transform_config (~500 bytes)
-        // Used by: Cart Transform function - applies discounts at checkout
-        // Contains: Only minimal data needed for cart transform (bundleId, parentVariantId, pricing)
-        if (bundleParentVariantId) {
-          AppLogger.debug("🔧 [CART_TRANSFORM_CONFIG] Creating lightweight cart transform config");
-          const cartTransformConfig = buildCartTransformConfig(
-            updatedBundle.id,
-            updatedBundle.name,
-            bundleParentVariantId,
-            baseConfiguration.pricing
-          );
-          await updateCartTransformConfigMetafield(admin, updatedBundle.shopifyProductId, cartTransformConfig);
-          AppLogger.debug("✅ [CART_TRANSFORM_CONFIG] Cart transform config created successfully");
-        } else {
-          AppLogger.warn("⚠️ [CART_TRANSFORM_CONFIG] Skipping - bundle parent variant ID not found");
-        }
-
         // STANDARD METAFIELDS: For Shopify cart transform compatibility
         AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
         try {
@@ -700,13 +683,39 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         }
 
         // COMPONENT METAFIELDS: Update component products with component_parents metafield
+        // CRITICAL: This metafield is required for cart transform MERGE operation
         AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
+
+        // Validate bundle has steps and products before setting metafields
         const fullBundleConfig = {
           ...baseConfiguration,
           steps: updatedBundle.steps  // Use database steps with StepProduct array
         };
+
+        if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {
+          AppLogger.error("❌ [COMPONENT_METAFIELD] Cannot set component_parents: No steps defined in bundle");
+          throw new Error("Bundle must have at least one step with products to set component metafields");
+        }
+
+        // Validate at least one step has products
+        const hasProducts = fullBundleConfig.steps.some((step: any) =>
+          (step.StepProduct && step.StepProduct.length > 0) ||
+          (step.products && step.products.length > 0)
+        );
+
+        if (!hasProducts) {
+          AppLogger.error("❌ [COMPONENT_METAFIELD] Cannot set component_parents: No products found in any step");
+          throw new Error("Bundle must have at least one product in steps to set component metafields");
+        }
+
         await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
         AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
+
+        // BUNDLE VARIANT METAFIELDS: Set bundle_ui_config and other variant-level metafields
+        // This is CRITICAL - without this, the widget cannot load on the storefront
+        AppLogger.debug("🔧 [BUNDLE_VARIANT_METAFIELD] Updating bundle variant metafields (bundle_ui_config, component_reference, etc.)");
+        await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
+        AppLogger.debug("✅ [BUNDLE_VARIANT_METAFIELD] Bundle variant metafields updated successfully");
 
       } catch (error) {
         AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
@@ -714,126 +723,13 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       }
     }
 
-    // BUNDLE INDEX: Update shop-level bundle index (custom:bundle_index)
-    // Used by: Widget for bundle discovery (~50 bytes per bundle, supports 200+ bundles)
-    try {
-      AppLogger.debug("🔄 [BUNDLE_INDEX] Updating shop-level bundle index...");
-      await updateBundleIndex(admin, session.shop);
-      AppLogger.debug("✅ [BUNDLE_INDEX] Bundle index updated successfully");
-    } catch (error) {
-      AppLogger.error("❌ [BUNDLE_INDEX] Failed to update bundle index:", {}, error as any);
-      // Don't fail the entire operation - just log the error
-    }
+    // BUNDLE INDEX: No longer needed
+    // Cart transform now queries variant metafields directly (Shopify Standard)
+    // Shop-level bundle index has been removed for better performance and simplicity
 
-    // Helper function to create bundle product isolation metafields
-    async function createBundleProductIsolationMetafields(admin: any, bundleProductId: string, bundleId: string) {
-      AppLogger.debug(`🏷️ [ISOLATION_METAFIELDS] Creating isolation metafields for bundle product: ${bundleProductId}`);
-
-      try {
-        const metafields = [
-          {
-            ownerId: bundleProductId,
-            namespace: "$app",
-            key: "ownsBundleId",
-            type: "single_line_text_field",
-            value: bundleId
-          },
-          {
-            ownerId: bundleProductId,
-            namespace: "$app",
-            key: "bundleProductType",
-            type: "single_line_text_field",
-            value: "cart_transform_bundle"
-          },
-          {
-            ownerId: bundleProductId,
-            namespace: "$app",
-            key: "isolationCreated",
-            type: "single_line_text_field",
-            value: new Date().toISOString()
-          }
-        ];
-
-        const SET_METAFIELDS_MUTATION = `
-        mutation SetIsolationMetafields($metafields: [MetafieldsSetInput!]!) {
-          metafieldsSet(metafields: $metafields) {
-            metafields {
-              id
-              key
-              namespace
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
-        const response = await admin.graphql(SET_METAFIELDS_MUTATION, {
-          variables: { metafields }
-        });
-
-        const data = await response.json();
-
-        if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-          AppLogger.error('❌ [ISOLATION_METAFIELDS] Metafield errors:', {}, data.data.metafieldsSet.userErrors);
-          return false;
-        }
-
-        AppLogger.debug(`✅ [ISOLATION_METAFIELDS] Created ${data.data?.metafieldsSet?.metafields?.length || 0} isolation metafields`);
-        return true;
-
-      } catch (error) {
-        AppLogger.error('❌ [ISOLATION_METAFIELDS] Error creating isolation metafields:', {}, error as any);
-        return false;
-      }
-    }
-
-    // Helper function to set up automatic bundle extension injection
-    async function setupBundleAutoInjection(admin: any, bundleProductId: string, bundleId: string) {
-      AppLogger.debug(`🎯 [AUTO_INJECTION] Setting up automatic bundle extension injection for product: ${bundleProductId}`);
-
-      try {
-        // Use the auto-injection service
-        const result = await BundleAutoInjectionService.injectBundleExtensionIntoProduct(
-          admin,
-          bundleProductId,
-          bundleId
-        );
-
-        if (result.success) {
-          AppLogger.debug(`✅ [AUTO_INJECTION] Successfully set up automatic bundle extension injection`);
-        } else {
-          AppLogger.debug(`⚠️ [AUTO_INJECTION] Auto-injection setup warning: ${result.error}`);
-          // Note: This is not a fatal error - the bundle widget will still work via JavaScript detection
-        }
-
-        return result.success;
-
-      } catch (error) {
-        AppLogger.error(`❌ [AUTO_INJECTION] Error setting up auto-injection:`, {}, error as any);
-        // Don't throw - this is not critical for bundle functionality
-        return false;
-      }
-    }
-
-    // 🎯 BUNDLE PRODUCT ISOLATION SETUP: Set up automatic bundle extension injection
-    if (bundleProductData?.id && updatedBundle.id) {
-      AppLogger.debug("🎯 [BUNDLE_ISOLATION] Setting up bundle product isolation for automatic extension display");
-      try {
-        // Create isolation metafields for automatic bundle detection
-        await createBundleProductIsolationMetafields(admin, bundleProductData.id, updatedBundle.id);
-
-        // Set up automatic bundle extension injection
-        await setupBundleAutoInjection(admin, bundleProductData.id, updatedBundle.id);
-
-        AppLogger.debug("✅ [BUNDLE_ISOLATION] Bundle product isolation setup completed successfully");
-      } catch (error) {
-        AppLogger.error("❌ [BUNDLE_ISOLATION] Bundle product isolation setup failed:", {}, error as any);
-        // Don't fail the entire operation - this is not critical for core functionality
-      }
-    }
+    // Note: Widget now only displays when manually added to theme via app blocks
+    // Merchants add the bundle-builder block through the theme editor (guided by onboarding flow)
+    // Auto-injection removed to comply with Shopify App Store requirements
 
     return json({
       success: true,
@@ -1289,24 +1185,17 @@ async function handleUpdateBundleProduct(admin: any, session: any, bundleId: str
       throw new Error(`Failed to update product: ${error.message}`);
     }
 
-    // Update product image if provided
+    // Add/update product image if provided (using productCreateMedia - API 2025-04+)
     if (productImageUrl) {
-      const UPDATE_IMAGE = `
-        mutation UpdateProductImage($productId: ID!, $images: [ImageInput!]!) {
-          productUpdate(input: {
-            id: $productId,
-            images: $images
-          }) {
-            product {
-              id
-              images(first: 1) {
-                nodes {
-                  id
-                  url
-                }
-              }
+      const CREATE_MEDIA = `
+        mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+          productCreateMedia(productId: $productId, media: $media) {
+            media {
+              alt
+              mediaContentType
+              status
             }
-            userErrors {
+            mediaUserErrors {
               field
               message
             }
@@ -1314,13 +1203,14 @@ async function handleUpdateBundleProduct(admin: any, session: any, bundleId: str
         }
       `;
 
-      const imageResponse = await admin.graphql(UPDATE_IMAGE, {
+      const imageResponse = await admin.graphql(CREATE_MEDIA, {
         variables: {
           productId: productId,
-          images: [
+          media: [
             {
-              src: productImageUrl,
-              altText: `${productTitle} - Bundle`
+              originalSource: productImageUrl,
+              alt: `${productTitle} - Bundle`,
+              mediaContentType: "IMAGE"
             }
           ]
         }
@@ -1328,10 +1218,12 @@ async function handleUpdateBundleProduct(admin: any, session: any, bundleId: str
 
       const imageData = await imageResponse.json();
 
-      if (imageData.data?.productUpdate?.userErrors?.length > 0) {
-        const error = imageData.data.productUpdate.userErrors[0];
+      if (imageData.data?.productCreateMedia?.mediaUserErrors?.length > 0) {
+        const error = imageData.data.productCreateMedia.mediaUserErrors[0];
         AppLogger.error("❌ [PRODUCT_UPDATE] Image update failed:", {}, error);
         // Don't fail the entire operation for image update errors
+      } else {
+        AppLogger.debug("✅ [PRODUCT_UPDATE] Image added successfully");
       }
     }
 
@@ -1808,7 +1700,7 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
 }
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop } = useLoaderData<LoaderData>();
+  const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -1842,8 +1734,7 @@ export default function ConfigureBundleFlow() {
 
   // Condition rules management
   const conditionsState = useBundleConditions({
-    initialStepConditions: initializeStepConditions(),
-    onTriggerSaveBar: formState.triggerSaveBar
+    initialStepConditions: initializeStepConditions()
   });
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
@@ -1860,14 +1751,12 @@ export default function ConfigureBundleFlow() {
   // Steps management
   const stepsState = useBundleSteps({
     initialSteps: transformedSteps,
-    onTriggerSaveBar: formState.triggerSaveBar,
     shopify
   });
 
   // Pricing management
   const pricingState = useBundlePricing({
-    initialPricing: bundle.pricing,
-    onTriggerSaveBar: formState.triggerSaveBar
+    initialPricing: bundle.pricing
   });
 
 
@@ -1909,8 +1798,9 @@ export default function ConfigureBundleFlow() {
   // UI state for section navigation (expandedSteps and selectedTab now from stepsState hook)
   const [activeSection, setActiveSection] = useState('step_setup');
 
-  // Track original values for change detection - initialize with loaded data to prevent false positives
-  const [originalValues, setOriginalValues] = useState({
+  // Track original values for change detection using useRef to prevent re-renders
+  // This approach prevents SaveBar flickering by keeping originalValues stable
+  const originalValuesRef = useRef({
     status: formState.bundleStatus,
     name: formState.bundleName,
     description: formState.bundleDescription,
@@ -1937,12 +1827,19 @@ export default function ConfigureBundleFlow() {
     productStatus: loadedBundleProduct?.status || "ACTIVE",
   });
 
-  // Track if there are unsaved changes
+  // Track if there are unsaved changes (controls SaveBar visibility via 'open' prop)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // NOTE: triggerSaveBar and dismissSaveBar are now provided by formState hook
+  // Memoize stringified values to prevent unnecessary re-computations
+  // This is critical for preventing SaveBar flickering
+  const currentStepsString = useMemo(() => JSON.stringify(stepsState.steps), [stepsState.steps]);
+  const currentSelectedCollectionsString = useMemo(() => JSON.stringify(selectedCollections), [selectedCollections]);
+  const currentStepConditionsString = useMemo(() => JSON.stringify(conditionsState.stepConditions), [conditionsState.stepConditions]);
+  const currentDiscountRulesString = useMemo(() => JSON.stringify(pricingState.discountRules), [pricingState.discountRules]);
+  const currentRuleMessagesString = useMemo(() => JSON.stringify(ruleMessages), [ruleMessages]);
 
   // Check for changes whenever form values change
+  // Using memoized values and ref-based original values to prevent flickering
   useEffect(() => {
     // Helper function to safely compare bundle products
     const compareBundleProducts = (current: any, original: any) => {
@@ -1951,13 +1848,15 @@ export default function ConfigureBundleFlow() {
       return current.id === original.id;
     };
 
+    const originalValues = originalValuesRef.current;
+
     const stepSetupChanges = (
       formState.bundleName !== originalValues.name ||
       formState.bundleDescription !== originalValues.description ||
       formState.templateName !== originalValues.templateName ||
-      JSON.stringify(stepsState.steps) !== originalValues.steps ||
-      JSON.stringify(selectedCollections) !== originalValues.selectedCollections ||
-      JSON.stringify(conditionsState.stepConditions) !== originalValues.stepConditions ||
+      currentStepsString !== originalValues.steps ||
+      currentSelectedCollectionsString !== originalValues.selectedCollections ||
+      currentStepConditionsString !== originalValues.stepConditions ||
       !compareBundleProducts(bundleProduct, originalValues.bundleProduct) ||
       productStatus !== originalValues.productStatus
     );
@@ -1965,11 +1864,11 @@ export default function ConfigureBundleFlow() {
     const discountPricingChanges = (
       pricingState.discountEnabled !== originalValues.discountEnabled ||
       pricingState.discountType !== originalValues.discountType ||
-      JSON.stringify(pricingState.discountRules) !== originalValues.discountRules ||
+      currentDiscountRulesString !== originalValues.discountRules ||
       pricingState.showProgressBar !== originalValues.showProgressBar ||
       pricingState.showFooter !== originalValues.showFooter ||
       pricingState.discountMessagingEnabled !== originalValues.discountMessagingEnabled ||
-      JSON.stringify(ruleMessages) !== originalValues.ruleMessages
+      currentRuleMessagesString !== originalValues.ruleMessages
     );
 
     const bundleStatusChanges = (
@@ -1978,34 +1877,29 @@ export default function ConfigureBundleFlow() {
 
     const hasChanges = stepSetupChanges || discountPricingChanges || bundleStatusChanges;
 
-    setHasUnsavedChanges(hasChanges);
-
-    // Control SaveBar visibility using App Bridge API
-    if (hasChanges) {
-      shopify.saveBar.show('bundle-save-bar');
-    } else {
-      shopify.saveBar.hide('bundle-save-bar');
-    }
+    // Only update state if it actually changed to prevent unnecessary re-renders and SaveBar flickering
+    setHasUnsavedChanges(prev => prev !== hasChanges ? hasChanges : prev);
   }, [
     formState.bundleStatus,
     formState.bundleName,
     formState.bundleDescription,
     formState.templateName,
-    stepsState.steps,
+    currentStepsString,
     pricingState.discountEnabled,
     pricingState.discountType,
-    pricingState.discountRules,
+    currentDiscountRulesString,
     pricingState.showProgressBar,
     pricingState.showFooter,
     pricingState.discountMessagingEnabled,
-    ruleMessages,
-    selectedCollections,
-    conditionsState.stepConditions,
+    currentRuleMessagesString,
+    currentSelectedCollectionsString,
+    currentStepConditionsString,
     bundleProduct,
     productStatus,
-    originalValues,
-    shopify
   ]);
+
+  // SaveBar visibility is now controlled declaratively via the 'open' prop
+  // No need for manual show/hide API calls - React handles it automatically
 
   // Save handler
   const handleSave = useCallback(async () => {
@@ -2120,27 +2014,30 @@ export default function ConfigureBundleFlow() {
         // Check if this was a save bundle action by looking for bundle data in response
         if ('bundle' in result && result.bundle) {
           // This is a save bundle response
-          setOriginalValues({
+          // Update the ref directly to avoid re-renders and prevent SaveBar flickering
+          originalValuesRef.current = {
             status: formState.bundleStatus,
             name: formState.bundleName,
             description: formState.bundleDescription,
             templateName: formState.templateName,
-            steps: JSON.stringify(stepsState.steps),
+            steps: currentStepsString,
             discountEnabled: pricingState.discountEnabled,
             discountType: pricingState.discountType,
-            discountRules: JSON.stringify(pricingState.discountRules),
+            discountRules: currentDiscountRulesString,
             showProgressBar: pricingState.showProgressBar,
             showFooter: pricingState.showFooter,
             discountMessagingEnabled: pricingState.discountMessagingEnabled,
-            selectedCollections: JSON.stringify(selectedCollections),
-            ruleMessages: JSON.stringify(ruleMessages),
-            stepConditions: JSON.stringify(conditionsState.stepConditions),
+            selectedCollections: currentSelectedCollectionsString,
+            ruleMessages: currentRuleMessagesString,
+            stepConditions: currentStepConditionsString,
             bundleProduct: bundleProduct || null,
             productStatus: productStatus,
-          });
+          };
 
-          // Hide the save bar after successful save
-          shopify.saveBar.hide('bundle-save-bar');
+          // Force a check to hide the SaveBar by setting hasUnsavedChanges to false
+          setHasUnsavedChanges(false);
+
+          // SaveBar will hide automatically when hasUnsavedChanges becomes false
           shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
         } else if ('productId' in result && result.productId) {
           // This is a sync product response
@@ -2212,6 +2109,8 @@ export default function ConfigureBundleFlow() {
   // Discard handler
   const handleDiscard = useCallback(() => {
     try {
+      const originalValues = originalValuesRef.current;
+
       // Reset to original values using hook setters
       formState.setBundleStatus(originalValues.status);
       formState.setBundleName(originalValues.name);
@@ -2231,14 +2130,16 @@ export default function ConfigureBundleFlow() {
       setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
       setProductStatus(originalValues.productStatus);
 
-      // Hide the save bar after discarding
-      shopify.saveBar.hide('bundle-save-bar');
+      // Force a check to hide the SaveBar
+      setHasUnsavedChanges(false);
+
+      // SaveBar will hide automatically when hasUnsavedChanges becomes false
       shopify.toast.show("Changes discarded", { isError: false });
     } catch (error) {
       AppLogger.error("Error discarding changes:", {}, error as any);
       shopify.toast.show("Error discarding changes", { isError: true });
     }
-  }, [originalValues, loadedBundleProduct, shopify]);
+  }, [loadedBundleProduct, shopify, formState, stepsState, pricingState, conditionsState]);
 
   // Emergency force navigation state for escape hatch
   const [forceNavigation, setForceNavigation] = useState(false);
@@ -2459,9 +2360,6 @@ export default function ConfigureBundleFlow() {
             : step
         ) as any);
 
-        // Trigger save bar for product selection changes
-        formState.triggerSaveBar();
-
         const addedCount = transformedProducts.length - currentProducts.length;
         const message = addedCount > 0
           ? `Added ${addedCount} product${addedCount !== 1 ? 's' : ''}!`
@@ -2491,7 +2389,7 @@ export default function ConfigureBundleFlow() {
         shopify.toast.show("Failed to select products", { isError: true });
       }
     }
-  }, [stepsState.steps, stepsState.setSteps, shopify, formState.triggerSaveBar]);
+  }, [stepsState.steps, stepsState.setSteps, shopify]);
 
   const handleSyncProduct = useCallback(() => {
     try {
@@ -2521,13 +2419,10 @@ export default function ConfigureBundleFlow() {
       });
 
       if (products && products.length > 0) {
-        const selectedProduct = products[0];
+        const selectedProduct = products[0] as any;
         setBundleProduct(selectedProduct);
         setProductTitle(selectedProduct.title || "");
         setProductImageUrl(selectedProduct.featuredImage?.url || selectedProduct.images?.[0]?.originalSrc || "");
-
-        // Trigger save bar immediately after bundle product selection
-        formState.triggerSaveBar();
 
         shopify.toast.show("Bundle product updated successfully", { isError: false });
       }
@@ -2565,13 +2460,12 @@ export default function ConfigureBundleFlow() {
       if (imageUrl) {
         setProductImageUrl(imageUrl);
         shopify.toast.show("Image will be updated when you save changes", { isError: false });
-        formState.triggerSaveBar();
       }
     } catch (error) {
       AppLogger.error("Image upload failed:", {}, error as any);
       shopify.toast.show("Failed to upload image", { isError: true });
     }
-  }, [bundleProduct, shopify, formState.triggerSaveBar]);
+  }, [bundleProduct, shopify]);
 
   // Handle product title update
   const handleSaveProductDetails = useCallback(async () => {
@@ -2743,9 +2637,6 @@ export default function ConfigureBundleFlow() {
           [stepId]: collections as any
         }));
 
-        // Trigger save bar for collection selection changes
-        formState.triggerSaveBar();
-
         const addedCount = collections.length - currentCollections.length;
         const message = addedCount > 0
           ? `Added ${addedCount} collection${addedCount !== 1 ? 's' : ''}!`
@@ -2760,7 +2651,6 @@ export default function ConfigureBundleFlow() {
           ...prev,
           [stepId]: []
         }));
-        formState.triggerSaveBar();
         shopify.toast.show("All collections removed", { isError: false });
       }
     } catch (error) {
@@ -2781,7 +2671,7 @@ export default function ConfigureBundleFlow() {
         shopify.toast.show("Failed to select collections", { isError: true });
       }
     }
-  }, [shopify, formState.triggerSaveBar, selectedCollections]);
+  }, [shopify, selectedCollections]);
 
   // NOTE: Discount rule management (addDiscountRule, removeDiscountRule, updateDiscountRule)
   // is now provided by pricingState hook
@@ -2795,10 +2685,7 @@ export default function ConfigureBundleFlow() {
         [field]: value
       }
     }));
-
-    // Trigger save bar for rule message changes
-    formState.triggerSaveBar();
-  }, [formState.triggerSaveBar]);
+  }, []);
 
   // Function to load available theme templates
   const loadAvailablePages = useCallback(() => {
@@ -2876,33 +2763,45 @@ export default function ConfigureBundleFlow() {
         }
       }
 
-      // Use correct extension UUID from environment variable
-      const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
-      const blockHandle = 'bundle-builder'; // Match the extension handle
-      const appBlockId = `${extensionUuid}/${blockHandle}`;
+      // Use app API key and block handle from loader data (passed from server)
+      // CRITICAL: Must use app's API key (client_id), not extension UUID
+      if (!apiKey || !blockHandle) {
+        AppLogger.error('🚨 [THEME_EDITOR] Missing app configuration');
+        shopify.toast.show("App configuration missing. Please check app setup.", { isError: true });
+        return;
+      }
 
-      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`);
+      const appBlockId = `${apiKey}/${blockHandle}`;
 
-      // Generate simple deep link following Shopify's official documentation
-      // Official format: template + addAppBlockId + target
+      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`, {
+        apiKey,
+        blockHandle,
+        bundleId: bundle.id
+      });
+
+      // Generate deep link following Shopify's official documentation with bundle ID
+      // Official format: template + addAppBlockId + target + bundleId (for auto-population)
       // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
       //
-      // Note: activate=true and previewPath are NOT in official docs and don't work reliably
-      // This simple format opens the theme editor with the block ready to add
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection`;
+      // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
+      // the bundle_id setting in the theme editor, making setup seamless for merchants
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
 
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link:`, {}, themeEditorUrl);
+      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
+        template: template.handle,
+        bundleId: bundle.id,
+        url: themeEditorUrl
+      });
 
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
-      // Use App Bridge redirect (not window.open) to avoid popup blockers
-      // This navigates the entire app frame to the theme editor
+      // Open theme editor in new window/tab for better workflow
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
-      AppLogger.debug(`✅ [THEME_EDITOR] Navigating to theme editor via App Bridge`);
+      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor in new window`);
 
-      // Use App Bridge redirect - this avoids popup blockers
-      window.open(themeEditorUrl, '_top');
+      // Open in new window so merchant can keep bundle configuration open
+      window.open(themeEditorUrl, '_blank');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -2942,7 +2841,7 @@ export default function ConfigureBundleFlow() {
         disabled: !bundleProduct || stepsState.steps.length === 0,
       }}
     >
-      {/* Modern App Bridge contextual save bar using form with data-save-bar */}
+      {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -2953,23 +2852,25 @@ export default function ConfigureBundleFlow() {
           handleDiscard();
         }}
       >
-        {/* SaveBar component - controlled via App Bridge API show/hide methods */}
-        <SaveBar id="bundle-save-bar">
+        {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
+        <SaveBar
+          id="bundle-save-bar"
+          open={hasUnsavedChanges}
+          discardConfirmation={true}
+        >
           <button
             variant="primary"
             onClick={handleSave}
-            loading={fetcher.state !== "idle" ? "" : undefined}
+            loading={fetcher.state !== "idle"}
             disabled={fetcher.state !== "idle"}
           >
             Save
           </button>
-          <button
-            onClick={handleDiscard}
-            disabled={fetcher.state !== "idle"}
-          >
+          <button onClick={handleDiscard} disabled={fetcher.state !== "idle"}>
             Discard
           </button>
         </SaveBar>
+
         {/* Hidden inputs for form submission - values will be updated by React state changes */}
         <input type="hidden" name="bundleName" value={formState.bundleName} />
         <input type="hidden" name="bundleDescription" value={formState.bundleDescription} />
@@ -3160,30 +3061,23 @@ export default function ConfigureBundleFlow() {
                     Take your bundle live
                   </Text>
 
-                  {/* Green recommendation banner for manual template creation */}
-                  <div style={{
-                    padding: '12px 16px',
-                    backgroundColor: '#e8f5e8',
-                    border: '1px solid #4caf50',
-                    borderRadius: '8px'
-                  }}>
+                  {/* Installation Guide Banner */}
+                  <Banner tone="info">
                     <BlockStack gap="200">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={RefreshIcon} tone="success" />
-                        <Text as="span" variant="bodyMd" fontWeight="medium" tone="success">
-                          💡 Pro Tip: Manual Template Creation
-                        </Text>
+                      <Text as="p" variant="bodyMd">
+                        <strong>New to installing bundles?</strong> Check out our comprehensive installation guide
+                        with step-by-step instructions, screenshots, and troubleshooting tips.
+                      </Text>
+                      <InlineStack gap="200">
+                        <Button
+                          onClick={() => navigate('/app/installation-guide')}
+                          icon={ExternalIcon}
+                        >
+                          View Installation Guide
+                        </Button>
                       </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        For optimal bundle widget placement, manually create a product template named "cart-transform"
-                        in your theme's templates folder. This allows precise control over bundle widget positioning
-                        and ensures consistent styling across your store.
-                      </Text>
-                      <Text as="p" variant="bodyXs" tone="subdued">
-                        <strong>Video Tutorial:</strong> See our detailed video guide for step-by-step template creation instructions.
-                      </Text>
                     </BlockStack>
-                  </div>
+                  </Banner>
 
                   {/* Template Selection */}
                   <BlockStack gap="200">
@@ -3204,29 +3098,45 @@ export default function ConfigureBundleFlow() {
                     />
                   </BlockStack>
 
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <Text variant="bodyMd" as="p">
-                        Place on theme
-                      </Text>
+                  {/* Quick Setup Action */}
+                  <BlockStack gap="300">
+                    <Divider />
+
+                    <InlineStack align="space-between" blockAlign="center" gap="400">
+                      <BlockStack gap="100">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          Install Widget in Theme
+                        </Text>
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          Opens theme editor with bundle widget pre-selected. Simply drag & drop to position.
+                        </Text>
+                      </BlockStack>
                       <Button
+                        variant="primary"
                         icon={SettingsIcon}
                         onClick={handlePlaceWidget}
+                        size="large"
                       >
                         Place Widget
                       </Button>
                     </InlineStack>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Need help? Check out our{" "}
-                      <Button
-                        variant="plain"
-                        onClick={() => window.open('/app/onboarding', '_blank')}
-                      >
-                        setup guide
-                      </Button>
-                      {" "}for step-by-step instructions
-                    </Text>
                   </BlockStack>
+
+                  {/* Pro Tip */}
+                  <Banner tone="success">
+                    <BlockStack gap="200">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={RefreshIcon} />
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">
+                          💡 Pro Tip: Custom Templates
+                        </Text>
+                      </InlineStack>
+                      <Text as="p" variant="bodySm">
+                        Create a custom product template named "cart-transform" specifically for bundle products.
+                        This gives you better control and keeps bundle products separate from regular products.
+                      </Text>
+                    </BlockStack>
+                  </Banner>
                 </BlockStack>
               </Card>
             </BlockStack>

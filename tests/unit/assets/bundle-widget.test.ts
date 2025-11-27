@@ -75,8 +75,8 @@ describe('Bundle Widget JavaScript', () => {
           BUNDLE_CONFIG: '_bundle_config'
         },
         BUNDLE_TYPES: {
-          CART_TRANSFORM: 'cart_transform',
-          DISCOUNT_FUNCTION: 'discount_function'
+          PRODUCT_PAGE: 'product_page',
+          FULL_PAGE: 'full_page'
         }
       };
 
@@ -157,7 +157,7 @@ describe('Bundle Widget JavaScript', () => {
         id: 'test-bundle-1',
         name: 'Test Bundle',
         status: 'active',
-        bundleType: 'cart_transform',
+        bundleType: 'product_page',
         steps: [
           {
             id: 'step-1',
@@ -194,7 +194,7 @@ describe('Bundle Widget JavaScript', () => {
           id: 'bundle-1',
           name: 'Product Bundle',
           status: 'active',
-          bundleType: 'cart_transform',
+          bundleType: 'product_page',
           shopifyProductId: 'gid://shopify/Product/123',
           steps: [{ id: 'step-1', name: 'Step 1' }]
         },
@@ -219,12 +219,12 @@ describe('Bundle Widget JavaScript', () => {
         );
 
         for (const bundle of bundles) {
-          if (bundle.bundleType === 'cart_transform') {
+          if (bundle.bundleType === 'product_page') {
             if (config.currentProductId) {
               const productIdStr = config.currentProductId.toString();
-              const bundleProductId = bundle.shopifyProductId ? 
+              const bundleProductId = bundle.shopifyProductId ?
                 bundle.shopifyProductId.split('/').pop() : null;
-              
+
               if (bundleProductId === productIdStr) {
                 return bundle;
               }

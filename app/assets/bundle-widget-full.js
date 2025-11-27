@@ -344,6 +344,10 @@ class PricingCalculator {
 
   static calculateDiscount(bundle, totalPrice, totalQuantity) {
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
+      console.log('[DISCOUNT] No pricing enabled or no rules', {
+        enabled: bundle?.pricing?.enabled,
+        rulesLength: bundle?.pricing?.rules?.length
+      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -382,6 +386,11 @@ class PricingCalculator {
     }
 
     if (!bestRule) {
+      console.log('[DISCOUNT] No rule matched conditions', {
+        totalPrice,
+        totalQuantity,
+        rulesChecked: rules.length
+      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -426,6 +435,16 @@ class PricingCalculator {
       applicableRule: bestRule,
       discountMethod
     };
+
+    console.log('[DISCOUNT] Calculated discount:', {
+      hasDiscount: result.hasDiscount,
+      discountAmount: result.discountAmount,
+      finalPrice: result.finalPrice,
+      originalPrice: totalPrice,
+      discountPercentage: result.discountPercentage.toFixed(2) + '%',
+      method: discountMethod
+    });
+
     return result;
   }
 
@@ -978,13 +997,29 @@ class BundleWidget {
 
     // Widget only works on container products with bundleConfig metafield
     if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+      // Check if we're in theme editor mode
+      const isThemeEditor = window.Shopify?.designMode ||
+                           window.isThemeEditorContext ||
+                           window.location.pathname.includes('/editor') ||
+                           window.location.search.includes('preview_theme_id');
+
+      const bundleIdFromDataset = this.container.dataset.bundleId;
+
+      // Show helpful preview in theme editor instead of error
+      if (isThemeEditor && bundleIdFromDataset) {
+        console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
+        this.showThemeEditorPreview(bundleIdFromDataset);
+        return; // Don't throw error, just show preview
+      }
+
+      // For production/storefront: show proper error
       const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
       console.error('[WIDGET_INIT] ❌', errorMsg);
       console.error('[WIDGET_INIT] 🔍 Debug info:', {
         isContainerProduct: !!configValue,
         configValue: configValue?.substring(0, 100),
         containerDataset: this.container.dataset,
-        bundleIdFromDataset: this.container.dataset.bundleId
+        bundleIdFromDataset: bundleIdFromDataset
       });
       throw new Error(errorMsg);
     }
@@ -1005,6 +1040,63 @@ class BundleWidget {
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
+  }
+
+  /**
+   * Show a helpful preview in theme editor when testing on non-bundle products
+   */
+  showThemeEditorPreview(bundleId) {
+    console.log('[WIDGET_PREVIEW] Showing theme editor preview for bundle:', bundleId);
+
+    this.container.innerHTML = `
+      <div style="
+        padding: 32px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 2px dashed #667eea;
+        border-radius: 12px;
+        text-align: center;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      ">
+        <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+        <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
+        <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
+          Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
+        </p>
+        <div style="
+          margin: 20px auto 0;
+          padding: 16px;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 8px;
+          max-width: 400px;
+          text-align: left;
+          font-size: 13px;
+          line-height: 1.6;
+        ">
+          <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
+          <div style="opacity: 0.9;">
+            This widget will automatically display on <strong>bundle container products</strong>.
+            <br><br>
+            <strong>To see it in action:</strong>
+            <ol style="margin: 8px 0; padding-left: 20px;">
+              <li>Save your theme</li>
+              <li>Navigate to a bundle product page</li>
+              <li>The widget will appear with product selection steps</li>
+            </ol>
+          </div>
+        </div>
+        <div style="
+          margin-top: 20px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          font-size: 12px;
+          opacity: 0.8;
+        ">
+          💡 <strong>Tip:</strong> You're currently previewing on a regular product. The widget only activates on products configured as bundle containers.
+        </div>
+      </div>
+    `;
   }
 
   // ========================================================================
@@ -1374,15 +1466,34 @@ class BundleWidget {
 
     const button = this.elements.addToCartButton;
 
-    if (totalQuantity === 0) {
-      button.textContent = 'Add Bundle to Cart';
+    // Check if all steps are complete (required)
+    const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+
+    // Disable button if no products selected OR if not all steps are complete
+    if (totalQuantity === 0 || !allStepsValid) {
+      if (totalQuantity === 0) {
+        button.textContent = 'Add Bundle to Cart';
+      } else {
+        // Some products selected but not all steps complete
+        button.textContent = 'Complete All Steps to Continue';
+      }
       button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
     } else {
+      // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
       const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
 
+      console.log('[ADD_TO_CART_BUTTON] Discount info:', {
+        hasDiscount: discountInfo.hasDiscount,
+        showDiscountDisplay: this.selectedBundle.pricing?.messages?.showDiscountDisplay,
+        shouldShowStrikethrough: discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false
+      });
+
       if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
         const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+        console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
         button.innerHTML = `
           <span style="display: flex; flex-direction: column; align-items: center;">
             <span style="text-decoration: line-through; font-size: 0.8em; opacity: 0.7;">${originalPrice}</span>
@@ -1390,10 +1501,13 @@ class BundleWidget {
           </span>
         `;
       } else {
+        console.log('[ADD_TO_CART_BUTTON] No strikethrough shown');
         button.textContent = `Add Bundle to Cart • ${formattedPrice}`;
       }
 
       button.disabled = false;
+      button.style.opacity = '1';
+      button.style.cursor = 'pointer';
     }
   }
   // ========================================================================
@@ -2087,9 +2201,22 @@ class BundleWidget {
   }
 
   buildCartItems() {
+    // Shopify Standard Bundle approach for configurable bundles:
+    // Add ACTUAL selected component products to cart with _bundle_id property
+    // Cart transform MERGE groups by _bundle_id and combines into bundle parent
+    // See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+
     const cartItems = [];
     const bundleInstanceId = this.generateBundleInstanceId();
 
+    console.log('[CART] Building cart items for bundle:', {
+      bundleId: this.selectedBundle.id,
+      bundleName: this.selectedBundle.name,
+      bundleInstanceId
+    });
+
+    // Add ACTUAL selected component products to cart
+    // Each component gets _bundle_id property for grouping in cart transform
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.stepProductData[stepIndex];
 
@@ -2097,12 +2224,21 @@ class BundleWidget {
         if (quantity > 0) {
           const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
           if (product) {
+            console.log('[CART] Adding component:', {
+              stepIndex,
+              variantId,
+              quantity,
+              productTitle: product.title,
+              bundleInstanceId
+            });
+
             const cartItem = {
               id: parseInt(variantId),
               quantity: quantity,
               properties: {
-                [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_ID]: bundleInstanceId,
-                [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_CONFIG]: JSON.stringify(this.selectedBundle)
+                '_bundle_id': bundleInstanceId,
+                '_bundle_name': this.selectedBundle.name,
+                '_step_index': stepIndex.toString()
               }
             };
 
@@ -2111,34 +2247,32 @@ class BundleWidget {
         }
       });
     });
+
+    console.log('[CART] Cart items to add (components with _bundle_id property):', cartItems);
     return cartItems;
   }
 
   generateBundleInstanceId() {
-    // Create deterministic ID based on bundle + selected products
-    const itemsSignature = this.selectedProducts
-      .map((stepSelections, stepIndex) => {
-        const sortedItems = Object.entries(stepSelections)
-          .filter(([_, qty]) => qty > 0)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([variantId, quantity]) => `${variantId}:${quantity}`)
-          .join('|');
-        return `step${stepIndex}:${sortedItems}`;
-      })
-      .filter(step => step !== `step${this.selectedProducts.indexOf(step)}:`)
-      .join('||');
+    // Generate unique bundle instance ID using UUID (recommended by Shopify)
+    // This prevents hash collisions and ensures each bundle instance is truly unique
+    // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
 
-    // Simple hash function
-    let hash = 0;
-    const str = `${this.selectedBundle.id}_${itemsSignature}`;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
+    // Use crypto.randomUUID() if available (modern browsers)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      const uuid = crypto.randomUUID();
+      const bundleInstanceId = `${this.selectedBundle.id}_${uuid}`;
+
+      console.log('[CART] Generated UUID-based bundle instance ID:', bundleInstanceId);
+      return bundleInstanceId;
     }
 
-    const bundleInstanceId = `${this.selectedBundle.id}_${Math.abs(hash)}`;
+    // Fallback for older browsers: use timestamp + random number
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000000);
+    const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
 
+    console.warn('[CART] crypto.randomUUID() not available, using fallback ID generation');
+    console.log('[CART] Generated fallback bundle instance ID:', bundleInstanceId);
     return bundleInstanceId;
   }
   // ========================================================================
@@ -2344,6 +2478,12 @@ if (document.readyState === 'loading') {
   handleAutomaticBundleConfiguration();
   BundleWidgetManager.initialize();
 }
+
+// Listen for reload requests from theme editor when bundleId is auto-populated
+window.addEventListener('bundleWidgetReload', () => {
+  console.log('[BUNDLE_WIDGET] Received reload request, reinitializing widgets...');
+  BundleWidgetManager.reinitialize();
+});
 
 // Shopify theme editor support
 if (BundleDataManager.isThemeEditorContext()) {

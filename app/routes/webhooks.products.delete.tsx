@@ -2,7 +2,6 @@ import { json } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
-import { updateBundleIndex } from "../services/bundles/bundle-index.server";
 
 /**
  * Product Deletion Webhook Handler
@@ -12,11 +11,10 @@ import { updateBundleIndex } from "../services/bundles/bundle-index.server";
  * Actions:
  * - Remove product from bundle steps (StepProduct)
  * - Log affected bundles
- * - Update bundle index
  * - Identify bundles that may need merchant review
  *
  * Note: Widget will handle missing products gracefully
- * Cart transform continues to work with remaining products
+ * Cart transform continues to work with remaining products (reads from variant metafields)
  */
 export const action = async ({ request }: ActionFunctionArgs) => {
   try {
@@ -107,15 +105,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
-    // Update bundle index
-    if (admin) {
-      try {
-        await updateBundleIndex(admin, shop);
-        console.log(`✅ [PRODUCT_DELETE_WEBHOOK] Bundle index updated`);
-      } catch (error) {
-        console.error(`⚠️ [PRODUCT_DELETE_WEBHOOK] Failed to update index:`, error);
-      }
-    }
+    // Note: No need to update bundle index (removed in Shopify Standard migration)
+    // Cart transform queries variant metafields directly
 
     // Log summary
     if (bundlesNeedingReview.length > 0) {

@@ -100,7 +100,7 @@ export const createMockBundle = (overrides = {}) => ({
   description: 'A test bundle for unit testing',
   shopId: 'test-shop.myshopify.com',
   shopifyProductId: null,
-  bundleType: 'cart_transform',
+  bundleType: 'product_page',
   status: 'active',
   active: true,
   createdAt: new Date(),

@@ -8,7 +8,7 @@
  * - Save bar state
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 
 interface BundleFormData {
   name: string;
@@ -30,78 +30,6 @@ export function useBundleForm({ initialData }: UseBundleFormProps) {
 
   // UI state
   const [activeSection, setActiveSection] = useState("step_setup");
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // Track section-level changes
-  const [sectionChanges, setSectionChanges] = useState<Record<string, boolean>>({
-    step_setup: false,
-    discount: false,
-    bundle_product: false,
-    theme_integration: false
-  });
-
-  // Store original values for change detection
-  const [originalValues] = useState({
-    bundleName: initialData.name,
-    bundleDescription: initialData.description,
-    bundleStatus: initialData.status,
-    templateName: initialData.templateName
-  });
-
-  // Trigger save bar visibility
-  const triggerSaveBar = useCallback(() => {
-    setHasUnsavedChanges(true);
-  }, []);
-
-  // Dismiss save bar
-  const dismissSaveBar = useCallback(() => {
-    setHasUnsavedChanges(false);
-    setSectionChanges({
-      step_setup: false,
-      discount: false,
-      bundle_product: false,
-      theme_integration: false
-    });
-  }, []);
-
-  // Mark a section as changed
-  const markSectionChanged = useCallback((section: string) => {
-    setSectionChanges(prev => ({ ...prev, [section]: true }));
-    triggerSaveBar();
-  }, [triggerSaveBar]);
-
-  // Check if form has unsaved changes
-  const hasFormChanges = useCallback((): boolean => {
-    return (
-      bundleName !== originalValues.bundleName ||
-      bundleDescription !== originalValues.bundleDescription ||
-      bundleStatus !== originalValues.bundleStatus ||
-      templateName !== originalValues.templateName
-    );
-  }, [bundleName, bundleDescription, bundleStatus, templateName, originalValues]);
-
-  // Get current value for a specific field
-  const getCurrentValueForField = useCallback((fieldName: string): string => {
-    switch (fieldName) {
-      case 'bundleName':
-        return bundleName;
-      case 'bundleDescription':
-        return bundleDescription;
-      case 'bundleStatus':
-        return bundleStatus;
-      case 'templateName':
-        return templateName;
-      default:
-        return '';
-    }
-  }, [bundleName, bundleDescription, bundleStatus, templateName]);
-
-  // Auto-detect changes and trigger save bar
-  useEffect(() => {
-    if (hasFormChanges()) {
-      markSectionChanged('step_setup');
-    }
-  }, [bundleName, bundleDescription, bundleStatus, templateName, hasFormChanges, markSectionChanged]);
 
   return {
     // State
@@ -110,8 +38,6 @@ export function useBundleForm({ initialData }: UseBundleFormProps) {
     bundleStatus,
     templateName,
     activeSection,
-    hasUnsavedChanges,
-    sectionChanges,
 
     // Setters
     setBundleName,
@@ -119,12 +45,5 @@ export function useBundleForm({ initialData }: UseBundleFormProps) {
     setBundleStatus,
     setTemplateName,
     setActiveSection,
-
-    // Methods
-    triggerSaveBar,
-    dismissSaveBar,
-    markSectionChanged,
-    hasFormChanges,
-    getCurrentValueForField,
   };
 }

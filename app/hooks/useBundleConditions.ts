@@ -18,10 +18,9 @@ interface ConditionRule {
 
 interface UseBundleConditionsProps {
   initialStepConditions: Record<string, ConditionRule[]>;
-  onTriggerSaveBar: () => void;
 }
 
-export function useBundleConditions({ initialStepConditions, onTriggerSaveBar }: UseBundleConditionsProps) {
+export function useBundleConditions({ initialStepConditions }: UseBundleConditionsProps) {
   const [stepConditions, setStepConditions] = useState<Record<string, ConditionRule[]>>(initialStepConditions);
 
   // Add a new condition rule for a step
@@ -37,9 +36,7 @@ export function useBundleConditions({ initialStepConditions, onTriggerSaveBar }:
       ...prev,
       [stepId]: [...(prev[stepId] || []), newRule],
     }));
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Remove a condition rule
   const removeConditionRule = useCallback((stepId: string, ruleId: string) => {
@@ -47,9 +44,7 @@ export function useBundleConditions({ initialStepConditions, onTriggerSaveBar }:
       ...prev,
       [stepId]: (prev[stepId] || []).filter(rule => rule.id !== ruleId),
     }));
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Update a condition rule field
   const updateConditionRule = useCallback((stepId: string, ruleId: string, field: string, value: string) => {
@@ -59,9 +54,7 @@ export function useBundleConditions({ initialStepConditions, onTriggerSaveBar }:
         rule.id === ruleId ? { ...rule, [field]: value } : rule
       ),
     }));
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Get conditions for a specific step
   const getStepConditions = useCallback((stepId: string): ConditionRule[] => {
@@ -79,9 +72,7 @@ export function useBundleConditions({ initialStepConditions, onTriggerSaveBar }:
       ...prev,
       [stepId]: [],
     }));
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   return {
     // State

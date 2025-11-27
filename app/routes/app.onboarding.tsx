@@ -12,6 +12,8 @@ import {
   InlineStack,
   Banner,
   Divider,
+  Select,
+  Checkbox,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { useState } from "react";
@@ -20,38 +22,75 @@ import { AppLogger } from "../lib/logger";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
 
-  // Get extension UUID from environment
-  const extensionUuid = process.env.SHOPIFY_BUNDLE_BUILDER_ID;
-  const blockHandle = 'bundle-builder';
+  // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
+  // Per Shopify docs: addAppBlockId={api_key}/{handle}
+  // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
+  const apiKey = process.env.SHOPIFY_API_KEY;
+  // Block handle must match the liquid filename (without .liquid extension)
+  // File: extensions/bundle-builder/blocks/bundle.liquid
+  const blockHandle = 'bundle';
 
   return {
     shop: session.shop,
-    extensionUuid,
+    apiKey,
     blockHandle,
   };
 };
 
 export default function Onboarding() {
-  const { shop, extensionUuid, blockHandle } = useLoaderData<typeof loader>();
+  const { shop, apiKey, blockHandle } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [selectedTemplate, setSelectedTemplate] = useState('product');
+  const [selectedTarget, setSelectedTarget] = useState('newAppsSection');
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
   const totalSteps = 4;
 
-  // Generate theme editor deep link
-  const generateThemeEditorLink = () => {
-    const appBlockId = `${extensionUuid}/${blockHandle}`;
-    // Simple deep link following Shopify's official documentation
-    // This opens theme editor on the product template with the block ready to add
-    return `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${appBlockId}&target=newAppsSection`;
+  /**
+   * Generate theme editor deep link following Shopify's official documentation
+   * https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
+   *
+   * URL Structure: https://{shop}/admin/themes/current/editor?template={template}&addAppBlockId={api_key}/{handle}&target={target}
+   *
+   * @param template - JSON template name (product, index, collection, etc.)
+   * @param target - Where to add the block (newAppsSection, mainSection, sectionGroup:header, etc.)
+   */
+  const generateThemeEditorLink = (template: string = 'product', target: string = 'newAppsSection') => {
+    // CRITICAL: Use app's API key (client_id), not extension UUID
+    const appBlockId = `${apiKey}/${blockHandle}`;
+
+    // Construct deep link with proper parameters
+    const params = new URLSearchParams({
+      template: template,
+      addAppBlockId: appBlockId,
+      target: target
+    });
+
+    const deepLink = `https://${shop}/admin/themes/current/editor?${params.toString()}`;
+
+    AppLogger.debug('Generated theme editor deep link', {
+      shop,
+      template,
+      target,
+      appBlockId,
+      apiKey,
+      deepLink
+    });
+
+    return deepLink;
   };
 
   const handleOpenThemeEditor = () => {
-    const themeEditorUrl = generateThemeEditorLink();
-    AppLogger.info('Opening theme editor from onboarding wizard', { shop });
+    const themeEditorUrl = generateThemeEditorLink(selectedTemplate, selectedTarget);
+    AppLogger.info('Opening theme editor from onboarding wizard', {
+      shop,
+      template: selectedTemplate,
+      target: selectedTarget
+    });
 
     // Use window.open with _top to navigate the entire app frame
-    // This avoids popup blockers
+    // This avoids popup blockers and works within Shopify admin
     window.open(themeEditorUrl, '_top');
   };
 
@@ -146,33 +185,102 @@ export default function Onboarding() {
                   {step.number === 2 && (
                     <>
                       <Divider />
-                      <Banner tone="info">
-                        <BlockStack gap="200">
-                          <Text variant="bodyMd" as="p" fontWeight="semibold">
-                            How to add the bundle widget to your theme:
-                          </Text>
-                          <List type="number">
-                            <List.Item>
-                              Click "Open Theme Editor" below to navigate to your theme editor
-                            </List.Item>
-                            <List.Item>
-                              In the theme editor, you'll see the "bundle-builder" block available to add
-                            </List.Item>
-                            <List.Item>
-                              Click the "Add block" button and look for "Apps" section
-                            </List.Item>
-                            <List.Item>
-                              Select "bundle-builder" from the list of available app blocks
-                            </List.Item>
-                            <List.Item>
-                              Position the block where you want it to appear on product pages (typically near the product form)
-                            </List.Item>
-                            <List.Item>
-                              Click "Save" in the theme editor to publish your changes
-                            </List.Item>
-                          </List>
-                        </BlockStack>
-                      </Banner>
+                      <BlockStack gap="400">
+                        <Banner tone="info">
+                          <BlockStack gap="200">
+                            <Text variant="bodyMd" as="p" fontWeight="semibold">
+                              Choose where to add the bundle widget:
+                            </Text>
+                            <Text variant="bodyMd" as="p" tone="subdued">
+                              The bundle widget will open in the theme editor, ready to add to your selected template.
+                            </Text>
+                          </BlockStack>
+                        </Banner>
+
+                        <Card>
+                          <BlockStack gap="400">
+                            <Text variant="headingSm" as="h4">
+                              Template Selection
+                            </Text>
+                            <Select
+                              label="Which page should display bundles?"
+                              options={[
+                                { label: 'Product Pages (Recommended)', value: 'product' },
+                                { label: 'Home Page', value: 'index' },
+                                { label: 'Collection Pages', value: 'collection' },
+                              ]}
+                              value={selectedTemplate}
+                              onChange={setSelectedTemplate}
+                              helpText="Product pages are recommended since bundles are configured per product."
+                            />
+
+                            <Checkbox
+                              label="Show advanced placement options"
+                              checked={showAdvancedOptions}
+                              onChange={setShowAdvancedOptions}
+                            />
+
+                            {showAdvancedOptions && (
+                              <Select
+                                label="Block placement"
+                                options={[
+                                  { label: 'New Apps Section (Recommended)', value: 'newAppsSection' },
+                                  { label: 'Main Section', value: 'mainSection' },
+                                  { label: 'Header Section Group', value: 'sectionGroup:header' },
+                                  { label: 'Footer Section Group', value: 'sectionGroup:footer' },
+                                ]}
+                                value={selectedTarget}
+                                onChange={setSelectedTarget}
+                                helpText="Where the bundle widget will be added on the selected template."
+                              />
+                            )}
+                          </BlockStack>
+                        </Card>
+
+                        <Banner tone="info">
+                          <BlockStack gap="200">
+                            <Text variant="bodyMd" as="p" fontWeight="semibold">
+                              Step-by-step instructions:
+                            </Text>
+                            <List type="number">
+                              <List.Item>
+                                Click "Open Theme Editor" below to open your theme editor
+                              </List.Item>
+                              <List.Item>
+                                The bundle-builder block will be pre-selected and ready to add
+                              </List.Item>
+                              <List.Item>
+                                Position the block where you want it (we recommend near the product form)
+                              </List.Item>
+                              <List.Item>
+                                Preview your changes to see how the bundle widget looks
+                              </List.Item>
+                              <List.Item>
+                                Click "Save" in the theme editor to publish your changes
+                              </List.Item>
+                            </List>
+                          </BlockStack>
+                        </Banner>
+
+                        <Banner tone="warning">
+                          <BlockStack gap="200">
+                            <Text variant="bodyMd" as="p" fontWeight="semibold">
+                              Important notes:
+                            </Text>
+                            <List>
+                              <List.Item>
+                                Your theme must be Online Store 2.0 compatible (JSON templates)
+                              </List.Item>
+                              <List.Item>
+                                The bundle widget will only display on products configured as bundles
+                              </List.Item>
+                              <List.Item>
+                                You can customize the widget appearance in the theme editor settings
+                              </List.Item>
+                            </List>
+                          </BlockStack>
+                        </Banner>
+                      </BlockStack>
                     </>
                   )}
 
