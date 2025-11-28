@@ -79,10 +79,10 @@ async function messageHandler(message: Message) {
 
   try {
     // Extract Shopify webhook attributes
-    const attributes = message.attributes || {};
-    const topic = attributes["X-Shopify-Topic"];
-    const shopDomain = attributes["X-Shopify-Shop-Domain"];
-    const webhookId = attributes["X-Shopify-Webhook-Id"];
+    const messageAttributes = message.attributes || {};
+    const topic = messageAttributes["X-Shopify-Topic"];
+    const shopDomain = messageAttributes["X-Shopify-Shop-Domain"];
+    const webhookId = messageAttributes["X-Shopify-Webhook-Id"];
 
     AppLogger.info("Processing Pub/Sub message", {
       component: "pubsub-worker",
@@ -97,6 +97,14 @@ async function messageHandler(message: Message) {
 
     // Convert message data to base64 string
     const data = message.data.toString("base64");
+
+    // Construct attributes object matching WebhookProcessor interface
+    const attributes = {
+      "X-Shopify-Topic": topic || "",
+      "X-Shopify-Shop-Domain": shopDomain || "",
+      "X-Shopify-Webhook-Id": webhookId,
+      "X-Shopify-API-Version": messageAttributes["X-Shopify-API-Version"]
+    };
 
     // Process through webhook processor
     const result = await WebhookProcessor.processPubSubMessage({

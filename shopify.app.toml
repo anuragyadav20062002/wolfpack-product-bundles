@@ -41,41 +41,8 @@ url = "https://wolfpack-product-bundle-app.onrender.com"
 subpath = "product-bundles"
 prefix = "apps"
 
-# ==============================================================================
-# METAFIELD DEFINITIONS - Declarative Custom Data
-# ==============================================================================
-# These definitions ensure metafields have proper structure, validation,
-# and access controls. Declared in app-reserved namespace ($app).
-# See: https://shopify.dev/docs/apps/build/custom-data/declarative-custom-data-definitions
-
 [metafields]
 api_version = "2025-10"
-
-# ==============================================================================
-# VARIANT-LEVEL BUNDLE METAFIELDS (Shopify Standard - Approach 1: Hybrid)
-# ==============================================================================
-# Bundle metafields are stored on ProductVariant following Shopify's official
-# bundle architecture for optimal performance and standards compliance.
-# See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
-#
-# IMPORTANT: shopify.app.toml does not yet support product_variant metafield
-# declarations in all CLI versions. Variant-level metafield definitions are
-# created programmatically via GraphQL MetafieldDefinitionCreate mutation.
-#
-# Parent Bundle Variant Metafields (created in metafield-sync.server.ts):
-# - component_reference (list.variant_reference) - List of component variant GIDs
-# - component_quantities (list.number_integer) - Quantity of each component
-# - price_adjustment (json) - Discount configuration
-# - bundle_ui_config (json) - Widget display configuration
-#
-# Child Component Variant Metafields (created in metafield-sync.server.ts):
-# - component_parents (json) - Parent bundle configurations
-#
-# Benefits of variant-level storage:
-# - 91% smaller data size (500 bytes vs 5.5KB)
-# - Follows Shopify official standards
-# - Better cart transform performance
-# - Simpler data model
 
 # App Configuration
 # Shop-level app settings
@@ -92,26 +59,3 @@ name = "Last Sync Timestamp"
 description = "ISO timestamp of last successful sync with app server"
 access.admin = "merchant_read"
 access.storefront = "none"
-
-# ==============================================================================
-# VARIANT-LEVEL BUNDLE METAFIELDS (Shopify Standard - Approach 1: Hybrid)
-# ==============================================================================
-# These metafields follow Shopify's official bundle architecture:
-# - Stored on ProductVariant (not Product)
-# - Uses standard naming conventions (component_reference, component_quantities)
-# - Minimal data for optimal cart transform performance
-# See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
-
-# NOTE: Variant-level metafields are managed programmatically via GraphQL
-# because shopify.app.toml doesn't yet support product_variant metafield declarations
-# in older CLI versions. The metafield definitions will be created via
-# MetafieldDefinitionCreate mutation when the bundle is created.
-
-# Parent Bundle Variant Metafields (created programmatically):
-# - component_reference (list.variant_reference)
-# - component_quantities (list.number_integer)
-# - price_adjustment (json)
-# - bundle_ui_config (json)
-
-# Child Component Variant Metafields (created programmatically):
-# - component_parents (json)
