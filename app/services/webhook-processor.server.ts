@@ -16,7 +16,7 @@
 
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
-import { PLANS } from "./billing.server";
+import { PLANS } from "../constants/plans";
 import type { SubscriptionStatus } from "@prisma/client";
 
 // Shopify AppSubscriptionStatus enum values

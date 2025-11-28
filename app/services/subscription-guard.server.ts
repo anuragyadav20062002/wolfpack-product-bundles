@@ -6,7 +6,8 @@
  */
 
 import { json } from "@remix-run/node";
-import { BillingService, PLANS } from "./billing.server";
+import { BillingService } from "./billing.server";
+import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
 import type { SubscriptionPlan } from "@prisma/client";
 
