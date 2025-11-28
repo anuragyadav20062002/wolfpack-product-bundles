@@ -12,49 +12,7 @@
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 import type { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
-
-export interface PlanConfig {
-  id: SubscriptionPlan;
-  name: string;
-  price: number;
-  currencyCode: string;
-  interval: "EVERY_30_DAYS" | "ANNUAL";
-  bundleLimit: number;
-  features: string[];
-}
-
-export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
-  free: {
-    id: "free",
-    name: "Free Plan",
-    price: 0,
-    currencyCode: "USD",
-    interval: "EVERY_30_DAYS",
-    bundleLimit: 3,
-    features: [
-      "Up to 3 bundles",
-      "Basic bundle builder",
-      "Cart transformation",
-      "Community support"
-    ]
-  },
-  grow: {
-    id: "grow",
-    name: "Grow Plan",
-    price: 9.99,
-    currencyCode: "USD",
-    interval: "EVERY_30_DAYS",
-    bundleLimit: 20,
-    features: [
-      "Up to 20 bundles",
-      "Advanced bundle builder",
-      "Cart transformation",
-      "Priority support",
-      "Future: Advanced analytics",
-      "Future: Custom styling"
-    ]
-  }
-};
+import { PLANS } from "../constants/plans";
 
 export interface CreateSubscriptionParams {
   shopDomain: string;

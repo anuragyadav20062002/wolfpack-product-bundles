@@ -15,7 +15,8 @@ import {
   Divider,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { BillingService, PLANS } from "../services/billing.server";
+import { BillingService } from "../services/billing.server";
+import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
 import { useCallback, useState } from "react";
 
