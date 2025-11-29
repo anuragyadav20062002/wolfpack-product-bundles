@@ -111,9 +111,14 @@ export class WebhookProcessor {
       let result: WebhookProcessResult;
 
       switch (topic) {
-        case "app/subscriptions_update":
+        case "app_subscriptions/update":
         case "APP_SUBSCRIPTIONS_UPDATE":
           result = await this.handleSubscriptionUpdate(shopDomain, payload);
+          break;
+
+        case "app_purchases_one_time/update":
+        case "APP_PURCHASES_ONE_TIME_UPDATE":
+          result = await this.handlePurchaseUpdate(shopDomain, payload);
           break;
 
         case "products/update":
@@ -350,6 +355,44 @@ export class WebhookProcessor {
       return {
         success: false,
         message: "Error handling subscription update",
+        error: error instanceof Error ? error.message : "Unknown error"
+      };
+    }
+  }
+
+  /**
+   * Handle one-time purchase update webhook
+   * Tracks one-time app charges and updates
+   */
+  private static async handlePurchaseUpdate(
+    shopDomain: string,
+    payload: any
+  ): Promise<WebhookProcessResult> {
+    try {
+      const chargeId = payload.app_purchase_one_time?.admin_graphql_api_id;
+      const status = payload.app_purchase_one_time?.status;
+
+      AppLogger.info("Processing one-time purchase update", {
+        component: "webhook-processor",
+        operation: "handlePurchaseUpdate"
+      }, { shop: shopDomain, status, chargeId });
+
+      // For now, we just log the purchase update
+      // You can add database tracking here if needed
+      return {
+        success: true,
+        message: `One-time purchase update processed: ${status}`
+      };
+
+    } catch (error) {
+      AppLogger.error("Error handling purchase update", {
+        component: "webhook-processor",
+        operation: "handlePurchaseUpdate"
+      }, error);
+
+      return {
+        success: false,
+        message: "Error handling purchase update",
         error: error instanceof Error ? error.message : "Unknown error"
       };
     }

@@ -16,7 +16,7 @@ import { AppLogger } from "../lib/logger";
  *   message: {
  *     data: "base64-encoded-json",
  *     attributes: {
- *       "X-Shopify-Topic": "app/subscriptions_update",
+ *       "X-Shopify-Topic": "app_subscriptions/update",
  *       "X-Shopify-Shop-Domain": "store.myshopify.com",
  *       "X-Shopify-Webhook-Id": "unique-webhook-id"
  *     }

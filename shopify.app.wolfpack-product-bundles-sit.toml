@@ -12,8 +12,8 @@ api_version = "2025-10"
   uri = "pubsub://light-quest-455608-i3:wolfpack-product-bundles-staging"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
   topics = [
-    "app/subscriptions_update",
-    "app/purchases_one_time_update",
+    "app_subscriptions/update",
+    "app_purchases_one_time/update",
     "products/update",
     "products/delete"
   ]
