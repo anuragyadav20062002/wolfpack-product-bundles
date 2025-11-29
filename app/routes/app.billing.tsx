@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigation, useFetcher } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -138,28 +138,18 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function BillingPage() {
   const data = useLoaderData<typeof loader>();
-  const navigation = useNavigation();
   const fetcher = useFetcher<typeof action>();
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  const isUpgrading = navigation.state === "submitting" && navigation.formData?.get("intent") === "upgrade";
+  const isUpgrading = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "upgrade";
   const isCancelling = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "cancel";
 
   const handleUpgrade = useCallback(() => {
-    // Create form and submit
-    const form = document.createElement("form");
-    form.method = "post";
-    form.action = "/app/billing";
-
-    const intentInput = document.createElement("input");
-    intentInput.type = "hidden";
-    intentInput.name = "intent";
-    intentInput.value = "upgrade";
-    form.appendChild(intentInput);
-
-    document.body.appendChild(form);
-    form.submit();
-  }, []);
+    fetcher.submit(
+      { intent: "upgrade" },
+      { method: "post" }
+    );
+  }, [fetcher]);
 
   const handleCancelSubscription = useCallback(() => {
     fetcher.submit(
