@@ -17,6 +17,7 @@
 import { PubSub, Message } from "@google-cloud/pubsub";
 import { WebhookProcessor } from "./webhook-processor.server";
 import { AppLogger } from "../lib/logger";
+import { fileURLToPath } from "url";
 
 // Environment validation
 const GOOGLE_CLOUD_PROJECT = process.env.GOOGLE_CLOUD_PROJECT;
@@ -233,7 +234,10 @@ export async function stopPubSubWorker() {
   }
 }
 
-// If running directly (not imported)
-if (require.main === module) {
-  startPubSubWorker();
+// If running directly (not imported) - ES module equivalent
+if (import.meta.url.startsWith('file:')) {
+  const modulePath = fileURLToPath(import.meta.url);
+  if (process.argv[1] === modulePath) {
+    startPubSubWorker();
+  }
 }
