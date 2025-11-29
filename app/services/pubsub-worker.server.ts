@@ -11,13 +11,17 @@
  * Configuration via environment variables:
  * - GOOGLE_CLOUD_PROJECT: GCP project ID
  * - PUBSUB_SUBSCRIPTION: Subscription name
- * - GOOGLE_APPLICATION_CREDENTIALS_JSON: Service account credentials
+ *
+ * Credentials (choose one):
+ * - Recommended: Add secret file at /etc/secrets/google-cloud-key.json (Render Secret Files)
+ * - Alternative: Set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable (local dev)
  */
 
 import { PubSub, Message } from "@google-cloud/pubsub";
 import { WebhookProcessor } from "./webhook-processor.server";
 import { AppLogger } from "../lib/logger";
 import { fileURLToPath } from "url";
+import { readFileSync, existsSync } from "fs";
 
 // Environment validation
 const GOOGLE_CLOUD_PROJECT = process.env.GOOGLE_CLOUD_PROJECT;
@@ -32,16 +36,38 @@ if (!PUBSUB_SUBSCRIPTION) {
   throw new Error("PUBSUB_SUBSCRIPTION environment variable is required");
 }
 
-if (!GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-  throw new Error("GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is required");
-}
-
-// Parse credentials from JSON string
+// Load credentials from secret file or environment variable
 let credentials;
+const SECRET_FILE_PATH = "/etc/secrets/google-cloud-key.json";
+
 try {
-  credentials = JSON.parse(GOOGLE_APPLICATION_CREDENTIALS_JSON);
+  // Try to load from Render secret file first (production)
+  if (existsSync(SECRET_FILE_PATH)) {
+    console.log(`Loading Google Cloud credentials from secret file: ${SECRET_FILE_PATH}`);
+    const credentialsFile = readFileSync(SECRET_FILE_PATH, "utf-8");
+    credentials = JSON.parse(credentialsFile);
+  }
+  // Fall back to environment variable (local development)
+  else if (GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    console.log("Loading Google Cloud credentials from environment variable");
+    credentials = JSON.parse(GOOGLE_APPLICATION_CREDENTIALS_JSON);
+
+    // Fix private key line breaks if needed
+    if (credentials.private_key && typeof credentials.private_key === 'string') {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
+  } else {
+    throw new Error(
+      `Google Cloud credentials not found. Please either:\n` +
+      `  1. Add a secret file at ${SECRET_FILE_PATH} in Render, or\n` +
+      `  2. Set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable`
+    );
+  }
 } catch (error) {
-  throw new Error("Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON: " + error);
+  if (error instanceof SyntaxError) {
+    throw new Error("Failed to parse Google Cloud credentials JSON: " + error.message);
+  }
+  throw error;
 }
 
 // Initialize Pub/Sub client
