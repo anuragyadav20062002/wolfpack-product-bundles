@@ -31,6 +31,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
       `;
 
       const shopResponse = await admin.graphql(GET_SHOP_ID);
+
+      // Check if we got a redirect (happens on first install before session is fully established)
+      if (!shopResponse.ok || shopResponse.status === 302) {
+        AppLogger.info("Skipping app URL sync - session not ready (will retry on next load)", {
+          component: "app._index",
+          operation: "sync-app-url",
+          status: shopResponse.status
+        });
+        return json({ message: "Welcome to Bundle Builder" });
+      }
+
       const shopData = await shopResponse.json();
 
       if (!shopData.data?.shop?.id) {
@@ -69,6 +80,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
           }]
         }
       });
+
+      // Check if mutation response is valid
+      if (!response.ok) {
+        AppLogger.info("Metafield update failed - session not ready (will retry on next load)", {
+          component: "app._index",
+          operation: "sync-app-url",
+          status: response.status
+        });
+        return json({ message: "Welcome to Bundle Builder" });
+      }
 
       const data = await response.json();
 
