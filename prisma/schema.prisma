@@ -10,9 +10,9 @@ generator client {
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   // Comment out for development environment
-  provider = "sqlite"
+  provider = "postgresql"
   // Comment out for production environment
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
