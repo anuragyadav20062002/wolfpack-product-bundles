@@ -882,6 +882,9 @@ class BundleWidget {
       // Parse configuration
       this.parseConfiguration();
 
+      // Load design settings CSS
+      await this.loadDesignSettingsCSS();
+
       // Load and validate bundle data
       await this.loadBundleData();
 
@@ -911,6 +914,53 @@ class BundleWidget {
 
     } catch (error) {
       this.showErrorUI(error);
+    }
+  }
+
+  /**
+   * Load Design Control Panel CSS settings
+   * Injects custom CSS from Design Control Panel into the page
+   */
+  async loadDesignSettingsCSS() {
+    try {
+      // Get shop domain from bundle data or window
+      const shopDomain = window.Shopify?.shop || this.container.dataset.shop;
+
+      if (!shopDomain) {
+        console.warn('[BUNDLE_WIDGET] No shop domain found, skipping design settings');
+        return;
+      }
+
+      // Get bundle type (defaults to product_page)
+      const bundleType = this.selectedBundle?.bundleType || 'product_page';
+
+      // Check if design CSS is already loaded
+      const existingLink = document.getElementById('bundle-design-settings-css');
+      if (existingLink) {
+        existingLink.remove();
+      }
+
+      // Get app URL from metafield or use current domain
+      const appUrl = this.container.dataset.appUrl || window.location.origin;
+
+      // Build CSS URL
+      const cssUrl = `${appUrl}/api/design-settings/${shopDomain}.css?bundleType=${bundleType}`;
+
+      // Create and inject link element
+      const linkElement = document.createElement('link');
+      linkElement.id = 'bundle-design-settings-css';
+      linkElement.rel = 'stylesheet';
+      linkElement.href = cssUrl;
+      linkElement.type = 'text/css';
+
+      // Add to document head
+      document.head.appendChild(linkElement);
+
+      console.log('[BUNDLE_WIDGET] ✅ Design settings CSS loaded:', cssUrl);
+
+    } catch (error) {
+      console.warn('[BUNDLE_WIDGET] Failed to load design settings CSS:', error);
+      // Don't throw - widget should work even if design CSS fails to load
     }
   }
 
