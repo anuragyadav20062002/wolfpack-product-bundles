@@ -23,6 +23,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const shopDomain = session.shop;
 
   try {
+    const url = new URL(request.url);
+    const upgraded = url.searchParams.get("upgraded");
+    const error = url.searchParams.get("error");
+
     // Get subscription info
     const subscriptionInfo = await BillingService.getSubscriptionInfo(shopDomain);
 
@@ -41,6 +45,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       },
       plans: PLANS,
       appUrl: process.env.SHOPIFY_APP_URL || "",
+      // Pass callback status to UI
+      upgraded: upgraded === "true",
+      callbackError: error || null,
     });
   } catch (error) {
     AppLogger.error("Error loading billing page", {
@@ -54,6 +61,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
         subscription: null,
         plans: PLANS,
         appUrl: process.env.SHOPIFY_APP_URL || "",
+        upgraded: false,
+        callbackError: null,
       },
       { status: 500 }
     );
@@ -70,7 +79,7 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === "upgrade") {
     try {
       const appUrl = process.env.SHOPIFY_APP_URL || "";
-      const returnUrl = `${appUrl}/app/billing?upgraded=true`;
+      const returnUrl = `${appUrl}/app/billing/callback`;
 
       const result = await BillingService.createSubscription(admin, {
         shopDomain,
@@ -139,6 +148,8 @@ export default function BillingPage() {
   const fetcher = useFetcher<typeof action>();
   const navigate = useNavigate();
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(data.upgraded);
+  const [showErrorBanner, setShowErrorBanner] = useState(!!data.callbackError);
 
   const isUpgrading = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "upgrade";
   const isCancelling = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "cancel";
@@ -172,6 +183,37 @@ export default function BillingPage() {
       subtitle="Manage your subscription plan and billing settings"
     >
       <Layout>
+        {/* Success/Error Messages */}
+        {showSuccessBanner && (
+          <Layout.Section>
+            <Banner
+              tone="success"
+              onDismiss={() => setShowSuccessBanner(false)}
+            >
+              <Text as="p" variant="bodyMd">
+                Subscription upgraded successfully! Welcome to the Grow plan.
+              </Text>
+            </Banner>
+          </Layout.Section>
+        )}
+
+        {showErrorBanner && data.callbackError && (
+          <Layout.Section>
+            <Banner
+              tone="critical"
+              onDismiss={() => setShowErrorBanner(false)}
+            >
+              <Text as="p" variant="bodyMd">
+                {data.callbackError === "missing_charge_id"
+                  ? "Subscription confirmation failed: Missing charge ID. Please try again or contact support."
+                  : data.callbackError === "confirmation_failed"
+                  ? "Failed to confirm subscription. Please try again or contact support."
+                  : "An unexpected error occurred. Please try again or contact support."}
+              </Text>
+            </Banner>
+          </Layout.Section>
+        )}
+
         {/* Current Plan Status */}
         <Layout.Section>
           <Card>
