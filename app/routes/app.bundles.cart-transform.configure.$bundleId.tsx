@@ -3,21 +3,8 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-r
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
 
-// TypeScript declaration for Polaris web components (s-switch)
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      's-switch': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        label?: string;
-        checked?: boolean;
-        onChange?: (e: any) => void;
-        disabled?: boolean;
-        name?: string;
-        value?: string;
-      };
-    }
-  }
-}
+// Note: Using Polaris Checkbox component for toggle functionality
+// Polaris React v12 doesn't have a dedicated Switch component
 import {
   DiscountMethod,
   ConditionType,
@@ -50,7 +37,6 @@ import {
   Divider,
   Banner,
 } from "@shopify/polaris";
-// Note: Switch component will be used via Polaris web components (s-switch) for Discount & Pricing toggle
 import {
   ViewIcon,
   SettingsIcon,
@@ -3000,8 +2986,10 @@ export default function ConfigureBundleFlow() {
                               <InlineStack gap="200" blockAlign="center">
                                 <Button
                                   variant="plain"
-                                  url={`https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`}
-                                  external
+                                  onClick={() => {
+                                    const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
+                                    window.open(productUrl, '_top');
+                                  }}
                                   icon={ExternalIcon}
                                 >
                                   {productTitle || bundleProduct.title || "Untitled Product"}
@@ -3469,14 +3457,13 @@ export default function ConfigureBundleFlow() {
                     </Text>
                   </BlockStack>
 
-                  {/* Discount Enable Toggle - Using Polaris Switch (s-switch) web component for toggle UI */}
-                  <FormLayout>
-                    <s-switch
-                      label="Discount & Pricing"
-                      checked={pricingState.discountEnabled ? true : undefined}
-                      onChange={(e: any) => pricingState.setDiscountEnabled(e.target.checked)}
-                    />
-                  </FormLayout>
+                  {/* Discount Enable Toggle - Using Checkbox as toggle */}
+                  <Checkbox
+                    label="Enable discount pricing for this bundle"
+                    checked={pricingState.discountEnabled}
+                    onChange={(value) => pricingState.setDiscountEnabled(value)}
+                    helpText="Turn on to configure discount rules and pricing options"
+                  />
 
                   {pricingState.discountEnabled && (
                     <BlockStack gap="400">
@@ -3846,9 +3833,9 @@ export default function ConfigureBundleFlow() {
                                   {/* Make product title clickable to navigate to Shopify Admin product page */}
                                   <Button
                                     variant="plain"
-                                    url={productUrl}
-                                    external
+                                    onClick={() => productUrl && window.open(productUrl, '_top')}
                                     icon={ExternalIcon}
+                                    disabled={!productUrl}
                                   >
                                     {product.title || product.name || 'Unnamed Product'}
                                   </Button>
