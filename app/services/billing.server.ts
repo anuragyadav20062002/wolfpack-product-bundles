@@ -45,7 +45,10 @@ export class BillingService {
     admin: any,
     params: CreateSubscriptionParams
   ): Promise<CreateSubscriptionResult> {
-    const { shopDomain, plan, returnUrl, test = true } = params;
+    // Use dedicated test charges flag, defaulting to true for safety
+    // Only set SHOPIFY_TEST_CHARGES=false in real production environment
+    const useTestCharges = process.env.SHOPIFY_TEST_CHARGES !== "false";
+    const { shopDomain, plan, returnUrl, test = useTestCharges } = params;
 
     // Can't create paid subscription for free plan
     if (plan === "free") {

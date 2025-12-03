@@ -85,7 +85,7 @@ export async function action({ request }: ActionFunctionArgs) {
         shopDomain,
         plan: "grow",
         returnUrl,
-        test: process.env.NODE_ENV !== "production", // Use test charges in development
+        // test flag is now handled in BillingService based on SHOPIFY_TEST_CHARGES env var
       });
 
       if (!result.success) {
