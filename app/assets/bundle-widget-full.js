@@ -1686,30 +1686,38 @@ class BundleWidget {
       }
     }
 
-    // Process collection products
+    // Process collection products using Storefront API (not legacy REST endpoint)
     if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-      const collectionPromises = step.collections.map(async (collection) => {
-        if (!collection.handle) {
-          return [];
-        }
+      const collectionHandles = step.collections
+        .map(c => c.handle)
+        .filter(Boolean);
+
+      if (collectionHandles.length > 0) {
+        const shop = window.Shopify?.shop || window.location.host;
+        const widgetContainer = document.querySelector('#bundle-builder-app');
+        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const apiBaseUrl = appUrl || window.location.origin;
+
+        console.log('[LOAD_PRODUCTS] Fetching products from collections via Storefront API:', collectionHandles);
 
         try {
-          const response = await fetch(`/collections/${collection.handle}/products.json?limit=250`);
+          const response = await fetch(
+            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
+          );
 
-          if (!response.ok) {
-            return [];
+          if (response.ok) {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'products from collections');
+            }
+          } else {
+            console.error('[LOAD_PRODUCTS] Failed to fetch collection products:', response.status);
           }
-
-          const data = await response.json();
-          const products = data.products || [];
-          return products;
         } catch (error) {
-          return [];
+          console.error('[LOAD_PRODUCTS] Error fetching collection products:', error);
         }
-      });
-
-      const collectionProducts = (await Promise.all(collectionPromises)).flat();
-      allProducts = allProducts.concat(collectionProducts);
+      }
     }
 
     // Process and normalize product data
@@ -1742,12 +1750,8 @@ class BundleWidget {
         return product.variants
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
-            const imageUrl = product.imageUrl ||
-              product.images?.[0]?.originalSrc ||
-              product.images?.[0]?.src ||
-              product.image?.src ||
-              variant.image?.src ||
-              'https://via.placeholder.com/150';
+            // Storefront API: prioritize variant image, fallback to product featured image
+            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
             return {
               id: this.extractId(variant.id),
@@ -1767,12 +1771,8 @@ class BundleWidget {
           return [];
         }
 
-        const imageUrl = product.imageUrl ||
-          product.images?.[0]?.originalSrc ||
-          product.images?.[0]?.src ||
-          product.image?.src ||
-          defaultVariant?.image?.src ||
-          'https://via.placeholder.com/150';
+        // Storefront API: prioritize variant image, fallback to product featured image
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
         return [{
           id: this.extractId(defaultVariant?.id || product.id),
