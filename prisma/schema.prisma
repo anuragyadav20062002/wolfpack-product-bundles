@@ -10,9 +10,8 @@ generator client {
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   // Comment out for development environment
-  // provider = "sqlite"
-  // Comment out for production environment
   provider = "postgresql"
+  // Comment out for production environment
   url      = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -182,6 +181,65 @@ model ShopSettings {
   updatedAt               DateTime                   @updatedAt
 
   @@index([shopId])
+}
+
+// Design Control Panel Settings - Stores visual customization per bundle type
+model DesignSettings {
+  id                    String     @id @default(uuid())
+  shopId                String
+  bundleType            BundleType @default(product_page) // Allows different designs per bundle type
+
+  // Product Card Section
+  productCardBgColor          String? @default("#FFFFFF")
+  productCardFontColor        String? @default("#000000")
+  productCardFontSize         Int?    @default(16)
+  productCardFontWeight       Int?    @default(400)
+  productCardImageFit         String? @default("cover") // cover, contain, fill
+  productCardsPerRow          Int?    @default(3)
+  productPriceVisibility      Boolean @default(true)
+  productStrikePriceColor     String? @default("#8D8D8D")
+  productStrikeFontSize       Int?    @default(14)
+  productStrikeFontWeight     Int?    @default(400)
+  productFinalPriceColor      String? @default("#000000")
+  productFinalPriceFontSize   Int?    @default(18)
+  productFinalPriceFontWeight Int?    @default(700)
+
+  // Button Section
+  buttonBgColor               String? @default("#000000")
+  buttonTextColor             String? @default("#FFFFFF")
+  buttonFontSize              Int?    @default(16)
+  buttonFontWeight            Int?    @default(600)
+  buttonBorderRadius          Int?    @default(8)
+  buttonHoverBgColor          String? @default("#333333")
+  buttonAddToCartText         String? @default("Add to cart")
+
+  // Quantity Selector Section
+  quantitySelectorBgColor     String? @default("#000000")
+  quantitySelectorTextColor   String? @default("#FFFFFF")
+  quantitySelectorFontSize    Int?    @default(16)
+  quantitySelectorBorderRadius Int?   @default(8)
+
+  // Bundle Footer Section (coming soon)
+  footerSettings              Json?
+
+  // Bundle Step Bar Section (coming soon)
+  stepBarSettings             Json?
+
+  // General Section (coming soon)
+  generalSettings             Json?
+
+  // Images & Gifs Section (coming soon)
+  imagesSettings              Json?
+
+  // Advanced Settings - Custom CSS
+  customCss                   String?
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@unique([shopId, bundleType]) // One design config per shop per bundle type
+  @@index([shopId])
+  @@index([bundleType])
 }
 
 model QueuedJob {
