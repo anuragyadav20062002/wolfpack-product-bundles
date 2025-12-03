@@ -645,11 +645,22 @@ export default function Dashboard() {
                     </BlockStack>
                   </Card>
                 ) : (
-                  <DataTable
-                    columnContentTypes={["text", "text", "text", "text"]}
-                    headings={["Bundle Name", "Status", "Discount", "Actions"]}
-                    rows={bundleRows}
-                  />
+                  <div style={{ width: '100%' }}>
+                    <style>{`
+                      .Polaris-DataTable__Table {
+                        width: 100%;
+                        table-layout: fixed;
+                      }
+                      .Polaris-DataTable__Cell {
+                        width: 25%;
+                      }
+                    `}</style>
+                    <DataTable
+                      columnContentTypes={["text", "text", "text", "text"]}
+                      headings={["Bundle Name", "Status", "Discount", "Actions"]}
+                      rows={bundleRows}
+                    />
+                  </div>
                 )}
               </BlockStack>
             </Card>
