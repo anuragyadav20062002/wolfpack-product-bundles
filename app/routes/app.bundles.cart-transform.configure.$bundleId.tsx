@@ -2,6 +2,22 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
+
+// TypeScript declaration for Polaris web components (s-switch)
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      's-switch': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        label?: string;
+        checked?: boolean;
+        onChange?: (e: any) => void;
+        disabled?: boolean;
+        name?: string;
+        value?: string;
+      };
+    }
+  }
+}
 import {
   DiscountMethod,
   ConditionType,
@@ -34,6 +50,7 @@ import {
   Divider,
   Banner,
 } from "@shopify/polaris";
+// Note: Switch component will be used via Polaris web components (s-switch) for Discount & Pricing toggle
 import {
   ViewIcon,
   SettingsIcon,
@@ -2853,6 +2870,7 @@ export default function ConfigureBundleFlow() {
         }}
       >
         {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
+        {/* Loading state properly shows spinner during save operation */}
         <SaveBar
           id="bundle-save-bar"
           open={hasUnsavedChanges}
@@ -2861,7 +2879,7 @@ export default function ConfigureBundleFlow() {
           <button
             variant="primary"
             onClick={handleSave}
-            loading={fetcher.state !== "idle"}
+            loading={fetcher.state !== "idle" ? "" : undefined}
             disabled={fetcher.state !== "idle"}
           >
             Save
@@ -3451,12 +3469,12 @@ export default function ConfigureBundleFlow() {
                     </Text>
                   </BlockStack>
 
-                  {/* Discount Enable Toggle */}
+                  {/* Discount Enable Toggle - Using Polaris Switch (s-switch) web component for toggle UI */}
                   <FormLayout>
-                    <Checkbox
+                    <s-switch
                       label="Discount & Pricing"
-                      checked={pricingState.discountEnabled}
-                      onChange={pricingState.setDiscountEnabled}
+                      checked={pricingState.discountEnabled ? true : undefined}
+                      onChange={(e: any) => pricingState.setDiscountEnabled(e.target.checked)}
                     />
                   </FormLayout>
 
@@ -3808,30 +3826,44 @@ export default function ConfigureBundleFlow() {
                   </Text>
                   <Card>
                     <List type="bullet">
-                      {selectedProducts.map((product: any, index: number) => (
-                        <List.Item key={product.id || index}>
-                          <InlineStack gap="200" align="space-between" blockAlign="center">
-                            <InlineStack gap="300" blockAlign="center">
-                              <Thumbnail
-                                source={product.imageUrl || product.image?.url || "/bundle.png"}
-                                alt={product.title || product.name || 'Product'}
-                                size="small"
-                              />
-                              <BlockStack gap="050">
-                                <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                  {product.title || product.name || 'Unnamed Product'}
-                                </Text>
-                                {product.variants && product.variants.length > 0 && (
-                                  <Text as="p" variant="bodySm" tone="subdued">
-                                    {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
-                                  </Text>
-                                )}
-                              </BlockStack>
+                      {selectedProducts.map((product: any, index: number) => {
+                        // Extract product ID from Shopify GID (e.g., "gid://shopify/Product/123" -> "123")
+                        const productId = product.productId || product.id?.split('/').pop();
+                        const productUrl = productId
+                          ? `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`
+                          : undefined;
+
+                        return (
+                          <List.Item key={product.id || index}>
+                            <InlineStack gap="200" align="space-between" blockAlign="center">
+                              <InlineStack gap="300" blockAlign="center">
+                                <Thumbnail
+                                  source={product.imageUrl || product.image?.url || "/bundle.png"}
+                                  alt={product.title || product.name || 'Product'}
+                                  size="small"
+                                />
+                                <BlockStack gap="050">
+                                  {/* Make product title clickable to navigate to Shopify Admin product page */}
+                                  <Button
+                                    variant="plain"
+                                    url={productUrl}
+                                    external
+                                    icon={ExternalIcon}
+                                  >
+                                    {product.title || product.name || 'Unnamed Product'}
+                                  </Button>
+                                  {product.variants && product.variants.length > 0 && (
+                                    <Text as="p" variant="bodySm" tone="subdued">
+                                      {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                                    </Text>
+                                  )}
+                                </BlockStack>
+                              </InlineStack>
+                              <Badge tone="info">Product</Badge>
                             </InlineStack>
-                            <Badge tone="info">Product</Badge>
-                          </InlineStack>
-                        </List.Item>
-                      ))}
+                          </List.Item>
+                        );
+                      })}
                     </List>
                   </Card>
                 </BlockStack>
