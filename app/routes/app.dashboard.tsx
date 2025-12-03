@@ -423,7 +423,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    AppLogger.error("Failed to create cart transform bundle", { component: "app.dashboard", operation: "create-bundle" }, error);
+    AppLogger.error("Failed to create bundle", { component: "app.dashboard", operation: "create-bundle" }, error);
     return json({ error: `Failed to create bundle: ${errorMessage}` }, { status: 500 });
   }
 };
@@ -545,7 +545,7 @@ export default function Dashboard() {
       <Modal
         open={modalOpen}
         onClose={handleCloseModal}
-        title="Create Cart Transform Bundle"
+        title="Create New Bundle"
         primaryAction={{
           content: "Create Bundle",
           onAction: handleSubmit,
@@ -614,16 +614,15 @@ export default function Dashboard() {
               <BlockStack gap="400">
                 <InlineStack gap="200" align="space-between">
                   <Text variant="headingSm" as="h3">
-                    Active Cart Transform Bundles
+                    Your Bundles
                   </Text>
                   <InlineStack gap="200">
-                    <Badge tone="info">Cart Transform Mode</Badge>
                     <Button
                       variant="primary"
                       icon={PlusIcon}
                       onClick={handleCreateBundle}
                     >
-                      Create Cart Transform Bundle
+                      Create Bundle
                     </Button>
                   </InlineStack>
                 </InlineStack>
@@ -633,15 +632,15 @@ export default function Dashboard() {
                     <BlockStack gap="400" align="center" inlineAlign="center">
                       <BlockStack gap="200" align="center" inlineAlign="center">
                         <Text variant="headingLg" as="h2" alignment="center">
-                          Create your first cart transform bundle
+                          Create your first bundle
                         </Text>
                         <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                          Cart transform bundles provide real-time cart updates and merge
-                          bundle items into a single cart line with automatic pricing.
+                          Our bundles provide real-time cart updates and merge
+                          bundle items into a single cart line with automatic price adjustments.
                         </Text>
                       </BlockStack>
                       <Button variant="primary" size="large" onClick={handleCreateBundle}>
-                        Create Cart Transform Bundle
+                        Create Bundle
                       </Button>
                     </BlockStack>
                   </Card>
@@ -662,13 +661,13 @@ export default function Dashboard() {
               {/* Cart Transform Bundle Setup Instructions */}
               <div style={{ flex: '1' }}>
                 <BundleSetupInstructions
-                  title="Cart Transform Bundle Setup"
-                  subtitle="Follow these steps to create your cart transform bundle"
+                  title="Bundle Setup Steps"
+                  subtitle="Follow these steps to create your bundle"
                   bundlesExist={bundles.length > 0}
                   steps={[
                     {
                       id: "create_bundle",
-                      title: 'Click "Create Cart Transform Bundle"',
+                      title: 'Click "Create Bundle"',
                       description: "Click the \"Create\" button to start making your bundle.",
                       isClickable: true,
                       onClick: handleCreateBundle,
@@ -829,7 +828,7 @@ export default function Dashboard() {
                 }}>
                   <img
                     src="/demo.png"
-                    alt="Bundle Cart Transform Demo"
+                    alt="Bundle Demo"
                     style={{
                       width: '100%',
                       height: 'auto',
