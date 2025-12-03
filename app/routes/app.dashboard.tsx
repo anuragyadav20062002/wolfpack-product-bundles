@@ -806,6 +806,40 @@ export default function Dashboard() {
               </div>
             </div>
           </Layout.Section>
+
+          {/* Demo Section */}
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="300">
+                <Text variant="headingSm" as="h4">
+                  It will create a Parent bundle product in Shopify, but during checkout, it will pull stock from your regular Shopify inventory in real time.
+                </Text>
+                <div style={{
+                  border: '2px solid #e1e3e5',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  transition: 'transform 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}>
+                  <img
+                    src="/demo.png"
+                    alt="Bundle Cart Transform Demo"
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      display: 'block'
+                    }}
+                  />
+                </div>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
         </Layout>
       </Page>
     </>
