@@ -811,7 +811,7 @@ export default function Dashboard() {
             <Card>
               <BlockStack gap="300">
                 <Text variant="headingSm" as="h4">
-                  It will create a Parent bundle product in Shopify, but during checkout, it will pull stock from your regular Shopify inventory in real time.
+                  Your bundles appear as products in your store, but they automatically sync with your existing inventory — no duplicate stock tracking needed!
                 </Text>
                 <div style={{
                   border: '2px solid #e1e3e5',
