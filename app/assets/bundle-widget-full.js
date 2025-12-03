@@ -1738,26 +1738,35 @@ class BundleWidget {
   processProductsForStep(products, step) {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
-        // Display each variant as separate product
-        return product.variants.map(variant => {
-          const imageUrl = product.imageUrl ||
-            product.images?.[0]?.originalSrc ||
-            product.images?.[0]?.src ||
-            product.image?.src ||
-            variant.image?.src ||
-            'https://via.placeholder.com/150';
+        // Display each variant as separate product - filter out unavailable variants
+        return product.variants
+          .filter(variant => variant.available === true) // Only show available variants
+          .map(variant => {
+            const imageUrl = product.imageUrl ||
+              product.images?.[0]?.originalSrc ||
+              product.images?.[0]?.src ||
+              product.image?.src ||
+              variant.image?.src ||
+              'https://via.placeholder.com/150';
 
-          return {
-            id: this.extractId(variant.id),
-            title: `${product.title} - ${variant.title}`,
-            imageUrl,
-            price: parseFloat(variant.price || '0') * 100,
-            variantId: this.extractId(variant.id)
-          };
-        });
+            return {
+              id: this.extractId(variant.id),
+              title: `${product.title} - ${variant.title}`,
+              imageUrl,
+              price: parseFloat(variant.price || '0') * 100,
+              variantId: this.extractId(variant.id),
+              available: variant.available === true // Store availability (always boolean)
+            };
+          });
       } else {
-        // Display product with default variant
+        // Display product with default variant - check availability
         const defaultVariant = product.variants?.[0];
+
+        // Skip product if default variant is not available
+        if (defaultVariant && defaultVariant.available !== true) {
+          return [];
+        }
+
         const imageUrl = product.imageUrl ||
           product.images?.[0]?.originalSrc ||
           product.images?.[0]?.src ||
@@ -1770,7 +1779,8 @@ class BundleWidget {
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-          variantId: this.extractId(defaultVariant?.id || product.id)
+          variantId: this.extractId(defaultVariant?.id || product.id),
+          available: defaultVariant?.available === true // Store availability (always boolean from API)
         }];
       }
     });
@@ -2267,6 +2277,8 @@ class BundleWidget {
 
     // Add ACTUAL selected component products to cart
     // Each component gets _bundle_id property for grouping in cart transform
+    const unavailableProducts = []; // Track unavailable products
+
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.stepProductData[stepIndex];
 
@@ -2274,12 +2286,25 @@ class BundleWidget {
         if (quantity > 0) {
           const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
           if (product) {
+            // Check availability before adding to cart
+            if (product.available !== true) {
+              console.warn('[CART] Product not available for sale:', {
+                stepIndex,
+                variantId,
+                productTitle: product.title,
+                availabilityStatus: product.available
+              });
+              unavailableProducts.push(product.title);
+              return; // Skip this product
+            }
+
             console.log('[CART] Adding component:', {
               stepIndex,
               variantId,
               quantity,
               productTitle: product.title,
-              bundleInstanceId
+              bundleInstanceId,
+              available: product.available
             });
 
             const cartItem = {
@@ -2299,6 +2324,13 @@ class BundleWidget {
     });
 
     console.log('[CART] Cart items to add (components with _bundle_id property):', cartItems);
+
+    // Throw error if any products are unavailable
+    if (unavailableProducts.length > 0) {
+      const productList = unavailableProducts.join(', ');
+      throw new Error(`The following product${unavailableProducts.length > 1 ? 's are' : ' is'} currently unavailable: ${productList}. Please remove ${unavailableProducts.length > 1 ? 'them' : 'it'} from your bundle or try again later.`);
+    }
+
     return cartItems;
   }
 
