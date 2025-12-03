@@ -89,7 +89,7 @@ export default function InstallationGuide() {
       }}
       primaryAction={{
         content: "Create Your First Bundle",
-        onAction: () => navigate("/app/bundles/cart-transform"),
+        onAction: () => navigate("/app/dashboard"),
       }}
     >
       <Layout>
@@ -203,7 +203,7 @@ export default function InstallationGuide() {
                       Open Theme Editor
                     </Button>
                     <Button
-                      onClick={() => navigate("/app/bundles/cart-transform")}
+                      onClick={() => navigate("/app/dashboard")}
                     >
                       Create Bundle First
                     </Button>
@@ -700,7 +700,7 @@ export default function InstallationGuide() {
                 <List.Item>
                   <Button
                     variant="plain"
-                    onClick={() => navigate("/app/bundles/cart-transform")}
+                    onClick={() => navigate("/app/dashboard")}
                   >
                     Create more bundles
                   </Button>

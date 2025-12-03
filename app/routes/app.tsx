@@ -24,7 +24,6 @@ export default function App() {
         <a href="/app/dashboard" rel="home">
           Dashboard
         </a>
-        <a href="/app/bundles/cart-transform">Bundles</a>
         <a href="/app/design-control-panel">Design Control Panel</a>
         <a href="/app/pricing">Pricing</a>
       </NavMenu>

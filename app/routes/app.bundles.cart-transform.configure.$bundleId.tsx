@@ -2174,7 +2174,7 @@ export default function ConfigureBundleFlow() {
       if (proceed) {
         setForceNavigation(true);
         // Force navigation even with unsaved changes
-        navigate("/app/bundles/cart-transform");
+        navigate("/app/dashboard");
       } else {
         shopify.toast.show("Save or discard your changes to continue", {
           isError: true,
@@ -2183,7 +2183,7 @@ export default function ConfigureBundleFlow() {
       }
       return;
     }
-    navigate("/app/bundles/cart-transform");
+    navigate("/app/dashboard");
   }, [hasUnsavedChanges, forceNavigation, navigate, shopify]);
 
   const handlePreviewBundle = useCallback(() => {
