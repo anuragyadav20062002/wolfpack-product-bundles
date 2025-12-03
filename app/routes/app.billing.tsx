@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useFetcher } from "@remix-run/react";
+import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -10,15 +10,13 @@ import {
   InlineStack,
   Badge,
   Banner,
-  List,
-  Box,
   Divider,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { BillingService } from "../services/billing.server";
 import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -139,17 +137,15 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function BillingPage() {
   const data = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
+  const navigate = useNavigate();
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const isUpgrading = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "upgrade";
   const isCancelling = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "cancel";
 
-  const handleUpgrade = useCallback(() => {
-    fetcher.submit(
-      { intent: "upgrade" },
-      { method: "post" }
-    );
-  }, [fetcher]);
+  const handleViewPricing = useCallback(() => {
+    navigate("/app/pricing");
+  }, [navigate]);
 
   const handleCancelSubscription = useCallback(() => {
     fetcher.submit(
@@ -159,10 +155,12 @@ export default function BillingPage() {
     setShowCancelConfirm(false);
   }, [fetcher]);
 
-  // Handle redirect to Shopify billing confirmation
-  if (fetcher.data && "confirmationUrl" in fetcher.data && fetcher.data.confirmationUrl) {
-    window.top?.location.assign(fetcher.data.confirmationUrl);
-  }
+  // Handle redirect to Shopify billing confirmation using window.open (App Bridge v4)
+  useEffect(() => {
+    if (fetcher.data && "confirmationUrl" in fetcher.data && fetcher.data.confirmationUrl) {
+      window.open(fetcher.data.confirmationUrl, '_top');
+    }
+  }, [fetcher.data]);
 
   const currentPlan = data.subscription?.plan || "free";
   const isFreePlan = currentPlan === "free";
@@ -263,111 +261,27 @@ export default function BillingPage() {
           </Card>
         </Layout.Section>
 
-        {/* Plan Cards */}
-        <Layout.Section>
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingLg">
-              Available Plans
-            </Text>
-
-            <InlineStack gap="400" wrap={false}>
-              {/* Free Plan Card */}
-              <Box width="50%">
-                <Card>
-                  <BlockStack gap="400">
-                    <BlockStack gap="200">
-                      <InlineStack align="space-between" blockAlign="center">
-                        <Text as="h3" variant="headingMd">
-                          {PLANS.free.name}
-                        </Text>
-                        {isFreePlan && <Badge tone="success">Current Plan</Badge>}
-                      </InlineStack>
-                      <Text as="p" variant="headingXl">
-                        Free
-                      </Text>
-                    </BlockStack>
-
-                    <Divider />
-
-                    <BlockStack gap="200">
-                      <Text as="p" variant="bodyMd" fontWeight="semibold">
-                        Features:
-                      </Text>
-                      <List type="bullet">
-                        {PLANS.free.features.map((feature, index) => (
-                          <List.Item key={index}>
-                            <Text as="span" variant="bodyMd">
-                              {feature}
-                            </Text>
-                          </List.Item>
-                        ))}
-                      </List>
-                    </BlockStack>
-
-                    <Button
-                      fullWidth
-                      disabled={isFreePlan}
-                      variant="secondary"
-                    >
-                      {isFreePlan ? "Current Plan" : "Downgrade"}
-                    </Button>
-                  </BlockStack>
-                </Card>
-              </Box>
-
-              {/* Grow Plan Card */}
-              <Box width="50%">
-                <Card>
-                  <BlockStack gap="400">
-                    <BlockStack gap="200">
-                      <InlineStack align="space-between" blockAlign="center">
-                        <Text as="h3" variant="headingMd">
-                          {PLANS.grow.name}
-                        </Text>
-                        {isGrowPlan && <Badge tone="success">Current Plan</Badge>}
-                      </InlineStack>
-                      <InlineStack gap="100" blockAlign="baseline">
-                        <Text as="p" variant="headingXl">
-                          ${PLANS.grow.price}
-                        </Text>
-                        <Text as="span" variant="bodyMd" tone="subdued">
-                          / month
-                        </Text>
-                      </InlineStack>
-                    </BlockStack>
-
-                    <Divider />
-
-                    <BlockStack gap="200">
-                      <Text as="p" variant="bodyMd" fontWeight="semibold">
-                        Features:
-                      </Text>
-                      <List type="bullet">
-                        {PLANS.grow.features.map((feature, index) => (
-                          <List.Item key={index}>
-                            <Text as="span" variant="bodyMd">
-                              {feature}
-                            </Text>
-                          </List.Item>
-                        ))}
-                      </List>
-                    </BlockStack>
-
-                    <Button
-                      fullWidth
-                      variant="primary"
-                      disabled={isGrowPlan}
-                      loading={isUpgrading}
-                      onClick={handleUpgrade}
-                    >
-                      {isGrowPlan ? "Current Plan" : "Upgrade to Grow"}
-                    </Button>
-                  </BlockStack>
-                </Card>
-              </Box>
-            </InlineStack>
-          </BlockStack>
-        </Layout.Section>
+        {/* Quick Actions */}
+        {isFreePlan && (
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="300">
+                <Text as="h3" variant="headingMd">
+                  Want to create more bundles?
+                </Text>
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  Upgrade to the Grow plan for up to 20 bundles, advanced features, and priority support.
+                </Text>
+                <Button
+                  variant="primary"
+                  onClick={handleViewPricing}
+                >
+                  View Pricing Plans
+                </Button>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        )}
 
         {/* Help Section */}
         <Layout.Section>

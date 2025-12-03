@@ -1,5 +1,5 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate } from "@remix-run/react";
+import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -17,7 +17,7 @@ import { authenticate } from "../shopify.server";
 import { BillingService } from "../services/billing.server";
 import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -52,17 +52,76 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 }
 
+export async function action({ request }: ActionFunctionArgs) {
+  const { admin, session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
+
+  const formData = await request.formData();
+  const plan = formData.get("plan");
+
+  if (plan === "grow") {
+    try {
+      const appUrl = process.env.SHOPIFY_APP_URL || "";
+      const returnUrl = `${appUrl}/app/billing?upgraded=true`;
+
+      const result = await BillingService.createSubscription(admin, {
+        shopDomain,
+        plan: "grow",
+        returnUrl,
+        test: process.env.NODE_ENV !== "production",
+      });
+
+      if (!result.success) {
+        return json(
+          { error: result.error },
+          { status: 400 }
+        );
+      }
+
+      return json({
+        success: true,
+        confirmationUrl: result.confirmationUrl,
+      });
+
+    } catch (error) {
+      AppLogger.error("Error creating subscription from pricing page", {
+        component: "app.pricing",
+        operation: "action-upgrade"
+      }, error);
+
+      return json(
+        { error: "Failed to create subscription" },
+        { status: 500 }
+      );
+    }
+  }
+
+  return json({ error: "Invalid plan" }, { status: 400 });
+}
+
 export default function PricingPage() {
   const data = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
+  const fetcher = useFetcher<typeof action>();
 
   const handleSelectPlan = useCallback((planId: string) => {
-    // Navigate to billing page where users can upgrade
-    navigate("/app/billing");
-  }, [navigate]);
+    if (planId === "grow") {
+      fetcher.submit(
+        { plan: planId },
+        { method: "post" }
+      );
+    }
+  }, [fetcher]);
+
+  // Handle redirect to Shopify billing confirmation using window.open (App Bridge v4)
+  useEffect(() => {
+    if (fetcher.data && "confirmationUrl" in fetcher.data && fetcher.data.confirmationUrl) {
+      window.open(fetcher.data.confirmationUrl, '_top');
+    }
+  }, [fetcher.data]);
 
   const isFreePlan = data.currentPlan === "free";
   const isGrowPlan = data.currentPlan === "grow";
+  const isUpgrading = fetcher.state === "submitting";
 
   return (
     <Page
@@ -169,6 +228,7 @@ export default function PricingPage() {
                       fullWidth
                       variant="primary"
                       disabled={isGrowPlan}
+                      loading={isUpgrading}
                       onClick={() => handleSelectPlan("grow")}
                     >
                       {isGrowPlan ? "Current Plan" : "Upgrade to Grow"}
