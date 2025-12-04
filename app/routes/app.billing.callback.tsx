@@ -20,7 +20,7 @@ import { AppLogger } from "../lib/logger";
  * URL: /app/billing/callback?charge_id=gid://shopify/AppSubscription/12345
  */
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
   try {
@@ -42,8 +42,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       operation: "loader"
     }, { shop: shopDomain, chargeId });
 
-    // Confirm subscription in database
-    const result = await BillingService.confirmSubscription(shopDomain, chargeId);
+    // IMPROVED: Confirm subscription with Shopify API verification
+    const result = await BillingService.confirmSubscription(admin, shopDomain, chargeId);
 
     if (!result.success) {
       AppLogger.error("Failed to confirm subscription", {

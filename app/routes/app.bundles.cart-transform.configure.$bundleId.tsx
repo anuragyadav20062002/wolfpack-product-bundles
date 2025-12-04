@@ -1835,11 +1835,36 @@ export default function ConfigureBundleFlow() {
 
   // Memoize stringified values to prevent unnecessary re-computations
   // This is critical for preventing SaveBar flickering
-  const currentStepsString = useMemo(() => JSON.stringify(stepsState.steps), [stepsState.steps]);
-  const currentSelectedCollectionsString = useMemo(() => JSON.stringify(selectedCollections), [selectedCollections]);
-  const currentStepConditionsString = useMemo(() => JSON.stringify(conditionsState.stepConditions), [conditionsState.stepConditions]);
-  const currentDiscountRulesString = useMemo(() => JSON.stringify(pricingState.discountRules), [pricingState.discountRules]);
-  const currentRuleMessagesString = useMemo(() => JSON.stringify(ruleMessages), [ruleMessages]);
+  // IMPORTANT: Deep stringify to catch all nested changes
+  const currentStepsString = useMemo(() => {
+    const serialized = JSON.stringify(stepsState.steps);
+    AppLogger.debug("[SAVEBAR] Steps string updated:", {}, serialized.substring(0, 100));
+    return serialized;
+  }, [stepsState.steps]);
+
+  const currentSelectedCollectionsString = useMemo(() => {
+    const serialized = JSON.stringify(selectedCollections);
+    AppLogger.debug("[SAVEBAR] Collections string updated:", {}, serialized.substring(0, 100));
+    return serialized;
+  }, [selectedCollections]);
+
+  const currentStepConditionsString = useMemo(() => {
+    const serialized = JSON.stringify(conditionsState.stepConditions);
+    AppLogger.debug("[SAVEBAR] Step conditions string updated:", {}, serialized.substring(0, 100));
+    return serialized;
+  }, [conditionsState.stepConditions]);
+
+  const currentDiscountRulesString = useMemo(() => {
+    const serialized = JSON.stringify(pricingState.discountRules);
+    AppLogger.debug("[SAVEBAR] Discount rules string updated:", {}, serialized.substring(0, 100));
+    return serialized;
+  }, [pricingState.discountRules]);
+
+  const currentRuleMessagesString = useMemo(() => {
+    const serialized = JSON.stringify(ruleMessages);
+    AppLogger.debug("[SAVEBAR] Rule messages string updated:", {}, serialized.substring(0, 100));
+    return serialized;
+  }, [ruleMessages]);
 
   // Check for changes whenever form values change
   // Using memoized values and ref-based original values to prevent flickering
@@ -1853,35 +1878,79 @@ export default function ConfigureBundleFlow() {
 
     const originalValues = originalValuesRef.current;
 
+    // Individual change checks with detailed logging
+    const nameChanged = formState.bundleName !== originalValues.name;
+    const descChanged = formState.bundleDescription !== originalValues.description;
+    const templateChanged = formState.templateName !== originalValues.templateName;
+    const stepsChanged = currentStepsString !== originalValues.steps;
+    const collectionsChanged = currentSelectedCollectionsString !== originalValues.selectedCollections;
+    const conditionsChanged = currentStepConditionsString !== originalValues.stepConditions;
+    const productChanged = !compareBundleProducts(bundleProduct, originalValues.bundleProduct);
+    const productStatusChanged = productStatus !== originalValues.productStatus;
+
+    const discountEnabledChanged = pricingState.discountEnabled !== originalValues.discountEnabled;
+    const discountTypeChanged = pricingState.discountType !== originalValues.discountType;
+    const discountRulesChanged = currentDiscountRulesString !== originalValues.discountRules;
+    const progressBarChanged = pricingState.showProgressBar !== originalValues.showProgressBar;
+    const footerChanged = pricingState.showFooter !== originalValues.showFooter;
+    const messagingChanged = pricingState.discountMessagingEnabled !== originalValues.discountMessagingEnabled;
+    const ruleMessagesChanged = currentRuleMessagesString !== originalValues.ruleMessages;
+
+    const statusChanged = formState.bundleStatus !== originalValues.status;
+
+    // Log any changes detected
+    if (nameChanged) AppLogger.debug("[SAVEBAR] Name changed:", {}, `"${originalValues.name}" -> "${formState.bundleName}"`);
+    if (descChanged) AppLogger.debug("[SAVEBAR] Description changed");
+    if (templateChanged) AppLogger.debug("[SAVEBAR] Template changed:", {}, `"${originalValues.templateName}" -> "${formState.templateName}"`);
+    if (stepsChanged) AppLogger.debug("[SAVEBAR] Steps changed");
+    if (collectionsChanged) AppLogger.debug("[SAVEBAR] Collections changed");
+    if (conditionsChanged) AppLogger.debug("[SAVEBAR] Step conditions changed");
+    if (productChanged) AppLogger.debug("[SAVEBAR] Bundle product changed");
+    if (productStatusChanged) AppLogger.debug("[SAVEBAR] Product status changed");
+    if (discountEnabledChanged) AppLogger.debug("[SAVEBAR] Discount enabled changed:", {}, `${originalValues.discountEnabled} -> ${pricingState.discountEnabled}`);
+    if (discountTypeChanged) AppLogger.debug("[SAVEBAR] Discount type changed:", {}, `${originalValues.discountType} -> ${pricingState.discountType}`);
+    if (discountRulesChanged) AppLogger.debug("[SAVEBAR] Discount rules changed");
+    if (progressBarChanged) AppLogger.debug("[SAVEBAR] Progress bar changed:", {}, `${originalValues.showProgressBar} -> ${pricingState.showProgressBar}`);
+    if (footerChanged) AppLogger.debug("[SAVEBAR] Footer changed:", {}, `${originalValues.showFooter} -> ${pricingState.showFooter}`);
+    if (messagingChanged) AppLogger.debug("[SAVEBAR] Messaging changed:", {}, `${originalValues.discountMessagingEnabled} -> ${pricingState.discountMessagingEnabled}`);
+    if (ruleMessagesChanged) AppLogger.debug("[SAVEBAR] Rule messages changed");
+    if (statusChanged) AppLogger.debug("[SAVEBAR] Status changed:", {}, `"${originalValues.status}" -> "${formState.bundleStatus}"`);
+
     const stepSetupChanges = (
-      formState.bundleName !== originalValues.name ||
-      formState.bundleDescription !== originalValues.description ||
-      formState.templateName !== originalValues.templateName ||
-      currentStepsString !== originalValues.steps ||
-      currentSelectedCollectionsString !== originalValues.selectedCollections ||
-      currentStepConditionsString !== originalValues.stepConditions ||
-      !compareBundleProducts(bundleProduct, originalValues.bundleProduct) ||
-      productStatus !== originalValues.productStatus
+      nameChanged ||
+      descChanged ||
+      templateChanged ||
+      stepsChanged ||
+      collectionsChanged ||
+      conditionsChanged ||
+      productChanged ||
+      productStatusChanged
     );
 
     const discountPricingChanges = (
-      pricingState.discountEnabled !== originalValues.discountEnabled ||
-      pricingState.discountType !== originalValues.discountType ||
-      currentDiscountRulesString !== originalValues.discountRules ||
-      pricingState.showProgressBar !== originalValues.showProgressBar ||
-      pricingState.showFooter !== originalValues.showFooter ||
-      pricingState.discountMessagingEnabled !== originalValues.discountMessagingEnabled ||
-      currentRuleMessagesString !== originalValues.ruleMessages
+      discountEnabledChanged ||
+      discountTypeChanged ||
+      discountRulesChanged ||
+      progressBarChanged ||
+      footerChanged ||
+      messagingChanged ||
+      ruleMessagesChanged
     );
 
-    const bundleStatusChanges = (
-      formState.bundleStatus !== originalValues.status
-    );
+    const bundleStatusChanges = statusChanged;
 
     const hasChanges = stepSetupChanges || discountPricingChanges || bundleStatusChanges;
 
+    AppLogger.debug("[SAVEBAR] Change detection:", {}, `stepSetup=${stepSetupChanges}, pricing=${discountPricingChanges}, status=${bundleStatusChanges}, total=${hasChanges}`);
+
     // Only update state if it actually changed to prevent unnecessary re-renders and SaveBar flickering
-    setHasUnsavedChanges(prev => prev !== hasChanges ? hasChanges : prev);
+    setHasUnsavedChanges(prev => {
+      if (prev !== hasChanges) {
+        AppLogger.debug("[SAVEBAR] SaveBar state changing:", {}, `${prev} -> ${hasChanges}`);
+        return hasChanges;
+      }
+      return prev;
+    });
   }, [
     formState.bundleStatus,
     formState.bundleName,
@@ -2988,7 +3057,7 @@ export default function ConfigureBundleFlow() {
                                   variant="plain"
                                   onClick={() => {
                                     const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                                    window.open(productUrl, '_top');
+                                    window.open(productUrl, '_blank');
                                   }}
                                   icon={ExternalIcon}
                                 >
@@ -3833,7 +3902,7 @@ export default function ConfigureBundleFlow() {
                                   {/* Make product title clickable to navigate to Shopify Admin product page */}
                                   <Button
                                     variant="plain"
-                                    onClick={() => productUrl && window.open(productUrl, '_top')}
+                                    onClick={() => productUrl && window.open(productUrl, '_blank')}
                                     icon={ExternalIcon}
                                     disabled={!productUrl}
                                   >

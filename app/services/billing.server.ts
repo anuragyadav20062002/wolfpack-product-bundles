@@ -273,8 +273,11 @@ export class BillingService {
   /**
    * Confirm subscription after merchant approval
    * This is called from the returnUrl callback
+   *
+   * IMPROVED: Now verifies subscription status with Shopify API before confirming
    */
   static async confirmSubscription(
+    admin: any,
     shopDomain: string,
     shopifySubscriptionId: string
   ): Promise<{ success: boolean; error?: string }> {
@@ -300,12 +303,61 @@ export class BillingService {
         return { success: false, error: "Subscription not found or already confirmed" };
       }
 
-      // Update subscription status to active
+      // IMPROVEMENT: Verify subscription status with Shopify API
+      const VERIFY_SUBSCRIPTION = `
+        query GetAppSubscription($id: ID!) {
+          node(id: $id) {
+            ... on AppSubscription {
+              id
+              name
+              status
+              currentPeriodEnd
+              test
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(VERIFY_SUBSCRIPTION, {
+        variables: {
+          id: shopifySubscriptionId
+        }
+      });
+
+      const data = await response.json();
+      const appSubscription = data.data?.node;
+
+      if (!appSubscription) {
+        AppLogger.error("Failed to verify subscription with Shopify", {
+          component: "billing.server",
+          operation: "confirmSubscription"
+        }, { shopifySubscriptionId });
+
+        return { success: false, error: "Could not verify subscription with Shopify" };
+      }
+
+      // Only confirm if Shopify reports it as ACTIVE
+      if (appSubscription.status !== "ACTIVE") {
+        AppLogger.warn("Subscription not active in Shopify", {
+          component: "billing.server",
+          operation: "confirmSubscription"
+        }, { shopifySubscriptionId, status: appSubscription.status });
+
+        return { success: false, error: `Subscription status is ${appSubscription.status}, expected ACTIVE` };
+      }
+
+      // IMPROVEMENT: Store billing period information
+      const currentPeriodEnd = appSubscription.currentPeriodEnd
+        ? new Date(appSubscription.currentPeriodEnd)
+        : null;
+
+      // Update subscription status to active with verified data
       await db.subscription.update({
         where: { id: subscription.id },
         data: {
           status: "active",
-          currentPeriodStart: new Date()
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: currentPeriodEnd
         }
       });
 
@@ -317,10 +369,14 @@ export class BillingService {
         }
       });
 
-      AppLogger.info("Subscription confirmed", {
+      AppLogger.info("Subscription confirmed and verified with Shopify", {
         component: "billing.server",
         operation: "confirmSubscription"
-      }, { shop: shopDomain, subscriptionId: subscription.id });
+      }, {
+        shop: shopDomain,
+        subscriptionId: subscription.id,
+        currentPeriodEnd: currentPeriodEnd?.toISOString()
+      });
 
       return { success: true };
 

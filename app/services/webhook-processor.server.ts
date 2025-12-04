@@ -116,6 +116,18 @@ export class WebhookProcessor {
           result = await this.handleSubscriptionUpdate(shopDomain, payload);
           break;
 
+        // IMPROVEMENT: Handle subscription cancellation
+        case "app_subscriptions/cancelled":
+        case "APP_SUBSCRIPTIONS_CANCELLED":
+          result = await this.handleSubscriptionCancelled(shopDomain, payload);
+          break;
+
+        // IMPROVEMENT: Handle approaching capped amount (90% threshold)
+        case "app_subscriptions/approaching_capped_amount":
+        case "APP_SUBSCRIPTIONS_APPROACHING_CAPPED_AMOUNT":
+          result = await this.handleSubscriptionApproachingCap(shopDomain, payload);
+          break;
+
         case "app_purchases_one_time/update":
         case "APP_PURCHASES_ONE_TIME_UPDATE":
           result = await this.handlePurchaseUpdate(shopDomain, payload);
@@ -355,6 +367,158 @@ export class WebhookProcessor {
       return {
         success: false,
         message: "Error handling subscription update",
+        error: error instanceof Error ? error.message : "Unknown error"
+      };
+    }
+  }
+
+  /**
+   * IMPROVEMENT: Handle subscription cancellation webhook
+   * Triggered when a subscription is cancelled by the merchant or Shopify
+   */
+  private static async handleSubscriptionCancelled(
+    shopDomain: string,
+    payload: any
+  ): Promise<WebhookProcessResult> {
+    try {
+      const shopifySubscriptionId = payload.app_subscription?.admin_graphql_api_id;
+
+      if (!shopifySubscriptionId) {
+        return {
+          success: false,
+          message: "Missing subscription ID in webhook payload",
+          error: "shopifySubscriptionId is required"
+        };
+      }
+
+      AppLogger.info("Processing subscription cancellation", {
+        component: "webhook-processor",
+        operation: "handleSubscriptionCancelled"
+      }, { shop: shopDomain, shopifySubscriptionId });
+
+      // Find shop
+      const shop = await db.shop.findUnique({
+        where: { shopDomain }
+      });
+
+      if (!shop) {
+        return {
+          success: false,
+          message: "Shop not found",
+          error: `Shop ${shopDomain} not found in database`
+        };
+      }
+
+      // Find and update subscription
+      const subscription = await db.subscription.findUnique({
+        where: { shopifySubscriptionId }
+      });
+
+      if (!subscription) {
+        AppLogger.warn("Cancelled subscription not found in database", {
+          component: "webhook-processor",
+          operation: "handleSubscriptionCancelled"
+        }, { shop: shopDomain, shopifySubscriptionId });
+
+        return {
+          success: true,
+          message: "Subscription not found (may have been deleted)"
+        };
+      }
+
+      // Mark subscription as cancelled
+      await db.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          status: "cancelled",
+          cancelledAt: new Date()
+        }
+      });
+
+      // Create free plan subscription
+      const freeSubscription = await db.subscription.create({
+        data: {
+          shopId: shop.id,
+          plan: "free",
+          status: "active",
+          name: PLANS.free.name,
+          price: 0,
+          currencyCode: "USD",
+          test: false
+        }
+      });
+
+      // Update shop's current subscription
+      await db.shop.update({
+        where: { id: shop.id },
+        data: {
+          currentSubscriptionId: freeSubscription.id
+        }
+      });
+
+      AppLogger.info("Subscription cancelled, downgraded to free plan", {
+        component: "webhook-processor",
+        operation: "handleSubscriptionCancelled"
+      }, { shop: shopDomain, subscriptionId: subscription.id });
+
+      return {
+        success: true,
+        message: "Subscription cancelled and downgraded to free plan"
+      };
+
+    } catch (error) {
+      AppLogger.error("Error handling subscription cancellation", {
+        component: "webhook-processor",
+        operation: "handleSubscriptionCancelled"
+      }, error);
+
+      return {
+        success: false,
+        message: "Error handling subscription cancellation",
+        error: error instanceof Error ? error.message : "Unknown error"
+      };
+    }
+  }
+
+  /**
+   * IMPROVEMENT: Handle approaching capped amount webhook
+   * Triggered when usage-based charges reach 90% of their cap
+   * Note: Currently for usage-based billing (future feature)
+   */
+  private static async handleSubscriptionApproachingCap(
+    shopDomain: string,
+    payload: any
+  ): Promise<WebhookProcessResult> {
+    try {
+      const shopifySubscriptionId = payload.app_subscription?.admin_graphql_api_id;
+      const cappedAmount = payload.app_subscription?.capped_amount;
+      const balance = payload.balance;
+
+      AppLogger.info("Subscription approaching capped amount", {
+        component: "webhook-processor",
+        operation: "handleSubscriptionApproachingCap"
+      }, { shop: shopDomain, shopifySubscriptionId, cappedAmount, balance });
+
+      // For now, just log the event
+      // In the future, you can implement:
+      // 1. Send email notification to merchant
+      // 2. Display in-app banner
+      // 3. Suggest upgrade to higher tier
+
+      return {
+        success: true,
+        message: "Approaching capped amount event logged"
+      };
+
+    } catch (error) {
+      AppLogger.error("Error handling approaching capped amount", {
+        component: "webhook-processor",
+        operation: "handleSubscriptionApproachingCap"
+      }, error);
+
+      return {
+        success: false,
+        message: "Error handling approaching capped amount",
         error: error instanceof Error ? error.message : "Unknown error"
       };
     }

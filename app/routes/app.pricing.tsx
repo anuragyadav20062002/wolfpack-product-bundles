@@ -12,6 +12,7 @@ import {
   List,
   Box,
   Divider,
+  ProgressBar,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { BillingService } from "../services/billing.server";
@@ -24,7 +25,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const shopDomain = session.shop;
 
   try {
-    // Get subscription info to show current plan
+    // Get subscription info to show current plan and bundle quota
     const subscriptionInfo = await BillingService.getSubscriptionInfo(shopDomain);
 
     if (!subscriptionInfo) {
@@ -34,6 +35,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return json({
       currentPlan: subscriptionInfo.plan,
       plans: PLANS,
+      subscription: {
+        currentBundleCount: subscriptionInfo.currentBundleCount,
+        bundleLimit: subscriptionInfo.bundleLimit,
+        canCreateBundle: subscriptionInfo.canCreateBundle,
+      },
     });
   } catch (error) {
     AppLogger.error("Error loading pricing page", {
@@ -46,6 +52,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
         error: "Failed to load pricing information",
         currentPlan: "free",
         plans: PLANS,
+        subscription: {
+          currentBundleCount: 0,
+          bundleLimit: 3,
+          canCreateBundle: true,
+        },
       },
       { status: 500 }
     );
@@ -123,6 +134,19 @@ export default function PricingPage() {
   const isGrowPlan = data.currentPlan === "grow";
   const isUpgrading = fetcher.state === "submitting";
 
+  // Calculate progress percentage for quota
+  const currentBundleCount = data.subscription?.currentBundleCount || 0;
+  const bundleLimit = data.subscription?.bundleLimit || 3;
+  const quotaPercentage = (currentBundleCount / bundleLimit) * 100;
+
+  // Badge tone: uses Polaris Badge tones
+  const badgeTone = quotaPercentage >= 90 ? "critical" : quotaPercentage >= 70 ? "attention" : "success";
+
+  // ProgressBar tone: uses different tone values
+  const progressBarTone = quotaPercentage >= 90 ? "critical" : quotaPercentage >= 70 ? "primary" : "success";
+
+  const currentPlanConfig = data.plans[data.currentPlan as keyof typeof data.plans];
+
   return (
     <Page
       title="Pricing"
@@ -131,6 +155,33 @@ export default function PricingPage() {
       <Layout>
         <Layout.Section>
           <BlockStack gap="600">
+            {/* Subscription Quota Card */}
+            <Card>
+              <BlockStack gap="400">
+                <BlockStack gap="200">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Text as="h3" variant="headingMd">
+                      Bundle Subscription Quota
+                    </Text>
+                    <Badge tone={badgeTone}>
+                      {`${currentBundleCount} / ${bundleLimit} bundles used`}
+                    </Badge>
+                  </InlineStack>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {bundleLimit - currentBundleCount > 0
+                      ? `You have ${bundleLimit - currentBundleCount} bundle${bundleLimit - currentBundleCount !== 1 ? 's' : ''} remaining on your ${currentPlanConfig.name}.`
+                      : `You've reached your bundle limit. Upgrade to create more bundles.`
+                    }
+                  </Text>
+                </BlockStack>
+                <ProgressBar
+                  progress={quotaPercentage}
+                  tone={progressBarTone}
+                  size="small"
+                />
+              </BlockStack>
+            </Card>
+
             {/* Plan Comparison */}
             <InlineStack gap="400" align="center">
               {/* Free Plan Card */}
