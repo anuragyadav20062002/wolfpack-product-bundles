@@ -83,6 +83,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
       quantitySelectorTextColor: "#FFFFFF",
       quantitySelectorFontSize: 16,
       quantitySelectorBorderRadius: 8,
+      // Bundle Footer
+      footerBgColor: "#FFFFFF",
+      footerTotalBgColor: "#F6F6F6",
+      footerBorderRadius: 8,
+      footerPadding: 16,
+      // Footer Price
+      footerFinalPriceColor: "#000000",
+      footerFinalPriceFontSize: 18,
+      footerFinalPriceFontWeight: 700,
+      footerStrikePriceColor: "#8D8D8D",
+      footerStrikeFontSize: 14,
+      footerStrikeFontWeight: 400,
+      footerPriceVisibility: true,
+      // Footer Buttons
+      footerBackButtonBgColor: "#FFFFFF",
+      footerBackButtonTextColor: "#000000",
+      footerBackButtonBorderColor: "#E3E3E3",
+      footerBackButtonBorderRadius: 8,
+      footerNextButtonBgColor: "#000000",
+      footerNextButtonTextColor: "#FFFFFF",
+      footerNextButtonBorderColor: "#000000",
+      footerNextButtonBorderRadius: 8,
+      // Discount & Progress Bar
+      footerDiscountTextVisibility: true,
+      footerProgressBarFilledColor: "#000000",
+      footerProgressBarEmptyColor: "#E3E3E3",
     },
     full_page: {
       // Default settings for full_page (can be different from product_page)
@@ -110,6 +136,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
       quantitySelectorTextColor: "#FFFFFF",
       quantitySelectorFontSize: 18,
       quantitySelectorBorderRadius: 12,
+      // Bundle Footer
+      footerBgColor: "#FFFFFF",
+      footerTotalBgColor: "#F9FAFB",
+      footerBorderRadius: 12,
+      footerPadding: 20,
+      // Footer Price
+      footerFinalPriceColor: "#111827",
+      footerFinalPriceFontSize: 20,
+      footerFinalPriceFontWeight: 700,
+      footerStrikePriceColor: "#9CA3AF",
+      footerStrikeFontSize: 16,
+      footerStrikeFontWeight: 400,
+      footerPriceVisibility: true,
+      // Footer Buttons
+      footerBackButtonBgColor: "#FFFFFF",
+      footerBackButtonTextColor: "#111827",
+      footerBackButtonBorderColor: "#E5E7EB",
+      footerBackButtonBorderRadius: 12,
+      footerNextButtonBgColor: "#7132FF",
+      footerNextButtonTextColor: "#FFFFFF",
+      footerNextButtonBorderColor: "#7132FF",
+      footerNextButtonBorderRadius: 12,
+      // Discount & Progress Bar
+      footerDiscountTextVisibility: true,
+      footerProgressBarFilledColor: "#7132FF",
+      footerProgressBarEmptyColor: "#E5E7EB",
     },
   };
 
@@ -186,6 +238,36 @@ export default function DesignControlPanel() {
   const [quantitySelectorFontSize, setQuantitySelectorFontSize] = useState(currentSettings.quantitySelectorFontSize);
   const [quantitySelectorBorderRadius, setQuantitySelectorBorderRadius] = useState(currentSettings.quantitySelectorBorderRadius);
 
+  // Bundle Footer Section
+  const [footerBgColor, setFooterBgColor] = useState(currentSettings.footerBgColor);
+  const [footerTotalBgColor, setFooterTotalBgColor] = useState(currentSettings.footerTotalBgColor);
+  const [footerBorderRadius, setFooterBorderRadius] = useState(currentSettings.footerBorderRadius);
+  const [footerPadding, setFooterPadding] = useState(currentSettings.footerPadding);
+
+  // Footer Price
+  const [footerFinalPriceColor, setFooterFinalPriceColor] = useState(currentSettings.footerFinalPriceColor);
+  const [footerFinalPriceFontSize, setFooterFinalPriceFontSize] = useState(currentSettings.footerFinalPriceFontSize);
+  const [footerFinalPriceFontWeight, setFooterFinalPriceFontWeight] = useState(currentSettings.footerFinalPriceFontWeight);
+  const [footerStrikePriceColor, setFooterStrikePriceColor] = useState(currentSettings.footerStrikePriceColor);
+  const [footerStrikeFontSize, setFooterStrikeFontSize] = useState(currentSettings.footerStrikeFontSize);
+  const [footerStrikeFontWeight, setFooterStrikeFontWeight] = useState(currentSettings.footerStrikeFontWeight);
+  const [footerPriceVisibility, setFooterPriceVisibility] = useState(currentSettings.footerPriceVisibility);
+
+  // Footer Buttons
+  const [footerBackButtonBgColor, setFooterBackButtonBgColor] = useState(currentSettings.footerBackButtonBgColor);
+  const [footerBackButtonTextColor, setFooterBackButtonTextColor] = useState(currentSettings.footerBackButtonTextColor);
+  const [footerBackButtonBorderColor, setFooterBackButtonBorderColor] = useState(currentSettings.footerBackButtonBorderColor);
+  const [footerBackButtonBorderRadius, setFooterBackButtonBorderRadius] = useState(currentSettings.footerBackButtonBorderRadius);
+  const [footerNextButtonBgColor, setFooterNextButtonBgColor] = useState(currentSettings.footerNextButtonBgColor);
+  const [footerNextButtonTextColor, setFooterNextButtonTextColor] = useState(currentSettings.footerNextButtonTextColor);
+  const [footerNextButtonBorderColor, setFooterNextButtonBorderColor] = useState(currentSettings.footerNextButtonBorderColor);
+  const [footerNextButtonBorderRadius, setFooterNextButtonBorderRadius] = useState(currentSettings.footerNextButtonBorderRadius);
+
+  // Discount & Progress Bar
+  const [footerDiscountTextVisibility, setFooterDiscountTextVisibility] = useState(currentSettings.footerDiscountTextVisibility);
+  const [footerProgressBarFilledColor, setFooterProgressBarFilledColor] = useState(currentSettings.footerProgressBarFilledColor);
+  const [footerProgressBarEmptyColor, setFooterProgressBarEmptyColor] = useState(currentSettings.footerProgressBarEmptyColor);
+
   // Update form state when bundle type changes
   useEffect(() => {
     const newSettings = settings[selectedBundleType];
@@ -212,6 +294,28 @@ export default function DesignControlPanel() {
     setQuantitySelectorTextColor(newSettings.quantitySelectorTextColor);
     setQuantitySelectorFontSize(newSettings.quantitySelectorFontSize);
     setQuantitySelectorBorderRadius(newSettings.quantitySelectorBorderRadius);
+    setFooterBgColor(newSettings.footerBgColor);
+    setFooterTotalBgColor(newSettings.footerTotalBgColor);
+    setFooterBorderRadius(newSettings.footerBorderRadius);
+    setFooterPadding(newSettings.footerPadding);
+    setFooterFinalPriceColor(newSettings.footerFinalPriceColor);
+    setFooterFinalPriceFontSize(newSettings.footerFinalPriceFontSize);
+    setFooterFinalPriceFontWeight(newSettings.footerFinalPriceFontWeight);
+    setFooterStrikePriceColor(newSettings.footerStrikePriceColor);
+    setFooterStrikeFontSize(newSettings.footerStrikeFontSize);
+    setFooterStrikeFontWeight(newSettings.footerStrikeFontWeight);
+    setFooterPriceVisibility(newSettings.footerPriceVisibility);
+    setFooterBackButtonBgColor(newSettings.footerBackButtonBgColor);
+    setFooterBackButtonTextColor(newSettings.footerBackButtonTextColor);
+    setFooterBackButtonBorderColor(newSettings.footerBackButtonBorderColor);
+    setFooterBackButtonBorderRadius(newSettings.footerBackButtonBorderRadius);
+    setFooterNextButtonBgColor(newSettings.footerNextButtonBgColor);
+    setFooterNextButtonTextColor(newSettings.footerNextButtonTextColor);
+    setFooterNextButtonBorderColor(newSettings.footerNextButtonBorderColor);
+    setFooterNextButtonBorderRadius(newSettings.footerNextButtonBorderRadius);
+    setFooterDiscountTextVisibility(newSettings.footerDiscountTextVisibility);
+    setFooterProgressBarFilledColor(newSettings.footerProgressBarFilledColor);
+    setFooterProgressBarEmptyColor(newSettings.footerProgressBarEmptyColor);
   }, [selectedBundleType, settings]);
 
   const handleOpenModal = useCallback(() => setModalActive(true), []);
@@ -250,6 +354,28 @@ export default function DesignControlPanel() {
       quantitySelectorTextColor,
       quantitySelectorFontSize,
       quantitySelectorBorderRadius,
+      footerBgColor,
+      footerTotalBgColor,
+      footerBorderRadius,
+      footerPadding,
+      footerFinalPriceColor,
+      footerFinalPriceFontSize,
+      footerFinalPriceFontWeight,
+      footerStrikePriceColor,
+      footerStrikeFontSize,
+      footerStrikeFontWeight,
+      footerPriceVisibility,
+      footerBackButtonBgColor,
+      footerBackButtonTextColor,
+      footerBackButtonBorderColor,
+      footerBackButtonBorderRadius,
+      footerNextButtonBgColor,
+      footerNextButtonTextColor,
+      footerNextButtonBorderColor,
+      footerNextButtonBorderRadius,
+      footerDiscountTextVisibility,
+      footerProgressBarFilledColor,
+      footerProgressBarEmptyColor,
     };
 
     const formData = new FormData();
@@ -283,6 +409,28 @@ export default function DesignControlPanel() {
     quantitySelectorTextColor,
     quantitySelectorFontSize,
     quantitySelectorBorderRadius,
+    footerBgColor,
+    footerTotalBgColor,
+    footerBorderRadius,
+    footerPadding,
+    footerFinalPriceColor,
+    footerFinalPriceFontSize,
+    footerFinalPriceFontWeight,
+    footerStrikePriceColor,
+    footerStrikeFontSize,
+    footerStrikeFontWeight,
+    footerPriceVisibility,
+    footerBackButtonBgColor,
+    footerBackButtonTextColor,
+    footerBackButtonBorderColor,
+    footerBackButtonBorderRadius,
+    footerNextButtonBgColor,
+    footerNextButtonTextColor,
+    footerNextButtonBorderColor,
+    footerNextButtonBorderRadius,
+    footerDiscountTextVisibility,
+    footerProgressBarFilledColor,
+    footerProgressBarEmptyColor,
     submit,
     handleCloseModal,
   ]);
@@ -887,6 +1035,662 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
+      case "footer":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Footer
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerBgColorInput"
+                    type="color"
+                    value={footerBgColor}
+                    onChange={(e) => setFooterBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerTotalBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerTotalBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerTotalBgColorInput"
+                    type="color"
+                    value={footerTotalBgColor}
+                    onChange={(e) => setFooterTotalBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Total Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerTotalBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Border Radius"
+              value={footerBorderRadius}
+              onChange={(value) => setFooterBorderRadius(value as number)}
+              min={0}
+              max={24}
+              output
+            />
+
+            <RangeSlider
+              label="Padding"
+              value={footerPadding}
+              onChange={(value) => setFooterPadding(value as number)}
+              min={8}
+              max={32}
+              output
+            />
+          </BlockStack>
+        );
+
+      case "footerPrice":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Price
+            </Text>
+            <Divider />
+
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Prices
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={footerPriceVisibility === true}
+                  onClick={() => setFooterPriceVisibility(true)}
+                >
+                  Show
+                </Button>
+                <Button
+                  pressed={footerPriceVisibility === false}
+                  onClick={() => setFooterPriceVisibility(false)}
+                >
+                  Hide
+                </Button>
+              </ButtonGroup>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerFinalPriceColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerFinalPriceColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerFinalPriceColorInput"
+                    type="color"
+                    value={footerFinalPriceColor}
+                    onChange={(e) => setFooterFinalPriceColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Final Price Font Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerFinalPriceColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Final Price Font Size"
+              value={footerFinalPriceFontSize}
+              onChange={(value) => setFooterFinalPriceFontSize(value as number)}
+              min={14}
+              max={28}
+              output
+            />
+
+            <RangeSlider
+              label="Final Price Font Weight"
+              value={footerFinalPriceFontWeight}
+              onChange={(value) => setFooterFinalPriceFontWeight(value as number)}
+              min={400}
+              max={900}
+              step={100}
+              output
+            />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerStrikePriceColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerStrikePriceColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerStrikePriceColorInput"
+                    type="color"
+                    value={footerStrikePriceColor}
+                    onChange={(e) => setFooterStrikePriceColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Strikethrough Price Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerStrikePriceColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Strikethrough Font Size"
+              value={footerStrikeFontSize}
+              onChange={(value) => setFooterStrikeFontSize(value as number)}
+              min={10}
+              max={20}
+              output
+            />
+
+            <RangeSlider
+              label="Strikethrough Font Weight"
+              value={footerStrikeFontWeight}
+              onChange={(value) => setFooterStrikeFontWeight(value as number)}
+              min={300}
+              max={700}
+              step={100}
+              output
+            />
+          </BlockStack>
+        );
+
+      case "footerButton":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Button
+            </Text>
+            <Divider />
+
+            <Text as="h3" variant="headingSm">
+              Back Button
+            </Text>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerBackButtonBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerBackButtonBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerBackButtonBgColorInput"
+                    type="color"
+                    value={footerBackButtonBgColor}
+                    onChange={(e) => setFooterBackButtonBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Back Button Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerBackButtonBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerBackButtonTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerBackButtonTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerBackButtonTextColorInput"
+                    type="color"
+                    value={footerBackButtonTextColor}
+                    onChange={(e) => setFooterBackButtonTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Back Button Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerBackButtonTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerBackButtonBorderColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerBackButtonBorderColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerBackButtonBorderColorInput"
+                    type="color"
+                    value={footerBackButtonBorderColor}
+                    onChange={(e) => setFooterBackButtonBorderColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Back Button Border Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerBackButtonBorderColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Back Button Border Radius"
+              value={footerBackButtonBorderRadius}
+              onChange={(value) => setFooterBackButtonBorderRadius(value as number)}
+              min={0}
+              max={24}
+              output
+            />
+
+            <Divider />
+
+            <Text as="h3" variant="headingSm">
+              Next Button
+            </Text>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerNextButtonBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerNextButtonBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerNextButtonBgColorInput"
+                    type="color"
+                    value={footerNextButtonBgColor}
+                    onChange={(e) => setFooterNextButtonBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Next Button Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerNextButtonBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerNextButtonTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerNextButtonTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerNextButtonTextColorInput"
+                    type="color"
+                    value={footerNextButtonTextColor}
+                    onChange={(e) => setFooterNextButtonTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Next Button Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerNextButtonTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerNextButtonBorderColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerNextButtonBorderColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerNextButtonBorderColorInput"
+                    type="color"
+                    value={footerNextButtonBorderColor}
+                    onChange={(e) => setFooterNextButtonBorderColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Next Button Border Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerNextButtonBorderColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Next Button Border Radius"
+              value={footerNextButtonBorderRadius}
+              onChange={(value) => setFooterNextButtonBorderRadius(value as number)}
+              min={0}
+              max={24}
+              output
+            />
+          </BlockStack>
+        );
+
+      case "footerDiscountProgress":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Discount Text & Progress Bar
+            </Text>
+            <Divider />
+
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Discount Text
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={footerDiscountTextVisibility === true}
+                  onClick={() => setFooterDiscountTextVisibility(true)}
+                >
+                  Show
+                </Button>
+                <Button
+                  pressed={footerDiscountTextVisibility === false}
+                  onClick={() => setFooterDiscountTextVisibility(false)}
+                >
+                  Hide
+                </Button>
+              </ButtonGroup>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerProgressBarFilledColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerProgressBarFilledColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerProgressBarFilledColorInput"
+                    type="color"
+                    value={footerProgressBarFilledColor}
+                    onChange={(e) => setFooterProgressBarFilledColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Progress Bar Filled Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerProgressBarFilledColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerProgressBarEmptyColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerProgressBarEmptyColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerProgressBarEmptyColorInput"
+                    type="color"
+                    value={footerProgressBarEmptyColor}
+                    onChange={(e) => setFooterProgressBarEmptyColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Progress Bar Empty Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerProgressBarEmptyColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </BlockStack>
+        );
+
       default:
         return (
           <Banner tone="info">
@@ -975,12 +1779,40 @@ export default function DesignControlPanel() {
                 />
               </Collapsible>
 
-              {/* Other Sections - Collapsed by default */}
+              {/* Bundle Footer Section */}
               <NavigationItem
                 label="Bundle Footer"
                 sectionKey="bundleFooter"
                 hasChildren
               />
+              <Collapsible open={expandedSection === "bundleFooter"} id="bundleFooter-collapsible">
+                <NavigationItem
+                  label="Footer"
+                  sectionKey="footer"
+                  isChild
+                  onClick={() => handleSubSectionClick("footer")}
+                />
+                <NavigationItem
+                  label="Price"
+                  sectionKey="footerPrice"
+                  isChild
+                  onClick={() => handleSubSectionClick("footerPrice")}
+                />
+                <NavigationItem
+                  label="Button"
+                  sectionKey="footerButton"
+                  isChild
+                  onClick={() => handleSubSectionClick("footerButton")}
+                />
+                <NavigationItem
+                  label="Discount Text & Progress Bar"
+                  sectionKey="footerDiscountProgress"
+                  isChild
+                  onClick={() => handleSubSectionClick("footerDiscountProgress")}
+                />
+              </Collapsible>
+
+              {/* Other Sections - Collapsed by default */}
               <NavigationItem
                 label="Bundle Step Bar"
                 sectionKey="bundleStepBar"
