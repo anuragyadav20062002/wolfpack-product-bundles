@@ -16,6 +16,7 @@ import {
   Checkbox,
   Box,
   Icon,
+  ButtonGroup,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { useState, useCallback, useEffect } from "react";
@@ -336,28 +337,51 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <InlineStack gap="400" align="start">
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Background Color
-                </Text>
-                <TextField
-                  label=""
-                  type="color"
-                  value={productCardBgColor}
-                  onChange={setProductCardBgColor}
-                  autoComplete="off"
-                />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {productCardBgColor}
-                </Text>
-              </BlockStack>
-            </InlineStack>
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: productCardBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("productCardBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="productCardBgColorInput"
+                    type="color"
+                    value={productCardBgColor}
+                    onChange={(e) => setProductCardBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {productCardBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
 
             <RangeSlider
               label="Font Size"
               value={productCardFontSize}
-              onChange={setProductCardFontSize}
+              onChange={(value) => setProductCardFontSize(value as number)}
               min={12}
               max={24}
               output
@@ -366,26 +390,64 @@ export default function DesignControlPanel() {
             <RangeSlider
               label="Font Weight"
               value={productCardFontWeight}
-              onChange={setProductCardFontWeight}
+              onChange={(value) => setProductCardFontWeight(value as number)}
               min={300}
               max={900}
               step={100}
               output
             />
 
-            <Select
-              label="Product Image Fit"
-              options={IMAGE_FIT_OPTIONS}
-              value={productCardImageFit}
-              onChange={setProductCardImageFit}
-            />
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Product Image Fit
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={productCardImageFit === "cover"}
+                  onClick={() => setProductCardImageFit("cover")}
+                >
+                  Cover
+                </Button>
+                <Button
+                  pressed={productCardImageFit === "fill"}
+                  onClick={() => setProductCardImageFit("fill")}
+                >
+                  Fill
+                </Button>
+                <Button
+                  pressed={productCardImageFit === "contain"}
+                  onClick={() => setProductCardImageFit("contain")}
+                >
+                  Contain
+                </Button>
+              </ButtonGroup>
+            </BlockStack>
 
-            <Select
-              label="Number of cards per row"
-              options={CARDS_PER_ROW_OPTIONS}
-              value={productCardsPerRow}
-              onChange={setProductCardsPerRow}
-            />
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Number of cards per row
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={productCardsPerRow === "3"}
+                  onClick={() => setProductCardsPerRow("3")}
+                >
+                  3
+                </Button>
+                <Button
+                  pressed={productCardsPerRow === "4"}
+                  onClick={() => setProductCardsPerRow("4")}
+                >
+                  4
+                </Button>
+                <Button
+                  pressed={productCardsPerRow === "5"}
+                  onClick={() => setProductCardsPerRow("5")}
+                >
+                  5
+                </Button>
+              </ButtonGroup>
+            </BlockStack>
           </BlockStack>
         );
 
@@ -397,81 +459,203 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <InlineStack gap="400" align="start">
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Product Font Color
-                </Text>
-                <TextField
-                  label=""
-                  type="color"
-                  value={productCardFontColor}
-                  onChange={setProductCardFontColor}
-                  autoComplete="off"
-                />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {productCardFontColor}
-                </Text>
-              </BlockStack>
-            </InlineStack>
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: productCardFontColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("productCardFontColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="productCardFontColorInput"
+                    type="color"
+                    value={productCardFontColor}
+                    onChange={(e) => setProductCardFontColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Product Font Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {productCardFontColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
 
-            <Checkbox
-              label="Product Price Visibility"
-              checked={productPriceVisibility}
-              onChange={setProductPriceVisibility}
+            <RangeSlider
+              label="Font Size"
+              value={productCardFontSize}
+              onChange={(value) => setProductCardFontSize(value as number)}
+              min={12}
+              max={24}
+              output
             />
 
-            <InlineStack gap="400" align="start">
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Strikethrough Price Color
-                </Text>
-                <TextField
-                  label=""
-                  type="color"
-                  value={productStrikePriceColor}
-                  onChange={setProductStrikePriceColor}
-                  autoComplete="off"
-                />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {productStrikePriceColor}
-                </Text>
-              </BlockStack>
-            </InlineStack>
+            <RangeSlider
+              label="Font Weight"
+              value={productCardFontWeight}
+              onChange={(value) => setProductCardFontWeight(value as number)}
+              min={300}
+              max={900}
+              step={100}
+              output
+            />
+
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Product Price Visibility
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={productPriceVisibility === true}
+                  onClick={() => setProductPriceVisibility(true)}
+                >
+                  Show
+                </Button>
+                <Button
+                  pressed={productPriceVisibility === false}
+                  onClick={() => setProductPriceVisibility(false)}
+                >
+                  Hide
+                </Button>
+              </ButtonGroup>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: productStrikePriceColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("productStrikePriceColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="productStrikePriceColorInput"
+                    type="color"
+                    value={productStrikePriceColor}
+                    onChange={(e) => setProductStrikePriceColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Strikethrough Price Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {productStrikePriceColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
 
             <RangeSlider
               label="Strikethrough Font Size"
               value={productStrikeFontSize}
-              onChange={setProductStrikeFontSize}
+              onChange={(value) => setProductStrikeFontSize(value as number)}
               min={10}
               max={20}
               output
             />
 
-            <InlineStack gap="400" align="start">
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Final Price Font Color
-                </Text>
-                <TextField
-                  label=""
-                  type="color"
-                  value={productFinalPriceColor}
-                  onChange={setProductFinalPriceColor}
-                  autoComplete="off"
-                />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {productFinalPriceColor}
-                </Text>
-              </BlockStack>
-            </InlineStack>
+            <RangeSlider
+              label="Strikethrough Font Weight"
+              value={productStrikeFontWeight}
+              onChange={(value) => setProductStrikeFontWeight(value as number)}
+              min={300}
+              max={700}
+              step={100}
+              output
+            />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: productFinalPriceColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("productFinalPriceColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="productFinalPriceColorInput"
+                    type="color"
+                    value={productFinalPriceColor}
+                    onChange={(e) => setProductFinalPriceColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Final Price Font Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {productFinalPriceColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
 
             <RangeSlider
               label="Final Price Font Size"
               value={productFinalPriceFontSize}
-              onChange={setProductFinalPriceFontSize}
+              onChange={(value) => setProductFinalPriceFontSize(value as number)}
               min={14}
               max={28}
+              output
+            />
+
+            <RangeSlider
+              label="Final Price Font Weight"
+              value={productFinalPriceFontWeight}
+              onChange={(value) => setProductFinalPriceFontWeight(value as number)}
+              min={400}
+              max={900}
+              step={100}
               output
             />
           </BlockStack>
@@ -485,54 +669,110 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <InlineStack gap="400" align="start">
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Background Color
-                </Text>
-                <TextField
-                  label=""
-                  type="color"
-                  value={buttonBgColor}
-                  onChange={setButtonBgColor}
-                  autoComplete="off"
-                />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {buttonBgColor}
-                </Text>
-              </BlockStack>
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: buttonBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("buttonBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="buttonBgColorInput"
+                    type="color"
+                    value={buttonBgColor}
+                    onChange={(e) => setButtonBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {buttonBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
 
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Text Color
-                </Text>
-                <TextField
-                  label=""
-                  type="color"
-                  value={buttonTextColor}
-                  onChange={setButtonTextColor}
-                  autoComplete="off"
-                />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {buttonTextColor}
-                </Text>
-              </BlockStack>
-            </InlineStack>
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: buttonTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("buttonTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="buttonTextColorInput"
+                    type="color"
+                    value={buttonTextColor}
+                    onChange={(e) => setButtonTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {buttonTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Font Size"
+              value={buttonFontSize}
+              onChange={(value) => setButtonFontSize(value as number)}
+              min={12}
+              max={24}
+              output
+            />
 
             <RangeSlider
               label="Border Radius"
               value={buttonBorderRadius}
-              onChange={setButtonBorderRadius}
+              onChange={(value) => setButtonBorderRadius(value as number)}
               min={0}
               max={24}
               output
             />
 
-            <TextField
-              label="Button Text"
-              value={buttonAddToCartText}
-              onChange={setButtonAddToCartText}
-              autoComplete="off"
+            <Checkbox
+              label="Rounded Corners"
+              checked={buttonBorderRadius > 0}
+              onChange={(checked) => setButtonBorderRadius(checked ? 8 : 0)}
             />
           </BlockStack>
         );
@@ -541,48 +781,105 @@ export default function DesignControlPanel() {
         return (
           <BlockStack gap="400">
             <Text as="h2" variant="headingMd">
-              Quantity & Variant Selector
+              Quantity Selector
             </Text>
             <Divider />
 
-            <InlineStack gap="400" align="start">
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Background Color
-                </Text>
-                <TextField
-                  label=""
-                  type="color"
-                  value={quantitySelectorBgColor}
-                  onChange={setQuantitySelectorBgColor}
-                  autoComplete="off"
-                />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {quantitySelectorBgColor}
-                </Text>
-              </BlockStack>
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: quantitySelectorBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("quantitySelectorBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="quantitySelectorBgColorInput"
+                    type="color"
+                    value={quantitySelectorBgColor}
+                    onChange={(e) => setQuantitySelectorBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {quantitySelectorBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
 
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Text Color
-                </Text>
-                <TextField
-                  label=""
-                  type="color"
-                  value={quantitySelectorTextColor}
-                  onChange={setQuantitySelectorTextColor}
-                  autoComplete="off"
-                />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {quantitySelectorTextColor}
-                </Text>
-              </BlockStack>
-            </InlineStack>
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: quantitySelectorTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("quantitySelectorTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="quantitySelectorTextColorInput"
+                    type="color"
+                    value={quantitySelectorTextColor}
+                    onChange={(e) => setQuantitySelectorTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {quantitySelectorTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Font Size"
+              value={quantitySelectorFontSize}
+              onChange={(value) => setQuantitySelectorFontSize(value as number)}
+              min={12}
+              max={24}
+              output
+            />
 
             <RangeSlider
               label="Border Radius"
               value={quantitySelectorBorderRadius}
-              onChange={setQuantitySelectorBorderRadius}
+              onChange={(value) => setQuantitySelectorBorderRadius(value as number)}
               min={0}
               max={24}
               output
@@ -614,7 +911,7 @@ export default function DesignControlPanel() {
         open={modalActive}
         onClose={handleCloseModal}
         title="Customisations"
-        large
+        size="fullScreen"
         primaryAction={{
           content: "Save",
           onAction: handleSaveSettings,
@@ -627,13 +924,13 @@ export default function DesignControlPanel() {
         ]}
       >
         <Modal.Section flush>
-          <div style={{ display: "flex", minHeight: "600px" }}>
+          <div style={{ display: "flex", height: "calc(100vh - 120px)", minHeight: "600px" }}>
             {/* Left Sidebar - Navigation */}
             <div
               style={{
-                width: "200px",
-                borderRight: "1px solid #E3E3E3",
-                backgroundColor: "#FAFAFA",
+                width: "269px",
+                borderRight: "1px solid #D9D9D9",
+                backgroundColor: "#FFFFFF",
                 overflowY: "auto",
               }}
             >
@@ -671,7 +968,7 @@ export default function DesignControlPanel() {
                   onClick={() => handleSubSectionClick("button")}
                 />
                 <NavigationItem
-                  label="Quantity & Variant Selector"
+                  label="Quantity Selector"
                   sectionKey="quantitySelector"
                   isChild
                   onClick={() => handleSubSectionClick("quantitySelector")}
@@ -703,7 +1000,7 @@ export default function DesignControlPanel() {
                 style={{
                   flex: 1,
                   padding: "40px",
-                  backgroundColor: "#F6F6F7",
+                  backgroundColor: "#F4F4F4",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -828,8 +1125,8 @@ export default function DesignControlPanel() {
               {/* Right Panel - Settings Controls */}
               <div
                 style={{
-                  width: "320px",
-                  borderLeft: "1px solid #E3E3E3",
+                  width: "285px",
+                  borderLeft: "1px solid #D9D9D9",
                   padding: "24px",
                   backgroundColor: "#FFFFFF",
                   overflowY: "auto",
