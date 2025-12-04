@@ -109,6 +109,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerDiscountTextVisibility: true,
       footerProgressBarFilledColor: "#000000",
       footerProgressBarEmptyColor: "#E3E3E3",
+      // Bundle Step Bar - Step Name
+      stepNameFontColor: "#000000",
+      stepNameFontSize: 16,
+      // Completed Step
+      completedStepCheckMarkColor: "#FFFFFF",
+      completedStepBgColor: "#000000",
+      completedStepCircleBorderColor: "#000000",
+      completedStepCircleBorderRadius: 50,
+      // Incomplete Step
+      incompleteStepBgColor: "#FFFFFF",
+      incompleteStepCircleStrokeColor: "#000000",
+      incompleteStepCircleStrokeRadius: 50,
+      // Step Bar Progress Bar
+      stepBarProgressFilledColor: "#000000",
+      stepBarProgressEmptyColor: "#C6C6C6",
+      // Tabs
+      tabsActiveBgColor: "#000000",
+      tabsActiveTextColor: "#FFFFFF",
+      tabsInactiveBgColor: "#FFFFFF",
+      tabsInactiveTextColor: "#000000",
+      tabsBorderColor: "#000000",
+      tabsBorderRadius: 8,
     },
     full_page: {
       // Default settings for full_page (can be different from product_page)
@@ -162,6 +184,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerDiscountTextVisibility: true,
       footerProgressBarFilledColor: "#7132FF",
       footerProgressBarEmptyColor: "#E5E7EB",
+      // Bundle Step Bar - Step Name
+      stepNameFontColor: "#111827",
+      stepNameFontSize: 18,
+      // Completed Step
+      completedStepCheckMarkColor: "#FFFFFF",
+      completedStepBgColor: "#7132FF",
+      completedStepCircleBorderColor: "#7132FF",
+      completedStepCircleBorderRadius: 50,
+      // Incomplete Step
+      incompleteStepBgColor: "#F9FAFB",
+      incompleteStepCircleStrokeColor: "#9CA3AF",
+      incompleteStepCircleStrokeRadius: 50,
+      // Step Bar Progress Bar
+      stepBarProgressFilledColor: "#7132FF",
+      stepBarProgressEmptyColor: "#E5E7EB",
+      // Tabs
+      tabsActiveBgColor: "#7132FF",
+      tabsActiveTextColor: "#FFFFFF",
+      tabsInactiveBgColor: "#F9FAFB",
+      tabsInactiveTextColor: "#111827",
+      tabsBorderColor: "#E5E7EB",
+      tabsBorderRadius: 12,
     },
   };
 
@@ -268,6 +312,30 @@ export default function DesignControlPanel() {
   const [footerProgressBarFilledColor, setFooterProgressBarFilledColor] = useState(currentSettings.footerProgressBarFilledColor);
   const [footerProgressBarEmptyColor, setFooterProgressBarEmptyColor] = useState(currentSettings.footerProgressBarEmptyColor);
 
+  // Bundle Step Bar Section
+  // Step Name
+  const [stepNameFontColor, setStepNameFontColor] = useState(currentSettings.stepNameFontColor);
+  const [stepNameFontSize, setStepNameFontSize] = useState(currentSettings.stepNameFontSize);
+  // Completed Step
+  const [completedStepCheckMarkColor, setCompletedStepCheckMarkColor] = useState(currentSettings.completedStepCheckMarkColor);
+  const [completedStepBgColor, setCompletedStepBgColor] = useState(currentSettings.completedStepBgColor);
+  const [completedStepCircleBorderColor, setCompletedStepCircleBorderColor] = useState(currentSettings.completedStepCircleBorderColor);
+  const [completedStepCircleBorderRadius, setCompletedStepCircleBorderRadius] = useState(currentSettings.completedStepCircleBorderRadius);
+  // Incomplete Step
+  const [incompleteStepBgColor, setIncompleteStepBgColor] = useState(currentSettings.incompleteStepBgColor);
+  const [incompleteStepCircleStrokeColor, setIncompleteStepCircleStrokeColor] = useState(currentSettings.incompleteStepCircleStrokeColor);
+  const [incompleteStepCircleStrokeRadius, setIncompleteStepCircleStrokeRadius] = useState(currentSettings.incompleteStepCircleStrokeRadius);
+  // Step Bar Progress Bar
+  const [stepBarProgressFilledColor, setStepBarProgressFilledColor] = useState(currentSettings.stepBarProgressFilledColor);
+  const [stepBarProgressEmptyColor, setStepBarProgressEmptyColor] = useState(currentSettings.stepBarProgressEmptyColor);
+  // Tabs
+  const [tabsActiveBgColor, setTabsActiveBgColor] = useState(currentSettings.tabsActiveBgColor);
+  const [tabsActiveTextColor, setTabsActiveTextColor] = useState(currentSettings.tabsActiveTextColor);
+  const [tabsInactiveBgColor, setTabsInactiveBgColor] = useState(currentSettings.tabsInactiveBgColor);
+  const [tabsInactiveTextColor, setTabsInactiveTextColor] = useState(currentSettings.tabsInactiveTextColor);
+  const [tabsBorderColor, setTabsBorderColor] = useState(currentSettings.tabsBorderColor);
+  const [tabsBorderRadius, setTabsBorderRadius] = useState(currentSettings.tabsBorderRadius);
+
   // Update form state when bundle type changes
   useEffect(() => {
     const newSettings = settings[selectedBundleType];
@@ -316,6 +384,24 @@ export default function DesignControlPanel() {
     setFooterDiscountTextVisibility(newSettings.footerDiscountTextVisibility);
     setFooterProgressBarFilledColor(newSettings.footerProgressBarFilledColor);
     setFooterProgressBarEmptyColor(newSettings.footerProgressBarEmptyColor);
+    // Bundle Step Bar
+    setStepNameFontColor(newSettings.stepNameFontColor);
+    setStepNameFontSize(newSettings.stepNameFontSize);
+    setCompletedStepCheckMarkColor(newSettings.completedStepCheckMarkColor);
+    setCompletedStepBgColor(newSettings.completedStepBgColor);
+    setCompletedStepCircleBorderColor(newSettings.completedStepCircleBorderColor);
+    setCompletedStepCircleBorderRadius(newSettings.completedStepCircleBorderRadius);
+    setIncompleteStepBgColor(newSettings.incompleteStepBgColor);
+    setIncompleteStepCircleStrokeColor(newSettings.incompleteStepCircleStrokeColor);
+    setIncompleteStepCircleStrokeRadius(newSettings.incompleteStepCircleStrokeRadius);
+    setStepBarProgressFilledColor(newSettings.stepBarProgressFilledColor);
+    setStepBarProgressEmptyColor(newSettings.stepBarProgressEmptyColor);
+    setTabsActiveBgColor(newSettings.tabsActiveBgColor);
+    setTabsActiveTextColor(newSettings.tabsActiveTextColor);
+    setTabsInactiveBgColor(newSettings.tabsInactiveBgColor);
+    setTabsInactiveTextColor(newSettings.tabsInactiveTextColor);
+    setTabsBorderColor(newSettings.tabsBorderColor);
+    setTabsBorderRadius(newSettings.tabsBorderRadius);
   }, [selectedBundleType, settings]);
 
   const handleOpenModal = useCallback(() => setModalActive(true), []);
@@ -470,6 +556,288 @@ export default function DesignControlPanel() {
         {hasChildren && (
           <Icon source={isExpanded ? ChevronDownIcon : ChevronRightIcon} />
         )}
+      </div>
+    );
+  };
+
+  // Render preview content based on active subsection
+  const renderPreviewContent = () => {
+    // Bundle Footer subsections
+    if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
+      return (
+        <div style={{ maxWidth: "800px", width: "100%" }}>
+          {/* Discount Text */}
+          {footerDiscountTextVisibility && (
+            <div style={{ textAlign: "center", marginBottom: "16px" }}>
+              <Text as="p" variant="bodyMd">
+                Add 5 products and get 20% off
+              </Text>
+            </div>
+          )}
+
+          {/* Progress Bar */}
+          <div style={{ marginBottom: "24px" }}>
+            <div
+              style={{
+                width: "100%",
+                height: "8px",
+                backgroundColor: footerProgressBarEmptyColor,
+                borderRadius: "4px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: "24%",
+                  height: "100%",
+                  backgroundColor: footerProgressBarFilledColor,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Product Item */}
+          <div
+            style={{
+              display: "flex",
+              gap: "16px",
+              marginBottom: "24px",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "60px",
+                height: "60px",
+                backgroundColor: "#E5E5E5",
+                borderRadius: "8px",
+              }}
+            />
+            <div style={{ flex: 1 }}>
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Classic Edition...
+              </Text>
+              <Text as="p" variant="bodySm" tone="subdued">
+                €11.15 x 4
+              </Text>
+            </div>
+          </div>
+
+          {/* Bundle Footer */}
+          <div
+            style={{
+              backgroundColor: footerBgColor,
+              borderRadius: `${footerBorderRadius}px`,
+              padding: `${footerPadding}px`,
+            }}
+          >
+            {/* Footer Content */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              {/* Back Button */}
+              <button
+                style={{
+                  flex: 1,
+                  backgroundColor: footerBackButtonBgColor,
+                  color: footerBackButtonTextColor,
+                  border: `1px solid ${footerBackButtonBorderColor}`,
+                  borderRadius: `${footerBackButtonBorderRadius}px`,
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+              >
+                Back
+              </button>
+
+              {/* Total Section */}
+              <div
+                style={{
+                  flex: 1,
+                  backgroundColor: footerTotalBgColor,
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Total
+                </Text>
+                {footerPriceVisibility && (
+                  <div style={{ marginTop: "4px" }}>
+                    <span
+                      style={{
+                        color: footerStrikePriceColor,
+                        fontSize: `${footerStrikeFontSize}px`,
+                        fontWeight: footerStrikeFontWeight,
+                        textDecoration: "line-through",
+                        marginRight: "8px",
+                      }}
+                    >
+                      $19.99
+                    </span>
+                    <span
+                      style={{
+                        color: footerFinalPriceColor,
+                        fontSize: `${footerFinalPriceFontSize}px`,
+                        fontWeight: footerFinalPriceFontWeight,
+                      }}
+                    >
+                      $19.99
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Next Button */}
+              <button
+                style={{
+                  flex: 1,
+                  backgroundColor: footerNextButtonBgColor,
+                  color: footerNextButtonTextColor,
+                  border: `1px solid ${footerNextButtonBorderColor}`,
+                  borderRadius: `${footerNextButtonBorderRadius}px`,
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          {/* Annotation */}
+          <div style={{ marginTop: "40px", textAlign: "center" }}>
+            <Text as="p" variant="bodySm" tone="subdued">
+              Preview updates as you customize
+            </Text>
+          </div>
+        </div>
+      );
+    }
+
+    // Product Card subsections (default)
+    return (
+      <div style={{ textAlign: "center" }}>
+        {/* Product Card Preview */}
+        <div
+          style={{
+            backgroundColor: productCardBgColor,
+            borderRadius: "12px",
+            padding: "24px",
+            maxWidth: "280px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            position: "relative",
+          }}
+        >
+          {/* Product Image Placeholder */}
+          <div
+            style={{
+              width: "100%",
+              height: "200px",
+              backgroundColor: "#E5E5E5",
+              borderRadius: "8px",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Product Image
+            </Text>
+          </div>
+
+          {/* Product Title */}
+          <Text
+            as="h3"
+            variant="headingMd"
+            alignment="center"
+            fontWeight={String(productCardFontWeight) as any}
+          >
+            <span
+              style={{
+                color: productCardFontColor,
+                fontSize: `${productCardFontSize}px`,
+              }}
+            >
+              BIG PRODUCT NAME SPANNING TWO LINES
+            </span>
+          </Text>
+
+          {/* Prices */}
+          {productPriceVisibility && (
+            <div style={{ margin: "12px 0", textAlign: "center" }}>
+              <span
+                style={{
+                  color: productStrikePriceColor,
+                  fontSize: `${productStrikeFontSize}px`,
+                  fontWeight: productStrikeFontWeight,
+                  textDecoration: "line-through",
+                  marginRight: "8px",
+                }}
+              >
+                $19.99
+              </span>
+              <span
+                style={{
+                  color: productFinalPriceColor,
+                  fontSize: `${productFinalPriceFontSize}px`,
+                  fontWeight: productFinalPriceFontWeight,
+                }}
+              >
+                $19.99
+              </span>
+            </div>
+          )}
+
+          {/* Variant Selector */}
+          <div style={{ marginBottom: "12px" }}>
+            <input
+              type="text"
+              placeholder="Size 9"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: `${quantitySelectorBorderRadius}px`,
+                border: "1px solid #D1D1D1",
+                fontSize: `${quantitySelectorFontSize}px`,
+              }}
+              readOnly
+            />
+          </div>
+
+          {/* Add to Cart Button */}
+          <button
+            style={{
+              width: "100%",
+              backgroundColor: buttonBgColor,
+              color: buttonTextColor,
+              border: "none",
+              borderRadius: `${buttonBorderRadius}px`,
+              padding: "12px 24px",
+              fontSize: `${buttonFontSize}px`,
+              fontWeight: buttonFontWeight,
+              cursor: "pointer",
+            }}
+          >
+            {buttonAddToCartText}
+          </button>
+        </div>
+
+        {/* Annotation Labels */}
+        <div style={{ marginTop: "40px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Preview updates as you customize
+          </Text>
+        </div>
       </div>
     );
   };
@@ -1812,12 +2180,46 @@ export default function DesignControlPanel() {
                 />
               </Collapsible>
 
-              {/* Other Sections - Collapsed by default */}
+              {/* Bundle Step Bar Section */}
               <NavigationItem
                 label="Bundle Step Bar"
                 sectionKey="bundleStepBar"
                 hasChildren
               />
+              <Collapsible open={expandedSection === "bundleStepBar"} id="bundleStepBar-collapsible">
+                <NavigationItem
+                  label="Step Name"
+                  sectionKey="stepName"
+                  isChild
+                  onClick={() => handleSubSectionClick("stepName")}
+                />
+                <NavigationItem
+                  label="Completed Step"
+                  sectionKey="completedStep"
+                  isChild
+                  onClick={() => handleSubSectionClick("completedStep")}
+                />
+                <NavigationItem
+                  label="Incomplete Step"
+                  sectionKey="incompleteStep"
+                  isChild
+                  onClick={() => handleSubSectionClick("incompleteStep")}
+                />
+                <NavigationItem
+                  label="Progress Bar"
+                  sectionKey="stepBarProgressBar"
+                  isChild
+                  onClick={() => handleSubSectionClick("stepBarProgressBar")}
+                />
+                <NavigationItem
+                  label="Tabs"
+                  sectionKey="stepBarTabs"
+                  isChild
+                  onClick={() => handleSubSectionClick("stepBarTabs")}
+                />
+              </Collapsible>
+
+              {/* Other Sections - Collapsed by default */}
               <NavigationItem
                 label="General"
                 sectionKey="general"
@@ -1838,120 +2240,7 @@ export default function DesignControlPanel() {
                   justifyContent: "center",
                 }}
               >
-                <div style={{ textAlign: "center" }}>
-                  {/* Product Card Preview */}
-                  <div
-                    style={{
-                      backgroundColor: productCardBgColor,
-                      borderRadius: "12px",
-                      padding: "24px",
-                      maxWidth: "280px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                      position: "relative",
-                    }}
-                  >
-                    {/* Product Image Placeholder */}
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "200px",
-                        backgroundColor: "#E5E5E5",
-                        borderRadius: "8px",
-                        marginBottom: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        Product Image
-                      </Text>
-                    </div>
-
-                    {/* Product Title */}
-                    <Text
-                      as="h3"
-                      variant="headingMd"
-                      alignment="center"
-                      fontWeight={String(productCardFontWeight) as any}
-                    >
-                      <span
-                        style={{
-                          color: productCardFontColor,
-                          fontSize: `${productCardFontSize}px`,
-                        }}
-                      >
-                        BIG PRODUCT NAME SPANNING TWO LINES
-                      </span>
-                    </Text>
-
-                    {/* Prices */}
-                    {productPriceVisibility && (
-                      <div style={{ margin: "12px 0", textAlign: "center" }}>
-                        <span
-                          style={{
-                            color: productStrikePriceColor,
-                            fontSize: `${productStrikeFontSize}px`,
-                            fontWeight: productStrikeFontWeight,
-                            textDecoration: "line-through",
-                            marginRight: "8px",
-                          }}
-                        >
-                          $19.99
-                        </span>
-                        <span
-                          style={{
-                            color: productFinalPriceColor,
-                            fontSize: `${productFinalPriceFontSize}px`,
-                            fontWeight: productFinalPriceFontWeight,
-                          }}
-                        >
-                          $19.99
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Variant Selector */}
-                    <div style={{ marginBottom: "12px" }}>
-                      <input
-                        type="text"
-                        placeholder="Size 9"
-                        style={{
-                          width: "100%",
-                          padding: "8px 12px",
-                          borderRadius: `${quantitySelectorBorderRadius}px`,
-                          border: "1px solid #D1D1D1",
-                          fontSize: `${quantitySelectorFontSize}px`,
-                        }}
-                        readOnly
-                      />
-                    </div>
-
-                    {/* Add to Cart Button */}
-                    <button
-                      style={{
-                        width: "100%",
-                        backgroundColor: buttonBgColor,
-                        color: buttonTextColor,
-                        border: "none",
-                        borderRadius: `${buttonBorderRadius}px`,
-                        padding: "12px 24px",
-                        fontSize: `${buttonFontSize}px`,
-                        fontWeight: buttonFontWeight,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {buttonAddToCartText}
-                    </button>
-                  </div>
-
-                  {/* Annotation Labels */}
-                  <div style={{ marginTop: "40px" }}>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Preview updates as you customize
-                    </Text>
-                  </div>
-                </div>
+                {renderPreviewContent()}
               </div>
 
               {/* Right Panel - Settings Controls */}
