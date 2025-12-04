@@ -474,6 +474,288 @@ export default function DesignControlPanel() {
     );
   };
 
+  // Render preview content based on active subsection
+  const renderPreviewContent = () => {
+    // Bundle Footer subsections
+    if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
+      return (
+        <div style={{ maxWidth: "800px", width: "100%" }}>
+          {/* Discount Text */}
+          {footerDiscountTextVisibility && (
+            <div style={{ textAlign: "center", marginBottom: "16px" }}>
+              <Text as="p" variant="bodyMd">
+                Add 5 products and get 20% off
+              </Text>
+            </div>
+          )}
+
+          {/* Progress Bar */}
+          <div style={{ marginBottom: "24px" }}>
+            <div
+              style={{
+                width: "100%",
+                height: "8px",
+                backgroundColor: footerProgressBarEmptyColor,
+                borderRadius: "4px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: "24%",
+                  height: "100%",
+                  backgroundColor: footerProgressBarFilledColor,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Product Item */}
+          <div
+            style={{
+              display: "flex",
+              gap: "16px",
+              marginBottom: "24px",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "60px",
+                height: "60px",
+                backgroundColor: "#E5E5E5",
+                borderRadius: "8px",
+              }}
+            />
+            <div style={{ flex: 1 }}>
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Classic Edition...
+              </Text>
+              <Text as="p" variant="bodySm" tone="subdued">
+                €11.15 x 4
+              </Text>
+            </div>
+          </div>
+
+          {/* Bundle Footer */}
+          <div
+            style={{
+              backgroundColor: footerBgColor,
+              borderRadius: `${footerBorderRadius}px`,
+              padding: `${footerPadding}px`,
+            }}
+          >
+            {/* Footer Content */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              {/* Back Button */}
+              <button
+                style={{
+                  flex: 1,
+                  backgroundColor: footerBackButtonBgColor,
+                  color: footerBackButtonTextColor,
+                  border: `1px solid ${footerBackButtonBorderColor}`,
+                  borderRadius: `${footerBackButtonBorderRadius}px`,
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+              >
+                Back
+              </button>
+
+              {/* Total Section */}
+              <div
+                style={{
+                  flex: 1,
+                  backgroundColor: footerTotalBgColor,
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Total
+                </Text>
+                {footerPriceVisibility && (
+                  <div style={{ marginTop: "4px" }}>
+                    <span
+                      style={{
+                        color: footerStrikePriceColor,
+                        fontSize: `${footerStrikeFontSize}px`,
+                        fontWeight: footerStrikeFontWeight,
+                        textDecoration: "line-through",
+                        marginRight: "8px",
+                      }}
+                    >
+                      $19.99
+                    </span>
+                    <span
+                      style={{
+                        color: footerFinalPriceColor,
+                        fontSize: `${footerFinalPriceFontSize}px`,
+                        fontWeight: footerFinalPriceFontWeight,
+                      }}
+                    >
+                      $19.99
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Next Button */}
+              <button
+                style={{
+                  flex: 1,
+                  backgroundColor: footerNextButtonBgColor,
+                  color: footerNextButtonTextColor,
+                  border: `1px solid ${footerNextButtonBorderColor}`,
+                  borderRadius: `${footerNextButtonBorderRadius}px`,
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          {/* Annotation */}
+          <div style={{ marginTop: "40px", textAlign: "center" }}>
+            <Text as="p" variant="bodySm" tone="subdued">
+              Preview updates as you customize
+            </Text>
+          </div>
+        </div>
+      );
+    }
+
+    // Product Card subsections (default)
+    return (
+      <div style={{ textAlign: "center" }}>
+        {/* Product Card Preview */}
+        <div
+          style={{
+            backgroundColor: productCardBgColor,
+            borderRadius: "12px",
+            padding: "24px",
+            maxWidth: "280px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            position: "relative",
+          }}
+        >
+          {/* Product Image Placeholder */}
+          <div
+            style={{
+              width: "100%",
+              height: "200px",
+              backgroundColor: "#E5E5E5",
+              borderRadius: "8px",
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Product Image
+            </Text>
+          </div>
+
+          {/* Product Title */}
+          <Text
+            as="h3"
+            variant="headingMd"
+            alignment="center"
+            fontWeight={String(productCardFontWeight) as any}
+          >
+            <span
+              style={{
+                color: productCardFontColor,
+                fontSize: `${productCardFontSize}px`,
+              }}
+            >
+              BIG PRODUCT NAME SPANNING TWO LINES
+            </span>
+          </Text>
+
+          {/* Prices */}
+          {productPriceVisibility && (
+            <div style={{ margin: "12px 0", textAlign: "center" }}>
+              <span
+                style={{
+                  color: productStrikePriceColor,
+                  fontSize: `${productStrikeFontSize}px`,
+                  fontWeight: productStrikeFontWeight,
+                  textDecoration: "line-through",
+                  marginRight: "8px",
+                }}
+              >
+                $19.99
+              </span>
+              <span
+                style={{
+                  color: productFinalPriceColor,
+                  fontSize: `${productFinalPriceFontSize}px`,
+                  fontWeight: productFinalPriceFontWeight,
+                }}
+              >
+                $19.99
+              </span>
+            </div>
+          )}
+
+          {/* Variant Selector */}
+          <div style={{ marginBottom: "12px" }}>
+            <input
+              type="text"
+              placeholder="Size 9"
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: `${quantitySelectorBorderRadius}px`,
+                border: "1px solid #D1D1D1",
+                fontSize: `${quantitySelectorFontSize}px`,
+              }}
+              readOnly
+            />
+          </div>
+
+          {/* Add to Cart Button */}
+          <button
+            style={{
+              width: "100%",
+              backgroundColor: buttonBgColor,
+              color: buttonTextColor,
+              border: "none",
+              borderRadius: `${buttonBorderRadius}px`,
+              padding: "12px 24px",
+              fontSize: `${buttonFontSize}px`,
+              fontWeight: buttonFontWeight,
+              cursor: "pointer",
+            }}
+          >
+            {buttonAddToCartText}
+          </button>
+        </div>
+
+        {/* Annotation Labels */}
+        <div style={{ marginTop: "40px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Preview updates as you customize
+          </Text>
+        </div>
+      </div>
+    );
+  };
+
   // Render settings panel based on active subsection
   const renderSettingsPanel = () => {
     switch (activeSubSection) {
@@ -1838,120 +2120,7 @@ export default function DesignControlPanel() {
                   justifyContent: "center",
                 }}
               >
-                <div style={{ textAlign: "center" }}>
-                  {/* Product Card Preview */}
-                  <div
-                    style={{
-                      backgroundColor: productCardBgColor,
-                      borderRadius: "12px",
-                      padding: "24px",
-                      maxWidth: "280px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                      position: "relative",
-                    }}
-                  >
-                    {/* Product Image Placeholder */}
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "200px",
-                        backgroundColor: "#E5E5E5",
-                        borderRadius: "8px",
-                        marginBottom: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        Product Image
-                      </Text>
-                    </div>
-
-                    {/* Product Title */}
-                    <Text
-                      as="h3"
-                      variant="headingMd"
-                      alignment="center"
-                      fontWeight={String(productCardFontWeight) as any}
-                    >
-                      <span
-                        style={{
-                          color: productCardFontColor,
-                          fontSize: `${productCardFontSize}px`,
-                        }}
-                      >
-                        BIG PRODUCT NAME SPANNING TWO LINES
-                      </span>
-                    </Text>
-
-                    {/* Prices */}
-                    {productPriceVisibility && (
-                      <div style={{ margin: "12px 0", textAlign: "center" }}>
-                        <span
-                          style={{
-                            color: productStrikePriceColor,
-                            fontSize: `${productStrikeFontSize}px`,
-                            fontWeight: productStrikeFontWeight,
-                            textDecoration: "line-through",
-                            marginRight: "8px",
-                          }}
-                        >
-                          $19.99
-                        </span>
-                        <span
-                          style={{
-                            color: productFinalPriceColor,
-                            fontSize: `${productFinalPriceFontSize}px`,
-                            fontWeight: productFinalPriceFontWeight,
-                          }}
-                        >
-                          $19.99
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Variant Selector */}
-                    <div style={{ marginBottom: "12px" }}>
-                      <input
-                        type="text"
-                        placeholder="Size 9"
-                        style={{
-                          width: "100%",
-                          padding: "8px 12px",
-                          borderRadius: `${quantitySelectorBorderRadius}px`,
-                          border: "1px solid #D1D1D1",
-                          fontSize: `${quantitySelectorFontSize}px`,
-                        }}
-                        readOnly
-                      />
-                    </div>
-
-                    {/* Add to Cart Button */}
-                    <button
-                      style={{
-                        width: "100%",
-                        backgroundColor: buttonBgColor,
-                        color: buttonTextColor,
-                        border: "none",
-                        borderRadius: `${buttonBorderRadius}px`,
-                        padding: "12px 24px",
-                        fontSize: `${buttonFontSize}px`,
-                        fontWeight: buttonFontWeight,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {buttonAddToCartText}
-                    </button>
-                  </div>
-
-                  {/* Annotation Labels */}
-                  <div style={{ marginTop: "40px" }}>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Preview updates as you customize
-                    </Text>
-                  </div>
-                </div>
+                {renderPreviewContent()}
               </div>
 
               {/* Right Panel - Settings Controls */}
