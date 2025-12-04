@@ -155,7 +155,7 @@ export class WebhookProcessor {
 
         case "shop/redact":
         case "SHOP_REDACT":
-          result = await this.handleShopRedact(shopDomain, payload);
+          result = await this.handleShopRedact(shopDomain, payload, webhookEvent.id);
           break;
 
         default:
@@ -896,7 +896,8 @@ export class WebhookProcessor {
    */
   private static async handleShopRedact(
     shopDomain: string,
-    payload: any
+    payload: any,
+    currentWebhookEventId?: string
   ): Promise<WebhookProcessResult> {
     try {
       // Store compliance record first
@@ -940,10 +941,23 @@ export class WebhookProcessor {
         where: { shopId: shopDomain }
       });
 
-      // Delete webhook events
-      await db.webhookEvent.deleteMany({
-        where: { shopDomain }
-      });
+      // Delete webhook events (excluding current event being processed)
+      // SAFETY: Explicitly handle the case where we need to exclude current webhook
+      if (currentWebhookEventId) {
+        // Safe: Delete all webhook events for this shop EXCEPT the current one
+        await db.webhookEvent.deleteMany({
+          where: {
+            shopDomain,
+            id: { not: currentWebhookEventId }
+          }
+        });
+      } else {
+        // Fallback: If no current webhook ID provided, delete all
+        // This should rarely happen, but is safe for cleanup scenarios
+        await db.webhookEvent.deleteMany({
+          where: { shopDomain }
+        });
+      }
 
       // Update compliance record
       await db.complianceRecord.updateMany({
