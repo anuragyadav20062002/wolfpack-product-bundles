@@ -26,10 +26,11 @@ interface BundleStep {
 interface UseBundleStepsProps {
   initialSteps: BundleStep[];
   shopify: any;
+  onStateChange?: () => void;
 }
 
-export function useBundleSteps({ initialSteps, shopify }: UseBundleStepsProps) {
-  const [steps, setSteps] = useState<BundleStep[]>(initialSteps);
+export function useBundleSteps({ initialSteps, shopify, onStateChange }: UseBundleStepsProps) {
+  const [steps, setStepsRaw] = useState<BundleStep[]>(initialSteps);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedCollections, setSelectedCollections] = useState<Record<string, any[]>>(() => {
@@ -41,6 +42,12 @@ export function useBundleSteps({ initialSteps, shopify }: UseBundleStepsProps) {
     });
     return initial;
   });
+
+  // Wrapped setter that triggers dirty flag
+  const setSteps = useCallback((value: BundleStep[] | ((prev: BundleStep[]) => BundleStep[])) => {
+    setStepsRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
 
   // Add a new step
   const addStep = useCallback(() => {
@@ -55,7 +62,7 @@ export function useBundleSteps({ initialSteps, shopify }: UseBundleStepsProps) {
     setSteps(prev => [...prev, newStep]);
     setExpandedSteps(prev => new Set([...prev, newStep.id]));
     shopify.toast.show("Step added successfully", { isError: false });
-  }, [steps.length, shopify]);
+  }, [steps.length, shopify, setSteps]);
 
   // Update a step field
   const updateStepField = useCallback((stepId: string, field: string, value: any) => {
@@ -64,7 +71,7 @@ export function useBundleSteps({ initialSteps, shopify }: UseBundleStepsProps) {
         step.id === stepId ? { ...step, [field]: value } : step
       )
     );
-  }, []);
+  }, [setSteps]);
 
   // Remove a step
   const removeStep = useCallback((stepId: string) => {
@@ -75,7 +82,7 @@ export function useBundleSteps({ initialSteps, shopify }: UseBundleStepsProps) {
       return newSet;
     });
     shopify.toast.show("Step removed", { isError: false });
-  }, [shopify]);
+  }, [shopify, setSteps]);
 
   // Toggle step expansion
   const toggleStepExpansion = useCallback((stepId: string) => {
@@ -103,7 +110,7 @@ export function useBundleSteps({ initialSteps, shopify }: UseBundleStepsProps) {
       setExpandedSteps(prev => new Set([...prev, duplicatedStep.id]));
       shopify.toast.show("Step duplicated successfully", { isError: false });
     }
-  }, [steps, shopify]);
+  }, [steps, shopify, setSteps]);
 
   // Collection selection handler
   const handleCollectionSelection = useCallback(async (stepId: string) => {
@@ -168,7 +175,7 @@ export function useBundleSteps({ initialSteps, shopify }: UseBundleStepsProps) {
       newSteps.splice(toIndex, 0, movedStep);
       return newSteps;
     });
-  }, []);
+  }, [setSteps]);
 
   return {
     // State
