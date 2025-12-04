@@ -911,7 +911,7 @@ export default function DesignControlPanel() {
         open={modalActive}
         onClose={handleCloseModal}
         title="Customisations"
-        size="fullScreen"
+        size="large"
         primaryAction={{
           content: "Save",
           onAction: handleSaveSettings,
@@ -924,7 +924,7 @@ export default function DesignControlPanel() {
         ]}
       >
         <Modal.Section flush>
-          <div style={{ display: "flex", height: "calc(100vh - 120px)", minHeight: "600px" }}>
+          <div style={{ display: "flex", height: "80vh", minHeight: "700px" }}>
             {/* Left Sidebar - Navigation */}
             <div
               style={{
