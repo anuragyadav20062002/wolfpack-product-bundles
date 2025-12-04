@@ -109,6 +109,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerDiscountTextVisibility: true,
       footerProgressBarFilledColor: "#000000",
       footerProgressBarEmptyColor: "#E3E3E3",
+      // Bundle Step Bar - Step Name
+      stepNameFontColor: "#000000",
+      stepNameFontSize: 16,
+      // Completed Step
+      completedStepCheckMarkColor: "#FFFFFF",
+      completedStepBgColor: "#000000",
+      completedStepCircleBorderColor: "#000000",
+      completedStepCircleBorderRadius: 50,
+      // Incomplete Step
+      incompleteStepBgColor: "#FFFFFF",
+      incompleteStepCircleStrokeColor: "#000000",
+      incompleteStepCircleStrokeRadius: 50,
+      // Step Bar Progress Bar
+      stepBarProgressFilledColor: "#000000",
+      stepBarProgressEmptyColor: "#C6C6C6",
+      // Tabs
+      tabsActiveBgColor: "#000000",
+      tabsActiveTextColor: "#FFFFFF",
+      tabsInactiveBgColor: "#FFFFFF",
+      tabsInactiveTextColor: "#000000",
+      tabsBorderColor: "#000000",
+      tabsBorderRadius: 8,
     },
     full_page: {
       // Default settings for full_page (can be different from product_page)
@@ -162,6 +184,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerDiscountTextVisibility: true,
       footerProgressBarFilledColor: "#7132FF",
       footerProgressBarEmptyColor: "#E5E7EB",
+      // Bundle Step Bar - Step Name
+      stepNameFontColor: "#111827",
+      stepNameFontSize: 18,
+      // Completed Step
+      completedStepCheckMarkColor: "#FFFFFF",
+      completedStepBgColor: "#7132FF",
+      completedStepCircleBorderColor: "#7132FF",
+      completedStepCircleBorderRadius: 50,
+      // Incomplete Step
+      incompleteStepBgColor: "#F9FAFB",
+      incompleteStepCircleStrokeColor: "#9CA3AF",
+      incompleteStepCircleStrokeRadius: 50,
+      // Step Bar Progress Bar
+      stepBarProgressFilledColor: "#7132FF",
+      stepBarProgressEmptyColor: "#E5E7EB",
+      // Tabs
+      tabsActiveBgColor: "#7132FF",
+      tabsActiveTextColor: "#FFFFFF",
+      tabsInactiveBgColor: "#F9FAFB",
+      tabsInactiveTextColor: "#111827",
+      tabsBorderColor: "#E5E7EB",
+      tabsBorderRadius: 12,
     },
   };
 
@@ -268,6 +312,30 @@ export default function DesignControlPanel() {
   const [footerProgressBarFilledColor, setFooterProgressBarFilledColor] = useState(currentSettings.footerProgressBarFilledColor);
   const [footerProgressBarEmptyColor, setFooterProgressBarEmptyColor] = useState(currentSettings.footerProgressBarEmptyColor);
 
+  // Bundle Step Bar Section
+  // Step Name
+  const [stepNameFontColor, setStepNameFontColor] = useState(currentSettings.stepNameFontColor);
+  const [stepNameFontSize, setStepNameFontSize] = useState(currentSettings.stepNameFontSize);
+  // Completed Step
+  const [completedStepCheckMarkColor, setCompletedStepCheckMarkColor] = useState(currentSettings.completedStepCheckMarkColor);
+  const [completedStepBgColor, setCompletedStepBgColor] = useState(currentSettings.completedStepBgColor);
+  const [completedStepCircleBorderColor, setCompletedStepCircleBorderColor] = useState(currentSettings.completedStepCircleBorderColor);
+  const [completedStepCircleBorderRadius, setCompletedStepCircleBorderRadius] = useState(currentSettings.completedStepCircleBorderRadius);
+  // Incomplete Step
+  const [incompleteStepBgColor, setIncompleteStepBgColor] = useState(currentSettings.incompleteStepBgColor);
+  const [incompleteStepCircleStrokeColor, setIncompleteStepCircleStrokeColor] = useState(currentSettings.incompleteStepCircleStrokeColor);
+  const [incompleteStepCircleStrokeRadius, setIncompleteStepCircleStrokeRadius] = useState(currentSettings.incompleteStepCircleStrokeRadius);
+  // Step Bar Progress Bar
+  const [stepBarProgressFilledColor, setStepBarProgressFilledColor] = useState(currentSettings.stepBarProgressFilledColor);
+  const [stepBarProgressEmptyColor, setStepBarProgressEmptyColor] = useState(currentSettings.stepBarProgressEmptyColor);
+  // Tabs
+  const [tabsActiveBgColor, setTabsActiveBgColor] = useState(currentSettings.tabsActiveBgColor);
+  const [tabsActiveTextColor, setTabsActiveTextColor] = useState(currentSettings.tabsActiveTextColor);
+  const [tabsInactiveBgColor, setTabsInactiveBgColor] = useState(currentSettings.tabsInactiveBgColor);
+  const [tabsInactiveTextColor, setTabsInactiveTextColor] = useState(currentSettings.tabsInactiveTextColor);
+  const [tabsBorderColor, setTabsBorderColor] = useState(currentSettings.tabsBorderColor);
+  const [tabsBorderRadius, setTabsBorderRadius] = useState(currentSettings.tabsBorderRadius);
+
   // Update form state when bundle type changes
   useEffect(() => {
     const newSettings = settings[selectedBundleType];
@@ -316,6 +384,24 @@ export default function DesignControlPanel() {
     setFooterDiscountTextVisibility(newSettings.footerDiscountTextVisibility);
     setFooterProgressBarFilledColor(newSettings.footerProgressBarFilledColor);
     setFooterProgressBarEmptyColor(newSettings.footerProgressBarEmptyColor);
+    // Bundle Step Bar
+    setStepNameFontColor(newSettings.stepNameFontColor);
+    setStepNameFontSize(newSettings.stepNameFontSize);
+    setCompletedStepCheckMarkColor(newSettings.completedStepCheckMarkColor);
+    setCompletedStepBgColor(newSettings.completedStepBgColor);
+    setCompletedStepCircleBorderColor(newSettings.completedStepCircleBorderColor);
+    setCompletedStepCircleBorderRadius(newSettings.completedStepCircleBorderRadius);
+    setIncompleteStepBgColor(newSettings.incompleteStepBgColor);
+    setIncompleteStepCircleStrokeColor(newSettings.incompleteStepCircleStrokeColor);
+    setIncompleteStepCircleStrokeRadius(newSettings.incompleteStepCircleStrokeRadius);
+    setStepBarProgressFilledColor(newSettings.stepBarProgressFilledColor);
+    setStepBarProgressEmptyColor(newSettings.stepBarProgressEmptyColor);
+    setTabsActiveBgColor(newSettings.tabsActiveBgColor);
+    setTabsActiveTextColor(newSettings.tabsActiveTextColor);
+    setTabsInactiveBgColor(newSettings.tabsInactiveBgColor);
+    setTabsInactiveTextColor(newSettings.tabsInactiveTextColor);
+    setTabsBorderColor(newSettings.tabsBorderColor);
+    setTabsBorderRadius(newSettings.tabsBorderRadius);
   }, [selectedBundleType, settings]);
 
   const handleOpenModal = useCallback(() => setModalActive(true), []);
@@ -2094,12 +2180,46 @@ export default function DesignControlPanel() {
                 />
               </Collapsible>
 
-              {/* Other Sections - Collapsed by default */}
+              {/* Bundle Step Bar Section */}
               <NavigationItem
                 label="Bundle Step Bar"
                 sectionKey="bundleStepBar"
                 hasChildren
               />
+              <Collapsible open={expandedSection === "bundleStepBar"} id="bundleStepBar-collapsible">
+                <NavigationItem
+                  label="Step Name"
+                  sectionKey="stepName"
+                  isChild
+                  onClick={() => handleSubSectionClick("stepName")}
+                />
+                <NavigationItem
+                  label="Completed Step"
+                  sectionKey="completedStep"
+                  isChild
+                  onClick={() => handleSubSectionClick("completedStep")}
+                />
+                <NavigationItem
+                  label="Incomplete Step"
+                  sectionKey="incompleteStep"
+                  isChild
+                  onClick={() => handleSubSectionClick("incompleteStep")}
+                />
+                <NavigationItem
+                  label="Progress Bar"
+                  sectionKey="stepBarProgressBar"
+                  isChild
+                  onClick={() => handleSubSectionClick("stepBarProgressBar")}
+                />
+                <NavigationItem
+                  label="Tabs"
+                  sectionKey="stepBarTabs"
+                  isChild
+                  onClick={() => handleSubSectionClick("stepBarTabs")}
+                />
+              </Collapsible>
+
+              {/* Other Sections - Collapsed by default */}
               <NavigationItem
                 label="General"
                 sectionKey="general"
