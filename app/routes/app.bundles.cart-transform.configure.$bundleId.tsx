@@ -2791,14 +2791,18 @@ export default function ConfigureBundleFlow() {
           discardConfirmation={true}
         >
           <button
+            type="submit"
             variant="primary"
-            onClick={handleSave}
             loading={fetcher.state !== "idle" ? "" : undefined}
             disabled={fetcher.state !== "idle"}
           >
             Save
           </button>
-          <button onClick={handleDiscard} disabled={fetcher.state !== "idle"}>
+          <button
+            type="button"
+            onClick={handleDiscard}
+            disabled={fetcher.state !== "idle"}
+          >
             Discard
           </button>
         </SaveBar>
