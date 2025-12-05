@@ -1712,6 +1712,7 @@ export default function ConfigureBundleFlow() {
   // Simple dirty flag that gets set on ANY state change
   const [isDirty, setIsDirty] = useState(false);
   const isResettingRef = useRef(false); // Flag to prevent dirty marking during reset/discard
+  const lastProcessedFetcherDataRef = useRef<any>(null); // Track last processed fetcher response to prevent duplicate processing
   const markAsDirty = useCallback(() => {
     if (!isResettingRef.current) {
       setIsDirty(true);
@@ -1973,8 +1974,19 @@ export default function ConfigureBundleFlow() {
   }, [formState.templateName]);
 
   // Handle fetcher response
+  // CRITICAL FIX: Only process NEW fetcher responses to prevent auto-save bug
+  // Note: Intentionally omitting state values from dependencies - we want to capture
+  // current values when the response arrives, not re-run when they change
   useEffect(() => {
     if (fetcher.data && fetcher.state === 'idle') {
+      // Skip if we've already processed this response
+      if (fetcher.data === lastProcessedFetcherDataRef.current) {
+        return;
+      }
+
+      // Mark this response as processed
+      lastProcessedFetcherDataRef.current = fetcher.data;
+
       const result = fetcher.data;
 
       // Handle different action types based on the response or form data
@@ -2050,28 +2062,7 @@ export default function ConfigureBundleFlow() {
         }
       }
     }
-  }, [
-    fetcher.data,
-    fetcher.state,
-    formState.bundleStatus,
-    formState.bundleName,
-    formState.bundleDescription,
-    formState.templateName,
-    stepsState.steps,
-    pricingState.discountEnabled,
-    pricingState.discountType,
-    pricingState.discountRules,
-    pricingState.showProgressBar,
-    pricingState.showFooter,
-    pricingState.discountMessagingEnabled,
-    selectedCollections,
-    ruleMessages,
-    conditionsState.stepConditions,
-    bundleProduct,
-    productStatus,
-    shopify,
-    enhanceTemplateListWithUserSelection
-  ]);
+  }, [fetcher.data, fetcher.state]);
 
   // Discard handler
   const handleDiscard = useCallback(() => {
