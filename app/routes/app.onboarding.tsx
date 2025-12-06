@@ -101,7 +101,7 @@ export default function Onboarding() {
       description: "Start by creating a bundle with products you want to offer together.",
       action: {
         label: "Create Bundle",
-        onAction: () => navigate("/app/bundles/cart-transform"),
+        onAction: () => navigate("/app/dashboard"),
       },
       completed: false,
     },
@@ -121,7 +121,7 @@ export default function Onboarding() {
       description: "Configure how your bundles appear to customers.",
       action: {
         label: "View Settings",
-        onAction: () => navigate("/app/bundles/cart-transform"),
+        onAction: () => navigate("/app/dashboard"),
       },
       completed: false,
     },

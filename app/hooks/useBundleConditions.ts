@@ -18,10 +18,17 @@ interface ConditionRule {
 
 interface UseBundleConditionsProps {
   initialStepConditions: Record<string, ConditionRule[]>;
+  onStateChange?: () => void;
 }
 
-export function useBundleConditions({ initialStepConditions }: UseBundleConditionsProps) {
-  const [stepConditions, setStepConditions] = useState<Record<string, ConditionRule[]>>(initialStepConditions);
+export function useBundleConditions({ initialStepConditions, onStateChange }: UseBundleConditionsProps) {
+  const [stepConditions, setStepConditionsRaw] = useState<Record<string, ConditionRule[]>>(initialStepConditions);
+
+  // Wrapped setter that triggers dirty flag
+  const setStepConditions = useCallback((value: Record<string, ConditionRule[]> | ((prev: Record<string, ConditionRule[]>) => Record<string, ConditionRule[]>)) => {
+    setStepConditionsRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
 
   // Add a new condition rule for a step
   const addConditionRule = useCallback((stepId: string) => {
@@ -36,7 +43,7 @@ export function useBundleConditions({ initialStepConditions }: UseBundleConditio
       ...prev,
       [stepId]: [...(prev[stepId] || []), newRule],
     }));
-  }, []);
+  }, [setStepConditions]);
 
   // Remove a condition rule
   const removeConditionRule = useCallback((stepId: string, ruleId: string) => {
@@ -44,7 +51,7 @@ export function useBundleConditions({ initialStepConditions }: UseBundleConditio
       ...prev,
       [stepId]: (prev[stepId] || []).filter(rule => rule.id !== ruleId),
     }));
-  }, []);
+  }, [setStepConditions]);
 
   // Update a condition rule field
   const updateConditionRule = useCallback((stepId: string, ruleId: string, field: string, value: string) => {
@@ -54,7 +61,7 @@ export function useBundleConditions({ initialStepConditions }: UseBundleConditio
         rule.id === ruleId ? { ...rule, [field]: value } : rule
       ),
     }));
-  }, []);
+  }, [setStepConditions]);
 
   // Get conditions for a specific step
   const getStepConditions = useCallback((stepId: string): ConditionRule[] => {
@@ -72,7 +79,7 @@ export function useBundleConditions({ initialStepConditions }: UseBundleConditio
       ...prev,
       [stepId]: [],
     }));
-  }, []);
+  }, [setStepConditions]);
 
   return {
     // State

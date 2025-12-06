@@ -882,6 +882,9 @@ class BundleWidget {
       // Parse configuration
       this.parseConfiguration();
 
+      // Load design settings CSS
+      await this.loadDesignSettingsCSS();
+
       // Load and validate bundle data
       await this.loadBundleData();
 
@@ -911,6 +914,53 @@ class BundleWidget {
 
     } catch (error) {
       this.showErrorUI(error);
+    }
+  }
+
+  /**
+   * Load Design Control Panel CSS settings
+   * Injects custom CSS from Design Control Panel into the page
+   */
+  async loadDesignSettingsCSS() {
+    try {
+      // Get shop domain from bundle data or window
+      const shopDomain = window.Shopify?.shop || this.container.dataset.shop;
+
+      if (!shopDomain) {
+        console.warn('[BUNDLE_WIDGET] No shop domain found, skipping design settings');
+        return;
+      }
+
+      // Get bundle type (defaults to product_page)
+      const bundleType = this.selectedBundle?.bundleType || 'product_page';
+
+      // Check if design CSS is already loaded
+      const existingLink = document.getElementById('bundle-design-settings-css');
+      if (existingLink) {
+        existingLink.remove();
+      }
+
+      // Get app URL from metafield or use current domain
+      const appUrl = this.container.dataset.appUrl || window.location.origin;
+
+      // Build CSS URL
+      const cssUrl = `${appUrl}/api/design-settings/${shopDomain}.css?bundleType=${bundleType}`;
+
+      // Create and inject link element
+      const linkElement = document.createElement('link');
+      linkElement.id = 'bundle-design-settings-css';
+      linkElement.rel = 'stylesheet';
+      linkElement.href = cssUrl;
+      linkElement.type = 'text/css';
+
+      // Add to document head
+      document.head.appendChild(linkElement);
+
+      console.log('[BUNDLE_WIDGET] ✅ Design settings CSS loaded:', cssUrl);
+
+    } catch (error) {
+      console.warn('[BUNDLE_WIDGET] Failed to load design settings CSS:', error);
+      // Don't throw - widget should work even if design CSS fails to load
     }
   }
 
@@ -1636,30 +1686,38 @@ class BundleWidget {
       }
     }
 
-    // Process collection products
+    // Process collection products using Storefront API (not legacy REST endpoint)
     if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-      const collectionPromises = step.collections.map(async (collection) => {
-        if (!collection.handle) {
-          return [];
-        }
+      const collectionHandles = step.collections
+        .map(c => c.handle)
+        .filter(Boolean);
+
+      if (collectionHandles.length > 0) {
+        const shop = window.Shopify?.shop || window.location.host;
+        const widgetContainer = document.querySelector('#bundle-builder-app');
+        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const apiBaseUrl = appUrl || window.location.origin;
+
+        console.log('[LOAD_PRODUCTS] Fetching products from collections via Storefront API:', collectionHandles);
 
         try {
-          const response = await fetch(`/collections/${collection.handle}/products.json?limit=250`);
+          const response = await fetch(
+            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
+          );
 
-          if (!response.ok) {
-            return [];
+          if (response.ok) {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'products from collections');
+            }
+          } else {
+            console.error('[LOAD_PRODUCTS] Failed to fetch collection products:', response.status);
           }
-
-          const data = await response.json();
-          const products = data.products || [];
-          return products;
         } catch (error) {
-          return [];
+          console.error('[LOAD_PRODUCTS] Error fetching collection products:', error);
         }
-      });
-
-      const collectionProducts = (await Promise.all(collectionPromises)).flat();
-      allProducts = allProducts.concat(collectionProducts);
+      }
     }
 
     // Process and normalize product data
@@ -1688,39 +1746,41 @@ class BundleWidget {
   processProductsForStep(products, step) {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
-        // Display each variant as separate product
-        return product.variants.map(variant => {
-          const imageUrl = product.imageUrl ||
-            product.images?.[0]?.originalSrc ||
-            product.images?.[0]?.src ||
-            product.image?.src ||
-            variant.image?.src ||
-            'https://via.placeholder.com/150';
+        // Display each variant as separate product - filter out unavailable variants
+        return product.variants
+          .filter(variant => variant.available === true) // Only show available variants
+          .map(variant => {
+            // Storefront API: prioritize variant image, fallback to product featured image
+            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
-          return {
-            id: this.extractId(variant.id),
-            title: `${product.title} - ${variant.title}`,
-            imageUrl,
-            price: parseFloat(variant.price || '0') * 100,
-            variantId: this.extractId(variant.id)
-          };
-        });
+            return {
+              id: this.extractId(variant.id),
+              title: `${product.title} - ${variant.title}`,
+              imageUrl,
+              price: parseFloat(variant.price || '0') * 100,
+              variantId: this.extractId(variant.id),
+              available: variant.available === true // Store availability (always boolean)
+            };
+          });
       } else {
-        // Display product with default variant
+        // Display product with default variant - check availability
         const defaultVariant = product.variants?.[0];
-        const imageUrl = product.imageUrl ||
-          product.images?.[0]?.originalSrc ||
-          product.images?.[0]?.src ||
-          product.image?.src ||
-          defaultVariant?.image?.src ||
-          'https://via.placeholder.com/150';
+
+        // Skip product if default variant is not available
+        if (defaultVariant && defaultVariant.available !== true) {
+          return [];
+        }
+
+        // Storefront API: prioritize variant image, fallback to product featured image
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
         return [{
           id: this.extractId(defaultVariant?.id || product.id),
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-          variantId: this.extractId(defaultVariant?.id || product.id)
+          variantId: this.extractId(defaultVariant?.id || product.id),
+          available: defaultVariant?.available === true // Store availability (always boolean from API)
         }];
       }
     });
@@ -2217,6 +2277,8 @@ class BundleWidget {
 
     // Add ACTUAL selected component products to cart
     // Each component gets _bundle_id property for grouping in cart transform
+    const unavailableProducts = []; // Track unavailable products
+
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.stepProductData[stepIndex];
 
@@ -2224,12 +2286,25 @@ class BundleWidget {
         if (quantity > 0) {
           const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
           if (product) {
+            // Check availability before adding to cart
+            if (product.available !== true) {
+              console.warn('[CART] Product not available for sale:', {
+                stepIndex,
+                variantId,
+                productTitle: product.title,
+                availabilityStatus: product.available
+              });
+              unavailableProducts.push(product.title);
+              return; // Skip this product
+            }
+
             console.log('[CART] Adding component:', {
               stepIndex,
               variantId,
               quantity,
               productTitle: product.title,
-              bundleInstanceId
+              bundleInstanceId,
+              available: product.available
             });
 
             const cartItem = {
@@ -2249,6 +2324,13 @@ class BundleWidget {
     });
 
     console.log('[CART] Cart items to add (components with _bundle_id property):', cartItems);
+
+    // Throw error if any products are unavailable
+    if (unavailableProducts.length > 0) {
+      const productList = unavailableProducts.join(', ');
+      throw new Error(`The following product${unavailableProducts.length > 1 ? 's are' : ' is'} currently unavailable: ${productList}. Please remove ${unavailableProducts.length > 1 ? 'them' : 'it'} from your bundle or try again later.`);
+    }
+
     return cartItems;
   }
 

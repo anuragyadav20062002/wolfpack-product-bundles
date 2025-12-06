@@ -23,7 +23,7 @@ export class CartTransformService {
     // Reference: https://shopify.dev/changelog/introducing-functionhandle
     const functionHandle = 'bundle-cart-transform-ts';
 
-    AppLogger.info('Using stable function handle (2025-10+ best practice)', {
+    AppLogger.info('Using stable function handle', {
       component: 'cart-transform',
       operation: 'get-function-handle'
     }, { functionHandle });

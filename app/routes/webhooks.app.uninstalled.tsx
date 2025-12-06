@@ -3,6 +3,7 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
+import { BillingService } from "../services/billing.server";
 
 /**
  * App Uninstall Webhook Handler
@@ -27,6 +28,42 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   });
 
   try {
+    // Step 0: Cancel active subscription if exists
+    if (admin) {
+      try {
+        const cancelResult = await BillingService.cancelSubscription(admin, shop);
+        if (cancelResult.success) {
+          AppLogger.info("Subscription cancelled on uninstall", {
+            component: "webhooks.app.uninstalled",
+            operation: "cancel-subscription"
+          }, { shop });
+        }
+      } catch (subscriptionError) {
+        // Log error but continue with cleanup
+        AppLogger.error("Failed to cancel subscription on uninstall", {
+          component: "webhooks.app.uninstalled",
+          operation: "cancel-subscription"
+        }, subscriptionError);
+      }
+
+      // Mark shop as uninstalled
+      try {
+        await db.shop.updateMany({
+          where: { shopDomain: shop },
+          data: { uninstalledAt: new Date() }
+        });
+        AppLogger.info("Shop marked as uninstalled", {
+          component: "webhooks.app.uninstalled",
+          operation: "mark-uninstalled"
+        }, { shop });
+      } catch (shopUpdateError) {
+        AppLogger.error("Failed to mark shop as uninstalled", {
+          component: "webhooks.app.uninstalled",
+          operation: "mark-uninstalled"
+        }, shopUpdateError);
+      }
+    }
+
     // Step 1: Get all bundles for this shop before deletion
     const bundles = await db.bundle.findMany({
       where: { shopId: shop },

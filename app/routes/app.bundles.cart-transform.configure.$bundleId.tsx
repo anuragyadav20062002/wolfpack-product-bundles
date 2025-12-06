@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
+
+// Note: Using Polaris Checkbox component for toggle functionality
+// Polaris React v12 doesn't have a dedicated Switch component
 import {
   DiscountMethod,
   ConditionType,
@@ -1705,6 +1708,17 @@ export default function ConfigureBundleFlow() {
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
 
+  // ===== DIRTY FLAG SYSTEM =====
+  // Simple dirty flag that gets set on ANY state change
+  const [isDirty, setIsDirty] = useState(false);
+  const isResettingRef = useRef(false); // Flag to prevent dirty marking during reset/discard
+  const lastProcessedFetcherDataRef = useRef<any>(null); // Track last processed fetcher response to prevent duplicate processing
+  const markAsDirty = useCallback(() => {
+    if (!isResettingRef.current) {
+      setIsDirty(true);
+    }
+  }, []);
+
   // ===== CUSTOM HOOKS =====
   // Form state management
   const formState = useBundleForm({
@@ -1713,7 +1727,8 @@ export default function ConfigureBundleFlow() {
       description: bundle.description || "",
       status: bundle.status,
       templateName: bundle.templateName || ""
-    }
+    },
+    onStateChange: markAsDirty
   });
 
   // Step conditions initialization
@@ -1734,7 +1749,8 @@ export default function ConfigureBundleFlow() {
 
   // Condition rules management
   const conditionsState = useBundleConditions({
-    initialStepConditions: initializeStepConditions()
+    initialStepConditions: initializeStepConditions(),
+    onStateChange: markAsDirty
   });
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
@@ -1751,12 +1767,14 @@ export default function ConfigureBundleFlow() {
   // Steps management
   const stepsState = useBundleSteps({
     initialSteps: transformedSteps,
-    shopify
+    shopify,
+    onStateChange: markAsDirty
   });
 
   // Pricing management
   const pricingState = useBundlePricing({
-    initialPricing: bundle.pricing
+    initialPricing: bundle.pricing,
+    onStateChange: markAsDirty
   });
 
 
@@ -1772,16 +1790,27 @@ export default function ConfigureBundleFlow() {
   const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
 
   // State for bundle product - initialize with loaded data
-  const [bundleProduct, setBundleProduct] = useState<any>(loadedBundleProduct || null);
-  const [productStatus, setProductStatus] = useState(loadedBundleProduct?.status || "ACTIVE");
+  const [bundleProduct, setBundleProductRaw] = useState<any>(loadedBundleProduct || null);
+  const [productStatus, setProductStatusRaw] = useState(loadedBundleProduct?.status || "ACTIVE");
 
-  // State for bundle product editing
+  // Wrapped setters that trigger dirty flag
+  const setBundleProduct = useCallback((value: any) => {
+    setBundleProductRaw(value);
+    markAsDirty();
+  }, [markAsDirty]);
+
+  const setProductStatus = useCallback((value: string) => {
+    setProductStatusRaw(value);
+    markAsDirty();
+  }, [markAsDirty]);
+
+  // State for bundle product editing (doesn't trigger dirty flag)
   const [isEditingProductDetails, setIsEditingProductDetails] = useState(false);
   const [productTitle, setProductTitle] = useState(loadedBundleProduct?.title || "");
   const [productImageUrl, setProductImageUrl] = useState(loadedBundleProduct?.featuredImage?.url || loadedBundleProduct?.images?.[0]?.originalSrc || "");
 
   // State for collections - initialize with data from loaded bundle steps
-  const [selectedCollections, setSelectedCollections] = useState<Record<string, any[]>>(() => {
+  const [selectedCollections, setSelectedCollectionsRaw] = useState<Record<string, any[]>>(() => {
     const collections: Record<string, any[]> = {};
     bundle.steps?.forEach(step => {
       if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
@@ -1791,15 +1820,27 @@ export default function ConfigureBundleFlow() {
     return collections;
   });
 
+  // Wrapped setter that triggers dirty flag
+  const setSelectedCollections = useCallback((value: Record<string, any[]> | ((prev: Record<string, any[]>) => Record<string, any[]>)) => {
+    setSelectedCollectionsRaw(value);
+    markAsDirty();
+  }, [markAsDirty]);
+
   // NOTE: Discount & pricing state now managed by pricingState hook above
   // NOTE: Rule-specific messaging still uses local state (not extracted to hook yet)
-  const [ruleMessages, setRuleMessages] = useState<Record<string, { discountText: string; successMessage: string }>>({});
+  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>({});
+
+  // Wrapped setter that triggers dirty flag
+  const setRuleMessages = useCallback((value: Record<string, { discountText: string; successMessage: string }> | ((prev: Record<string, { discountText: string; successMessage: string }>) => Record<string, { discountText: string; successMessage: string }>)) => {
+    setRuleMessagesRaw(value);
+    markAsDirty();
+  }, [markAsDirty]);
 
   // UI state for section navigation (expandedSteps and selectedTab now from stepsState hook)
   const [activeSection, setActiveSection] = useState('step_setup');
 
-  // Track original values for change detection using useRef to prevent re-renders
-  // This approach prevents SaveBar flickering by keeping originalValues stable
+  // Track original values for discard functionality only
+  // This is used to restore state when user clicks "Discard"
   const originalValuesRef = useRef({
     status: formState.bundleStatus,
     name: formState.bundleName,
@@ -1827,79 +1868,7 @@ export default function ConfigureBundleFlow() {
     productStatus: loadedBundleProduct?.status || "ACTIVE",
   });
 
-  // Track if there are unsaved changes (controls SaveBar visibility via 'open' prop)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // Memoize stringified values to prevent unnecessary re-computations
-  // This is critical for preventing SaveBar flickering
-  const currentStepsString = useMemo(() => JSON.stringify(stepsState.steps), [stepsState.steps]);
-  const currentSelectedCollectionsString = useMemo(() => JSON.stringify(selectedCollections), [selectedCollections]);
-  const currentStepConditionsString = useMemo(() => JSON.stringify(conditionsState.stepConditions), [conditionsState.stepConditions]);
-  const currentDiscountRulesString = useMemo(() => JSON.stringify(pricingState.discountRules), [pricingState.discountRules]);
-  const currentRuleMessagesString = useMemo(() => JSON.stringify(ruleMessages), [ruleMessages]);
-
-  // Check for changes whenever form values change
-  // Using memoized values and ref-based original values to prevent flickering
-  useEffect(() => {
-    // Helper function to safely compare bundle products
-    const compareBundleProducts = (current: any, original: any) => {
-      if (!current && !original) return true;
-      if (!current || !original) return false;
-      return current.id === original.id;
-    };
-
-    const originalValues = originalValuesRef.current;
-
-    const stepSetupChanges = (
-      formState.bundleName !== originalValues.name ||
-      formState.bundleDescription !== originalValues.description ||
-      formState.templateName !== originalValues.templateName ||
-      currentStepsString !== originalValues.steps ||
-      currentSelectedCollectionsString !== originalValues.selectedCollections ||
-      currentStepConditionsString !== originalValues.stepConditions ||
-      !compareBundleProducts(bundleProduct, originalValues.bundleProduct) ||
-      productStatus !== originalValues.productStatus
-    );
-
-    const discountPricingChanges = (
-      pricingState.discountEnabled !== originalValues.discountEnabled ||
-      pricingState.discountType !== originalValues.discountType ||
-      currentDiscountRulesString !== originalValues.discountRules ||
-      pricingState.showProgressBar !== originalValues.showProgressBar ||
-      pricingState.showFooter !== originalValues.showFooter ||
-      pricingState.discountMessagingEnabled !== originalValues.discountMessagingEnabled ||
-      currentRuleMessagesString !== originalValues.ruleMessages
-    );
-
-    const bundleStatusChanges = (
-      formState.bundleStatus !== originalValues.status
-    );
-
-    const hasChanges = stepSetupChanges || discountPricingChanges || bundleStatusChanges;
-
-    // Only update state if it actually changed to prevent unnecessary re-renders and SaveBar flickering
-    setHasUnsavedChanges(prev => prev !== hasChanges ? hasChanges : prev);
-  }, [
-    formState.bundleStatus,
-    formState.bundleName,
-    formState.bundleDescription,
-    formState.templateName,
-    currentStepsString,
-    pricingState.discountEnabled,
-    pricingState.discountType,
-    currentDiscountRulesString,
-    pricingState.showProgressBar,
-    pricingState.showFooter,
-    pricingState.discountMessagingEnabled,
-    currentRuleMessagesString,
-    currentSelectedCollectionsString,
-    currentStepConditionsString,
-    bundleProduct,
-    productStatus,
-  ]);
-
-  // SaveBar visibility is now controlled declaratively via the 'open' prop
-  // No need for manual show/hide API calls - React handles it automatically
+  // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
   // Save handler
   const handleSave = useCallback(async () => {
@@ -2005,8 +1974,19 @@ export default function ConfigureBundleFlow() {
   }, [formState.templateName]);
 
   // Handle fetcher response
+  // CRITICAL FIX: Only process NEW fetcher responses to prevent auto-save bug
+  // Note: Intentionally omitting state values from dependencies - we want to capture
+  // current values when the response arrives, not re-run when they change
   useEffect(() => {
     if (fetcher.data && fetcher.state === 'idle') {
+      // Skip if we've already processed this response
+      if (fetcher.data === lastProcessedFetcherDataRef.current) {
+        return;
+      }
+
+      // Mark this response as processed
+      lastProcessedFetcherDataRef.current = fetcher.data;
+
       const result = fetcher.data;
 
       // Handle different action types based on the response or form data
@@ -2014,30 +1994,29 @@ export default function ConfigureBundleFlow() {
         // Check if this was a save bundle action by looking for bundle data in response
         if ('bundle' in result && result.bundle) {
           // This is a save bundle response
-          // Update the ref directly to avoid re-renders and prevent SaveBar flickering
+          // Update the ref to new baseline for discard functionality
           originalValuesRef.current = {
             status: formState.bundleStatus,
             name: formState.bundleName,
             description: formState.bundleDescription,
             templateName: formState.templateName,
-            steps: currentStepsString,
+            steps: JSON.stringify(stepsState.steps),
             discountEnabled: pricingState.discountEnabled,
             discountType: pricingState.discountType,
-            discountRules: currentDiscountRulesString,
+            discountRules: JSON.stringify(pricingState.discountRules),
             showProgressBar: pricingState.showProgressBar,
             showFooter: pricingState.showFooter,
             discountMessagingEnabled: pricingState.discountMessagingEnabled,
-            selectedCollections: currentSelectedCollectionsString,
-            ruleMessages: currentRuleMessagesString,
-            stepConditions: currentStepConditionsString,
+            selectedCollections: JSON.stringify(selectedCollections),
+            ruleMessages: JSON.stringify(ruleMessages),
+            stepConditions: JSON.stringify(conditionsState.stepConditions),
             bundleProduct: bundleProduct || null,
             productStatus: productStatus,
           };
 
-          // Force a check to hide the SaveBar by setting hasUnsavedChanges to false
-          setHasUnsavedChanges(false);
+          // Reset dirty flag after successful save
+          setIsDirty(false);
 
-          // SaveBar will hide automatically when hasUnsavedChanges becomes false
           shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
         } else if ('productId' in result && result.productId) {
           // This is a sync product response
@@ -2083,33 +2062,15 @@ export default function ConfigureBundleFlow() {
         }
       }
     }
-  }, [
-    fetcher.data,
-    fetcher.state,
-    formState.bundleStatus,
-    formState.bundleName,
-    formState.bundleDescription,
-    formState.templateName,
-    stepsState.steps,
-    pricingState.discountEnabled,
-    pricingState.discountType,
-    pricingState.discountRules,
-    pricingState.showProgressBar,
-    pricingState.showFooter,
-    pricingState.discountMessagingEnabled,
-    selectedCollections,
-    ruleMessages,
-    conditionsState.stepConditions,
-    bundleProduct,
-    productStatus,
-    shopify,
-    enhanceTemplateListWithUserSelection
-  ]);
+  }, [fetcher.data, fetcher.state]);
 
   // Discard handler
   const handleDiscard = useCallback(() => {
     try {
       const originalValues = originalValuesRef.current;
+
+      // Set flag to prevent dirty marking during reset
+      isResettingRef.current = true;
 
       // Reset to original values using hook setters
       formState.setBundleStatus(originalValues.status);
@@ -2130,23 +2091,27 @@ export default function ConfigureBundleFlow() {
       setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
       setProductStatus(originalValues.productStatus);
 
-      // Force a check to hide the SaveBar
-      setHasUnsavedChanges(false);
+      // Clear the resetting flag
+      isResettingRef.current = false;
 
-      // SaveBar will hide automatically when hasUnsavedChanges becomes false
+      // Reset dirty flag
+      setIsDirty(false);
+
       shopify.toast.show("Changes discarded", { isError: false });
     } catch (error) {
       AppLogger.error("Error discarding changes:", {}, error as any);
       shopify.toast.show("Error discarding changes", { isError: true });
+      // Make sure to clear the flag even on error
+      isResettingRef.current = false;
     }
-  }, [loadedBundleProduct, shopify, formState, stepsState, pricingState, conditionsState]);
+  }, [loadedBundleProduct, shopify, formState, stepsState, pricingState, conditionsState, setBundleProduct, setProductStatus, setSelectedCollections, setRuleMessages]);
 
   // Emergency force navigation state for escape hatch
   const [forceNavigation, setForceNavigation] = useState(false);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
-    if (hasUnsavedChanges && !forceNavigation) {
+    if (isDirty && !forceNavigation) {
       // Show user-friendly message about unsaved changes with force option
       const proceed = confirm(
         "You have unsaved changes. Are you sure you want to leave this page?\n\n" +
@@ -2157,7 +2122,7 @@ export default function ConfigureBundleFlow() {
       if (proceed) {
         setForceNavigation(true);
         // Force navigation even with unsaved changes
-        navigate("/app/bundles/cart-transform");
+        navigate("/app/dashboard");
       } else {
         shopify.toast.show("Save or discard your changes to continue", {
           isError: true,
@@ -2166,11 +2131,11 @@ export default function ConfigureBundleFlow() {
       }
       return;
     }
-    navigate("/app/bundles/cart-transform");
-  }, [hasUnsavedChanges, forceNavigation, navigate, shopify]);
+    navigate("/app/dashboard");
+  }, [isDirty, forceNavigation, navigate, shopify]);
 
   const handlePreviewBundle = useCallback(() => {
-    if (hasUnsavedChanges) {
+    if (isDirty) {
       // Show user-friendly message about unsaved changes
       shopify.toast.show("Please save your changes before previewing the bundle", {
         isError: true,
@@ -2252,10 +2217,10 @@ export default function ConfigureBundleFlow() {
         duration: 5000
       });
     }
-  }, [hasUnsavedChanges, bundleProduct, shop, shopify]);
+  }, [isDirty, bundleProduct, shop, shopify]);
 
   const handleSectionChange = useCallback((section: string) => {
-    if (hasUnsavedChanges) {
+    if (isDirty) {
       // Show user-friendly message about unsaved changes
       shopify.toast.show("Please save or discard your changes before switching sections", {
         isError: true,
@@ -2265,7 +2230,7 @@ export default function ConfigureBundleFlow() {
     }
 
     setActiveSection(section);
-  }, [hasUnsavedChanges, activeSection, shopify]);
+  }, [isDirty, activeSection, shopify]);
 
   // Modal handlers for products and collections view
   // handleShowProducts and handleShowCollections removed - modals managed inline
@@ -2505,18 +2470,6 @@ export default function ConfigureBundleFlow() {
         const stepIndex = prev.findIndex(step => step.id === stepId);
         const newSteps = [...prev];
         newSteps.splice(stepIndex + 1, 0, newStep);
-
-        // Update the hidden form input immediately to trigger save bar
-        setTimeout(() => {
-          const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
-          if (stepsInput) {
-            stepsInput.value = JSON.stringify(newSteps);
-            // Trigger an input event to notify App Bridge of the change
-            const event = new Event('input', { bubbles: true });
-            stepsInput.dispatchEvent(event);
-          }
-        }, 0);
-
         return newSteps;
       });
       shopify.toast.show("Step cloned successfully", { isError: false });
@@ -2529,18 +2482,8 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    // Use hook's removeStep which handles expandedSteps cleanup
+    // Use hook's removeStep which handles expandedSteps cleanup and dirty flag
     stepsState.removeStep(stepId);
-
-    // Manual DOM manipulation for immediate save bar trigger
-    setTimeout(() => {
-      const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
-      if (stepsInput) {
-        stepsInput.value = JSON.stringify(stepsState.steps.filter(s => s.id !== stepId));
-        const event = new Event('input', { bubbles: true });
-        stepsInput.dispatchEvent(event);
-      }
-    }, 0);
   }, [stepsState]);
 
   // Drag and drop state
@@ -2593,18 +2536,6 @@ export default function ConfigureBundleFlow() {
         const draggedStepData = newSteps[dragIndex];
         newSteps.splice(dragIndex, 1);
         newSteps.splice(dropIndex, 0, draggedStepData);
-
-        // Update the hidden form input immediately to trigger save bar
-        setTimeout(() => {
-          const stepsInput = document.querySelector('input[name="stepsData"]') as HTMLInputElement;
-          if (stepsInput) {
-            stepsInput.value = JSON.stringify(newSteps);
-            // Trigger an input event to notify App Bridge of the change
-            const event = new Event('input', { bubbles: true });
-            stepsInput.dispatchEvent(event);
-          }
-        }, 0);
-
         return newSteps;
       });
 
@@ -2853,20 +2784,25 @@ export default function ConfigureBundleFlow() {
         }}
       >
         {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
+        {/* Loading state properly shows spinner during save operation */}
         <SaveBar
           id="bundle-save-bar"
-          open={hasUnsavedChanges}
+          open={isDirty}
           discardConfirmation={true}
         >
           <button
+            type="submit"
             variant="primary"
-            onClick={handleSave}
-            loading={fetcher.state !== "idle"}
+            loading={fetcher.state !== "idle" ? "" : undefined}
             disabled={fetcher.state !== "idle"}
           >
             Save
           </button>
-          <button onClick={handleDiscard} disabled={fetcher.state !== "idle"}>
+          <button
+            type="button"
+            onClick={handleDiscard}
+            disabled={fetcher.state !== "idle"}
+          >
             Discard
           </button>
         </SaveBar>
@@ -2982,8 +2918,10 @@ export default function ConfigureBundleFlow() {
                               <InlineStack gap="200" blockAlign="center">
                                 <Button
                                   variant="plain"
-                                  url={`https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`}
-                                  external
+                                  onClick={() => {
+                                    const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
+                                    window.open(productUrl, '_blank');
+                                  }}
                                   icon={ExternalIcon}
                                 >
                                   {productTitle || bundleProduct.title || "Untitled Product"}
@@ -3451,14 +3389,13 @@ export default function ConfigureBundleFlow() {
                     </Text>
                   </BlockStack>
 
-                  {/* Discount Enable Toggle */}
-                  <FormLayout>
-                    <Checkbox
-                      label="Discount & Pricing"
-                      checked={pricingState.discountEnabled}
-                      onChange={pricingState.setDiscountEnabled}
-                    />
-                  </FormLayout>
+                  {/* Discount Enable Toggle - Using Checkbox as toggle */}
+                  <Checkbox
+                    label="Enable discount pricing for this bundle"
+                    checked={pricingState.discountEnabled}
+                    onChange={(value) => pricingState.setDiscountEnabled(value)}
+                    helpText="Turn on to configure discount rules and pricing options"
+                  />
 
                   {pricingState.discountEnabled && (
                     <BlockStack gap="400">
@@ -3808,30 +3745,44 @@ export default function ConfigureBundleFlow() {
                   </Text>
                   <Card>
                     <List type="bullet">
-                      {selectedProducts.map((product: any, index: number) => (
-                        <List.Item key={product.id || index}>
-                          <InlineStack gap="200" align="space-between" blockAlign="center">
-                            <InlineStack gap="300" blockAlign="center">
-                              <Thumbnail
-                                source={product.imageUrl || product.image?.url || "/bundle.png"}
-                                alt={product.title || product.name || 'Product'}
-                                size="small"
-                              />
-                              <BlockStack gap="050">
-                                <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                  {product.title || product.name || 'Unnamed Product'}
-                                </Text>
-                                {product.variants && product.variants.length > 0 && (
-                                  <Text as="p" variant="bodySm" tone="subdued">
-                                    {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
-                                  </Text>
-                                )}
-                              </BlockStack>
+                      {selectedProducts.map((product: any, index: number) => {
+                        // Extract product ID from Shopify GID (e.g., "gid://shopify/Product/123" -> "123")
+                        const productId = product.productId || product.id?.split('/').pop();
+                        const productUrl = productId
+                          ? `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`
+                          : undefined;
+
+                        return (
+                          <List.Item key={product.id || index}>
+                            <InlineStack gap="200" align="space-between" blockAlign="center">
+                              <InlineStack gap="300" blockAlign="center">
+                                <Thumbnail
+                                  source={product.imageUrl || product.image?.url || "/bundle.png"}
+                                  alt={product.title || product.name || 'Product'}
+                                  size="small"
+                                />
+                                <BlockStack gap="050">
+                                  {/* Make product title clickable to navigate to Shopify Admin product page */}
+                                  <Button
+                                    variant="plain"
+                                    onClick={() => productUrl && window.open(productUrl, '_blank')}
+                                    icon={ExternalIcon}
+                                    disabled={!productUrl}
+                                  >
+                                    {product.title || product.name || 'Unnamed Product'}
+                                  </Button>
+                                  {product.variants && product.variants.length > 0 && (
+                                    <Text as="p" variant="bodySm" tone="subdued">
+                                      {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                                    </Text>
+                                  )}
+                                </BlockStack>
+                              </InlineStack>
+                              <Badge tone="info">Product</Badge>
                             </InlineStack>
-                            <Badge tone="info">Product</Badge>
-                          </InlineStack>
-                        </List.Item>
-                      ))}
+                          </List.Item>
+                        );
+                      })}
                     </List>
                   </Card>
                 </BlockStack>

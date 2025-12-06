@@ -127,7 +127,11 @@
       "Bash(node:*)",
       "Bash(del fix-graphql.js fix-graphql.cjs)",
       "Bash(del \"C:/Users/91945/wolfpack-main/Only-Bundles/add-all-bundles-data.cjs\")",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "mcp__figma__whoami",
+      "mcp__figma__get_metadata",
+      "mcp__figma__get_screenshot",
+      "mcp__figma__get_design_context"
     ],
     "deny": []
   }
