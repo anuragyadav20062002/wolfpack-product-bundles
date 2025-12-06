@@ -131,6 +131,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
       tabsInactiveTextColor: "#000000",
       tabsBorderColor: "#000000",
       tabsBorderRadius: 8,
+      // General Section
+      // Bundle Design
+      bundleBgColor: "#FFFFFF",
+      footerScrollBarColor: "#F6F6F6",
+      // Product Page Title
+      productPageTitleFontColor: "#000000",
+      productPageTitleFontSize: 16,
+      // Bundle Upsell
+      bundleUpsellButtonBgColor: "#F6F6F6",
+      bundleUpsellBorderColor: "#F6F6F6",
+      bundleUpsellTextColor: "#F6F6F6",
+      // Toasts
+      toastBgColor: "#000000",
+      toastTextColor: "#FFFFFF",
+      // Filters
+      filterIconColor: "#000000",
+      filterBgColor: "#FFFFFF",
+      filterTextColor: "#000000",
     },
     full_page: {
       // Default settings for full_page (can be different from product_page)
@@ -206,6 +224,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
       tabsInactiveTextColor: "#111827",
       tabsBorderColor: "#E5E7EB",
       tabsBorderRadius: 12,
+      // General Section
+      // Bundle Design
+      bundleBgColor: "#F9FAFB",
+      footerScrollBarColor: "#E5E7EB",
+      // Product Page Title
+      productPageTitleFontColor: "#111827",
+      productPageTitleFontSize: 18,
+      // Bundle Upsell
+      bundleUpsellButtonBgColor: "#E5E7EB",
+      bundleUpsellBorderColor: "#E5E7EB",
+      bundleUpsellTextColor: "#111827",
+      // Toasts
+      toastBgColor: "#7132FF",
+      toastTextColor: "#FFFFFF",
+      // Filters
+      filterIconColor: "#111827",
+      filterBgColor: "#F9FAFB",
+      filterTextColor: "#111827",
     },
   };
 
@@ -336,6 +372,25 @@ export default function DesignControlPanel() {
   const [tabsBorderColor, setTabsBorderColor] = useState(currentSettings.tabsBorderColor);
   const [tabsBorderRadius, setTabsBorderRadius] = useState(currentSettings.tabsBorderRadius);
 
+  // General Section
+  // Bundle Design
+  const [bundleBgColor, setBundleBgColor] = useState(currentSettings.bundleBgColor);
+  const [footerScrollBarColor, setFooterScrollBarColor] = useState(currentSettings.footerScrollBarColor);
+  // Product Page Title
+  const [productPageTitleFontColor, setProductPageTitleFontColor] = useState(currentSettings.productPageTitleFontColor);
+  const [productPageTitleFontSize, setProductPageTitleFontSize] = useState(currentSettings.productPageTitleFontSize);
+  // Bundle Upsell
+  const [bundleUpsellButtonBgColor, setBundleUpsellButtonBgColor] = useState(currentSettings.bundleUpsellButtonBgColor);
+  const [bundleUpsellBorderColor, setBundleUpsellBorderColor] = useState(currentSettings.bundleUpsellBorderColor);
+  const [bundleUpsellTextColor, setBundleUpsellTextColor] = useState(currentSettings.bundleUpsellTextColor);
+  // Toasts
+  const [toastBgColor, setToastBgColor] = useState(currentSettings.toastBgColor);
+  const [toastTextColor, setToastTextColor] = useState(currentSettings.toastTextColor);
+  // Filters
+  const [filterIconColor, setFilterIconColor] = useState(currentSettings.filterIconColor);
+  const [filterBgColor, setFilterBgColor] = useState(currentSettings.filterBgColor);
+  const [filterTextColor, setFilterTextColor] = useState(currentSettings.filterTextColor);
+
   // Update form state when bundle type changes
   useEffect(() => {
     const newSettings = settings[selectedBundleType];
@@ -402,6 +457,19 @@ export default function DesignControlPanel() {
     setTabsInactiveTextColor(newSettings.tabsInactiveTextColor);
     setTabsBorderColor(newSettings.tabsBorderColor);
     setTabsBorderRadius(newSettings.tabsBorderRadius);
+    // General Section
+    setBundleBgColor(newSettings.bundleBgColor);
+    setFooterScrollBarColor(newSettings.footerScrollBarColor);
+    setProductPageTitleFontColor(newSettings.productPageTitleFontColor);
+    setProductPageTitleFontSize(newSettings.productPageTitleFontSize);
+    setBundleUpsellButtonBgColor(newSettings.bundleUpsellButtonBgColor);
+    setBundleUpsellBorderColor(newSettings.bundleUpsellBorderColor);
+    setBundleUpsellTextColor(newSettings.bundleUpsellTextColor);
+    setToastBgColor(newSettings.toastBgColor);
+    setToastTextColor(newSettings.toastTextColor);
+    setFilterIconColor(newSettings.filterIconColor);
+    setFilterBgColor(newSettings.filterBgColor);
+    setFilterTextColor(newSettings.filterTextColor);
   }, [selectedBundleType, settings]);
 
   const handleOpenModal = useCallback(() => setModalActive(true), []);
@@ -705,6 +773,611 @@ export default function DesignControlPanel() {
                   borderRadius: `${footerNextButtonBorderRadius}px`,
                   padding: "10px 20px",
                   fontSize: "16px",
+                  cursor: "pointer",
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          {/* Annotation */}
+          <div style={{ marginTop: "40px", textAlign: "center" }}>
+            <Text as="p" variant="bodySm" tone="subdued">
+              Preview updates as you customize
+            </Text>
+          </div>
+        </div>
+      );
+    }
+
+    // Bundle Step Bar subsections
+    if (["stepName", "completedStep", "incompleteStep", "stepBarProgressBar", "stepBarTabs"].includes(activeSubSection)) {
+      return (
+        <div style={{ maxWidth: "627px", width: "100%" }}>
+          {/* Step Bar Container */}
+          <div style={{ marginBottom: "24px" }}>
+            {/* Steps with circles and progress bar */}
+            <div style={{ position: "relative", marginBottom: "16px" }}>
+              {/* Progress Bar Background */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "33px",
+                  left: "33px",
+                  right: "33px",
+                  height: "7px",
+                  backgroundColor: stepBarProgressEmptyColor,
+                  borderRadius: "4px",
+                  zIndex: 0,
+                }}
+              >
+                {/* Progress Bar Filled */}
+                <div
+                  style={{
+                    width: "47%",
+                    height: "100%",
+                    backgroundColor: stepBarProgressFilledColor,
+                    borderRadius: "4px",
+                  }}
+                />
+              </div>
+
+              {/* Steps Row */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                {/* Step 1 - Completed */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div
+                    style={{
+                      width: "67px",
+                      height: "67px",
+                      borderRadius: `${completedStepCircleBorderRadius}%`,
+                      backgroundColor: completedStepBgColor,
+                      border: `2px solid ${completedStepCircleBorderColor}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M20 6L9 17L4 12"
+                        stroke={completedStepCheckMarkColor}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span
+                    style={{
+                      color: stepNameFontColor,
+                      fontSize: `${stepNameFontSize}px`,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Step 1
+                  </span>
+                </div>
+
+                {/* Step 2 - Completed */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div
+                    style={{
+                      width: "67px",
+                      height: "67px",
+                      borderRadius: `${completedStepCircleBorderRadius}%`,
+                      backgroundColor: completedStepBgColor,
+                      border: `2px solid ${completedStepCircleBorderColor}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M20 6L9 17L4 12"
+                        stroke={completedStepCheckMarkColor}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span
+                    style={{
+                      color: stepNameFontColor,
+                      fontSize: `${stepNameFontSize}px`,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Step 2
+                  </span>
+                </div>
+
+                {/* Step 3 - Incomplete */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div
+                    style={{
+                      width: "67px",
+                      height: "67px",
+                      borderRadius: `${incompleteStepCircleStrokeRadius}%`,
+                      backgroundColor: incompleteStepBgColor,
+                      border: `2px solid ${incompleteStepCircleStrokeColor}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: stepNameFontColor,
+                        fontSize: "20px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      3
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      color: stepNameFontColor,
+                      fontSize: `${stepNameFontSize}px`,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Step 3
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            {activeSubSection === "stepBarTabs" && (
+              <div style={{ marginTop: "32px", display: "flex", gap: "0", border: `1px solid ${tabsBorderColor}`, borderRadius: `${tabsBorderRadius}px`, overflow: "hidden" }}>
+                <div
+                  style={{
+                    flex: 1,
+                    backgroundColor: tabsActiveBgColor,
+                    color: tabsActiveTextColor,
+                    padding: "12px 24px",
+                    textAlign: "center",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  Category 1
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    backgroundColor: tabsInactiveBgColor,
+                    color: tabsInactiveTextColor,
+                    padding: "12px 24px",
+                    textAlign: "center",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    borderLeft: `1px solid ${tabsBorderColor}`,
+                  }}
+                >
+                  Category 2
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    backgroundColor: tabsInactiveBgColor,
+                    color: tabsInactiveTextColor,
+                    padding: "12px 24px",
+                    textAlign: "center",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    borderLeft: `1px solid ${tabsBorderColor}`,
+                  }}
+                >
+                  Category 3
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Annotation */}
+          <div style={{ marginTop: "40px", textAlign: "center" }}>
+            <Text as="p" variant="bodySm" tone="subdued">
+              Preview updates as you customize
+            </Text>
+          </div>
+        </div>
+      );
+    }
+
+    // General Section subsections
+    if (["bundleDesign", "productPageTitle", "bundleUpsell", "toasts", "filters"].includes(activeSubSection)) {
+      return (
+        <div style={{ maxWidth: "800px", width: "100%", backgroundColor: bundleBgColor, padding: "40px", borderRadius: "12px" }}>
+          {/* Product Page Title */}
+          {activeSubSection === "productPageTitle" && (
+            <div style={{ marginBottom: "32px" }}>
+              <h1
+                style={{
+                  color: productPageTitleFontColor,
+                  fontSize: `${productPageTitleFontSize}px`,
+                  fontWeight: 600,
+                  margin: 0,
+                  marginBottom: "24px",
+                }}
+              >
+                Product Page Title
+              </h1>
+            </div>
+          )}
+
+          {/* Product Grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "24px",
+              marginBottom: "32px",
+            }}
+          >
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                style={{
+                  backgroundColor: productCardBgColor,
+                  borderRadius: "12px",
+                  padding: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    height: "140px",
+                    backgroundColor: "#E5E5E5",
+                    borderRadius: "8px",
+                    marginBottom: "12px",
+                  }}
+                />
+                <div style={{ color: productCardFontColor, fontSize: "14px", marginBottom: "8px" }}>
+                  Product Name
+                </div>
+                <div style={{ marginBottom: "12px" }}>
+                  <span style={{ color: productStrikePriceColor, fontSize: "12px", textDecoration: "line-through", marginRight: "4px" }}>
+                    $19.99
+                  </span>
+                  <span style={{ color: productFinalPriceColor, fontSize: "14px", fontWeight: 600 }}>
+                    $15.99
+                  </span>
+                </div>
+                <button
+                  style={{
+                    width: "100%",
+                    backgroundColor: buttonBgColor,
+                    color: buttonTextColor,
+                    padding: "8px 12px",
+                    borderRadius: `${buttonBorderRadius}px`,
+                    border: "none",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Add to cart
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Filters Preview */}
+          {activeSubSection === "filters" && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                backgroundColor: filterBgColor,
+                padding: "8px 16px",
+                borderRadius: "8px",
+                marginBottom: "24px",
+                border: "1px solid #E3E3E3",
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M3 4.99509C3 3.89323 3.89262 3 4.99509 3H19.0049C20.1068 3 21 3.89262 21 4.99509V6.5C21 7.05 20.78 7.58 20.38 7.96L14.5 13.5V21L9.5 19V13.5L3.62 7.96C3.22 7.58 3 7.05 3 6.5V4.99509Z"
+                  stroke={filterIconColor}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span style={{ color: filterTextColor, fontSize: "14px", fontWeight: 500 }}>
+                Filters
+              </span>
+            </div>
+          )}
+
+          {/* Step Bar */}
+          <div style={{ marginBottom: "24px" }}>
+            <div style={{ position: "relative", marginBottom: "16px" }}>
+              {/* Progress Bar */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "18px",
+                  left: "18px",
+                  right: "18px",
+                  height: "4px",
+                  backgroundColor: stepBarProgressEmptyColor,
+                  borderRadius: "2px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "47%",
+                    height: "100%",
+                    backgroundColor: stepBarProgressFilledColor,
+                    borderRadius: "2px",
+                  }}
+                />
+              </div>
+
+              {/* Steps */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
+                {/* Step 1 */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      backgroundColor: completedStepBgColor,
+                      border: `2px solid ${completedStepCircleBorderColor}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M20 6L9 17L4 12"
+                        stroke={completedStepCheckMarkColor}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span style={{ color: stepNameFontColor, fontSize: "11px" }}>Step 1</span>
+                </div>
+
+                {/* Step 2 */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      backgroundColor: completedStepBgColor,
+                      border: `2px solid ${completedStepCircleBorderColor}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M20 6L9 17L4 12"
+                        stroke={completedStepCheckMarkColor}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span style={{ color: stepNameFontColor, fontSize: "11px" }}>Step 2</span>
+                </div>
+
+                {/* Step 3 */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      backgroundColor: incompleteStepBgColor,
+                      border: `2px solid ${incompleteStepCircleStrokeColor}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <span style={{ color: stepNameFontColor, fontSize: "12px", fontWeight: 600 }}>3</span>
+                  </div>
+                  <span style={{ color: stepNameFontColor, fontSize: "11px" }}>Step 3</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bundle Upsell Button */}
+          {activeSubSection === "bundleUpsell" && (
+            <div style={{ marginBottom: "24px" }}>
+              <button
+                style={{
+                  width: "100%",
+                  backgroundColor: bundleUpsellButtonBgColor,
+                  color: bundleUpsellTextColor,
+                  border: `2px solid ${bundleUpsellBorderColor}`,
+                  padding: "16px 24px",
+                  borderRadius: "12px",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Add to Cart
+              </button>
+            </div>
+          )}
+
+          {/* Toast Notification */}
+          {activeSubSection === "toasts" && (
+            <div style={{ marginBottom: "24px" }}>
+              <div
+                style={{
+                  backgroundColor: toastBgColor,
+                  color: toastTextColor,
+                  padding: "16px 24px",
+                  borderRadius: "8px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M20 6L9 17L4 12"
+                    stroke={toastTextColor}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span style={{ fontSize: "14px", fontWeight: 500 }}>
+                  Add at least 1 product on this step
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Footer with Scroll Bar indicator */}
+          <div
+            style={{
+              backgroundColor: footerBgColor,
+              borderRadius: `${footerBorderRadius}px`,
+              padding: `${footerPadding}px`,
+              position: "relative",
+            }}
+          >
+            {/* Scroll Bar Preview (right side) */}
+            {activeSubSection === "bundleDesign" && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: "8px",
+                  top: "20px",
+                  bottom: "20px",
+                  width: "8px",
+                  backgroundColor: "#F0F0F0",
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    height: "40%",
+                    backgroundColor: footerScrollBarColor,
+                    borderRadius: "4px",
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <button
+                style={{
+                  flex: 1,
+                  backgroundColor: footerBackButtonBgColor,
+                  color: footerBackButtonTextColor,
+                  border: `1px solid ${footerBackButtonBorderColor}`,
+                  borderRadius: `${footerBackButtonBorderRadius}px`,
+                  padding: "10px 20px",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Back
+              </button>
+
+              <div
+                style={{
+                  flex: 1,
+                  backgroundColor: footerTotalBgColor,
+                  padding: "12px",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: "11px", color: "#666", marginBottom: "4px" }}>Total</div>
+                <div>
+                  <span
+                    style={{
+                      color: footerStrikePriceColor,
+                      fontSize: `${footerStrikeFontSize}px`,
+                      textDecoration: "line-through",
+                      marginRight: "6px",
+                    }}
+                  >
+                    $19.99
+                  </span>
+                  <span
+                    style={{
+                      color: footerFinalPriceColor,
+                      fontSize: `${footerFinalPriceFontSize}px`,
+                      fontWeight: footerFinalPriceFontWeight,
+                    }}
+                  >
+                    $15.99
+                  </span>
+                </div>
+              </div>
+
+              <button
+                style={{
+                  flex: 1,
+                  backgroundColor: footerNextButtonBgColor,
+                  color: footerNextButtonTextColor,
+                  border: `1px solid ${footerNextButtonBorderColor}`,
+                  borderRadius: `${footerNextButtonBorderRadius}px`,
+                  padding: "10px 20px",
+                  fontSize: "14px",
                   cursor: "pointer",
                 }}
               >
@@ -2059,6 +2732,1137 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
+      // ========== BUNDLE STEP BAR SECTION ==========
+      case "stepName":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Step Name
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: stepNameFontColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("stepNameFontColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="stepNameFontColorInput"
+                    type="color"
+                    value={stepNameFontColor}
+                    onChange={(e) => setStepNameFontColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Step Name Font Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {stepNameFontColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Font Size"
+              value={stepNameFontSize}
+              onChange={(value) => setStepNameFontSize(value as number)}
+              min={12}
+              max={24}
+              output
+            />
+          </BlockStack>
+        );
+
+      case "completedStep":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Completed Step
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: completedStepCheckMarkColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("completedStepCheckMarkColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="completedStepCheckMarkColorInput"
+                    type="color"
+                    value={completedStepCheckMarkColor}
+                    onChange={(e) => setCompletedStepCheckMarkColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Check Mark Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {completedStepCheckMarkColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: completedStepBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("completedStepBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="completedStepBgColorInput"
+                    type="color"
+                    value={completedStepBgColor}
+                    onChange={(e) => setCompletedStepBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Step Completed Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {completedStepBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: completedStepCircleBorderColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("completedStepCircleBorderColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="completedStepCircleBorderColorInput"
+                    type="color"
+                    value={completedStepCircleBorderColor}
+                    onChange={(e) => setCompletedStepCircleBorderColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Circle Border Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {completedStepCircleBorderColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Border Radius"
+              value={completedStepCircleBorderRadius}
+              onChange={(value) => setCompletedStepCircleBorderRadius(value as number)}
+              min={0}
+              max={50}
+              output
+            />
+          </BlockStack>
+        );
+
+      case "incompleteStep":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Incomplete Step
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: incompleteStepBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("incompleteStepBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="incompleteStepBgColorInput"
+                    type="color"
+                    value={incompleteStepBgColor}
+                    onChange={(e) => setIncompleteStepBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Incomplete Step Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {incompleteStepBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: incompleteStepCircleStrokeColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("incompleteStepCircleStrokeColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="incompleteStepCircleStrokeColorInput"
+                    type="color"
+                    value={incompleteStepCircleStrokeColor}
+                    onChange={(e) => setIncompleteStepCircleStrokeColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Circle Stroke Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {incompleteStepCircleStrokeColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Border Radius"
+              value={incompleteStepCircleStrokeRadius}
+              onChange={(value) => setIncompleteStepCircleStrokeRadius(value as number)}
+              min={0}
+              max={50}
+              output
+            />
+          </BlockStack>
+        );
+
+      case "stepBarProgressBar":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Progress Bar
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: stepBarProgressFilledColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("stepBarProgressFilledColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="stepBarProgressFilledColorInput"
+                    type="color"
+                    value={stepBarProgressFilledColor}
+                    onChange={(e) => setStepBarProgressFilledColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Progress Bar Filled Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {stepBarProgressFilledColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: stepBarProgressEmptyColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("stepBarProgressEmptyColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="stepBarProgressEmptyColorInput"
+                    type="color"
+                    value={stepBarProgressEmptyColor}
+                    onChange={(e) => setStepBarProgressEmptyColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Progress Bar Empty Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {stepBarProgressEmptyColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </BlockStack>
+        );
+
+      case "stepBarTabs":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Tabs
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: tabsActiveBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("tabsActiveBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="tabsActiveBgColorInput"
+                    type="color"
+                    value={tabsActiveBgColor}
+                    onChange={(e) => setTabsActiveBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Tabs Active Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {tabsActiveBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: tabsActiveTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("tabsActiveTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="tabsActiveTextColorInput"
+                    type="color"
+                    value={tabsActiveTextColor}
+                    onChange={(e) => setTabsActiveTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Tabs Active Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {tabsActiveTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: tabsInactiveBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("tabsInactiveBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="tabsInactiveBgColorInput"
+                    type="color"
+                    value={tabsInactiveBgColor}
+                    onChange={(e) => setTabsInactiveBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Tabs Inactive Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {tabsInactiveBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: tabsInactiveTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("tabsInactiveTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="tabsInactiveTextColorInput"
+                    type="color"
+                    value={tabsInactiveTextColor}
+                    onChange={(e) => setTabsInactiveTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Tabs Inactive Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {tabsInactiveTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: tabsBorderColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("tabsBorderColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="tabsBorderColorInput"
+                    type="color"
+                    value={tabsBorderColor}
+                    onChange={(e) => setTabsBorderColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Tabs Border Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {tabsBorderColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Border Radius"
+              value={tabsBorderRadius}
+              onChange={(value) => setTabsBorderRadius(value as number)}
+              min={0}
+              max={24}
+              output
+            />
+          </BlockStack>
+        );
+
+      // ========== GENERAL SECTION ==========
+      case "bundleDesign":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Bundle Design
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: bundleBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("bundleBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="bundleBgColorInput"
+                    type="color"
+                    value={bundleBgColor}
+                    onChange={(e) => setBundleBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Bundle Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {bundleBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: footerScrollBarColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("footerScrollBarColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="footerScrollBarColorInput"
+                    type="color"
+                    value={footerScrollBarColor}
+                    onChange={(e) => setFooterScrollBarColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Footer Scroll Bar Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {footerScrollBarColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </BlockStack>
+        );
+
+      case "productPageTitle":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Product Page Title
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: productPageTitleFontColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("productPageTitleFontColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="productPageTitleFontColorInput"
+                    type="color"
+                    value={productPageTitleFontColor}
+                    onChange={(e) => setProductPageTitleFontColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Font Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {productPageTitleFontColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <RangeSlider
+              label="Font Size"
+              value={productPageTitleFontSize}
+              onChange={(value) => setProductPageTitleFontSize(value as number)}
+              min={12}
+              max={32}
+              output
+            />
+          </BlockStack>
+        );
+
+      case "bundleUpsell":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Bundle Upsell
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: bundleUpsellButtonBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("bundleUpsellButtonBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="bundleUpsellButtonBgColorInput"
+                    type="color"
+                    value={bundleUpsellButtonBgColor}
+                    onChange={(e) => setBundleUpsellButtonBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Button Background
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {bundleUpsellButtonBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: bundleUpsellBorderColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("bundleUpsellBorderColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="bundleUpsellBorderColorInput"
+                    type="color"
+                    value={bundleUpsellBorderColor}
+                    onChange={(e) => setBundleUpsellBorderColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Border Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {bundleUpsellBorderColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: bundleUpsellTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("bundleUpsellTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="bundleUpsellTextColorInput"
+                    type="color"
+                    value={bundleUpsellTextColor}
+                    onChange={(e) => setBundleUpsellTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {bundleUpsellTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </BlockStack>
+        );
+
+      case "toasts":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Toasts
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: toastBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("toastBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="toastBgColorInput"
+                    type="color"
+                    value={toastBgColor}
+                    onChange={(e) => setToastBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {toastBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: toastTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("toastTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="toastTextColorInput"
+                    type="color"
+                    value={toastTextColor}
+                    onChange={(e) => setToastTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {toastTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </BlockStack>
+        );
+
+      case "filters":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Filters
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: filterIconColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("filterIconColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="filterIconColorInput"
+                    type="color"
+                    value={filterIconColor}
+                    onChange={(e) => setFilterIconColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Icon Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {filterIconColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: filterBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("filterBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="filterBgColorInput"
+                    type="color"
+                    value={filterBgColor}
+                    onChange={(e) => setFilterBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {filterBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: filterTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("filterTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="filterTextColorInput"
+                    type="color"
+                    value={filterTextColor}
+                    onChange={(e) => setFilterTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {filterTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </BlockStack>
+        );
+
       default:
         return (
           <Banner tone="info">
@@ -2219,12 +4023,44 @@ export default function DesignControlPanel() {
                 />
               </Collapsible>
 
-              {/* Other Sections - Collapsed by default */}
+              {/* General Section */}
               <NavigationItem
                 label="General"
                 sectionKey="general"
                 hasChildren
               />
+              <Collapsible open={expandedSection === "general"} id="general-collapsible">
+                <NavigationItem
+                  label="Bundle Design"
+                  sectionKey="bundleDesign"
+                  isChild
+                  onClick={() => handleSubSectionClick("bundleDesign")}
+                />
+                <NavigationItem
+                  label="Product Page Title"
+                  sectionKey="productPageTitle"
+                  isChild
+                  onClick={() => handleSubSectionClick("productPageTitle")}
+                />
+                <NavigationItem
+                  label="Bundle Upsell"
+                  sectionKey="bundleUpsell"
+                  isChild
+                  onClick={() => handleSubSectionClick("bundleUpsell")}
+                />
+                <NavigationItem
+                  label="Toasts"
+                  sectionKey="toasts"
+                  isChild
+                  onClick={() => handleSubSectionClick("toasts")}
+                />
+                <NavigationItem
+                  label="Filters"
+                  sectionKey="filters"
+                  isChild
+                  onClick={() => handleSubSectionClick("filters")}
+                />
+              </Collapsible>
             </div>
 
             {/* Right Side - Visual Preview + Settings */}
