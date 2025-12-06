@@ -10,9 +10,6 @@
 import { isUUID } from "../../utils/shopify-validators";
 import { getFirstVariantId } from "../../utils/variant-lookup.server";
 
-// Cache to prevent redundant definition checks
-let metafieldDefinitionsChecked = false;
-
 type MetafieldError = {
   productId: string;
   title: string;
@@ -50,19 +47,6 @@ export async function convertBundleToStandardMetafields(
       if (step.StepProduct && Array.isArray(step.StepProduct)) {
         for (const stepProduct of step.StepProduct) {
           totalProductsProcessed++;
-
-          // Check if this is a UUID (old data that needs migration)
-          if (isUUID(stepProduct.productId)) {
-            const error = `Legacy UUID product ID (needs data migration to Shopify product ID)`;
-            console.warn(`⚠️ [STANDARD_METAFIELD] ${error}: ${stepProduct.productId} - Product: ${stepProduct.title}`);
-            errors.push({
-              productId: stepProduct.productId,
-              title: stepProduct.title || 'Unknown Product',
-              error,
-              step: stepName
-            });
-            continue; // Skip UUID products entirely
-          }
 
           // Get the actual first variant ID
           const result = await getFirstVariantId(admin, stepProduct.productId);
@@ -115,9 +99,9 @@ export async function convertBundleToStandardMetafields(
     }
 
     if (componentReferences.length > 0) {
-      standardMetafields.component_reference = componentReferences; // Array of GIDs for list.product_reference
-      standardMetafields.component_quantities = componentQuantities; // Array of integers for list.number_integer
-      console.log("✅ [STANDARD_METAFIELD] Component references:", componentReferences);
+      standardMetafields.componentVariants = componentReferences; // Array of variant GIDs for list.variant_reference (camelCase to match TOML)
+      standardMetafields.componentQuantities = componentQuantities; // Array of integers for list.number_integer (camelCase to match TOML)
+      console.log("✅ [STANDARD_METAFIELD] Component variant references:", componentReferences);
       console.log("✅ [STANDARD_METAFIELD] Component quantities:", componentQuantities);
     } else if (totalProductsProcessed > 0) {
       console.warn(`⚠️ [STANDARD_METAFIELD] No valid products found to create metafields (${totalProductsProcessed} products processed, all failed)`);
@@ -132,7 +116,7 @@ export async function convertBundleToStandardMetafields(
       if (bundle.pricing.method === 'percentage_off' && rule.discount?.value) {
         // For number_decimal metafield type, store as number (not string)
         // Value is already 0-100 percentage in the new structure
-        standardMetafields.price_adjustment = parseFloat(rule.discount.value) || 0;
+        standardMetafields.priceAdjustment = parseFloat(rule.discount.value) || 0; // camelCase to match TOML
       }
     }
   }
@@ -151,8 +135,8 @@ export async function updateProductStandardMetafields(
   console.log("🔧 [STANDARD_METAFIELD] Setting standard Shopify metafields on product:", productId);
   console.log("📋 [STANDARD_METAFIELD] Metafields:", standardMetafields);
 
-  // Ensure metafield definitions exist for the custom namespace
-  await ensureStandardMetafieldDefinitions(admin);
+  // Metafield definitions are now managed via shopify.app.toml
+  // No need to programmatically create definitions
 
   const metafieldsToSet: any[] = [];
 
@@ -164,37 +148,37 @@ export async function updateProductStandardMetafields(
       let type = 'json'; // Default fallback
 
       // Use proper types for each metafield with correct value formats
-      switch(key) {
-        case 'component_reference':
-          type = 'list.product_reference';
-          // For list.product_reference, Shopify expects a JSON array string of GIDs
-          // BUT the GIDs must be valid product variant references
+      // CRITICAL: Keys must match TOML definitions (camelCase)
+      switch (key) {
+        case 'componentVariants':
+          type = 'list.variant_reference';
+          // For list.variant_reference, Shopify expects a JSON array string of ProductVariant GIDs
           if (Array.isArray(value)) {
-            // Validate that all entries are proper Shopify GIDs
+            // Validate that all entries are proper Shopify ProductVariant GIDs
             const validGids = value.filter(gid =>
               typeof gid === 'string' && gid.startsWith('gid://shopify/ProductVariant/')
             );
             if (validGids.length === 0) {
-              console.warn(`⚠️ [STANDARD_METAFIELD] Skipping component_reference - no valid GIDs found`);
+              console.warn(`⚠️ [STANDARD_METAFIELD] Skipping componentVariants - no valid ProductVariant GIDs found`);
               return; // Skip this metafield entirely
             }
             value = JSON.stringify(validGids);
           } else {
-            console.warn(`⚠️ [STANDARD_METAFIELD] Skipping component_reference - invalid value type`);
+            console.warn(`⚠️ [STANDARD_METAFIELD] Skipping componentVariants - invalid value type`);
             return;
           }
           break;
-        case 'component_quantities':
+        case 'componentQuantities':
           type = 'list.number_integer';
           // For list types, value must be JSON-encoded array string
           value = JSON.stringify(Array.isArray(value) ? value : []);
           break;
-        case 'component_parents':
+        case 'componentParents':
           type = 'json';
           // Ensure it's a JSON string
           value = typeof value === 'string' ? value : JSON.stringify(value);
           break;
-        case 'price_adjustment':
+        case 'priceAdjustment':
           type = 'number_decimal';
           // Numbers must be strings
           value = typeof value === 'number' ? value.toString() : parseFloat(value || '0').toString();
@@ -266,127 +250,5 @@ export async function updateProductStandardMetafields(
   return data.data?.metafieldsSet?.metafields;
 }
 
-/**
- * Ensure standard metafield definitions exist
- */
-export async function ensureStandardMetafieldDefinitions(admin: any) {
-  // Skip if we've already checked/created definitions in this session
-  if (metafieldDefinitionsChecked) {
-    console.log("🔧 [STANDARD_METAFIELD] Definitions already verified this session, skipping");
-    return;
-  }
-
-  console.log("🔧 [STANDARD_METAFIELD] Checking if definitions exist in app-reserved namespace");
-
-  // Use app-reserved namespace to avoid type conflicts with existing custom namespace definitions
-  const standardDefinitions = [
-    {
-      namespace: "$app", // App-reserved namespace avoids conflicts
-      key: "component_reference",
-      name: "Component Reference",
-      description: "Bundle component variant IDs",
-      type: "list.product_reference",
-      ownerType: "PRODUCT"
-    },
-    {
-      namespace: "$app",
-      key: "component_quantities",
-      name: "Component Quantities",
-      description: "Bundle component quantities",
-      type: "list.number_integer",
-      ownerType: "PRODUCT"
-    },
-    {
-      namespace: "$app",
-      key: "component_parents",
-      name: "Component Parents",
-      description: "Bundle parent configurations",
-      type: "json",
-      ownerType: "PRODUCT"
-    },
-    {
-      namespace: "$app",
-      key: "price_adjustment",
-      name: "Price Adjustment",
-      description: "Bundle price adjustment configuration",
-      type: "number_decimal",
-      ownerType: "PRODUCT"
-    }
-  ];
-
-  // First, check if definitions already exist
-  const CHECK_DEFINITIONS = `
-    query checkMetafieldDefinitions {
-      metafieldDefinitions(first: 20, ownerType: PRODUCT, namespace: "$app") {
-        edges {
-          node {
-            id
-            key
-            namespace
-          }
-        }
-      }
-    }
-  `;
-
-  try {
-    const checkResponse = await admin.graphql(CHECK_DEFINITIONS);
-    const checkData = await checkResponse.json();
-    const existingKeys = checkData.data?.metafieldDefinitions?.edges?.map((edge: any) => edge.node.key) || [];
-
-    console.log(`🔧 [STANDARD_METAFIELD] Found ${existingKeys.length} existing definitions:`, existingKeys);
-
-    // Only create definitions that don't exist
-    for (const definition of standardDefinitions) {
-      if (existingKeys.includes(definition.key)) {
-        console.log(`🔧 [STANDARD_METAFIELD] Definition for ${definition.key} already exists, skipping`);
-        continue;
-      }
-
-      try {
-        const CREATE_METAFIELD_DEFINITION = `
-          mutation createMetafieldDefinition($definition: MetafieldDefinitionInput!) {
-            metafieldDefinitionCreate(definition: $definition) {
-              createdDefinition {
-                id
-                name
-                namespace
-                key
-                type {
-                  name
-                }
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
-
-        const response = await admin.graphql(CREATE_METAFIELD_DEFINITION, {
-          variables: { definition }
-        });
-
-        const data = await response.json();
-        if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
-          const errors = data.data.metafieldDefinitionCreate.userErrors;
-          // Only log if it's not a "already exists" error
-          const isAlreadyExistsError = errors.some((e: any) => e.message.includes("in use"));
-          if (!isAlreadyExistsError) {
-            console.log(`🔧 [STANDARD_METAFIELD] Definition error for ${definition.key}:`, errors);
-          }
-        } else {
-          console.log(`🔧 [STANDARD_METAFIELD] ✅ Created definition for ${definition.key} in $app namespace`);
-        }
-      } catch (error) {
-        console.log(`🔧 [STANDARD_METAFIELD] Error creating definition for ${definition.key}:`, error);
-      }
-    }
-
-    // Mark as checked so we don't repeat this on every save
-    metafieldDefinitionsChecked = true;
-  } catch (error) {
-    console.error("🔧 [STANDARD_METAFIELD] Error checking definitions:", error);
-  }
-}
+// NOTE: Metafield definitions are now managed declaratively via shopify.app.toml
+// The ensureStandardMetafieldDefinitions() function has been removed as it's no longer needed

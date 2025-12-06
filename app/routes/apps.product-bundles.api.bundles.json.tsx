@@ -8,7 +8,7 @@ import { AppLogger } from "../lib/logger";
  * Public API endpoint to fetch fresh bundle data
  * This bypasses Shopify's metafield cache and returns the latest data from database
  *
- * GET /apps/bundle-discounts/api/bundles.json
+ * GET /apps/product-bundles/api/bundles.json
  */
 export const loader: LoaderFunction = async ({ request }) => {
   try {
@@ -19,13 +19,13 @@ export const loader: LoaderFunction = async ({ request }) => {
       return json({ error: "Shop not found" }, { status: 400 });
     }
 
-    AppLogger.info("Fetching fresh bundle data", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", shop: session.shop });
+    AppLogger.info("Fetching fresh bundle data", { component: "apps.product-bundles.api.bundles.json", operation: "loader", shop: session.shop });
 
-    // Get all active cart transform bundles from database
+    // Get all active bundles from database
     const allBundles = await db.bundle.findMany({
       where: {
         shopId: session.shop,
-        bundleType: 'cart_transform',
+        // Note: bundleType filter removed - returning all active bundles regardless of display mode
         status: 'active'
       },
       include: {
@@ -41,7 +41,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     });
 
-    AppLogger.info("Found active bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", count: allBundles.length });
+    AppLogger.info("Found active bundles", { component: "apps.product-bundles.api.bundles.json", operation: "loader", count: allBundles.length });
 
     // Format bundles for JavaScript widget
     const formattedBundles = allBundles.map(bundle => ({
@@ -81,7 +81,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       bundlesObject[bundle.id] = bundle;
     });
 
-    AppLogger.info("Returning bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader", bundleIds: Object.keys(bundlesObject) });
+    AppLogger.info("Returning bundles", { component: "apps.product-bundles.api.bundles.json", operation: "loader", bundleIds: Object.keys(bundlesObject) });
 
     return json({
       success: true,
@@ -97,7 +97,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     });
 
   } catch (error) {
-    AppLogger.error("Error fetching bundles", { component: "apps.bundle-discounts.api.bundles.json", operation: "loader" }, error);
+    AppLogger.error("Error fetching bundles", { component: "apps.product-bundles.api.bundles.json", operation: "loader" }, error);
     return json({
       success: false,
       error: (error as Error).message,

@@ -10,9 +10,8 @@ generator client {
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   // Comment out for development environment
-  // provider = "sqlite"
-  // Comment out for production environment
   provider = "postgresql"
+  // Comment out for production environment
   url      = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -48,7 +47,8 @@ enum DiscountImplementationType {
 }
 
 enum BundleType {
-  cart_transform
+  product_page  // Widget embedded in product page (current implementation)
+  full_page     // Dedicated bundle page (future feature)
 }
 
 model Session {
@@ -81,7 +81,7 @@ model Bundle {
   shopId           String
   shopifyProductId String? // New field to store the Shopify Product ID (GID)
   templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
-  bundleType       BundleType        @default(cart_transform)
+  bundleType       BundleType        @default(product_page)
   status           BundleStatus      @default(draft)
   active           Boolean           @default(false)
   publishedAt      DateTime?
@@ -183,6 +183,65 @@ model ShopSettings {
   @@index([shopId])
 }
 
+// Design Control Panel Settings - Stores visual customization per bundle type
+model DesignSettings {
+  id                    String     @id @default(uuid())
+  shopId                String
+  bundleType            BundleType @default(product_page) // Allows different designs per bundle type
+
+  // Product Card Section
+  productCardBgColor          String? @default("#FFFFFF")
+  productCardFontColor        String? @default("#000000")
+  productCardFontSize         Int?    @default(16)
+  productCardFontWeight       Int?    @default(400)
+  productCardImageFit         String? @default("cover") // cover, contain, fill
+  productCardsPerRow          Int?    @default(3)
+  productPriceVisibility      Boolean @default(true)
+  productStrikePriceColor     String? @default("#8D8D8D")
+  productStrikeFontSize       Int?    @default(14)
+  productStrikeFontWeight     Int?    @default(400)
+  productFinalPriceColor      String? @default("#000000")
+  productFinalPriceFontSize   Int?    @default(18)
+  productFinalPriceFontWeight Int?    @default(700)
+
+  // Button Section
+  buttonBgColor               String? @default("#000000")
+  buttonTextColor             String? @default("#FFFFFF")
+  buttonFontSize              Int?    @default(16)
+  buttonFontWeight            Int?    @default(600)
+  buttonBorderRadius          Int?    @default(8)
+  buttonHoverBgColor          String? @default("#333333")
+  buttonAddToCartText         String? @default("Add to cart")
+
+  // Quantity Selector Section
+  quantitySelectorBgColor     String? @default("#000000")
+  quantitySelectorTextColor   String? @default("#FFFFFF")
+  quantitySelectorFontSize    Int?    @default(16)
+  quantitySelectorBorderRadius Int?   @default(8)
+
+  // Bundle Footer Section (coming soon)
+  footerSettings              Json?
+
+  // Bundle Step Bar Section (coming soon)
+  stepBarSettings             Json?
+
+  // General Section (coming soon)
+  generalSettings             Json?
+
+  // Images & Gifs Section (coming soon)
+  imagesSettings              Json?
+
+  // Advanced Settings - Custom CSS
+  customCss                   String?
+
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@unique([shopId, bundleType]) // One design config per shop per bundle type
+  @@index([shopId])
+  @@index([bundleType])
+}
+
 model QueuedJob {
   id          String    @id @default(uuid())
   shopId      String
@@ -213,4 +272,87 @@ model ComplianceRecord {
   @@index([shop])
   @@index([type])
   @@index([status])
+}
+
+// ==============================================================================
+// SUBSCRIPTION BILLING MODELS
+// ==============================================================================
+
+enum SubscriptionStatus {
+  pending      // Subscription created, awaiting merchant approval
+  active       // Subscription active and billing
+  cancelled    // Subscription cancelled
+  frozen       // Shop billing frozen
+  expired      // Subscription expired
+  declined     // Merchant declined subscription
+}
+
+enum SubscriptionPlan {
+  free  // Free tier: 3 bundles max
+  grow  // Grow tier: 20 bundles max, $9.99/month
+}
+
+// Shop model - represents a Shopify store
+model Shop {
+  id                    String         @id @default(uuid())
+  shopDomain            String         @unique // e.g., "mystore.myshopify.com"
+  name                  String?        // Store name
+  email                 String?        // Store contact email
+  installedAt           DateTime       @default(now())
+  uninstalledAt         DateTime?      // Track when app was uninstalled
+  subscriptions         Subscription[] // Subscription history
+  currentSubscriptionId String?        // Current active subscription
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([shopDomain])
+  @@index([currentSubscriptionId])
+}
+
+// Subscription model - tracks app subscriptions
+model Subscription {
+  id                    String             @id @default(uuid())
+  shopId                String
+  shop                  Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopifySubscriptionId String?            @unique // Shopify's subscription ID (GID)
+  plan                  SubscriptionPlan   @default(free)
+  status                SubscriptionStatus @default(pending)
+  name                  String // Plan display name (e.g., "Grow Plan")
+  price                 Float              @default(0) // Monthly price in USD
+  currencyCode          String             @default("USD")
+  trialDaysRemaining    Int?               // Null for non-trial subscriptions
+  currentPeriodStart    DateTime?          // Start of current billing period
+  currentPeriodEnd      DateTime?          // End of current billing period
+  cancelledAt           DateTime?          // When subscription was cancelled
+  test                  Boolean            @default(false) // Test mode flag
+  confirmationUrl       String?            // Shopify confirmation URL
+  returnUrl             String?            // Return URL after approval
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([shopId])
+  @@index([shopifySubscriptionId])
+  @@index([status])
+  @@index([plan])
+}
+
+// WebhookEvent model - tracks processed webhooks for idempotency
+model WebhookEvent {
+  id            String   @id @default(uuid())
+  shopDomain    String
+  topic         String // e.g., "APP_SUBSCRIPTIONS_UPDATE"
+  webhookId     String? // Shopify webhook ID if available
+  payload       Json // Full webhook payload
+  processed     Boolean  @default(false)
+  processedAt   DateTime?
+  error         String? // Error message if processing failed
+  retryCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([shopDomain, topic, webhookId]) // Prevent duplicate processing
+  @@index([shopDomain])
+  @@index([topic])
+  @@index([processed])
+  @@index([createdAt])
 }

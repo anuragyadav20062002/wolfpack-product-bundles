@@ -20,25 +20,56 @@ interface UseBundlePricingProps {
     showProgressBar?: boolean;
     showFooter?: boolean;
   } | null;
-  onTriggerSaveBar: () => void;
+  onStateChange?: () => void;
 }
 
-export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundlePricingProps) {
+export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePricingProps) {
   // Pricing state
-  const [discountEnabled, setDiscountEnabled] = useState(initialPricing?.enabled || false);
-  const [discountType, setDiscountType] = useState<DiscountMethod>(
+  const [discountEnabled, setDiscountEnabledRaw] = useState(initialPricing?.enabled || false);
+  const [discountType, setDiscountTypeRaw] = useState<DiscountMethod>(
     (initialPricing?.method as DiscountMethod) || DiscountMethod.PERCENTAGE_OFF
   );
-  const [discountRules, setDiscountRules] = useState<PricingRule[]>(
+  const [discountRules, setDiscountRulesRaw] = useState<PricingRule[]>(
     Array.isArray(initialPricing?.rules) ? initialPricing.rules : []
   );
-  const [showProgressBar, setShowProgressBar] = useState(initialPricing?.showProgressBar || false);
-  const [showFooter, setShowFooter] = useState(initialPricing?.showFooter !== false);
-  const [discountMessagingEnabled, setDiscountMessagingEnabled] = useState(true);
+  const [showProgressBar, setShowProgressBarRaw] = useState(initialPricing?.showProgressBar || false);
+  const [showFooter, setShowFooterRaw] = useState(initialPricing?.showFooter !== false);
+  const [discountMessagingEnabled, setDiscountMessagingEnabledRaw] = useState(true);
 
   // Rule messaging
   const [ruleMessages, setRuleMessages] = useState<Record<string, { discountText: string; successMessage: string }>>({});
   const [showVariables, setShowVariables] = useState(false);
+
+  // Wrapped setters that trigger dirty flag
+  const setDiscountEnabled = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
+    setDiscountEnabledRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
+
+  const setDiscountType = useCallback((value: DiscountMethod | ((prev: DiscountMethod) => DiscountMethod)) => {
+    setDiscountTypeRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
+
+  const setDiscountRules = useCallback((value: PricingRule[] | ((prev: PricingRule[]) => PricingRule[])) => {
+    setDiscountRulesRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
+
+  const setShowProgressBar = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
+    setShowProgressBarRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
+
+  const setShowFooter = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
+    setShowFooterRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
+
+  const setDiscountMessagingEnabled = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
+    setDiscountMessagingEnabledRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
 
   // Add a new discount rule
   const addDiscountRule = useCallback(() => {
@@ -53,9 +84,7 @@ export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundle
         successMessage: 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'
       }
     }));
-
-    onTriggerSaveBar();
-  }, [discountType, onTriggerSaveBar]);
+  }, [discountType, setDiscountRules]);
 
   // Remove a discount rule
   const removeDiscountRule = useCallback((ruleId: string) => {
@@ -67,9 +96,7 @@ export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundle
       delete updated[ruleId];
       return updated;
     });
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, [setDiscountRules]);
 
   // Update a discount rule
   const updateDiscountRule = useCallback((ruleId: string, updates: Partial<PricingRule>) => {
@@ -78,9 +105,7 @@ export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundle
         rule.id === ruleId ? { ...rule, ...updates } : rule
       )
     );
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, [setDiscountRules]);
 
   // Update rule message
   const updateRuleMessage = useCallback((ruleId: string, field: 'discountText' | 'successMessage', value: string) => {
@@ -91,33 +116,27 @@ export function useBundlePricing({ initialPricing, onTriggerSaveBar }: UseBundle
         [field]: value
       }
     }));
-
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, []);
 
   // Toggle discount enabled
   const toggleDiscountEnabled = useCallback((enabled: boolean) => {
     setDiscountEnabled(enabled);
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, [setDiscountEnabled]);
 
   // Change discount type
   const changeDiscountType = useCallback((type: DiscountMethod) => {
     setDiscountType(type);
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, [setDiscountType]);
 
   // Toggle progress bar
   const toggleProgressBar = useCallback((show: boolean) => {
     setShowProgressBar(show);
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, [setShowProgressBar]);
 
   // Toggle footer
   const toggleFooter = useCallback((show: boolean) => {
     setShowFooter(show);
-    onTriggerSaveBar();
-  }, [onTriggerSaveBar]);
+  }, [setShowFooter]);
 
   // Toggle variables panel
   const toggleVariablesPanel = useCallback(() => {

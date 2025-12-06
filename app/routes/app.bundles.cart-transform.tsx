@@ -21,17 +21,82 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
+import { SubscriptionGuard } from "../services/subscription-guard.server";
+import { BillingService } from "../services/billing.server";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
+import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
+
+/**
+ * Add image to a product using productCreateMedia mutation
+ * This is the recommended approach for API version 2025-04+
+ */
+async function addProductImage(admin: any, productId: string, imageUrl: string, altText?: string) {
+  const CREATE_MEDIA = `
+    mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+      productCreateMedia(productId: $productId, media: $media) {
+        media {
+          alt
+          mediaContentType
+          status
+        }
+        mediaUserErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(CREATE_MEDIA, {
+      variables: {
+        productId: productId,
+        media: [
+          {
+            originalSource: imageUrl,
+            alt: altText || "Bundle product image",
+            mediaContentType: "IMAGE"
+          }
+        ]
+      }
+    });
+
+    const data = await response.json();
+
+    if (data.data?.productCreateMedia?.mediaUserErrors?.length > 0) {
+      const errors = data.data.productCreateMedia.mediaUserErrors;
+      AppLogger.error("Failed to add product image", {
+        component: "app.bundles.cart-transform",
+        operation: "add-product-image"
+      }, { errors, productId, imageUrl });
+      return { success: false, errors };
+    }
+
+    AppLogger.info("Product image added successfully", {
+      component: "app.bundles.cart-transform",
+      productId,
+      imageUrl
+    });
+
+    return { success: true };
+  } catch (error) {
+    AppLogger.error("Error adding product image", {
+      component: "app.bundles.cart-transform",
+      operation: "add-product-image"
+    }, error);
+    return { success: false, error };
+  }
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
-  
-  // Get cart transform bundles only (exclude archived)
+
+  // Get all bundles (exclude archived)
   const cartTransformBundles = await db.bundle.findMany({
     where: {
       shopId: session.shop,
-      bundleType: "cart_transform",
+      // Note: bundleType filter removed - showing all bundle display types
       status: {
         in: ['active', 'draft'] // Only show active and draft bundles, exclude archived
       }
@@ -43,9 +108,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     orderBy: { createdAt: "desc" },
   });
 
+  // Get subscription info for upgrade prompt
+  const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
+
   return json({
     bundles: cartTransformBundles,
-    bundleType: "cart_transform",
+    bundleType: "product_page", // Default display mode
+    subscription: subscriptionInfo ? {
+      plan: subscriptionInfo.plan,
+      currentBundleCount: subscriptionInfo.currentBundleCount,
+      bundleLimit: subscriptionInfo.bundleLimit,
+      canCreateBundle: subscriptionInfo.canCreateBundle,
+    } : null,
   });
 }
 
@@ -58,8 +132,14 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Handle different actions
   if (intent === "cloneBundle") {
+    // Check subscription limits before cloning
+    const limitCheck = await SubscriptionGuard.enforceBundleLimit(shop);
+    if (limitCheck) {
+      return limitCheck; // Return 403 response if limit reached
+    }
+
     const bundleId = formData.get("bundleId") as string;
-    
+
     try {
       // Fetch the original bundle with all related data
       const originalBundle = await db.bundle.findUnique({
@@ -136,7 +216,7 @@ export async function action({ request }: ActionFunctionArgs) {
           name: clonedBundleName,
           description: originalBundle.description,
           shopId: shop,
-          bundleType: 'cart_transform',
+          bundleType: 'product_page', // Default to product-page bundle
           status: 'draft',
           active: false,
           shopifyProductId: shopifyProductId,
@@ -274,6 +354,12 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // Original create bundle logic
+  // Check subscription limits before creating new bundle
+  const limitCheck = await SubscriptionGuard.enforceBundleLimit(shop);
+  if (limitCheck) {
+    return limitCheck; // Return 403 response if limit reached
+  }
+
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
 
@@ -282,10 +368,11 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    // Create bundle product in Shopify first
+    // Create bundle product in Shopify with optional media
+    // API 2025-04 uses ProductCreateInput (ProductInput is deprecated)
     const CREATE_BUNDLE_PRODUCT = `
-      mutation CreateBundleProduct($input: ProductInput!) {
-        productCreate(input: $input) {
+      mutation CreateBundleProduct($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product {
             id
             title
@@ -309,24 +396,40 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     `;
 
+    // Product input for bundle creation
+    const productInput: any = {
+      title: bundleName,
+      descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
+      productType: "Bundle",
+      vendor: "Bundle Builder",
+      status: "ACTIVE",
+      tags: ["bundle", "cart-transform"],
+    };
+
+    // Prepare media input if app URL is configured
+    const appUrl = process.env.SHOPIFY_APP_URL;
+    const mediaInput = appUrl ? [
+      {
+        originalSource: `${appUrl}/bundle.png`,
+        alt: `${bundleName} - Bundle`,
+        mediaContentType: "IMAGE"
+      }
+    ] : undefined;
+
     const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
       variables: {
-        input: {
-          title: bundleName,
-          descriptionHtml: description || `${bundleName} - Bundle Product`,
-          productType: "Bundle",
-          vendor: "Bundle Builder",
-          status: "ACTIVE",
-          tags: ["bundle", "cart-transform"]
-        }
+        product: productInput,
+        ...(mediaInput && { media: mediaInput })
       }
     });
 
     const productData = await productResponse.json();
 
     if (productData.data?.productCreate?.userErrors?.length > 0) {
-      AppLogger.error("Product creation failed", { component: "app.bundles.cart-transform", operation: "create-bundle" }, { errors: productData.data.productCreate.userErrors });
-      return json({ error: 'Failed to create bundle product in Shopify' }, { status: 500 });
+      const errors = productData.data.productCreate.userErrors;
+      const errorMessages = errors.map((e: any) => e.message).join(', ');
+      AppLogger.error("Product creation failed", { component: "app.bundles.cart-transform", operation: "create-bundle" }, { errors });
+      return json({ error: `Shopify API error: ${errorMessages}` }, { status: 500 });
     }
 
     const shopifyProductId = productData.data?.productCreate?.product?.id;
@@ -342,7 +445,7 @@ export async function action({ request }: ActionFunctionArgs) {
         name: bundleName,
         description: typeof description === 'string' ? description : null,
         shopId: shop,
-        bundleType: 'cart_transform',
+        bundleType: 'product_page', // Default to product-page bundle
         status: 'draft',
         active: false,
         shopifyProductId: shopifyProductId, // Link the Shopify product
@@ -351,21 +454,22 @@ export async function action({ request }: ActionFunctionArgs) {
 
 
     // Return success with the bundle ID to allow client-side navigation
-    return json({ 
-      success: true, 
+    return json({
+      success: true,
       bundleId: newBundle.id,
       bundleProductId: shopifyProductId,
       redirectTo: `/app/bundles/cart-transform/configure/${newBundle.id}`
     });
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     AppLogger.error("Failed to create cart transform bundle", { component: "app.bundles.cart-transform", operation: "create-bundle" }, error);
-    return json({ error: 'Failed to create cart transform bundle' }, { status: 500 });
+    return json({ error: `Failed to create bundle: ${errorMessage}` }, { status: 500 });
   }
 }
 
 export default function CartTransformBundles() {
-  const { bundles } = useLoaderData<typeof loader>();
+  const { bundles, subscription } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -550,6 +654,18 @@ export default function CartTransformBundles() {
         ]}
       >
       <Layout>
+        {/* Upgrade Prompt Banner for Free Users */}
+        {subscription && (
+          <Layout.Section>
+            <UpgradePromptBanner
+              plan={subscription.plan}
+              currentBundleCount={subscription.currentBundleCount}
+              bundleLimit={subscription.bundleLimit}
+              canCreateBundle={subscription.canCreateBundle}
+            />
+          </Layout.Section>
+        )}
+
         <Layout.Section>
           <Card>
             <BlockStack gap="300">

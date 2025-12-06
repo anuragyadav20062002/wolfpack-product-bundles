@@ -266,122 +266,71 @@
   ]
 }
 {% endschema %}
-{% comment %} Bundle Container Product Detection - ENHANCED LOGIC {% endcomment %}
-{% assign is_container_product = false %}
-{% assign container_bundle_id = null %}
-{% assign bundle_config = null %}
-{% assign auto_display_mode = false %}
+{% comment %}
+  Bundle Widget - Shopify Standard Architecture (Approach 1: Hybrid)
+  Reads bundle configuration from variant-level metafields.
+  See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+{% endcomment %}
 
-{% comment %} PRIMARY CHECK: Is this product a designated bundle container? {% endcomment %}
-{% if product.metafields['$app:bundle_isolation'].bundle_product_type == 'cart_transform_bundle' %}
-  {% assign is_container_product = true %}
-  {% assign container_bundle_id = product.metafields['$app:bundle_isolation'].owns_bundle_id %}
-  {% assign auto_display_mode = true %}
-  {% comment %} Load bundle configuration from container metafields {% endcomment %}
-  {% if product.metafields['$app'].bundle_config %}
-    {% assign bundle_config = product.metafields['$app'].bundle_config %}
-  {% endif %}
-{% endif %}
-
-{% comment %} SECONDARY CHECK: Widget configured with specific bundle ID (theme editor) {% endcomment %}
-{% assign widget_has_bundle_id = false %}
-{% if block.settings.bundle_id and block.settings.bundle_id != blank %}
-  {% assign widget_has_bundle_id = true %}
-{% endif %}
-
-{% comment %} WIDGET DISPLAY LOGIC - STRICT CONTAINER MATCHING {% endcomment %}
+{% assign is_bundle_product = false %}
+{% assign bundle_ui_config = nil %}
+{% assign bundle_id = nil %}
 {% assign should_show_widget = false %}
+{% assign hide_default_buttons = false %}
 
-{% comment %} 1. CONTAINER PRODUCT: Always show if this is a bundle container {% endcomment %}
-{% if is_container_product %}
-  {% assign should_show_widget = true %}
-  {% comment %} Hide default buy buttons automatically {% endcomment %}
-  {% assign hide_default_buttons = true %}
-{% comment %} 2. THEME EDITOR: Show if bundle ID is manually configured {% endcomment %}
-{% elsif widget_has_bundle_id and block.settings.enabled %}
-  {% assign should_show_widget = true %}
-{% comment %} 3. ALL OTHER CASES: Don't show to avoid confusion {% endcomment %}
-{% else %}
-  {% assign should_show_widget = false %}
+{% comment %}
+  Use $app reserved namespace for app-owned metafields
+  This matches the namespace: "$app" used when setting metafields via GraphQL
+  Reference: https://shopify.dev/docs/apps/build/custom-data/metafields/manage-metafields
+{% endcomment %}
+{% assign app_namespace = '$app' %}
+
+{% comment %}
+  SHOPIFY STANDARD: Bundle metafields are stored on ProductVariant (not Product)
+  Access the first variant where bundle configuration is stored
+  Reference: https://shopify.dev/docs/api/liquid/objects/product#product-variants
+{% endcomment %}
+{% assign bundle_variant = product.variants.first %}
+
+{% if bundle_variant %}
+  {% comment %} Access variant metafields per Shopify Liquid documentation {% endcomment %}
+  {% assign variant_metafields = bundle_variant.metafields[app_namespace] %}
+
+  {% if variant_metafields %}
+    {% comment %} Check for bundle_ui_config metafield (Approach 1: Hybrid) {% endcomment %}
+    {% assign bundle_ui_config_field = variant_metafields['bundle_ui_config'] %}
+
+    {% if bundle_ui_config_field and bundle_ui_config_field.value %}
+      {% comment %} Parse JSON metafield value {% endcomment %}
+      {% assign bundle_ui_config = bundle_ui_config_field.value %}
+      {% assign is_bundle_product = true %}
+      {% assign should_show_widget = true %}
+      {% assign hide_default_buttons = true %}
+
+      {% comment %} Extract bundle ID from UI config {% endcomment %}
+      {% if bundle_ui_config.bundleId %}
+        {% assign bundle_id = bundle_ui_config.bundleId %}
+      {% endif %}
+    {% endif %}
   {% endif %}
+{% endif %}
+
+{% comment %} THEME EDITOR: Allow manual bundle ID override for preview {% endcomment %}
+{% if request.design_mode and block.settings.bundle_id and block.settings.bundle_id != blank %}
+  {% assign should_show_widget = true %}
+  {% assign bundle_id = block.settings.bundle_id %}
+{% endif %}
 
 {% if should_show_widget %}
-    <!-- 🔧 [THEME_DEBUG] Bundle Widget Debugging Information -->
-    <script>
-      console.log('🎯 [THEME_DEBUG] Bundle Container Widget Loading:', {
-        enabled: {{ block.settings.enabled | json }},
-        bundleId: {{ block.settings.bundle_id | json }},
-        productId: {{ product.id | json }},
-        productHandle: {{ product.handle | json }},
-        productTemplate: {{ product.template_suffix | json }},
-        isContainerProduct: {{ is_container_product | json }},
-        containerBundleId: {{ container_bundle_id | json }},
-        widgetHasBundleId: {{ widget_has_bundle_id | json }},
-        shouldShowWidget: {{ should_show_widget | json }},
-        hideDefaultButtons: {{ hide_default_buttons | json }},
-        autoDisplayMode: {{ auto_display_mode | json }},
-        isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
-        urlParams: new URLSearchParams(window.location.search).toString()
-      });
-
-      // 🔍 Enhanced debugging for custom template pages
-      console.log('🔍 [THEME_DEBUG] Product Metafields Check:', {
-        bundleIsolationType: {{ product.metafields['$app:bundle_isolation'].bundle_product_type | json }},
-        ownsBundleId: {{ product.metafields['$app:bundle_isolation'].owns_bundle_id | json }},
-        cartTransformConfig: {{ product.metafields['$app'].bundle_config | json }}
-      });
-
-      // 🔍 Debug the Liquid template bundle ID selection logic
-      console.log('🔍 [LIQUID_DEBUG] Bundle ID Selection:', {
-        blockSettingsBundleId: {{ block.settings.bundle_id | json }},
-        isContainerProduct: {{ is_container_product | json }},
-        containerBundleId: {{ container_bundle_id | json }},
-        finalBundleIdValue: {% if block.settings.bundle_id and block.settings.bundle_id != blank %}'{{ block.settings.bundle_id }}'{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}'{{ container_bundle_id }}'{% else %}''{% endif %}
-      });
-    </script>
-
-    {% comment %} Hide default buy buttons if this is a container product {% endcomment %}
-    {% if hide_default_buttons %}
-    <style>
-      /* Hide default Shopify buy buttons on container products */
-      .product-form__cart-submit,
-      .product-form__buttons button[name="add"],
-      .btn.product-form__cart-submit,
-      button[name="add"]:not(.bundle-add-to-cart),
-      input[name="add"]:not(.bundle-add-to-cart),
-      form[action*="/cart/add"] button[type="submit"]:not(.bundle-add-to-cart),
-      form[action*="/cart/add"] input[type="submit"]:not(.bundle-add-to-cart),
-      .shopify-payment-button,
-      .dynamic-checkout__content,
-      .additional-checkout-buttons,
-      .payment-button-container,
-      [data-testid="AddToCartButton"]:not(.bundle-add-to-cart),
-      .add-to-cart-button:not(.bundle-add-to-cart),
-      .btn-addtocart:not(.bundle-add-to-cart),
-      .product-add-to-cart:not(.bundle-add-to-cart) {
-        display: none !important;
-      }
-
-      /* Show bundle widget prominently */
-      #bundle-builder-app {
-        background: #f8f9fa;
-        border: 2px solid #007ace;
-        border-radius: 12px;
-        padding: 24px;
-        margin: 20px 0;
-        box-shadow: 0 4px 12px rgba(0, 122, 206, 0.1);
-      }
-    </style>
-    {% endif %}
-
     <div
+      {{ block.shopify_attributes }}
       id="bundle-builder-app"
-      data-bundle-id="{% if block.settings.bundle_id and block.settings.bundle_id != blank %}{{ block.settings.bundle_id }}{% elsif is_container_product and container_bundle_id and container_bundle_id != blank %}{{ container_bundle_id }}{% endif %}"
+      data-bundle-id="{{ bundle_id }}"
       data-app-url="{{ block.settings.app_url | default: '' }}"
-      data-is-container-product="{{ is_container_product }}"
-      data-container-bundle-id="{{ container_bundle_id }}"
-      data-auto-display-mode="{{ auto_display_mode }}"
-      data-bundle-config="{{ bundle_config | escape }}"
+      data-is-bundle-product="{{ is_bundle_product }}"
+      data-is-container-product="{{ is_bundle_product }}"
+      data-container-bundle-id="{{ bundle_id }}"
+      data-bundle-config='{{ bundle_ui_config | json }}'
       data-hide-default-buttons="{{ hide_default_buttons }}"
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
@@ -461,39 +410,87 @@
       </div>
       {% endif %}
     </div>
+
+    <!-- 🔧 [THEME_DEBUG] Bundle Widget Debugging Information -->
+    <script>
+      console.log('🎯 [THEME_DEBUG] Bundle Widget Loading (Shopify Standard):', {
+        enabled: {{ block.settings.enabled | json }},
+        bundleId: {{ bundle_id | json }},
+        productId: {{ product.id | json }},
+        productHandle: {{ product.handle | json }},
+        productTemplate: {{ product.template_suffix | json }},
+        isBundleProduct: {{ is_bundle_product | json }},
+        shouldShowWidget: {{ should_show_widget | json }},
+        hideDefaultButtons: {{ hide_default_buttons | json }},
+        isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
+        urlParams: new URLSearchParams(window.location.search).toString()
+      });
+
+      // 🔍 Variant metafield debugging (Shopify Standard Architecture)
+      console.log('🔍 [THEME_DEBUG] Variant Metafields:', {
+        bundleUiConfig: {{ bundle_ui_config | json }},
+        variantId: {{ bundle_variant.id | json }},
+        appNamespace: {{ app_namespace | json }}
+      });
+    </script>
+
+    {% comment %} Hide default buy buttons if this is a container product {% endcomment %}
+    {% if hide_default_buttons %}
+    <style>
+      /* Hide default Shopify buy buttons on container products */
+      .product-form__cart-submit,
+      .product-form__buttons button[name="add"],
+      .btn.product-form__cart-submit,
+      button[name="add"]:not(.bundle-add-to-cart),
+      input[name="add"]:not(.bundle-add-to-cart),
+      form[action*="/cart/add"] button[type="submit"]:not(.bundle-add-to-cart),
+      form[action*="/cart/add"] input[type="submit"]:not(.bundle-add-to-cart),
+      .shopify-payment-button,
+      .dynamic-checkout__content,
+      .additional-checkout-buttons,
+      .payment-button-container,
+      [data-testid="AddToCartButton"]:not(.bundle-add-to-cart),
+      .add-to-cart-button:not(.bundle-add-to-cart),
+      .btn-addtocart:not(.bundle-add-to-cart),
+      .product-add-to-cart:not(.bundle-add-to-cart) {
+        display: none !important;
+      }
+
+      /* Show bundle widget prominently */
+      #bundle-builder-app {
+        background: #f8f9fa;
+        border: 2px solid #007ace;
+        border-radius: 12px;
+        padding: 24px;
+        margin: 20px 0;
+        box-shadow: 0 4px 12px rgba(0, 122, 206, 0.1);
+      }
+    </style>
+    {% endif %}
 {% endif %}
 
 <script>
   // Inject app URL from shop metafield (auto-synced when merchant accesses app admin)
-  window.__BUNDLE_APP_URL__ = {{ shop.metafields.app_config.server_url | json }};
+  // Note: Changed from appconfig namespace to $app namespace per TOML definition
+  // single_line_text_field metafields require .value accessor per Shopify docs
+  {% assign shop_app_metafields = shop.metafields[app_namespace] %}
+  {% assign server_url_field = nil %}
+  {% if shop_app_metafields %}
+    {% assign server_url_field = shop_app_metafields['serverUrl'] %}
+  {% endif %}
+  window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
 </script>
 
 <script>
-  // Load bundle configuration directly from product metafield
-  // This is much faster than shop-level metafields and naturally isolated
-  if (!window.allBundlesData) {
-    // Primary source: product's bundle_config metafield
-    // Note: App-scoped metafields ($app namespace) require bracket notation in theme app extensions
-    // JSON metafields require .value accessor to retrieve the parsed JSON object
-    // Reference: https://shopify.dev/changelog/metafields-and-metaobjects-reserved-prefixes-now-supported-in-theme-app-extensions
-    const productBundleConfig = {{ product.metafields['$app']['bundle_config'].value | json }};
-
-    // Set as allBundlesData object (widget expects this name)
-    // Create an object with the bundle ID as key for compatibility
-    if (productBundleConfig && productBundleConfig.id) {
-      window.allBundlesData = {
-        [productBundleConfig.id]: productBundleConfig
-      };
-    } else {
-      window.allBundlesData = null;
-    }
-
+  // Initialize global Shopify context for widget
+  // Widget reads bundle data directly from data-bundle-config attribute (no window global needed)
+  if (!window.bundleWidgetContext) {
     window.currentProductId = {{ product.id | json }};
     window.currentProductHandle = {{ product.handle | json }};
     window.currentProductCollections = {{ product.collections | json }};
     window.shopCurrency = {{ shop.currency | json }};
     window.shopMoneyFormat = {{ shop.money_format | json }};
-    
+
     // Enhanced multi-currency support
     window.shopifyMultiCurrency = {
       shopBaseCurrency: {{ shop.currency | json }},
@@ -504,26 +501,44 @@
       isMultiCurrencyEnabled: false
     };
     window.bundleWidgetInstanceCount = (window.bundleWidgetInstanceCount || 0) + 1;
+    window.bundleWidgetContext = true;
 
     // Enhanced debugging for bundle data loading
-    console.log('🎯 [BUNDLE_DATA] Loading bundle config from product metafield:', {{ product.id | json }});
-    console.log('🎯 [BUNDLE_DATA] Product bundle config found:', !!productBundleConfig);
-    console.log('🔍 [BUNDLE_DATA] Bundle config structure:', productBundleConfig);
+    const productBundleConfig = {{ bundle_ui_config | json }};
+    console.log('🎯 [BUNDLE_DATA] Product ID:', {{ product.id | json }});
+    console.log('🎯 [BUNDLE_DATA] Product Handle:', {{ product.handle | json }});
+    console.log('🎯 [BUNDLE_DATA] Has bundle config metafield:', !!productBundleConfig);
+    console.log('🎯 [BUNDLE_DATA] Bundle config value:', productBundleConfig);
+    console.log('🎯 [BUNDLE_DATA] App namespace:', {{ app_namespace | json }});
+    console.log('🎯 [BUNDLE_DATA] First variant ID:', {{ bundle_variant.id | json }});
+    console.log('🎯 [BUNDLE_DATA] Is bundle product flag:', {{ is_bundle_product | json }});
+    console.log('🎯 [BUNDLE_DATA] Should show widget:', {{ should_show_widget | json }});
 
-    // Validate bundle configuration
-    const hasBundleConfig = productBundleConfig && productBundleConfig.id;
+    // Debug app namespace metafields (checking specific keys only - cannot serialize entire metafields collection)
+    {% if bundle_variant %}
+      console.log('🔍 [METAFIELD_DEBUG] Checking variant metafields in namespace:', {{ app_namespace | json }});
 
-    if (!hasBundleConfig) {
-      console.log('🔄 [BUNDLE_DATA] No bundle config found on product metafield');
-      console.log('🔍 [BUNDLE_DATA] Product ID:', {{ product.id | json }});
-      console.log('🔍 [BUNDLE_DATA] Is this a bundle product? Check admin configuration.');
+      {% comment %}Check each expected metafield individually{% endcomment %}
+      {% assign bundle_ui_config_check = bundle_variant.metafields[app_namespace]['bundle_ui_config'] %}
+      {% assign component_reference_check = bundle_variant.metafields[app_namespace]['component_reference'] %}
 
-      // Bundle config not found - this may be expected for non-bundle products
-      console.log('ℹ️ [BUNDLE_DATA] This product does not have a bundle configuration.');
+      console.log('🔍 [METAFIELD_DEBUG] bundle_ui_config exists:', {{ bundle_ui_config_check | json }} !== null);
+      console.log('🔍 [METAFIELD_DEBUG] component_reference exists:', {{ component_reference_check | json }} !== null);
+
+      {% if bundle_ui_config_check == null and component_reference_check == null %}
+        console.log('⚠️ [METAFIELD_DEBUG] No bundle metafields found in namespace:', {{ app_namespace | json }});
+        console.log('⚠️ [METAFIELD_DEBUG] This means either:');
+        console.log('   1. Metafield definitions not created (need fresh install after latest deploy)');
+        console.log('   2. Metafield values not set on this variant');
+        console.log('   3. Wrong namespace being used');
+      {% endif %}
+    {% endif %}
+
+    if (productBundleConfig && productBundleConfig.bundleId) {
+      console.log('✅ [BUNDLE_DATA] Container product detected:', productBundleConfig.name);
+      console.log('✅ [BUNDLE_DATA] Bundle ID:', productBundleConfig.bundleId);
     } else {
-      console.log('✅ [BUNDLE_DATA] Bundle config loaded successfully:', productBundleConfig.name);
-      console.log('✅ [BUNDLE_DATA] Bundle ID:', productBundleConfig.id);
-      console.log('✅ [BUNDLE_DATA] window.allBundlesData set with', Object.keys(window.allBundlesData).length, 'bundle(s)');
+      console.log('ℹ️ [BUNDLE_DATA] Not a bundle container product - no bundle_ui_config metafield found');
     }
   }
   
@@ -582,9 +597,18 @@
       // Also update any existing widget instances with the bundle ID
       const existingWidgets = document.querySelectorAll('#bundle-builder-app');
       existingWidgets.forEach(widget => {
-        if (!widget.dataset.bundleId) {
+        if (!widget.dataset.bundleId || widget.dataset.bundleId === '') {
           widget.dataset.bundleId = bundleIdFromUrl;
-          console.log('[BUNDLE_WIDGET] Updated existing widget with bundle ID');
+          console.log('[BUNDLE_WIDGET] Updated existing widget with bundle ID:', bundleIdFromUrl);
+
+          // Mark for theme editor preview mode
+          widget.setAttribute('data-theme-editor-preview', 'true');
+
+          // Trigger widget re-initialization if it already tried to load
+          if (window.__bundleWidgetLoaded || window.__bundleWidgetLoading) {
+            console.log('[BUNDLE_WIDGET] Triggering widget re-initialization with bundleId');
+            window.dispatchEvent(new CustomEvent('bundleWidgetReload'));
+          }
         }
       });
 
@@ -604,82 +628,4 @@
 <link rel="stylesheet" href="{{ 'bundle-widget.css' | asset_url }}">
 
 <!-- Small loader (bundle-widget.js) handles widget initialization automatically -->
-<script src="{{ 'bundle-widget.js' | asset_url }}" defer></script>
-
-{% comment %} Auto-injection for bundle products that don't have manual widget placement {% endcomment %}
-{% unless should_show_widget %}
-<script>
-// 🎯 Auto-inject bundle widget on bundle products when widget isn't manually added
-(function() {
-  'use strict';
-
-  // Check if we're on a product page
-  if (!window.location.pathname.includes('/products/')) return;
-
-  // Check if bundle widget already exists
-  if (document.getElementById('bundle-builder-app')) return;
-
-  // Check if this is a bundle product via tags
-  const productData = {{ product | json }};
-  if (!productData || !productData.tags) return;
-
-  const tags = Array.isArray(productData.tags) ? productData.tags : productData.tags.split(',').map(t => t.trim());
-  const isBundleProduct = tags.includes('bundle') || tags.includes('cart-transform');
-
-  if (!isBundleProduct) return;
-
-  console.log('🎯 [AUTO_INJECT] Bundle product detected, injecting widget');
-
-  // Hide default buttons first
-  const buttonSelectors = [
-    'button[name="add"]', 'input[name="add"]', 'form[action*="/cart/add"] button[type="submit"]',
-    '.btn.product-form__cart-submit', '.shopify-payment-button', '[data-testid="AddToCartButton"]'
-  ];
-
-  buttonSelectors.forEach(selector => {
-    document.querySelectorAll(selector).forEach(btn => {
-      if (btn && !btn.getAttribute('data-bundle-hidden')) {
-        btn.style.display = 'none';
-        btn.setAttribute('data-bundle-hidden', 'true');
-      }
-    });
-  });
-
-  // Find injection point
-  const injectionTarget = document.querySelector('.product-form') ||
-                         document.querySelector('.product__form') ||
-                         document.querySelector('form[action*="/cart/add"]') ||
-                         document.body;
-
-  // Create bundle widget with footer messaging
-  const widgetHTML = `
-    <div id="bundle-builder-app" data-bundle-id="" data-is-bundle-product="true"
-         data-auto-display-mode="true" data-show-footer-messaging="true"
-         style="margin: 20px 0; padding: 20px; border: 2px solid #28a745; border-radius: 8px; background: #f8f9fa;">
-      <h2 style="color: #28a745; margin-bottom: 15px;">🎯 Bundle Product Detected</h2>
-      <p>Loading bundle configuration...</p>
-      <button class="add-bundle-to-cart" style="background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">
-        Add Bundle to Cart
-      </button>
-
-      <!-- Footer discount messaging with progress bar -->
-      <div class="bundle-footer-messaging" style="display: none;">
-        <div class="footer-discount-text"></div>
-        <div class="footer-progress-container">
-          <div class="progress-bar">
-            <div class="progress-fill"></div>
-          </div>
-          <div class="progress-details">
-            <span class="progress-text">
-              <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-  injectionTarget.insertAdjacentHTML('beforeend', widgetHTML);
-  console.log('🎯 [AUTO_INJECT] Bundle widget injected successfully');
-})();
-</script>
-{% endunless %} 
+<script src="{{ 'bundle-widget.js' | asset_url }}" defer></script> 

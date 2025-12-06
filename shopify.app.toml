@@ -10,15 +10,21 @@ embedded = true
 automatically_update_urls_on_dev = false
 
 [webhooks]
-api_version = "2025-04"
+api_version = "2025-10"
 
   [[webhooks.subscriptions]]
-  uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
+  uri = "pubsub://light-quest-455608-i3:wolfpack-product-bundles"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  topics = [
+    "app_subscriptions/update",
+    "app_purchases_one_time/update",
+    "products/update",
+    "products/delete"
+  ]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,write_themes,unauthenticated_read_product_listings,unauthenticated_read_content"
+scopes = "read_content,read_product_listings,read_products,read_themes,write_themes,write_cart_transforms,write_discounts,write_products,unauthenticated_read_product_listings,unauthenticated_read_content"
 
 [auth]
 redirect_urls = [
@@ -29,3 +35,27 @@ redirect_urls = [
 
 [pos]
 embedded = false
+
+[app_proxy]
+url = "https://wolfpack-product-bundle-app.onrender.com"
+subpath = "product-bundles"
+prefix = "apps"
+
+[metafields]
+api_version = "2025-10"
+
+# App Configuration
+# Shop-level app settings
+[shop.metafields.app.serverUrl]
+type = "single_line_text_field"
+name = "App Server URL"
+description = "URL of the app server for widget API calls"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+[shop.metafields.app.lastSync]
+type = "single_line_text_field"
+name = "Last Sync Timestamp"
+description = "ISO timestamp of last successful sync with app server"
+access.admin = "merchant_read"
+access.storefront = "none"

@@ -33,9 +33,10 @@ const BUNDLE_WIDGET = {
     BUNDLE_CONFIG: '_bundle_config'
   },
 
-  // Bundle Types
+  // Bundle Types (Display Modes)
   BUNDLE_TYPES: {
-    CART_TRANSFORM: 'cart_transform'
+    PRODUCT_PAGE: 'product_page',  // Widget embedded in product page
+    FULL_PAGE: 'full_page'         // Dedicated bundle page (future)
   },
 
   // Step Condition Operators
@@ -237,9 +238,10 @@ class BundleDataManager {
       return null;
     }
 
-    // Selection priority for cart transform bundles
+    // Selection priority for bundles (both product-page and full-page types)
     for (const bundle of bundles) {
-      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.CART_TRANSFORM) {
+      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
         // Priority 1: Manual bundle ID
         if (config.bundleId && bundle.id === config.bundleId) {
           return bundle;
@@ -342,6 +344,10 @@ class PricingCalculator {
 
   static calculateDiscount(bundle, totalPrice, totalQuantity) {
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
+      console.log('[DISCOUNT] No pricing enabled or no rules', {
+        enabled: bundle?.pricing?.enabled,
+        rulesLength: bundle?.pricing?.rules?.length
+      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -380,6 +386,11 @@ class PricingCalculator {
     }
 
     if (!bestRule) {
+      console.log('[DISCOUNT] No rule matched conditions', {
+        totalPrice,
+        totalQuantity,
+        rulesChecked: rules.length
+      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -424,13 +435,23 @@ class PricingCalculator {
       applicableRule: bestRule,
       discountMethod
     };
+
+    console.log('[DISCOUNT] Calculated discount:', {
+      hasDiscount: result.hasDiscount,
+      discountAmount: result.discountAmount,
+      finalPrice: result.finalPrice,
+      originalPrice: totalPrice,
+      discountPercentage: result.discountPercentage.toFixed(2) + '%',
+      method: discountMethod
+    });
+
     return result;
   }
 
   static checkCondition(value, condition, targetValue) {
     // Handle different condition formats
     const normalizedCondition = this.normalizeCondition(condition);
-    
+
     switch (normalizedCondition) {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
         return value === targetValue;
@@ -464,7 +485,7 @@ class PricingCalculator {
       'less_than_or_equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO,
       'less_than_equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO
     };
-    
+
     return conditionMap[condition] || condition || BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO;
   }
 
@@ -649,10 +670,10 @@ class TemplateManager {
 
     // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo);
-    
+
     // Calculate discount-specific values  
     const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
-    
+
     // Calculate progress
     const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
     const progressPercentage = targetValue > 0 ? Math.min(100, (currentProgress / targetValue) * 100) : 0;
@@ -840,14 +861,18 @@ class BundleWidget {
     this.config = {};
     this.elements = {};
 
-    this.init();
+    // Call async init but don't block constructor
+    this.init().catch(error => {
+      console.error('[WIDGET_INIT] ❌ Initialization failed:', error);
+      this.showError(error.message);
+    });
   }
 
   // ========================================================================
   // INITIALIZATION
   // ========================================================================
 
-  init() {
+  async init() {
     try {
       // Check if already initialized
       if (this.container.dataset.initialized === 'true') {
@@ -857,8 +882,11 @@ class BundleWidget {
       // Parse configuration
       this.parseConfiguration();
 
+      // Load design settings CSS
+      await this.loadDesignSettingsCSS();
+
       // Load and validate bundle data
-      this.loadBundleData();
+      await this.loadBundleData();
 
       // Select appropriate bundle
       this.selectBundle();
@@ -889,6 +917,53 @@ class BundleWidget {
     }
   }
 
+  /**
+   * Load Design Control Panel CSS settings
+   * Injects custom CSS from Design Control Panel into the page
+   */
+  async loadDesignSettingsCSS() {
+    try {
+      // Get shop domain from bundle data or window
+      const shopDomain = window.Shopify?.shop || this.container.dataset.shop;
+
+      if (!shopDomain) {
+        console.warn('[BUNDLE_WIDGET] No shop domain found, skipping design settings');
+        return;
+      }
+
+      // Get bundle type (defaults to product_page)
+      const bundleType = this.selectedBundle?.bundleType || 'product_page';
+
+      // Check if design CSS is already loaded
+      const existingLink = document.getElementById('bundle-design-settings-css');
+      if (existingLink) {
+        existingLink.remove();
+      }
+
+      // Get app URL from metafield or use current domain
+      const appUrl = this.container.dataset.appUrl || window.location.origin;
+
+      // Build CSS URL
+      const cssUrl = `${appUrl}/api/design-settings/${shopDomain}.css?bundleType=${bundleType}`;
+
+      // Create and inject link element
+      const linkElement = document.createElement('link');
+      linkElement.id = 'bundle-design-settings-css';
+      linkElement.rel = 'stylesheet';
+      linkElement.href = cssUrl;
+      linkElement.type = 'text/css';
+
+      // Add to document head
+      document.head.appendChild(linkElement);
+
+      console.log('[BUNDLE_WIDGET] ✅ Design settings CSS loaded:', cssUrl);
+
+    } catch (error) {
+      console.warn('[BUNDLE_WIDGET] Failed to load design settings CSS:', error);
+      // Don't throw - widget should work even if design CSS fails to load
+    }
+  }
+
   parseConfiguration() {
     const dataset = this.container.dataset;
 
@@ -912,26 +987,26 @@ class BundleWidget {
   normalizeDiscountTemplate(template) {
     // Professional template normalization with comprehensive old variable detection
     const modernTemplate = 'Add {conditionText} to get {discountText}';
-    
+
     // If no template provided, use modern default
     if (!template) {
       return modernTemplate;
     }
-    
+
     // Detect old variable patterns and normalize to modern format
     const oldVariablePatterns = [
       'discountConditionDiff',
-      'discountUnit', 
+      'discountUnit',
       'discountValue',
       'discountValueUnit'
     ];
-    
+
     const hasOldVariables = oldVariablePatterns.some(pattern => template.includes(pattern));
-    
+
     if (hasOldVariables) {
       return modernTemplate;
     }
-    
+
     // Template is already modern, return as-is
     return template;
   }
@@ -948,29 +1023,59 @@ class BundleWidget {
     return template;
   }
 
-  loadBundleData() {
+  async loadBundleData() {
     let bundleData = null;
 
-    // Source 1: data-bundle-config attribute
-    if (this.container.dataset.bundleConfig) {
+    // Single source: data-bundle-config attribute (from product metafield)
+    const configValue = this.container.dataset.bundleConfig;
+    if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
       try {
-        const singleBundle = JSON.parse(this.container.dataset.bundleConfig);
-        bundleData = { [singleBundle.id]: singleBundle };
+        const singleBundle = JSON.parse(configValue);
+        // Validate parsed result is a valid object with an id
+        if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
+          bundleData = { [singleBundle.id]: singleBundle };
+          console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
+        } else {
+          console.warn('[WIDGET_INIT] ⚠️ Parsed bundle config is invalid (missing id):', singleBundle);
+        }
       } catch (error) {
-        console.error('[WIDGET_INIT] Failed to parse data-bundle-config:', error);
+        console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error, 'Value:', configValue.substring(0, 100));
       }
+    } else {
+      console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
     }
 
-    // Source 2: window.allBundlesData
-    if (!bundleData && window.allBundlesData) {
-      bundleData = window.allBundlesData;
-    }
+    // Widget only works on container products with bundleConfig metafield
+    if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+      // Check if we're in theme editor mode
+      const isThemeEditor = window.Shopify?.designMode ||
+                           window.isThemeEditorContext ||
+                           window.location.pathname.includes('/editor') ||
+                           window.location.search.includes('preview_theme_id');
 
-    if (!bundleData) {
-      throw new Error('No bundle data available');
+      const bundleIdFromDataset = this.container.dataset.bundleId;
+
+      // Show helpful preview in theme editor instead of error
+      if (isThemeEditor && bundleIdFromDataset) {
+        console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
+        this.showThemeEditorPreview(bundleIdFromDataset);
+        return; // Don't throw error, just show preview
+      }
+
+      // For production/storefront: show proper error
+      const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
+      console.error('[WIDGET_INIT] ❌', errorMsg);
+      console.error('[WIDGET_INIT] 🔍 Debug info:', {
+        isContainerProduct: !!configValue,
+        configValue: configValue?.substring(0, 100),
+        containerDataset: this.container.dataset,
+        bundleIdFromDataset: bundleIdFromDataset
+      });
+      throw new Error(errorMsg);
     }
 
     this.bundleData = bundleData;
+    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully from container product metafield');
   }
 
   selectBundle() {
@@ -985,6 +1090,63 @@ class BundleWidget {
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
+  }
+
+  /**
+   * Show a helpful preview in theme editor when testing on non-bundle products
+   */
+  showThemeEditorPreview(bundleId) {
+    console.log('[WIDGET_PREVIEW] Showing theme editor preview for bundle:', bundleId);
+
+    this.container.innerHTML = `
+      <div style="
+        padding: 32px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 2px dashed #667eea;
+        border-radius: 12px;
+        text-align: center;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      ">
+        <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+        <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
+        <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
+          Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
+        </p>
+        <div style="
+          margin: 20px auto 0;
+          padding: 16px;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 8px;
+          max-width: 400px;
+          text-align: left;
+          font-size: 13px;
+          line-height: 1.6;
+        ">
+          <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
+          <div style="opacity: 0.9;">
+            This widget will automatically display on <strong>bundle container products</strong>.
+            <br><br>
+            <strong>To see it in action:</strong>
+            <ol style="margin: 8px 0; padding-left: 20px;">
+              <li>Save your theme</li>
+              <li>Navigate to a bundle product page</li>
+              <li>The widget will appear with product selection steps</li>
+            </ol>
+          </div>
+        </div>
+        <div style="
+          margin-top: 20px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          font-size: 12px;
+          opacity: 0.8;
+        ">
+          💡 <strong>Tip:</strong> You're currently previewing on a regular product. The widget only activates on products configured as bundle containers.
+        </div>
+      </div>
+    `;
   }
 
   // ========================================================================
@@ -1354,15 +1516,34 @@ class BundleWidget {
 
     const button = this.elements.addToCartButton;
 
-    if (totalQuantity === 0) {
-      button.textContent = 'Add Bundle to Cart';
+    // Check if all steps are complete (required)
+    const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+
+    // Disable button if no products selected OR if not all steps are complete
+    if (totalQuantity === 0 || !allStepsValid) {
+      if (totalQuantity === 0) {
+        button.textContent = 'Add Bundle to Cart';
+      } else {
+        // Some products selected but not all steps complete
+        button.textContent = 'Complete All Steps to Continue';
+      }
       button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
     } else {
+      // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
       const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
 
+      console.log('[ADD_TO_CART_BUTTON] Discount info:', {
+        hasDiscount: discountInfo.hasDiscount,
+        showDiscountDisplay: this.selectedBundle.pricing?.messages?.showDiscountDisplay,
+        shouldShowStrikethrough: discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false
+      });
+
       if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
         const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+        console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
         button.innerHTML = `
           <span style="display: flex; flex-direction: column; align-items: center;">
             <span style="text-decoration: line-through; font-size: 0.8em; opacity: 0.7;">${originalPrice}</span>
@@ -1370,10 +1551,13 @@ class BundleWidget {
           </span>
         `;
       } else {
+        console.log('[ADD_TO_CART_BUTTON] No strikethrough shown');
         button.textContent = `Add Bundle to Cart • ${formattedPrice}`;
       }
 
       button.disabled = false;
+      button.style.opacity = '1';
+      button.style.cursor = 'pointer';
     }
   }
   // ========================================================================
@@ -1502,30 +1686,38 @@ class BundleWidget {
       }
     }
 
-    // Process collection products
+    // Process collection products using Storefront API (not legacy REST endpoint)
     if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-      const collectionPromises = step.collections.map(async (collection) => {
-        if (!collection.handle) {
-          return [];
-        }
+      const collectionHandles = step.collections
+        .map(c => c.handle)
+        .filter(Boolean);
+
+      if (collectionHandles.length > 0) {
+        const shop = window.Shopify?.shop || window.location.host;
+        const widgetContainer = document.querySelector('#bundle-builder-app');
+        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const apiBaseUrl = appUrl || window.location.origin;
+
+        console.log('[LOAD_PRODUCTS] Fetching products from collections via Storefront API:', collectionHandles);
 
         try {
-          const response = await fetch(`/collections/${collection.handle}/products.json?limit=250`);
+          const response = await fetch(
+            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
+          );
 
-          if (!response.ok) {
-            return [];
+          if (response.ok) {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'products from collections');
+            }
+          } else {
+            console.error('[LOAD_PRODUCTS] Failed to fetch collection products:', response.status);
           }
-
-          const data = await response.json();
-          const products = data.products || [];
-          return products;
         } catch (error) {
-          return [];
+          console.error('[LOAD_PRODUCTS] Error fetching collection products:', error);
         }
-      });
-
-      const collectionProducts = (await Promise.all(collectionPromises)).flat();
-      allProducts = allProducts.concat(collectionProducts);
+      }
     }
 
     // Process and normalize product data
@@ -1554,44 +1746,46 @@ class BundleWidget {
   processProductsForStep(products, step) {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
-        // Display each variant as separate product
-        return product.variants.map(variant => {
-          const imageUrl = product.imageUrl ||
-                          product.images?.[0]?.originalSrc ||
-                          product.images?.[0]?.src ||
-                          product.image?.src ||
-                          variant.image?.src ||
-                          'https://via.placeholder.com/150';
+        // Display each variant as separate product - filter out unavailable variants
+        return product.variants
+          .filter(variant => variant.available === true) // Only show available variants
+          .map(variant => {
+            // Storefront API: prioritize variant image, fallback to product featured image
+            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
-          return {
-            id: this.extractId(variant.id),
-            title: `${product.title} - ${variant.title}`,
-            imageUrl,
-            price: parseFloat(variant.price || '0') * 100,
-            variantId: this.extractId(variant.id)
-          };
-        });
+            return {
+              id: this.extractId(variant.id),
+              title: `${product.title} - ${variant.title}`,
+              imageUrl,
+              price: parseFloat(variant.price || '0') * 100,
+              variantId: this.extractId(variant.id),
+              available: variant.available === true // Store availability (always boolean)
+            };
+          });
       } else {
-        // Display product with default variant
+        // Display product with default variant - check availability
         const defaultVariant = product.variants?.[0];
-        const imageUrl = product.imageUrl ||
-                        product.images?.[0]?.originalSrc ||
-                        product.images?.[0]?.src ||
-                        product.image?.src ||
-                        defaultVariant?.image?.src ||
-                        'https://via.placeholder.com/150';
+
+        // Skip product if default variant is not available
+        if (defaultVariant && defaultVariant.available !== true) {
+          return [];
+        }
+
+        // Storefront API: prioritize variant image, fallback to product featured image
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
         return [{
           id: this.extractId(defaultVariant?.id || product.id),
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-          variantId: this.extractId(defaultVariant?.id || product.id)
+          variantId: this.extractId(defaultVariant?.id || product.id),
+          available: defaultVariant?.available === true // Store availability (always boolean from API)
         }];
       }
     });
   }
-  
+
   extractId(idString) {
     if (!idString) return null;
 
@@ -1715,7 +1909,7 @@ class BundleWidget {
     // Remove existing event listeners to prevent duplicates
     const newProductGrid = productGrid.cloneNode(true);
     productGrid.parentNode.replaceChild(newProductGrid, productGrid);
-    
+
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('quantity-control-button')) {
@@ -1800,11 +1994,11 @@ class BundleWidget {
     if (productCard) {
       const quantityDisplay = productCard.querySelector('.quantity-display');
       const selectedOverlay = productCard.querySelector('.selected-overlay');
-      
+
       if (quantityDisplay) {
         quantityDisplay.textContent = quantity;
       }
-      
+
       if (selectedOverlay) {
         if (quantity > 0) {
           selectedOverlay.textContent = quantity;
@@ -1813,7 +2007,7 @@ class BundleWidget {
           selectedOverlay.style.display = 'none';
         }
       }
-      
+
       // Update card visual state
       if (quantity > 0) {
         productCard.classList.add('selected');
@@ -2067,8 +2261,23 @@ class BundleWidget {
   }
 
   buildCartItems() {
+    // Shopify Standard Bundle approach for configurable bundles:
+    // Add ACTUAL selected component products to cart with _bundle_id property
+    // Cart transform MERGE groups by _bundle_id and combines into bundle parent
+    // See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+
     const cartItems = [];
     const bundleInstanceId = this.generateBundleInstanceId();
+
+    console.log('[CART] Building cart items for bundle:', {
+      bundleId: this.selectedBundle.id,
+      bundleName: this.selectedBundle.name,
+      bundleInstanceId
+    });
+
+    // Add ACTUAL selected component products to cart
+    // Each component gets _bundle_id property for grouping in cart transform
+    const unavailableProducts = []; // Track unavailable products
 
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.stepProductData[stepIndex];
@@ -2077,48 +2286,75 @@ class BundleWidget {
         if (quantity > 0) {
           const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
           if (product) {
+            // Check availability before adding to cart
+            if (product.available !== true) {
+              console.warn('[CART] Product not available for sale:', {
+                stepIndex,
+                variantId,
+                productTitle: product.title,
+                availabilityStatus: product.available
+              });
+              unavailableProducts.push(product.title);
+              return; // Skip this product
+            }
+
+            console.log('[CART] Adding component:', {
+              stepIndex,
+              variantId,
+              quantity,
+              productTitle: product.title,
+              bundleInstanceId,
+              available: product.available
+            });
+
             const cartItem = {
               id: parseInt(variantId),
               quantity: quantity,
               properties: {
-                [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_ID]: bundleInstanceId,
-                [BUNDLE_WIDGET.CART_PROPERTIES.BUNDLE_CONFIG]: JSON.stringify(this.selectedBundle)
+                '_bundle_id': bundleInstanceId,
+                '_bundle_name': this.selectedBundle.name,
+                '_step_index': stepIndex.toString()
               }
             };
-            
+
             cartItems.push(cartItem);
           }
         }
       });
     });
+
+    console.log('[CART] Cart items to add (components with _bundle_id property):', cartItems);
+
+    // Throw error if any products are unavailable
+    if (unavailableProducts.length > 0) {
+      const productList = unavailableProducts.join(', ');
+      throw new Error(`The following product${unavailableProducts.length > 1 ? 's are' : ' is'} currently unavailable: ${productList}. Please remove ${unavailableProducts.length > 1 ? 'them' : 'it'} from your bundle or try again later.`);
+    }
+
     return cartItems;
   }
 
   generateBundleInstanceId() {
-    // Create deterministic ID based on bundle + selected products
-    const itemsSignature = this.selectedProducts
-      .map((stepSelections, stepIndex) => {
-        const sortedItems = Object.entries(stepSelections)
-          .filter(([_, qty]) => qty > 0)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([variantId, quantity]) => `${variantId}:${quantity}`)
-          .join('|');
-        return `step${stepIndex}:${sortedItems}`;
-      })
-      .filter(step => step !== `step${this.selectedProducts.indexOf(step)}:`)
-      .join('||');
+    // Generate unique bundle instance ID using UUID (recommended by Shopify)
+    // This prevents hash collisions and ensures each bundle instance is truly unique
+    // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
 
-    // Simple hash function
-    let hash = 0;
-    const str = `${this.selectedBundle.id}_${itemsSignature}`;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
+    // Use crypto.randomUUID() if available (modern browsers)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      const uuid = crypto.randomUUID();
+      const bundleInstanceId = `${this.selectedBundle.id}_${uuid}`;
+
+      console.log('[CART] Generated UUID-based bundle instance ID:', bundleInstanceId);
+      return bundleInstanceId;
     }
 
-    const bundleInstanceId = `${this.selectedBundle.id}_${Math.abs(hash)}`;
+    // Fallback for older browsers: use timestamp + random number
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000000);
+    const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
 
+    console.warn('[CART] crypto.randomUUID() not available, using fallback ID generation');
+    console.log('[CART] Generated fallback bundle instance ID:', bundleInstanceId);
     return bundleInstanceId;
   }
   // ========================================================================
@@ -2286,33 +2522,7 @@ class BundleWidgetManager {
   }
 }
 
-// ============================================================================
-// LEGACY COMPATIBILITY FUNCTIONS
-// ============================================================================
 
-// Legacy function for backward compatibility
-function initializeBundleWidget(containerElement) {
-  if (!containerElement) {
-    return;
-  }
-
-  try {
-    const widget = new BundleWidget(containerElement);
-    return widget;
-  } catch (error) {
-    return null;
-  }
-}
-
-// Legacy function for theme editor
-function reinitializeAllBundleWidgets() {
-  BundleWidgetManager.reinitialize();
-}
-
-// Legacy toast function
-function showToast(message, type = 'info', duration = 4000) {
-  ToastManager.show(message, type, duration);
-}
 
 // ============================================================================
 // AUTO-INITIALIZATION AND THEME EDITOR SUPPORT
@@ -2351,6 +2561,12 @@ if (document.readyState === 'loading') {
   BundleWidgetManager.initialize();
 }
 
+// Listen for reload requests from theme editor when bundleId is auto-populated
+window.addEventListener('bundleWidgetReload', () => {
+  console.log('[BUNDLE_WIDGET] Received reload request, reinitializing widgets...');
+  BundleWidgetManager.reinitialize();
+});
+
 // Shopify theme editor support
 if (BundleDataManager.isThemeEditorContext()) {
   // Watch for theme editor changes
@@ -2383,8 +2599,3 @@ window.BundleWidgetManager = BundleWidgetManager;
 window.CurrencyManager = CurrencyManager;
 window.PricingCalculator = PricingCalculator;
 window.ToastManager = ToastManager;
-
-// Legacy global functions
-window.initializeBundleWidget = initializeBundleWidget;
-window.reinitializeAllBundleWidgets = reinitializeAllBundleWidgets;
-window.showToast = showToast;
