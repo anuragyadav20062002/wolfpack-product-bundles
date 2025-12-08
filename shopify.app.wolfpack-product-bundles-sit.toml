@@ -5,9 +5,6 @@ name = "Wolfpack: Product Bundles -SIT"
 application_url = "https://wolfpack-product-bundle-app-sit.onrender.com"
 embedded = true
 
-[build]
-automatically_update_urls_on_dev = false
-
 [webhooks]
 api_version = "2025-10"
 
@@ -33,6 +30,11 @@ redirect_urls = [
   "https://wolfpack-product-bundle-app-sit.onrender.com/auth/shopify/callback",
   "https://wolfpack-product-bundle-app-sit.onrender.com/api/auth/callback"
 ]
+
+[app_proxy]
+url = "https://wolfpack-product-bundle-app-sit.onrender.com"
+subpath = "product-bundles"
+prefix = "apps"
 
 [metafields]
 api_version = "2025-10"
