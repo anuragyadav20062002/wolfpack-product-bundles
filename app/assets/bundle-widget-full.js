@@ -931,31 +931,14 @@ class BundleWidget {
         return;
       }
 
-      // Get bundle type (defaults to product_page)
-      const bundleType = this.selectedBundle?.bundleType || 'product_page';
-
-      // Check if design CSS is already loaded
-      const existingLink = document.getElementById('bundle-design-settings-css');
+      // CSS is loaded by the small loader (bundle-widget.js) for better performance
+      // No need to load it here - just verify it's present
+      const existingLink = document.querySelector('link[href*="design-settings"]');
       if (existingLink) {
-        existingLink.remove();
+        console.log('[BUNDLE_WIDGET] ✅ Design CSS already loaded by loader script');
+      } else {
+        console.warn('[BUNDLE_WIDGET] ⚠️ Design CSS not found - loader script may have failed');
       }
-      
-      const appUrl = window.__BUNDLE_APP_URL__ || '';
-
-      // Build CSS URL
-      const cssUrl = `${appUrl}/api/design-settings/${shopDomain}.css?bundleType=${bundleType}`;
-
-      // Create and inject link element
-      const linkElement = document.createElement('link');
-      linkElement.id = 'bundle-design-settings-css';
-      linkElement.rel = 'stylesheet';
-      linkElement.href = cssUrl;
-      linkElement.type = 'text/css';
-
-      // Add to document head
-      document.head.appendChild(linkElement);
-
-      console.log('[BUNDLE_WIDGET] ✅ Design settings CSS loaded:', cssUrl);
 
     } catch (error) {
       console.warn('[BUNDLE_WIDGET] Failed to load design settings CSS:', error);
