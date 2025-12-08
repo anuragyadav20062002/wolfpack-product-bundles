@@ -225,7 +225,7 @@ export default function PricingPage() {
                     <Button
                       fullWidth
                       variant={isFreePlan ? "secondary" : "primary"}
-                      disabled={isFreePlan}
+                      disabled={isGrowPlan}
                       onClick={() => handleSelectPlan("free")}
                     >
                       {isFreePlan ? "Current Plan" : "Select Plan"}
@@ -278,7 +278,8 @@ export default function PricingPage() {
                     <Button
                       fullWidth
                       variant="primary"
-                      disabled={isGrowPlan}
+                      //disabled={isGrowPlan}
+                      disabled={true}
                       loading={isUpgrading}
                       onClick={() => handleSelectPlan("grow")}
                     >
@@ -301,15 +302,7 @@ export default function PricingPage() {
                       Can I change plans at any time?
                     </Text>
                     <Text as="p" variant="bodyMd" tone="subdued">
-                      Yes! You can upgrade or downgrade your plan at any time from the Billing page.
-                    </Text>
-                  </BlockStack>
-                  <BlockStack gap="100">
-                    <Text as="p" variant="bodyMd" fontWeight="semibold">
-                      What happens if I downgrade?
-                    </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      If you have more bundles than your new plan allows, excess bundles will be automatically archived. You can reactivate them by upgrading again.
+                      Yes! You can upgrade your plan at any time from the Billing page.
                     </Text>
                   </BlockStack>
                   <BlockStack gap="100">

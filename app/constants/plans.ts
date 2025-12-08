@@ -27,25 +27,29 @@ export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
     bundleLimit: 3,
     features: [
       "Up to 3 bundles",
-      "Basic bundle builder",
-      "Cart transformation",
+      "Product Page Bundles",
+      "Future: Full Page Bundles",
+      "Discount Support",
+      "All features available",
+      "Standard support",
       "Community support"
     ]
   },
   grow: {
     id: "grow",
-    name: "Grow Plan",
+    name: "Grow Plan (Coming Soon)",
     price: 9.99,
     currencyCode: "USD",
     interval: "EVERY_30_DAYS",
     bundleLimit: 20,
     features: [
       "Up to 20 bundles",
-      "Advanced bundle builder",
-      "Cart transformation",
+      "More Bundle Types",
+      "Discount Support",
+      "Design Control Panel",
+      "Future: Bundle analytics",
       "Priority support",
-      "Future: Advanced analytics",
-      "Future: Custom styling"
+      "Community support"
     ]
   }
 };
