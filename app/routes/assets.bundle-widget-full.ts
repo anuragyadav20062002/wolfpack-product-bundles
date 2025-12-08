@@ -51,7 +51,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         // Static ETag for proper cache validation
         // Uses app version to invalidate cache on deployments
         // NOTE: Update this when deploying widget changes
-        "ETag": `"bundle-widget-v1.0.1"`,
+        "ETag": `"bundle-widget-v1.0.2"`,
 
         // Additional performance headers
         "X-Content-Type-Options": "nosniff",
