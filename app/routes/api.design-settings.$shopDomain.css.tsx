@@ -268,6 +268,27 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   background-color: var(--bundle-button-hover-bg) !important;
 }
 
+.add-bundle-to-cart.disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.button-price-wrapper {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.button-price-strike {
+  text-decoration: line-through !important;
+  font-size: 0.8em !important;
+  opacity: 0.7 !important;
+}
+
+.button-price-final {
+  font-size: 1em !important;
+}
+
 /* FOOTER STYLING */
 .bundle-footer-messaging,
 .modal-footer-discount-messaging {
