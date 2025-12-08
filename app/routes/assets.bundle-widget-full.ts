@@ -39,21 +39,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         "Access-Control-Allow-Methods": "GET, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
 
-        // Cache headers - Cache for 1 hour (3600 seconds)
-        // This means the browser will cache the file for 1 hour before requesting it again
-        // Benefits:
-        // - Reduces server load
-        // - Faster page loads for returning visitors
-        // - Lower bandwidth usage
-        "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        // Cache headers - Aggressive caching for high-traffic scale
+        // Cache for 1 hour, serve stale content during revalidation for 24 hours
+        // This handles traffic spikes (sales, promotions) by serving cached versions
+        // even when cache is expired, while fetching fresh content in background
+        "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
 
-        // CDN cache header (for services like Cloudflare)
-        // Tells CDNs to cache for 1 hour as well
+        // CDN cache header (for Shopify's CDN when using app proxy)
         "CDN-Cache-Control": "public, max-age=3600",
 
-        // ETag for cache validation - force reload with timestamp
-        // Allows browser to check if file has changed without downloading it
-        "ETag": `"bundle-widget-${Date.now()}"`,
+        // Static ETag for proper cache validation
+        // Uses app version to invalidate cache on deployments
+        // NOTE: Update this when deploying widget changes
+        "ETag": `"bundle-widget-v1.0.1"`,
 
         // Additional performance headers
         "X-Content-Type-Options": "nosniff",

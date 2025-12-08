@@ -62,51 +62,43 @@
   };
 
   /**
-   * Generates the appropriate URL based on environment
+   * Generates the appropriate URL for loading external assets
    *
-   * Shopify App Proxy Strategy (Official Best Practice):
-   * -----------------------------------------------------
-   * PRODUCTION/SHOPIFY ENVIRONMENT:
-   *   - Uses Shopify App Proxy when window.Shopify exists
-   *   - URL format: /apps/product-bundles/... (same-origin)
-   *   - Benefits: No CORS issues, passes strict CSP, faster loading
-   *   - App proxy auto-forwards: shop.com/apps/product-bundles/api/... → your-app.com/api/...
+   * Hybrid Strategy for Optimal Performance & Scale:
+   * -------------------------------------------------
+   * 1. PRIMARY: App Proxy (for production storefronts)
+   *    - Same-origin requests through Shopify's infrastructure
+   *    - Benefits: CDN caching, no CORS, better DDoS protection
+   *    - Used when window.Shopify exists (live storefront)
    *
-   * LOCAL DEVELOPMENT (Outside Shopify):
-   *   - Uses direct app server URL when:
-   *     a) window.Shopify is not available (testing in isolation)
-   *     b) Explicit override via data-app-url attribute in theme editor
-   *   - Detects Shopify environment using official indicators:
-   *     * window.Shopify.designMode - Theme customizer/editor
-   *     * URL params: preview_theme_id, preview_key - Preview mode
-   *     * window.parent !== window - Iframe context (editor)
+   * 2. FALLBACK: Direct URL (for development/testing)
+   *    - Direct connection to app server
+   *    - Used when outside Shopify environment
    *
-   * @param {string} path - API path (e.g., "/api/design-settings/shop.css")
+   * Scale Considerations:
+   * - App proxy routes through Shopify's CDN and edge network
+   * - Handles thousands of concurrent users during sales/traffic spikes
+   * - Reduces load on your app server (only unique CSS fetches hit backend)
+   *
+   * @param {string} path - API path (e.g., "/api/design-settings/shop")
    * @returns {string} - Full URL to use for the request
    */
-  function getProxiedUrl(path) {
-    // Shopify's official environment detection
-    const isShopifyEnvironment = window.Shopify && window.Shopify.shop;
+  function getAssetUrl(path) {
+    const isShopifyStorefront = window.Shopify && window.Shopify.shop;
 
-    // Theme editor/preview detection (Shopify recommended patterns)
-    const isThemeEditor = window.Shopify?.designMode === true ||
-                          window.location.search.includes('preview_theme_id') ||
-                          window.location.search.includes('preview_key') ||
-                          window.parent !== window; // In iframe (theme editor)
-
-    if (isShopifyEnvironment || isThemeEditor) {
-      // SHOPIFY ENVIRONMENT: Use app proxy (same-origin requests)
-      console.log('[Bundle Widget] 🚀 Using Shopify App Proxy (production/development store)');
+    if (isShopifyStorefront) {
+      // PRODUCTION: Use app proxy for better scale and performance
+      console.log('[Bundle Widget] 🚀 Using Shopify App Proxy (CDN-cached)');
       return `/apps/product-bundles${path}`;
     } else {
-      // STANDALONE TESTING: Use direct URL (outside Shopify context)
-      console.log('[Bundle Widget] 🔧 Using direct URL (standalone development)');
+      // DEVELOPMENT: Use direct URL for testing outside Shopify
+      console.log('[Bundle Widget] 🔧 Using direct app URL');
       return `${CONFIG.appUrl}${path}`;
     }
   }
 
   /**
-   * Loads design settings CSS from the app server via app proxy
+   * Loads design settings CSS from the app server (via app proxy for scale)
    */
   function loadDesignCSS() {
     const shopDomain = window.Shopify?.shop || null;
@@ -116,7 +108,8 @@
       return;
     }
 
-    const cssUrl = getProxiedUrl(`/api/design-settings/${shopDomain}.css`);
+    // Use app proxy path (without .css) - route will set Content-Type: text/css
+    const cssUrl = getAssetUrl(`/api/design-settings/${shopDomain}`);
 
     console.log("[Bundle Widget] Loading design CSS from:", cssUrl);
 
@@ -137,10 +130,10 @@
   }
 
   /**
-   * Loads the full bundle widget script from the app server via app proxy
+   * Loads the full bundle widget script from the app server (via app proxy for scale)
    */
   function loadFullWidget(retryCount = 0) {
-    const scriptUrl = getProxiedUrl(CONFIG.scriptPath);
+    const scriptUrl = getAssetUrl(CONFIG.scriptPath);
 
     console.log(
       `[Bundle Widget] Loading full widget from: ${scriptUrl} (attempt ${retryCount + 1}/${CONFIG.maxRetries})`
