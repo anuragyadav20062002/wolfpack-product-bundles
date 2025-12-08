@@ -56,6 +56,10 @@
     // Script path on app server
     scriptPath: "/assets/bundle-widget-full",
 
+    // Widget version - increment this when deploying updates to force cache invalidation
+    // Format: MAJOR.MINOR.PATCH (following semantic versioning)
+    version: "1.0.3",
+
     // Retry configuration
     maxRetries: 3,
     retryDelay: 1000, // 1 second
@@ -109,7 +113,8 @@
     }
 
     // Use app proxy path (without .css) - route will set Content-Type: text/css
-    const cssUrl = getAssetUrl(`/api/design-settings/${shopDomain}`);
+    // Add version parameter for cache control (static per deployment for optimal CDN caching)
+    const cssUrl = getAssetUrl(`/api/design-settings/${shopDomain}`) + `?v=${CONFIG.version}`;
 
     console.log("[Bundle Widget] Loading design CSS from:", cssUrl);
 
@@ -133,7 +138,10 @@
    * Loads the full bundle widget script from the app server (via app proxy for scale)
    */
   function loadFullWidget(retryCount = 0) {
-    const scriptUrl = getAssetUrl(CONFIG.scriptPath);
+    // Add static version parameter for cache control
+    // Version stays the same for all users = optimal CDN caching
+    // Increment CONFIG.version when deploying updates to invalidate cache
+    const scriptUrl = getAssetUrl(CONFIG.scriptPath) + `?v=${CONFIG.version}`;
 
     console.log(
       `[Bundle Widget] Loading full widget from: ${scriptUrl} (attempt ${retryCount + 1}/${CONFIG.maxRetries})`
@@ -142,11 +150,11 @@
     // Create script element
     const script = document.createElement("script");
     script.src = scriptUrl;
-    script.async = true;
+    script.defer = true; // Use defer instead of async for proper execution order
     script.type = "text/javascript";
 
-    // Add crossorigin for better error handling
-    script.crossOrigin = "anonymous";
+    // Note: crossOrigin NOT needed for app proxy (same-origin requests)
+    // Adding it can interfere with caching and CORS handling
 
     // Success handler
     script.onload = function () {
