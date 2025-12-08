@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useSubmit } from "@remix-run/react";
+import { useLoaderData, useSubmit, useActionData, useNavigation } from "@remix-run/react";
 import {
   Page,
   Modal,
@@ -17,13 +17,13 @@ import {
   Box,
   Icon,
   ButtonGroup,
+  Frame,
+  Toast,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { useState, useCallback, useEffect } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@shopify/polaris-icons";
-
-// TODO: Import prisma client when implementing database integration
-// import { prisma } from "../db.server";
+import { prisma } from "../db.server";
 
 // Bundle type options for the selector
 const BUNDLE_TYPE_OPTIONS = [
@@ -48,13 +48,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
   const shopId = session.shop;
 
-  // TODO: Fetch design settings from database
-  // const productPageSettings = await prisma.designSettings.findUnique({
-  //   where: { shopId_bundleType: { shopId, bundleType: "product_page" } }
-  // });
+  const productPageSettings = await prisma.designSettings.findUnique({
+    where: { shopId_bundleType: { shopId, bundleType: "product_page" } }
+  });
 
-  // Mock data for now
-  const mockSettings = {
+  const fullPageSettings = await prisma.designSettings.findUnique({
+    where: { shopId_bundleType: { shopId, bundleType: "full_page" } }
+  });
+
+  const defaultSettings = {
     product_page: {
       // Product Card
       productCardBgColor: "#FFFFFF",
@@ -251,31 +253,208 @@ export async function loader({ request }: LoaderFunctionArgs) {
     },
   };
 
+  const mergeSettings = (dbSettings: any, defaults: any) => {
+    if (!dbSettings) return defaults;
+
+    const footerSettings = dbSettings.footerSettings as any || {};
+    const stepBarSettings = dbSettings.stepBarSettings as any || {};
+    const generalSettings = dbSettings.generalSettings as any || {};
+    const imagesSettings = dbSettings.imagesSettings as any || {};
+
+    return {
+      ...defaults,
+      productCardBgColor: dbSettings.productCardBgColor || defaults.productCardBgColor,
+      productCardFontColor: dbSettings.productCardFontColor || defaults.productCardFontColor,
+      productCardFontSize: dbSettings.productCardFontSize || defaults.productCardFontSize,
+      productCardFontWeight: dbSettings.productCardFontWeight || defaults.productCardFontWeight,
+      productCardImageFit: dbSettings.productCardImageFit || defaults.productCardImageFit,
+      productCardsPerRow: dbSettings.productCardsPerRow || defaults.productCardsPerRow,
+      productPriceVisibility: dbSettings.productPriceVisibility !== undefined ? dbSettings.productPriceVisibility : defaults.productPriceVisibility,
+      productStrikePriceColor: dbSettings.productStrikePriceColor || defaults.productStrikePriceColor,
+      productStrikeFontSize: dbSettings.productStrikeFontSize || defaults.productStrikeFontSize,
+      productStrikeFontWeight: dbSettings.productStrikeFontWeight || defaults.productStrikeFontWeight,
+      productFinalPriceColor: dbSettings.productFinalPriceColor || defaults.productFinalPriceColor,
+      productFinalPriceFontSize: dbSettings.productFinalPriceFontSize || defaults.productFinalPriceFontSize,
+      productFinalPriceFontWeight: dbSettings.productFinalPriceFontWeight || defaults.productFinalPriceFontWeight,
+      buttonBgColor: dbSettings.buttonBgColor || defaults.buttonBgColor,
+      buttonTextColor: dbSettings.buttonTextColor || defaults.buttonTextColor,
+      buttonFontSize: dbSettings.buttonFontSize || defaults.buttonFontSize,
+      buttonFontWeight: dbSettings.buttonFontWeight || defaults.buttonFontWeight,
+      buttonBorderRadius: dbSettings.buttonBorderRadius || defaults.buttonBorderRadius,
+      buttonHoverBgColor: dbSettings.buttonHoverBgColor || defaults.buttonHoverBgColor,
+      buttonAddToCartText: dbSettings.buttonAddToCartText || defaults.buttonAddToCartText,
+      quantitySelectorBgColor: dbSettings.quantitySelectorBgColor || defaults.quantitySelectorBgColor,
+      quantitySelectorTextColor: dbSettings.quantitySelectorTextColor || defaults.quantitySelectorTextColor,
+      quantitySelectorFontSize: dbSettings.quantitySelectorFontSize || defaults.quantitySelectorFontSize,
+      quantitySelectorBorderRadius: dbSettings.quantitySelectorBorderRadius || defaults.quantitySelectorBorderRadius,
+      ...footerSettings,
+      ...stepBarSettings,
+      ...generalSettings,
+      ...imagesSettings,
+    };
+  };
+
+  const settings = {
+    product_page: mergeSettings(productPageSettings, defaultSettings.product_page),
+    full_page: mergeSettings(fullPageSettings, defaultSettings.full_page),
+  };
+
   return json({
     shopId,
-    settings: mockSettings,
+    settings,
   });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const { session } = await authenticate.admin(request);
-  const shopId = session.shop;
-  const formData = await request.formData();
+  try {
+    const { session } = await authenticate.admin(request);
+    const shopId = session.shop;
+    const formData = await request.json();
 
-  const bundleType = formData.get("bundleType") as string;
-  const settingsJson = formData.get("settings") as string;
-  const settings = JSON.parse(settingsJson);
+    const bundleType = formData.bundleType as "product_page" | "full_page";
+    const settings = formData.settings;
 
-  // TODO: Save to database
-  // await prisma.designSettings.upsert({
-  //   where: { shopId_bundleType: { shopId, bundleType } },
-  //   create: { shopId, bundleType, ...settings },
-  //   update: settings
-  // });
+    const footerSettings = {
+      footerBgColor: settings.footerBgColor,
+      footerTotalBgColor: settings.footerTotalBgColor,
+      footerBorderRadius: settings.footerBorderRadius,
+      footerPadding: settings.footerPadding,
+      footerFinalPriceColor: settings.footerFinalPriceColor,
+      footerFinalPriceFontSize: settings.footerFinalPriceFontSize,
+      footerFinalPriceFontWeight: settings.footerFinalPriceFontWeight,
+      footerStrikePriceColor: settings.footerStrikePriceColor,
+      footerStrikeFontSize: settings.footerStrikeFontSize,
+      footerStrikeFontWeight: settings.footerStrikeFontWeight,
+      footerPriceVisibility: settings.footerPriceVisibility,
+      footerBackButtonBgColor: settings.footerBackButtonBgColor,
+      footerBackButtonTextColor: settings.footerBackButtonTextColor,
+      footerBackButtonBorderColor: settings.footerBackButtonBorderColor,
+      footerBackButtonBorderRadius: settings.footerBackButtonBorderRadius,
+      footerNextButtonBgColor: settings.footerNextButtonBgColor,
+      footerNextButtonTextColor: settings.footerNextButtonTextColor,
+      footerNextButtonBorderColor: settings.footerNextButtonBorderColor,
+      footerNextButtonBorderRadius: settings.footerNextButtonBorderRadius,
+      footerDiscountTextVisibility: settings.footerDiscountTextVisibility,
+      footerProgressBarFilledColor: settings.footerProgressBarFilledColor,
+      footerProgressBarEmptyColor: settings.footerProgressBarEmptyColor,
+    };
 
-  console.log("Saving design settings:", { shopId, bundleType, settings });
+    const stepBarSettings = {
+      stepNameFontColor: settings.stepNameFontColor,
+      stepNameFontSize: settings.stepNameFontSize,
+      completedStepCheckMarkColor: settings.completedStepCheckMarkColor,
+      completedStepBgColor: settings.completedStepBgColor,
+      completedStepCircleBorderColor: settings.completedStepCircleBorderColor,
+      completedStepCircleBorderRadius: settings.completedStepCircleBorderRadius,
+      incompleteStepBgColor: settings.incompleteStepBgColor,
+      incompleteStepCircleStrokeColor: settings.incompleteStepCircleStrokeColor,
+      incompleteStepCircleStrokeRadius: settings.incompleteStepCircleStrokeRadius,
+      stepBarProgressFilledColor: settings.stepBarProgressFilledColor,
+      stepBarProgressEmptyColor: settings.stepBarProgressEmptyColor,
+      tabsActiveBgColor: settings.tabsActiveBgColor,
+      tabsActiveTextColor: settings.tabsActiveTextColor,
+      tabsInactiveBgColor: settings.tabsInactiveBgColor,
+      tabsInactiveTextColor: settings.tabsInactiveTextColor,
+      tabsBorderColor: settings.tabsBorderColor,
+      tabsBorderRadius: settings.tabsBorderRadius,
+    };
 
-  return json({ success: true, message: "Design settings saved successfully!" });
+    const generalSettings = {
+      bundleBgColor: settings.bundleBgColor,
+      footerScrollBarColor: settings.footerScrollBarColor,
+      productPageTitleFontColor: settings.productPageTitleFontColor,
+      productPageTitleFontSize: settings.productPageTitleFontSize,
+      bundleUpsellButtonBgColor: settings.bundleUpsellButtonBgColor,
+      bundleUpsellBorderColor: settings.bundleUpsellBorderColor,
+      bundleUpsellTextColor: settings.bundleUpsellTextColor,
+      toastBgColor: settings.toastBgColor,
+      toastTextColor: settings.toastTextColor,
+      filterIconColor: settings.filterIconColor,
+      filterBgColor: settings.filterBgColor,
+      filterTextColor: settings.filterTextColor,
+    };
+
+    const imagesSettings = {
+      bundleLoadingGifUrl: settings.bundleLoadingGifUrl || null,
+      checkoutGifUrl: settings.checkoutGifUrl || null,
+    };
+
+    await prisma.designSettings.upsert({
+      where: {
+        shopId_bundleType: {
+          shopId,
+          bundleType,
+        },
+      },
+      create: {
+        shopId,
+        bundleType,
+        productCardBgColor: settings.productCardBgColor,
+        productCardFontColor: settings.productCardFontColor,
+        productCardFontSize: settings.productCardFontSize,
+        productCardFontWeight: settings.productCardFontWeight,
+        productCardImageFit: settings.productCardImageFit,
+        productCardsPerRow: settings.productCardsPerRow,
+        productPriceVisibility: settings.productPriceVisibility,
+        productStrikePriceColor: settings.productStrikePriceColor,
+        productStrikeFontSize: settings.productStrikeFontSize,
+        productStrikeFontWeight: settings.productStrikeFontWeight,
+        productFinalPriceColor: settings.productFinalPriceColor,
+        productFinalPriceFontSize: settings.productFinalPriceFontSize,
+        productFinalPriceFontWeight: settings.productFinalPriceFontWeight,
+        buttonBgColor: settings.buttonBgColor,
+        buttonTextColor: settings.buttonTextColor,
+        buttonFontSize: settings.buttonFontSize,
+        buttonFontWeight: settings.buttonFontWeight,
+        buttonBorderRadius: settings.buttonBorderRadius,
+        buttonHoverBgColor: settings.buttonHoverBgColor,
+        buttonAddToCartText: settings.buttonAddToCartText,
+        quantitySelectorBgColor: settings.quantitySelectorBgColor,
+        quantitySelectorTextColor: settings.quantitySelectorTextColor,
+        quantitySelectorFontSize: settings.quantitySelectorFontSize,
+        quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
+        footerSettings: footerSettings,
+        stepBarSettings: stepBarSettings,
+        generalSettings: generalSettings,
+        imagesSettings: imagesSettings,
+      },
+      update: {
+        productCardBgColor: settings.productCardBgColor,
+        productCardFontColor: settings.productCardFontColor,
+        productCardFontSize: settings.productCardFontSize,
+        productCardFontWeight: settings.productCardFontWeight,
+        productCardImageFit: settings.productCardImageFit,
+        productCardsPerRow: settings.productCardsPerRow,
+        productPriceVisibility: settings.productPriceVisibility,
+        productStrikePriceColor: settings.productStrikePriceColor,
+        productStrikeFontSize: settings.productStrikeFontSize,
+        productStrikeFontWeight: settings.productStrikeFontWeight,
+        productFinalPriceColor: settings.productFinalPriceColor,
+        productFinalPriceFontSize: settings.productFinalPriceFontSize,
+        productFinalPriceFontWeight: settings.productFinalPriceFontWeight,
+        buttonBgColor: settings.buttonBgColor,
+        buttonTextColor: settings.buttonTextColor,
+        buttonFontSize: settings.buttonFontSize,
+        buttonFontWeight: settings.buttonFontWeight,
+        buttonBorderRadius: settings.buttonBorderRadius,
+        buttonHoverBgColor: settings.buttonHoverBgColor,
+        buttonAddToCartText: settings.buttonAddToCartText,
+        quantitySelectorBgColor: settings.quantitySelectorBgColor,
+        quantitySelectorTextColor: settings.quantitySelectorTextColor,
+        quantitySelectorFontSize: settings.quantitySelectorFontSize,
+        quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
+        footerSettings: footerSettings,
+        stepBarSettings: stepBarSettings,
+        generalSettings: generalSettings,
+        imagesSettings: imagesSettings,
+      },
+    });
+
+    return json({ success: true, message: "Design settings saved successfully!" });
+  } catch (error) {
+    console.error("Error saving design settings:", error);
+    return json({ success: false, message: "Failed to save design settings" }, { status: 500 });
+  }
 }
 
 export default function DesignControlPanel() {
@@ -496,6 +675,25 @@ export default function DesignControlPanel() {
     setActiveSubSection(subSection);
   }, []);
 
+  const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const [toastActive, setToastActive] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastError, setToastError] = useState(false);
+
+  const isLoading = navigation.state === "submitting";
+
+  useEffect(() => {
+    if (actionData) {
+      setToastActive(true);
+      setToastMessage(actionData.message);
+      setToastError(!actionData.success);
+      if (actionData.success) {
+        shopify.toast.show(actionData.message);
+      }
+    }
+  }, [actionData]);
+
   const handleSaveSettings = useCallback(() => {
     const settingsToSave = {
       productCardBgColor,
@@ -516,6 +714,7 @@ export default function DesignControlPanel() {
       buttonFontSize,
       buttonFontWeight,
       buttonBorderRadius,
+      buttonHoverBgColor: buttonBgColor,
       buttonAddToCartText,
       quantitySelectorBgColor,
       quantitySelectorTextColor,
@@ -543,14 +742,49 @@ export default function DesignControlPanel() {
       footerDiscountTextVisibility,
       footerProgressBarFilledColor,
       footerProgressBarEmptyColor,
+      stepNameFontColor,
+      stepNameFontSize,
+      completedStepCheckMarkColor,
+      completedStepBgColor,
+      completedStepCircleBorderColor,
+      completedStepCircleBorderRadius,
+      incompleteStepBgColor,
+      incompleteStepCircleStrokeColor,
+      incompleteStepCircleStrokeRadius,
+      stepBarProgressFilledColor,
+      stepBarProgressEmptyColor,
+      tabsActiveBgColor,
+      tabsActiveTextColor,
+      tabsInactiveBgColor,
+      tabsInactiveTextColor,
+      tabsBorderColor,
+      tabsBorderRadius,
+      bundleBgColor,
+      footerScrollBarColor,
+      productPageTitleFontColor,
+      productPageTitleFontSize,
+      bundleUpsellButtonBgColor,
+      bundleUpsellBorderColor,
+      bundleUpsellTextColor,
+      toastBgColor,
+      toastTextColor,
+      filterIconColor,
+      filterBgColor,
+      filterTextColor,
+      bundleLoadingGifUrl,
+      checkoutGifUrl,
     };
 
-    const formData = new FormData();
-    formData.append("bundleType", selectedBundleType);
-    formData.append("settings", JSON.stringify(settingsToSave));
-
-    submit(formData, { method: "post" });
-    handleCloseModal();
+    submit(
+      {
+        bundleType: selectedBundleType,
+        settings: settingsToSave,
+      },
+      {
+        method: "post",
+        encType: "application/json",
+      }
+    );
   }, [
     selectedBundleType,
     productCardBgColor,
@@ -598,8 +832,38 @@ export default function DesignControlPanel() {
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
+    stepNameFontColor,
+    stepNameFontSize,
+    completedStepCheckMarkColor,
+    completedStepBgColor,
+    completedStepCircleBorderColor,
+    completedStepCircleBorderRadius,
+    incompleteStepBgColor,
+    incompleteStepCircleStrokeColor,
+    incompleteStepCircleStrokeRadius,
+    stepBarProgressFilledColor,
+    stepBarProgressEmptyColor,
+    tabsActiveBgColor,
+    tabsActiveTextColor,
+    tabsInactiveBgColor,
+    tabsInactiveTextColor,
+    tabsBorderColor,
+    tabsBorderRadius,
+    bundleBgColor,
+    footerScrollBarColor,
+    productPageTitleFontColor,
+    productPageTitleFontSize,
+    bundleUpsellButtonBgColor,
+    bundleUpsellBorderColor,
+    bundleUpsellTextColor,
+    toastBgColor,
+    toastTextColor,
+    filterIconColor,
+    filterBgColor,
+    filterTextColor,
+    bundleLoadingGifUrl,
+    checkoutGifUrl,
     submit,
-    handleCloseModal,
   ]);
 
   const NavigationItem = ({
@@ -4137,30 +4401,32 @@ export default function DesignControlPanel() {
   };
 
   return (
-    <Page
-      title="Design Control Panel"
-      subtitle="Customize the appearance of your bundles"
-      primaryAction={{
-        content: "Open Customisations",
-        onAction: handleOpenModal,
-      }}
-    >
-      <Modal
-        open={modalActive}
-        onClose={handleCloseModal}
-        title="Customisations"
-        size="large"
+    <Frame>
+      <Page
+        title="Design Control Panel"
+        subtitle="Customize the appearance of your bundles"
         primaryAction={{
-          content: "Save",
-          onAction: handleSaveSettings,
+          content: "Open Customisations",
+          onAction: handleOpenModal,
         }}
-        secondaryActions={[
-          {
-            content: "Cancel",
-            onAction: handleCloseModal,
-          },
-        ]}
       >
+        <Modal
+          open={modalActive}
+          onClose={handleCloseModal}
+          title="Customisations"
+          size="large"
+          primaryAction={{
+            content: "Save",
+            onAction: handleSaveSettings,
+            loading: isLoading,
+          }}
+          secondaryActions={[
+            {
+              content: "Cancel",
+              onAction: handleCloseModal,
+            },
+          ]}
+        >
         <Modal.Section flush>
           <div style={{ display: "flex", height: "80vh", minHeight: "700px" }}>
             {/* Left Sidebar - Navigation */}
@@ -4379,5 +4645,13 @@ export default function DesignControlPanel() {
         </Modal.Section>
       </Modal>
     </Page>
+    {toastActive && (
+      <Toast
+        content={toastMessage}
+        onDismiss={() => setToastActive(false)}
+        error={toastError}
+      />
+    )}
+  </Frame>
   );
 }

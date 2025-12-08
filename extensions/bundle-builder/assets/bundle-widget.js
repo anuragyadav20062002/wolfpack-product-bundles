@@ -62,6 +62,37 @@
   };
 
   /**
+   * Loads design settings CSS from the app server
+   */
+  function loadDesignCSS() {
+    const shopDomain = window.Shopify?.shop || null;
+
+    if (!shopDomain) {
+      console.warn("[Bundle Widget] ⚠️ Cannot load design CSS: Shopify.shop not available");
+      return;
+    }
+
+    const cssUrl = `${CONFIG.appUrl}/api/design-settings/${shopDomain}.css`;
+
+    console.log("[Bundle Widget] Loading design CSS from:", cssUrl);
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = cssUrl;
+    link.type = "text/css";
+
+    link.onload = function () {
+      console.log("[Bundle Widget] ✅ Design CSS loaded successfully");
+    };
+
+    link.onerror = function () {
+      console.warn("[Bundle Widget] ⚠️ Failed to load design CSS, using default styles");
+    };
+
+    document.head.appendChild(link);
+  }
+
+  /**
    * Loads the full bundle widget script from the app server
    */
   function loadFullWidget(retryCount = 0) {
@@ -147,7 +178,8 @@
     console.log("[Bundle Widget] Container check result:", hasContainer ? "FOUND" : "NOT FOUND");
 
     if (hasContainer) {
-      console.log("[Bundle Widget] ✅ Container found, loading full widget...");
+      console.log("[Bundle Widget] ✅ Container found, loading design CSS and full widget...");
+      loadDesignCSS();
       loadFullWidget();
     } else if (retryCount < maxRetries) {
       console.log(`[Bundle Widget] ⏳ Retrying in 300ms... (attempt ${retryCount + 2}/${maxRetries + 1})`);

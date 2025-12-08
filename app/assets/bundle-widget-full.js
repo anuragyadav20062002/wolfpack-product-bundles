@@ -1528,8 +1528,7 @@ class BundleWidget {
         button.textContent = 'Complete All Steps to Continue';
       }
       button.disabled = true;
-      button.style.opacity = '0.6';
-      button.style.cursor = 'not-allowed';
+      button.classList.add('disabled');
     } else {
       // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
@@ -1545,9 +1544,9 @@ class BundleWidget {
         const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
         console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
         button.innerHTML = `
-          <span style="display: flex; flex-direction: column; align-items: center;">
-            <span style="text-decoration: line-through; font-size: 0.8em; opacity: 0.7;">${originalPrice}</span>
-            <span>Add Bundle to Cart • ${formattedPrice}</span>
+          <span class="button-price-wrapper">
+            <span class="button-price-strike">${originalPrice}</span>
+            <span class="button-price-final">Add Bundle to Cart • ${formattedPrice}</span>
           </span>
         `;
       } else {
@@ -1556,8 +1555,7 @@ class BundleWidget {
       }
 
       button.disabled = false;
-      button.style.opacity = '1';
-      button.style.cursor = 'pointer';
+      button.classList.remove('disabled');
     }
   }
   // ========================================================================
