@@ -1077,14 +1077,14 @@ export default function DesignControlPanel() {
                     marginBottom: "12px",
                   }}
                 />
-                <div style={{ color: productCardFontColor, fontSize: "14px", marginBottom: "8px" }}>
+                <div style={{ color: productCardFontColor, fontSize: `${productCardFontSize}px`, fontWeight: productCardFontWeight, marginBottom: "8px" }}>
                   Product Name
                 </div>
                 <div style={{ marginBottom: "12px" }}>
-                  <span style={{ color: productStrikePriceColor, fontSize: "12px", textDecoration: "line-through", marginRight: "4px" }}>
+                  <span style={{ color: productStrikePriceColor, fontSize: `${productStrikeFontSize}px`, fontWeight: productStrikeFontWeight, textDecoration: "line-through", marginRight: "4px" }}>
                     $19.99
                   </span>
-                  <span style={{ color: productFinalPriceColor, fontSize: "14px", fontWeight: 600 }}>
+                  <span style={{ color: productFinalPriceColor, fontSize: `${productFinalPriceFontSize}px`, fontWeight: productFinalPriceFontWeight }}>
                     $15.99
                   </span>
                 </div>
@@ -1364,6 +1364,7 @@ export default function DesignControlPanel() {
                     style={{
                       color: footerStrikePriceColor,
                       fontSize: `${footerStrikeFontSize}px`,
+                      fontWeight: footerStrikeFontWeight,
                       textDecoration: "line-through",
                       marginRight: "6px",
                     }}
