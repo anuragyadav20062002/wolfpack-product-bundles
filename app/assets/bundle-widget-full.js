@@ -3,7 +3,7 @@
  * Handles bundle product selection, pricing, and cart operations
  * Supports both cart transform and discount function bundles
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * @author Wolfpack Team
  * 
  */
@@ -15,7 +15,7 @@
 // ============================================================================
 
 const BUNDLE_WIDGET = {
-  VERSION: '3.0.0',
+  VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
 
   // DOM Selectors

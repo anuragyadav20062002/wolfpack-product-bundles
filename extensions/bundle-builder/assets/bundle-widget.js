@@ -58,7 +58,7 @@
 
     // Widget version - increment this when deploying updates to force cache invalidation
     // Format: MAJOR.MINOR.PATCH (following semantic versioning)
-    version: "1.0.3",
+    version: "1.0.4",
 
     // Retry configuration
     maxRetries: 3,
@@ -77,7 +77,12 @@
    *
    * 2. FALLBACK: Direct URL (for development/testing)
    *    - Direct connection to app server
-   *    - Used when outside Shopify environment
+   *    - Used when outside Shopify environment or on dev stores
+   *
+   * Development Store Detection:
+   * - Dev stores have mandatory password protection (cannot be removed)
+   * - App proxy returns 302 redirect on password-protected stores
+   * - Solution: Use direct URLs for dev stores (detected by domain pattern)
    *
    * Scale Considerations:
    * - App proxy routes through Shopify's CDN and edge network
@@ -89,14 +94,20 @@
    */
   function getAssetUrl(path) {
     const isShopifyStorefront = window.Shopify && window.Shopify.shop;
+    const shopDomain = window.Shopify?.shop || '';
 
-    if (isShopifyStorefront) {
+    // Detect development store (pattern: xxx.myshopify.com without custom domain)
+    // Dev stores have mandatory password protection, so app proxy won't work
+    const isDevelopmentStore = shopDomain.includes('.myshopify.com');
+
+    if (isShopifyStorefront && !isDevelopmentStore) {
       // PRODUCTION: Use app proxy for better scale and performance
       console.log('[Bundle Widget] 🚀 Using Shopify App Proxy (CDN-cached)');
       return `/apps/product-bundles${path}`;
     } else {
-      // DEVELOPMENT: Use direct URL for testing outside Shopify
-      console.log('[Bundle Widget] 🔧 Using direct app URL');
+      // DEVELOPMENT: Use direct URL for dev stores or testing outside Shopify
+      const reason = isDevelopmentStore ? 'development store (password protected)' : 'testing outside Shopify';
+      console.log(`[Bundle Widget] 🔧 Using direct app URL (${reason})`);
       return `${CONFIG.appUrl}${path}`;
     }
   }
