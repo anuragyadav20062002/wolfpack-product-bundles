@@ -939,9 +939,8 @@ class BundleWidget {
       if (existingLink) {
         existingLink.remove();
       }
-
-      // Get app URL from metafield or use current domain
-      const appUrl = this.container.dataset.appUrl || window.location.origin;
+      
+      const appUrl = window.__BUNDLE_APP_URL__ || '';
 
       // Build CSS URL
       const cssUrl = `${appUrl}/api/design-settings/${shopDomain}.css?bundleType=${bundleType}`;
@@ -1624,8 +1623,7 @@ class BundleWidget {
       const shop = window.Shopify?.shop || window.location.host;
 
       // Get app URL from widget data attribute or window global
-      const widgetContainer = document.querySelector('#bundle-builder-app');
-      const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+      const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
 
       console.log('[LOAD_PRODUCTS] Fetching products from Storefront API. IDs:', productIds);
@@ -1662,8 +1660,7 @@ class BundleWidget {
         console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
 
         // Get app URL (same as above)
-        const widgetContainer = document.querySelector('#bundle-builder-app');
-        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const appUrl = window.__BUNDLE_APP_URL__ || '';
         const apiBaseUrl = appUrl || window.location.origin;
 
         try {
@@ -1692,8 +1689,7 @@ class BundleWidget {
 
       if (collectionHandles.length > 0) {
         const shop = window.Shopify?.shop || window.location.host;
-        const widgetContainer = document.querySelector('#bundle-builder-app');
-        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const appUrl = window.__BUNDLE_APP_URL__ || '';
         const apiBaseUrl = appUrl || window.location.origin;
 
         console.log('[LOAD_PRODUCTS] Fetching products from collections via Storefront API:', collectionHandles);
