@@ -62,7 +62,51 @@
   };
 
   /**
-   * Loads design settings CSS from the app server
+   * Generates the appropriate URL based on environment
+   *
+   * Shopify App Proxy Strategy (Official Best Practice):
+   * -----------------------------------------------------
+   * PRODUCTION/SHOPIFY ENVIRONMENT:
+   *   - Uses Shopify App Proxy when window.Shopify exists
+   *   - URL format: /apps/product-bundles/... (same-origin)
+   *   - Benefits: No CORS issues, passes strict CSP, faster loading
+   *   - App proxy auto-forwards: shop.com/apps/product-bundles/api/... → your-app.com/api/...
+   *
+   * LOCAL DEVELOPMENT (Outside Shopify):
+   *   - Uses direct app server URL when:
+   *     a) window.Shopify is not available (testing in isolation)
+   *     b) Explicit override via data-app-url attribute in theme editor
+   *   - Detects Shopify environment using official indicators:
+   *     * window.Shopify.designMode - Theme customizer/editor
+   *     * URL params: preview_theme_id, preview_key - Preview mode
+   *     * window.parent !== window - Iframe context (editor)
+   *
+   * @param {string} path - API path (e.g., "/api/design-settings/shop.css")
+   * @returns {string} - Full URL to use for the request
+   */
+  function getProxiedUrl(path) {
+    // Shopify's official environment detection
+    const isShopifyEnvironment = window.Shopify && window.Shopify.shop;
+
+    // Theme editor/preview detection (Shopify recommended patterns)
+    const isThemeEditor = window.Shopify?.designMode === true ||
+                          window.location.search.includes('preview_theme_id') ||
+                          window.location.search.includes('preview_key') ||
+                          window.parent !== window; // In iframe (theme editor)
+
+    if (isShopifyEnvironment || isThemeEditor) {
+      // SHOPIFY ENVIRONMENT: Use app proxy (same-origin requests)
+      console.log('[Bundle Widget] 🚀 Using Shopify App Proxy (production/development store)');
+      return `/apps/product-bundles${path}`;
+    } else {
+      // STANDALONE TESTING: Use direct URL (outside Shopify context)
+      console.log('[Bundle Widget] 🔧 Using direct URL (standalone development)');
+      return `${CONFIG.appUrl}${path}`;
+    }
+  }
+
+  /**
+   * Loads design settings CSS from the app server via app proxy
    */
   function loadDesignCSS() {
     const shopDomain = window.Shopify?.shop || null;
@@ -72,7 +116,7 @@
       return;
     }
 
-    const cssUrl = `${CONFIG.appUrl}/api/design-settings/${shopDomain}.css`;
+    const cssUrl = getProxiedUrl(`/api/design-settings/${shopDomain}.css`);
 
     console.log("[Bundle Widget] Loading design CSS from:", cssUrl);
 
@@ -93,10 +137,10 @@
   }
 
   /**
-   * Loads the full bundle widget script from the app server
+   * Loads the full bundle widget script from the app server via app proxy
    */
   function loadFullWidget(retryCount = 0) {
-    const scriptUrl = `${CONFIG.appUrl}${CONFIG.scriptPath}`;
+    const scriptUrl = getProxiedUrl(CONFIG.scriptPath);
 
     console.log(
       `[Bundle Widget] Loading full widget from: ${scriptUrl} (attempt ${retryCount + 1}/${CONFIG.maxRetries})`

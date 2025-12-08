@@ -6,6 +6,7 @@
   display: block;
   width: 100%;
   max-width: min(var(--widget-max-width, 800px), 100%);
+  background-color: var(--bundle-bg-color, transparent);
 }
 
 
@@ -31,7 +32,8 @@
 }
 
 .bundle-title {
-  font-size: 1.5em; /* Reduced size */
+  font-size: var(--bundle-title-font-size, 1.5em);
+  color: var(--bundle-title-color, inherit);
   margin-bottom: 10px;
 }
 
@@ -295,15 +297,15 @@
   color: #555;
 }
 
-/* Match Shopify "Buy it now" button aesthetics */
+/* Match Shopify "Buy it now" button aesthetics - Uses DCP variables */
 .add-bundle-to-cart {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--bundle-button-bg, #000);
+  color: var(--bundle-button-text-color, #fff);
   height: var(--button-height, 55px);
   border: none;
-  border-radius: 4px;
-  font-size: 1em;
-  font-weight: 600;
+  border-radius: var(--bundle-button-border-radius, 4px);
+  font-size: var(--bundle-button-font-size, 1em);
+  font-weight: var(--bundle-button-font-weight, 600);
   cursor: pointer;
   width: 100%;
   max-width: 100%;
@@ -316,7 +318,7 @@
 }
 
 .add-bundle-to-cart:hover {
-  background-color: #111;
+  background-color: var(--bundle-button-hover-bg, #111);
 }
 
 /* Bundle Builder Modal Styles - Full Screen Overlay */
@@ -796,7 +798,7 @@
 
 .modal-body .product-card .image-wrapper img {
   position: static;
-  object-fit: contain;
+  object-fit: var(--bundle-product-card-image-fit, contain);
   width: auto;
   height: 100%;
   max-height: 150px;
@@ -812,10 +814,10 @@
 }
 
 .modal-body .product-card .product-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--bundle-product-card-font-size, 13px);
+  font-weight: var(--bundle-product-card-font-weight, 600);
   margin: 0;
-  color: #1a1a1a;
+  color: var(--bundle-product-card-font-color, #1a1a1a);
   text-align: center;
   line-height: 1.3;
   display: -webkit-box;
@@ -828,10 +830,10 @@
 }
 
 .modal-body .product-card .product-price {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--bundle-product-final-price-font-size, 14px);
+  font-weight: var(--bundle-product-final-price-font-weight, 700);
   margin: 0;
-  color: #111;
+  color: var(--bundle-product-final-price-color, #111);
   text-align: left;
 }
 
@@ -880,7 +882,7 @@
   aspect-ratio: auto;
   max-height: none;
   overflow: hidden;
-  background: #fff;
+  background: var(--bundle-product-card-bg, #fff);
 }
 
 .product-card:hover {
@@ -909,14 +911,14 @@
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: var(--bundle-product-card-image-fit, contain);
 }
 
 .product-card .product-title {
-  font-size: var(--modal-product-title-size, 0.9em);
-  font-weight: 600;
+  font-size: var(--bundle-product-card-font-size, 0.9em);
+  font-weight: var(--bundle-product-card-font-weight, 600);
   margin-bottom: 6px;
-  color: #333;
+  color: var(--bundle-product-card-font-color, #333);
   text-align: center;
   line-height: 1.3;
   display: -webkit-box;
@@ -927,15 +929,15 @@
   min-height: 2.6em;
 }
 
-/* Quantity Controls Styling */
+/* Quantity Controls Styling - Uses DCP variables */
 .quantity-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%; /* Take full width of the card's content area */
   margin-top: auto; /* Push to bottom */
-  background-color: #000; /* Black background for the bar */
-  border-radius: 0 0 8px 8px; /* Rounded bottom corners to match card */
+  background-color: var(--bundle-quantity-selector-bg, #000);
+  border-radius: var(--bundle-quantity-selector-border-radius, 8px) var(--bundle-quantity-selector-border-radius, 8px) 0 0;
   padding: 0; /* remove extra padding */
   position: absolute; /* Position absolutely within the card */
   bottom: 0;
@@ -947,11 +949,11 @@
 
 .quantity-control-button {
   background-color: transparent;
-  color: white;
+  color: var(--bundle-quantity-selector-text-color, white);
   border: none;
   padding: 0 12px; /* adjust to fit new height */
   cursor: pointer;
-  font-size: 1.3em; /* Larger font for +/- */
+  font-size: var(--bundle-quantity-selector-font-size, 1.3em);
   font-weight: bold;
   border-radius: 0;
   transition: background-color 0.2s ease;
@@ -968,17 +970,17 @@
   border: none;
   padding: 0;
   font-weight: bold;
-  color: white;
-  font-size: 1.1em;
+  color: var(--bundle-quantity-selector-text-color, white);
+  font-size: var(--bundle-quantity-selector-font-size, 1.1em);
 }
 
-/* Selected overlay for checkmark */
+/* Selected overlay for checkmark - Uses DCP variables */
 .selected-overlay {
   position: absolute;
   top: 10px;
   right: 10px;
-  background-color: #000;
-  color: white;
+  background-color: var(--bundle-button-bg, #000);
+  color: var(--bundle-button-text-color, white);
   border-radius: 50%;
   width: 28px;
   height: 28px;
@@ -1128,17 +1130,18 @@
   overflow: hidden;
 }
 
-/* Added product price */
+/* Added product price - Uses DCP variables */
 .product-price {
-  font-size: var(--modal-product-price-size, 0.85em);
-  font-weight: 700;
+  font-size: var(--bundle-product-final-price-font-size, 0.85em);
+  font-weight: var(--bundle-product-final-price-font-weight, 700);
   margin-bottom: 8px;
-  color: var(--modal-product-price-color, #2c5530);
+  color: var(--bundle-product-final-price-color, #2c5530);
   text-align: center;
   background: var(--modal-product-price-bg, #f0f8f0);
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid #e0f0e0;
+  display: var(--bundle-product-price-display, block);
 }
 
 /* Variant selector */
