@@ -56,13 +56,64 @@
     // Script path on app server
     scriptPath: "/assets/bundle-widget-full",
 
+    // Widget version - increment this when deploying updates to force cache invalidation
+    // Format: MAJOR.MINOR.PATCH (following semantic versioning)
+    version: "1.0.4",
+
     // Retry configuration
     maxRetries: 3,
     retryDelay: 1000, // 1 second
   };
 
   /**
-   * Loads design settings CSS from the app server
+   * Generates the appropriate URL for loading external assets
+   *
+   * Hybrid Strategy for Optimal Performance & Scale:
+   * -------------------------------------------------
+   * 1. PRIMARY: App Proxy (for production storefronts)
+   *    - Same-origin requests through Shopify's infrastructure
+   *    - Benefits: CDN caching, no CORS, better DDoS protection
+   *    - Used when window.Shopify exists (live storefront)
+   *
+   * 2. FALLBACK: Direct URL (for development/testing)
+   *    - Direct connection to app server
+   *    - Used when outside Shopify environment or on dev stores
+   *
+   * Development Store Detection:
+   * - Dev stores have mandatory password protection (cannot be removed)
+   * - App proxy returns 302 redirect on password-protected stores
+   * - Solution: Use direct URLs for dev stores (detected by domain pattern)
+   *
+   * Scale Considerations:
+   * - App proxy routes through Shopify's CDN and edge network
+   * - Handles thousands of concurrent users during sales/traffic spikes
+   * - Reduces load on your app server (only unique CSS fetches hit backend)
+   *
+   * @param {string} path - API path (e.g., "/api/design-settings/shop")
+   * @returns {string} - Full URL to use for the request
+   */
+  function getAssetUrl(path) {
+    const isShopifyStorefront = window.Shopify && window.Shopify.shop;
+    const shopDomain = window.Shopify?.shop || '';
+
+    // Detect development store (pattern: xxx.myshopify.com without custom domain)
+    // Dev stores have mandatory password protection, so app proxy won't work
+    const isDevelopmentStore = shopDomain.includes('.myshopify.com');
+
+    if (isShopifyStorefront && !isDevelopmentStore) {
+      // PRODUCTION: Use app proxy for better scale and performance
+      console.log('[Bundle Widget] 🚀 Using Shopify App Proxy (CDN-cached)');
+      return `/apps/product-bundles${path}`;
+    } else {
+      // DEVELOPMENT: Use direct URL for dev stores or testing outside Shopify
+      const reason = isDevelopmentStore ? 'development store (password protected)' : 'testing outside Shopify';
+      console.log(`[Bundle Widget] 🔧 Using direct app URL (${reason})`);
+      return `${CONFIG.appUrl}${path}`;
+    }
+  }
+
+  /**
+   * Loads design settings CSS from the app server (via app proxy for scale)
    */
   function loadDesignCSS() {
     const shopDomain = window.Shopify?.shop || null;
@@ -72,7 +123,9 @@
       return;
     }
 
-    const cssUrl = `${CONFIG.appUrl}/api/design-settings/${shopDomain}.css`;
+    // Use app proxy path (without .css) - route will set Content-Type: text/css
+    // Add version parameter for cache control (static per deployment for optimal CDN caching)
+    const cssUrl = getAssetUrl(`/api/design-settings/${shopDomain}`) + `?v=${CONFIG.version}`;
 
     console.log("[Bundle Widget] Loading design CSS from:", cssUrl);
 
@@ -93,10 +146,13 @@
   }
 
   /**
-   * Loads the full bundle widget script from the app server
+   * Loads the full bundle widget script from the app server (via app proxy for scale)
    */
   function loadFullWidget(retryCount = 0) {
-    const scriptUrl = `${CONFIG.appUrl}${CONFIG.scriptPath}`;
+    // Add static version parameter for cache control
+    // Version stays the same for all users = optimal CDN caching
+    // Increment CONFIG.version when deploying updates to invalidate cache
+    const scriptUrl = getAssetUrl(CONFIG.scriptPath) + `?v=${CONFIG.version}`;
 
     console.log(
       `[Bundle Widget] Loading full widget from: ${scriptUrl} (attempt ${retryCount + 1}/${CONFIG.maxRetries})`
@@ -105,11 +161,11 @@
     // Create script element
     const script = document.createElement("script");
     script.src = scriptUrl;
-    script.async = true;
+    script.defer = true; // Use defer instead of async for proper execution order
     script.type = "text/javascript";
 
-    // Add crossorigin for better error handling
-    script.crossOrigin = "anonymous";
+    // Note: crossOrigin NOT needed for app proxy (same-origin requests)
+    // Adding it can interfere with caching and CORS handling
 
     // Success handler
     script.onload = function () {

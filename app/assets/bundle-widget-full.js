@@ -3,7 +3,7 @@
  * Handles bundle product selection, pricing, and cart operations
  * Supports both cart transform and discount function bundles
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * @author Wolfpack Team
  * 
  */
@@ -15,7 +15,7 @@
 // ============================================================================
 
 const BUNDLE_WIDGET = {
-  VERSION: '3.0.0',
+  VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
 
   // DOM Selectors
@@ -931,32 +931,14 @@ class BundleWidget {
         return;
       }
 
-      // Get bundle type (defaults to product_page)
-      const bundleType = this.selectedBundle?.bundleType || 'product_page';
-
-      // Check if design CSS is already loaded
-      const existingLink = document.getElementById('bundle-design-settings-css');
+      // CSS is loaded by the small loader (bundle-widget.js) for better performance
+      // No need to load it here - just verify it's present
+      const existingLink = document.querySelector('link[href*="design-settings"]');
       if (existingLink) {
-        existingLink.remove();
+        console.log('[BUNDLE_WIDGET] ✅ Design CSS already loaded by loader script');
+      } else {
+        console.warn('[BUNDLE_WIDGET] ⚠️ Design CSS not found - loader script may have failed');
       }
-
-      // Get app URL from metafield or use current domain
-      const appUrl = this.container.dataset.appUrl || window.location.origin;
-
-      // Build CSS URL
-      const cssUrl = `${appUrl}/api/design-settings/${shopDomain}.css?bundleType=${bundleType}`;
-
-      // Create and inject link element
-      const linkElement = document.createElement('link');
-      linkElement.id = 'bundle-design-settings-css';
-      linkElement.rel = 'stylesheet';
-      linkElement.href = cssUrl;
-      linkElement.type = 'text/css';
-
-      // Add to document head
-      document.head.appendChild(linkElement);
-
-      console.log('[BUNDLE_WIDGET] ✅ Design settings CSS loaded:', cssUrl);
 
     } catch (error) {
       console.warn('[BUNDLE_WIDGET] Failed to load design settings CSS:', error);
@@ -1624,8 +1606,7 @@ class BundleWidget {
       const shop = window.Shopify?.shop || window.location.host;
 
       // Get app URL from widget data attribute or window global
-      const widgetContainer = document.querySelector('#bundle-builder-app');
-      const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+      const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
 
       console.log('[LOAD_PRODUCTS] Fetching products from Storefront API. IDs:', productIds);
@@ -1662,8 +1643,7 @@ class BundleWidget {
         console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
 
         // Get app URL (same as above)
-        const widgetContainer = document.querySelector('#bundle-builder-app');
-        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const appUrl = window.__BUNDLE_APP_URL__ || '';
         const apiBaseUrl = appUrl || window.location.origin;
 
         try {
@@ -1692,8 +1672,7 @@ class BundleWidget {
 
       if (collectionHandles.length > 0) {
         const shop = window.Shopify?.shop || window.location.host;
-        const widgetContainer = document.querySelector('#bundle-builder-app');
-        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const appUrl = window.__BUNDLE_APP_URL__ || '';
         const apiBaseUrl = appUrl || window.location.origin;
 
         console.log('[LOAD_PRODUCTS] Fetching products from collections via Storefront API:', collectionHandles);

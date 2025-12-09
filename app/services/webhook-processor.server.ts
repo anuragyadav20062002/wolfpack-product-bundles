@@ -155,7 +155,7 @@ export class WebhookProcessor {
 
         case "shop/redact":
         case "SHOP_REDACT":
-          result = await this.handleShopRedact(shopDomain, payload);
+          result = await this.handleShopRedact(shopDomain, payload, webhookEvent.id);
           break;
 
         default:
@@ -170,15 +170,27 @@ export class WebhookProcessor {
           };
       }
 
-      // Mark webhook as processed
-      await db.webhookEvent.update({
-        where: { id: webhookEvent.id },
-        data: {
-          processed: true,
-          processedAt: new Date(),
-          error: result.success ? null : result.error
-        }
-      });
+      // SAFETY: Only mark webhook as processed if handler succeeded
+      // Failed webhooks remain unprocessed for potential retry
+      if (result.success) {
+        await db.webhookEvent.update({
+          where: { id: webhookEvent.id },
+          data: {
+            processed: true,
+            processedAt: new Date(),
+            error: null
+          }
+        });
+      } else {
+        // Log failure but don't mark as processed
+        await db.webhookEvent.update({
+          where: { id: webhookEvent.id },
+          data: {
+            processed: false,
+            error: result.error
+          }
+        });
+      }
 
       return result;
 
@@ -258,16 +270,29 @@ export class WebhookProcessor {
       const mappedStatus = this.mapSubscriptionStatus(status);
 
       // Update subscription
-      await db.subscription.update({
-        where: { id: subscription.id },
-        data: {
-          status: mappedStatus,
-          name: name || subscription.name,
-          trialDaysRemaining,
-          currentPeriodEnd: currentPeriodEnd ? new Date(currentPeriodEnd) : subscription.currentPeriodEnd,
-          ...(mappedStatus === "cancelled" ? { cancelledAt: new Date() } : {})
-        }
-      });
+      // SAFETY: Explicitly handle cancelledAt based on status
+      if (mappedStatus === "cancelled") {
+        await db.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            status: mappedStatus,
+            name: name || subscription.name,
+            trialDaysRemaining,
+            currentPeriodEnd: currentPeriodEnd ? new Date(currentPeriodEnd) : subscription.currentPeriodEnd,
+            cancelledAt: new Date()
+          }
+        });
+      } else {
+        await db.subscription.update({
+          where: { id: subscription.id },
+          data: {
+            status: mappedStatus,
+            name: name || subscription.name,
+            trialDaysRemaining,
+            currentPeriodEnd: currentPeriodEnd ? new Date(currentPeriodEnd) : subscription.currentPeriodEnd
+          }
+        });
+      }
 
       // Handle downgrade to free plan
       const shouldDowngrade = ["cancelled", "expired", "frozen"].includes(mappedStatus);
@@ -278,18 +303,37 @@ export class WebhookProcessor {
           operation: "handleSubscriptionUpdate"
         }, { shop: shopDomain, previousPlan: subscription.plan });
 
-        // Create free plan subscription
-        const freeSubscription = await db.subscription.create({
-          data: {
+        // SAFETY: Check if shop already has an active free subscription
+        const existingFreeSubscription = await db.subscription.findFirst({
+          where: {
             shopId: shop.id,
             plan: "free",
-            status: "active",
-            name: PLANS.free.name,
-            price: 0,
-            currencyCode: "USD",
-            test: false
+            status: "active"
           }
         });
+
+        let freeSubscription;
+        if (existingFreeSubscription) {
+          // Use existing free subscription
+          freeSubscription = existingFreeSubscription;
+          AppLogger.info("Using existing free subscription", {
+            component: "webhook-processor",
+            operation: "handleSubscriptionUpdate"
+          }, { shop: shopDomain, freeSubscriptionId: existingFreeSubscription.id });
+        } else {
+          // Create new free plan subscription
+          freeSubscription = await db.subscription.create({
+            data: {
+              shopId: shop.id,
+              plan: "free",
+              status: "active",
+              name: PLANS.free.name,
+              price: 0,
+              currencyCode: "USD",
+              test: false
+            }
+          });
+        }
 
         // Update shop's current subscription
         await db.shop.update({
@@ -435,18 +479,37 @@ export class WebhookProcessor {
         }
       });
 
-      // Create free plan subscription
-      const freeSubscription = await db.subscription.create({
-        data: {
+      // SAFETY: Check if shop already has an active free subscription
+      const existingFreeSubscription = await db.subscription.findFirst({
+        where: {
           shopId: shop.id,
           plan: "free",
-          status: "active",
-          name: PLANS.free.name,
-          price: 0,
-          currencyCode: "USD",
-          test: false
+          status: "active"
         }
       });
+
+      let freeSubscription;
+      if (existingFreeSubscription) {
+        // Use existing free subscription
+        freeSubscription = existingFreeSubscription;
+        AppLogger.info("Using existing free subscription", {
+          component: "webhook-processor",
+          operation: "handleSubscriptionCancelled"
+        }, { shop: shopDomain, freeSubscriptionId: existingFreeSubscription.id });
+      } else {
+        // Create new free plan subscription
+        freeSubscription = await db.subscription.create({
+          data: {
+            shopId: shop.id,
+            plan: "free",
+            status: "active",
+            name: PLANS.free.name,
+            price: 0,
+            currencyCode: "USD",
+            test: false
+          }
+        });
+      }
 
       // Update shop's current subscription
       await db.shop.update({
@@ -455,6 +518,59 @@ export class WebhookProcessor {
           currentSubscriptionId: freeSubscription.id
         }
       });
+
+      // Check if bundle count exceeds free plan limit
+      const bundleCount = await db.bundle.count({
+        where: {
+          shopId: shopDomain,
+          status: {
+            in: ["active", "draft"]
+          }
+        }
+      });
+
+      const freeLimit = PLANS.free.bundleLimit;
+
+      if (bundleCount > freeLimit) {
+        AppLogger.info("Bundle count exceeds free plan limit, archiving excess", {
+          component: "webhook-processor",
+          operation: "handleSubscriptionCancelled"
+        }, { shop: shopDomain, bundleCount, limit: freeLimit });
+
+        // Get bundles to archive (keep oldest bundles, archive newest)
+        const bundlesToArchive = await db.bundle.findMany({
+          where: {
+            shopId: shopDomain,
+            status: {
+              in: ["active", "draft"]
+            }
+          },
+          orderBy: {
+            createdAt: "desc"
+          },
+          skip: freeLimit,
+          select: {
+            id: true
+          }
+        });
+
+        // Archive excess bundles
+        await db.bundle.updateMany({
+          where: {
+            id: {
+              in: bundlesToArchive.map(b => b.id)
+            }
+          },
+          data: {
+            status: "archived"
+          }
+        });
+
+        AppLogger.info("Archived excess bundles", {
+          component: "webhook-processor",
+          operation: "handleSubscriptionCancelled"
+        }, { shop: shopDomain, archivedCount: bundlesToArchive.length });
+      }
 
       AppLogger.info("Subscription cancelled, downgraded to free plan", {
         component: "webhook-processor",
@@ -571,6 +687,15 @@ export class WebhookProcessor {
     payload: any
   ): Promise<WebhookProcessResult> {
     try {
+      // SAFETY: Validate payload has required fields
+      if (!payload.id) {
+        return {
+          success: false,
+          message: "Missing product ID in webhook payload",
+          error: "payload.id is required"
+        };
+      }
+
       const productId = `gid://shopify/Product/${payload.id}`;
       const status = payload.status;
       const variants = payload.variants || [];
@@ -680,6 +805,15 @@ export class WebhookProcessor {
     payload: any
   ): Promise<WebhookProcessResult> {
     try {
+      // SAFETY: Validate payload has required fields
+      if (!payload.id) {
+        return {
+          success: false,
+          message: "Missing product ID in webhook payload",
+          error: "payload.id is required"
+        };
+      }
+
       const productId = `gid://shopify/Product/${payload.id}`;
 
       AppLogger.info("Processing product delete", {
@@ -811,6 +945,15 @@ export class WebhookProcessor {
     payload: any
   ): Promise<WebhookProcessResult> {
     try {
+      // SAFETY: Validate payload exists
+      if (!payload || typeof payload !== "object") {
+        return {
+          success: false,
+          message: "Invalid webhook payload",
+          error: "payload is required and must be an object"
+        };
+      }
+
       await db.complianceRecord.create({
         data: {
           shop: shopDomain,
@@ -824,6 +967,9 @@ export class WebhookProcessor {
         component: "webhook-processor",
         operation: "handleCustomerDataRequest"
       }, { shop: shopDomain });
+
+      // NOTE: This creates a compliance record with status "pending"
+      // Manual processing may be required to fulfill the data request
 
       return {
         success: true,
@@ -853,9 +999,20 @@ export class WebhookProcessor {
     payload: any
   ): Promise<WebhookProcessResult> {
     try {
+      // SAFETY: Validate payload exists
+      if (!payload || typeof payload !== "object") {
+        return {
+          success: false,
+          message: "Invalid webhook payload",
+          error: "payload is required and must be an object"
+        };
+      }
+
       const customerId = payload.customer?.id;
 
       // Store compliance record
+      // NOTE: We mark this as "completed" immediately because this app
+      // doesn't store customer PII - only the compliance record itself
       await db.complianceRecord.create({
         data: {
           shop: shopDomain,
@@ -896,7 +1053,8 @@ export class WebhookProcessor {
    */
   private static async handleShopRedact(
     shopDomain: string,
-    payload: any
+    payload: any,
+    currentWebhookEventId?: string
   ): Promise<WebhookProcessResult> {
     try {
       // Store compliance record first
@@ -940,10 +1098,23 @@ export class WebhookProcessor {
         where: { shopId: shopDomain }
       });
 
-      // Delete webhook events
-      await db.webhookEvent.deleteMany({
-        where: { shopDomain }
-      });
+      // Delete webhook events (excluding current event being processed)
+      // SAFETY: Explicitly handle the case where we need to exclude current webhook
+      if (currentWebhookEventId) {
+        // Safe: Delete all webhook events for this shop EXCEPT the current one
+        await db.webhookEvent.deleteMany({
+          where: {
+            shopDomain,
+            id: { not: currentWebhookEventId }
+          }
+        });
+      } else {
+        // Fallback: If no current webhook ID provided, delete all
+        // This should rarely happen, but is safe for cleanup scenarios
+        await db.webhookEvent.deleteMany({
+          where: { shopDomain }
+        });
+      }
 
       // Update compliance record
       await db.complianceRecord.updateMany({

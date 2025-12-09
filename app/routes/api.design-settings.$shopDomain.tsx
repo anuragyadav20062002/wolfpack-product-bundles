@@ -106,8 +106,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       status: 200,
       headers: {
         "Content-Type": "text/css; charset=utf-8",
-        "Cache-Control": "public, max-age=300",
+        // Cache for 1 hour (3600 seconds) - balances performance with design updates
+        // Shopify's CDN/edge network will cache this when using app proxy
+        // Reduces load on your app server during traffic spikes (sales, promotions)
+        "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
         "Access-Control-Allow-Origin": "*",
+        // Help CDNs cache efficiently
+        "Vary": "Origin",
       },
     });
   } catch (error) {
