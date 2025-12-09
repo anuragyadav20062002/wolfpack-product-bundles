@@ -688,9 +688,7 @@ export default function DesignControlPanel() {
       setToastActive(true);
       setToastMessage(actionData.message);
       setToastError(!actionData.success);
-      if (actionData.success) {
-        shopify.toast.show(actionData.message);
-      }
+      // Removed shopify.toast.show() to prevent duplicate toasts
     }
   }, [actionData]);
 
@@ -2054,7 +2052,7 @@ export default function DesignControlPanel() {
             </BlockStack>
 
             <RangeSlider
-              label="Font Size"
+              label="Product Name Font Size"
               value={productCardFontSize}
               onChange={(value) => setProductCardFontSize(value as number)}
               min={12}
@@ -2063,7 +2061,7 @@ export default function DesignControlPanel() {
             />
 
             <RangeSlider
-              label="Font Weight"
+              label="Product Name Font Weight"
               value={productCardFontWeight}
               onChange={(value) => setProductCardFontWeight(value as number)}
               min={300}
@@ -2092,125 +2090,129 @@ export default function DesignControlPanel() {
               </ButtonGroup>
             </BlockStack>
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: productStrikePriceColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("productStrikePriceColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="productStrikePriceColorInput"
-                    type="color"
-                    value={productStrikePriceColor}
-                    onChange={(e) => setProductStrikePriceColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Strikethrough Price Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {productStrikePriceColor}
-                  </Text>
+            {productPriceVisibility && (
+              <>
+                <BlockStack gap="300">
+                  <InlineStack gap="300" align="start" blockAlign="center">
+                    <div
+                      style={{
+                        width: "41px",
+                        height: "41px",
+                        borderRadius: "50%",
+                        backgroundColor: productStrikePriceColor,
+                        border: "1px solid #E3E3E3",
+                        cursor: "pointer",
+                        position: "relative",
+                      }}
+                      onClick={() => {
+                        const input = document.getElementById("productStrikePriceColorInput");
+                        if (input) input.click();
+                      }}
+                    >
+                      <input
+                        id="productStrikePriceColorInput"
+                        type="color"
+                        value={productStrikePriceColor}
+                        onChange={(e) => setProductStrikePriceColor(e.target.value)}
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: 0,
+                          height: 0,
+                        }}
+                      />
+                    </div>
+                    <BlockStack gap="100">
+                      <Text as="p" variant="bodyMd" fontWeight="medium">
+                        Strikethrough Price Color
+                      </Text>
+                      <Text as="p" variant="bodyMd" tone="subdued">
+                        {productStrikePriceColor}
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
                 </BlockStack>
-              </InlineStack>
-            </BlockStack>
 
-            <RangeSlider
-              label="Strikethrough Font Size"
-              value={productStrikeFontSize}
-              onChange={(value) => setProductStrikeFontSize(value as number)}
-              min={10}
-              max={20}
-              output
-            />
+                <RangeSlider
+                  label="Strikethrough Font Size"
+                  value={productStrikeFontSize}
+                  onChange={(value) => setProductStrikeFontSize(value as number)}
+                  min={10}
+                  max={20}
+                  output
+                />
 
-            <RangeSlider
-              label="Strikethrough Font Weight"
-              value={productStrikeFontWeight}
-              onChange={(value) => setProductStrikeFontWeight(value as number)}
-              min={300}
-              max={700}
-              step={100}
-              output
-            />
+                <RangeSlider
+                  label="Strikethrough Font Weight"
+                  value={productStrikeFontWeight}
+                  onChange={(value) => setProductStrikeFontWeight(value as number)}
+                  min={300}
+                  max={700}
+                  step={100}
+                  output
+                />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: productFinalPriceColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("productFinalPriceColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="productFinalPriceColorInput"
-                    type="color"
-                    value={productFinalPriceColor}
-                    onChange={(e) => setProductFinalPriceColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Final Price Font Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {productFinalPriceColor}
-                  </Text>
+                <BlockStack gap="300">
+                  <InlineStack gap="300" align="start" blockAlign="center">
+                    <div
+                      style={{
+                        width: "41px",
+                        height: "41px",
+                        borderRadius: "50%",
+                        backgroundColor: productFinalPriceColor,
+                        border: "1px solid #E3E3E3",
+                        cursor: "pointer",
+                        position: "relative",
+                      }}
+                      onClick={() => {
+                        const input = document.getElementById("productFinalPriceColorInput");
+                        if (input) input.click();
+                      }}
+                    >
+                      <input
+                        id="productFinalPriceColorInput"
+                        type="color"
+                        value={productFinalPriceColor}
+                        onChange={(e) => setProductFinalPriceColor(e.target.value)}
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: 0,
+                          height: 0,
+                        }}
+                      />
+                    </div>
+                    <BlockStack gap="100">
+                      <Text as="p" variant="bodyMd" fontWeight="medium">
+                        Final Price Font Color
+                      </Text>
+                      <Text as="p" variant="bodyMd" tone="subdued">
+                        {productFinalPriceColor}
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
                 </BlockStack>
-              </InlineStack>
-            </BlockStack>
 
-            <RangeSlider
-              label="Final Price Font Size"
-              value={productFinalPriceFontSize}
-              onChange={(value) => setProductFinalPriceFontSize(value as number)}
-              min={14}
-              max={28}
-              output
-            />
+                <RangeSlider
+                  label="Final Price Font Size"
+                  value={productFinalPriceFontSize}
+                  onChange={(value) => setProductFinalPriceFontSize(value as number)}
+                  min={14}
+                  max={28}
+                  output
+                />
 
-            <RangeSlider
-              label="Final Price Font Weight"
-              value={productFinalPriceFontWeight}
-              onChange={(value) => setProductFinalPriceFontWeight(value as number)}
-              min={400}
-              max={900}
-              step={100}
-              output
-            />
+                <RangeSlider
+                  label="Final Price Font Weight"
+                  value={productFinalPriceFontWeight}
+                  onChange={(value) => setProductFinalPriceFontWeight(value as number)}
+                  min={400}
+                  max={900}
+                  step={100}
+                  output
+                />
+              </>
+            )}
           </BlockStack>
         );
 
@@ -2305,7 +2307,7 @@ export default function DesignControlPanel() {
             </BlockStack>
 
             <RangeSlider
-              label="Font Size"
+              label="Size"
               value={buttonFontSize}
               onChange={(value) => setButtonFontSize(value as number)}
               min={12}
@@ -2320,12 +2322,6 @@ export default function DesignControlPanel() {
               min={0}
               max={24}
               output
-            />
-
-            <Checkbox
-              label="Rounded Corners"
-              checked={buttonBorderRadius > 0}
-              onChange={(checked) => setButtonBorderRadius(checked ? 8 : 0)}
             />
           </BlockStack>
         );
@@ -2578,125 +2574,129 @@ export default function DesignControlPanel() {
               </ButtonGroup>
             </BlockStack>
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerFinalPriceColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerFinalPriceColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerFinalPriceColorInput"
-                    type="color"
-                    value={footerFinalPriceColor}
-                    onChange={(e) => setFooterFinalPriceColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Final Price Font Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerFinalPriceColor}
-                  </Text>
+            {footerPriceVisibility && (
+              <>
+                <BlockStack gap="300">
+                  <InlineStack gap="300" align="start" blockAlign="center">
+                    <div
+                      style={{
+                        width: "41px",
+                        height: "41px",
+                        borderRadius: "50%",
+                        backgroundColor: footerFinalPriceColor,
+                        border: "1px solid #E3E3E3",
+                        cursor: "pointer",
+                        position: "relative",
+                      }}
+                      onClick={() => {
+                        const input = document.getElementById("footerFinalPriceColorInput");
+                        if (input) input.click();
+                      }}
+                    >
+                      <input
+                        id="footerFinalPriceColorInput"
+                        type="color"
+                        value={footerFinalPriceColor}
+                        onChange={(e) => setFooterFinalPriceColor(e.target.value)}
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: 0,
+                          height: 0,
+                        }}
+                      />
+                    </div>
+                    <BlockStack gap="100">
+                      <Text as="p" variant="bodyMd" fontWeight="medium">
+                        Final Price Font Color
+                      </Text>
+                      <Text as="p" variant="bodyMd" tone="subdued">
+                        {footerFinalPriceColor}
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
                 </BlockStack>
-              </InlineStack>
-            </BlockStack>
 
-            <RangeSlider
-              label="Final Price Font Size"
-              value={footerFinalPriceFontSize}
-              onChange={(value) => setFooterFinalPriceFontSize(value as number)}
-              min={14}
-              max={28}
-              output
-            />
+                <RangeSlider
+                  label="Final Price Font Size"
+                  value={footerFinalPriceFontSize}
+                  onChange={(value) => setFooterFinalPriceFontSize(value as number)}
+                  min={14}
+                  max={28}
+                  output
+                />
 
-            <RangeSlider
-              label="Final Price Font Weight"
-              value={footerFinalPriceFontWeight}
-              onChange={(value) => setFooterFinalPriceFontWeight(value as number)}
-              min={400}
-              max={900}
-              step={100}
-              output
-            />
+                <RangeSlider
+                  label="Final Price Font Weight"
+                  value={footerFinalPriceFontWeight}
+                  onChange={(value) => setFooterFinalPriceFontWeight(value as number)}
+                  min={400}
+                  max={900}
+                  step={100}
+                  output
+                />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerStrikePriceColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerStrikePriceColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerStrikePriceColorInput"
-                    type="color"
-                    value={footerStrikePriceColor}
-                    onChange={(e) => setFooterStrikePriceColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Strikethrough Price Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerStrikePriceColor}
-                  </Text>
+                <BlockStack gap="300">
+                  <InlineStack gap="300" align="start" blockAlign="center">
+                    <div
+                      style={{
+                        width: "41px",
+                        height: "41px",
+                        borderRadius: "50%",
+                        backgroundColor: footerStrikePriceColor,
+                        border: "1px solid #E3E3E3",
+                        cursor: "pointer",
+                        position: "relative",
+                      }}
+                      onClick={() => {
+                        const input = document.getElementById("footerStrikePriceColorInput");
+                        if (input) input.click();
+                      }}
+                    >
+                      <input
+                        id="footerStrikePriceColorInput"
+                        type="color"
+                        value={footerStrikePriceColor}
+                        onChange={(e) => setFooterStrikePriceColor(e.target.value)}
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: 0,
+                          height: 0,
+                        }}
+                      />
+                    </div>
+                    <BlockStack gap="100">
+                      <Text as="p" variant="bodyMd" fontWeight="medium">
+                        Strikethrough Price Color
+                      </Text>
+                      <Text as="p" variant="bodyMd" tone="subdued">
+                        {footerStrikePriceColor}
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
                 </BlockStack>
-              </InlineStack>
-            </BlockStack>
 
-            <RangeSlider
-              label="Strikethrough Font Size"
-              value={footerStrikeFontSize}
-              onChange={(value) => setFooterStrikeFontSize(value as number)}
-              min={10}
-              max={20}
-              output
-            />
+                <RangeSlider
+                  label="Strikethrough Font Size"
+                  value={footerStrikeFontSize}
+                  onChange={(value) => setFooterStrikeFontSize(value as number)}
+                  min={10}
+                  max={20}
+                  output
+                />
 
-            <RangeSlider
-              label="Strikethrough Font Weight"
-              value={footerStrikeFontWeight}
-              onChange={(value) => setFooterStrikeFontWeight(value as number)}
-              min={300}
-              max={700}
-              step={100}
-              output
-            />
+                <RangeSlider
+                  label="Strikethrough Font Weight"
+                  value={footerStrikeFontWeight}
+                  onChange={(value) => setFooterStrikeFontWeight(value as number)}
+                  min={300}
+                  max={700}
+                  step={100}
+                  output
+                />
+              </>
+            )}
           </BlockStack>
         );
 
@@ -4405,6 +4405,10 @@ export default function DesignControlPanel() {
       <Page
         title="Design Control Panel"
         subtitle="Customize the appearance of your bundles"
+        backAction={{
+          content: "Go to Bundles",
+          url: "/app/dashboard",
+        }}
         primaryAction={{
           content: "Open Customisations",
           onAction: handleOpenModal,
@@ -4428,11 +4432,12 @@ export default function DesignControlPanel() {
           ]}
         >
         <Modal.Section flush>
-          <div style={{ display: "flex", height: "80vh", minHeight: "700px" }}>
+          <div style={{ display: "flex", height: "80vh", minHeight: "700px", maxWidth: "100%", overflowX: "hidden" }}>
             {/* Left Sidebar - Navigation */}
             <div
               style={{
                 width: "269px",
+                minWidth: "269px",
                 borderRight: "1px solid #D9D9D9",
                 backgroundColor: "#FFFFFF",
                 overflowY: "auto",
@@ -4613,7 +4618,7 @@ export default function DesignControlPanel() {
             </div>
 
             {/* Right Side - Visual Preview + Settings */}
-            <div style={{ flex: 1, display: "flex", overflowY: "auto" }}>
+            <div style={{ flex: 1, display: "flex", overflowY: "auto", minWidth: 0 }}>
               {/* Center - Visual Preview */}
               <div
                 style={{
@@ -4623,6 +4628,8 @@ export default function DesignControlPanel() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  minWidth: 0,
+                  overflowX: "hidden",
                 }}
               >
                 {renderPreviewContent()}
@@ -4632,6 +4639,7 @@ export default function DesignControlPanel() {
               <div
                 style={{
                   width: "285px",
+                  minWidth: "285px",
                   borderLeft: "1px solid #D9D9D9",
                   padding: "24px",
                   backgroundColor: "#FFFFFF",
