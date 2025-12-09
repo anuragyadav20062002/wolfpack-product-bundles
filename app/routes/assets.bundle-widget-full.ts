@@ -28,6 +28,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     const content = await readFile(filePath, "utf-8");
 
+    // Detect environment for appropriate caching strategy
+    const isDevelopment = process.env.NODE_ENV === "development";
+
     // Return the JavaScript file with appropriate headers
     return new Response(content, {
       status: 200,
@@ -39,19 +42,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         "Access-Control-Allow-Methods": "GET, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
 
-        // Cache headers - Aggressive caching for high-traffic scale
-        // Cache for 1 hour, serve stale content during revalidation for 24 hours
-        // This handles traffic spikes (sales, promotions) by serving cached versions
-        // even when cache is expired, while fetching fresh content in background
-        "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
-
-        // CDN cache header (for Shopify's CDN when using app proxy)
-        "CDN-Cache-Control": "public, max-age=3600",
+        // Cache headers - Environment-aware caching strategy
+        // Development: No caching for instant updates during development
+        // Production: Aggressive caching for high-traffic scale
+        //   - Cache for 1 hour, serve stale content during revalidation for 24 hours
+        //   - Handles traffic spikes by serving cached versions while fetching fresh content
+        "Cache-Control": isDevelopment
+          ? "no-cache, no-store, must-revalidate"
+          : "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
 
         // Static ETag for proper cache validation
-        // Uses app version to invalidate cache on deployments
-        // NOTE: Update this when deploying widget changes
-        "ETag": `"bundle-widget-v1.0.2"`,
+        // Development: Timestamp-based for instant updates
+        // Production: Version-based to invalidate cache on deployments
+        // NOTE: Update version when deploying widget changes
+        "ETag": isDevelopment
+          ? `"bundle-widget-dev-${Date.now()}"`
+          : `"bundle-widget-v1.0.4"`,
 
         // Additional performance headers
         "X-Content-Type-Options": "nosniff",

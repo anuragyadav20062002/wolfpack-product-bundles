@@ -62,79 +62,26 @@ const BUNDLE_WIDGET = {
 
 class CurrencyManager {
   static getShopBaseCurrency() {
-    // Shop's base currency - used for calculations
+    // Shop's base currency from Shopify object (official source)
     return {
-      code: window.Shopify?.shop?.currency || window.shopCurrency || 'USD',
+      code: window.Shopify?.shop?.currency || 'USD',
       format: window.shopMoneyFormat || '{{amount}}'
     };
   }
 
   static detectCustomerCurrency() {
-    // Priority 1: Shopify Markets active currency
+    // Primary: Shopify Markets active currency (official method)
+    // Shopify Markets handles geolocation and user preferences automatically
     if (window.Shopify?.currency?.active) {
-      const currency = {
+      return {
         code: window.Shopify.currency.active,
-        format: window.Shopify.currency.format || window.shopMoneyFormat,
+        format: window.Shopify.currency.format || window.shopMoneyFormat || '{{amount}}',
         rate: window.Shopify.currency.rate || 1
       };
-      return currency;
-    }
-
-    // Priority 2: Currency cookie
-    const currencyCookie = this.getCurrencyFromCookie();
-    if (currencyCookie) {
-      const currency = {
-        code: currencyCookie,
-        format: window.shopMoneyFormat,
-        rate: 1
-      };
-      return currency;
-    }
-
-    // Priority 3: URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const currencyParam = urlParams.get('currency');
-    if (currencyParam) {
-      const currency = {
-        code: currencyParam,
-        format: window.shopMoneyFormat,
-        rate: 1
-      };
-      return currency;
-    }
-
-    // Priority 4: localStorage
-    try {
-      const storedCurrency = localStorage.getItem('shopify_currency') || localStorage.getItem('currency');
-      if (storedCurrency) {
-        const currency = {
-          code: storedCurrency,
-          format: window.shopMoneyFormat,
-          rate: 1
-        };
-        return currency;
-      }
-    } catch (e) {
     }
 
     // Fallback: Shop base currency
-    const fallbackCurrency = {
-      code: window.shopCurrency || 'USD',
-      format: window.shopMoneyFormat,
-      rate: 1
-    };
-    return fallbackCurrency;
-  }
-
-  static getCurrencyFromCookie() {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'currency' || name === 'shopify_currency') {
-        return value;
-      }
-    }
-    return null;
+    return this.getShopBaseCurrency();
   }
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
@@ -522,28 +469,25 @@ class PricingCalculator {
 // ============================================================================
 
 class ToastManager {
-  static show(message, type = 'info', duration = 4000) {
+  static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
     if (existingToast) {
       existingToast.remove();
     }
 
-    // Create toast element
+    // Create toast element - now uses DCP CSS variables
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
-    toast.className = `bundle-toast bundle-toast-${type}`;
+    toast.className = `bundle-toast`;
     toast.innerHTML = `
-      <div class="bundle-toast-content">
-        <span class="bundle-toast-message">${message}</span>
-        <button class="bundle-toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
-      </div>
+      <span>${message}</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;" onclick="this.parentElement.remove()">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     `;
 
-    // Add CSS styles if not already present
-    this.ensureStyles();
-
-    // Add to page
+    // Add to page (styles come from bundle-widget.css with DCP CSS variables)
     document.body.appendChild(toast);
 
     // Auto-remove after duration
@@ -556,81 +500,6 @@ class ToastManager {
     }
   }
 
-  static ensureStyles() {
-    if (document.getElementById('bundle-toast-styles')) return;
-
-    const styles = document.createElement('style');
-    styles.id = 'bundle-toast-styles';
-    styles.textContent = `
-      .bundle-toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000001;
-        max-width: 400px;
-        padding: 16px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
-        line-height: 1.4;
-        animation: slideInRight 0.3s ease-out;
-      }
-      .bundle-toast-info {
-        background-color: #f0f8ff;
-        border-left: 4px solid #007ace;
-        color: #003d82;
-      }
-      .bundle-toast-warning {
-        background-color: #fff8e1;
-        border-left: 4px solid #ff9800;
-        color: #e65100;
-      }
-      .bundle-toast-error {
-        background-color: #ffebee;
-        border-left: 4px solid #f44336;
-        color: #c62828;
-      }
-      .bundle-toast-success {
-        background-color: #e8f5e8;
-        border-left: 4px solid #4caf50;
-        color: #2e7d32;
-      }
-      .bundle-toast-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-      }
-      .bundle-toast-message {
-        flex: 1;
-      }
-      .bundle-toast-close {
-        background: none;
-        border: none;
-        font-size: 18px;
-        font-weight: bold;
-        cursor: pointer;
-        padding: 0;
-        line-height: 1;
-        opacity: 0.7;
-      }
-      .bundle-toast-close:hover {
-        opacity: 1;
-      }
-      @keyframes slideInRight {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-    `;
-    document.head.appendChild(styles);
-  }
 }
 
 // ============================================================================
@@ -858,6 +727,7 @@ class BundleWidget {
     this.stepProductData = [];
     this.currentStepIndex = 0;
     this.isInitialized = false;
+    this.initializeFilters();
     this.config = {};
     this.elements = {};
 
@@ -1225,26 +1095,40 @@ class BundleWidget {
             <div class="product-grid"></div>
           </div>
           <div class="modal-footer">
-            <button class="modal-nav-button prev-button">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Prev
-            </button>
+            <!-- Cart Badge -->
+            <div class="modal-footer-cart-badge">
+              <span class="cart-badge-count">0</span> 🛒
+            </div>
+
+            <!-- Discount Text -->
+            <div class="modal-footer-discount-text"></div>
+
+            <!-- Progress Bar -->
+            <div class="modal-footer-progress-wrapper">
+              <div class="modal-footer-progress-bar">
+                <div class="modal-footer-progress-fill"></div>
+              </div>
+            </div>
+
+            <!-- Selected Products List -->
+            <div class="modal-footer-products-list"></div>
+
+            <!-- Footer Navigation Buttons -->
             <div class="modal-footer-discount-messaging">
-              <div class="modal-footer-progress-wrapper">
-                <div class="modal-footer-progress-bar">
-                  <div class="modal-footer-progress-fill"></div>
+              <button class="modal-nav-button prev-button">
+                Back
+              </button>
+              <div class="modal-footer-total-section">
+                <span class="total-label">Total</span>
+                <div class="total-prices">
+                  <span class="total-price-strike"></span>
+                  <span class="total-price-final"></span>
                 </div>
               </div>
-              <div class="modal-footer-discount-text"></div>
+              <button class="modal-nav-button next-button">
+                Next
+              </button>
             </div>
-            <button class="modal-nav-button next-button">
-              Next
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
           </div>
         </div>
       `;
@@ -1557,6 +1441,7 @@ class BundleWidget {
     this.loadStepProducts(stepIndex).then(() => {
       this.renderModalTabs();
       this.renderModalProducts(stepIndex);
+      this.renderFilterButton(stepIndex); // Add filter button to modal header
       this.updateModalNavigation();
       this.updateModalFooterMessaging();
 
@@ -1565,7 +1450,7 @@ class BundleWidget {
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
     }).catch(error => {
-      ToastManager.show('Failed to load products for this step', 'error');
+      ToastManager.show('Failed to load products for this step');
     });
   }
 
@@ -1805,7 +1690,7 @@ class BundleWidget {
       const stepElement = stepContainer.querySelector('.milestone-step');
       stepElement.addEventListener('click', async () => {
         if (!isAccessible) {
-          ToastManager.show('Please complete the previous steps first.', 'warning');
+          ToastManager.show('Please complete the previous steps first.');
           return;
         }
 
@@ -1829,13 +1714,209 @@ class BundleWidget {
     });
   }
 
-  renderModalProducts(stepIndex) {
-    const products = this.stepProductData[stepIndex];
+  // Filter state management
+  initializeFilters() {
+    this.filters = {
+      sortBy: 'default', // default, price-asc, price-desc, title-asc, title-desc
+      priceRange: { min: 0, max: Infinity },
+      searchQuery: '',
+      showAvailableOnly: false
+    };
+    this.filteredProductCache = {};
+  }
+
+  renderFilterButton(stepIndex) {
+    const modalHeader = this.elements.modal.querySelector('.modal-header');
+
+    // Check if filter button already exists
+    if (modalHeader.querySelector('.bundle-filters-button')) {
+      return;
+    }
+
+    // Create filter button
+    const filterButton = document.createElement('button');
+    filterButton.className = 'bundle-filters-button';
+    filterButton.setAttribute('aria-label', 'Filter products');
+    filterButton.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M3 4.99509C3 3.89323 3.89262 3 4.99509 3H19.0049C20.1068 3 21 3.89262 21 4.99509V6.5C21 7.05 20.78 7.58 20.38 7.96L14.5 13.5V21L9.5 19V13.5L3.62 7.96C3.22 7.58 3 7.05 3 6.5V4.99509Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Filters</span>
+    `;
+
+    // Insert before close button
+    const closeButton = modalHeader.querySelector('.close-button');
+    modalHeader.insertBefore(filterButton, closeButton);
+
+    // Add click handler
+    filterButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleFilterPanel(stepIndex);
+    });
+  }
+
+  toggleFilterPanel(stepIndex) {
+    const existingPanel = this.elements.modal.querySelector('.filter-panel');
+
+    if (existingPanel) {
+      existingPanel.remove();
+      return;
+    }
+
+    // Create filter panel
+    const filterPanel = document.createElement('div');
+    filterPanel.className = 'filter-panel';
+    filterPanel.innerHTML = `
+      <div class="filter-panel-content">
+        <h3 class="filter-panel-title">Filter Products</h3>
+
+        <!-- Sort Options -->
+        <div class="filter-group">
+          <label class="filter-label">Sort By</label>
+          <select class="filter-select sort-select">
+            <option value="default">Default</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="title-asc">Name: A to Z</option>
+            <option value="title-desc">Name: Z to A</option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div class="filter-group">
+          <label class="filter-label">Search</label>
+          <input type="text" class="filter-input search-input" placeholder="Search products..." value="${this.filters.searchQuery || ''}">
+        </div>
+
+        <!-- Price Range -->
+        <div class="filter-group">
+          <label class="filter-label">Price Range</label>
+          <div class="price-range-inputs">
+            <input type="number" class="filter-input price-min" placeholder="Min" min="0" step="0.01" value="${this.filters.priceRange.min || ''}">
+            <span>to</span>
+            <input type="number" class="filter-input price-max" placeholder="Max" min="0" step="0.01" value="${this.filters.priceRange.max === Infinity ? '' : this.filters.priceRange.max}">
+          </div>
+        </div>
+
+        <!-- Availability Filter -->
+        <div class="filter-group">
+          <label class="filter-checkbox">
+            <input type="checkbox" class="availability-filter" ${this.filters.showAvailableOnly ? 'checked' : ''}>
+            <span>Show available only</span>
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="filter-actions">
+          <button class="filter-button filter-clear">Clear Filters</button>
+          <button class="filter-button filter-apply">Apply Filters</button>
+        </div>
+      </div>
+    `;
+
+    // Insert after modal header
+    const modalHeader = this.elements.modal.querySelector('.modal-header');
+    modalHeader.after(filterPanel);
+
+    // Attach event handlers
+    this.attachFilterEventHandlers(filterPanel, stepIndex);
+  }
+
+  attachFilterEventHandlers(filterPanel, stepIndex) {
+    const applyButton = filterPanel.querySelector('.filter-apply');
+    const clearButton = filterPanel.querySelector('.filter-clear');
+    const sortSelect = filterPanel.querySelector('.sort-select');
+    const searchInput = filterPanel.querySelector('.search-input');
+    const priceMin = filterPanel.querySelector('.price-min');
+    const priceMax = filterPanel.querySelector('.price-max');
+    const availabilityCheckbox = filterPanel.querySelector('.availability-filter');
+
+    // Apply filters
+    applyButton.addEventListener('click', () => {
+      this.filters.sortBy = sortSelect.value;
+      this.filters.searchQuery = searchInput.value.trim().toLowerCase();
+      this.filters.priceRange.min = parseFloat(priceMin.value) || 0;
+      this.filters.priceRange.max = parseFloat(priceMax.value) || Infinity;
+      this.filters.showAvailableOnly = availabilityCheckbox.checked;
+
+      this.applyFilters(stepIndex);
+      filterPanel.remove();
+    });
+
+    // Clear filters
+    clearButton.addEventListener('click', () => {
+      this.filters = {
+        sortBy: 'default',
+        priceRange: { min: 0, max: Infinity },
+        searchQuery: '',
+        showAvailableOnly: false
+      };
+      this.applyFilters(stepIndex);
+      filterPanel.remove();
+    });
+
+    // Real-time search
+    searchInput.addEventListener('input', (e) => {
+      this.filters.searchQuery = e.target.value.trim().toLowerCase();
+      this.applyFilters(stepIndex);
+    });
+  }
+
+  applyFilters(stepIndex) {
+    let products = [...this.stepProductData[stepIndex]];
+
+    // Apply search filter
+    if (this.filters.searchQuery) {
+      products = products.filter(p =>
+        p.title.toLowerCase().includes(this.filters.searchQuery)
+      );
+    }
+
+    // Apply price range filter
+    products = products.filter(p =>
+      p.price >= this.filters.priceRange.min &&
+      p.price <= this.filters.priceRange.max
+    );
+
+    // Apply availability filter
+    if (this.filters.showAvailableOnly) {
+      products = products.filter(p => p.available !== false);
+    }
+
+    // Apply sorting
+    switch (this.filters.sortBy) {
+      case 'price-asc':
+        products.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        products.sort((a, b) => b.price - a.price);
+        break;
+      case 'title-asc':
+        products.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'title-desc':
+        products.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      default:
+        // Keep original order
+        break;
+    }
+
+    // Store filtered products temporarily
+    this.filteredProductCache[stepIndex] = products;
+
+    // Re-render products with filtered list
+    this.renderModalProducts(stepIndex, products);
+  }
+
+  renderModalProducts(stepIndex, productsToRender = null) {
+    // Use filtered products if available, otherwise use all products
+    const products = productsToRender || this.filteredProductCache[stepIndex] || this.stepProductData[stepIndex];
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
     if (products.length === 0) {
-      productGrid.innerHTML = '<p style="text-align: center; padding: 20px;">No products configured for this step.</p>';
+      productGrid.innerHTML = '<p style="text-align: center; padding: 20px;">No products found matching your filters.</p>';
       return;
     }
 
@@ -2042,7 +2123,7 @@ class BundleWidget {
       };
 
       const limitText = operatorText[step.conditionOperator] || requiredQuantity;
-      ToastManager.show(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`, 'warning');
+      ToastManager.show(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`);
       return false;
     }
 
@@ -2128,6 +2209,12 @@ class BundleWidget {
       currencyInfo
     );
 
+    // Update cart badge with total item count
+    const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
+    if (cartBadge) {
+      cartBadge.textContent = totalQuantity.toString();
+    }
+
     const footerMessaging = this.elements.modal.querySelector('.modal-footer-discount-messaging');
     const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
     const discountText = this.elements.modal.querySelector('.modal-footer-discount-text');
@@ -2173,9 +2260,109 @@ class BundleWidget {
       progressFill.style.width = `${progressPercentage}%`;
     }
 
+    // Update products list in footer
+    this.updateFooterProductsList();
+
+    // Update total prices
+    this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+
     // Apply state class
     footerMessaging.className = `modal-footer-discount-messaging ${messageState}`;
     footerMessaging.style.display = 'flex';
+  }
+
+  updateFooterProductsList() {
+    const productsList = this.elements.modal.querySelector('.modal-footer-products-list');
+    if (!productsList) return;
+
+    productsList.innerHTML = '';
+
+    // Collect all selected products across all steps
+    const selectedProductsList = [];
+    this.selectedBundle.steps.forEach((step, stepIndex) => {
+      const stepSelections = this.selectedProducts[stepIndex] || {};
+      Object.entries(stepSelections).forEach(([productId, quantity]) => {
+        if (quantity > 0) {
+          const productData = this.stepProductData[stepIndex]?.[productId];
+          if (productData) {
+            selectedProductsList.push({
+              stepIndex,
+              productId,
+              quantity,
+              data: productData
+            });
+          }
+        }
+      });
+    });
+
+    // Render each product with close button
+    selectedProductsList.forEach(({ stepIndex, productId, quantity, data }) => {
+      const productItem = document.createElement('div');
+      productItem.className = 'footer-product-item';
+      productItem.dataset.stepIndex = stepIndex;
+      productItem.dataset.productId = productId;
+
+      const currencyInfo = CurrencyManager.getCurrencyInfo();
+      const priceDisplay = CurrencyManager.formatMoney(data.price || 0, currencyInfo.display.format);
+
+      productItem.innerHTML = `
+        <button class="footer-product-remove" aria-label="Remove product">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="footer-product-image">
+          <img src="${data.image || ''}" alt="${data.title || 'Product'}" />
+        </div>
+        <div class="footer-product-info">
+          <div class="footer-product-title">${data.title || 'Product'}</div>
+          <div class="footer-product-price">${priceDisplay} x ${quantity}</div>
+        </div>
+      `;
+
+      // Add click handler for remove button
+      const removeBtn = productItem.querySelector('.footer-product-remove');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeProductFromFooter(stepIndex, productId);
+      });
+
+      productsList.appendChild(productItem);
+    });
+
+    // Show/hide products list based on selections
+    productsList.style.display = selectedProductsList.length > 0 ? 'flex' : 'none';
+  }
+
+  removeProductFromFooter(stepIndex, productId) {
+    // Remove the product from selections
+    if (this.selectedProducts[stepIndex]) {
+      delete this.selectedProducts[stepIndex][productId];
+    }
+
+    // Update UI
+    this.updateStepDisplay(stepIndex);
+    this.updateModalFooterMessaging();
+    this.updateAddToCartButton();
+  }
+
+  updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {
+    const strikePriceEl = this.elements.modal.querySelector('.total-price-strike');
+    const finalPriceEl = this.elements.modal.querySelector('.total-price-final');
+
+    if (!strikePriceEl || !finalPriceEl) return;
+
+    if (discountInfo.qualifiesForDiscount && discountInfo.discountedPrice < totalPrice) {
+      // Show strike-through original price and discounted price
+      strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      strikePriceEl.style.display = 'inline';
+      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.discountedPrice, currencyInfo.display.format);
+    } else {
+      // Show only regular price
+      strikePriceEl.style.display = 'none';
+      finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+    }
   }
 
   // ========================================================================
@@ -2190,14 +2377,14 @@ class BundleWidget {
       );
 
       if (totalQuantity === 0) {
-        ToastManager.show('Please select products for your bundle before adding to cart.', 'warning');
+        ToastManager.show('Please select products for your bundle before adding to cart.');
         return;
       }
 
       // Validate all steps
       const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
       if (!allStepsValid) {
-        ToastManager.show('Please complete all bundle steps before adding to cart.', 'warning');
+        ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;
       }
 
@@ -2223,14 +2410,14 @@ class BundleWidget {
       const result = await response.json();
 
       // Show success message and redirect
-      ToastManager.show('Bundle added to cart successfully!', 'success');
+      ToastManager.show('Bundle added to cart successfully!');
 
       setTimeout(() => {
         window.location.href = '/cart';
       }, 1000);
 
     } catch (error) {
-      ToastManager.show(`Failed to add bundle to cart: ${error.message}`, 'error');
+      ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
     } finally {
       // Re-enable button
       this.updateAddToCartButton();
@@ -2395,7 +2582,7 @@ class BundleWidget {
         this.updateModalNavigation();
         this.updateModalFooterMessaging();
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before going back.', 'warning');
+        ToastManager.show('Please meet the quantity conditions for the current step before going back.');
       }
     } else if (direction > 0) {
       if (newStepIndex < this.selectedBundle.steps.length) {
@@ -2416,14 +2603,14 @@ class BundleWidget {
           this.updateModalNavigation();
           this.updateModalFooterMessaging();
         } else {
-          ToastManager.show('Please meet the quantity conditions for the current step before proceeding.', 'warning');
+          ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
         }
       } else {
         // Done button clicked on last step
         if (this.validateStep(this.currentStepIndex)) {
           this.closeModal();
         } else {
-          ToastManager.show('Please meet the quantity conditions for the current step before finishing.', 'warning');
+          ToastManager.show('Please meet the quantity conditions for the current step before finishing.');
         }
       }
     }
@@ -2520,7 +2707,7 @@ function handleAutomaticBundleConfiguration() {
     bundleContainers.forEach(container => {
       if (!container.dataset.bundleId) {
         container.dataset.bundleId = bundleId;
-        ToastManager.show(`Bundle widget configured with ID: ${bundleId}`, 'info', 6000);
+        ToastManager.show(`Bundle widget configured with ID: ${bundleId}`, 6000);
       }
     });
   }
