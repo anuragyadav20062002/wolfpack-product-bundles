@@ -993,209 +993,83 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* Modal Footer - Integrated Design with Discount Messaging */
+/* Modal Footer - Centered Grouped Layout */
 .modal-footer {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 24px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--bundle-footer-padding, 20px 24px);
   border-top: 1px solid #e8e8e8;
   margin-top: 0;
   background-color: var(--bundle-footer-bg, var(--modal-footer-bg-color, #ffffff));
-  max-height: 400px;
-}
-
-/* Cart Badge */
-.modal-footer-cart-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background-color: #000000;
-  color: #ffffff;
-  border-radius: 14px;
-  padding: 4px 12px;
-  font-size: 13px;
-  font-weight: 700;
-  align-self: center;
-}
-
-.cart-badge-count {
-  font-weight: 700;
-}
-
-/* Discount Text */
-.modal-footer-discount-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--modal-footer-text-color, #2d3748);
-  text-align: center;
-  line-height: 1.3;
-  display: var(--bundle-footer-discount-display, block);
-}
-
-.modal-footer-discount-messaging.success .modal-footer-discount-text {
-  color: var(--modal-footer-success-color, #28a745);
-}
-
-/* Progress Bar */
-.modal-footer-progress-wrapper {
-  width: 100%;
-  max-width: 600px;
-  align-self: center;
-}
-
-.modal-footer-progress-bar {
-  width: 100%;
-  height: 8px;
-  background: var(--bundle-footer-progress-empty, rgba(113, 50, 255, 0.1));
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-
-.modal-footer-progress-fill {
-  height: 100% !important;
-  background: var(--bundle-footer-progress-filled, linear-gradient(90deg, #7132FF 0%, #9b6bff 100%)) !important;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-  display: block !important;
-  width: 0%;
-}
-
-.modal-footer-discount-messaging.success .modal-footer-progress-fill {
-  background: linear-gradient(90deg, var(--modal-footer-success-color, #28a745) 0%, #34ce57 100%);
-}
-
-/* Products List */
-.modal-footer-products-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 150px;
-  overflow-y: auto;
-  padding: 8px 0;
-}
-
-.footer-product-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  position: relative;
-  padding-left: 20px;
-}
-
-.footer-product-remove {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  background-color: #ffffff;
-  border: 1px solid #000000;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.2s ease;
-}
-
-.footer-product-remove:hover {
-  background-color: #f3f4f6;
-  transform: translateY(-50%) scale(1.1);
-}
-
-.footer-product-remove svg {
-  width: 10px;
-  height: 10px;
-  stroke: #000000;
-}
-
-.footer-product-image {
-  width: 52px;
-  height: 52px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: #f3f4f6;
-}
-
-.footer-product-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.footer-product-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.footer-product-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: #111827;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.footer-product-price {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  margin-top: 2px;
-}
-
-/* Footer Navigation Buttons Section */
-.modal-footer-discount-messaging {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: var(--bundle-footer-padding, 12px 16px);
-  background-color: var(--bundle-footer-total-bg, #f6f6f6);
   border-radius: var(--bundle-footer-border-radius, 8px);
+  min-width: 600px;
 }
 
-.modal-footer-total-section {
-  flex: 1;
-  display: flex;
+/* Centered Grouped Content Container */
+.modal-footer-grouped-content {
+  display: inline-flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 0 16px;
-}
-
-.total-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-.total-prices {
-  display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.total-price-strike {
-  font-size: 13px;
+/* Total Pill - Sits Above Buttons */
+.modal-footer-total-pill {
+  background-color: var(--bundle-footer-total-bg, #f6f6f6);
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
   font-weight: 500;
+}
+
+/* Total Prices inside Pill */
+.modal-footer-total-pill .total-price-strike {
+  font-size: var(--bundle-footer-strike-font-size, 13px);
+  font-weight: var(--bundle-footer-strike-font-weight, 500);
   color: var(--bundle-footer-strike-price-color, #8d8d8d);
   text-decoration: line-through;
 }
 
-.total-price-final {
+.modal-footer-total-pill .total-price-final {
   font-size: var(--bundle-footer-final-price-font-size, 18px);
   font-weight: var(--bundle-footer-final-price-font-weight, 700);
   color: var(--bundle-footer-final-price-color, #000000);
 }
 
-/* Navigation Buttons - Compact Design */
+/* Buttons Row - Below Pill */
+.modal-footer-buttons-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Cart Badge Wrapper inside Pill */
+.cart-badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #666;
+}
+
+.cart-badge-count {
+  font-weight: 600;
+  color: #666;
+}
+
+.cart-icon {
+  font-size: 14px;
+}
+
+/* Price Cart Separator */
+.price-cart-separator {
+  color: #666;
+  font-weight: 400;
+}
+/* Navigation Buttons - New Centered Layout Design */
 .modal-nav-button {
   display: flex;
   align-items: center;
@@ -1207,8 +1081,10 @@
   font-weight: 600;
   transition: all 0.2s ease;
   white-space: nowrap;
-  flex: 1;
   min-width: 100px;
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .modal-nav-button svg {
@@ -1285,20 +1161,6 @@
 /* ===== GENERAL SECTION STYLES ===== */
 
 /* Scrollbar styling for modal footer products list */
-.modal-footer-products-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.modal-footer-products-list::-webkit-scrollbar-track {
-  background: #F0F0F0;
-  border-radius: 4px;
-}
-
-.modal-footer-products-list::-webkit-scrollbar-thumb {
-  background-color: var(--bundle-scrollbar-color, #F6F6F6);
-  border-radius: 4px;
-}
-
 /* Bundle Upsell Button - Alternative styling for add-to-cart button */
 .bundle-upsell-button,
 .add-bundle-to-cart.upsell-style {

@@ -1095,40 +1095,34 @@ class BundleWidget {
             <div class="product-grid"></div>
           </div>
           <div class="modal-footer">
-            <!-- Cart Badge -->
-            <div class="modal-footer-cart-badge">
-              <span class="cart-badge-count">0</span> 🛒
+            <!-- Centered Grouped Content Container -->
+            <div class="modal-footer-grouped-content">
+              <!-- Total Pill - Sits Above Buttons -->
+              <div class="modal-footer-total-pill">
+                <span class="total-price-strike"></span>
+                <span class="total-price-final"></span>
+                <span class="price-cart-separator">|</span>
+                <span class="cart-badge-wrapper">
+                  <span class="cart-badge-count">0</span>
+                  <span class="cart-icon">🛒</span>
+                </span>
+              </div>
+
+              <!-- Buttons Row - Below Pill -->
+              <div class="modal-footer-buttons-row">
+                <button class="modal-nav-button prev-button">BACK</button>
+                <button class="modal-nav-button next-button">NEXT</button>
+              </div>
             </div>
 
-            <!-- Discount Text -->
-            <div class="modal-footer-discount-text"></div>
-
-            <!-- Progress Bar -->
-            <div class="modal-footer-progress-wrapper">
+            <!-- Hidden elements for backwards compatibility (will be removed later) -->
+            <div class="modal-footer-discount-text" style="display: none;"></div>
+            <div class="modal-footer-progress-wrapper" style="display: none;">
               <div class="modal-footer-progress-bar">
                 <div class="modal-footer-progress-fill"></div>
               </div>
             </div>
-
-            <!-- Selected Products List -->
-            <div class="modal-footer-products-list"></div>
-
-            <!-- Footer Navigation Buttons -->
-            <div class="modal-footer-discount-messaging">
-              <button class="modal-nav-button prev-button">
-                Back
-              </button>
-              <div class="modal-footer-total-section">
-                <span class="total-label">Total</span>
-                <div class="total-prices">
-                  <span class="total-price-strike"></span>
-                  <span class="total-price-final"></span>
-                </div>
-              </div>
-              <button class="modal-nav-button next-button">
-                Next
-              </button>
-            </div>
+            <div class="modal-footer-products-list" style="display: none;"></div>
           </div>
         </div>
       `;
