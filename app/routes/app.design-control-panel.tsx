@@ -2,7 +2,6 @@ import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-r
 import { useLoaderData, useSubmit, useActionData, useNavigation } from "@remix-run/react";
 import {
   Page,
-  Modal,
   Text,
   BlockStack,
   InlineStack,
@@ -20,8 +19,9 @@ import {
   Frame,
   Toast,
 } from "@shopify/polaris";
+import { Modal, SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@shopify/polaris-icons";
 import { prisma } from "../db.server";
 
@@ -460,9 +460,9 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function DesignControlPanel() {
   const { settings } = useLoaderData<typeof loader>();
   const submit = useSubmit();
+  const shopify = useAppBridge();
 
-  // Modal state
-  const [modalActive, setModalActive] = useState(false);
+  // Bundle type state
   const [selectedBundleType, setSelectedBundleType] = useState<"product_page" | "full_page">("product_page");
 
   // Current settings based on selected bundle type
@@ -664,8 +664,269 @@ export default function DesignControlPanel() {
     setCheckoutGifUrl(newSettings.checkoutGifUrl || "");
   }, [selectedBundleType, settings]);
 
-  const handleOpenModal = useCallback(() => setModalActive(true), []);
-  const handleCloseModal = useCallback(() => setModalActive(false), []);
+  // Track if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    const current = settings[selectedBundleType];
+    return (
+      productCardBgColor !== current.productCardBgColor ||
+      productCardFontColor !== current.productCardFontColor ||
+      productCardFontSize !== current.productCardFontSize ||
+      productCardFontWeight !== current.productCardFontWeight ||
+      productCardImageFit !== current.productCardImageFit ||
+      String(productCardsPerRow) !== String(current.productCardsPerRow) ||
+      productPriceVisibility !== current.productPriceVisibility ||
+      productStrikePriceColor !== current.productStrikePriceColor ||
+      productStrikeFontSize !== current.productStrikeFontSize ||
+      productStrikeFontWeight !== current.productStrikeFontWeight ||
+      productFinalPriceColor !== current.productFinalPriceColor ||
+      productFinalPriceFontSize !== current.productFinalPriceFontSize ||
+      productFinalPriceFontWeight !== current.productFinalPriceFontWeight ||
+      buttonBgColor !== current.buttonBgColor ||
+      buttonTextColor !== current.buttonTextColor ||
+      buttonFontSize !== current.buttonFontSize ||
+      buttonFontWeight !== current.buttonFontWeight ||
+      buttonBorderRadius !== current.buttonBorderRadius ||
+      buttonAddToCartText !== current.buttonAddToCartText ||
+      quantitySelectorBgColor !== current.quantitySelectorBgColor ||
+      quantitySelectorTextColor !== current.quantitySelectorTextColor ||
+      quantitySelectorFontSize !== current.quantitySelectorFontSize ||
+      quantitySelectorBorderRadius !== current.quantitySelectorBorderRadius ||
+      footerBgColor !== current.footerBgColor ||
+      footerTotalBgColor !== current.footerTotalBgColor ||
+      footerBorderRadius !== current.footerBorderRadius ||
+      footerPadding !== current.footerPadding ||
+      footerFinalPriceColor !== current.footerFinalPriceColor ||
+      footerFinalPriceFontSize !== current.footerFinalPriceFontSize ||
+      footerFinalPriceFontWeight !== current.footerFinalPriceFontWeight ||
+      footerStrikePriceColor !== current.footerStrikePriceColor ||
+      footerStrikeFontSize !== current.footerStrikeFontSize ||
+      footerStrikeFontWeight !== current.footerStrikeFontWeight ||
+      footerPriceVisibility !== current.footerPriceVisibility ||
+      footerBackButtonBgColor !== current.footerBackButtonBgColor ||
+      footerBackButtonTextColor !== current.footerBackButtonTextColor ||
+      footerBackButtonBorderColor !== current.footerBackButtonBorderColor ||
+      footerBackButtonBorderRadius !== current.footerBackButtonBorderRadius ||
+      footerNextButtonBgColor !== current.footerNextButtonBgColor ||
+      footerNextButtonTextColor !== current.footerNextButtonTextColor ||
+      footerNextButtonBorderColor !== current.footerNextButtonBorderColor ||
+      footerNextButtonBorderRadius !== current.footerNextButtonBorderRadius ||
+      footerDiscountTextVisibility !== current.footerDiscountTextVisibility ||
+      footerProgressBarFilledColor !== current.footerProgressBarFilledColor ||
+      footerProgressBarEmptyColor !== current.footerProgressBarEmptyColor ||
+      stepNameFontColor !== current.stepNameFontColor ||
+      stepNameFontSize !== current.stepNameFontSize ||
+      completedStepCheckMarkColor !== current.completedStepCheckMarkColor ||
+      completedStepBgColor !== current.completedStepBgColor ||
+      completedStepCircleBorderColor !== current.completedStepCircleBorderColor ||
+      completedStepCircleBorderRadius !== current.completedStepCircleBorderRadius ||
+      incompleteStepBgColor !== current.incompleteStepBgColor ||
+      incompleteStepCircleStrokeColor !== current.incompleteStepCircleStrokeColor ||
+      incompleteStepCircleStrokeRadius !== current.incompleteStepCircleStrokeRadius ||
+      stepBarProgressFilledColor !== current.stepBarProgressFilledColor ||
+      stepBarProgressEmptyColor !== current.stepBarProgressEmptyColor ||
+      tabsActiveBgColor !== current.tabsActiveBgColor ||
+      tabsActiveTextColor !== current.tabsActiveTextColor ||
+      tabsInactiveBgColor !== current.tabsInactiveBgColor ||
+      tabsInactiveTextColor !== current.tabsInactiveTextColor ||
+      tabsBorderColor !== current.tabsBorderColor ||
+      tabsBorderRadius !== current.tabsBorderRadius ||
+      bundleBgColor !== current.bundleBgColor ||
+      footerScrollBarColor !== current.footerScrollBarColor ||
+      productPageTitleFontColor !== current.productPageTitleFontColor ||
+      productPageTitleFontSize !== current.productPageTitleFontSize ||
+      bundleUpsellButtonBgColor !== current.bundleUpsellButtonBgColor ||
+      bundleUpsellBorderColor !== current.bundleUpsellBorderColor ||
+      bundleUpsellTextColor !== current.bundleUpsellTextColor ||
+      toastBgColor !== current.toastBgColor ||
+      toastTextColor !== current.toastTextColor ||
+      filterIconColor !== current.filterIconColor ||
+      filterBgColor !== current.filterBgColor ||
+      filterTextColor !== current.filterTextColor ||
+      bundleLoadingGifUrl !== (current.bundleLoadingGifUrl || "") ||
+      checkoutGifUrl !== (current.checkoutGifUrl || "")
+    );
+  }, [
+    settings,
+    selectedBundleType,
+    productCardBgColor,
+    productCardFontColor,
+    productCardFontSize,
+    productCardFontWeight,
+    productCardImageFit,
+    productCardsPerRow,
+    productPriceVisibility,
+    productStrikePriceColor,
+    productStrikeFontSize,
+    productStrikeFontWeight,
+    productFinalPriceColor,
+    productFinalPriceFontSize,
+    productFinalPriceFontWeight,
+    buttonBgColor,
+    buttonTextColor,
+    buttonFontSize,
+    buttonFontWeight,
+    buttonBorderRadius,
+    buttonAddToCartText,
+    quantitySelectorBgColor,
+    quantitySelectorTextColor,
+    quantitySelectorFontSize,
+    quantitySelectorBorderRadius,
+    footerBgColor,
+    footerTotalBgColor,
+    footerBorderRadius,
+    footerPadding,
+    footerFinalPriceColor,
+    footerFinalPriceFontSize,
+    footerFinalPriceFontWeight,
+    footerStrikePriceColor,
+    footerStrikeFontSize,
+    footerStrikeFontWeight,
+    footerPriceVisibility,
+    footerBackButtonBgColor,
+    footerBackButtonTextColor,
+    footerBackButtonBorderColor,
+    footerBackButtonBorderRadius,
+    footerNextButtonBgColor,
+    footerNextButtonTextColor,
+    footerNextButtonBorderColor,
+    footerNextButtonBorderRadius,
+    footerDiscountTextVisibility,
+    footerProgressBarFilledColor,
+    footerProgressBarEmptyColor,
+    stepNameFontColor,
+    stepNameFontSize,
+    completedStepCheckMarkColor,
+    completedStepBgColor,
+    completedStepCircleBorderColor,
+    completedStepCircleBorderRadius,
+    incompleteStepBgColor,
+    incompleteStepCircleStrokeColor,
+    incompleteStepCircleStrokeRadius,
+    stepBarProgressFilledColor,
+    stepBarProgressEmptyColor,
+    tabsActiveBgColor,
+    tabsActiveTextColor,
+    tabsInactiveBgColor,
+    tabsInactiveTextColor,
+    tabsBorderColor,
+    tabsBorderRadius,
+    bundleBgColor,
+    footerScrollBarColor,
+    productPageTitleFontColor,
+    productPageTitleFontSize,
+    bundleUpsellButtonBgColor,
+    bundleUpsellBorderColor,
+    bundleUpsellTextColor,
+    toastBgColor,
+    toastTextColor,
+    filterIconColor,
+    filterBgColor,
+    filterTextColor,
+    bundleLoadingGifUrl,
+    checkoutGifUrl,
+  ]);
+
+  // Function to discard changes and revert to saved values
+  const handleDiscard = useCallback(() => {
+    const savedSettings = settings[selectedBundleType];
+    setProductCardBgColor(savedSettings.productCardBgColor);
+    setProductCardFontColor(savedSettings.productCardFontColor);
+    setProductCardFontSize(savedSettings.productCardFontSize);
+    setProductCardFontWeight(savedSettings.productCardFontWeight);
+    setProductCardImageFit(savedSettings.productCardImageFit);
+    setProductCardsPerRow(String(savedSettings.productCardsPerRow));
+    setProductPriceVisibility(savedSettings.productPriceVisibility);
+    setProductStrikePriceColor(savedSettings.productStrikePriceColor);
+    setProductStrikeFontSize(savedSettings.productStrikeFontSize);
+    setProductStrikeFontWeight(savedSettings.productStrikeFontWeight);
+    setProductFinalPriceColor(savedSettings.productFinalPriceColor);
+    setProductFinalPriceFontSize(savedSettings.productFinalPriceFontSize);
+    setProductFinalPriceFontWeight(savedSettings.productFinalPriceFontWeight);
+    setButtonBgColor(savedSettings.buttonBgColor);
+    setButtonTextColor(savedSettings.buttonTextColor);
+    setButtonFontSize(savedSettings.buttonFontSize);
+    setButtonFontWeight(savedSettings.buttonFontWeight);
+    setButtonBorderRadius(savedSettings.buttonBorderRadius);
+    setButtonAddToCartText(savedSettings.buttonAddToCartText);
+    setQuantitySelectorBgColor(savedSettings.quantitySelectorBgColor);
+    setQuantitySelectorTextColor(savedSettings.quantitySelectorTextColor);
+    setQuantitySelectorFontSize(savedSettings.quantitySelectorFontSize);
+    setQuantitySelectorBorderRadius(savedSettings.quantitySelectorBorderRadius);
+    setFooterBgColor(savedSettings.footerBgColor);
+    setFooterTotalBgColor(savedSettings.footerTotalBgColor);
+    setFooterBorderRadius(savedSettings.footerBorderRadius);
+    setFooterPadding(savedSettings.footerPadding);
+    setFooterFinalPriceColor(savedSettings.footerFinalPriceColor);
+    setFooterFinalPriceFontSize(savedSettings.footerFinalPriceFontSize);
+    setFooterFinalPriceFontWeight(savedSettings.footerFinalPriceFontWeight);
+    setFooterStrikePriceColor(savedSettings.footerStrikePriceColor);
+    setFooterStrikeFontSize(savedSettings.footerStrikeFontSize);
+    setFooterStrikeFontWeight(savedSettings.footerStrikeFontWeight);
+    setFooterPriceVisibility(savedSettings.footerPriceVisibility);
+    setFooterBackButtonBgColor(savedSettings.footerBackButtonBgColor);
+    setFooterBackButtonTextColor(savedSettings.footerBackButtonTextColor);
+    setFooterBackButtonBorderColor(savedSettings.footerBackButtonBorderColor);
+    setFooterBackButtonBorderRadius(savedSettings.footerBackButtonBorderRadius);
+    setFooterNextButtonBgColor(savedSettings.footerNextButtonBgColor);
+    setFooterNextButtonTextColor(savedSettings.footerNextButtonTextColor);
+    setFooterNextButtonBorderColor(savedSettings.footerNextButtonBorderColor);
+    setFooterNextButtonBorderRadius(savedSettings.footerNextButtonBorderRadius);
+    setFooterDiscountTextVisibility(savedSettings.footerDiscountTextVisibility);
+    setFooterProgressBarFilledColor(savedSettings.footerProgressBarFilledColor);
+    setFooterProgressBarEmptyColor(savedSettings.footerProgressBarEmptyColor);
+    setStepNameFontColor(savedSettings.stepNameFontColor);
+    setStepNameFontSize(savedSettings.stepNameFontSize);
+    setCompletedStepCheckMarkColor(savedSettings.completedStepCheckMarkColor);
+    setCompletedStepBgColor(savedSettings.completedStepBgColor);
+    setCompletedStepCircleBorderColor(savedSettings.completedStepCircleBorderColor);
+    setCompletedStepCircleBorderRadius(savedSettings.completedStepCircleBorderRadius);
+    setIncompleteStepBgColor(savedSettings.incompleteStepBgColor);
+    setIncompleteStepCircleStrokeColor(savedSettings.incompleteStepCircleStrokeColor);
+    setIncompleteStepCircleStrokeRadius(savedSettings.incompleteStepCircleStrokeRadius);
+    setStepBarProgressFilledColor(savedSettings.stepBarProgressFilledColor);
+    setStepBarProgressEmptyColor(savedSettings.stepBarProgressEmptyColor);
+    setTabsActiveBgColor(savedSettings.tabsActiveBgColor);
+    setTabsActiveTextColor(savedSettings.tabsActiveTextColor);
+    setTabsInactiveBgColor(savedSettings.tabsInactiveBgColor);
+    setTabsInactiveTextColor(savedSettings.tabsInactiveTextColor);
+    setTabsBorderColor(savedSettings.tabsBorderColor);
+    setTabsBorderRadius(savedSettings.tabsBorderRadius);
+    setBundleBgColor(savedSettings.bundleBgColor);
+    setFooterScrollBarColor(savedSettings.footerScrollBarColor);
+    setProductPageTitleFontColor(savedSettings.productPageTitleFontColor);
+    setProductPageTitleFontSize(savedSettings.productPageTitleFontSize);
+    setBundleUpsellButtonBgColor(savedSettings.bundleUpsellButtonBgColor);
+    setBundleUpsellBorderColor(savedSettings.bundleUpsellBorderColor);
+    setBundleUpsellTextColor(savedSettings.bundleUpsellTextColor);
+    setToastBgColor(savedSettings.toastBgColor);
+    setToastTextColor(savedSettings.toastTextColor);
+    setFilterIconColor(savedSettings.filterIconColor);
+    setFilterBgColor(savedSettings.filterBgColor);
+    setFilterTextColor(savedSettings.filterTextColor);
+    setBundleLoadingGifUrl(savedSettings.bundleLoadingGifUrl || "");
+    setCheckoutGifUrl(savedSettings.checkoutGifUrl || "");
+  }, [settings, selectedBundleType]);
+
+  // Show/hide save bar based on unsaved changes
+  useEffect(() => {
+    if (hasUnsavedChanges) {
+      shopify.saveBar.show('dcp-save-bar');
+    } else {
+      shopify.saveBar.hide('dcp-save-bar');
+    }
+  }, [hasUnsavedChanges, shopify]);
+
+  const handleOpenModal = useCallback(() => {
+    shopify.modal.show('dcp-customization-modal');
+  }, [shopify]);
+
+  const handleCloseModal = useCallback(() => {
+    // Discard changes if there are any unsaved changes
+    if (hasUnsavedChanges) {
+      handleDiscard();
+    }
+    shopify.modal.hide('dcp-customization-modal');
+  }, [shopify, hasUnsavedChanges, handleDiscard]);
 
   const toggleSection = useCallback((section: string) => {
     setExpandedSection((prev) => (prev === section ? null : section));
@@ -688,9 +949,13 @@ export default function DesignControlPanel() {
       setToastActive(true);
       setToastMessage(actionData.message);
       setToastError(!actionData.success);
-      // Removed shopify.toast.show() to prevent duplicate toasts
+
+      // Hide save bar after successful save
+      if (actionData.success) {
+        shopify.saveBar.hide('dcp-save-bar');
+      }
     }
-  }, [actionData]);
+  }, [actionData, shopify]);
 
   const handleSaveSettings = useCallback(() => {
     const settingsToSave = {
@@ -909,6 +1174,25 @@ export default function DesignControlPanel() {
     if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
       return (
         <div style={{ maxWidth: "800px", width: "100%" }}>
+          {/* Cart Badge */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+            <div
+              style={{
+                backgroundColor: "#000000",
+                color: "#FFFFFF",
+                borderRadius: "14px",
+                padding: "4px 12px",
+                fontSize: "13px",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              2 🛒
+            </div>
+          </div>
+
           {/* Discount Text */}
           {footerDiscountTextVisibility && (
             <div style={{ textAlign: "center", marginBottom: "16px" }}>
@@ -939,15 +1223,39 @@ export default function DesignControlPanel() {
             </div>
           </div>
 
-          {/* Product Item */}
+          {/* Product Item with Close Button */}
           <div
             style={{
               display: "flex",
               gap: "16px",
               marginBottom: "24px",
               alignItems: "center",
+              position: "relative",
             }}
           >
+            {/* Close Button */}
+            <div
+              style={{
+                position: "absolute",
+                left: "-6px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: "12px",
+                height: "12px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #000000",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontSize: "8px",
+                lineHeight: "1",
+              }}
+            >
+              ×
+            </div>
+
             <div
               style={{
                 width: "60px",
@@ -1291,104 +1599,328 @@ export default function DesignControlPanel() {
       );
     }
 
-    // General Section subsections
+    // General Section subsections - each has its own isolated preview
     if (["bundleDesign", "productPageTitle", "bundleUpsell", "toasts", "filters"].includes(activeSubSection)) {
-      return (
-        <div style={{ maxWidth: "800px", width: "100%", backgroundColor: bundleBgColor, padding: "40px", borderRadius: "12px" }}>
-          {/* Product Page Title */}
-          {activeSubSection === "productPageTitle" && (
-            <div style={{ marginBottom: "32px" }}>
-              <h1
-                style={{
-                  color: productPageTitleFontColor,
-                  fontSize: `${productPageTitleFontSize}px`,
-                  fontWeight: 600,
-                  margin: 0,
-                  marginBottom: "24px",
-                }}
-              >
-                Product Page Title
-              </h1>
-            </div>
-          )}
+      // Bundle Design - Full bundle view with all components
+      if (activeSubSection === "bundleDesign") {
+        return (
+          <div style={{ maxWidth: "800px", width: "100%", backgroundColor: bundleBgColor, padding: "40px", borderRadius: "12px" }}>
+            {/* Product Page Title */}
+            <h1
+              style={{
+                color: productPageTitleFontColor,
+                fontSize: `${productPageTitleFontSize}px`,
+                fontWeight: 600,
+                margin: 0,
+                marginBottom: "24px",
+              }}
+            >
+              Product Page Title
+            </h1>
 
-          {/* Product Grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "24px",
-              marginBottom: "32px",
-            }}
-          >
-            {[1, 2, 3].map((i) => (
+            {/* Filters and Search Row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              {/* Filters Button */}
               <div
-                key={i}
                 style={{
-                  backgroundColor: productCardBgColor,
-                  borderRadius: "12px",
-                  padding: "16px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  backgroundColor: filterBgColor,
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #E3E3E3",
+                  fontSize: "12px",
                 }}
               >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M3 4.99509C3 3.89323 3.89262 3 4.99509 3H19.0049C20.1068 3 21 3.89262 21 4.99509V6.5C21 7.05 20.78 7.58 20.38 7.96L14.5 13.5V21L9.5 19V13.5L3.62 7.96C3.22 7.58 3 7.05 3 6.5V4.99509Z"
+                    stroke={filterIconColor}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span style={{ color: filterTextColor, fontWeight: 500 }}>Filters</span>
+              </div>
+
+              {/* Search */}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="11" cy="11" r="8" stroke="#666" strokeWidth="2" />
+                  <path d="M21 21L16.65 16.65" stroke="#666" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <span style={{ color: "#666" }}>Search</span>
+              </div>
+            </div>
+
+            {/* Step Bar */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{ position: "relative", marginBottom: "16px" }}>
                 <div
                   style={{
-                    width: "100%",
-                    height: "140px",
-                    backgroundColor: "#E5E5E5",
-                    borderRadius: "8px",
-                    marginBottom: "12px",
-                  }}
-                />
-                <div style={{ color: productCardFontColor, fontSize: `${productCardFontSize}px`, fontWeight: productCardFontWeight, marginBottom: "8px" }}>
-                  Product Name
-                </div>
-                <div style={{ marginBottom: "12px" }}>
-                  <span style={{ color: productStrikePriceColor, fontSize: `${productStrikeFontSize}px`, fontWeight: productStrikeFontWeight, textDecoration: "line-through", marginRight: "4px" }}>
-                    $19.99
-                  </span>
-                  <span style={{ color: productFinalPriceColor, fontSize: `${productFinalPriceFontSize}px`, fontWeight: productFinalPriceFontWeight }}>
-                    $15.99
-                  </span>
-                </div>
-                <button
-                  style={{
-                    width: "100%",
-                    backgroundColor: buttonBgColor,
-                    color: buttonTextColor,
-                    padding: "8px 12px",
-                    borderRadius: `${buttonBorderRadius}px`,
-                    border: "none",
-                    fontSize: "13px",
-                    cursor: "pointer",
+                    position: "absolute",
+                    top: "18px",
+                    left: "18px",
+                    right: "18px",
+                    height: "4px",
+                    backgroundColor: stepBarProgressEmptyColor,
+                    borderRadius: "2px",
                   }}
                 >
-                  Add to cart
+                  <div style={{ width: "47%", height: "100%", backgroundColor: stepBarProgressFilledColor, borderRadius: "2px" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
+                  {[1, 2].map((step) => (
+                    <div key={step} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "50%",
+                          backgroundColor: completedStepBgColor,
+                          border: `2px solid ${completedStepCircleBorderColor}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M20 6L9 17L4 12" stroke={completedStepCheckMarkColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <span style={{ color: stepNameFontColor, fontSize: "11px" }}>Step {step}</span>
+                    </div>
+                  ))}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "50%",
+                        backgroundColor: incompleteStepBgColor,
+                        border: `2px solid ${incompleteStepCircleStrokeColor}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <span style={{ color: stepNameFontColor, fontSize: "12px", fontWeight: 600 }}>3</span>
+                    </div>
+                    <span style={{ color: stepNameFontColor, fontSize: "11px" }}>Step 3</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Product Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} style={{ backgroundColor: productCardBgColor, borderRadius: "12px", padding: "12px" }}>
+                  <div style={{ width: "100%", height: "100px", backgroundColor: "#E5E5E5", borderRadius: "8px", marginBottom: "8px" }} />
+                  <div style={{ color: productCardFontColor, fontSize: "11px", fontWeight: productCardFontWeight, marginBottom: "6px" }}>
+                    {i === 2 || i === 4 || i === 6 ? "big product name spanning two lines" : "Product Name"}
+                  </div>
+                  <div style={{ marginBottom: "8px", fontSize: "10px" }}>
+                    <span style={{ color: productStrikePriceColor, textDecoration: "line-through", marginRight: "4px" }}>$19.99</span>
+                    <span style={{ color: productFinalPriceColor, fontWeight: 600 }}>$15.99</span>
+                  </div>
+                  <button style={{ width: "100%", backgroundColor: buttonBgColor, color: buttonTextColor, padding: "6px", borderRadius: `${buttonBorderRadius}px`, border: "none", fontSize: "10px", cursor: "pointer" }}>
+                    Add to cart
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer with Scroll Bar */}
+            <div style={{ backgroundColor: footerBgColor, borderRadius: `${footerBorderRadius}px`, padding: `${footerPadding}px`, position: "relative" }}>
+              {/* Scroll Bar Indicator */}
+              <div
+                style={{
+                  position: "absolute",
+                  right: "8px",
+                  top: "20px",
+                  bottom: "20px",
+                  width: "6px",
+                  backgroundColor: "#F0F0F0",
+                  borderRadius: "3px",
+                  overflow: "hidden",
+                }}
+              >
+                <div style={{ width: "100%", height: "40%", backgroundColor: footerScrollBarColor, borderRadius: "3px" }} />
+              </div>
+
+              {/* Cart Badge */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
+                <div
+                  style={{
+                    backgroundColor: "#000000",
+                    color: "#FFFFFF",
+                    borderRadius: "12px",
+                    padding: "3px 10px",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "3px",
+                  }}
+                >
+                  5 🛒
+                </div>
+              </div>
+
+              {/* Discount Progress */}
+              <div style={{ textAlign: "center", marginBottom: "10px", fontSize: "11px" }}>Buy 3 and get 30% off</div>
+              <div style={{ marginBottom: "16px" }}>
+                <div style={{ width: "100%", height: "6px", backgroundColor: footerProgressBarEmptyColor, borderRadius: "3px", overflow: "hidden" }}>
+                  <div style={{ width: "47%", height: "100%", backgroundColor: footerProgressBarFilledColor }} />
+                </div>
+              </div>
+
+              {/* Product List */}
+              <div style={{ marginBottom: "16px", maxHeight: "80px", overflowY: "auto" }}>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", position: "relative", paddingLeft: "16px" }}>
+                    <div style={{ position: "absolute", left: "0", width: "12px", height: "12px", backgroundColor: "#FFF", border: "1px solid #000", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "8px" }}>×</div>
+                    <div style={{ width: "28px", height: "28px", backgroundColor: "#E5E5E5", borderRadius: "4px" }} />
+                    <div style={{ flex: 1, fontSize: "9px" }}>
+                      <div style={{ fontWeight: 500 }}>Small product name</div>
+                      <div style={{ color: "#666" }}>$19.99 x 4</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Navigation */}
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button style={{ flex: 1, backgroundColor: footerBackButtonBgColor, color: footerBackButtonTextColor, border: `1px solid ${footerBackButtonBorderColor}`, borderRadius: `${footerBackButtonBorderRadius}px`, padding: "8px", fontSize: "11px", cursor: "pointer" }}>
+                  Back
+                </button>
+                <div style={{ flex: 1, backgroundColor: footerTotalBgColor, padding: "8px", borderRadius: "6px", textAlign: "center" }}>
+                  <div style={{ fontSize: "9px", color: "#666", marginBottom: "2px" }}>Total</div>
+                  <div>
+                    <span style={{ color: footerStrikePriceColor, fontSize: "10px", textDecoration: "line-through", marginRight: "4px" }}>$19.99</span>
+                    <span style={{ color: footerFinalPriceColor, fontSize: "12px", fontWeight: 700 }}>$19.99</span>
+                  </div>
+                </div>
+                <button style={{ flex: 1, backgroundColor: footerNextButtonBgColor, color: footerNextButtonTextColor, border: `1px solid ${footerNextButtonBorderColor}`, borderRadius: `${footerNextButtonBorderRadius}px`, padding: "8px", fontSize: "11px", cursor: "pointer" }}>
+                  Next
                 </button>
               </div>
-            ))}
-          </div>
+            </div>
 
-          {/* Filters Preview */}
-          {activeSubSection === "filters" && (
+            <div style={{ marginTop: "24px", textAlign: "center" }}>
+              <Text as="p" variant="bodySm" tone="subdued">
+                Preview updates as you customize
+              </Text>
+            </div>
+          </div>
+        );
+      }
+
+      // Product Page Title - Only show the title
+      if (activeSubSection === "productPageTitle") {
+        return (
+          <div style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}>
+            <h1
+              style={{
+                color: productPageTitleFontColor,
+                fontSize: `${productPageTitleFontSize}px`,
+                fontWeight: 600,
+                margin: 0,
+                marginBottom: "40px",
+              }}
+            >
+              Product Page Title
+            </h1>
+            <div style={{ marginTop: "40px" }}>
+              <Text as="p" variant="bodySm" tone="subdued">
+                Preview updates as you customize
+              </Text>
+            </div>
+          </div>
+        );
+      }
+
+      // Bundle Upsell - Only show the large upsell button
+      if (activeSubSection === "bundleUpsell") {
+        return (
+          <div style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}>
+            <button
+              style={{
+                width: "100%",
+                backgroundColor: bundleUpsellButtonBgColor,
+                color: bundleUpsellTextColor,
+                border: `2px solid ${bundleUpsellBorderColor}`,
+                padding: "20px 32px",
+                borderRadius: "12px",
+                fontSize: "18px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Add to Cart
+            </button>
+            <div style={{ marginTop: "40px" }}>
+              <Text as="p" variant="bodySm" tone="subdued">
+                Preview updates as you customize
+              </Text>
+            </div>
+          </div>
+        );
+      }
+
+      // Toasts - Only show the toast notification
+      if (activeSubSection === "toasts") {
+        return (
+          <div style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}>
+            <div
+              style={{
+                backgroundColor: toastBgColor,
+                color: toastTextColor,
+                padding: "20px 32px",
+                borderRadius: "10px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "16px",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              }}
+            >
+              <span style={{ fontSize: "16px", fontWeight: 500 }}>
+                Add at least 1 product on this step
+              </span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6L18 18" stroke={toastTextColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div style={{ marginTop: "40px" }}>
+              <Text as="p" variant="bodySm" tone="subdued">
+                Preview updates as you customize
+              </Text>
+            </div>
+          </div>
+        );
+      }
+
+      // Filters - Only show the large filter button
+      if (activeSubSection === "filters") {
+        return (
+          <div style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}>
             <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "16px",
                 backgroundColor: filterBgColor,
-                padding: "8px 16px",
-                borderRadius: "8px",
-                marginBottom: "24px",
-                border: "1px solid #E3E3E3",
+                padding: "20px 40px",
+                borderRadius: "12px",
+                border: "2px solid #E3E3E3",
               }}
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M3 4.99509C3 3.89323 3.89262 3 4.99509 3H19.0049C20.1068 3 21 3.89262 21 4.99509V6.5C21 7.05 20.78 7.58 20.38 7.96L14.5 13.5V21L9.5 19V13.5L3.62 7.96C3.22 7.58 3 7.05 3 6.5V4.99509Z"
                   stroke={filterIconColor}
@@ -1397,279 +1929,16 @@ export default function DesignControlPanel() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <span style={{ color: filterTextColor, fontSize: "14px", fontWeight: 500 }}>
-                Filters
-              </span>
+              <span style={{ color: filterTextColor, fontSize: "20px", fontWeight: 600 }}>Filters</span>
             </div>
-          )}
-
-          {/* Step Bar */}
-          <div style={{ marginBottom: "24px" }}>
-            <div style={{ position: "relative", marginBottom: "16px" }}>
-              {/* Progress Bar */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "18px",
-                  left: "18px",
-                  right: "18px",
-                  height: "4px",
-                  backgroundColor: stepBarProgressEmptyColor,
-                  borderRadius: "2px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "47%",
-                    height: "100%",
-                    backgroundColor: stepBarProgressFilledColor,
-                    borderRadius: "2px",
-                  }}
-                />
-              </div>
-
-              {/* Steps */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
-                {/* Step 1 */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "50%",
-                      backgroundColor: completedStepBgColor,
-                      border: `2px solid ${completedStepCircleBorderColor}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M20 6L9 17L4 12"
-                        stroke={completedStepCheckMarkColor}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <span style={{ color: stepNameFontColor, fontSize: "11px" }}>Step 1</span>
-                </div>
-
-                {/* Step 2 */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "50%",
-                      backgroundColor: completedStepBgColor,
-                      border: `2px solid ${completedStepCircleBorderColor}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M20 6L9 17L4 12"
-                        stroke={completedStepCheckMarkColor}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <span style={{ color: stepNameFontColor, fontSize: "11px" }}>Step 2</span>
-                </div>
-
-                {/* Step 3 */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "50%",
-                      backgroundColor: incompleteStepBgColor,
-                      border: `2px solid ${incompleteStepCircleStrokeColor}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <span style={{ color: stepNameFontColor, fontSize: "12px", fontWeight: 600 }}>3</span>
-                  </div>
-                  <span style={{ color: stepNameFontColor, fontSize: "11px" }}>Step 3</span>
-                </div>
-              </div>
+            <div style={{ marginTop: "40px" }}>
+              <Text as="p" variant="bodySm" tone="subdued">
+                Preview updates as you customize
+              </Text>
             </div>
           </div>
-
-          {/* Bundle Upsell Button */}
-          {activeSubSection === "bundleUpsell" && (
-            <div style={{ marginBottom: "24px" }}>
-              <button
-                style={{
-                  width: "100%",
-                  backgroundColor: bundleUpsellButtonBgColor,
-                  color: bundleUpsellTextColor,
-                  border: `2px solid ${bundleUpsellBorderColor}`,
-                  padding: "16px 24px",
-                  borderRadius: "12px",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Add to Cart
-              </button>
-            </div>
-          )}
-
-          {/* Toast Notification */}
-          {activeSubSection === "toasts" && (
-            <div style={{ marginBottom: "24px" }}>
-              <div
-                style={{
-                  backgroundColor: toastBgColor,
-                  color: toastTextColor,
-                  padding: "16px 24px",
-                  borderRadius: "8px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M20 6L9 17L4 12"
-                    stroke={toastTextColor}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span style={{ fontSize: "14px", fontWeight: 500 }}>
-                  Add at least 1 product on this step
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Footer with Scroll Bar indicator */}
-          <div
-            style={{
-              backgroundColor: footerBgColor,
-              borderRadius: `${footerBorderRadius}px`,
-              padding: `${footerPadding}px`,
-              position: "relative",
-            }}
-          >
-            {/* Scroll Bar Preview (right side) */}
-            {activeSubSection === "bundleDesign" && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: "8px",
-                  top: "20px",
-                  bottom: "20px",
-                  width: "8px",
-                  backgroundColor: "#F0F0F0",
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: "100%",
-                    height: "40%",
-                    backgroundColor: footerScrollBarColor,
-                    borderRadius: "4px",
-                  }}
-                />
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <button
-                style={{
-                  flex: 1,
-                  backgroundColor: footerBackButtonBgColor,
-                  color: footerBackButtonTextColor,
-                  border: `1px solid ${footerBackButtonBorderColor}`,
-                  borderRadius: `${footerBackButtonBorderRadius}px`,
-                  padding: "10px 20px",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                }}
-              >
-                Back
-              </button>
-
-              <div
-                style={{
-                  flex: 1,
-                  backgroundColor: footerTotalBgColor,
-                  padding: "12px",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <div style={{ fontSize: "11px", color: "#666", marginBottom: "4px" }}>Total</div>
-                <div>
-                  <span
-                    style={{
-                      color: footerStrikePriceColor,
-                      fontSize: `${footerStrikeFontSize}px`,
-                      fontWeight: footerStrikeFontWeight,
-                      textDecoration: "line-through",
-                      marginRight: "6px",
-                    }}
-                  >
-                    $19.99
-                  </span>
-                  <span
-                    style={{
-                      color: footerFinalPriceColor,
-                      fontSize: `${footerFinalPriceFontSize}px`,
-                      fontWeight: footerFinalPriceFontWeight,
-                    }}
-                  >
-                    $15.99
-                  </span>
-                </div>
-              </div>
-
-              <button
-                style={{
-                  flex: 1,
-                  backgroundColor: footerNextButtonBgColor,
-                  color: footerNextButtonTextColor,
-                  border: `1px solid ${footerNextButtonBorderColor}`,
-                  borderRadius: `${footerNextButtonBorderRadius}px`,
-                  padding: "10px 20px",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                }}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-
-          {/* Annotation */}
-          <div style={{ marginTop: "40px", textAlign: "center" }}>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Preview updates as you customize
-            </Text>
-          </div>
-        </div>
-      );
+        );
+      }
     }
 
     // Images & Gifs subsections
@@ -1791,21 +2060,17 @@ export default function DesignControlPanel() {
           </div>
 
           {/* Product Title */}
-          <Text
-            as="h3"
-            variant="headingMd"
-            alignment="center"
-            fontWeight={String(productCardFontWeight) as any}
+          <div
+            style={{
+              color: productCardFontColor,
+              fontSize: `${productCardFontSize}px`,
+              fontWeight: productCardFontWeight,
+              textAlign: "center",
+              marginBottom: "12px",
+            }}
           >
-            <span
-              style={{
-                color: productCardFontColor,
-                fontSize: `${productCardFontSize}px`,
-              }}
-            >
-              BIG PRODUCT NAME SPANNING TWO LINES
-            </span>
-          </Text>
+            PRODUCT NAME
+          </div>
 
           {/* Prices */}
           {productPriceVisibility && (
@@ -4414,25 +4679,9 @@ export default function DesignControlPanel() {
           onAction: handleOpenModal,
         }}
       >
-        <Modal
-          open={modalActive}
-          onClose={handleCloseModal}
-          title="Customisations"
-          size="large"
-          primaryAction={{
-            content: "Save",
-            onAction: handleSaveSettings,
-            loading: isLoading,
-          }}
-          secondaryActions={[
-            {
-              content: "Cancel",
-              onAction: handleCloseModal,
-            },
-          ]}
-        >
-        <Modal.Section flush>
-          <div style={{ display: "flex", height: "80vh", minHeight: "700px", maxWidth: "100%", overflowX: "hidden" }}>
+        {/* App Bridge Modal with max variant for full-screen */}
+        <Modal id="dcp-customization-modal" variant="max">
+          <div style={{ display: "flex", height: "100vh", maxWidth: "100%", overflowX: "hidden" }}>
             {/* Left Sidebar - Navigation */}
             <div
               style={{
@@ -4650,16 +4899,32 @@ export default function DesignControlPanel() {
               </div>
             </div>
           </div>
-        </Modal.Section>
-      </Modal>
-    </Page>
-    {toastActive && (
-      <Toast
-        content={toastMessage}
-        onDismiss={() => setToastActive(false)}
-        error={toastError}
-      />
-    )}
-  </Frame>
+        </Modal>
+
+        {/* App Bridge Save Bar */}
+        <SaveBar id="dcp-save-bar">
+          <button
+            variant="primary"
+            onClick={handleSaveSettings}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Saving...' : 'Save'}
+          </button>
+          <button
+            onClick={handleDiscard}
+            disabled={isLoading}
+          >
+            Discard
+          </button>
+        </SaveBar>
+      </Page>
+      {toastActive && (
+        <Toast
+          content={toastMessage}
+          onDismiss={() => setToastActive(false)}
+          error={toastError}
+        />
+      )}
+    </Frame>
   );
 }
