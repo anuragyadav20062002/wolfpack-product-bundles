@@ -4436,8 +4436,8 @@ export default function DesignControlPanel() {
             {/* Left Sidebar - Navigation */}
             <div
               style={{
-                width: "269px",
-                minWidth: "269px",
+                width: "220px",
+                minWidth: "220px",
                 borderRight: "1px solid #D9D9D9",
                 backgroundColor: "#FFFFFF",
                 overflowY: "auto",
@@ -4623,7 +4623,7 @@ export default function DesignControlPanel() {
               <div
                 style={{
                   flex: 1,
-                  padding: "40px",
+                  padding: "20px",
                   backgroundColor: "#F4F4F4",
                   display: "flex",
                   alignItems: "center",
@@ -4638,10 +4638,10 @@ export default function DesignControlPanel() {
               {/* Right Panel - Settings Controls */}
               <div
                 style={{
-                  width: "285px",
-                  minWidth: "285px",
+                  width: "240px",
+                  minWidth: "240px",
                   borderLeft: "1px solid #D9D9D9",
-                  padding: "24px",
+                  padding: "20px",
                   backgroundColor: "#FFFFFF",
                   overflowY: "auto",
                 }}
