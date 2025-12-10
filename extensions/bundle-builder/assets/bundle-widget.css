@@ -299,8 +299,8 @@
 
 /* Match Shopify "Buy it now" button aesthetics - Uses DCP variables */
 .add-bundle-to-cart {
-  background-color: var(--bundle-button-bg, var(--bundle-global-primary-button, #000));
-  color: var(--bundle-button-text-color, var(--bundle-global-button-text, #fff));
+  background-color: var(--bundle-add-to-cart-button-bg, var(--bundle-button-bg, var(--bundle-global-primary-button, #000)));
+  color: var(--bundle-add-to-cart-button-text, var(--bundle-button-text-color, var(--bundle-global-button-text, #fff)));
   height: var(--button-height, 55px);
   border: none;
   border-radius: var(--bundle-button-border-radius, 4px);
@@ -1049,6 +1049,33 @@
   background-color: var(--bundle-upsell-button-bg, var(--bundle-button-bg, #000000));
   color: var(--bundle-upsell-text, var(--bundle-button-text-color, #FFFFFF));
   border: 2px solid var(--bundle-upsell-border, var(--bundle-upsell-button-bg, #000000));
+}
+
+/* Empty State Cards */
+.empty-state-card {
+  background-color: var(--bundle-empty-state-card-bg, #FFFFFF);
+  border: 2px var(--bundle-empty-state-border-style, dashed) var(--bundle-empty-state-card-border, #F6F6F6);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+}
+
+.empty-state-card-icon {
+  color: var(--bundle-empty-state-text, #9CA3AF);
+  opacity: 0.4;
+  width: 60px;
+  height: 60px;
+}
+
+.empty-state-card-text {
+  color: var(--bundle-empty-state-text, #9CA3AF);
+  font-size: 14px;
+  text-align: center;
 }
 
 /* Toast Notifications */
