@@ -57,15 +57,22 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       quantitySelectorTextColor: "#FFFFFF",
       quantitySelectorFontSize: 16,
       quantitySelectorBorderRadius: 8,
+      // Global Colors
+      globalPrimaryButtonColor: "#000000",
+      globalButtonTextColor: "#FFFFFF",
+      globalPrimaryTextColor: "#000000",
+      globalSecondaryTextColor: "#6B7280",
+      globalFooterBgColor: "#FFFFFF",
+      globalFooterTextColor: "#000000",
     };
 
     let finalSettings = defaultSettings;
 
     if (designSettings) {
-      const footerSettings = designSettings.footerSettings as any || {};
-      const stepBarSettings = designSettings.stepBarSettings as any || {};
-      const generalSettings = designSettings.generalSettings as any || {};
-      const imagesSettings = designSettings.imagesSettings as any || {};
+      const globalColorsSettings = (designSettings as any).globalColorsSettings || {};
+      const footerSettings = (designSettings as any).footerSettings || {};
+      const stepBarSettings = (designSettings as any).stepBarSettings || {};
+      const generalSettings = (designSettings as any).generalSettings || {};
 
       finalSettings = {
         ...defaultSettings,
@@ -93,10 +100,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         quantitySelectorTextColor: designSettings.quantitySelectorTextColor || defaultSettings.quantitySelectorTextColor,
         quantitySelectorFontSize: designSettings.quantitySelectorFontSize || defaultSettings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: designSettings.quantitySelectorBorderRadius || defaultSettings.quantitySelectorBorderRadius,
+        ...globalColorsSettings,
         ...footerSettings,
         ...stepBarSettings,
         ...generalSettings,
-        ...imagesSettings,
       };
     }
 
@@ -207,6 +214,27 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-header-tab-inactive-text: ${s.headerTabInactiveTextColor || '#000000'};
   --bundle-header-tab-radius: ${s.headerTabRadius || 67}px;
 
+  /* BUNDLE STEP BAR */
+  --bundle-step-name-font-color: ${s.stepNameFontColor || '#000000'};
+  --bundle-step-name-font-size: ${s.stepNameFontSize || 16}px;
+  --bundle-completed-step-checkmark-color: ${s.completedStepCheckMarkColor || '#FFFFFF'};
+  --bundle-completed-step-bg-color: ${s.completedStepBgColor || '#000000'};
+  --bundle-completed-step-circle-border-color: ${s.completedStepCircleBorderColor || '#000000'};
+  --bundle-completed-step-circle-border-radius: ${s.completedStepCircleBorderRadius || 50}px;
+  --bundle-incomplete-step-bg-color: ${s.incompleteStepBgColor || '#FFFFFF'};
+  --bundle-incomplete-step-circle-stroke-color: ${s.incompleteStepCircleStrokeColor || '#000000'};
+  --bundle-incomplete-step-circle-stroke-radius: ${s.incompleteStepCircleStrokeRadius || 50}px;
+  --bundle-step-bar-progress-filled-color: ${s.stepBarProgressFilledColor || '#000000'};
+  --bundle-step-bar-progress-empty-color: ${s.stepBarProgressEmptyColor || '#C6C6C6'};
+
+  /* TABS */
+  --bundle-tabs-active-bg-color: ${s.tabsActiveBgColor || '#000000'};
+  --bundle-tabs-active-text-color: ${s.tabsActiveTextColor || '#FFFFFF'};
+  --bundle-tabs-inactive-bg-color: ${s.tabsInactiveBgColor || '#FFFFFF'};
+  --bundle-tabs-inactive-text-color: ${s.tabsInactiveTextColor || '#000000'};
+  --bundle-tabs-border-color: ${s.tabsBorderColor || '#000000'};
+  --bundle-tabs-border-radius: ${s.tabsBorderRadius || 8}px;
+
   /* GENERAL */
   /* Empty State */
   --bundle-empty-state-card-bg: ${s.emptyStateCardBgColor || '#FFFFFF'};
@@ -221,10 +249,20 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   /* Toasts */
   --bundle-toast-bg: ${s.toastBgColor || '#000000'};
   --bundle-toast-text: ${s.toastTextColor || '#FFFFFF'};
-
-  /* IMAGES */
-  --bundle-loading-gif: ${s.bundleLoadingGifUrl ? `url('${s.bundleLoadingGifUrl}')` : 'none'};
-  --bundle-checkout-gif: ${s.checkoutGifUrl ? `url('${s.checkoutGifUrl}')` : 'none'};
+  /* Bundle Design */
+  --bundle-bg-color: ${s.bundleBgColor || '#FFFFFF'};
+  --bundle-footer-scrollbar-color: ${s.footerScrollBarColor || '#000000'};
+  /* Product Page Title */
+  --bundle-product-page-title-font-color: ${s.productPageTitleFontColor || '#000000'};
+  --bundle-product-page-title-font-size: ${s.productPageTitleFontSize || 24}px;
+  /* Bundle Upsell */
+  --bundle-upsell-button-bg-color: ${s.bundleUpsellButtonBgColor || '#000000'};
+  --bundle-upsell-border-color: ${s.bundleUpsellBorderColor || '#000000'};
+  --bundle-upsell-text-color: ${s.bundleUpsellTextColor || '#FFFFFF'};
+  /* Filters */
+  --bundle-filter-icon-color: ${s.filterIconColor || '#000000'};
+  --bundle-filter-bg-color: ${s.filterBgColor || '#FFFFFF'};
+  --bundle-filter-text-color: ${s.filterTextColor || '#000000'};
 }
 
 /* PRODUCT CARD STYLING */

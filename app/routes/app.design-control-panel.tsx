@@ -218,9 +218,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // Toasts
       toastBgColor: "#000000",
       toastTextColor: "#FFFFFF",
-      // Images & Gifs
-      bundleLoadingGifUrl: "",
-      checkoutGifUrl: "",
+      // Bundle Design
+      bundleBgColor: "#FFFFFF",
+      footerScrollBarColor: "#000000",
+      // Product Page Title
+      productPageTitleFontColor: "#000000",
+      productPageTitleFontSize: 24,
+      // Bundle Upsell
+      bundleUpsellButtonBgColor: "#000000",
+      bundleUpsellBorderColor: "#000000",
+      bundleUpsellTextColor: "#FFFFFF",
+      // Filters
+      filterIconColor: "#000000",
+      filterBgColor: "#FFFFFF",
+      filterTextColor: "#000000",
     },
     full_page: {
       // Global Colors
@@ -328,9 +339,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // Toasts
       toastBgColor: "#7132FF",
       toastTextColor: "#FFFFFF",
-      // Images & Gifs
-      bundleLoadingGifUrl: "",
-      checkoutGifUrl: "",
+      // Bundle Design
+      bundleBgColor: "#F9FAFB",
+      footerScrollBarColor: "#7132FF",
+      // Product Page Title
+      productPageTitleFontColor: "#111827",
+      productPageTitleFontSize: 28,
+      // Bundle Upsell
+      bundleUpsellButtonBgColor: "#7132FF",
+      bundleUpsellBorderColor: "#7132FF",
+      bundleUpsellTextColor: "#FFFFFF",
+      // Filters
+      filterIconColor: "#111827",
+      filterBgColor: "#F9FAFB",
+      filterTextColor: "#111827",
     },
   };
 
@@ -341,7 +363,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const footerSettings = dbSettings.footerSettings as any || {};
     const stepBarSettings = dbSettings.stepBarSettings as any || {};
     const generalSettings = dbSettings.generalSettings as any || {};
-    const imagesSettings = dbSettings.imagesSettings as any || {};
 
     return {
       ...defaults,
@@ -373,7 +394,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       ...footerSettings,
       ...stepBarSettings,
       ...generalSettings,
-      ...imagesSettings,
     };
   };
 
@@ -465,11 +485,20 @@ export async function action({ request }: ActionFunctionArgs) {
       // Toasts
       toastBgColor: settings.toastBgColor,
       toastTextColor: settings.toastTextColor,
-    };
-
-    const imagesSettings = {
-      bundleLoadingGifUrl: settings.bundleLoadingGifUrl || null,
-      checkoutGifUrl: settings.checkoutGifUrl || null,
+      // Bundle Design
+      bundleBgColor: settings.bundleBgColor,
+      footerScrollBarColor: settings.footerScrollBarColor,
+      // Product Page Title
+      productPageTitleFontColor: settings.productPageTitleFontColor,
+      productPageTitleFontSize: settings.productPageTitleFontSize,
+      // Bundle Upsell
+      bundleUpsellButtonBgColor: settings.bundleUpsellButtonBgColor,
+      bundleUpsellBorderColor: settings.bundleUpsellBorderColor,
+      bundleUpsellTextColor: settings.bundleUpsellTextColor,
+      // Filters
+      filterIconColor: settings.filterIconColor,
+      filterBgColor: settings.filterBgColor,
+      filterTextColor: settings.filterTextColor,
     };
 
     await prisma.designSettings.upsert({
@@ -510,7 +539,6 @@ export async function action({ request }: ActionFunctionArgs) {
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
         generalSettings: generalSettings,
-        imagesSettings: imagesSettings,
       },
       update: {
         productCardBgColor: settings.productCardBgColor,
@@ -541,7 +569,6 @@ export async function action({ request }: ActionFunctionArgs) {
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
         generalSettings: generalSettings,
-        imagesSettings: imagesSettings,
       },
     });
 
@@ -665,9 +692,38 @@ export default function DesignControlPanel() {
   const [toastBgColor, setToastBgColor] = useState(currentSettings.toastBgColor || "#000000");
   const [toastTextColor, setToastTextColor] = useState(currentSettings.toastTextColor || "#FFFFFF");
 
-  // Images & Gifs Section
-  const [bundleLoadingGifUrl, setBundleLoadingGifUrl] = useState(currentSettings.bundleLoadingGifUrl || "");
-  const [checkoutGifUrl, setCheckoutGifUrl] = useState(currentSettings.checkoutGifUrl || "");
+  // Bundle Step Bar Section
+  const [stepNameFontColor, setStepNameFontColor] = useState(currentSettings.stepNameFontColor || "#000000");
+  const [stepNameFontSize, setStepNameFontSize] = useState(currentSettings.stepNameFontSize || 16);
+  const [completedStepCheckMarkColor, setCompletedStepCheckMarkColor] = useState(currentSettings.completedStepCheckMarkColor || "#FFFFFF");
+  const [completedStepBgColor, setCompletedStepBgColor] = useState(currentSettings.completedStepBgColor || "#000000");
+  const [completedStepCircleBorderColor, setCompletedStepCircleBorderColor] = useState(currentSettings.completedStepCircleBorderColor || "#000000");
+  const [completedStepCircleBorderRadius, setCompletedStepCircleBorderRadius] = useState(currentSettings.completedStepCircleBorderRadius || 50);
+  const [incompleteStepBgColor, setIncompleteStepBgColor] = useState(currentSettings.incompleteStepBgColor || "#FFFFFF");
+  const [incompleteStepCircleStrokeColor, setIncompleteStepCircleStrokeColor] = useState(currentSettings.incompleteStepCircleStrokeColor || "#000000");
+  const [incompleteStepCircleStrokeRadius, setIncompleteStepCircleStrokeRadius] = useState(currentSettings.incompleteStepCircleStrokeRadius || 50);
+  const [stepBarProgressFilledColor, setStepBarProgressFilledColor] = useState(currentSettings.stepBarProgressFilledColor || "#000000");
+  const [stepBarProgressEmptyColor, setStepBarProgressEmptyColor] = useState(currentSettings.stepBarProgressEmptyColor || "#C6C6C6");
+
+  // Tabs Section
+  const [tabsActiveBgColor, setTabsActiveBgColor] = useState(currentSettings.tabsActiveBgColor || "#000000");
+  const [tabsActiveTextColor, setTabsActiveTextColor] = useState(currentSettings.tabsActiveTextColor || "#FFFFFF");
+  const [tabsInactiveBgColor, setTabsInactiveBgColor] = useState(currentSettings.tabsInactiveBgColor || "#FFFFFF");
+  const [tabsInactiveTextColor, setTabsInactiveTextColor] = useState(currentSettings.tabsInactiveTextColor || "#000000");
+  const [tabsBorderColor, setTabsBorderColor] = useState(currentSettings.tabsBorderColor || "#000000");
+  const [tabsBorderRadius, setTabsBorderRadius] = useState(currentSettings.tabsBorderRadius || 8);
+
+  // General Section - Additional Settings
+  const [bundleBgColor, setBundleBgColor] = useState(currentSettings.bundleBgColor || "#FFFFFF");
+  const [footerScrollBarColor, setFooterScrollBarColor] = useState(currentSettings.footerScrollBarColor || "#000000");
+  const [productPageTitleFontColor, setProductPageTitleFontColor] = useState(currentSettings.productPageTitleFontColor || "#000000");
+  const [productPageTitleFontSize, setProductPageTitleFontSize] = useState(currentSettings.productPageTitleFontSize || 24);
+  const [bundleUpsellButtonBgColor, setBundleUpsellButtonBgColor] = useState(currentSettings.bundleUpsellButtonBgColor || "#000000");
+  const [bundleUpsellBorderColor, setBundleUpsellBorderColor] = useState(currentSettings.bundleUpsellBorderColor || "#000000");
+  const [bundleUpsellTextColor, setBundleUpsellTextColor] = useState(currentSettings.bundleUpsellTextColor || "#FFFFFF");
+  const [filterIconColor, setFilterIconColor] = useState(currentSettings.filterIconColor || "#000000");
+  const [filterBgColor, setFilterBgColor] = useState(currentSettings.filterBgColor || "#FFFFFF");
+  const [filterTextColor, setFilterTextColor] = useState(currentSettings.filterTextColor || "#000000");
 
   // Update form state when bundle type changes
   useEffect(() => {
@@ -748,9 +804,6 @@ export default function DesignControlPanel() {
     setFilterIconColor(newSettings.filterIconColor);
     setFilterBgColor(newSettings.filterBgColor);
     setFilterTextColor(newSettings.filterTextColor);
-    // Images & Gifs
-    setBundleLoadingGifUrl(newSettings.bundleLoadingGifUrl || "");
-    setCheckoutGifUrl(newSettings.checkoutGifUrl || "");
   }, [selectedBundleType, settings]);
 
   // Track if there are unsaved changes
@@ -834,9 +887,7 @@ export default function DesignControlPanel() {
       toastTextColor !== current.toastTextColor ||
       filterIconColor !== current.filterIconColor ||
       filterBgColor !== current.filterBgColor ||
-      filterTextColor !== current.filterTextColor ||
-      bundleLoadingGifUrl !== (current.bundleLoadingGifUrl || "") ||
-      checkoutGifUrl !== (current.checkoutGifUrl || "")
+      filterTextColor !== current.filterTextColor
     );
   }, [
     settings,
@@ -907,8 +958,6 @@ export default function DesignControlPanel() {
     filterIconColor,
     filterBgColor,
     filterTextColor,
-    bundleLoadingGifUrl,
-    checkoutGifUrl,
   ]);
 
   // Function to discard changes and revert to saved values
@@ -992,8 +1041,6 @@ export default function DesignControlPanel() {
     setFilterIconColor(savedSettings.filterIconColor);
     setFilterBgColor(savedSettings.filterBgColor);
     setFilterTextColor(savedSettings.filterTextColor);
-    setBundleLoadingGifUrl(savedSettings.bundleLoadingGifUrl || "");
-    setCheckoutGifUrl(savedSettings.checkoutGifUrl || "");
   }, [settings, selectedBundleType]);
 
   // Show/hide save bar based on unsaved changes
@@ -1133,8 +1180,6 @@ export default function DesignControlPanel() {
       filterIconColor,
       filterBgColor,
       filterTextColor,
-      bundleLoadingGifUrl,
-      checkoutGifUrl,
     };
 
     submit(
@@ -1220,8 +1265,6 @@ export default function DesignControlPanel() {
     filterIconColor,
     filterBgColor,
     filterTextColor,
-    bundleLoadingGifUrl,
-    checkoutGifUrl,
     submit,
   ]);
 
@@ -2018,92 +2061,6 @@ export default function DesignControlPanel() {
           </div>
         );
       }
-    }
-
-    // Images & Gifs subsections
-    if (["bundleLoadingGif", "checkoutGif"].includes(activeSubSection)) {
-      return (
-        <div style={{ maxWidth: "800px", width: "100%", textAlign: "center" }}>
-          {/* Bundle context showing where the gifs will appear */}
-          <div style={{
-            backgroundColor: "#FFFFFF",
-            padding: "40px",
-            borderRadius: "12px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-          }}>
-            {activeSubSection === "bundleLoadingGif" && (
-              <BlockStack gap="400">
-                <Text as="h3" variant="headingMd">Bundle Loading Animation</Text>
-                <div style={{
-                  width: "200px",
-                  height: "200px",
-                  margin: "0 auto",
-                  backgroundColor: "#F6F6F6",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "2px dashed #D9D9D9"
-                }}>
-                  {bundleLoadingGifUrl ? (
-                    <img
-                      src={bundleLoadingGifUrl}
-                      alt="Bundle Loading Gif"
-                      style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: "8px" }}
-                    />
-                  ) : (
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Upload a loading animation
-                    </Text>
-                  )}
-                </div>
-                <Text as="p" variant="bodyMd" tone="subdued">
-                  This animation appears while the bundle is loading
-                </Text>
-              </BlockStack>
-            )}
-
-            {activeSubSection === "checkoutGif" && (
-              <BlockStack gap="400">
-                <Text as="h3" variant="headingMd">Checkout Animation</Text>
-                <div style={{
-                  width: "300px",
-                  height: "200px",
-                  margin: "0 auto",
-                  backgroundColor: "#F6F6F6",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: "2px dashed #D9D9D9"
-                }}>
-                  {checkoutGifUrl ? (
-                    <img
-                      src={checkoutGifUrl}
-                      alt="Checkout Gif"
-                      style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: "8px" }}
-                    />
-                  ) : (
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Upload a checkout animation
-                    </Text>
-                  )}
-                </div>
-                <Text as="p" variant="bodyMd" tone="subdued">
-                  This animation appears during the checkout process
-                </Text>
-              </BlockStack>
-            )}
-          </div>
-
-          {/* Annotation */}
-          <div style={{ marginTop: "40px", textAlign: "center" }}>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Preview updates as you upload images
-            </Text>
-          </div>
-        </div>
-      );
     }
 
     // Product Card subsections (default)
@@ -3900,168 +3857,6 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
-      case "bundleLoadingGif":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Bundle Loading Gif
-            </Text>
-            <Divider />
-
-            <BlockStack gap="300">
-              <Text as="p" variant="bodyMd" fontWeight="medium">
-                Upload Loading Animation
-              </Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                Choose a GIF or image to display while your bundle is loading
-              </Text>
-
-              {bundleLoadingGifUrl && (
-                <div style={{
-                  width: "100%",
-                  padding: "16px",
-                  backgroundColor: "#F6F6F6",
-                  borderRadius: "8px",
-                  textAlign: "center"
-                }}>
-                  <img
-                    src={bundleLoadingGifUrl}
-                    alt="Bundle Loading Gif Preview"
-                    style={{
-                      maxWidth: "150px",
-                      maxHeight: "150px",
-                      borderRadius: "8px"
-                    }}
-                  />
-                </div>
-              )}
-
-              <TextField
-                label="Image URL"
-                value={bundleLoadingGifUrl}
-                onChange={setBundleLoadingGifUrl}
-                placeholder="https://example.com/loading.gif"
-                autoComplete="off"
-                helpText="Enter the URL of your loading animation"
-              />
-
-              <ButtonGroup>
-                <Button
-                  onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*,.gif';
-                    input.onchange = (e: any) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        // In a real implementation, upload to Shopify Files API
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          setBundleLoadingGifUrl(event.target?.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    };
-                    input.click();
-                  }}
-                >
-                  Browse Files
-                </Button>
-                {bundleLoadingGifUrl && (
-                  <Button
-                    variant="plain"
-                    tone="critical"
-                    onClick={() => setBundleLoadingGifUrl("")}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </ButtonGroup>
-            </BlockStack>
-          </BlockStack>
-        );
-
-      case "checkoutGif":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Checkout Gif
-            </Text>
-            <Divider />
-
-            <BlockStack gap="300">
-              <Text as="p" variant="bodyMd" fontWeight="medium">
-                Upload Checkout Animation
-              </Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                Choose a GIF or image to display during the checkout process
-              </Text>
-
-              {checkoutGifUrl && (
-                <div style={{
-                  width: "100%",
-                  padding: "16px",
-                  backgroundColor: "#F6F6F6",
-                  borderRadius: "8px",
-                  textAlign: "center"
-                }}>
-                  <img
-                    src={checkoutGifUrl}
-                    alt="Checkout Gif Preview"
-                    style={{
-                      maxWidth: "150px",
-                      maxHeight: "150px",
-                      borderRadius: "8px"
-                    }}
-                  />
-                </div>
-              )}
-
-              <TextField
-                label="Image URL"
-                value={checkoutGifUrl}
-                onChange={setCheckoutGifUrl}
-                placeholder="https://example.com/checkout.gif"
-                autoComplete="off"
-                helpText="Enter the URL of your checkout animation"
-              />
-
-              <ButtonGroup>
-                <Button
-                  onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*,.gif';
-                    input.onchange = (e: any) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        // In a real implementation, upload to Shopify Files API
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          setCheckoutGifUrl(event.target?.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    };
-                    input.click();
-                  }}
-                >
-                  Browse Files
-                </Button>
-                {checkoutGifUrl && (
-                  <Button
-                    variant="plain"
-                    tone="critical"
-                    onClick={() => setCheckoutGifUrl("")}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </ButtonGroup>
-            </BlockStack>
-          </BlockStack>
-        );
-
       default:
         return (
           <Banner tone="info">
@@ -4240,27 +4035,6 @@ export default function DesignControlPanel() {
                   sectionKey="toasts"
                   isChild
                   onClick={() => handleSubSectionClick("toasts")}
-                />
-              </Collapsible>
-
-              {/* Images & Gifs Section */}
-              <NavigationItem
-                label="Images & Gifs"
-                sectionKey="imagesGifs"
-                hasChildren
-              />
-              <Collapsible open={expandedSection === "imagesGifs"} id="imagesGifs-collapsible">
-                <NavigationItem
-                  label="Bundle Loading Gif"
-                  sectionKey="bundleLoadingGif"
-                  isChild
-                  onClick={() => handleSubSectionClick("bundleLoadingGif")}
-                />
-                <NavigationItem
-                  label="Checkout Gif"
-                  sectionKey="checkoutGif"
-                  isChild
-                  onClick={() => handleSubSectionClick("checkoutGif")}
                 />
               </Collapsible>
             </div>
