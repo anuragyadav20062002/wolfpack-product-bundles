@@ -111,6 +111,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const defaultSettings = {
     product_page: {
+      // Global Colors
+      globalPrimaryButtonColor: "#000000",
+      globalButtonTextColor: "#FFFFFF",
+      globalPrimaryTextColor: "#000000",
+      globalSecondaryTextColor: "#6B7280",
+      globalFooterBgColor: "#FFFFFF",
+      globalFooterTextColor: "#000000",
       // Product Card
       productCardBgColor: "#FFFFFF",
       productCardFontColor: "#000000",
@@ -147,6 +154,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerBgColor: "#FFFFFF",
       footerTotalBgColor: "#F6F6F6",
       footerBorderRadius: 8,
+      // Bundle Header
+      headerTabActiveBgColor: "#000000",
+      headerTabActiveTextColor: "#FFFFFF",
+      headerTabInactiveBgColor: "#FFFFFF",
+      headerTabInactiveTextColor: "#000000",
+      headerTabRadius: 67,
       footerPadding: 16,
       // Footer Price
       footerFinalPriceColor: "#000000",
@@ -192,28 +205,31 @@ export async function loader({ request }: LoaderFunctionArgs) {
       tabsBorderColor: "#000000",
       tabsBorderRadius: 8,
       // General Section
-      // Bundle Design
-      bundleBgColor: "#FFFFFF",
-      footerScrollBarColor: "#F6F6F6",
-      // Product Page Title
-      productPageTitleFontColor: "#000000",
-      productPageTitleFontSize: 16,
-      // Bundle Upsell
-      bundleUpsellButtonBgColor: "#F6F6F6",
-      bundleUpsellBorderColor: "#F6F6F6",
-      bundleUpsellTextColor: "#F6F6F6",
+      // Empty State
+      emptyStateCardBgColor: "#FFFFFF",
+      emptyStateCardBorderColor: "#F6F6F6",
+      emptyStateTextColor: "#9CA3AF",
+      emptyStateBorderStyle: "dashed",
+      // Drawer
+      drawerBgColor: "#FFFFFF",
+      // Add to Cart Button
+      addToCartButtonBgColor: "#000000",
+      addToCartButtonTextColor: "#FFFFFF",
       // Toasts
       toastBgColor: "#000000",
       toastTextColor: "#FFFFFF",
-      // Filters
-      filterIconColor: "#000000",
-      filterBgColor: "#FFFFFF",
-      filterTextColor: "#000000",
       // Images & Gifs
       bundleLoadingGifUrl: "",
       checkoutGifUrl: "",
     },
     full_page: {
+      // Global Colors
+      globalPrimaryButtonColor: "#7132FF",
+      globalButtonTextColor: "#FFFFFF",
+      globalPrimaryTextColor: "#111827",
+      globalSecondaryTextColor: "#9CA3AF",
+      globalFooterBgColor: "#F9FAFB",
+      globalFooterTextColor: "#111827",
       // Default settings for full_page (can be different from product_page)
       productCardBgColor: "#F9FAFB",
       productCardFontColor: "#111827",
@@ -248,6 +264,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerBgColor: "#FFFFFF",
       footerTotalBgColor: "#F9FAFB",
       footerBorderRadius: 12,
+      // Bundle Header
+      headerTabActiveBgColor: "#000000",
+      headerTabActiveTextColor: "#FFFFFF",
+      headerTabInactiveBgColor: "#FFFFFF",
+      headerTabInactiveTextColor: "#000000",
+      headerTabRadius: 67,
       footerPadding: 20,
       // Footer Price
       footerFinalPriceColor: "#111827",
@@ -293,23 +315,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
       tabsBorderColor: "#E5E7EB",
       tabsBorderRadius: 12,
       // General Section
-      // Bundle Design
-      bundleBgColor: "#F9FAFB",
-      footerScrollBarColor: "#E5E7EB",
-      // Product Page Title
-      productPageTitleFontColor: "#111827",
-      productPageTitleFontSize: 18,
-      // Bundle Upsell
-      bundleUpsellButtonBgColor: "#E5E7EB",
-      bundleUpsellBorderColor: "#E5E7EB",
-      bundleUpsellTextColor: "#111827",
+      // Empty State
+      emptyStateCardBgColor: "#F9FAFB",
+      emptyStateCardBorderColor: "#E5E7EB",
+      emptyStateTextColor: "#9CA3AF",
+      emptyStateBorderStyle: "dashed",
+      // Drawer
+      drawerBgColor: "#F9FAFB",
+      // Add to Cart Button
+      addToCartButtonBgColor: "#7132FF",
+      addToCartButtonTextColor: "#FFFFFF",
       // Toasts
       toastBgColor: "#7132FF",
       toastTextColor: "#FFFFFF",
-      // Filters
-      filterIconColor: "#111827",
-      filterBgColor: "#F9FAFB",
-      filterTextColor: "#111827",
       // Images & Gifs
       bundleLoadingGifUrl: "",
       checkoutGifUrl: "",
@@ -319,6 +337,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const mergeSettings = (dbSettings: any, defaults: any) => {
     if (!dbSettings) return defaults;
 
+    const globalColorsSettings = dbSettings.globalColorsSettings as any || {};
     const footerSettings = dbSettings.footerSettings as any || {};
     const stepBarSettings = dbSettings.stepBarSettings as any || {};
     const generalSettings = dbSettings.generalSettings as any || {};
@@ -350,6 +369,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       quantitySelectorTextColor: dbSettings.quantitySelectorTextColor || defaults.quantitySelectorTextColor,
       quantitySelectorFontSize: dbSettings.quantitySelectorFontSize || defaults.quantitySelectorFontSize,
       quantitySelectorBorderRadius: dbSettings.quantitySelectorBorderRadius || defaults.quantitySelectorBorderRadius,
+      ...globalColorsSettings,
       ...footerSettings,
       ...stepBarSettings,
       ...generalSettings,
@@ -422,19 +442,29 @@ export async function action({ request }: ActionFunctionArgs) {
       tabsBorderRadius: settings.tabsBorderRadius,
     };
 
+    const globalColorsSettings = {
+      globalPrimaryButtonColor: settings.globalPrimaryButtonColor,
+      globalButtonTextColor: settings.globalButtonTextColor,
+      globalPrimaryTextColor: settings.globalPrimaryTextColor,
+      globalSecondaryTextColor: settings.globalSecondaryTextColor,
+      globalFooterBgColor: settings.globalFooterBgColor,
+      globalFooterTextColor: settings.globalFooterTextColor,
+    };
+
     const generalSettings = {
-      bundleBgColor: settings.bundleBgColor,
-      footerScrollBarColor: settings.footerScrollBarColor,
-      productPageTitleFontColor: settings.productPageTitleFontColor,
-      productPageTitleFontSize: settings.productPageTitleFontSize,
-      bundleUpsellButtonBgColor: settings.bundleUpsellButtonBgColor,
-      bundleUpsellBorderColor: settings.bundleUpsellBorderColor,
-      bundleUpsellTextColor: settings.bundleUpsellTextColor,
+      // Empty State
+      emptyStateCardBgColor: settings.emptyStateCardBgColor,
+      emptyStateCardBorderColor: settings.emptyStateCardBorderColor,
+      emptyStateTextColor: settings.emptyStateTextColor,
+      emptyStateBorderStyle: settings.emptyStateBorderStyle,
+      // Drawer
+      drawerBgColor: settings.drawerBgColor,
+      // Add to Cart Button
+      addToCartButtonBgColor: settings.addToCartButtonBgColor,
+      addToCartButtonTextColor: settings.addToCartButtonTextColor,
+      // Toasts
       toastBgColor: settings.toastBgColor,
       toastTextColor: settings.toastTextColor,
-      filterIconColor: settings.filterIconColor,
-      filterBgColor: settings.filterBgColor,
-      filterTextColor: settings.filterTextColor,
     };
 
     const imagesSettings = {
@@ -476,6 +506,7 @@ export async function action({ request }: ActionFunctionArgs) {
         quantitySelectorTextColor: settings.quantitySelectorTextColor,
         quantitySelectorFontSize: settings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
+        globalColorsSettings: globalColorsSettings,
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
         generalSettings: generalSettings,
@@ -506,6 +537,7 @@ export async function action({ request }: ActionFunctionArgs) {
         quantitySelectorTextColor: settings.quantitySelectorTextColor,
         quantitySelectorFontSize: settings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
+        globalColorsSettings: globalColorsSettings,
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
         generalSettings: generalSettings,
@@ -534,6 +566,14 @@ export default function DesignControlPanel() {
   // Navigation state
   const [expandedSection, setExpandedSection] = useState<string | null>("productCard");
   const [activeSubSection, setActiveSubSection] = useState<string>("productCard");
+
+  // Global Colors Section
+  const [globalPrimaryButtonColor, setGlobalPrimaryButtonColor] = useState(currentSettings.globalPrimaryButtonColor || "#000000");
+  const [globalButtonTextColor, setGlobalButtonTextColor] = useState(currentSettings.globalButtonTextColor || "#FFFFFF");
+  const [globalPrimaryTextColor, setGlobalPrimaryTextColor] = useState(currentSettings.globalPrimaryTextColor || "#000000");
+  const [globalSecondaryTextColor, setGlobalSecondaryTextColor] = useState(currentSettings.globalSecondaryTextColor || "#6B7280");
+  const [globalFooterBgColor, setGlobalFooterBgColor] = useState(currentSettings.globalFooterBgColor || "#FFFFFF");
+  const [globalFooterTextColor, setGlobalFooterTextColor] = useState(currentSettings.globalFooterTextColor || "#000000");
 
   // Form state - Product Card Section
   const [productCardBgColor, setProductCardBgColor] = useState(currentSettings.productCardBgColor);
@@ -602,48 +642,28 @@ export default function DesignControlPanel() {
   const [footerProgressBarFilledColor, setFooterProgressBarFilledColor] = useState(currentSettings.footerProgressBarFilledColor);
   const [footerProgressBarEmptyColor, setFooterProgressBarEmptyColor] = useState(currentSettings.footerProgressBarEmptyColor);
 
-  // Bundle Step Bar Section
-  // Step Name
-  const [stepNameFontColor, setStepNameFontColor] = useState(currentSettings.stepNameFontColor);
-  const [stepNameFontSize, setStepNameFontSize] = useState(currentSettings.stepNameFontSize);
-  // Completed Step
-  const [completedStepCheckMarkColor, setCompletedStepCheckMarkColor] = useState(currentSettings.completedStepCheckMarkColor);
-  const [completedStepBgColor, setCompletedStepBgColor] = useState(currentSettings.completedStepBgColor);
-  const [completedStepCircleBorderColor, setCompletedStepCircleBorderColor] = useState(currentSettings.completedStepCircleBorderColor);
-  const [completedStepCircleBorderRadius, setCompletedStepCircleBorderRadius] = useState(currentSettings.completedStepCircleBorderRadius);
-  // Incomplete Step
-  const [incompleteStepBgColor, setIncompleteStepBgColor] = useState(currentSettings.incompleteStepBgColor);
-  const [incompleteStepCircleStrokeColor, setIncompleteStepCircleStrokeColor] = useState(currentSettings.incompleteStepCircleStrokeColor);
-  const [incompleteStepCircleStrokeRadius, setIncompleteStepCircleStrokeRadius] = useState(currentSettings.incompleteStepCircleStrokeRadius);
-  // Step Bar Progress Bar
-  const [stepBarProgressFilledColor, setStepBarProgressFilledColor] = useState(currentSettings.stepBarProgressFilledColor);
-  const [stepBarProgressEmptyColor, setStepBarProgressEmptyColor] = useState(currentSettings.stepBarProgressEmptyColor);
+  // Bundle Header Section
   // Tabs
-  const [tabsActiveBgColor, setTabsActiveBgColor] = useState(currentSettings.tabsActiveBgColor);
-  const [tabsActiveTextColor, setTabsActiveTextColor] = useState(currentSettings.tabsActiveTextColor);
-  const [tabsInactiveBgColor, setTabsInactiveBgColor] = useState(currentSettings.tabsInactiveBgColor);
-  const [tabsInactiveTextColor, setTabsInactiveTextColor] = useState(currentSettings.tabsInactiveTextColor);
-  const [tabsBorderColor, setTabsBorderColor] = useState(currentSettings.tabsBorderColor);
-  const [tabsBorderRadius, setTabsBorderRadius] = useState(currentSettings.tabsBorderRadius);
+  const [headerTabActiveBgColor, setHeaderTabActiveBgColor] = useState(currentSettings.headerTabActiveBgColor || "#000000");
+  const [headerTabActiveTextColor, setHeaderTabActiveTextColor] = useState(currentSettings.headerTabActiveTextColor || "#FFFFFF");
+  const [headerTabInactiveBgColor, setHeaderTabInactiveBgColor] = useState(currentSettings.headerTabInactiveBgColor || "#FFFFFF");
+  const [headerTabInactiveTextColor, setHeaderTabInactiveTextColor] = useState(currentSettings.headerTabInactiveTextColor || "#000000");
+  const [headerTabRadius, setHeaderTabRadius] = useState(currentSettings.headerTabRadius || 67);
 
   // General Section
-  // Bundle Design
-  const [bundleBgColor, setBundleBgColor] = useState(currentSettings.bundleBgColor);
-  const [footerScrollBarColor, setFooterScrollBarColor] = useState(currentSettings.footerScrollBarColor);
-  // Product Page Title
-  const [productPageTitleFontColor, setProductPageTitleFontColor] = useState(currentSettings.productPageTitleFontColor);
-  const [productPageTitleFontSize, setProductPageTitleFontSize] = useState(currentSettings.productPageTitleFontSize);
-  // Bundle Upsell
-  const [bundleUpsellButtonBgColor, setBundleUpsellButtonBgColor] = useState(currentSettings.bundleUpsellButtonBgColor);
-  const [bundleUpsellBorderColor, setBundleUpsellBorderColor] = useState(currentSettings.bundleUpsellBorderColor);
-  const [bundleUpsellTextColor, setBundleUpsellTextColor] = useState(currentSettings.bundleUpsellTextColor);
+  // Empty State
+  const [emptyStateCardBgColor, setEmptyStateCardBgColor] = useState(currentSettings.emptyStateCardBgColor || "#FFFFFF");
+  const [emptyStateCardBorderColor, setEmptyStateCardBorderColor] = useState(currentSettings.emptyStateCardBorderColor || "#F6F6F6");
+  const [emptyStateTextColor, setEmptyStateTextColor] = useState(currentSettings.emptyStateTextColor || "#9CA3AF");
+  const [emptyStateBorderStyle, setEmptyStateBorderStyle] = useState(currentSettings.emptyStateBorderStyle || "dashed");
+  // Drawer
+  const [drawerBgColor, setDrawerBgColor] = useState(currentSettings.drawerBgColor || "#FFFFFF");
+  // Add to Cart Button
+  const [addToCartButtonBgColor, setAddToCartButtonBgColor] = useState(currentSettings.addToCartButtonBgColor || "#000000");
+  const [addToCartButtonTextColor, setAddToCartButtonTextColor] = useState(currentSettings.addToCartButtonTextColor || "#FFFFFF");
   // Toasts
-  const [toastBgColor, setToastBgColor] = useState(currentSettings.toastBgColor);
-  const [toastTextColor, setToastTextColor] = useState(currentSettings.toastTextColor);
-  // Filters
-  const [filterIconColor, setFilterIconColor] = useState(currentSettings.filterIconColor);
-  const [filterBgColor, setFilterBgColor] = useState(currentSettings.filterBgColor);
-  const [filterTextColor, setFilterTextColor] = useState(currentSettings.filterTextColor);
+  const [toastBgColor, setToastBgColor] = useState(currentSettings.toastBgColor || "#000000");
+  const [toastTextColor, setToastTextColor] = useState(currentSettings.toastTextColor || "#FFFFFF");
 
   // Images & Gifs Section
   const [bundleLoadingGifUrl, setBundleLoadingGifUrl] = useState(currentSettings.bundleLoadingGifUrl || "");
@@ -870,23 +890,11 @@ export default function DesignControlPanel() {
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
-    stepNameFontColor,
-    stepNameFontSize,
-    completedStepCheckMarkColor,
-    completedStepBgColor,
-    completedStepCircleBorderColor,
-    completedStepCircleBorderRadius,
-    incompleteStepBgColor,
-    incompleteStepCircleStrokeColor,
-    incompleteStepCircleStrokeRadius,
-    stepBarProgressFilledColor,
-    stepBarProgressEmptyColor,
-    tabsActiveBgColor,
-    tabsActiveTextColor,
-    tabsInactiveBgColor,
-    tabsInactiveTextColor,
-    tabsBorderColor,
-    tabsBorderRadius,
+    headerTabActiveBgColor,
+    headerTabActiveTextColor,
+    headerTabInactiveBgColor,
+    headerTabInactiveTextColor,
+    headerTabRadius,
     bundleBgColor,
     footerScrollBarColor,
     productPageTitleFontColor,
@@ -1040,6 +1048,12 @@ export default function DesignControlPanel() {
 
   const handleSaveSettings = useCallback(() => {
     const settingsToSave = {
+      globalPrimaryButtonColor,
+      globalButtonTextColor,
+      globalPrimaryTextColor,
+      globalSecondaryTextColor,
+      globalFooterBgColor,
+      globalFooterTextColor,
       productCardBgColor,
       productCardFontColor,
       productCardFontSize,
@@ -1135,6 +1149,12 @@ export default function DesignControlPanel() {
     );
   }, [
     selectedBundleType,
+    globalPrimaryButtonColor,
+    globalButtonTextColor,
+    globalPrimaryTextColor,
+    globalSecondaryTextColor,
+    globalFooterBgColor,
+    globalFooterTextColor,
     productCardBgColor,
     productCardFontColor,
     productCardFontSize,
@@ -1183,23 +1203,11 @@ export default function DesignControlPanel() {
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
-    stepNameFontColor,
-    stepNameFontSize,
-    completedStepCheckMarkColor,
-    completedStepBgColor,
-    completedStepCircleBorderColor,
-    completedStepCircleBorderRadius,
-    incompleteStepBgColor,
-    incompleteStepCircleStrokeColor,
-    incompleteStepCircleStrokeRadius,
-    stepBarProgressFilledColor,
-    stepBarProgressEmptyColor,
-    tabsActiveBgColor,
-    tabsActiveTextColor,
-    tabsInactiveBgColor,
-    tabsInactiveTextColor,
-    tabsBorderColor,
-    tabsBorderRadius,
+    headerTabActiveBgColor,
+    headerTabActiveTextColor,
+    headerTabInactiveBgColor,
+    headerTabInactiveTextColor,
+    headerTabRadius,
     bundleBgColor,
     footerScrollBarColor,
     productPageTitleFontColor,
@@ -2246,6 +2254,56 @@ export default function DesignControlPanel() {
   // Render settings panel based on active subsection
   const renderSettingsPanel = () => {
     switch (activeSubSection) {
+      case "globalColors":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Global Colors
+            </Text>
+            <Divider />
+
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Define your brand's primary colors that will be used consistently across the bundle widget.
+            </Text>
+
+            <ColorPicker
+              label="Primary Button Color"
+              value={globalPrimaryButtonColor}
+              onChange={setGlobalPrimaryButtonColor}
+            />
+
+            <ColorPicker
+              label="Button Text Color"
+              value={globalButtonTextColor}
+              onChange={setGlobalButtonTextColor}
+            />
+
+            <ColorPicker
+              label="Primary Text Color"
+              value={globalPrimaryTextColor}
+              onChange={setGlobalPrimaryTextColor}
+            />
+
+            <ColorPicker
+              label="Secondary Text Color"
+              value={globalSecondaryTextColor}
+              onChange={setGlobalSecondaryTextColor}
+            />
+
+            <ColorPicker
+              label="Footer Background"
+              value={globalFooterBgColor}
+              onChange={setGlobalFooterBgColor}
+            />
+
+            <ColorPicker
+              label="Footer Text Color"
+              value={globalFooterTextColor}
+              onChange={setGlobalFooterTextColor}
+            />
+          </BlockStack>
+        );
+
       case "productCard":
         return (
           <BlockStack gap="400">
@@ -2833,12 +2891,12 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
-      // ========== BUNDLE STEP BAR SECTION ==========
-      case "stepName":
+      // ========== BUNDLE HEADER SECTION ==========
+      case "headerTabs":
         return (
           <BlockStack gap="400">
             <Text as="h2" variant="headingMd">
-              Step Name
+              Tabs
             </Text>
             <Divider />
 
@@ -3454,11 +3512,11 @@ export default function DesignControlPanel() {
         );
 
       // ========== GENERAL SECTION ==========
-      case "bundleDesign":
+      case "emptyState":
         return (
           <BlockStack gap="400">
             <Text as="h2" variant="headingMd">
-              Bundle Design
+              Empty State
             </Text>
             <Divider />
 
@@ -3469,21 +3527,21 @@ export default function DesignControlPanel() {
                     width: "41px",
                     height: "41px",
                     borderRadius: "50%",
-                    backgroundColor: bundleBgColor,
+                    backgroundColor: emptyStateCardBgColor,
                     border: "1px solid #E3E3E3",
                     cursor: "pointer",
                     position: "relative",
                   }}
                   onClick={() => {
-                    const input = document.getElementById("bundleBgColorInput");
+                    const input = document.getElementById("emptyStateCardBgColorInput");
                     if (input) input.click();
                   }}
                 >
                   <input
-                    id="bundleBgColorInput"
+                    id="emptyStateCardBgColorInput"
                     type="color"
-                    value={bundleBgColor}
-                    onChange={(e) => setBundleBgColor(e.target.value)}
+                    value={emptyStateCardBgColor}
+                    onChange={(e) => setEmptyStateCardBgColor(e.target.value)}
                     style={{
                       position: "absolute",
                       opacity: 0,
@@ -3494,10 +3552,10 @@ export default function DesignControlPanel() {
                 </div>
                 <BlockStack gap="100">
                   <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Bundle Background Color
+                    Card Background Color
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    {bundleBgColor}
+                    {emptyStateCardBgColor}
                   </Text>
                 </BlockStack>
               </InlineStack>
@@ -3510,21 +3568,21 @@ export default function DesignControlPanel() {
                     width: "41px",
                     height: "41px",
                     borderRadius: "50%",
-                    backgroundColor: footerScrollBarColor,
+                    backgroundColor: emptyStateCardBorderColor,
                     border: "1px solid #E3E3E3",
                     cursor: "pointer",
                     position: "relative",
                   }}
                   onClick={() => {
-                    const input = document.getElementById("footerScrollBarColorInput");
+                    const input = document.getElementById("emptyStateCardBorderColorInput");
                     if (input) input.click();
                   }}
                 >
                   <input
-                    id="footerScrollBarColorInput"
+                    id="emptyStateCardBorderColorInput"
                     type="color"
-                    value={footerScrollBarColor}
-                    onChange={(e) => setFooterScrollBarColor(e.target.value)}
+                    value={emptyStateCardBorderColor}
+                    onChange={(e) => setEmptyStateCardBorderColor(e.target.value)}
                     style={{
                       position: "absolute",
                       opacity: 0,
@@ -3535,121 +3593,10 @@ export default function DesignControlPanel() {
                 </div>
                 <BlockStack gap="100">
                   <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Footer Scroll Bar Color
+                    Card Border Color
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerScrollBarColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-          </BlockStack>
-        );
-
-      case "productPageTitle":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Product Page Title
-            </Text>
-            <Divider />
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: productPageTitleFontColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("productPageTitleFontColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="productPageTitleFontColorInput"
-                    type="color"
-                    value={productPageTitleFontColor}
-                    onChange={(e) => setProductPageTitleFontColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Font Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {productPageTitleFontColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <RangeSlider
-              label="Font Size"
-              value={productPageTitleFontSize}
-              onChange={(value) => setProductPageTitleFontSize(value as number)}
-              min={12}
-              max={32}
-              output
-            />
-          </BlockStack>
-        );
-
-      case "bundleUpsell":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Bundle Upsell
-            </Text>
-            <Divider />
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: bundleUpsellButtonBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("bundleUpsellButtonBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="bundleUpsellButtonBgColorInput"
-                    type="color"
-                    value={bundleUpsellButtonBgColor}
-                    onChange={(e) => setBundleUpsellButtonBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Button Background
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {bundleUpsellButtonBgColor}
+                    {emptyStateCardBorderColor}
                   </Text>
                 </BlockStack>
               </InlineStack>
@@ -3662,62 +3609,21 @@ export default function DesignControlPanel() {
                     width: "41px",
                     height: "41px",
                     borderRadius: "50%",
-                    backgroundColor: bundleUpsellBorderColor,
+                    backgroundColor: emptyStateTextColor,
                     border: "1px solid #E3E3E3",
                     cursor: "pointer",
                     position: "relative",
                   }}
                   onClick={() => {
-                    const input = document.getElementById("bundleUpsellBorderColorInput");
+                    const input = document.getElementById("emptyStateTextColorInput");
                     if (input) input.click();
                   }}
                 >
                   <input
-                    id="bundleUpsellBorderColorInput"
+                    id="emptyStateTextColorInput"
                     type="color"
-                    value={bundleUpsellBorderColor}
-                    onChange={(e) => setBundleUpsellBorderColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Border Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {bundleUpsellBorderColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: bundleUpsellTextColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("bundleUpsellTextColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="bundleUpsellTextColorInput"
-                    type="color"
-                    value={bundleUpsellTextColor}
-                    onChange={(e) => setBundleUpsellTextColor(e.target.value)}
+                    value={emptyStateTextColor}
+                    onChange={(e) => setEmptyStateTextColor(e.target.value)}
                     style={{
                       position: "absolute",
                       opacity: 0,
@@ -3731,7 +3637,170 @@ export default function DesignControlPanel() {
                     Text Color
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    {bundleUpsellTextColor}
+                    {emptyStateTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Border Style
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={emptyStateBorderStyle === "solid"}
+                  onClick={() => setEmptyStateBorderStyle("solid")}
+                >
+                  Solid
+                </Button>
+                <Button
+                  pressed={emptyStateBorderStyle === "dashed"}
+                  onClick={() => setEmptyStateBorderStyle("dashed")}
+                >
+                  Dashed
+                </Button>
+              </ButtonGroup>
+            </BlockStack>
+          </BlockStack>
+        );
+
+      case "drawer":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Drawer
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: drawerBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("drawerBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="drawerBgColorInput"
+                    type="color"
+                    value={drawerBgColor}
+                    onChange={(e) => setDrawerBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {drawerBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </BlockStack>
+        );
+
+      case "addToCartButton":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Add to Cart Button
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: addToCartButtonBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("addToCartButtonBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="addToCartButtonBgColorInput"
+                    type="color"
+                    value={addToCartButtonBgColor}
+                    onChange={(e) => setAddToCartButtonBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {addToCartButtonBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: addToCartButtonTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("addToCartButtonTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="addToCartButtonTextColorInput"
+                    type="color"
+                    value={addToCartButtonTextColor}
+                    onChange={(e) => setAddToCartButtonTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {addToCartButtonTextColor}
                   </Text>
                 </BlockStack>
               </InlineStack>
@@ -3824,139 +3893,6 @@ export default function DesignControlPanel() {
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
                     {toastTextColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-          </BlockStack>
-        );
-
-      case "filters":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Filters
-            </Text>
-            <Divider />
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: filterIconColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("filterIconColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="filterIconColorInput"
-                    type="color"
-                    value={filterIconColor}
-                    onChange={(e) => setFilterIconColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Icon Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {filterIconColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: filterBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("filterBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="filterBgColorInput"
-                    type="color"
-                    value={filterBgColor}
-                    onChange={(e) => setFilterBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Background Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {filterBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: filterTextColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("filterTextColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="filterTextColorInput"
-                    type="color"
-                    value={filterTextColor}
-                    onChange={(e) => setFilterTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Text Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {filterTextColor}
                   </Text>
                 </BlockStack>
               </InlineStack>
@@ -4172,6 +4108,15 @@ export default function DesignControlPanel() {
 
               <Divider />
 
+              {/* Global Colors Section */}
+              <NavigationItem
+                label="Global Colors"
+                sectionKey="globalColors"
+                onClick={() => handleSubSectionClick("globalColors")}
+              />
+
+              <Divider />
+
               {/* Product Card Section */}
               <NavigationItem
                 label="Product Card"
@@ -4244,42 +4189,24 @@ export default function DesignControlPanel() {
                 />
               </Collapsible>
 
-              {/* Bundle Step Bar Section */}
+              {/* Bundle Header Section */}
               <NavigationItem
-                label="Bundle Step Bar"
-                sectionKey="bundleStepBar"
+                label="Bundle Header"
+                sectionKey="bundleHeader"
                 hasChildren
               />
-              <Collapsible open={expandedSection === "bundleStepBar"} id="bundleStepBar-collapsible">
-                <NavigationItem
-                  label="Step Name"
-                  sectionKey="stepName"
-                  isChild
-                  onClick={() => handleSubSectionClick("stepName")}
-                />
-                <NavigationItem
-                  label="Completed Step"
-                  sectionKey="completedStep"
-                  isChild
-                  onClick={() => handleSubSectionClick("completedStep")}
-                />
-                <NavigationItem
-                  label="Incomplete Step"
-                  sectionKey="incompleteStep"
-                  isChild
-                  onClick={() => handleSubSectionClick("incompleteStep")}
-                />
-                <NavigationItem
-                  label="Progress Bar"
-                  sectionKey="stepBarProgressBar"
-                  isChild
-                  onClick={() => handleSubSectionClick("stepBarProgressBar")}
-                />
+              <Collapsible open={expandedSection === "bundleHeader"} id="bundleHeader-collapsible">
                 <NavigationItem
                   label="Tabs"
-                  sectionKey="stepBarTabs"
+                  sectionKey="headerTabs"
                   isChild
-                  onClick={() => handleSubSectionClick("stepBarTabs")}
+                  onClick={() => handleSubSectionClick("headerTabs")}
+                />
+                <NavigationItem
+                  label="Header Text"
+                  sectionKey="headerText"
+                  isChild
+                  onClick={() => handleSubSectionClick("headerText")}
                 />
               </Collapsible>
 
@@ -4291,34 +4218,28 @@ export default function DesignControlPanel() {
               />
               <Collapsible open={expandedSection === "general"} id="general-collapsible">
                 <NavigationItem
-                  label="Bundle Design"
-                  sectionKey="bundleDesign"
+                  label="Empty State"
+                  sectionKey="emptyState"
                   isChild
-                  onClick={() => handleSubSectionClick("bundleDesign")}
+                  onClick={() => handleSubSectionClick("emptyState")}
                 />
                 <NavigationItem
-                  label="Product Page Title"
-                  sectionKey="productPageTitle"
+                  label="Drawer"
+                  sectionKey="drawer"
                   isChild
-                  onClick={() => handleSubSectionClick("productPageTitle")}
+                  onClick={() => handleSubSectionClick("drawer")}
                 />
                 <NavigationItem
-                  label="Bundle Upsell"
-                  sectionKey="bundleUpsell"
+                  label="Add to Cart Button"
+                  sectionKey="addToCartButton"
                   isChild
-                  onClick={() => handleSubSectionClick("bundleUpsell")}
+                  onClick={() => handleSubSectionClick("addToCartButton")}
                 />
                 <NavigationItem
                   label="Toasts"
                   sectionKey="toasts"
                   isChild
                   onClick={() => handleSubSectionClick("toasts")}
-                />
-                <NavigationItem
-                  label="Filters"
-                  sectionKey="filters"
-                  isChild
-                  onClick={() => handleSubSectionClick("filters")}
                 />
               </Collapsible>
 

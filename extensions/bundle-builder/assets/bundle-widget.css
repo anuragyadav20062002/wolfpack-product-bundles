@@ -33,7 +33,7 @@
 
 .bundle-title {
   font-size: var(--bundle-title-font-size, 1.5em);
-  color: var(--bundle-title-color, inherit);
+  color: var(--bundle-title-color, var(--bundle-global-primary-text, inherit));
   margin-bottom: 10px;
 }
 
@@ -299,8 +299,8 @@
 
 /* Match Shopify "Buy it now" button aesthetics - Uses DCP variables */
 .add-bundle-to-cart {
-  background-color: var(--bundle-button-bg, #000);
-  color: var(--bundle-button-text-color, #fff);
+  background-color: var(--bundle-button-bg, var(--bundle-global-primary-button, #000));
+  color: var(--bundle-button-text-color, var(--bundle-global-button-text, #fff));
   height: var(--button-height, 55px);
   border: none;
   border-radius: var(--bundle-button-border-radius, 4px);
@@ -318,7 +318,7 @@
 }
 
 .add-bundle-to-cart:hover {
-  background-color: var(--bundle-button-hover-bg, #111);
+  background-color: var(--bundle-button-hover-bg, var(--bundle-global-primary-button, #111));
 }
 
 /* Bundle Builder Modal Styles - Full Screen Overlay */
@@ -365,7 +365,7 @@
 }
 
 .modal-content {
-  background-color: #fefefe;
+  background-color: var(--bundle-drawer-bg, #fefefe);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 
@@ -481,205 +481,87 @@
 .modal-tabs {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   margin-bottom: 20px;
   padding: 0 30px;
   box-sizing: border-box;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-/* Milestone Step Container */
-.milestone-step-container {
-  display: flex;
-  align-items: flex-start;
-  flex: 1;
-  position: relative;
-}
-
-.milestone-step-container:last-child {
-  flex: 0;
-  flex-shrink: 0;
-}
-
-/* Milestone Step */
-.milestone-step {
-  display: flex;
-  flex-direction: column;
+/* Bundle Header Tab */
+.bundle-header-tab {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  padding: 10px 24px;
+  border-radius: var(--bundle-header-tab-radius, 67px);
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s ease;
-  position: relative;
-  z-index: 2;
-  flex-shrink: 0;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-height: 40px;
+  border: none;
+  outline: none;
 }
 
-.milestone-step.locked {
+/* Inactive Tab */
+.bundle-header-tab {
+  background-color: var(--bundle-header-tab-inactive-bg, #FFFFFF);
+  color: var(--bundle-header-tab-inactive-text, #000000);
+  border: 1px solid #e5e7eb;
+}
+
+/* Active Tab */
+.bundle-header-tab.active {
+  background-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #000000));
+  color: var(--bundle-header-tab-active-text, var(--bundle-global-button-text, #FFFFFF));
+  border: 1px solid var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #000000));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Locked Tab */
+.bundle-header-tab.locked {
   cursor: not-allowed;
   opacity: 0.4;
 }
 
-/* Milestone Circle */
-.milestone-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f3f4f6;
-  border: 2px solid #d1d5db;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.milestone-number {
-  font-size: 14px;
-  font-weight: 700;
-  color: #9ca3af;
-  transition: all 0.25s ease;
-}
-
-/* Active Step */
-.milestone-step.active .milestone-circle {
-  background: var(--modal-tab-active-bg-start, #111827);
-  border-color: var(--modal-tab-active-border-color, #111827);
-  border-width: 2px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-  transform: scale(1.1);
-}
-
-.milestone-step.active .milestone-number {
-  color: #ffffff;
-}
-
-/* Completed Step */
-.milestone-step.completed .milestone-circle {
-  background-color: var(--modal-tab-completed-border-color, #10b981);
-  border-color: var(--modal-tab-completed-border-color, #10b981);
-  border-width: 2px;
-}
-
-.milestone-step.completed .milestone-number {
-  color: #ffffff;
-}
-
-/* In-Progress Step */
-.milestone-step.in-progress .milestone-circle {
-  background-color: #ffffff;
-  border-color: var(--modal-tab-progress-fill-start, #7132FF);
-  border-width: 2px;
-}
-
-.milestone-step.in-progress .milestone-number {
-  color: var(--modal-tab-progress-fill-start, #7132FF);
-}
-
-/* Milestone Label */
-.milestone-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-align: center;
-  max-width: 90px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: all 0.25s ease;
-}
-
-.milestone-step.active .milestone-label {
-  color: var(--modal-tab-active-border-color, #111827);
-  font-weight: 700;
-}
-
-.milestone-step.completed .milestone-label {
-  color: var(--modal-tab-completed-border-color, #10b981);
-  font-weight: 600;
-}
-
-.milestone-step.in-progress .milestone-label {
-  color: var(--modal-tab-progress-fill-start, #7132FF);
-}
-
-/* Milestone Connector (Progress Bar between steps) */
-.milestone-connector {
-  flex: 1;
-  height: 3px;
-  background-color: #d1d5db;
-  margin: 0 8px;
-  margin-top: 19px;
-  z-index: 1;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 30px;
-  border-radius: 2px;
-  position: relative;
-  overflow: hidden;
-}
-
-.milestone-connector.completed {
-  background: var(--modal-tab-completed-progress-fill-start, #10b981);
-}
-
-.milestone-connector.in-progress {
-  background: linear-gradient(90deg, var(--modal-tab-completed-progress-fill-start, #10b981) 0%, #d1d5db 50%);
-}
-
-/* Ensure connectors are always visible */
-.milestone-step-container:not(:last-child) .milestone-connector {
-  display: block !important;
-}
-
 /* Hover Effects */
-.milestone-step:not(.locked):not(.active):hover .milestone-circle {
-  border-color: #9ca3af;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  transform: scale(1.05);
+.bundle-header-tab:not(.locked):not(.active):hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .modal-tabs {
     padding: 0 20px;
+    gap: 10px;
   }
 
-  .milestone-circle {
-    width: 40px;
-    height: 40px;
-  }
-
-  .milestone-number {
-    font-size: 14px;
-  }
-
-  .milestone-label {
-    font-size: 11px;
-    max-width: 80px;
+  .bundle-header-tab {
+    font-size: 13px;
+    padding: 8px 20px;
+    min-height: 36px;
   }
 }
 
 @media (max-width: 480px) {
   .modal-tabs {
     padding: 0 15px;
-    flex-wrap: wrap;
-    gap: 16px;
+    gap: 8px;
   }
 
-  .milestone-step-container {
-    flex-direction: column;
-    flex: none;
-    width: 100%;
-  }
-
-  .milestone-connector {
-    width: 3px;
-    height: 24px;
-    margin: 0;
-  }
-
-  .milestone-circle {
-    width: 44px;
-    height: 44px;
+  .bundle-header-tab {
+    font-size: 12px;
+    padding: 8px 16px;
+    min-height: 32px;
+    flex: 1;
+    min-width: 0;
   }
 }
 
@@ -817,7 +699,7 @@
   font-size: var(--bundle-product-card-font-size, 13px);
   font-weight: var(--bundle-product-card-font-weight, 600);
   margin: 0;
-  color: var(--bundle-product-card-font-color, #1a1a1a);
+  color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, #1a1a1a));
   text-align: center;
   line-height: 1.3;
   display: -webkit-box;
@@ -833,7 +715,7 @@
   font-size: var(--bundle-product-final-price-font-size, 14px);
   font-weight: var(--bundle-product-final-price-font-weight, 700);
   margin: 0;
-  color: var(--bundle-product-final-price-color, #111);
+  color: var(--bundle-product-final-price-color, var(--bundle-global-primary-text, #111));
   text-align: left;
 }
 
@@ -936,7 +818,7 @@
   align-items: center;
   width: 100%; /* Take full width of the card's content area */
   margin-top: auto; /* Push to bottom */
-  background-color: var(--bundle-quantity-selector-bg, #000);
+  background-color: var(--bundle-quantity-selector-bg, var(--bundle-global-primary-button, #000));
   border-radius: var(--bundle-quantity-selector-border-radius, 8px) var(--bundle-quantity-selector-border-radius, 8px) 0 0;
   padding: 0; /* remove extra padding */
   position: absolute; /* Position absolutely within the card */
@@ -949,7 +831,7 @@
 
 .quantity-control-button {
   background-color: transparent;
-  color: var(--bundle-quantity-selector-text-color, white);
+  color: var(--bundle-quantity-selector-text-color, var(--bundle-global-button-text, white));
   border: none;
   padding: 0 12px; /* adjust to fit new height */
   cursor: pointer;
@@ -970,7 +852,7 @@
   border: none;
   padding: 0;
   font-weight: bold;
-  color: var(--bundle-quantity-selector-text-color, white);
+  color: var(--bundle-quantity-selector-text-color, var(--bundle-global-button-text, white));
   font-size: var(--bundle-quantity-selector-font-size, 1.1em);
 }
 
@@ -979,8 +861,8 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  background-color: var(--bundle-button-bg, #000);
-  color: var(--bundle-button-text-color, white);
+  background-color: var(--bundle-button-bg, var(--bundle-global-primary-button, #000));
+  color: var(--bundle-button-text-color, var(--bundle-global-button-text, white));
   border-radius: 50%;
   width: 28px;
   height: 28px;
@@ -1001,7 +883,7 @@
   padding: var(--bundle-footer-padding, 20px 24px);
   border-top: 1px solid #e8e8e8;
   margin-top: 0;
-  background-color: var(--bundle-footer-bg, var(--modal-footer-bg-color, #ffffff));
+  background-color: var(--bundle-footer-bg, var(--bundle-global-footer-bg, var(--modal-footer-bg-color, #ffffff)));
   border-radius: var(--bundle-footer-border-radius, 8px);
   min-width: 600px;
 }
@@ -1030,14 +912,14 @@
 .modal-footer-total-pill .total-price-strike {
   font-size: var(--bundle-footer-strike-font-size, 13px);
   font-weight: var(--bundle-footer-strike-font-weight, 500);
-  color: var(--bundle-footer-strike-price-color, #8d8d8d);
+  color: var(--bundle-footer-strike-price-color, var(--bundle-global-secondary-text, #8d8d8d));
   text-decoration: line-through;
 }
 
 .modal-footer-total-pill .total-price-final {
   font-size: var(--bundle-footer-final-price-font-size, 18px);
   font-weight: var(--bundle-footer-final-price-font-weight, 700);
-  color: var(--bundle-footer-final-price-color, #000000);
+  color: var(--bundle-footer-final-price-color, var(--bundle-global-footer-text, #000000));
 }
 
 /* Buttons Row - Below Pill */
@@ -1105,9 +987,9 @@
 }
 
 .modal-nav-button.next-button {
-  background-color: var(--bundle-footer-next-button-bg, #000000);
-  color: var(--bundle-footer-next-button-text, #ffffff);
-  border: 1px solid var(--bundle-footer-next-button-border, #000000);
+  background-color: var(--bundle-footer-next-button-bg, var(--bundle-global-primary-button, #000000));
+  color: var(--bundle-footer-next-button-text, var(--bundle-global-button-text, #ffffff));
+  border: 1px solid var(--bundle-footer-next-button-border, var(--bundle-global-primary-button, #000000));
   border-radius: var(--bundle-footer-next-button-radius, 8px);
 }
 
@@ -1177,8 +1059,8 @@
   transform: translateX(-50%);
   background-color: var(--bundle-toast-bg, #000000);
   color: var(--bundle-toast-text, #FFFFFF);
-  padding: 16px 24px;
-  border-radius: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 10000;
   display: flex;
@@ -1187,6 +1069,7 @@
   font-size: 14px;
   font-weight: 500;
   animation: slideDown 0.3s ease-out;
+  max-width: 90%;
 }
 
 @keyframes slideDown {
@@ -1565,21 +1448,6 @@
     padding: 12px 16px;
     gap: 12px;
     flex-wrap: wrap;
-  }
-
-  .modal-footer-discount-messaging {
-    order: -1;
-    width: 100%;
-    padding: 0;
-    margin-bottom: 8px;
-  }
-
-  .modal-footer-discount-text {
-    font-size: 12px;
-  }
-
-  .modal-footer-progress-bar {
-    height: 5px;
   }
 
   .modal-nav-button {
