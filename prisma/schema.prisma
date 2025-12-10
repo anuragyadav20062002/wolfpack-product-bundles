@@ -219,17 +219,17 @@ model DesignSettings {
   quantitySelectorFontSize    Int?    @default(16)
   quantitySelectorBorderRadius Int?   @default(8)
 
-  // Bundle Footer Section (coming soon)
+  // Global Colors Section
+  globalColorsSettings        Json?
+
+  // Bundle Footer Section
   footerSettings              Json?
 
-  // Bundle Step Bar Section (coming soon)
+  // Bundle Step Bar Section
   stepBarSettings             Json?
 
-  // General Section (coming soon)
+  // General Section
   generalSettings             Json?
-
-  // Images & Gifs Section (coming soon)
-  imagesSettings              Json?
 
   // Advanced Settings - Custom CSS
   customCss                   String?
