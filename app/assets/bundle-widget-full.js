@@ -517,8 +517,16 @@ class TemplateManager {
       const singleBrace = new RegExp(`\\{${key}\\}`, 'g');
       const doubleBrace = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
 
-      result = result.replace(singleBrace, value);
-      result = result.replace(doubleBrace, value);
+      // Wrap conditionText and discountText with styled spans
+      let replacementValue = value;
+      if (key === 'conditionText') {
+        replacementValue = `<span class="bundle-conditions-text" style="color: var(--bundle-conditions-text-color, inherit); font-size: var(--bundle-conditions-text-font-size, inherit);">${value}</span>`;
+      } else if (key === 'discountText') {
+        replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit); font-size: var(--bundle-discount-text-font-size, inherit);">${value}</span>`;
+      }
+
+      result = result.replace(singleBrace, replacementValue);
+      result = result.replace(doubleBrace, replacementValue);
     });
     return result;
   }
