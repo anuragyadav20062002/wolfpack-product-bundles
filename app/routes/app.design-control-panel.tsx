@@ -44,6 +44,59 @@ const CARDS_PER_ROW_OPTIONS = [
   { label: "4", value: "4" },
 ];
 
+// Color Picker Component - Shopify Polaris Best Practice
+function ColorPicker({
+  label,
+  value,
+  onChange
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [localValue, setLocalValue] = useState(value);
+
+  const handleChange = (newValue: string) => {
+    setLocalValue(newValue);
+    // Validate hex color format
+    if (/^#[0-9A-F]{6}$/i.test(newValue)) {
+      onChange(newValue);
+    }
+  };
+
+  const handleBlur = () => {
+    // If invalid, reset to current valid value
+    if (!/^#[0-9A-F]{6}$/i.test(localValue)) {
+      setLocalValue(value);
+    }
+  };
+
+  return (
+    <InlineStack gap="300" align="start" blockAlign="center">
+      <div
+        style={{
+          width: "41px",
+          height: "41px",
+          borderRadius: "50%",
+          backgroundColor: value,
+          border: "1px solid #E3E3E3",
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ flex: 1 }}>
+        <TextField
+          label={label}
+          value={localValue}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          autoComplete="off"
+          placeholder="#000000"
+        />
+      </div>
+    </InlineStack>
+  );
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
   const shopId = session.shop;
@@ -58,6 +111,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const defaultSettings = {
     product_page: {
+      // Global Colors
+      globalPrimaryButtonColor: "#000000",
+      globalButtonTextColor: "#FFFFFF",
+      globalPrimaryTextColor: "#000000",
+      globalSecondaryTextColor: "#6B7280",
+      globalFooterBgColor: "#FFFFFF",
+      globalFooterTextColor: "#000000",
       // Product Card
       productCardBgColor: "#FFFFFF",
       productCardFontColor: "#000000",
@@ -65,6 +125,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       productCardFontWeight: 400,
       productCardImageFit: "cover",
       productCardsPerRow: 3,
+      productTitleVisibility: true,
       productPriceVisibility: true,
       productStrikePriceColor: "#8D8D8D",
       productStrikeFontSize: 14,
@@ -85,10 +146,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
       quantitySelectorTextColor: "#FFFFFF",
       quantitySelectorFontSize: 16,
       quantitySelectorBorderRadius: 8,
+      // Variant Selector
+      variantSelectorBgColor: "#FFFFFF",
+      variantSelectorTextColor: "#000000",
+      variantSelectorBorderRadius: 8,
       // Bundle Footer
       footerBgColor: "#FFFFFF",
       footerTotalBgColor: "#F6F6F6",
       footerBorderRadius: 8,
+      // Bundle Header
+      headerTabActiveBgColor: "#000000",
+      headerTabActiveTextColor: "#FFFFFF",
+      headerTabInactiveBgColor: "#FFFFFF",
+      headerTabInactiveTextColor: "#000000",
+      headerTabRadius: 67,
       footerPadding: 16,
       // Footer Price
       footerFinalPriceColor: "#000000",
@@ -134,28 +205,31 @@ export async function loader({ request }: LoaderFunctionArgs) {
       tabsBorderColor: "#000000",
       tabsBorderRadius: 8,
       // General Section
-      // Bundle Design
-      bundleBgColor: "#FFFFFF",
-      footerScrollBarColor: "#F6F6F6",
-      // Product Page Title
-      productPageTitleFontColor: "#000000",
-      productPageTitleFontSize: 16,
-      // Bundle Upsell
-      bundleUpsellButtonBgColor: "#F6F6F6",
-      bundleUpsellBorderColor: "#F6F6F6",
-      bundleUpsellTextColor: "#F6F6F6",
+      // Empty State
+      emptyStateCardBgColor: "#FFFFFF",
+      emptyStateCardBorderColor: "#F6F6F6",
+      emptyStateTextColor: "#9CA3AF",
+      emptyStateBorderStyle: "dashed",
+      // Drawer
+      drawerBgColor: "#FFFFFF",
+      // Add to Cart Button
+      addToCartButtonBgColor: "#000000",
+      addToCartButtonTextColor: "#FFFFFF",
       // Toasts
       toastBgColor: "#000000",
       toastTextColor: "#FFFFFF",
-      // Filters
-      filterIconColor: "#000000",
-      filterBgColor: "#FFFFFF",
-      filterTextColor: "#000000",
       // Images & Gifs
       bundleLoadingGifUrl: "",
       checkoutGifUrl: "",
     },
     full_page: {
+      // Global Colors
+      globalPrimaryButtonColor: "#7132FF",
+      globalButtonTextColor: "#FFFFFF",
+      globalPrimaryTextColor: "#111827",
+      globalSecondaryTextColor: "#9CA3AF",
+      globalFooterBgColor: "#F9FAFB",
+      globalFooterTextColor: "#111827",
       // Default settings for full_page (can be different from product_page)
       productCardBgColor: "#F9FAFB",
       productCardFontColor: "#111827",
@@ -163,6 +237,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       productCardFontWeight: 500,
       productCardImageFit: "contain",
       productCardsPerRow: 4,
+      productTitleVisibility: true,
       productPriceVisibility: true,
       productStrikePriceColor: "#9CA3AF",
       productStrikeFontSize: 16,
@@ -181,10 +256,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
       quantitySelectorTextColor: "#FFFFFF",
       quantitySelectorFontSize: 18,
       quantitySelectorBorderRadius: 12,
+      // Variant Selector
+      variantSelectorBgColor: "#FFFFFF",
+      variantSelectorTextColor: "#111827",
+      variantSelectorBorderRadius: 12,
       // Bundle Footer
       footerBgColor: "#FFFFFF",
       footerTotalBgColor: "#F9FAFB",
       footerBorderRadius: 12,
+      // Bundle Header
+      headerTabActiveBgColor: "#000000",
+      headerTabActiveTextColor: "#FFFFFF",
+      headerTabInactiveBgColor: "#FFFFFF",
+      headerTabInactiveTextColor: "#000000",
+      headerTabRadius: 67,
       footerPadding: 20,
       // Footer Price
       footerFinalPriceColor: "#111827",
@@ -230,23 +315,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
       tabsBorderColor: "#E5E7EB",
       tabsBorderRadius: 12,
       // General Section
-      // Bundle Design
-      bundleBgColor: "#F9FAFB",
-      footerScrollBarColor: "#E5E7EB",
-      // Product Page Title
-      productPageTitleFontColor: "#111827",
-      productPageTitleFontSize: 18,
-      // Bundle Upsell
-      bundleUpsellButtonBgColor: "#E5E7EB",
-      bundleUpsellBorderColor: "#E5E7EB",
-      bundleUpsellTextColor: "#111827",
+      // Empty State
+      emptyStateCardBgColor: "#F9FAFB",
+      emptyStateCardBorderColor: "#E5E7EB",
+      emptyStateTextColor: "#9CA3AF",
+      emptyStateBorderStyle: "dashed",
+      // Drawer
+      drawerBgColor: "#F9FAFB",
+      // Add to Cart Button
+      addToCartButtonBgColor: "#7132FF",
+      addToCartButtonTextColor: "#FFFFFF",
       // Toasts
       toastBgColor: "#7132FF",
       toastTextColor: "#FFFFFF",
-      // Filters
-      filterIconColor: "#111827",
-      filterBgColor: "#F9FAFB",
-      filterTextColor: "#111827",
       // Images & Gifs
       bundleLoadingGifUrl: "",
       checkoutGifUrl: "",
@@ -256,6 +337,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const mergeSettings = (dbSettings: any, defaults: any) => {
     if (!dbSettings) return defaults;
 
+    const globalColorsSettings = dbSettings.globalColorsSettings as any || {};
     const footerSettings = dbSettings.footerSettings as any || {};
     const stepBarSettings = dbSettings.stepBarSettings as any || {};
     const generalSettings = dbSettings.generalSettings as any || {};
@@ -287,6 +369,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       quantitySelectorTextColor: dbSettings.quantitySelectorTextColor || defaults.quantitySelectorTextColor,
       quantitySelectorFontSize: dbSettings.quantitySelectorFontSize || defaults.quantitySelectorFontSize,
       quantitySelectorBorderRadius: dbSettings.quantitySelectorBorderRadius || defaults.quantitySelectorBorderRadius,
+      ...globalColorsSettings,
       ...footerSettings,
       ...stepBarSettings,
       ...generalSettings,
@@ -359,19 +442,29 @@ export async function action({ request }: ActionFunctionArgs) {
       tabsBorderRadius: settings.tabsBorderRadius,
     };
 
+    const globalColorsSettings = {
+      globalPrimaryButtonColor: settings.globalPrimaryButtonColor,
+      globalButtonTextColor: settings.globalButtonTextColor,
+      globalPrimaryTextColor: settings.globalPrimaryTextColor,
+      globalSecondaryTextColor: settings.globalSecondaryTextColor,
+      globalFooterBgColor: settings.globalFooterBgColor,
+      globalFooterTextColor: settings.globalFooterTextColor,
+    };
+
     const generalSettings = {
-      bundleBgColor: settings.bundleBgColor,
-      footerScrollBarColor: settings.footerScrollBarColor,
-      productPageTitleFontColor: settings.productPageTitleFontColor,
-      productPageTitleFontSize: settings.productPageTitleFontSize,
-      bundleUpsellButtonBgColor: settings.bundleUpsellButtonBgColor,
-      bundleUpsellBorderColor: settings.bundleUpsellBorderColor,
-      bundleUpsellTextColor: settings.bundleUpsellTextColor,
+      // Empty State
+      emptyStateCardBgColor: settings.emptyStateCardBgColor,
+      emptyStateCardBorderColor: settings.emptyStateCardBorderColor,
+      emptyStateTextColor: settings.emptyStateTextColor,
+      emptyStateBorderStyle: settings.emptyStateBorderStyle,
+      // Drawer
+      drawerBgColor: settings.drawerBgColor,
+      // Add to Cart Button
+      addToCartButtonBgColor: settings.addToCartButtonBgColor,
+      addToCartButtonTextColor: settings.addToCartButtonTextColor,
+      // Toasts
       toastBgColor: settings.toastBgColor,
       toastTextColor: settings.toastTextColor,
-      filterIconColor: settings.filterIconColor,
-      filterBgColor: settings.filterBgColor,
-      filterTextColor: settings.filterTextColor,
     };
 
     const imagesSettings = {
@@ -413,6 +506,7 @@ export async function action({ request }: ActionFunctionArgs) {
         quantitySelectorTextColor: settings.quantitySelectorTextColor,
         quantitySelectorFontSize: settings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
+        globalColorsSettings: globalColorsSettings,
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
         generalSettings: generalSettings,
@@ -443,6 +537,7 @@ export async function action({ request }: ActionFunctionArgs) {
         quantitySelectorTextColor: settings.quantitySelectorTextColor,
         quantitySelectorFontSize: settings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
+        globalColorsSettings: globalColorsSettings,
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
         generalSettings: generalSettings,
@@ -472,6 +567,14 @@ export default function DesignControlPanel() {
   const [expandedSection, setExpandedSection] = useState<string | null>("productCard");
   const [activeSubSection, setActiveSubSection] = useState<string>("productCard");
 
+  // Global Colors Section
+  const [globalPrimaryButtonColor, setGlobalPrimaryButtonColor] = useState(currentSettings.globalPrimaryButtonColor || "#000000");
+  const [globalButtonTextColor, setGlobalButtonTextColor] = useState(currentSettings.globalButtonTextColor || "#FFFFFF");
+  const [globalPrimaryTextColor, setGlobalPrimaryTextColor] = useState(currentSettings.globalPrimaryTextColor || "#000000");
+  const [globalSecondaryTextColor, setGlobalSecondaryTextColor] = useState(currentSettings.globalSecondaryTextColor || "#6B7280");
+  const [globalFooterBgColor, setGlobalFooterBgColor] = useState(currentSettings.globalFooterBgColor || "#FFFFFF");
+  const [globalFooterTextColor, setGlobalFooterTextColor] = useState(currentSettings.globalFooterTextColor || "#000000");
+
   // Form state - Product Card Section
   const [productCardBgColor, setProductCardBgColor] = useState(currentSettings.productCardBgColor);
   const [productCardFontColor, setProductCardFontColor] = useState(currentSettings.productCardFontColor);
@@ -479,6 +582,7 @@ export default function DesignControlPanel() {
   const [productCardFontWeight, setProductCardFontWeight] = useState(currentSettings.productCardFontWeight);
   const [productCardImageFit, setProductCardImageFit] = useState(currentSettings.productCardImageFit);
   const [productCardsPerRow, setProductCardsPerRow] = useState(String(currentSettings.productCardsPerRow));
+  const [productTitleVisibility, setProductTitleVisibility] = useState(currentSettings.productTitleVisibility);
   const [productPriceVisibility, setProductPriceVisibility] = useState(currentSettings.productPriceVisibility);
 
   // Product Card Typography
@@ -502,6 +606,11 @@ export default function DesignControlPanel() {
   const [quantitySelectorTextColor, setQuantitySelectorTextColor] = useState(currentSettings.quantitySelectorTextColor);
   const [quantitySelectorFontSize, setQuantitySelectorFontSize] = useState(currentSettings.quantitySelectorFontSize);
   const [quantitySelectorBorderRadius, setQuantitySelectorBorderRadius] = useState(currentSettings.quantitySelectorBorderRadius);
+
+  // Variant Selector Section
+  const [variantSelectorBgColor, setVariantSelectorBgColor] = useState(currentSettings.variantSelectorBgColor);
+  const [variantSelectorTextColor, setVariantSelectorTextColor] = useState(currentSettings.variantSelectorTextColor);
+  const [variantSelectorBorderRadius, setVariantSelectorBorderRadius] = useState(currentSettings.variantSelectorBorderRadius);
 
   // Bundle Footer Section
   const [footerBgColor, setFooterBgColor] = useState(currentSettings.footerBgColor);
@@ -533,48 +642,28 @@ export default function DesignControlPanel() {
   const [footerProgressBarFilledColor, setFooterProgressBarFilledColor] = useState(currentSettings.footerProgressBarFilledColor);
   const [footerProgressBarEmptyColor, setFooterProgressBarEmptyColor] = useState(currentSettings.footerProgressBarEmptyColor);
 
-  // Bundle Step Bar Section
-  // Step Name
-  const [stepNameFontColor, setStepNameFontColor] = useState(currentSettings.stepNameFontColor);
-  const [stepNameFontSize, setStepNameFontSize] = useState(currentSettings.stepNameFontSize);
-  // Completed Step
-  const [completedStepCheckMarkColor, setCompletedStepCheckMarkColor] = useState(currentSettings.completedStepCheckMarkColor);
-  const [completedStepBgColor, setCompletedStepBgColor] = useState(currentSettings.completedStepBgColor);
-  const [completedStepCircleBorderColor, setCompletedStepCircleBorderColor] = useState(currentSettings.completedStepCircleBorderColor);
-  const [completedStepCircleBorderRadius, setCompletedStepCircleBorderRadius] = useState(currentSettings.completedStepCircleBorderRadius);
-  // Incomplete Step
-  const [incompleteStepBgColor, setIncompleteStepBgColor] = useState(currentSettings.incompleteStepBgColor);
-  const [incompleteStepCircleStrokeColor, setIncompleteStepCircleStrokeColor] = useState(currentSettings.incompleteStepCircleStrokeColor);
-  const [incompleteStepCircleStrokeRadius, setIncompleteStepCircleStrokeRadius] = useState(currentSettings.incompleteStepCircleStrokeRadius);
-  // Step Bar Progress Bar
-  const [stepBarProgressFilledColor, setStepBarProgressFilledColor] = useState(currentSettings.stepBarProgressFilledColor);
-  const [stepBarProgressEmptyColor, setStepBarProgressEmptyColor] = useState(currentSettings.stepBarProgressEmptyColor);
+  // Bundle Header Section
   // Tabs
-  const [tabsActiveBgColor, setTabsActiveBgColor] = useState(currentSettings.tabsActiveBgColor);
-  const [tabsActiveTextColor, setTabsActiveTextColor] = useState(currentSettings.tabsActiveTextColor);
-  const [tabsInactiveBgColor, setTabsInactiveBgColor] = useState(currentSettings.tabsInactiveBgColor);
-  const [tabsInactiveTextColor, setTabsInactiveTextColor] = useState(currentSettings.tabsInactiveTextColor);
-  const [tabsBorderColor, setTabsBorderColor] = useState(currentSettings.tabsBorderColor);
-  const [tabsBorderRadius, setTabsBorderRadius] = useState(currentSettings.tabsBorderRadius);
+  const [headerTabActiveBgColor, setHeaderTabActiveBgColor] = useState(currentSettings.headerTabActiveBgColor || "#000000");
+  const [headerTabActiveTextColor, setHeaderTabActiveTextColor] = useState(currentSettings.headerTabActiveTextColor || "#FFFFFF");
+  const [headerTabInactiveBgColor, setHeaderTabInactiveBgColor] = useState(currentSettings.headerTabInactiveBgColor || "#FFFFFF");
+  const [headerTabInactiveTextColor, setHeaderTabInactiveTextColor] = useState(currentSettings.headerTabInactiveTextColor || "#000000");
+  const [headerTabRadius, setHeaderTabRadius] = useState(currentSettings.headerTabRadius || 67);
 
   // General Section
-  // Bundle Design
-  const [bundleBgColor, setBundleBgColor] = useState(currentSettings.bundleBgColor);
-  const [footerScrollBarColor, setFooterScrollBarColor] = useState(currentSettings.footerScrollBarColor);
-  // Product Page Title
-  const [productPageTitleFontColor, setProductPageTitleFontColor] = useState(currentSettings.productPageTitleFontColor);
-  const [productPageTitleFontSize, setProductPageTitleFontSize] = useState(currentSettings.productPageTitleFontSize);
-  // Bundle Upsell
-  const [bundleUpsellButtonBgColor, setBundleUpsellButtonBgColor] = useState(currentSettings.bundleUpsellButtonBgColor);
-  const [bundleUpsellBorderColor, setBundleUpsellBorderColor] = useState(currentSettings.bundleUpsellBorderColor);
-  const [bundleUpsellTextColor, setBundleUpsellTextColor] = useState(currentSettings.bundleUpsellTextColor);
+  // Empty State
+  const [emptyStateCardBgColor, setEmptyStateCardBgColor] = useState(currentSettings.emptyStateCardBgColor || "#FFFFFF");
+  const [emptyStateCardBorderColor, setEmptyStateCardBorderColor] = useState(currentSettings.emptyStateCardBorderColor || "#F6F6F6");
+  const [emptyStateTextColor, setEmptyStateTextColor] = useState(currentSettings.emptyStateTextColor || "#9CA3AF");
+  const [emptyStateBorderStyle, setEmptyStateBorderStyle] = useState(currentSettings.emptyStateBorderStyle || "dashed");
+  // Drawer
+  const [drawerBgColor, setDrawerBgColor] = useState(currentSettings.drawerBgColor || "#FFFFFF");
+  // Add to Cart Button
+  const [addToCartButtonBgColor, setAddToCartButtonBgColor] = useState(currentSettings.addToCartButtonBgColor || "#000000");
+  const [addToCartButtonTextColor, setAddToCartButtonTextColor] = useState(currentSettings.addToCartButtonTextColor || "#FFFFFF");
   // Toasts
-  const [toastBgColor, setToastBgColor] = useState(currentSettings.toastBgColor);
-  const [toastTextColor, setToastTextColor] = useState(currentSettings.toastTextColor);
-  // Filters
-  const [filterIconColor, setFilterIconColor] = useState(currentSettings.filterIconColor);
-  const [filterBgColor, setFilterBgColor] = useState(currentSettings.filterBgColor);
-  const [filterTextColor, setFilterTextColor] = useState(currentSettings.filterTextColor);
+  const [toastBgColor, setToastBgColor] = useState(currentSettings.toastBgColor || "#000000");
+  const [toastTextColor, setToastTextColor] = useState(currentSettings.toastTextColor || "#FFFFFF");
 
   // Images & Gifs Section
   const [bundleLoadingGifUrl, setBundleLoadingGifUrl] = useState(currentSettings.bundleLoadingGifUrl || "");
@@ -674,6 +763,7 @@ export default function DesignControlPanel() {
       productCardFontWeight !== current.productCardFontWeight ||
       productCardImageFit !== current.productCardImageFit ||
       String(productCardsPerRow) !== String(current.productCardsPerRow) ||
+      productTitleVisibility !== current.productTitleVisibility ||
       productPriceVisibility !== current.productPriceVisibility ||
       productStrikePriceColor !== current.productStrikePriceColor ||
       productStrikeFontSize !== current.productStrikeFontSize ||
@@ -691,6 +781,9 @@ export default function DesignControlPanel() {
       quantitySelectorTextColor !== current.quantitySelectorTextColor ||
       quantitySelectorFontSize !== current.quantitySelectorFontSize ||
       quantitySelectorBorderRadius !== current.quantitySelectorBorderRadius ||
+      variantSelectorBgColor !== current.variantSelectorBgColor ||
+      variantSelectorTextColor !== current.variantSelectorTextColor ||
+      variantSelectorBorderRadius !== current.variantSelectorBorderRadius ||
       footerBgColor !== current.footerBgColor ||
       footerTotalBgColor !== current.footerTotalBgColor ||
       footerBorderRadius !== current.footerBorderRadius ||
@@ -754,6 +847,7 @@ export default function DesignControlPanel() {
     productCardFontWeight,
     productCardImageFit,
     productCardsPerRow,
+    productTitleVisibility,
     productPriceVisibility,
     productStrikePriceColor,
     productStrikeFontSize,
@@ -771,6 +865,9 @@ export default function DesignControlPanel() {
     quantitySelectorTextColor,
     quantitySelectorFontSize,
     quantitySelectorBorderRadius,
+    variantSelectorBgColor,
+    variantSelectorTextColor,
+    variantSelectorBorderRadius,
     footerBgColor,
     footerTotalBgColor,
     footerBorderRadius,
@@ -793,23 +890,11 @@ export default function DesignControlPanel() {
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
-    stepNameFontColor,
-    stepNameFontSize,
-    completedStepCheckMarkColor,
-    completedStepBgColor,
-    completedStepCircleBorderColor,
-    completedStepCircleBorderRadius,
-    incompleteStepBgColor,
-    incompleteStepCircleStrokeColor,
-    incompleteStepCircleStrokeRadius,
-    stepBarProgressFilledColor,
-    stepBarProgressEmptyColor,
-    tabsActiveBgColor,
-    tabsActiveTextColor,
-    tabsInactiveBgColor,
-    tabsInactiveTextColor,
-    tabsBorderColor,
-    tabsBorderRadius,
+    headerTabActiveBgColor,
+    headerTabActiveTextColor,
+    headerTabInactiveBgColor,
+    headerTabInactiveTextColor,
+    headerTabRadius,
     bundleBgColor,
     footerScrollBarColor,
     productPageTitleFontColor,
@@ -835,6 +920,7 @@ export default function DesignControlPanel() {
     setProductCardFontWeight(savedSettings.productCardFontWeight);
     setProductCardImageFit(savedSettings.productCardImageFit);
     setProductCardsPerRow(String(savedSettings.productCardsPerRow));
+    setProductTitleVisibility(savedSettings.productTitleVisibility);
     setProductPriceVisibility(savedSettings.productPriceVisibility);
     setProductStrikePriceColor(savedSettings.productStrikePriceColor);
     setProductStrikeFontSize(savedSettings.productStrikeFontSize);
@@ -852,6 +938,9 @@ export default function DesignControlPanel() {
     setQuantitySelectorTextColor(savedSettings.quantitySelectorTextColor);
     setQuantitySelectorFontSize(savedSettings.quantitySelectorFontSize);
     setQuantitySelectorBorderRadius(savedSettings.quantitySelectorBorderRadius);
+    setVariantSelectorBgColor(savedSettings.variantSelectorBgColor);
+    setVariantSelectorTextColor(savedSettings.variantSelectorTextColor);
+    setVariantSelectorBorderRadius(savedSettings.variantSelectorBorderRadius);
     setFooterBgColor(savedSettings.footerBgColor);
     setFooterTotalBgColor(savedSettings.footerTotalBgColor);
     setFooterBorderRadius(savedSettings.footerBorderRadius);
@@ -959,6 +1048,12 @@ export default function DesignControlPanel() {
 
   const handleSaveSettings = useCallback(() => {
     const settingsToSave = {
+      globalPrimaryButtonColor,
+      globalButtonTextColor,
+      globalPrimaryTextColor,
+      globalSecondaryTextColor,
+      globalFooterBgColor,
+      globalFooterTextColor,
       productCardBgColor,
       productCardFontColor,
       productCardFontSize,
@@ -966,6 +1061,7 @@ export default function DesignControlPanel() {
       productCardImageFit,
       productCardsPerRow: parseInt(productCardsPerRow),
       productPriceVisibility,
+      productTitleVisibility,
       productStrikePriceColor,
       productStrikeFontSize,
       productStrikeFontWeight,
@@ -983,6 +1079,9 @@ export default function DesignControlPanel() {
       quantitySelectorTextColor,
       quantitySelectorFontSize,
       quantitySelectorBorderRadius,
+      variantSelectorBgColor,
+      variantSelectorTextColor,
+      variantSelectorBorderRadius,
       footerBgColor,
       footerTotalBgColor,
       footerBorderRadius,
@@ -1050,6 +1149,12 @@ export default function DesignControlPanel() {
     );
   }, [
     selectedBundleType,
+    globalPrimaryButtonColor,
+    globalButtonTextColor,
+    globalPrimaryTextColor,
+    globalSecondaryTextColor,
+    globalFooterBgColor,
+    globalFooterTextColor,
     productCardBgColor,
     productCardFontColor,
     productCardFontSize,
@@ -1073,6 +1178,9 @@ export default function DesignControlPanel() {
     quantitySelectorTextColor,
     quantitySelectorFontSize,
     quantitySelectorBorderRadius,
+    variantSelectorBgColor,
+    variantSelectorTextColor,
+    variantSelectorBorderRadius,
     footerBgColor,
     footerTotalBgColor,
     footerBorderRadius,
@@ -1095,23 +1203,11 @@ export default function DesignControlPanel() {
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
-    stepNameFontColor,
-    stepNameFontSize,
-    completedStepCheckMarkColor,
-    completedStepBgColor,
-    completedStepCircleBorderColor,
-    completedStepCircleBorderRadius,
-    incompleteStepBgColor,
-    incompleteStepCircleStrokeColor,
-    incompleteStepCircleStrokeRadius,
-    stepBarProgressFilledColor,
-    stepBarProgressEmptyColor,
-    tabsActiveBgColor,
-    tabsActiveTextColor,
-    tabsInactiveBgColor,
-    tabsInactiveTextColor,
-    tabsBorderColor,
-    tabsBorderRadius,
+    headerTabActiveBgColor,
+    headerTabActiveTextColor,
+    headerTabInactiveBgColor,
+    headerTabInactiveTextColor,
+    headerTabRadius,
     bundleBgColor,
     footerScrollBarColor,
     productPageTitleFontColor,
@@ -1173,202 +1269,185 @@ export default function DesignControlPanel() {
     // Bundle Footer subsections
     if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
       return (
-        <div style={{ maxWidth: "800px", width: "100%" }}>
-          {/* Cart Badge */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+        <div style={{ textAlign: "center", position: "relative" }}>
+          <Text as="h3" variant="headingLg" fontWeight="semibold">
+            Footer
+          </Text>
+          <div style={{ marginTop: "48px", display: "inline-block", position: "relative" }}>
+            {/* Bundle Footer Container - Full Width Bar */}
             <div
               style={{
-                backgroundColor: "#000000",
-                color: "#FFFFFF",
-                borderRadius: "14px",
-                padding: "4px 12px",
-                fontSize: "13px",
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
-              2 🛒
-            </div>
-          </div>
-
-          {/* Discount Text */}
-          {footerDiscountTextVisibility && (
-            <div style={{ textAlign: "center", marginBottom: "16px" }}>
-              <Text as="p" variant="bodyMd">
-                Add 5 products and get 20% off
-              </Text>
-            </div>
-          )}
-
-          {/* Progress Bar */}
-          <div style={{ marginBottom: "24px" }}>
-            <div
-              style={{
-                width: "100%",
-                height: "8px",
-                backgroundColor: footerProgressBarEmptyColor,
-                borderRadius: "4px",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  width: "24%",
-                  height: "100%",
-                  backgroundColor: footerProgressBarFilledColor,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Product Item with Close Button */}
-          <div
-            style={{
-              display: "flex",
-              gap: "16px",
-              marginBottom: "24px",
-              alignItems: "center",
-              position: "relative",
-            }}
-          >
-            {/* Close Button */}
-            <div
-              style={{
-                position: "absolute",
-                left: "-6px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                width: "12px",
-                height: "12px",
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #000000",
-                borderRadius: "50%",
+                backgroundColor: footerBgColor,
+                borderRadius: `${footerBorderRadius}px`,
+                padding: `${footerPadding}px`,
+                minWidth: "600px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                cursor: "pointer",
-                fontSize: "8px",
-                lineHeight: "1",
+                position: "relative",
               }}
             >
-              ×
-            </div>
-
-            <div
-              style={{
-                width: "60px",
-                height: "60px",
-                backgroundColor: "#E5E5E5",
-                borderRadius: "8px",
-              }}
-            />
-            <div style={{ flex: 1 }}>
-              <Text as="p" variant="bodyMd" fontWeight="medium">
-                Classic Edition...
-              </Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                €11.15 x 4
-              </Text>
-            </div>
-          </div>
-
-          {/* Bundle Footer */}
-          <div
-            style={{
-              backgroundColor: footerBgColor,
-              borderRadius: `${footerBorderRadius}px`,
-              padding: `${footerPadding}px`,
-            }}
-          >
-            {/* Footer Content */}
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              {/* Back Button */}
-              <button
-                style={{
-                  flex: 1,
-                  backgroundColor: footerBackButtonBgColor,
-                  color: footerBackButtonTextColor,
-                  border: `1px solid ${footerBackButtonBorderColor}`,
-                  borderRadius: `${footerBackButtonBorderRadius}px`,
-                  padding: "10px 20px",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                }}
-              >
-                Back
-              </button>
-
-              {/* Total Section */}
+              {/* Centered Grouped Content */}
               <div
                 style={{
-                  flex: 1,
-                  backgroundColor: footerTotalBgColor,
-                  padding: "12px 16px",
-                  borderRadius: "8px",
-                  textAlign: "center",
+                  display: "inline-flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "8px",
                 }}
               >
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Total
-                </Text>
+                {/* Total Pill - Sits Above */}
                 {footerPriceVisibility && (
-                  <div style={{ marginTop: "4px" }}>
-                    <span
-                      style={{
-                        color: footerStrikePriceColor,
-                        fontSize: `${footerStrikeFontSize}px`,
-                        fontWeight: footerStrikeFontWeight,
-                        textDecoration: "line-through",
-                        marginRight: "8px",
-                      }}
-                    >
+                  <div
+                    style={{
+                      backgroundColor: footerTotalBgColor,
+                      padding: "10px 20px",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      position: "relative",
+                    }}
+                  >
+                    <span style={{
+                      color: footerStrikePriceColor,
+                      fontSize: `${footerStrikeFontSize}px`,
+                      fontWeight: footerStrikeFontWeight,
+                      textDecoration: "line-through",
+                    }}>
+                      $24.99
+                    </span>
+                    <span style={{ color: footerFinalPriceColor }}>
                       $19.99
                     </span>
-                    <span
-                      style={{
-                        color: footerFinalPriceColor,
-                        fontSize: `${footerFinalPriceFontSize}px`,
-                        fontWeight: footerFinalPriceFontWeight,
-                      }}
-                    >
-                      $19.99
-                    </span>
+                    <span style={{ color: "#666" }}>|</span>
+                    <span style={{ color: "#666" }}>2 🛒</span>
+
+                    {/* Arrow pointing to Total Pill */}
+                    <div style={{
+                      position: "absolute",
+                      top: "-32px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}>
+                      <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
+                        Total Pill
+                      </Text>
+                      <svg width="2" height="24" style={{ marginTop: "4px" }}>
+                        <line x1="1" y1="0" x2="1" y2="20" stroke="#D9D9D9" strokeWidth="2"/>
+                        <polygon points="1,20 4,17 1,24 -2,17" fill="#D9D9D9"/>
+                      </svg>
+                    </div>
                   </div>
                 )}
+
+                {/* Buttons Row - Below Pill */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "center",
+                  }}
+                >
+                  {/* Back Button */}
+                  <button
+                    style={{
+                      backgroundColor: footerBackButtonBgColor,
+                      color: footerBackButtonTextColor,
+                      border: "none",
+                      borderRadius: `${footerBackButtonBorderRadius}px`,
+                      padding: "12px 28px",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      textTransform: "uppercase",
+                      position: "relative",
+                    }}
+                  >
+                    BACK
+
+                    {/* Arrow pointing to Back Button */}
+                    <div style={{
+                      position: "absolute",
+                      bottom: "-38px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}>
+                      <svg width="2" height="24" style={{ marginBottom: "4px" }}>
+                        <line x1="1" y1="4" x2="1" y2="24" stroke="#D9D9D9" strokeWidth="2"/>
+                        <polygon points="1,4 4,7 1,0 -2,7" fill="#D9D9D9"/>
+                      </svg>
+                      <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
+                        Back Button
+                      </Text>
+                    </div>
+                  </button>
+
+                  {/* Next Button */}
+                  <button
+                    style={{
+                      backgroundColor: footerNextButtonBgColor,
+                      color: footerNextButtonTextColor,
+                      border: "none",
+                      borderRadius: `${footerNextButtonBorderRadius}px`,
+                      padding: "12px 28px",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      textTransform: "uppercase",
+                      position: "relative",
+                    }}
+                  >
+                    NEXT
+
+                    {/* Arrow pointing to Next Button */}
+                    <div style={{
+                      position: "absolute",
+                      bottom: "-38px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}>
+                      <svg width="2" height="24" style={{ marginBottom: "4px" }}>
+                        <line x1="1" y1="4" x2="1" y2="24" stroke="#D9D9D9" strokeWidth="2"/>
+                        <polygon points="1,4 4,7 1,0 -2,7" fill="#D9D9D9"/>
+                      </svg>
+                      <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
+                        Next Button
+                      </Text>
+                    </div>
+                  </button>
+                </div>
               </div>
 
-              {/* Next Button */}
-              <button
-                style={{
-                  flex: 1,
-                  backgroundColor: footerNextButtonBgColor,
-                  color: footerNextButtonTextColor,
-                  border: `1px solid ${footerNextButtonBorderColor}`,
-                  borderRadius: `${footerNextButtonBorderRadius}px`,
-                  padding: "10px 20px",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                }}
-              >
-                Next
-              </button>
+              {/* Arrow pointing to Footer Background */}
+              <div style={{
+                position: "absolute",
+                top: "-38px",
+                left: "24px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}>
+                <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
+                  Footer
+                </Text>
+                <svg width="2" height="30" style={{ marginTop: "4px" }}>
+                  <line x1="1" y1="0" x2="1" y2="26" stroke="#D9D9D9" strokeWidth="2"/>
+                  <polygon points="1,26 4,23 1,30 -2,23" fill="#D9D9D9"/>
+                </svg>
+              </div>
             </div>
-          </div>
-
-          {/* Annotation */}
-          <div style={{ marginTop: "40px", textAlign: "center" }}>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Preview updates as you customize
-            </Text>
           </div>
         </div>
       );
@@ -2035,12 +2114,34 @@ export default function DesignControlPanel() {
           style={{
             backgroundColor: productCardBgColor,
             borderRadius: "12px",
-            padding: "24px",
+            padding: "16px",
             maxWidth: "280px",
             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
             position: "relative",
           }}
         >
+          {/* Checkmark Badge for Selected State */}
+          <div
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              width: "24px",
+              height: "24px",
+              borderRadius: "50%",
+              backgroundColor: "#4CAF50",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: "14px",
+              fontWeight: "bold",
+              zIndex: 1,
+            }}
+          >
+            ✓
+          </div>
+
           {/* Product Image Placeholder */}
           <div
             style={{
@@ -2048,7 +2149,7 @@ export default function DesignControlPanel() {
               height: "200px",
               backgroundColor: "#E5E5E5",
               borderRadius: "8px",
-              marginBottom: "16px",
+              marginBottom: "12px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -2059,22 +2160,24 @@ export default function DesignControlPanel() {
             </Text>
           </div>
 
-          {/* Product Title */}
-          <div
-            style={{
-              color: productCardFontColor,
-              fontSize: `${productCardFontSize}px`,
-              fontWeight: productCardFontWeight,
-              textAlign: "center",
-              marginBottom: "12px",
-            }}
-          >
-            PRODUCT NAME
-          </div>
+          {/* Product Title - Conditional Rendering */}
+          {productTitleVisibility && (
+            <div
+              style={{
+                color: productCardFontColor,
+                fontSize: `${productCardFontSize}px`,
+                fontWeight: productCardFontWeight,
+                textAlign: "center",
+                marginBottom: "8px",
+              }}
+            >
+              PRODUCT NAME
+            </div>
+          )}
 
           {/* Prices */}
           {productPriceVisibility && (
-            <div style={{ margin: "12px 0", textAlign: "center" }}>
+            <div style={{ margin: "8px 0", textAlign: "center" }}>
               <span
                 style={{
                   color: productStrikePriceColor,
@@ -2093,25 +2196,31 @@ export default function DesignControlPanel() {
                   fontWeight: productFinalPriceFontWeight,
                 }}
               >
-                $19.99
+                $14.99
               </span>
             </div>
           )}
 
           {/* Variant Selector */}
           <div style={{ marginBottom: "12px" }}>
-            <input
-              type="text"
-              placeholder="Size 9"
+            <select
               style={{
                 width: "100%",
-                padding: "8px 12px",
-                borderRadius: `${quantitySelectorBorderRadius}px`,
+                padding: "10px 12px",
+                borderRadius: `${variantSelectorBorderRadius}px`,
                 border: "1px solid #D1D1D1",
-                fontSize: `${quantitySelectorFontSize}px`,
+                backgroundColor: variantSelectorBgColor,
+                color: variantSelectorTextColor,
+                fontSize: "14px",
+                cursor: "pointer",
+                appearance: "none",
+                backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23303030' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
               }}
-              readOnly
-            />
+            >
+              <option>Select Variant</option>
+            </select>
           </div>
 
           {/* Add to Cart Button */}
@@ -2145,6 +2254,56 @@ export default function DesignControlPanel() {
   // Render settings panel based on active subsection
   const renderSettingsPanel = () => {
     switch (activeSubSection) {
+      case "globalColors":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Global Colors
+            </Text>
+            <Divider />
+
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Define your brand's primary colors that will be used consistently across the bundle widget.
+            </Text>
+
+            <ColorPicker
+              label="Primary Button Color"
+              value={globalPrimaryButtonColor}
+              onChange={setGlobalPrimaryButtonColor}
+            />
+
+            <ColorPicker
+              label="Button Text Color"
+              value={globalButtonTextColor}
+              onChange={setGlobalButtonTextColor}
+            />
+
+            <ColorPicker
+              label="Primary Text Color"
+              value={globalPrimaryTextColor}
+              onChange={setGlobalPrimaryTextColor}
+            />
+
+            <ColorPicker
+              label="Secondary Text Color"
+              value={globalSecondaryTextColor}
+              onChange={setGlobalSecondaryTextColor}
+            />
+
+            <ColorPicker
+              label="Footer Background"
+              value={globalFooterBgColor}
+              onChange={setGlobalFooterBgColor}
+            />
+
+            <ColorPicker
+              label="Footer Text Color"
+              value={globalFooterTextColor}
+              onChange={setGlobalFooterTextColor}
+            />
+          </BlockStack>
+        );
+
       case "productCard":
         return (
           <BlockStack gap="400">
@@ -2153,46 +2312,11 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: productCardBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("productCardBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="productCardBgColorInput"
-                    type="color"
-                    value={productCardBgColor}
-                    onChange={(e) => setProductCardBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Background Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {productCardBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Background Color"
+              value={productCardBgColor}
+              onChange={setProductCardBgColor}
+            />
 
             <RangeSlider
               label="Font Size"
@@ -2275,46 +2399,31 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: productCardFontColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("productCardFontColorInput");
-                    if (input) input.click();
-                  }}
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Product Title
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={productTitleVisibility === true}
+                  onClick={() => setProductTitleVisibility(true)}
                 >
-                  <input
-                    id="productCardFontColorInput"
-                    type="color"
-                    value={productCardFontColor}
-                    onChange={(e) => setProductCardFontColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Product Font Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {productCardFontColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
+                  Show
+                </Button>
+                <Button
+                  pressed={productTitleVisibility === false}
+                  onClick={() => setProductTitleVisibility(false)}
+                >
+                  Hide
+                </Button>
+              </ButtonGroup>
             </BlockStack>
+
+            <ColorPicker
+              label="Product Font Color"
+              value={productCardFontColor}
+              onChange={setProductCardFontColor}
+            />
 
             <RangeSlider
               label="Product Name Font Size"
@@ -2357,46 +2466,11 @@ export default function DesignControlPanel() {
 
             {productPriceVisibility && (
               <>
-                <BlockStack gap="300">
-                  <InlineStack gap="300" align="start" blockAlign="center">
-                    <div
-                      style={{
-                        width: "41px",
-                        height: "41px",
-                        borderRadius: "50%",
-                        backgroundColor: productStrikePriceColor,
-                        border: "1px solid #E3E3E3",
-                        cursor: "pointer",
-                        position: "relative",
-                      }}
-                      onClick={() => {
-                        const input = document.getElementById("productStrikePriceColorInput");
-                        if (input) input.click();
-                      }}
-                    >
-                      <input
-                        id="productStrikePriceColorInput"
-                        type="color"
-                        value={productStrikePriceColor}
-                        onChange={(e) => setProductStrikePriceColor(e.target.value)}
-                        style={{
-                          position: "absolute",
-                          opacity: 0,
-                          width: 0,
-                          height: 0,
-                        }}
-                      />
-                    </div>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodyMd" fontWeight="medium">
-                        Strikethrough Price Color
-                      </Text>
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        {productStrikePriceColor}
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </BlockStack>
+                <ColorPicker
+                  label="Strikethrough Price Color"
+                  value={productStrikePriceColor}
+                  onChange={setProductStrikePriceColor}
+                />
 
                 <RangeSlider
                   label="Strikethrough Font Size"
@@ -2417,46 +2491,11 @@ export default function DesignControlPanel() {
                   output
                 />
 
-                <BlockStack gap="300">
-                  <InlineStack gap="300" align="start" blockAlign="center">
-                    <div
-                      style={{
-                        width: "41px",
-                        height: "41px",
-                        borderRadius: "50%",
-                        backgroundColor: productFinalPriceColor,
-                        border: "1px solid #E3E3E3",
-                        cursor: "pointer",
-                        position: "relative",
-                      }}
-                      onClick={() => {
-                        const input = document.getElementById("productFinalPriceColorInput");
-                        if (input) input.click();
-                      }}
-                    >
-                      <input
-                        id="productFinalPriceColorInput"
-                        type="color"
-                        value={productFinalPriceColor}
-                        onChange={(e) => setProductFinalPriceColor(e.target.value)}
-                        style={{
-                          position: "absolute",
-                          opacity: 0,
-                          width: 0,
-                          height: 0,
-                        }}
-                      />
-                    </div>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodyMd" fontWeight="medium">
-                        Final Price Font Color
-                      </Text>
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        {productFinalPriceColor}
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </BlockStack>
+                <ColorPicker
+                  label="Final Price Font Color"
+                  value={productFinalPriceColor}
+                  onChange={setProductFinalPriceColor}
+                />
 
                 <RangeSlider
                   label="Final Price Font Size"
@@ -2489,87 +2528,17 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: buttonBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("buttonBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="buttonBgColorInput"
-                    type="color"
-                    value={buttonBgColor}
-                    onChange={(e) => setButtonBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Background Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {buttonBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Background Color"
+              value={buttonBgColor}
+              onChange={setButtonBgColor}
+            />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: buttonTextColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("buttonTextColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="buttonTextColorInput"
-                    type="color"
-                    value={buttonTextColor}
-                    onChange={(e) => setButtonTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Text Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {buttonTextColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Text Color"
+              value={buttonTextColor}
+              onChange={setButtonTextColor}
+            />
 
             <RangeSlider
               label="Size"
@@ -2599,87 +2568,17 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: quantitySelectorBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("quantitySelectorBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="quantitySelectorBgColorInput"
-                    type="color"
-                    value={quantitySelectorBgColor}
-                    onChange={(e) => setQuantitySelectorBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Background Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {quantitySelectorBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Background Color"
+              value={quantitySelectorBgColor}
+              onChange={setQuantitySelectorBgColor}
+            />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: quantitySelectorTextColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("quantitySelectorTextColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="quantitySelectorTextColorInput"
-                    type="color"
-                    value={quantitySelectorTextColor}
-                    onChange={(e) => setQuantitySelectorTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Text Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {quantitySelectorTextColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Text Color"
+              value={quantitySelectorTextColor}
+              onChange={setQuantitySelectorTextColor}
+            />
 
             <RangeSlider
               label="Font Size"
@@ -2701,6 +2600,37 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
+      case "variantSelector":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Variant Selector
+            </Text>
+            <Divider />
+
+            <ColorPicker
+              label="Background Color"
+              value={variantSelectorBgColor}
+              onChange={setVariantSelectorBgColor}
+            />
+
+            <ColorPicker
+              label="Text Color"
+              value={variantSelectorTextColor}
+              onChange={setVariantSelectorTextColor}
+            />
+
+            <RangeSlider
+              label="Border Radius"
+              value={variantSelectorBorderRadius}
+              onChange={(value) => setVariantSelectorBorderRadius(value as number)}
+              min={0}
+              max={24}
+              output
+            />
+          </BlockStack>
+        );
+
       case "footer":
         return (
           <BlockStack gap="400">
@@ -2709,87 +2639,17 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerBgColorInput"
-                    type="color"
-                    value={footerBgColor}
-                    onChange={(e) => setFooterBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Background Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Background Color"
+              value={footerBgColor}
+              onChange={setFooterBgColor}
+            />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerTotalBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerTotalBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerTotalBgColorInput"
-                    type="color"
-                    value={footerTotalBgColor}
-                    onChange={(e) => setFooterTotalBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Total Background Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerTotalBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Total Pill Background Color"
+              value={footerTotalBgColor}
+              onChange={setFooterTotalBgColor}
+            />
 
             <RangeSlider
               label="Border Radius"
@@ -2821,7 +2681,7 @@ export default function DesignControlPanel() {
 
             <BlockStack gap="200">
               <Text as="p" variant="bodyMd" fontWeight="medium">
-                Prices
+                Visibility
               </Text>
               <ButtonGroup variant="segmented">
                 <Button
@@ -2841,124 +2701,16 @@ export default function DesignControlPanel() {
 
             {footerPriceVisibility && (
               <>
-                <BlockStack gap="300">
-                  <InlineStack gap="300" align="start" blockAlign="center">
-                    <div
-                      style={{
-                        width: "41px",
-                        height: "41px",
-                        borderRadius: "50%",
-                        backgroundColor: footerFinalPriceColor,
-                        border: "1px solid #E3E3E3",
-                        cursor: "pointer",
-                        position: "relative",
-                      }}
-                      onClick={() => {
-                        const input = document.getElementById("footerFinalPriceColorInput");
-                        if (input) input.click();
-                      }}
-                    >
-                      <input
-                        id="footerFinalPriceColorInput"
-                        type="color"
-                        value={footerFinalPriceColor}
-                        onChange={(e) => setFooterFinalPriceColor(e.target.value)}
-                        style={{
-                          position: "absolute",
-                          opacity: 0,
-                          width: 0,
-                          height: 0,
-                        }}
-                      />
-                    </div>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodyMd" fontWeight="medium">
-                        Final Price Font Color
-                      </Text>
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        {footerFinalPriceColor}
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </BlockStack>
-
-                <RangeSlider
-                  label="Final Price Font Size"
-                  value={footerFinalPriceFontSize}
-                  onChange={(value) => setFooterFinalPriceFontSize(value as number)}
-                  min={14}
-                  max={28}
-                  output
+                <ColorPicker
+                  label="Final Price Font Color"
+                  value={footerFinalPriceColor}
+                  onChange={setFooterFinalPriceColor}
                 />
 
-                <RangeSlider
-                  label="Final Price Font Weight"
-                  value={footerFinalPriceFontWeight}
-                  onChange={(value) => setFooterFinalPriceFontWeight(value as number)}
-                  min={400}
-                  max={900}
-                  step={100}
-                  output
-                />
-
-                <BlockStack gap="300">
-                  <InlineStack gap="300" align="start" blockAlign="center">
-                    <div
-                      style={{
-                        width: "41px",
-                        height: "41px",
-                        borderRadius: "50%",
-                        backgroundColor: footerStrikePriceColor,
-                        border: "1px solid #E3E3E3",
-                        cursor: "pointer",
-                        position: "relative",
-                      }}
-                      onClick={() => {
-                        const input = document.getElementById("footerStrikePriceColorInput");
-                        if (input) input.click();
-                      }}
-                    >
-                      <input
-                        id="footerStrikePriceColorInput"
-                        type="color"
-                        value={footerStrikePriceColor}
-                        onChange={(e) => setFooterStrikePriceColor(e.target.value)}
-                        style={{
-                          position: "absolute",
-                          opacity: 0,
-                          width: 0,
-                          height: 0,
-                        }}
-                      />
-                    </div>
-                    <BlockStack gap="100">
-                      <Text as="p" variant="bodyMd" fontWeight="medium">
-                        Strikethrough Price Color
-                      </Text>
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        {footerStrikePriceColor}
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </BlockStack>
-
-                <RangeSlider
-                  label="Strikethrough Font Size"
-                  value={footerStrikeFontSize}
-                  onChange={(value) => setFooterStrikeFontSize(value as number)}
-                  min={10}
-                  max={20}
-                  output
-                />
-
-                <RangeSlider
-                  label="Strikethrough Font Weight"
-                  value={footerStrikeFontWeight}
-                  onChange={(value) => setFooterStrikeFontWeight(value as number)}
-                  min={300}
-                  max={700}
-                  step={100}
-                  output
+                <ColorPicker
+                  label="Strikethrough Price Color"
+                  value={footerStrikePriceColor}
+                  onChange={setFooterStrikePriceColor}
                 />
               </>
             )}
@@ -2977,136 +2729,16 @@ export default function DesignControlPanel() {
               Back Button
             </Text>
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerBackButtonBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerBackButtonBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerBackButtonBgColorInput"
-                    type="color"
-                    value={footerBackButtonBgColor}
-                    onChange={(e) => setFooterBackButtonBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Back Button Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerBackButtonBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Back Button Color"
+              value={footerBackButtonBgColor}
+              onChange={setFooterBackButtonBgColor}
+            />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerBackButtonTextColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerBackButtonTextColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerBackButtonTextColorInput"
-                    type="color"
-                    value={footerBackButtonTextColor}
-                    onChange={(e) => setFooterBackButtonTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Back Button Text Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerBackButtonTextColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerBackButtonBorderColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerBackButtonBorderColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerBackButtonBorderColorInput"
-                    type="color"
-                    value={footerBackButtonBorderColor}
-                    onChange={(e) => setFooterBackButtonBorderColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Back Button Border Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerBackButtonBorderColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <RangeSlider
-              label="Back Button Border Radius"
-              value={footerBackButtonBorderRadius}
-              onChange={(value) => setFooterBackButtonBorderRadius(value as number)}
-              min={0}
-              max={24}
-              output
+            <ColorPicker
+              label="Back Button Text Color"
+              value={footerBackButtonTextColor}
+              onChange={setFooterBackButtonTextColor}
             />
 
             <Divider />
@@ -3115,135 +2747,33 @@ export default function DesignControlPanel() {
               Next Button
             </Text>
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerNextButtonBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerNextButtonBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerNextButtonBgColorInput"
-                    type="color"
-                    value={footerNextButtonBgColor}
-                    onChange={(e) => setFooterNextButtonBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Next Button Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerNextButtonBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Next Button Color"
+              value={footerNextButtonBgColor}
+              onChange={setFooterNextButtonBgColor}
+            />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerNextButtonTextColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerNextButtonTextColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerNextButtonTextColorInput"
-                    type="color"
-                    value={footerNextButtonTextColor}
-                    onChange={(e) => setFooterNextButtonTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Next Button Text Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerNextButtonTextColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Next Button Text Color"
+              value={footerNextButtonTextColor}
+              onChange={setFooterNextButtonTextColor}
+            />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerNextButtonBorderColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerNextButtonBorderColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerNextButtonBorderColorInput"
-                    type="color"
-                    value={footerNextButtonBorderColor}
-                    onChange={(e) => setFooterNextButtonBorderColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Next Button Border Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerNextButtonBorderColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <Divider />
+
+            <Text as="h3" variant="headingSm">
+              Common
+            </Text>
 
             <RangeSlider
-              label="Next Button Border Radius"
-              value={footerNextButtonBorderRadius}
-              onChange={(value) => setFooterNextButtonBorderRadius(value as number)}
+              label="Button Border Radius"
+              value={footerBackButtonBorderRadius}
+              onChange={(value) => {
+                setFooterBackButtonBorderRadius(value as number);
+                setFooterNextButtonBorderRadius(value as number);
+              }}
               min={0}
-              max={24}
+              max={67}
               output
             />
           </BlockStack>
@@ -3361,12 +2891,12 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
-      // ========== BUNDLE STEP BAR SECTION ==========
-      case "stepName":
+      // ========== BUNDLE HEADER SECTION ==========
+      case "headerTabs":
         return (
           <BlockStack gap="400">
             <Text as="h2" variant="headingMd">
-              Step Name
+              Tabs
             </Text>
             <Divider />
 
@@ -3982,11 +3512,11 @@ export default function DesignControlPanel() {
         );
 
       // ========== GENERAL SECTION ==========
-      case "bundleDesign":
+      case "emptyState":
         return (
           <BlockStack gap="400">
             <Text as="h2" variant="headingMd">
-              Bundle Design
+              Empty State
             </Text>
             <Divider />
 
@@ -3997,21 +3527,21 @@ export default function DesignControlPanel() {
                     width: "41px",
                     height: "41px",
                     borderRadius: "50%",
-                    backgroundColor: bundleBgColor,
+                    backgroundColor: emptyStateCardBgColor,
                     border: "1px solid #E3E3E3",
                     cursor: "pointer",
                     position: "relative",
                   }}
                   onClick={() => {
-                    const input = document.getElementById("bundleBgColorInput");
+                    const input = document.getElementById("emptyStateCardBgColorInput");
                     if (input) input.click();
                   }}
                 >
                   <input
-                    id="bundleBgColorInput"
+                    id="emptyStateCardBgColorInput"
                     type="color"
-                    value={bundleBgColor}
-                    onChange={(e) => setBundleBgColor(e.target.value)}
+                    value={emptyStateCardBgColor}
+                    onChange={(e) => setEmptyStateCardBgColor(e.target.value)}
                     style={{
                       position: "absolute",
                       opacity: 0,
@@ -4022,10 +3552,10 @@ export default function DesignControlPanel() {
                 </div>
                 <BlockStack gap="100">
                   <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Bundle Background Color
+                    Card Background Color
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    {bundleBgColor}
+                    {emptyStateCardBgColor}
                   </Text>
                 </BlockStack>
               </InlineStack>
@@ -4038,21 +3568,21 @@ export default function DesignControlPanel() {
                     width: "41px",
                     height: "41px",
                     borderRadius: "50%",
-                    backgroundColor: footerScrollBarColor,
+                    backgroundColor: emptyStateCardBorderColor,
                     border: "1px solid #E3E3E3",
                     cursor: "pointer",
                     position: "relative",
                   }}
                   onClick={() => {
-                    const input = document.getElementById("footerScrollBarColorInput");
+                    const input = document.getElementById("emptyStateCardBorderColorInput");
                     if (input) input.click();
                   }}
                 >
                   <input
-                    id="footerScrollBarColorInput"
+                    id="emptyStateCardBorderColorInput"
                     type="color"
-                    value={footerScrollBarColor}
-                    onChange={(e) => setFooterScrollBarColor(e.target.value)}
+                    value={emptyStateCardBorderColor}
+                    onChange={(e) => setEmptyStateCardBorderColor(e.target.value)}
                     style={{
                       position: "absolute",
                       opacity: 0,
@@ -4063,121 +3593,10 @@ export default function DesignControlPanel() {
                 </div>
                 <BlockStack gap="100">
                   <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Footer Scroll Bar Color
+                    Card Border Color
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerScrollBarColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-          </BlockStack>
-        );
-
-      case "productPageTitle":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Product Page Title
-            </Text>
-            <Divider />
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: productPageTitleFontColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("productPageTitleFontColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="productPageTitleFontColorInput"
-                    type="color"
-                    value={productPageTitleFontColor}
-                    onChange={(e) => setProductPageTitleFontColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Font Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {productPageTitleFontColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <RangeSlider
-              label="Font Size"
-              value={productPageTitleFontSize}
-              onChange={(value) => setProductPageTitleFontSize(value as number)}
-              min={12}
-              max={32}
-              output
-            />
-          </BlockStack>
-        );
-
-      case "bundleUpsell":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Bundle Upsell
-            </Text>
-            <Divider />
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: bundleUpsellButtonBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("bundleUpsellButtonBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="bundleUpsellButtonBgColorInput"
-                    type="color"
-                    value={bundleUpsellButtonBgColor}
-                    onChange={(e) => setBundleUpsellButtonBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Button Background
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {bundleUpsellButtonBgColor}
+                    {emptyStateCardBorderColor}
                   </Text>
                 </BlockStack>
               </InlineStack>
@@ -4190,62 +3609,21 @@ export default function DesignControlPanel() {
                     width: "41px",
                     height: "41px",
                     borderRadius: "50%",
-                    backgroundColor: bundleUpsellBorderColor,
+                    backgroundColor: emptyStateTextColor,
                     border: "1px solid #E3E3E3",
                     cursor: "pointer",
                     position: "relative",
                   }}
                   onClick={() => {
-                    const input = document.getElementById("bundleUpsellBorderColorInput");
+                    const input = document.getElementById("emptyStateTextColorInput");
                     if (input) input.click();
                   }}
                 >
                   <input
-                    id="bundleUpsellBorderColorInput"
+                    id="emptyStateTextColorInput"
                     type="color"
-                    value={bundleUpsellBorderColor}
-                    onChange={(e) => setBundleUpsellBorderColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Border Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {bundleUpsellBorderColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: bundleUpsellTextColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("bundleUpsellTextColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="bundleUpsellTextColorInput"
-                    type="color"
-                    value={bundleUpsellTextColor}
-                    onChange={(e) => setBundleUpsellTextColor(e.target.value)}
+                    value={emptyStateTextColor}
+                    onChange={(e) => setEmptyStateTextColor(e.target.value)}
                     style={{
                       position: "absolute",
                       opacity: 0,
@@ -4259,7 +3637,170 @@ export default function DesignControlPanel() {
                     Text Color
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
-                    {bundleUpsellTextColor}
+                    {emptyStateTextColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="200">
+              <Text as="p" variant="bodyMd" fontWeight="medium">
+                Border Style
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={emptyStateBorderStyle === "solid"}
+                  onClick={() => setEmptyStateBorderStyle("solid")}
+                >
+                  Solid
+                </Button>
+                <Button
+                  pressed={emptyStateBorderStyle === "dashed"}
+                  onClick={() => setEmptyStateBorderStyle("dashed")}
+                >
+                  Dashed
+                </Button>
+              </ButtonGroup>
+            </BlockStack>
+          </BlockStack>
+        );
+
+      case "drawer":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Drawer
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: drawerBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("drawerBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="drawerBgColorInput"
+                    type="color"
+                    value={drawerBgColor}
+                    onChange={(e) => setDrawerBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {drawerBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+          </BlockStack>
+        );
+
+      case "addToCartButton":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Add to Cart Button
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: addToCartButtonBgColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("addToCartButtonBgColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="addToCartButtonBgColorInput"
+                    type="color"
+                    value={addToCartButtonBgColor}
+                    onChange={(e) => setAddToCartButtonBgColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Background Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {addToCartButtonBgColor}
+                  </Text>
+                </BlockStack>
+              </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="300">
+              <InlineStack gap="300" align="start" blockAlign="center">
+                <div
+                  style={{
+                    width: "41px",
+                    height: "41px",
+                    borderRadius: "50%",
+                    backgroundColor: addToCartButtonTextColor,
+                    border: "1px solid #E3E3E3",
+                    cursor: "pointer",
+                    position: "relative",
+                  }}
+                  onClick={() => {
+                    const input = document.getElementById("addToCartButtonTextColorInput");
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    id="addToCartButtonTextColorInput"
+                    type="color"
+                    value={addToCartButtonTextColor}
+                    onChange={(e) => setAddToCartButtonTextColor(e.target.value)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      width: 0,
+                      height: 0,
+                    }}
+                  />
+                </div>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodyMd" fontWeight="medium">
+                    Text Color
+                  </Text>
+                  <Text as="p" variant="bodyMd" tone="subdued">
+                    {addToCartButtonTextColor}
                   </Text>
                 </BlockStack>
               </InlineStack>
@@ -4352,139 +3893,6 @@ export default function DesignControlPanel() {
                   </Text>
                   <Text as="p" variant="bodyMd" tone="subdued">
                     {toastTextColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-          </BlockStack>
-        );
-
-      case "filters":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Filters
-            </Text>
-            <Divider />
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: filterIconColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("filterIconColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="filterIconColorInput"
-                    type="color"
-                    value={filterIconColor}
-                    onChange={(e) => setFilterIconColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Icon Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {filterIconColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: filterBgColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("filterBgColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="filterBgColorInput"
-                    type="color"
-                    value={filterBgColor}
-                    onChange={(e) => setFilterBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Background Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {filterBgColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
-
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: filterTextColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("filterTextColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="filterTextColorInput"
-                    type="color"
-                    value={filterTextColor}
-                    onChange={(e) => setFilterTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Text Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {filterTextColor}
                   </Text>
                 </BlockStack>
               </InlineStack>
@@ -4700,6 +4108,15 @@ export default function DesignControlPanel() {
 
               <Divider />
 
+              {/* Global Colors Section */}
+              <NavigationItem
+                label="Global Colors"
+                sectionKey="globalColors"
+                onClick={() => handleSubSectionClick("globalColors")}
+              />
+
+              <Divider />
+
               {/* Product Card Section */}
               <NavigationItem
                 label="Product Card"
@@ -4730,6 +4147,12 @@ export default function DesignControlPanel() {
                   sectionKey="quantitySelector"
                   isChild
                   onClick={() => handleSubSectionClick("quantitySelector")}
+                />
+                <NavigationItem
+                  label="Variant Selector"
+                  sectionKey="variantSelector"
+                  isChild
+                  onClick={() => handleSubSectionClick("variantSelector")}
                 />
               </Collapsible>
 
@@ -4766,42 +4189,24 @@ export default function DesignControlPanel() {
                 />
               </Collapsible>
 
-              {/* Bundle Step Bar Section */}
+              {/* Bundle Header Section */}
               <NavigationItem
-                label="Bundle Step Bar"
-                sectionKey="bundleStepBar"
+                label="Bundle Header"
+                sectionKey="bundleHeader"
                 hasChildren
               />
-              <Collapsible open={expandedSection === "bundleStepBar"} id="bundleStepBar-collapsible">
-                <NavigationItem
-                  label="Step Name"
-                  sectionKey="stepName"
-                  isChild
-                  onClick={() => handleSubSectionClick("stepName")}
-                />
-                <NavigationItem
-                  label="Completed Step"
-                  sectionKey="completedStep"
-                  isChild
-                  onClick={() => handleSubSectionClick("completedStep")}
-                />
-                <NavigationItem
-                  label="Incomplete Step"
-                  sectionKey="incompleteStep"
-                  isChild
-                  onClick={() => handleSubSectionClick("incompleteStep")}
-                />
-                <NavigationItem
-                  label="Progress Bar"
-                  sectionKey="stepBarProgressBar"
-                  isChild
-                  onClick={() => handleSubSectionClick("stepBarProgressBar")}
-                />
+              <Collapsible open={expandedSection === "bundleHeader"} id="bundleHeader-collapsible">
                 <NavigationItem
                   label="Tabs"
-                  sectionKey="stepBarTabs"
+                  sectionKey="headerTabs"
                   isChild
-                  onClick={() => handleSubSectionClick("stepBarTabs")}
+                  onClick={() => handleSubSectionClick("headerTabs")}
+                />
+                <NavigationItem
+                  label="Header Text"
+                  sectionKey="headerText"
+                  isChild
+                  onClick={() => handleSubSectionClick("headerText")}
                 />
               </Collapsible>
 
@@ -4813,34 +4218,28 @@ export default function DesignControlPanel() {
               />
               <Collapsible open={expandedSection === "general"} id="general-collapsible">
                 <NavigationItem
-                  label="Bundle Design"
-                  sectionKey="bundleDesign"
+                  label="Empty State"
+                  sectionKey="emptyState"
                   isChild
-                  onClick={() => handleSubSectionClick("bundleDesign")}
+                  onClick={() => handleSubSectionClick("emptyState")}
                 />
                 <NavigationItem
-                  label="Product Page Title"
-                  sectionKey="productPageTitle"
+                  label="Drawer"
+                  sectionKey="drawer"
                   isChild
-                  onClick={() => handleSubSectionClick("productPageTitle")}
+                  onClick={() => handleSubSectionClick("drawer")}
                 />
                 <NavigationItem
-                  label="Bundle Upsell"
-                  sectionKey="bundleUpsell"
+                  label="Add to Cart Button"
+                  sectionKey="addToCartButton"
                   isChild
-                  onClick={() => handleSubSectionClick("bundleUpsell")}
+                  onClick={() => handleSubSectionClick("addToCartButton")}
                 />
                 <NavigationItem
                   label="Toasts"
                   sectionKey="toasts"
                   isChild
                   onClick={() => handleSubSectionClick("toasts")}
-                />
-                <NavigationItem
-                  label="Filters"
-                  sectionKey="filters"
-                  isChild
-                  onClick={() => handleSubSectionClick("filters")}
                 />
               </Collapsible>
 

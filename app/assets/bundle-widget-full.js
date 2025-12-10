@@ -1095,39 +1095,24 @@ class BundleWidget {
             <div class="product-grid"></div>
           </div>
           <div class="modal-footer">
-            <!-- Cart Badge -->
-            <div class="modal-footer-cart-badge">
-              <span class="cart-badge-count">0</span> 🛒
-            </div>
-
-            <!-- Discount Text -->
-            <div class="modal-footer-discount-text"></div>
-
-            <!-- Progress Bar -->
-            <div class="modal-footer-progress-wrapper">
-              <div class="modal-footer-progress-bar">
-                <div class="modal-footer-progress-fill"></div>
+            <!-- Centered Grouped Content Container -->
+            <div class="modal-footer-grouped-content">
+              <!-- Total Pill - Sits Above Buttons -->
+              <div class="modal-footer-total-pill">
+                <span class="total-price-strike"></span>
+                <span class="total-price-final"></span>
+                <span class="price-cart-separator">|</span>
+                <span class="cart-badge-wrapper">
+                  <span class="cart-badge-count">0</span>
+                  <span class="cart-icon">🛒</span>
+                </span>
               </div>
-            </div>
 
-            <!-- Selected Products List -->
-            <div class="modal-footer-products-list"></div>
-
-            <!-- Footer Navigation Buttons -->
-            <div class="modal-footer-discount-messaging">
-              <button class="modal-nav-button prev-button">
-                Back
-              </button>
-              <div class="modal-footer-total-section">
-                <span class="total-label">Total</span>
-                <div class="total-prices">
-                  <span class="total-price-strike"></span>
-                  <span class="total-price-final"></span>
-                </div>
+              <!-- Buttons Row - Below Pill -->
+              <div class="modal-footer-buttons-row">
+                <button class="modal-nav-button prev-button">BACK</button>
+                <button class="modal-nav-button next-button">NEXT</button>
               </div>
-              <button class="modal-nav-button next-button">
-                Next
-              </button>
             </div>
           </div>
         </div>
@@ -1666,29 +1651,17 @@ class BundleWidget {
     tabsContainer.innerHTML = '';
 
     this.selectedBundle.steps.forEach((step, index) => {
-      const stepContainer = document.createElement('div');
-      stepContainer.className = 'milestone-step-container';
-
-      const stepTotalQuantity = Object.values(this.selectedProducts[index]).reduce((sum, qty) => sum + qty, 0);
-      const isStepCompleted = this.validateStep(index);
-      const isStepStarted = stepTotalQuantity > 0;
       const isAccessible = this.isStepAccessible(index);
+      const isActive = index === this.currentStepIndex;
 
-      stepContainer.innerHTML = `
-        <div class="milestone-step ${index === this.currentStepIndex ? 'active' : ''} ${isStepCompleted ? 'completed' : ''} ${isStepStarted && !isStepCompleted ? 'in-progress' : ''} ${!isAccessible ? 'locked' : ''}">
-          <div class="milestone-circle">
-            <span class="milestone-number">${isStepCompleted ? '✓' : index + 1}</span>
-          </div>
-          <div class="milestone-label">${step.name || `Step ${index + 1}`}</div>
-        </div>
-        ${index < this.selectedBundle.steps.length - 1 ? `<div class="milestone-connector ${isStepCompleted ? 'completed' : (isStepStarted ? 'in-progress' : '')}"></div>` : ''}
-      `;
-
-      stepContainer.dataset.stepIndex = index.toString();
+      // Create tab button
+      const tabButton = document.createElement('button');
+      tabButton.className = `bundle-header-tab ${isActive ? 'active' : ''} ${!isAccessible ? 'locked' : ''}`;
+      tabButton.textContent = step.name || `Step ${index + 1}`;
+      tabButton.dataset.stepIndex = index.toString();
 
       // Click handler
-      const stepElement = stepContainer.querySelector('.milestone-step');
-      stepElement.addEventListener('click', async () => {
+      tabButton.addEventListener('click', async () => {
         if (!isAccessible) {
           ToastManager.show('Please complete the previous steps first.');
           return;
@@ -1710,7 +1683,7 @@ class BundleWidget {
         this.updateModalFooterMessaging();
       });
 
-      tabsContainer.appendChild(stepContainer);
+      tabsContainer.appendChild(tabButton);
     });
   }
 
@@ -2201,13 +2174,6 @@ class BundleWidget {
     );
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      discountInfo,
-      currencyInfo
-    );
 
     // Update cart badge with total item count
     const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
@@ -2215,136 +2181,8 @@ class BundleWidget {
       cartBadge.textContent = totalQuantity.toString();
     }
 
-    const footerMessaging = this.elements.modal.querySelector('.modal-footer-discount-messaging');
-    const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
-    const discountText = this.elements.modal.querySelector('.modal-footer-discount-text');
-
-    if (!footerMessaging || !this.selectedBundle.pricing?.enabled) {
-      if (footerMessaging) footerMessaging.style.display = 'none';
-      return;
-    }
-
-    // Show appropriate message
-    let messageText = '';
-    let messageState = 'progress';
-
-    if (discountInfo.qualifiesForDiscount) {
-      messageState = 'success';
-      messageText = TemplateManager.replaceVariables(this.config.successMessageTemplate, variables);
-    } else {
-      messageText = TemplateManager.replaceVariables(this.config.discountTextTemplate, variables);
-    }
-
-    if (discountText) {
-      discountText.textContent = messageText;
-    }
-
-    // Update progress bar based on condition type
-    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
-
-    let progressPercentage = 0;
-
-    if (ruleToUse) {
-      const conditionType = ruleToUse.condition?.type || 'quantity';
-      const targetValue = ruleToUse.condition?.value || 0;
-
-      if (conditionType === 'amount') {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
-      } else {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
-      }
-    }
-
-    if (progressFill) {
-      progressFill.style.width = `${progressPercentage}%`;
-    }
-
-    // Update products list in footer
-    this.updateFooterProductsList();
-
-    // Update total prices
+    // Update total prices in the footer pill
     this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
-
-    // Apply state class
-    footerMessaging.className = `modal-footer-discount-messaging ${messageState}`;
-    footerMessaging.style.display = 'flex';
-  }
-
-  updateFooterProductsList() {
-    const productsList = this.elements.modal.querySelector('.modal-footer-products-list');
-    if (!productsList) return;
-
-    productsList.innerHTML = '';
-
-    // Collect all selected products across all steps
-    const selectedProductsList = [];
-    this.selectedBundle.steps.forEach((step, stepIndex) => {
-      const stepSelections = this.selectedProducts[stepIndex] || {};
-      Object.entries(stepSelections).forEach(([productId, quantity]) => {
-        if (quantity > 0) {
-          const productData = this.stepProductData[stepIndex]?.[productId];
-          if (productData) {
-            selectedProductsList.push({
-              stepIndex,
-              productId,
-              quantity,
-              data: productData
-            });
-          }
-        }
-      });
-    });
-
-    // Render each product with close button
-    selectedProductsList.forEach(({ stepIndex, productId, quantity, data }) => {
-      const productItem = document.createElement('div');
-      productItem.className = 'footer-product-item';
-      productItem.dataset.stepIndex = stepIndex;
-      productItem.dataset.productId = productId;
-
-      const currencyInfo = CurrencyManager.getCurrencyInfo();
-      const priceDisplay = CurrencyManager.formatMoney(data.price || 0, currencyInfo.display.format);
-
-      productItem.innerHTML = `
-        <button class="footer-product-remove" aria-label="Remove product">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <div class="footer-product-image">
-          <img src="${data.image || ''}" alt="${data.title || 'Product'}" />
-        </div>
-        <div class="footer-product-info">
-          <div class="footer-product-title">${data.title || 'Product'}</div>
-          <div class="footer-product-price">${priceDisplay} x ${quantity}</div>
-        </div>
-      `;
-
-      // Add click handler for remove button
-      const removeBtn = productItem.querySelector('.footer-product-remove');
-      removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.removeProductFromFooter(stepIndex, productId);
-      });
-
-      productsList.appendChild(productItem);
-    });
-
-    // Show/hide products list based on selections
-    productsList.style.display = selectedProductsList.length > 0 ? 'flex' : 'none';
-  }
-
-  removeProductFromFooter(stepIndex, productId) {
-    // Remove the product from selections
-    if (this.selectedProducts[stepIndex]) {
-      delete this.selectedProducts[stepIndex][productId];
-    }
-
-    // Update UI
-    this.updateStepDisplay(stepIndex);
-    this.updateModalFooterMessaging();
-    this.updateAddToCartButton();
   }
 
   updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {

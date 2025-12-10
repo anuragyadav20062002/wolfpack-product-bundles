@@ -139,6 +139,14 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
  */
 
 :root {
+  /* GLOBAL COLORS */
+  --bundle-global-primary-button: ${s.globalPrimaryButtonColor || '#000000'};
+  --bundle-global-button-text: ${s.globalButtonTextColor || '#FFFFFF'};
+  --bundle-global-primary-text: ${s.globalPrimaryTextColor || '#000000'};
+  --bundle-global-secondary-text: ${s.globalSecondaryTextColor || '#6B7280'};
+  --bundle-global-footer-bg: ${s.globalFooterBgColor || '#FFFFFF'};
+  --bundle-global-footer-text: ${s.globalFooterTextColor || '#000000'};
+
   /* PRODUCT CARD */
   --bundle-product-card-bg: ${s.productCardBgColor || '#FFFFFF'};
   --bundle-product-card-font-color: ${s.productCardFontColor || '#000000'};
@@ -192,38 +200,27 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-footer-progress-filled: ${s.footerProgressBarFilledColor || '#000000'};
   --bundle-footer-progress-empty: ${s.footerProgressBarEmptyColor || '#E3E3E3'};
 
-  /* STEP BAR */
-  --bundle-step-name-color: ${s.stepNameFontColor || '#000000'};
-  --bundle-step-name-font-size: ${s.stepNameFontSize || 16}px;
-  --bundle-step-completed-check-color: ${s.completedStepCheckMarkColor || '#FFFFFF'};
-  --bundle-step-completed-bg: ${s.completedStepBgColor || '#000000'};
-  --bundle-step-completed-border-color: ${s.completedStepCircleBorderColor || '#000000'};
-  --bundle-step-completed-border-radius: ${s.completedStepCircleBorderRadius || 50}%;
-  --bundle-step-incomplete-bg: ${s.incompleteStepBgColor || '#FFFFFF'};
-  --bundle-step-incomplete-stroke: ${s.incompleteStepCircleStrokeColor || '#000000'};
-  --bundle-step-incomplete-radius: ${s.incompleteStepCircleStrokeRadius || 50}%;
-  --bundle-step-progress-filled: ${s.stepBarProgressFilledColor || '#000000'};
-  --bundle-step-progress-empty: ${s.stepBarProgressEmptyColor || '#C6C6C6'};
-  --bundle-tabs-active-bg: ${s.tabsActiveBgColor || '#000000'};
-  --bundle-tabs-active-text: ${s.tabsActiveTextColor || '#FFFFFF'};
-  --bundle-tabs-inactive-bg: ${s.tabsInactiveBgColor || '#FFFFFF'};
-  --bundle-tabs-inactive-text: ${s.tabsInactiveTextColor || '#000000'};
-  --bundle-tabs-border: ${s.tabsBorderColor || '#000000'};
-  --bundle-tabs-border-radius: ${s.tabsBorderRadius || 8}px;
+  /* BUNDLE HEADER */
+  --bundle-header-tab-active-bg: ${s.headerTabActiveBgColor || '#000000'};
+  --bundle-header-tab-active-text: ${s.headerTabActiveTextColor || '#FFFFFF'};
+  --bundle-header-tab-inactive-bg: ${s.headerTabInactiveBgColor || '#FFFFFF'};
+  --bundle-header-tab-inactive-text: ${s.headerTabInactiveTextColor || '#000000'};
+  --bundle-header-tab-radius: ${s.headerTabRadius || 67}px;
 
   /* GENERAL */
-  --bundle-bg-color: ${s.bundleBgColor || '#FFFFFF'};
-  --bundle-scrollbar-color: ${s.footerScrollBarColor || '#F6F6F6'};
-  --bundle-title-color: ${s.productPageTitleFontColor || '#000000'};
-  --bundle-title-font-size: ${s.productPageTitleFontSize || 16}px;
-  --bundle-upsell-button-bg: ${s.bundleUpsellButtonBgColor || '#F6F6F6'};
-  --bundle-upsell-border: ${s.bundleUpsellBorderColor || '#F6F6F6'};
-  --bundle-upsell-text: ${s.bundleUpsellTextColor || '#F6F6F6'};
+  /* Empty State */
+  --bundle-empty-state-card-bg: ${s.emptyStateCardBgColor || '#FFFFFF'};
+  --bundle-empty-state-card-border: ${s.emptyStateCardBorderColor || '#F6F6F6'};
+  --bundle-empty-state-text: ${s.emptyStateTextColor || '#9CA3AF'};
+  --bundle-empty-state-border-style: ${s.emptyStateBorderStyle || 'dashed'};
+  /* Drawer */
+  --bundle-drawer-bg: ${s.drawerBgColor || '#FFFFFF'};
+  /* Add to Cart Button */
+  --bundle-add-to-cart-button-bg: ${s.addToCartButtonBgColor || '#000000'};
+  --bundle-add-to-cart-button-text: ${s.addToCartButtonTextColor || '#FFFFFF'};
+  /* Toasts */
   --bundle-toast-bg: ${s.toastBgColor || '#000000'};
   --bundle-toast-text: ${s.toastTextColor || '#FFFFFF'};
-  --bundle-filter-icon: ${s.filterIconColor || '#000000'};
-  --bundle-filter-bg: ${s.filterBgColor || '#FFFFFF'};
-  --bundle-filter-text: ${s.filterTextColor || '#000000'};
 
   /* IMAGES */
   --bundle-loading-gif: ${s.bundleLoadingGifUrl ? `url('${s.bundleLoadingGifUrl}')` : 'none'};
