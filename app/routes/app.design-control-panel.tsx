@@ -21,7 +21,7 @@ import {
 } from "@shopify/polaris";
 import { Modal, SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@shopify/polaris-icons";
 import { prisma } from "../db.server";
 
@@ -55,13 +55,20 @@ function ColorPicker({
   onChange: (value: string) => void;
 }) {
   const [localValue, setLocalValue] = useState(value);
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (newValue: string) => {
+  const handleTextChange = (newValue: string) => {
     setLocalValue(newValue);
     // Validate hex color format
     if (/^#[0-9A-F]{6}$/i.test(newValue)) {
       onChange(newValue);
     }
+  };
+
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    onChange(newValue);
   };
 
   const handleBlur = () => {
@@ -71,9 +78,14 @@ function ColorPicker({
     }
   };
 
+  const handleColorCircleClick = () => {
+    colorInputRef.current?.click();
+  };
+
   return (
     <InlineStack gap="300" align="start" blockAlign="center">
       <div
+        onClick={handleColorCircleClick}
         style={{
           width: "41px",
           height: "41px",
@@ -81,13 +93,29 @@ function ColorPicker({
           backgroundColor: value,
           border: "1px solid #E3E3E3",
           flexShrink: 0,
+          cursor: "pointer",
+          position: "relative",
         }}
-      />
+      >
+        <input
+          ref={colorInputRef}
+          type="color"
+          value={value}
+          onChange={handleColorChange}
+          style={{
+            position: "absolute",
+            opacity: 0,
+            width: "100%",
+            height: "100%",
+            cursor: "pointer",
+          }}
+        />
+      </div>
       <div style={{ flex: 1 }}>
         <TextField
           label={label}
           value={localValue}
-          onChange={handleChange}
+          onChange={handleTextChange}
           onBlur={handleBlur}
           autoComplete="off"
           placeholder="#000000"
@@ -154,12 +182,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerBgColor: "#FFFFFF",
       footerTotalBgColor: "#F6F6F6",
       footerBorderRadius: 8,
-      // Bundle Header
+      // Bundle Header - Tabs
       headerTabActiveBgColor: "#000000",
       headerTabActiveTextColor: "#FFFFFF",
       headerTabInactiveBgColor: "#FFFFFF",
       headerTabInactiveTextColor: "#000000",
       headerTabRadius: 67,
+      // Bundle Header - Header Text
+      conditionsTextColor: "#FFFFFF",
+      conditionsTextFontSize: 16,
+      discountTextColor: "#000000",
+      discountTextFontSize: 14,
       footerPadding: 16,
       // Footer Price
       footerFinalPriceColor: "#000000",
@@ -275,12 +308,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerBgColor: "#FFFFFF",
       footerTotalBgColor: "#F9FAFB",
       footerBorderRadius: 12,
-      // Bundle Header
+      // Bundle Header - Tabs
       headerTabActiveBgColor: "#000000",
       headerTabActiveTextColor: "#FFFFFF",
       headerTabInactiveBgColor: "#FFFFFF",
       headerTabInactiveTextColor: "#000000",
       headerTabRadius: 67,
+      // Bundle Header - Header Text
+      conditionsTextColor: "#FFFFFF",
+      conditionsTextFontSize: 16,
+      discountTextColor: "#111827",
+      discountTextFontSize: 14,
       footerPadding: 20,
       // Footer Price
       footerFinalPriceColor: "#111827",
@@ -499,6 +537,11 @@ export async function action({ request }: ActionFunctionArgs) {
       filterIconColor: settings.filterIconColor,
       filterBgColor: settings.filterBgColor,
       filterTextColor: settings.filterTextColor,
+      // Header Text
+      conditionsTextColor: settings.conditionsTextColor,
+      conditionsTextFontSize: settings.conditionsTextFontSize,
+      discountTextColor: settings.discountTextColor,
+      discountTextFontSize: settings.discountTextFontSize,
     };
 
     await prisma.designSettings.upsert({
@@ -676,6 +719,11 @@ export default function DesignControlPanel() {
   const [headerTabInactiveBgColor, setHeaderTabInactiveBgColor] = useState(currentSettings.headerTabInactiveBgColor || "#FFFFFF");
   const [headerTabInactiveTextColor, setHeaderTabInactiveTextColor] = useState(currentSettings.headerTabInactiveTextColor || "#000000");
   const [headerTabRadius, setHeaderTabRadius] = useState(currentSettings.headerTabRadius || 67);
+  // Header Text
+  const [conditionsTextColor, setConditionsTextColor] = useState(currentSettings.conditionsTextColor || "#FFFFFF");
+  const [conditionsTextFontSize, setConditionsTextFontSize] = useState(currentSettings.conditionsTextFontSize || 16);
+  const [discountTextColor, setDiscountTextColor] = useState(currentSettings.discountTextColor || "#000000");
+  const [discountTextFontSize, setDiscountTextFontSize] = useState(currentSettings.discountTextFontSize || 14);
 
   // General Section
   // Empty State
@@ -887,7 +935,17 @@ export default function DesignControlPanel() {
       toastTextColor !== current.toastTextColor ||
       filterIconColor !== current.filterIconColor ||
       filterBgColor !== current.filterBgColor ||
-      filterTextColor !== current.filterTextColor
+      filterTextColor !== current.filterTextColor ||
+      globalPrimaryButtonColor !== current.globalPrimaryButtonColor ||
+      globalButtonTextColor !== current.globalButtonTextColor ||
+      globalPrimaryTextColor !== current.globalPrimaryTextColor ||
+      globalSecondaryTextColor !== current.globalSecondaryTextColor ||
+      globalFooterBgColor !== current.globalFooterBgColor ||
+      globalFooterTextColor !== current.globalFooterTextColor ||
+      conditionsTextColor !== current.conditionsTextColor ||
+      conditionsTextFontSize !== current.conditionsTextFontSize ||
+      discountTextColor !== current.discountTextColor ||
+      discountTextFontSize !== current.discountTextFontSize
     );
   }, [
     settings,
@@ -958,6 +1016,16 @@ export default function DesignControlPanel() {
     filterIconColor,
     filterBgColor,
     filterTextColor,
+    globalPrimaryButtonColor,
+    globalButtonTextColor,
+    globalPrimaryTextColor,
+    globalSecondaryTextColor,
+    globalFooterBgColor,
+    globalFooterTextColor,
+    conditionsTextColor,
+    conditionsTextFontSize,
+    discountTextColor,
+    discountTextFontSize,
   ]);
 
   // Function to discard changes and revert to saved values
@@ -1041,6 +1109,16 @@ export default function DesignControlPanel() {
     setFilterIconColor(savedSettings.filterIconColor);
     setFilterBgColor(savedSettings.filterBgColor);
     setFilterTextColor(savedSettings.filterTextColor);
+    setGlobalPrimaryButtonColor(savedSettings.globalPrimaryButtonColor);
+    setGlobalButtonTextColor(savedSettings.globalButtonTextColor);
+    setGlobalPrimaryTextColor(savedSettings.globalPrimaryTextColor);
+    setGlobalSecondaryTextColor(savedSettings.globalSecondaryTextColor);
+    setGlobalFooterBgColor(savedSettings.globalFooterBgColor);
+    setGlobalFooterTextColor(savedSettings.globalFooterTextColor);
+    setConditionsTextColor(savedSettings.conditionsTextColor);
+    setConditionsTextFontSize(savedSettings.conditionsTextFontSize);
+    setDiscountTextColor(savedSettings.discountTextColor);
+    setDiscountTextFontSize(savedSettings.discountTextFontSize);
   }, [settings, selectedBundleType]);
 
   // Show/hide save bar based on unsaved changes
@@ -1309,47 +1387,206 @@ export default function DesignControlPanel() {
 
   // Render preview content based on active subsection
   const renderPreviewContent = () => {
-    // Bundle Footer subsections
-    if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
+    // Bundle Footer - Footer subsection (Background & Total Pill)
+    if (activeSubSection === "footer") {
       return (
         <div style={{ textAlign: "center", position: "relative" }}>
           <Text as="h3" variant="headingLg" fontWeight="semibold">
             Footer
           </Text>
-          <div style={{ marginTop: "48px", display: "inline-block", position: "relative" }}>
-            {/* Bundle Footer Container - Full Width Bar */}
+          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
+            {/* Bundle Footer Container */}
             <div
               style={{
                 backgroundColor: footerBgColor,
                 borderRadius: `${footerBorderRadius}px`,
                 padding: `${footerPadding}px`,
-                minWidth: "600px",
+                minWidth: "422px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 position: "relative",
               }}
             >
-              {/* Centered Grouped Content */}
+              {/* Centered Content */}
               <div
                 style={{
                   display: "inline-flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: "8px",
+                  gap: "15px",
                 }}
               >
-                {/* Total Pill - Sits Above */}
+                {/* Total Pill */}
+                <div
+                  style={{
+                    backgroundColor: footerTotalBgColor,
+                    padding: "6px 16px",
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    position: "relative",
+                  }}
+                >
+                  <span style={{
+                    color: footerStrikePriceColor,
+                    fontSize: `${footerStrikeFontSize}px`,
+                    fontWeight: footerStrikeFontWeight,
+                    textDecoration: "line-through",
+                  }}>
+                    $24.99
+                  </span>
+                  <span style={{
+                    color: footerFinalPriceColor,
+                    fontSize: `${footerFinalPriceFontSize}px`,
+                    fontWeight: footerFinalPriceFontWeight,
+                  }}>
+                    $19.99
+                  </span>
+                  <span style={{ color: "#666" }}>|</span>
+                  <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                    2
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 2L11 8M15 8L17 2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M1 7H21L19 21H3L1 7Z" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                      <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    </svg>
+                  </span>
+
+                  {/* Arrow pointing to Total Pill */}
+                  <div style={{
+                    position: "absolute",
+                    top: "-48px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}>
+                    <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
+                      Total Pill
+                    </Text>
+                    <svg width="2" height="32" style={{ marginTop: "4px" }}>
+                      <line x1="1" y1="0" x2="1" y2="28" stroke="#8D8D8D" strokeWidth="2"/>
+                      <polygon points="1,28 4,25 1,32 -2,25" fill="#8D8D8D"/>
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Buttons Row */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "15px",
+                    alignItems: "center",
+                  }}
+                >
+                  {/* Back Button */}
+                  <button
+                    style={{
+                      backgroundColor: footerBackButtonBgColor,
+                      color: footerBackButtonTextColor,
+                      border: `1px solid ${footerBackButtonBorderColor}`,
+                      borderRadius: `${footerBackButtonBorderRadius}px`,
+                      padding: "12px 56px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    BACK
+                  </button>
+
+                  {/* Next Button */}
+                  <button
+                    style={{
+                      backgroundColor: footerNextButtonBgColor,
+                      color: footerNextButtonTextColor,
+                      border: `1px solid ${footerNextButtonBorderColor}`,
+                      borderRadius: `${footerNextButtonBorderRadius}px`,
+                      padding: "12px 56px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    NEXT
+                  </button>
+                </div>
+              </div>
+
+              {/* Arrow pointing to Footer Background (left side) */}
+              <div style={{
+                position: "absolute",
+                top: "-48px",
+                left: "0",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+              }}>
+                <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
+                  Footer
+                </Text>
+                <svg width="2" height="40" style={{ marginTop: "4px", marginLeft: "20px" }}>
+                  <line x1="1" y1="0" x2="1" y2="36" stroke="#8D8D8D" strokeWidth="2"/>
+                  <polygon points="1,36 4,33 1,40 -2,33" fill="#8D8D8D"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Bundle Footer - Price subsection
+    if (activeSubSection === "footerPrice") {
+      return (
+        <div style={{ textAlign: "center", position: "relative" }}>
+          <Text as="h3" variant="headingLg" fontWeight="semibold">
+            Price
+          </Text>
+          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
+            {/* Bundle Footer Container */}
+            <div
+              style={{
+                backgroundColor: footerBgColor,
+                borderRadius: `${footerBorderRadius}px`,
+                padding: `${footerPadding}px`,
+                minWidth: "422px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "relative",
+              }}
+            >
+              {/* Centered Content */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "15px",
+                }}
+              >
+                {/* Total Pill with Price Label */}
                 {footerPriceVisibility && (
                   <div
                     style={{
                       backgroundColor: footerTotalBgColor,
-                      padding: "10px 20px",
-                      borderRadius: "8px",
+                      padding: "6px 16px",
+                      borderRadius: "6px",
                       display: "flex",
                       alignItems: "center",
                       gap: "8px",
-                      fontSize: "16px",
+                      fontSize: "14px",
                       fontWeight: 500,
                       position: "relative",
                     }}
@@ -1362,38 +1599,49 @@ export default function DesignControlPanel() {
                     }}>
                       $24.99
                     </span>
-                    <span style={{ color: footerFinalPriceColor }}>
+                    <span style={{
+                      color: footerFinalPriceColor,
+                      fontSize: `${footerFinalPriceFontSize}px`,
+                      fontWeight: footerFinalPriceFontWeight,
+                    }}>
                       $19.99
                     </span>
                     <span style={{ color: "#666" }}>|</span>
-                    <span style={{ color: "#666" }}>2 🛒</span>
+                    <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      2
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 2L11 8M15 8L17 2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M1 7H21L19 21H3L1 7Z" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                        <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
+                      </svg>
+                    </span>
 
-                    {/* Arrow pointing to Total Pill */}
+                    {/* Arrow pointing to Price */}
                     <div style={{
                       position: "absolute",
-                      top: "-32px",
-                      left: "50%",
-                      transform: "translateX(-50%)",
+                      top: "-48px",
+                      right: "-90px",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                     }}>
                       <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                        Total Pill
+                        Price
                       </Text>
-                      <svg width="2" height="24" style={{ marginTop: "4px" }}>
-                        <line x1="1" y1="0" x2="1" y2="20" stroke="#D9D9D9" strokeWidth="2"/>
-                        <polygon points="1,20 4,17 1,24 -2,17" fill="#D9D9D9"/>
+                      <svg width="2" height="40" style={{ marginTop: "4px", marginLeft: "12px" }}>
+                        <line x1="1" y1="0" x2="1" y2="36" stroke="#8D8D8D" strokeWidth="2"/>
+                        <polygon points="1,36 4,33 1,40 -2,33" fill="#8D8D8D"/>
                       </svg>
                     </div>
                   </div>
                 )}
 
-                {/* Buttons Row - Below Pill */}
+                {/* Buttons Row */}
                 <div
                   style={{
                     display: "flex",
-                    gap: "12px",
+                    gap: "15px",
                     alignItems: "center",
                   }}
                 >
@@ -1402,35 +1650,156 @@ export default function DesignControlPanel() {
                     style={{
                       backgroundColor: footerBackButtonBgColor,
                       color: footerBackButtonTextColor,
-                      border: "none",
+                      border: `1px solid ${footerBackButtonBorderColor}`,
                       borderRadius: `${footerBackButtonBorderRadius}px`,
-                      padding: "12px 28px",
-                      fontSize: "16px",
-                      fontWeight: 500,
+                      padding: "12px 56px",
+                      fontSize: "14px",
+                      fontWeight: 600,
                       cursor: "pointer",
                       textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    BACK
+                  </button>
+
+                  {/* Next Button */}
+                  <button
+                    style={{
+                      backgroundColor: footerNextButtonBgColor,
+                      color: footerNextButtonTextColor,
+                      border: `1px solid ${footerNextButtonBorderColor}`,
+                      borderRadius: `${footerNextButtonBorderRadius}px`,
+                      padding: "12px 56px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    NEXT
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Bundle Footer - Button subsection
+    if (activeSubSection === "footerButton") {
+      return (
+        <div style={{ textAlign: "center", position: "relative" }}>
+          <Text as="h3" variant="headingLg" fontWeight="semibold">
+            Button
+          </Text>
+          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
+            {/* Bundle Footer Container */}
+            <div
+              style={{
+                backgroundColor: footerBgColor,
+                borderRadius: `${footerBorderRadius}px`,
+                padding: `${footerPadding}px`,
+                minWidth: "561px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "relative",
+              }}
+            >
+              {/* Centered Content */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "15px",
+                }}
+              >
+                {/* Total Pill */}
+                <div
+                  style={{
+                    backgroundColor: footerTotalBgColor,
+                    padding: "6px 16px",
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                  }}
+                >
+                  <span style={{
+                    color: footerStrikePriceColor,
+                    fontSize: `${footerStrikeFontSize}px`,
+                    fontWeight: footerStrikeFontWeight,
+                    textDecoration: "line-through",
+                  }}>
+                    $24.99
+                  </span>
+                  <span style={{
+                    color: footerFinalPriceColor,
+                    fontSize: `${footerFinalPriceFontSize}px`,
+                    fontWeight: footerFinalPriceFontWeight,
+                  }}>
+                    $19.99
+                  </span>
+                  <span style={{ color: "#666" }}>|</span>
+                  <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                    2
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 2L11 8M15 8L17 2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M1 7H21L19 21H3L1 7Z" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                      <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    </svg>
+                  </span>
+                </div>
+
+                {/* Buttons Row with labels */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "15px",
+                    alignItems: "center",
+                  }}
+                >
+                  {/* Back Button */}
+                  <button
+                    style={{
+                      backgroundColor: footerBackButtonBgColor,
+                      color: footerBackButtonTextColor,
+                      border: `1px solid ${footerBackButtonBorderColor}`,
+                      borderRadius: `${footerBackButtonBorderRadius}px`,
+                      padding: "12px 56px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
                       position: "relative",
                     }}
                   >
                     BACK
 
-                    {/* Arrow pointing to Back Button */}
+                    {/* Arrow pointing to Back Button (left side) */}
                     <div style={{
                       position: "absolute",
-                      bottom: "-38px",
-                      left: "50%",
-                      transform: "translateX(-50%)",
+                      top: "-48px",
+                      left: "-90px",
                       display: "flex",
                       flexDirection: "column",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                     }}>
-                      <svg width="2" height="24" style={{ marginBottom: "4px" }}>
-                        <line x1="1" y1="4" x2="1" y2="24" stroke="#D9D9D9" strokeWidth="2"/>
-                        <polygon points="1,4 4,7 1,0 -2,7" fill="#D9D9D9"/>
-                      </svg>
                       <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
                         Back Button
                       </Text>
+                      <svg width="2" height="40" style={{ marginTop: "4px", marginLeft: "50px" }}>
+                        <line x1="1" y1="0" x2="1" y2="36" stroke="#8D8D8D" strokeWidth="2"/>
+                        <polygon points="1,36 4,33 1,40 -2,33" fill="#8D8D8D"/>
+                      </svg>
                     </div>
                   </button>
 
@@ -1439,56 +1808,152 @@ export default function DesignControlPanel() {
                     style={{
                       backgroundColor: footerNextButtonBgColor,
                       color: footerNextButtonTextColor,
-                      border: "none",
+                      border: `1px solid ${footerNextButtonBorderColor}`,
                       borderRadius: `${footerNextButtonBorderRadius}px`,
-                      padding: "12px 28px",
-                      fontSize: "16px",
-                      fontWeight: 500,
+                      padding: "12px 56px",
+                      fontSize: "14px",
+                      fontWeight: 600,
                       cursor: "pointer",
                       textTransform: "uppercase",
+                      letterSpacing: "0.5px",
                       position: "relative",
                     }}
                   >
                     NEXT
 
-                    {/* Arrow pointing to Next Button */}
+                    {/* Arrow pointing to Next Button (right side) */}
                     <div style={{
                       position: "absolute",
-                      bottom: "-38px",
-                      left: "50%",
-                      transform: "translateX(-50%)",
+                      top: "-48px",
+                      right: "-90px",
                       display: "flex",
                       flexDirection: "column",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                     }}>
-                      <svg width="2" height="24" style={{ marginBottom: "4px" }}>
-                        <line x1="1" y1="4" x2="1" y2="24" stroke="#D9D9D9" strokeWidth="2"/>
-                        <polygon points="1,4 4,7 1,0 -2,7" fill="#D9D9D9"/>
-                      </svg>
                       <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
                         Next Button
                       </Text>
+                      <svg width="2" height="40" style={{ marginTop: "4px", marginLeft: "50px" }}>
+                        <line x1="1" y1="0" x2="1" y2="36" stroke="#8D8D8D" strokeWidth="2"/>
+                        <polygon points="1,36 4,33 1,40 -2,33" fill="#8D8D8D"/>
+                      </svg>
                     </div>
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-              {/* Arrow pointing to Footer Background */}
-              <div style={{
-                position: "absolute",
-                top: "-38px",
-                left: "24px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}>
-                <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                  Footer
-                </Text>
-                <svg width="2" height="30" style={{ marginTop: "4px" }}>
-                  <line x1="1" y1="0" x2="1" y2="26" stroke="#D9D9D9" strokeWidth="2"/>
-                  <polygon points="1,26 4,23 1,30 -2,23" fill="#D9D9D9"/>
-                </svg>
+    // Bundle Footer - Discount & Progress Bar subsection
+    if (activeSubSection === "footerDiscountProgress") {
+      return (
+        <div style={{ textAlign: "center", position: "relative" }}>
+          <Text as="h3" variant="headingLg" fontWeight="semibold">
+            Discount Text & Progress Bar
+          </Text>
+          <div style={{ marginTop: "48px", display: "inline-block", position: "relative" }}>
+            <Text as="p" variant="bodySm" tone="subdued">
+              Preview updates as you customize
+            </Text>
+          </div>
+        </div>
+      );
+    }
+
+    // Bundle Header - Tabs subsection
+    if (activeSubSection === "headerTabs") {
+      return (
+        <div style={{ textAlign: "center", position: "relative" }}>
+          <Text as="h3" variant="headingLg" fontWeight="semibold">
+            Tabs
+          </Text>
+          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
+            {/* Empty preview box */}
+            <div style={{ width: "600px", height: "300px", border: "2px dashed #E3E3E3", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Text as="p" variant="bodySm" tone="subdued">
+                Preview updates as you customize
+              </Text>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Bundle Header - Header Text subsection
+    if (activeSubSection === "headerText") {
+      return (
+        <div style={{ textAlign: "center", position: "relative" }}>
+          <Text as="h3" variant="headingLg" fontWeight="semibold">
+            Header Text
+          </Text>
+          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
+            {/* Header Text Preview */}
+            <div style={{ maxWidth: "397px", width: "100%", position: "relative" }}>
+              {/* Conditions Text */}
+              <div style={{ marginBottom: "40px", position: "relative" }}>
+                <h2 style={{
+                  color: conditionsTextColor,
+                  fontSize: `${conditionsTextFontSize * 2}px`,
+                  fontWeight: 600,
+                  margin: 0,
+                  textAlign: "center",
+                  position: "relative",
+                }}>
+                  Choose 3 products
+                  {/* Arrow pointing to Conditions Text */}
+                  <div style={{
+                    position: "absolute",
+                    top: "-48px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}>
+                    <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
+                      Conditions Text
+                    </Text>
+                    <svg width="2" height="32" style={{ marginTop: "4px" }}>
+                      <line x1="1" y1="0" x2="1" y2="28" stroke="#8D8D8D" strokeWidth="2"/>
+                      <polygon points="1,28 4,25 1,32 -2,25" fill="#8D8D8D"/>
+                    </svg>
+                  </div>
+                </h2>
+              </div>
+
+              {/* Discount Text */}
+              <div style={{ position: "relative" }}>
+                <p style={{
+                  color: discountTextColor,
+                  fontSize: `${discountTextFontSize * 1.2}px`,
+                  fontWeight: 400,
+                  margin: 0,
+                  textAlign: "center",
+                  position: "relative",
+                }}>
+                  Add 2 product(s) to get the bundle at $45
+                  {/* Arrow pointing to Discount Text */}
+                  <div style={{
+                    position: "absolute",
+                    bottom: "-48px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}>
+                    <svg width="2" height="32" style={{ marginBottom: "4px" }}>
+                      <line x1="1" y1="4" x2="1" y2="32" stroke="#8D8D8D" strokeWidth="2"/>
+                      <polygon points="1,4 4,7 1,0 -2,7" fill="#8D8D8D"/>
+                    </svg>
+                    <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
+                      Discount Text
+                    </Text>
+                  </div>
+                </p>
               </div>
             </div>
           </div>
@@ -2857,52 +3322,75 @@ export default function DesignControlPanel() {
             </Text>
             <Divider />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: stepNameFontColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("stepNameFontColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="stepNameFontColorInput"
-                    type="color"
-                    value={stepNameFontColor}
-                    onChange={(e) => setStepNameFontColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Step Name Font Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {stepNameFontColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Tabs Active Background Color"
+              value={headerTabActiveBgColor}
+              onChange={setHeaderTabActiveBgColor}
+            />
+
+            <ColorPicker
+              label="Tabs Active Text Color"
+              value={headerTabActiveTextColor}
+              onChange={setHeaderTabActiveTextColor}
+            />
+
+            <ColorPicker
+              label="Tabs Inactive Background Color"
+              value={headerTabInactiveBgColor}
+              onChange={setHeaderTabInactiveBgColor}
+            />
+
+            <ColorPicker
+              label="Tabs Inactive Text Color"
+              value={headerTabInactiveTextColor}
+              onChange={setHeaderTabInactiveTextColor}
+            />
 
             <RangeSlider
-              label="Font Size"
-              value={stepNameFontSize}
-              onChange={(value) => setStepNameFontSize(value as number)}
+              label="Border Radius"
+              value={headerTabRadius}
+              onChange={(value) => setHeaderTabRadius(value as number)}
+              min={0}
+              max={100}
+              output
+            />
+          </BlockStack>
+        );
+
+      case "headerText":
+        return (
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">
+              Header Text
+            </Text>
+            <Divider />
+
+            <ColorPicker
+              label="Conditions Text Color"
+              value={conditionsTextColor}
+              onChange={setConditionsTextColor}
+            />
+
+            <RangeSlider
+              label="Conditions Text Font Size"
+              value={conditionsTextFontSize}
+              onChange={(value) => setConditionsTextFontSize(value as number)}
               min={12}
+              max={32}
+              output
+            />
+
+            <ColorPicker
+              label="Discount Text Color"
+              value={discountTextColor}
+              onChange={setDiscountTextColor}
+            />
+
+            <RangeSlider
+              label="Discount Text Font Size"
+              value={discountTextFontSize}
+              onChange={(value) => setDiscountTextFontSize(value as number)}
+              min={10}
               max={24}
               output
             />

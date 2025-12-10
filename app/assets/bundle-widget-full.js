@@ -1104,7 +1104,12 @@ class BundleWidget {
                 <span class="price-cart-separator">|</span>
                 <span class="cart-badge-wrapper">
                   <span class="cart-badge-count">0</span>
-                  <span class="cart-icon">🛒</span>
+                  <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 2L11 8M15 8L17 2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M1 7H21L19 21H3L1 7Z" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
+                  </svg>
                 </span>
               </div>
 

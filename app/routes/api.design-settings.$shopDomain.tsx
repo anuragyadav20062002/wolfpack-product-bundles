@@ -263,6 +263,11 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-filter-icon-color: ${s.filterIconColor || '#000000'};
   --bundle-filter-bg-color: ${s.filterBgColor || '#FFFFFF'};
   --bundle-filter-text-color: ${s.filterTextColor || '#000000'};
+  /* Bundle Header - Header Text */
+  --bundle-conditions-text-color: ${s.conditionsTextColor || '#FFFFFF'};
+  --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
+  --bundle-discount-text-color: ${s.discountTextColor || '#000000'};
+  --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
 }
 
 /* PRODUCT CARD STYLING */
@@ -337,11 +342,71 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   padding: var(--bundle-footer-padding) !important;
 }
 
+.modal-footer {
+  background-color: var(--bundle-footer-bg) !important;
+  border-radius: var(--bundle-footer-border-radius) !important;
+  padding: var(--bundle-footer-padding) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.modal-footer-grouped-content {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 15px !important;
+}
+
+.modal-footer-total-pill {
+  background-color: var(--bundle-footer-total-bg) !important;
+  display: var(--bundle-footer-price-display) !important;
+  padding: 6px 16px !important;
+  border-radius: 6px !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.modal-footer-buttons-row {
+  display: flex !important;
+  gap: 15px !important;
+  align-items: center !important;
+}
+
+.total-price-strike {
+  color: var(--bundle-footer-strike-price-color) !important;
+  font-size: var(--bundle-footer-strike-font-size) !important;
+  font-weight: var(--bundle-footer-strike-font-weight) !important;
+  text-decoration: line-through !important;
+}
+
+.total-price-final {
+  color: var(--bundle-footer-final-price-color) !important;
+  font-size: var(--bundle-footer-final-price-font-size) !important;
+  font-weight: var(--bundle-footer-final-price-font-weight) !important;
+}
+
+.cart-badge-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.cart-icon {
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
 .modal-footer .modal-nav-button.prev-button {
   background-color: var(--bundle-footer-back-button-bg) !important;
   color: var(--bundle-footer-back-button-text) !important;
   border: 1px solid var(--bundle-footer-back-button-border) !important;
   border-radius: var(--bundle-footer-back-button-radius) !important;
+  padding: 12px 56px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 
 .modal-footer .modal-nav-button.next-button {
@@ -349,6 +414,11 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   color: var(--bundle-footer-next-button-text) !important;
   border: 1px solid var(--bundle-footer-next-button-border) !important;
   border-radius: var(--bundle-footer-next-button-radius) !important;
+  padding: 12px 56px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 
 .modal-footer-progress-fill,
