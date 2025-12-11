@@ -1,4 +1,5 @@
 import { Text } from "@shopify/polaris";
+import { PlusIcon } from "../icons";
 
 interface GeneralPreviewProps {
   activeSubSection: string;
@@ -8,6 +9,7 @@ interface GeneralPreviewProps {
   emptyStateTextColor: string;
   addToCartButtonBgColor: string;
   addToCartButtonTextColor: string;
+  addToCartButtonBorderRadius: number;
   buttonAddToCartText: string;
   toastBgColor: string;
   toastTextColor: string;
@@ -22,6 +24,7 @@ export function GeneralPreview(props: GeneralPreviewProps) {
     emptyStateTextColor,
     addToCartButtonBgColor,
     addToCartButtonTextColor,
+    addToCartButtonBorderRadius,
     buttonAddToCartText,
     toastBgColor,
     toastTextColor,
@@ -57,12 +60,8 @@ export function GeneralPreview(props: GeneralPreviewProps) {
                     position: "relative",
                   }}
                 >
-                  {/* Image placeholder icon */}
-                  <svg width="69" height="69" viewBox="0 0 69 69" fill="none">
-                    <rect width="69" height="69" rx="8" fill={emptyStateTextColor} opacity="0.1"/>
-                    <path d="M24.5 34.5L28.5 30.5L37.5 39.5L44.5 32.5" stroke={emptyStateTextColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4"/>
-                    <circle cx="40" cy="28" r="2.5" fill={emptyStateTextColor} opacity="0.4"/>
-                  </svg>
+                  {/* Plus icon */}
+                  <PlusIcon width={69} height={69} color={emptyStateTextColor} />
                 </div>
 
                 {/* Label below card */}
@@ -92,7 +91,7 @@ export function GeneralPreview(props: GeneralPreviewProps) {
               color: addToCartButtonTextColor,
               width: "578px",
               height: "87px",
-              borderRadius: "8px",
+              borderRadius: `${addToCartButtonBorderRadius}px`,
               fontSize: "34px",
               fontWeight: "bold",
               border: "none",
@@ -110,32 +109,32 @@ export function GeneralPreview(props: GeneralPreviewProps) {
     );
   }
 
-  // Toasts - Only show the toast notification
+  // Toasts
   if (activeSubSection === "toasts") {
     return (
-      <div style={{ maxWidth: "600px", width: "100%", textAlign: "center", marginTop: "80px" }}>
-        <div
-          style={{
-            backgroundColor: toastBgColor,
-            color: toastTextColor,
-            width: "495px",
-            height: "81px",
-            borderRadius: "11px",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-            position: "relative",
-          }}
-        >
-          <span style={{ fontSize: "24px", fontWeight: 500 }}>
-            Add at least 1 product on this step
-          </span>
-        </div>
-        <div style={{ marginTop: "40px" }}>
-          <Text as="p" variant="bodySm" tone="subdued">
-            Preview updates as you customize
-          </Text>
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Toasts
+        </Text>
+        <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
+          <div
+            style={{
+              backgroundColor: toastBgColor,
+              color: toastTextColor,
+              width: "495px",
+              height: "81px",
+              borderRadius: "11px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              position: "relative",
+            }}
+          >
+            <span style={{ fontSize: "24px", fontWeight: 400 }}>
+              Add at least 1 product on this step
+            </span>
+          </div>
         </div>
       </div>
     );
