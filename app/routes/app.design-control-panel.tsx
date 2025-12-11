@@ -1963,7 +1963,7 @@ export default function DesignControlPanel() {
                   Primary Button Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Description about where all this color applies so that is is easy for the user to understand
+                  Main color for all primary action buttons (Add to Cart, Next, etc.)
                 </Text>
               </BlockStack>
               <ColorPicker
@@ -1981,7 +1981,7 @@ export default function DesignControlPanel() {
                   Button Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Description about where all this color applies so that is is easy for the user to understand
+                  Text color for all button labels and call-to-actions across the bundle
                 </Text>
               </BlockStack>
               <ColorPicker
@@ -1998,7 +1998,7 @@ export default function DesignControlPanel() {
                   Primary Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Description about where all this color applies so that is is easy for the user to understand
+                  Main text color for product titles, headings, and important content
                 </Text>
               </BlockStack>
               <ColorPicker
@@ -2015,7 +2015,7 @@ export default function DesignControlPanel() {
                   Secondary Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Description about where all this color applies so that is is easy for the user to understand
+                  Supporting text for product descriptions, helper text, and subdued content
                 </Text>
               </BlockStack>
               <ColorPicker
@@ -2032,7 +2032,7 @@ export default function DesignControlPanel() {
                   Footer Background
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Description about where all this color applies so that is is easy for the user to understand
+                  Background color for all footer sections in the bundle widget
                 </Text>
               </BlockStack>
               <ColorPicker
@@ -2049,7 +2049,7 @@ export default function DesignControlPanel() {
                   Footer Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Description about where all this color applies so that is is easy for the user to understand
+                  Text color for all content and labels within footer sections
                 </Text>
               </BlockStack>
               <ColorPicker
