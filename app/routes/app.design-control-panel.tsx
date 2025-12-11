@@ -1292,6 +1292,9 @@ export default function DesignControlPanel() {
           footerNextButtonTextColor={footerNextButtonTextColor}
           footerNextButtonBorderColor={footerNextButtonBorderColor}
           footerNextButtonBorderRadius={footerNextButtonBorderRadius}
+          footerDiscountTextVisibility={footerDiscountTextVisibility}
+          footerProgressBarFilledColor={footerProgressBarFilledColor}
+          footerProgressBarEmptyColor={footerProgressBarEmptyColor}
         />
       );
     }
@@ -1850,6 +1853,9 @@ export default function DesignControlPanel() {
         variantSelectorBgColor={variantSelectorBgColor}
         variantSelectorTextColor={variantSelectorTextColor}
         variantSelectorBorderRadius={variantSelectorBorderRadius}
+        quantitySelectorBgColor={quantitySelectorBgColor}
+        quantitySelectorTextColor={quantitySelectorTextColor}
+        quantitySelectorBorderRadius={quantitySelectorBorderRadius}
         buttonBgColor={buttonBgColor}
         buttonTextColor={buttonTextColor}
         buttonBorderRadius={buttonBorderRadius}
@@ -1876,6 +1882,16 @@ export default function DesignControlPanel() {
       );
     }
 
+    // Quantity & Variant Selector arrows
+    if (activeSubSection === "quantityVariantSelector") {
+      return (
+        <>
+          <ArrowLabel label="Variant Selector" position="left" horizontalDistance={160} verticalOffset={-40} />
+          <ArrowLabel label="Quantity Selector" position="right" horizontalDistance={160} verticalOffset={10} />
+        </>
+      );
+    }
+
     // Bundle Footer arrows
     if (activeSubSection === "footer") {
       return (
@@ -1895,6 +1911,15 @@ export default function DesignControlPanel() {
         <>
           <ArrowLabel label="Back Button" position="left" horizontalDistance={140} />
           <ArrowLabel label="Next Button" position="right" horizontalDistance={140} />
+        </>
+      );
+    }
+
+    if (activeSubSection === "footerDiscountProgress") {
+      return (
+        <>
+          <ArrowLabel label="Discount Text" position="top" verticalDistance={120} />
+          <ArrowLabel label="Progress Bar" position="bottom" verticalDistance={120} />
         </>
       );
     }
@@ -2316,74 +2341,73 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
-      case "quantitySelector":
+      case "quantityVariantSelector":
         return (
           <BlockStack gap="400">
             <Text as="h2" variant="headingMd">
-              Quantity Selector
+              Quantity & Variant Selector
             </Text>
             <Divider />
 
-            <ColorPicker
-              label="Background Color"
-              value={quantitySelectorBgColor}
-              onChange={setQuantitySelectorBgColor}
-            />
+            {/* Quantity Selector Section */}
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingSm">
+                Quantity Selector
+              </Text>
 
-            <ColorPicker
-              label="Text Color"
-              value={quantitySelectorTextColor}
-              onChange={setQuantitySelectorTextColor}
-            />
+              <ColorPicker
+                label="Background Color"
+                value={quantitySelectorBgColor}
+                onChange={setQuantitySelectorBgColor}
+              />
 
-            <RangeSlider
-              label="Font Size"
-              value={quantitySelectorFontSize}
-              onChange={(value) => setQuantitySelectorFontSize(value as number)}
-              min={12}
-              max={24}
-              output
-            />
+              <ColorPicker
+                label="Text Color"
+                value={quantitySelectorTextColor}
+                onChange={setQuantitySelectorTextColor}
+              />
 
-            <RangeSlider
-              label="Border Radius"
-              value={quantitySelectorBorderRadius}
-              onChange={(value) => setQuantitySelectorBorderRadius(value as number)}
-              min={0}
-              max={24}
-              output
-            />
-          </BlockStack>
-        );
+              <RangeSlider
+                label="Border Radius"
+                value={quantitySelectorBorderRadius}
+                onChange={(value) => setQuantitySelectorBorderRadius(value as number)}
+                min={0}
+                max={67}
+                output
+                suffix="px"
+              />
+            </BlockStack>
 
-      case "variantSelector":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Variant Selector
-            </Text>
             <Divider />
 
-            <ColorPicker
-              label="Background Color"
-              value={variantSelectorBgColor}
-              onChange={setVariantSelectorBgColor}
-            />
+            {/* Variant Selector Section */}
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingSm">
+                Variant Selector
+              </Text>
 
-            <ColorPicker
-              label="Text Color"
-              value={variantSelectorTextColor}
-              onChange={setVariantSelectorTextColor}
-            />
+              <ColorPicker
+                label="Background Color"
+                value={variantSelectorBgColor}
+                onChange={setVariantSelectorBgColor}
+              />
 
-            <RangeSlider
-              label="Border Radius"
-              value={variantSelectorBorderRadius}
-              onChange={(value) => setVariantSelectorBorderRadius(value as number)}
-              min={0}
-              max={24}
-              output
-            />
+              <ColorPicker
+                label="Text Color"
+                value={variantSelectorTextColor}
+                onChange={setVariantSelectorTextColor}
+              />
+
+              <RangeSlider
+                label="Border Radius"
+                value={variantSelectorBorderRadius}
+                onChange={(value) => setVariantSelectorBorderRadius(value as number)}
+                min={0}
+                max={67}
+                output
+                suffix="px"
+              />
+            </BlockStack>
           </BlockStack>
         );
 
@@ -2563,87 +2587,19 @@ export default function DesignControlPanel() {
               </ButtonGroup>
             </BlockStack>
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerProgressBarFilledColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerProgressBarFilledColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerProgressBarFilledColorInput"
-                    type="color"
-                    value={footerProgressBarFilledColor}
-                    onChange={(e) => setFooterProgressBarFilledColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Progress Bar Filled Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerProgressBarFilledColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <Divider />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerProgressBarEmptyColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerProgressBarEmptyColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerProgressBarEmptyColorInput"
-                    type="color"
-                    value={footerProgressBarEmptyColor}
-                    onChange={(e) => setFooterProgressBarEmptyColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Progress Bar Empty Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerProgressBarEmptyColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Progress Bar Filled Color"
+              value={footerProgressBarFilledColor}
+              onChange={setFooterProgressBarFilledColor}
+            />
+
+            <ColorPicker
+              label="Progress Bar Empty Color"
+              value={footerProgressBarEmptyColor}
+              onChange={setFooterProgressBarEmptyColor}
+            />
           </BlockStack>
         );
 
@@ -3727,18 +3683,11 @@ export default function DesignControlPanel() {
                   isActive={activeSubSection === "button"}
                 />
                 <NavigationItem
-                  label="Quantity Selector"
-                  sectionKey="quantitySelector"
+                  label="Quantity & Variant Selector"
+                  sectionKey="quantityVariantSelector"
                   isChild
-                  onClick={() => handleSubSectionClick("quantitySelector")}
-                  isActive={activeSubSection === "quantitySelector"}
-                />
-                <NavigationItem
-                  label="Variant Selector"
-                  sectionKey="variantSelector"
-                  isChild
-                  onClick={() => handleSubSectionClick("variantSelector")}
-                  isActive={activeSubSection === "variantSelector"}
+                  onClick={() => handleSubSectionClick("quantityVariantSelector")}
+                  isActive={activeSubSection === "quantityVariantSelector"}
                 />
               </Collapsible>
 

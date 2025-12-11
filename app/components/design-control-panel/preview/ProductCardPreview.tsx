@@ -16,6 +16,9 @@ interface ProductCardPreviewProps {
   variantSelectorBgColor: string;
   variantSelectorTextColor: string;
   variantSelectorBorderRadius: number;
+  quantitySelectorBgColor: string;
+  quantitySelectorTextColor: string;
+  quantitySelectorBorderRadius: number;
   buttonBgColor: string;
   buttonTextColor: string;
   buttonBorderRadius: number;
@@ -41,6 +44,9 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
     variantSelectorBgColor,
     variantSelectorTextColor,
     variantSelectorBorderRadius,
+    quantitySelectorBgColor,
+    quantitySelectorTextColor,
+    quantitySelectorBorderRadius,
     buttonBgColor,
     buttonTextColor,
     buttonBorderRadius,
@@ -185,8 +191,73 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
                 backgroundPosition: "right 12px center",
               }}
             >
-              <option>Select Variant</option>
+              <option>Size: M</option>
             </select>
+          </div>
+
+          {/* Quantity Selector */}
+          <div style={{ marginBottom: "12px", flexShrink: 0, position: "relative", display: "flex", justifyContent: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0px",
+                backgroundColor: quantitySelectorBgColor,
+                borderRadius: `${quantitySelectorBorderRadius}px`,
+                overflow: "hidden",
+                border: "1px solid #D1D1D1",
+              }}
+            >
+              {/* Minus Button */}
+              <button
+                style={{
+                  backgroundColor: "transparent",
+                  color: quantitySelectorTextColor,
+                  border: "none",
+                  padding: "10px 16px",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                −
+              </button>
+
+              {/* Quantity Display */}
+              <div
+                style={{
+                  color: quantitySelectorTextColor,
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  padding: "0 16px",
+                  minWidth: "40px",
+                  textAlign: "center",
+                }}
+              >
+                1
+              </div>
+
+              {/* Plus Button */}
+              <button
+                style={{
+                  backgroundColor: "transparent",
+                  color: quantitySelectorTextColor,
+                  border: "none",
+                  padding: "10px 16px",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                +
+              </button>
+            </div>
           </div>
 
           {/* Add to Cart Button */}

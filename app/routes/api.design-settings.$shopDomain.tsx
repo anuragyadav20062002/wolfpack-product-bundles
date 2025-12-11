@@ -138,135 +138,148 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 function generateCSSFromSettings(s: any, bundleType: string): string {
+  // Extract global colors with defaults
+  const globalPrimaryButton = s.globalPrimaryButtonColor || '#000000';
+  const globalButtonText = s.globalButtonTextColor || '#FFFFFF';
+  const globalPrimaryText = s.globalPrimaryTextColor || '#000000';
+  const globalSecondaryText = s.globalSecondaryTextColor || '#6B7280';
+  const globalFooterBg = s.globalFooterBgColor || '#FFFFFF';
+  const globalFooterText = s.globalFooterTextColor || '#000000';
+
   return `
 /*
  * Wolfpack Bundle Widget - Design Settings
  * Bundle Type: ${bundleType}
  * Auto-generated from Design Control Panel
+ *
+ * Global Colors System:
+ * - Global colors automatically cascade to all relevant components
+ * - Component-specific colors override global colors when set
+ * - This ensures brand consistency while allowing fine-grained control
  */
 
 :root {
   /* GLOBAL COLORS */
-  --bundle-global-primary-button: ${s.globalPrimaryButtonColor || '#000000'};
-  --bundle-global-button-text: ${s.globalButtonTextColor || '#FFFFFF'};
-  --bundle-global-primary-text: ${s.globalPrimaryTextColor || '#000000'};
-  --bundle-global-secondary-text: ${s.globalSecondaryTextColor || '#6B7280'};
-  --bundle-global-footer-bg: ${s.globalFooterBgColor || '#FFFFFF'};
-  --bundle-global-footer-text: ${s.globalFooterTextColor || '#000000'};
+  --bundle-global-primary-button: ${globalPrimaryButton};
+  --bundle-global-button-text: ${globalButtonText};
+  --bundle-global-primary-text: ${globalPrimaryText};
+  --bundle-global-secondary-text: ${globalSecondaryText};
+  --bundle-global-footer-bg: ${globalFooterBg};
+  --bundle-global-footer-text: ${globalFooterText};
 
   /* PRODUCT CARD */
   --bundle-product-card-bg: ${s.productCardBgColor || '#FFFFFF'};
-  --bundle-product-card-font-color: ${s.productCardFontColor || '#000000'};
+  --bundle-product-card-font-color: ${s.productCardFontColor || globalPrimaryText};
   --bundle-product-card-font-size: ${s.productCardFontSize || 16}px;
   --bundle-product-card-font-weight: ${s.productCardFontWeight || 400};
   --bundle-product-card-image-fit: ${s.productCardImageFit || 'cover'};
   --bundle-product-cards-per-row: ${s.productCardsPerRow || 3};
   --bundle-product-price-display: ${s.productPriceVisibility !== false ? 'block' : 'none'};
-  --bundle-product-strike-price-color: ${s.productStrikePriceColor || '#8D8D8D'};
+  --bundle-product-strike-price-color: ${s.productStrikePriceColor || globalSecondaryText};
   --bundle-product-strike-font-size: ${s.productStrikeFontSize || 14}px;
   --bundle-product-strike-font-weight: ${s.productStrikeFontWeight || 400};
-  --bundle-product-final-price-color: ${s.productFinalPriceColor || '#000000'};
+  --bundle-product-final-price-color: ${s.productFinalPriceColor || globalPrimaryText};
   --bundle-product-final-price-font-size: ${s.productFinalPriceFontSize || 18}px;
   --bundle-product-final-price-font-weight: ${s.productFinalPriceFontWeight || 700};
 
   /* BUTTON */
-  --bundle-button-bg: ${s.buttonBgColor || '#000000'};
-  --bundle-button-text-color: ${s.buttonTextColor || '#FFFFFF'};
+  --bundle-button-bg: ${s.buttonBgColor || globalPrimaryButton};
+  --bundle-button-text-color: ${s.buttonTextColor || globalButtonText};
   --bundle-button-font-size: ${s.buttonFontSize || 16}px;
   --bundle-button-font-weight: ${s.buttonFontWeight || 600};
   --bundle-button-border-radius: ${s.buttonBorderRadius || 8}px;
-  --bundle-button-hover-bg: ${s.buttonHoverBgColor || s.buttonBgColor || '#333333'};
+  --bundle-button-hover-bg: ${s.buttonHoverBgColor || s.buttonBgColor || globalPrimaryButton};
 
   /* QUANTITY SELECTOR */
-  --bundle-quantity-selector-bg: ${s.quantitySelectorBgColor || '#000000'};
-  --bundle-quantity-selector-text-color: ${s.quantitySelectorTextColor || '#FFFFFF'};
+  --bundle-quantity-selector-bg: ${s.quantitySelectorBgColor || globalPrimaryButton};
+  --bundle-quantity-selector-text-color: ${s.quantitySelectorTextColor || globalButtonText};
   --bundle-quantity-selector-font-size: ${s.quantitySelectorFontSize || 16}px;
   --bundle-quantity-selector-border-radius: ${s.quantitySelectorBorderRadius || 8}px;
 
   /* FOOTER */
-  --bundle-footer-bg: ${s.footerBgColor || '#FFFFFF'};
+  --bundle-footer-bg: ${s.footerBgColor || globalFooterBg};
   --bundle-footer-total-bg: ${s.footerTotalBgColor || '#F6F6F6'};
   --bundle-footer-border-radius: ${s.footerBorderRadius || 8}px;
   --bundle-footer-padding: ${s.footerPadding || 16}px;
-  --bundle-footer-final-price-color: ${s.footerFinalPriceColor || '#000000'};
+  --bundle-footer-final-price-color: ${s.footerFinalPriceColor || globalPrimaryText};
   --bundle-footer-final-price-font-size: ${s.footerFinalPriceFontSize || 18}px;
   --bundle-footer-final-price-font-weight: ${s.footerFinalPriceFontWeight || 700};
-  --bundle-footer-strike-price-color: ${s.footerStrikePriceColor || '#8D8D8D'};
+  --bundle-footer-strike-price-color: ${s.footerStrikePriceColor || globalSecondaryText};
   --bundle-footer-strike-font-size: ${s.footerStrikeFontSize || 14}px;
   --bundle-footer-strike-font-weight: ${s.footerStrikeFontWeight || 400};
   --bundle-footer-price-display: ${s.footerPriceVisibility !== false ? 'flex' : 'none'};
   --bundle-footer-back-button-bg: ${s.footerBackButtonBgColor || '#FFFFFF'};
-  --bundle-footer-back-button-text: ${s.footerBackButtonTextColor || '#000000'};
+  --bundle-footer-back-button-text: ${s.footerBackButtonTextColor || globalFooterText};
   --bundle-footer-back-button-border: ${s.footerBackButtonBorderColor || '#E3E3E3'};
   --bundle-footer-back-button-radius: ${s.footerBackButtonBorderRadius || 8}px;
-  --bundle-footer-next-button-bg: ${s.footerNextButtonBgColor || '#000000'};
-  --bundle-footer-next-button-text: ${s.footerNextButtonTextColor || '#FFFFFF'};
-  --bundle-footer-next-button-border: ${s.footerNextButtonBorderColor || '#000000'};
+  --bundle-footer-next-button-bg: ${s.footerNextButtonBgColor || globalPrimaryButton};
+  --bundle-footer-next-button-text: ${s.footerNextButtonTextColor || globalButtonText};
+  --bundle-footer-next-button-border: ${s.footerNextButtonBorderColor || globalPrimaryButton};
   --bundle-footer-next-button-radius: ${s.footerNextButtonBorderRadius || 8}px;
   --bundle-footer-discount-display: ${s.footerDiscountTextVisibility !== false ? 'block' : 'none'};
-  --bundle-footer-progress-filled: ${s.footerProgressBarFilledColor || '#000000'};
+  --bundle-footer-progress-filled: ${s.footerProgressBarFilledColor || globalPrimaryButton};
   --bundle-footer-progress-empty: ${s.footerProgressBarEmptyColor || '#E3E3E3'};
 
   /* BUNDLE HEADER */
-  --bundle-header-tab-active-bg: ${s.headerTabActiveBgColor || '#000000'};
-  --bundle-header-tab-active-text: ${s.headerTabActiveTextColor || '#FFFFFF'};
+  --bundle-header-tab-active-bg: ${s.headerTabActiveBgColor || globalPrimaryButton};
+  --bundle-header-tab-active-text: ${s.headerTabActiveTextColor || globalButtonText};
   --bundle-header-tab-inactive-bg: ${s.headerTabInactiveBgColor || '#FFFFFF'};
-  --bundle-header-tab-inactive-text: ${s.headerTabInactiveTextColor || '#000000'};
+  --bundle-header-tab-inactive-text: ${s.headerTabInactiveTextColor || globalPrimaryText};
   --bundle-header-tab-radius: ${s.headerTabRadius || 67}px;
 
   /* BUNDLE STEP BAR */
-  --bundle-step-name-font-color: ${s.stepNameFontColor || '#000000'};
+  --bundle-step-name-font-color: ${s.stepNameFontColor || globalPrimaryText};
   --bundle-step-name-font-size: ${s.stepNameFontSize || 16}px;
-  --bundle-completed-step-checkmark-color: ${s.completedStepCheckMarkColor || '#FFFFFF'};
-  --bundle-completed-step-bg-color: ${s.completedStepBgColor || '#000000'};
-  --bundle-completed-step-circle-border-color: ${s.completedStepCircleBorderColor || '#000000'};
+  --bundle-completed-step-checkmark-color: ${s.completedStepCheckMarkColor || globalButtonText};
+  --bundle-completed-step-bg-color: ${s.completedStepBgColor || globalPrimaryButton};
+  --bundle-completed-step-circle-border-color: ${s.completedStepCircleBorderColor || globalPrimaryButton};
   --bundle-completed-step-circle-border-radius: ${s.completedStepCircleBorderRadius || 50}px;
   --bundle-incomplete-step-bg-color: ${s.incompleteStepBgColor || '#FFFFFF'};
-  --bundle-incomplete-step-circle-stroke-color: ${s.incompleteStepCircleStrokeColor || '#000000'};
+  --bundle-incomplete-step-circle-stroke-color: ${s.incompleteStepCircleStrokeColor || globalPrimaryButton};
   --bundle-incomplete-step-circle-stroke-radius: ${s.incompleteStepCircleStrokeRadius || 50}px;
-  --bundle-step-bar-progress-filled-color: ${s.stepBarProgressFilledColor || '#000000'};
+  --bundle-step-bar-progress-filled-color: ${s.stepBarProgressFilledColor || globalPrimaryButton};
   --bundle-step-bar-progress-empty-color: ${s.stepBarProgressEmptyColor || '#C6C6C6'};
 
   /* TABS */
-  --bundle-tabs-active-bg-color: ${s.tabsActiveBgColor || '#000000'};
-  --bundle-tabs-active-text-color: ${s.tabsActiveTextColor || '#FFFFFF'};
+  --bundle-tabs-active-bg-color: ${s.tabsActiveBgColor || globalPrimaryButton};
+  --bundle-tabs-active-text-color: ${s.tabsActiveTextColor || globalButtonText};
   --bundle-tabs-inactive-bg-color: ${s.tabsInactiveBgColor || '#FFFFFF'};
-  --bundle-tabs-inactive-text-color: ${s.tabsInactiveTextColor || '#000000'};
-  --bundle-tabs-border-color: ${s.tabsBorderColor || '#000000'};
+  --bundle-tabs-inactive-text-color: ${s.tabsInactiveTextColor || globalPrimaryText};
+  --bundle-tabs-border-color: ${s.tabsBorderColor || globalPrimaryButton};
   --bundle-tabs-border-radius: ${s.tabsBorderRadius || 8}px;
 
   /* GENERAL */
   /* Empty State */
   --bundle-empty-state-card-bg: ${s.emptyStateCardBgColor || '#FFFFFF'};
   --bundle-empty-state-card-border: ${s.emptyStateCardBorderColor || '#F6F6F6'};
-  --bundle-empty-state-text: ${s.emptyStateTextColor || '#9CA3AF'};
+  --bundle-empty-state-text: ${s.emptyStateTextColor || globalSecondaryText};
   --bundle-empty-state-border-style: ${s.emptyStateBorderStyle || 'dashed'};
   /* Drawer */
   --bundle-drawer-bg: ${s.drawerBgColor || '#FFFFFF'};
   /* Add to Cart Button */
-  --bundle-add-to-cart-button-bg: ${s.addToCartButtonBgColor || '#000000'};
-  --bundle-add-to-cart-button-text: ${s.addToCartButtonTextColor || '#FFFFFF'};
+  --bundle-add-to-cart-button-bg: ${s.addToCartButtonBgColor || globalPrimaryButton};
+  --bundle-add-to-cart-button-text: ${s.addToCartButtonTextColor || globalButtonText};
   /* Toasts */
-  --bundle-toast-bg: ${s.toastBgColor || '#000000'};
-  --bundle-toast-text: ${s.toastTextColor || '#FFFFFF'};
+  --bundle-toast-bg: ${s.toastBgColor || globalPrimaryButton};
+  --bundle-toast-text: ${s.toastTextColor || globalButtonText};
   /* Bundle Design */
   --bundle-bg-color: ${s.bundleBgColor || '#FFFFFF'};
-  --bundle-footer-scrollbar-color: ${s.footerScrollBarColor || '#000000'};
+  --bundle-footer-scrollbar-color: ${s.footerScrollBarColor || globalPrimaryButton};
   /* Product Page Title */
-  --bundle-product-page-title-font-color: ${s.productPageTitleFontColor || '#000000'};
+  --bundle-product-page-title-font-color: ${s.productPageTitleFontColor || globalPrimaryText};
   --bundle-product-page-title-font-size: ${s.productPageTitleFontSize || 24}px;
   /* Bundle Upsell */
-  --bundle-upsell-button-bg-color: ${s.bundleUpsellButtonBgColor || '#000000'};
-  --bundle-upsell-border-color: ${s.bundleUpsellBorderColor || '#000000'};
-  --bundle-upsell-text-color: ${s.bundleUpsellTextColor || '#FFFFFF'};
+  --bundle-upsell-button-bg-color: ${s.bundleUpsellButtonBgColor || globalPrimaryButton};
+  --bundle-upsell-border-color: ${s.bundleUpsellBorderColor || globalPrimaryButton};
+  --bundle-upsell-text-color: ${s.bundleUpsellTextColor || globalButtonText};
   /* Filters */
-  --bundle-filter-icon-color: ${s.filterIconColor || '#000000'};
+  --bundle-filter-icon-color: ${s.filterIconColor || globalPrimaryButton};
   --bundle-filter-bg-color: ${s.filterBgColor || '#FFFFFF'};
-  --bundle-filter-text-color: ${s.filterTextColor || '#000000'};
+  --bundle-filter-text-color: ${s.filterTextColor || globalPrimaryText};
   /* Bundle Header - Header Text */
-  --bundle-conditions-text-color: ${s.conditionsTextColor || '#FFFFFF'};
+  --bundle-conditions-text-color: ${s.conditionsTextColor || globalPrimaryText};
   --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
-  --bundle-discount-text-color: ${s.discountTextColor || '#000000'};
+  --bundle-discount-text-color: ${s.discountTextColor || globalPrimaryText};
   --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
 }
 
