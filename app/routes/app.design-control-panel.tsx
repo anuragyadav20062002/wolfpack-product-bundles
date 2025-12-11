@@ -1263,6 +1263,11 @@ export default function DesignControlPanel() {
 
   // Render preview content based on active subsection
   const renderPreviewContent = () => {
+    // Global Colors - No preview
+    if (activeSubSection === "globalColors") {
+      return null;
+    }
+
     // Bundle Footer subsections
     if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
       return (
@@ -1958,48 +1963,14 @@ export default function DesignControlPanel() {
                   Primary Button Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Main color for all primary action buttons in the bundle
+                  Description about where all this color applies so that is is easy for the user to understand
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalPrimaryButtonColor}
-                  onChange={setGlobalPrimaryButtonColor}
-                  autoComplete="off"
-                  placeholder="#000000"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalPrimaryButtonColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalPrimaryButtonColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalPrimaryButtonColorInput"
-                    type="color"
-                    value={globalPrimaryButtonColor}
-                    onChange={(e) => setGlobalPrimaryButtonColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label=""
+                value={globalPrimaryButtonColor}
+                onChange={setGlobalPrimaryButtonColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -2010,48 +1981,13 @@ export default function DesignControlPanel() {
                   Button Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Text color for all button labels and call-to-actions
+                  Description about where all this color applies so that is is easy for the user to understand
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalButtonTextColor}
-                  onChange={setGlobalButtonTextColor}
-                  autoComplete="off"
-                  placeholder="#FFFFFF"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalButtonTextColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalButtonTextColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalButtonTextColorInput"
-                    type="color"
-                    value={globalButtonTextColor}
-                    onChange={(e) => setGlobalButtonTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalButtonTextColor}
+                onChange={setGlobalButtonTextColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -2062,48 +1998,13 @@ export default function DesignControlPanel() {
                   Primary Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Main text color for headings and important content
+                  Description about where all this color applies so that is is easy for the user to understand
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalPrimaryTextColor}
-                  onChange={setGlobalPrimaryTextColor}
-                  autoComplete="off"
-                  placeholder="#000000"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalPrimaryTextColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalPrimaryTextColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalPrimaryTextColorInput"
-                    type="color"
-                    value={globalPrimaryTextColor}
-                    onChange={(e) => setGlobalPrimaryTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalPrimaryTextColor}
+                onChange={setGlobalPrimaryTextColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -2114,48 +2015,13 @@ export default function DesignControlPanel() {
                   Secondary Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Supporting text color for descriptions and helper text
+                  Description about where all this color applies so that is is easy for the user to understand
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalSecondaryTextColor}
-                  onChange={setGlobalSecondaryTextColor}
-                  autoComplete="off"
-                  placeholder="#6B7280"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalSecondaryTextColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalSecondaryTextColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalSecondaryTextColorInput"
-                    type="color"
-                    value={globalSecondaryTextColor}
-                    onChange={(e) => setGlobalSecondaryTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalSecondaryTextColor}
+                onChange={setGlobalSecondaryTextColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -2166,48 +2032,13 @@ export default function DesignControlPanel() {
                   Footer Background
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Background color for footer sections in the bundle
+                  Description about where all this color applies so that is is easy for the user to understand
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalFooterBgColor}
-                  onChange={setGlobalFooterBgColor}
-                  autoComplete="off"
-                  placeholder="#FFFFFF"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalFooterBgColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalFooterBgColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalFooterBgColorInput"
-                    type="color"
-                    value={globalFooterBgColor}
-                    onChange={(e) => setGlobalFooterBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalFooterBgColor}
+                onChange={setGlobalFooterBgColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -2218,48 +2049,13 @@ export default function DesignControlPanel() {
                   Footer Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Text color for all footer content and labels
+                  Description about where all this color applies so that is is easy for the user to understand
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalFooterTextColor}
-                  onChange={setGlobalFooterTextColor}
-                  autoComplete="off"
-                  placeholder="#000000"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalFooterTextColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalFooterTextColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalFooterTextColorInput"
-                    type="color"
-                    value={globalFooterTextColor}
-                    onChange={(e) => setGlobalFooterTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalFooterTextColor}
+                onChange={setGlobalFooterTextColor}
+              />
             </InlineStack>
           </BlockStack>
         );
