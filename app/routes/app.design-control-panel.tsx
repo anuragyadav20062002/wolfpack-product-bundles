@@ -1821,9 +1821,6 @@ export default function DesignControlPanel() {
             buttonAddToCartText={buttonAddToCartText}
             toastBgColor={toastBgColor}
             toastTextColor={toastTextColor}
-            filterBgColor={filterBgColor}
-            filterIconColor={filterIconColor}
-            filterTextColor={filterTextColor}
           />
         );
       }
