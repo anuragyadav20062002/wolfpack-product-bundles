@@ -1847,6 +1847,7 @@ export default function DesignControlPanel() {
         productCardFontColor={productCardFontColor}
         productCardFontSize={productCardFontSize}
         productCardFontWeight={productCardFontWeight}
+        productCardImageFit={productCardImageFit}
         productTitleVisibility={productTitleVisibility}
         productPriceVisibility={productPriceVisibility}
         productStrikePriceColor={productStrikePriceColor}

@@ -735,7 +735,6 @@ class BundleWidget {
     this.stepProductData = [];
     this.currentStepIndex = 0;
     this.isInitialized = false;
-    this.initializeFilters();
     this.config = {};
     this.elements = {};
 
@@ -1426,20 +1425,41 @@ class BundleWidget {
   // MODAL FUNCTIONALITY
   // ========================================================================
 
+  // Helper method to get formatted header text
+  getFormattedHeaderText() {
+    const { totalQuantity, totalPrice } = this.calculateBundleTotals();
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalQuantity,
+      totalPrice
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.buildTemplateVariables(
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
+
+    return TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+  }
+
   openModal(stepIndex) {
     this.currentStepIndex = stepIndex;
-    const step = this.selectedBundle.steps[stepIndex];
 
     // Update modal header
     const modal = this.elements.modal;
-    modal.querySelector('.modal-step-title').textContent = step.name;
+    const headerText = this.getFormattedHeaderText();
+
+    modal.querySelector('.modal-step-title').innerHTML = headerText;
     modal.querySelector('.modal-step-subtitle').textContent = `Step ${stepIndex + 1} of ${this.selectedBundle.steps.length}`;
 
     // Load and render products for this step
     this.loadStepProducts(stepIndex).then(() => {
       this.renderModalTabs();
       this.renderModalProducts(stepIndex);
-      this.renderFilterButton(stepIndex); // Add filter button to modal header
       this.updateModalNavigation();
       this.updateModalFooterMessaging();
 
@@ -1683,7 +1703,8 @@ class BundleWidget {
         this.currentStepIndex = index;
 
         // Update modal header
-        this.elements.modal.querySelector('.modal-step-title').textContent = step.name;
+        const headerText = this.getFormattedHeaderText();
+        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
         this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${index + 1} of ${this.selectedBundle.steps.length}`;
 
         // Load products for this step if not already loaded
@@ -1700,209 +1721,27 @@ class BundleWidget {
     });
   }
 
-  // Filter state management
-  initializeFilters() {
-    this.filters = {
-      sortBy: 'default', // default, price-asc, price-desc, title-asc, title-desc
-      priceRange: { min: 0, max: Infinity },
-      searchQuery: '',
-      showAvailableOnly: false
-    };
-    this.filteredProductCache = {};
-  }
-
-  renderFilterButton(stepIndex) {
-    const modalHeader = this.elements.modal.querySelector('.modal-header');
-
-    // Check if filter button already exists
-    if (modalHeader.querySelector('.bundle-filters-button')) {
-      return;
-    }
-
-    // Create filter button
-    const filterButton = document.createElement('button');
-    filterButton.className = 'bundle-filters-button';
-    filterButton.setAttribute('aria-label', 'Filter products');
-    filterButton.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M3 4.99509C3 3.89323 3.89262 3 4.99509 3H19.0049C20.1068 3 21 3.89262 21 4.99509V6.5C21 7.05 20.78 7.58 20.38 7.96L14.5 13.5V21L9.5 19V13.5L3.62 7.96C3.22 7.58 3 7.05 3 6.5V4.99509Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Filters</span>
-    `;
-
-    // Insert before close button
-    const closeButton = modalHeader.querySelector('.close-button');
-    modalHeader.insertBefore(filterButton, closeButton);
-
-    // Add click handler
-    filterButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.toggleFilterPanel(stepIndex);
-    });
-  }
-
-  toggleFilterPanel(stepIndex) {
-    const existingPanel = this.elements.modal.querySelector('.filter-panel');
-
-    if (existingPanel) {
-      existingPanel.remove();
-      return;
-    }
-
-    // Create filter panel
-    const filterPanel = document.createElement('div');
-    filterPanel.className = 'filter-panel';
-    filterPanel.innerHTML = `
-      <div class="filter-panel-content">
-        <h3 class="filter-panel-title">Filter Products</h3>
-
-        <!-- Sort Options -->
-        <div class="filter-group">
-          <label class="filter-label">Sort By</label>
-          <select class="filter-select sort-select">
-            <option value="default">Default</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="title-asc">Name: A to Z</option>
-            <option value="title-desc">Name: Z to A</option>
-          </select>
-        </div>
-
-        <!-- Search -->
-        <div class="filter-group">
-          <label class="filter-label">Search</label>
-          <input type="text" class="filter-input search-input" placeholder="Search products..." value="${this.filters.searchQuery || ''}">
-        </div>
-
-        <!-- Price Range -->
-        <div class="filter-group">
-          <label class="filter-label">Price Range</label>
-          <div class="price-range-inputs">
-            <input type="number" class="filter-input price-min" placeholder="Min" min="0" step="0.01" value="${this.filters.priceRange.min || ''}">
-            <span>to</span>
-            <input type="number" class="filter-input price-max" placeholder="Max" min="0" step="0.01" value="${this.filters.priceRange.max === Infinity ? '' : this.filters.priceRange.max}">
-          </div>
-        </div>
-
-        <!-- Availability Filter -->
-        <div class="filter-group">
-          <label class="filter-checkbox">
-            <input type="checkbox" class="availability-filter" ${this.filters.showAvailableOnly ? 'checked' : ''}>
-            <span>Show available only</span>
-          </label>
-        </div>
-
-        <!-- Actions -->
-        <div class="filter-actions">
-          <button class="filter-button filter-clear">Clear Filters</button>
-          <button class="filter-button filter-apply">Apply Filters</button>
-        </div>
-      </div>
-    `;
-
-    // Insert after modal header
-    const modalHeader = this.elements.modal.querySelector('.modal-header');
-    modalHeader.after(filterPanel);
-
-    // Attach event handlers
-    this.attachFilterEventHandlers(filterPanel, stepIndex);
-  }
-
-  attachFilterEventHandlers(filterPanel, stepIndex) {
-    const applyButton = filterPanel.querySelector('.filter-apply');
-    const clearButton = filterPanel.querySelector('.filter-clear');
-    const sortSelect = filterPanel.querySelector('.sort-select');
-    const searchInput = filterPanel.querySelector('.search-input');
-    const priceMin = filterPanel.querySelector('.price-min');
-    const priceMax = filterPanel.querySelector('.price-max');
-    const availabilityCheckbox = filterPanel.querySelector('.availability-filter');
-
-    // Apply filters
-    applyButton.addEventListener('click', () => {
-      this.filters.sortBy = sortSelect.value;
-      this.filters.searchQuery = searchInput.value.trim().toLowerCase();
-      this.filters.priceRange.min = parseFloat(priceMin.value) || 0;
-      this.filters.priceRange.max = parseFloat(priceMax.value) || Infinity;
-      this.filters.showAvailableOnly = availabilityCheckbox.checked;
-
-      this.applyFilters(stepIndex);
-      filterPanel.remove();
-    });
-
-    // Clear filters
-    clearButton.addEventListener('click', () => {
-      this.filters = {
-        sortBy: 'default',
-        priceRange: { min: 0, max: Infinity },
-        searchQuery: '',
-        showAvailableOnly: false
-      };
-      this.applyFilters(stepIndex);
-      filterPanel.remove();
-    });
-
-    // Real-time search
-    searchInput.addEventListener('input', (e) => {
-      this.filters.searchQuery = e.target.value.trim().toLowerCase();
-      this.applyFilters(stepIndex);
-    });
-  }
-
-  applyFilters(stepIndex) {
-    let products = [...this.stepProductData[stepIndex]];
-
-    // Apply search filter
-    if (this.filters.searchQuery) {
-      products = products.filter(p =>
-        p.title.toLowerCase().includes(this.filters.searchQuery)
-      );
-    }
-
-    // Apply price range filter
-    products = products.filter(p =>
-      p.price >= this.filters.priceRange.min &&
-      p.price <= this.filters.priceRange.max
-    );
-
-    // Apply availability filter
-    if (this.filters.showAvailableOnly) {
-      products = products.filter(p => p.available !== false);
-    }
-
-    // Apply sorting
-    switch (this.filters.sortBy) {
-      case 'price-asc':
-        products.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        products.sort((a, b) => b.price - a.price);
-        break;
-      case 'title-asc':
-        products.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case 'title-desc':
-        products.sort((a, b) => b.title.localeCompare(a.title));
-        break;
-      default:
-        // Keep original order
-        break;
-    }
-
-    // Store filtered products temporarily
-    this.filteredProductCache[stepIndex] = products;
-
-    // Re-render products with filtered list
-    this.renderModalProducts(stepIndex, products);
-  }
-
   renderModalProducts(stepIndex, productsToRender = null) {
-    // Use filtered products if available, otherwise use all products
-    const products = productsToRender || this.filteredProductCache[stepIndex] || this.stepProductData[stepIndex];
+    // Use all products from step data
+    const products = productsToRender || this.stepProductData[stepIndex];
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
     if (products.length === 0) {
-      productGrid.innerHTML = '<p style="text-align: center; padding: 20px;">No products found matching your filters.</p>';
+      // Show empty state cards like in DCP preview
+      const emptyStateCards = Array(3).fill(0).map((_, index) => `
+        <div class="empty-state-card">
+          <div class="empty-card-icon">
+            <svg width="69" height="69" viewBox="0 0 69 69" fill="none">
+              <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+              <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="empty-card-label">Select Product</div>
+        </div>
+      `).join('');
+
+      productGrid.innerHTML = emptyStateCards;
       return;
     }
 
@@ -1913,19 +1752,40 @@ class BundleWidget {
 
       return `
         <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
-          <div class="image-wrapper">
+          ${currentQuantity > 0 ? `
+            <div class="checkmark-badge">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          ` : ''}
+
+          <div class="product-image-wrapper">
             <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
           </div>
-          <div class="product-info">
-            <p class="product-title">${product.title}</p>
-            <p class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</p>
+
+          <div class="product-content">
+            <div class="product-title">${product.title}</div>
+            <div class="product-price">
+              <span class="price-original">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+              <span class="price-final">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+            </div>
+
+            <div class="spacer"></div>
+
             ${this.renderVariantSelector(product)}
-          </div>
-          ${currentQuantity > 0 ? `<div class="selected-overlay">${currentQuantity}</div>` : ''}
-          <div class="quantity-controls">
-            <button class="quantity-control-button decrease-quantity" data-product-id="${selectionKey}">-</button>
-            <span class="quantity-display">${currentQuantity}</span>
-            <button class="quantity-control-button increase-quantity" data-product-id="${selectionKey}">+</button>
+
+            <div class="quantity-selector-wrapper">
+              <div class="quantity-selector">
+                <button class="quantity-btn decrease-quantity" data-product-id="${selectionKey}">−</button>
+                <span class="quantity-value">${currentQuantity}</span>
+                <button class="quantity-btn increase-quantity" data-product-id="${selectionKey}">+</button>
+              </div>
+            </div>
+
+            <button class="add-to-bundle-btn" data-product-id="${selectionKey}">
+              ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
+            </button>
           </div>
         </div>
       `;
@@ -1941,11 +1801,13 @@ class BundleWidget {
     }
 
     return `
-      <select class="variant-selector" data-base-product-id="${product.id}">
-        ${product.variants.map(v => `
-          <option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>
-        `).join('')}
-      </select>
+      <div class="variant-selector-wrapper">
+        <select class="variant-selector" data-base-product-id="${product.id}">
+          ${product.variants.map(v => `
+            <option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>
+          `).join('')}
+        </select>
+      </div>
     `;
   }
 
@@ -1956,7 +1818,7 @@ class BundleWidget {
 
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
-      if (e.target.classList.contains('quantity-control-button')) {
+      if (e.target.classList.contains('quantity-btn')) {
         const productId = e.target.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
         const isIncrease = e.target.classList.contains('increase-quantity');
@@ -1966,15 +1828,14 @@ class BundleWidget {
       }
     });
 
-    // Product card click handler
+    // Add to Bundle button handler
     newProductGrid.addEventListener('click', (e) => {
-      if (!e.target.closest('.quantity-control-button') && !e.target.closest('.variant-selector')) {
-        const productCard = e.target.closest('.product-card');
-        if (productCard) {
-          const productId = productCard.dataset.productId;
-          const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-          this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
-        }
+      if (e.target.classList.contains('add-to-bundle-btn')) {
+        e.stopPropagation();
+        const productId = e.target.dataset.productId;
+        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+        // Toggle between 0 and 1
+        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
       }
     });
 
@@ -2419,10 +2280,10 @@ class BundleWidget {
       // Previous step
       if (this.validateStep(this.currentStepIndex)) {
         this.currentStepIndex = newStepIndex;
-        const step = this.selectedBundle.steps[newStepIndex];
 
         // Update modal header
-        this.elements.modal.querySelector('.modal-step-title').textContent = step.name;
+        const headerText = this.getFormattedHeaderText();
+        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
         this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${newStepIndex + 1} of ${this.selectedBundle.steps.length}`;
 
         // Load products for this step
@@ -2440,10 +2301,10 @@ class BundleWidget {
         // Next step
         if (this.validateStep(this.currentStepIndex)) {
           this.currentStepIndex = newStepIndex;
-          const step = this.selectedBundle.steps[newStepIndex];
 
           // Update modal header
-          this.elements.modal.querySelector('.modal-step-title').textContent = step.name;
+          const headerText = this.getFormattedHeaderText();
+          this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
           this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${newStepIndex + 1} of ${this.selectedBundle.steps.length}`;
 
           // Load products for this step
