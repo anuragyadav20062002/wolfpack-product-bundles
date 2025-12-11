@@ -25,105 +25,18 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@shopify/polaris-icons";
 import { prisma } from "../db.server";
 
-// Bundle type options for the selector
-const BUNDLE_TYPE_OPTIONS = [
-  { label: "Product Page Bundle", value: "product_page" },
-  { label: "Full Page Bundle", value: "full_page" },
-];
-
-const IMAGE_FIT_OPTIONS = [
-  { label: "Cover", value: "cover" },
-  { label: "Contain", value: "contain" },
-  { label: "Fill", value: "fill" },
-];
-
-const CARDS_PER_ROW_OPTIONS = [
-  { label: "1", value: "1" },
-  { label: "2", value: "2" },
-  { label: "3", value: "3" },
-  { label: "4", value: "4" },
-];
-
-// Color Picker Component - Shopify Polaris Best Practice
-function ColorPicker({
-  label,
-  value,
-  onChange
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const [localValue, setLocalValue] = useState(value);
-  const colorInputRef = useRef<HTMLInputElement>(null);
-
-  const handleTextChange = (newValue: string) => {
-    setLocalValue(newValue);
-    // Validate hex color format
-    if (/^#[0-9A-F]{6}$/i.test(newValue)) {
-      onChange(newValue);
-    }
-  };
-
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    onChange(newValue);
-  };
-
-  const handleBlur = () => {
-    // If invalid, reset to current valid value
-    if (!/^#[0-9A-F]{6}$/i.test(localValue)) {
-      setLocalValue(value);
-    }
-  };
-
-  const handleColorCircleClick = () => {
-    colorInputRef.current?.click();
-  };
-
-  return (
-    <InlineStack gap="300" align="start" blockAlign="center">
-      <div
-        onClick={handleColorCircleClick}
-        style={{
-          width: "41px",
-          height: "41px",
-          borderRadius: "50%",
-          backgroundColor: value,
-          border: "1px solid #E3E3E3",
-          flexShrink: 0,
-          cursor: "pointer",
-          position: "relative",
-        }}
-      >
-        <input
-          ref={colorInputRef}
-          type="color"
-          value={value}
-          onChange={handleColorChange}
-          style={{
-            position: "absolute",
-            opacity: 0,
-            width: "100%",
-            height: "100%",
-            cursor: "pointer",
-          }}
-        />
-      </div>
-      <div style={{ flex: 1 }}>
-        <TextField
-          label={label}
-          value={localValue}
-          onChange={handleTextChange}
-          onBlur={handleBlur}
-          autoComplete="off"
-          placeholder="#000000"
-        />
-      </div>
-    </InlineStack>
-  );
-}
+// Import extracted components
+import { ColorPicker } from "../components/design-control-panel/common/ColorPicker";
+import { NavigationItem } from "../components/design-control-panel/NavigationItem";
+import { ProductCardPreview } from "../components/design-control-panel/preview/ProductCardPreview";
+import { BundleFooterPreview } from "../components/design-control-panel/preview/BundleFooterPreview";
+import { BundleHeaderPreview } from "../components/design-control-panel/preview/BundleHeaderPreview";
+import { GeneralPreview } from "../components/design-control-panel/preview/GeneralPreview";
+import {
+  BUNDLE_TYPE_OPTIONS,
+  IMAGE_FIT_OPTIONS,
+  CARDS_PER_ROW_OPTIONS
+} from "../components/design-control-panel/constants";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -1346,668 +1259,52 @@ export default function DesignControlPanel() {
     submit,
   ]);
 
-  const NavigationItem = ({
-    label,
-    sectionKey,
-    hasChildren = false,
-    isChild = false,
-    onClick,
-  }: {
-    label: string;
-    sectionKey: string;
-    hasChildren?: boolean;
-    isChild?: boolean;
-    onClick?: () => void;
-  }) => {
-    const isExpanded = expandedSection === sectionKey;
-    const isActive = activeSubSection === sectionKey;
-
-    return (
-      <div
-        onClick={onClick || (() => hasChildren && toggleSection(sectionKey))}
-        style={{
-          cursor: "pointer",
-          padding: isChild ? "8px 16px 8px 36px" : "12px 16px",
-          backgroundColor: isActive && isChild ? "#F3F3F3" : "transparent",
-          borderLeft: isActive && isChild ? "3px solid #303030" : "3px solid transparent",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Text as="span" variant="bodyMd" fontWeight={isChild && isActive ? "semibold" : "regular"}>
-          {label}
-        </Text>
-        {hasChildren && (
-          <Icon source={isExpanded ? ChevronDownIcon : ChevronRightIcon} />
-        )}
-      </div>
-    );
-  };
 
   // Render preview content based on active subsection
   const renderPreviewContent = () => {
-    // Bundle Footer - Footer subsection (Background & Total Pill)
-    if (activeSubSection === "footer") {
+    // Bundle Footer subsections
+    if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
       return (
-        <div style={{ textAlign: "center", position: "relative" }}>
-          <Text as="h3" variant="headingLg" fontWeight="semibold">
-            Footer
-          </Text>
-          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-            {/* Bundle Footer Container */}
-            <div
-              style={{
-                backgroundColor: footerBgColor,
-                borderRadius: `${footerBorderRadius}px`,
-                padding: `${footerPadding}px`,
-                minWidth: "422px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-              }}
-            >
-              {/* Centered Content */}
-              <div
-                style={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "15px",
-                }}
-              >
-                {/* Total Pill */}
-                <div
-                  style={{
-                    backgroundColor: footerTotalBgColor,
-                    padding: "6px 16px",
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    position: "relative",
-                  }}
-                >
-                  <span style={{
-                    color: footerStrikePriceColor,
-                    fontSize: `${footerStrikeFontSize}px`,
-                    fontWeight: footerStrikeFontWeight,
-                    textDecoration: "line-through",
-                  }}>
-                    $24.99
-                  </span>
-                  <span style={{
-                    color: footerFinalPriceColor,
-                    fontSize: `${footerFinalPriceFontSize}px`,
-                    fontWeight: footerFinalPriceFontWeight,
-                  }}>
-                    $19.99
-                  </span>
-                  <span style={{ color: "#666" }}>|</span>
-                  <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                    2
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 2L11 8M15 8L17 2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M1 7H21L19 21H3L1 7Z" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                      <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    </svg>
-                  </span>
-
-                  {/* Arrow pointing to Total Pill */}
-                  <div style={{
-                    position: "absolute",
-                    top: "-48px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}>
-                    <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                      Total Pill
-                    </Text>
-                    <svg width="2" height="32" style={{ marginTop: "4px" }}>
-                      <line x1="1" y1="0" x2="1" y2="28" stroke="#8D8D8D" strokeWidth="2"/>
-                      <polygon points="1,28 4,25 1,32 -2,25" fill="#8D8D8D"/>
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Buttons Row */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "15px",
-                    alignItems: "center",
-                  }}
-                >
-                  {/* Back Button */}
-                  <button
-                    style={{
-                      backgroundColor: footerBackButtonBgColor,
-                      color: footerBackButtonTextColor,
-                      border: `1px solid ${footerBackButtonBorderColor}`,
-                      borderRadius: `${footerBackButtonBorderRadius}px`,
-                      padding: "12px 56px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    BACK
-                  </button>
-
-                  {/* Next Button */}
-                  <button
-                    style={{
-                      backgroundColor: footerNextButtonBgColor,
-                      color: footerNextButtonTextColor,
-                      border: `1px solid ${footerNextButtonBorderColor}`,
-                      borderRadius: `${footerNextButtonBorderRadius}px`,
-                      padding: "12px 56px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    NEXT
-                  </button>
-                </div>
-              </div>
-
-              {/* Arrow pointing to Footer Background (left side) */}
-              <div style={{
-                position: "absolute",
-                top: "-48px",
-                left: "0",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-              }}>
-                <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                  Footer
-                </Text>
-                <svg width="2" height="40" style={{ marginTop: "4px", marginLeft: "20px" }}>
-                  <line x1="1" y1="0" x2="1" y2="36" stroke="#8D8D8D" strokeWidth="2"/>
-                  <polygon points="1,36 4,33 1,40 -2,33" fill="#8D8D8D"/>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
+        <BundleFooterPreview
+          activeSubSection={activeSubSection}
+          footerBgColor={footerBgColor}
+          footerBorderRadius={footerBorderRadius}
+          footerPadding={footerPadding}
+          footerTotalBgColor={footerTotalBgColor}
+          footerStrikePriceColor={footerStrikePriceColor}
+          footerStrikeFontSize={footerStrikeFontSize}
+          footerStrikeFontWeight={footerStrikeFontWeight}
+          footerFinalPriceColor={footerFinalPriceColor}
+          footerFinalPriceFontSize={footerFinalPriceFontSize}
+          footerFinalPriceFontWeight={footerFinalPriceFontWeight}
+          footerPriceVisibility={footerPriceVisibility}
+          footerBackButtonBgColor={footerBackButtonBgColor}
+          footerBackButtonTextColor={footerBackButtonTextColor}
+          footerBackButtonBorderColor={footerBackButtonBorderColor}
+          footerBackButtonBorderRadius={footerBackButtonBorderRadius}
+          footerNextButtonBgColor={footerNextButtonBgColor}
+          footerNextButtonTextColor={footerNextButtonTextColor}
+          footerNextButtonBorderColor={footerNextButtonBorderColor}
+          footerNextButtonBorderRadius={footerNextButtonBorderRadius}
+        />
       );
     }
 
-    // Bundle Footer - Price subsection
-    if (activeSubSection === "footerPrice") {
+    // Bundle Header subsections
+    if (["headerTabs", "headerText"].includes(activeSubSection)) {
       return (
-        <div style={{ textAlign: "center", position: "relative" }}>
-          <Text as="h3" variant="headingLg" fontWeight="semibold">
-            Price
-          </Text>
-          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-            {/* Bundle Footer Container */}
-            <div
-              style={{
-                backgroundColor: footerBgColor,
-                borderRadius: `${footerBorderRadius}px`,
-                padding: `${footerPadding}px`,
-                minWidth: "422px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-              }}
-            >
-              {/* Centered Content */}
-              <div
-                style={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "15px",
-                }}
-              >
-                {/* Total Pill with Price Label */}
-                {footerPriceVisibility && (
-                  <div
-                    style={{
-                      backgroundColor: footerTotalBgColor,
-                      padding: "6px 16px",
-                      borderRadius: "6px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      position: "relative",
-                    }}
-                  >
-                    <span style={{
-                      color: footerStrikePriceColor,
-                      fontSize: `${footerStrikeFontSize}px`,
-                      fontWeight: footerStrikeFontWeight,
-                      textDecoration: "line-through",
-                    }}>
-                      $24.99
-                    </span>
-                    <span style={{
-                      color: footerFinalPriceColor,
-                      fontSize: `${footerFinalPriceFontSize}px`,
-                      fontWeight: footerFinalPriceFontWeight,
-                    }}>
-                      $19.99
-                    </span>
-                    <span style={{ color: "#666" }}>|</span>
-                    <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                      2
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 2L11 8M15 8L17 2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M1 7H21L19 21H3L1 7Z" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                        <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
-                      </svg>
-                    </span>
-
-                    {/* Arrow pointing to Price */}
-                    <div style={{
-                      position: "absolute",
-                      top: "-48px",
-                      right: "-90px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}>
-                      <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                        Price
-                      </Text>
-                      <svg width="2" height="40" style={{ marginTop: "4px", marginLeft: "12px" }}>
-                        <line x1="1" y1="0" x2="1" y2="36" stroke="#8D8D8D" strokeWidth="2"/>
-                        <polygon points="1,36 4,33 1,40 -2,33" fill="#8D8D8D"/>
-                      </svg>
-                    </div>
-                  </div>
-                )}
-
-                {/* Buttons Row */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "15px",
-                    alignItems: "center",
-                  }}
-                >
-                  {/* Back Button */}
-                  <button
-                    style={{
-                      backgroundColor: footerBackButtonBgColor,
-                      color: footerBackButtonTextColor,
-                      border: `1px solid ${footerBackButtonBorderColor}`,
-                      borderRadius: `${footerBackButtonBorderRadius}px`,
-                      padding: "12px 56px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    BACK
-                  </button>
-
-                  {/* Next Button */}
-                  <button
-                    style={{
-                      backgroundColor: footerNextButtonBgColor,
-                      color: footerNextButtonTextColor,
-                      border: `1px solid ${footerNextButtonBorderColor}`,
-                      borderRadius: `${footerNextButtonBorderRadius}px`,
-                      padding: "12px 56px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    NEXT
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Bundle Footer - Button subsection
-    if (activeSubSection === "footerButton") {
-      return (
-        <div style={{ textAlign: "center", position: "relative" }}>
-          <Text as="h3" variant="headingLg" fontWeight="semibold">
-            Button
-          </Text>
-          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-            {/* Bundle Footer Container */}
-            <div
-              style={{
-                backgroundColor: footerBgColor,
-                borderRadius: `${footerBorderRadius}px`,
-                padding: `${footerPadding}px`,
-                minWidth: "561px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-              }}
-            >
-              {/* Centered Content */}
-              <div
-                style={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "15px",
-                }}
-              >
-                {/* Total Pill */}
-                <div
-                  style={{
-                    backgroundColor: footerTotalBgColor,
-                    padding: "6px 16px",
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                  }}
-                >
-                  <span style={{
-                    color: footerStrikePriceColor,
-                    fontSize: `${footerStrikeFontSize}px`,
-                    fontWeight: footerStrikeFontWeight,
-                    textDecoration: "line-through",
-                  }}>
-                    $24.99
-                  </span>
-                  <span style={{
-                    color: footerFinalPriceColor,
-                    fontSize: `${footerFinalPriceFontSize}px`,
-                    fontWeight: footerFinalPriceFontWeight,
-                  }}>
-                    $19.99
-                  </span>
-                  <span style={{ color: "#666" }}>|</span>
-                  <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                    2
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 2L11 8M15 8L17 2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M1 7H21L19 21H3L1 7Z" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                      <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    </svg>
-                  </span>
-                </div>
-
-                {/* Buttons Row with labels */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "15px",
-                    alignItems: "center",
-                  }}
-                >
-                  {/* Back Button */}
-                  <button
-                    style={{
-                      backgroundColor: footerBackButtonBgColor,
-                      color: footerBackButtonTextColor,
-                      border: `1px solid ${footerBackButtonBorderColor}`,
-                      borderRadius: `${footerBackButtonBorderRadius}px`,
-                      padding: "12px 56px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      position: "relative",
-                    }}
-                  >
-                    BACK
-
-                    {/* Arrow pointing to Back Button (left side) */}
-                    <div style={{
-                      position: "absolute",
-                      top: "-48px",
-                      left: "-90px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                    }}>
-                      <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                        Back Button
-                      </Text>
-                      <svg width="2" height="40" style={{ marginTop: "4px", marginLeft: "50px" }}>
-                        <line x1="1" y1="0" x2="1" y2="36" stroke="#8D8D8D" strokeWidth="2"/>
-                        <polygon points="1,36 4,33 1,40 -2,33" fill="#8D8D8D"/>
-                      </svg>
-                    </div>
-                  </button>
-
-                  {/* Next Button */}
-                  <button
-                    style={{
-                      backgroundColor: footerNextButtonBgColor,
-                      color: footerNextButtonTextColor,
-                      border: `1px solid ${footerNextButtonBorderColor}`,
-                      borderRadius: `${footerNextButtonBorderRadius}px`,
-                      padding: "12px 56px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      position: "relative",
-                    }}
-                  >
-                    NEXT
-
-                    {/* Arrow pointing to Next Button (right side) */}
-                    <div style={{
-                      position: "absolute",
-                      top: "-48px",
-                      right: "-90px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                    }}>
-                      <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                        Next Button
-                      </Text>
-                      <svg width="2" height="40" style={{ marginTop: "4px", marginLeft: "50px" }}>
-                        <line x1="1" y1="0" x2="1" y2="36" stroke="#8D8D8D" strokeWidth="2"/>
-                        <polygon points="1,36 4,33 1,40 -2,33" fill="#8D8D8D"/>
-                      </svg>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Bundle Footer - Discount & Progress Bar subsection
-    if (activeSubSection === "footerDiscountProgress") {
-      return (
-        <div style={{ textAlign: "center", position: "relative" }}>
-          <Text as="h3" variant="headingLg" fontWeight="semibold">
-            Discount Text & Progress Bar
-          </Text>
-          <div style={{ marginTop: "48px", display: "inline-block", position: "relative" }}>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Preview updates as you customize
-            </Text>
-          </div>
-        </div>
-      );
-    }
-
-    // Bundle Header - Tabs subsection
-    if (activeSubSection === "headerTabs") {
-      return (
-        <div style={{ textAlign: "center", position: "relative" }}>
-          <Text as="h3" variant="headingLg" fontWeight="semibold">
-            Tabs
-          </Text>
-          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-            {/* Tabs Preview */}
-            <div style={{
-              width: "600px",
-              padding: "40px",
-              border: "1px solid #E3E3E3",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#FAFAFA"
-            }}>
-              <div style={{ display: "flex", gap: "12px", justifyContent: "center", alignItems: "center" }}>
-                {/* Active Tab */}
-                <button style={{
-                  backgroundColor: headerTabActiveBgColor,
-                  color: headerTabActiveTextColor,
-                  borderRadius: `${headerTabRadius}px`,
-                  padding: "10px 24px",
-                  border: "none",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-                }}>
-                  Step 1
-                </button>
-
-                {/* Inactive Tab */}
-                <button style={{
-                  backgroundColor: headerTabInactiveBgColor,
-                  color: headerTabInactiveTextColor,
-                  borderRadius: `${headerTabRadius}px`,
-                  padding: "10px 24px",
-                  border: "1px solid #E5E7EB",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: "pointer"
-                }}>
-                  Step 2
-                </button>
-
-                {/* Inactive Tab */}
-                <button style={{
-                  backgroundColor: headerTabInactiveBgColor,
-                  color: headerTabInactiveTextColor,
-                  borderRadius: `${headerTabRadius}px`,
-                  padding: "10px 24px",
-                  border: "1px solid #E5E7EB",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: "pointer"
-                }}>
-                  Step 3
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Bundle Header - Header Text subsection
-    if (activeSubSection === "headerText") {
-      return (
-        <div style={{ textAlign: "center", position: "relative" }}>
-          <Text as="h3" variant="headingLg" fontWeight="semibold">
-            Header Text
-          </Text>
-          <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-            {/* Header Text Preview */}
-            <div style={{ maxWidth: "397px", width: "100%", position: "relative" }}>
-              {/* Conditions Text */}
-              <div style={{ marginBottom: "40px", position: "relative" }}>
-                <h2 style={{
-                  color: conditionsTextColor,
-                  fontSize: `${conditionsTextFontSize * 2}px`,
-                  fontWeight: 600,
-                  margin: 0,
-                  textAlign: "center",
-                  position: "relative",
-                }}>
-                  Choose 3 products
-                  {/* Arrow pointing to Conditions Text */}
-                  <div style={{
-                    position: "absolute",
-                    top: "-48px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}>
-                    <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                      Conditions Text
-                    </Text>
-                    <svg width="2" height="32" style={{ marginTop: "4px" }}>
-                      <line x1="1" y1="0" x2="1" y2="28" stroke="#8D8D8D" strokeWidth="2"/>
-                      <polygon points="1,28 4,25 1,32 -2,25" fill="#8D8D8D"/>
-                    </svg>
-                  </div>
-                </h2>
-              </div>
-
-              {/* Discount Text */}
-              <div style={{ position: "relative" }}>
-                <p style={{
-                  color: discountTextColor,
-                  fontSize: `${discountTextFontSize * 1.2}px`,
-                  fontWeight: 400,
-                  margin: 0,
-                  textAlign: "center",
-                  position: "relative",
-                }}>
-                  Add 2 product(s) to get the bundle at $45
-                  {/* Arrow pointing to Discount Text */}
-                  <div style={{
-                    position: "absolute",
-                    bottom: "-48px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}>
-                    <svg width="2" height="32" style={{ marginBottom: "4px" }}>
-                      <line x1="1" y1="4" x2="1" y2="32" stroke="#8D8D8D" strokeWidth="2"/>
-                      <polygon points="1,4 4,7 1,0 -2,7" fill="#8D8D8D"/>
-                    </svg>
-                    <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                      Discount Text
-                    </Text>
-                  </div>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <BundleHeaderPreview
+          activeSubSection={activeSubSection}
+          headerTabActiveBgColor={headerTabActiveBgColor}
+          headerTabActiveTextColor={headerTabActiveTextColor}
+          headerTabInactiveBgColor={headerTabInactiveBgColor}
+          headerTabInactiveTextColor={headerTabInactiveTextColor}
+          headerTabRadius={headerTabRadius}
+          conditionsTextColor={conditionsTextColor}
+          conditionsTextFontSize={conditionsTextFontSize}
+          discountTextColor={discountTextColor}
+          discountTextFontSize={discountTextFontSize}
+        />
       );
     }
 
@@ -2237,7 +1534,7 @@ export default function DesignControlPanel() {
     }
 
     // General Section subsections - each has its own isolated preview
-    if (["bundleDesign", "productPageTitle", "bundleUpsell", "toasts", "filters"].includes(activeSubSection)) {
+    if (["bundleDesign", "productPageTitle", "bundleUpsell"].includes(activeSubSection)) {
       // Bundle Design - Full bundle view with all components
       if (activeSubSection === "bundleDesign") {
         return (
@@ -2510,342 +1807,53 @@ export default function DesignControlPanel() {
         );
       }
 
-      // Empty State - Show 3 empty product cards
-      if (activeSubSection === "emptyState") {
+      // General subsections
+      if (["emptyState", "addToCartButton", "toasts"].includes(activeSubSection)) {
         return (
-          <div style={{ textAlign: "center", position: "relative" }}>
-            <Text as="h3" variant="headingLg" fontWeight="semibold">
-              Empty State
-            </Text>
-            <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-              {/* 3 Empty Cards */}
-              <div style={{ display: "flex", gap: "20px", justifyContent: "center" }}>
-                {[1, 2, 3].map((index) => (
-                  <div
-                    key={index}
-                    style={{
-                      width: "176px",
-                      height: "233px",
-                      backgroundColor: emptyStateCardBgColor,
-                      border: `2px ${emptyStateBorderStyle} ${emptyStateCardBorderColor}`,
-                      borderRadius: "8px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "12px",
-                      padding: "20px",
-                      position: "relative",
-                    }}
-                  >
-                    {/* Image placeholder icon */}
-                    <svg width="69" height="69" viewBox="0 0 69 69" fill="none">
-                      <rect width="69" height="69" rx="8" fill={emptyStateTextColor} opacity="0.1"/>
-                      <path d="M24.5 34.5L28.5 30.5L37.5 39.5L44.5 32.5" stroke={emptyStateTextColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4"/>
-                      <circle cx="40" cy="28" r="2.5" fill={emptyStateTextColor} opacity="0.4"/>
-                    </svg>
-
-                    {/* Text placeholder */}
-                    <div style={{ width: "100%", textAlign: "center" }}>
-                      <div style={{ height: "10px", backgroundColor: emptyStateTextColor, opacity: 0.2, borderRadius: "4px", marginBottom: "8px" }} />
-                      <div style={{ height: "8px", backgroundColor: emptyStateTextColor, opacity: 0.15, borderRadius: "4px", width: "70%", margin: "0 auto" }} />
-                    </div>
-
-                    {/* Label for first card */}
-                    {index === 2 && (
-                      <div style={{
-                        position: "absolute",
-                        top: "-48px",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}>
-                        <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium">
-                          Empty State Card
-                        </Text>
-                        <svg width="2" height="32" style={{ marginTop: "4px" }}>
-                          <line x1="1" y1="0" x2="1" y2="28" stroke="#8D8D8D" strokeWidth="2"/>
-                          <polygon points="1,28 4,25 1,32 -2,25" fill="#8D8D8D"/>
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      // Add to Cart Button - Show large button
-      if (activeSubSection === "addToCartButton") {
-        return (
-          <div style={{ textAlign: "center", position: "relative" }}>
-            <Text as="h3" variant="headingLg" fontWeight="semibold">
-              Add to Cart Button
-            </Text>
-            <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-              {/* Add to Cart Button Preview */}
-              <button
-                style={{
-                  backgroundColor: addToCartButtonBgColor,
-                  color: addToCartButtonTextColor,
-                  padding: "20px 120px",
-                  borderRadius: "12px",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  border: "none",
-                  cursor: "pointer",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {buttonAddToCartText || "Add to Cart"}
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      // Toasts - Only show the toast notification
-      if (activeSubSection === "toasts") {
-        return (
-          <div style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}>
-            <div
-              style={{
-                backgroundColor: toastBgColor,
-                color: toastTextColor,
-                padding: "20px 32px",
-                borderRadius: "10px",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "16px",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-              }}
-            >
-              <span style={{ fontSize: "16px", fontWeight: 500 }}>
-                Add at least 1 product on this step
-              </span>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6L18 18" stroke={toastTextColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div style={{ marginTop: "40px" }}>
-              <Text as="p" variant="bodySm" tone="subdued">
-                Preview updates as you customize
-              </Text>
-            </div>
-          </div>
-        );
-      }
-
-      // Filters - Only show the large filter button
-      if (activeSubSection === "filters") {
-        return (
-          <div style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "16px",
-                backgroundColor: filterBgColor,
-                padding: "20px 40px",
-                borderRadius: "12px",
-                border: "2px solid #E3E3E3",
-              }}
-            >
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M3 4.99509C3 3.89323 3.89262 3 4.99509 3H19.0049C20.1068 3 21 3.89262 21 4.99509V6.5C21 7.05 20.78 7.58 20.38 7.96L14.5 13.5V21L9.5 19V13.5L3.62 7.96C3.22 7.58 3 7.05 3 6.5V4.99509Z"
-                  stroke={filterIconColor}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span style={{ color: filterTextColor, fontSize: "20px", fontWeight: 600 }}>Filters</span>
-            </div>
-            <div style={{ marginTop: "40px" }}>
-              <Text as="p" variant="bodySm" tone="subdued">
-                Preview updates as you customize
-              </Text>
-            </div>
-          </div>
+          <GeneralPreview
+            activeSubSection={activeSubSection}
+            emptyStateCardBgColor={emptyStateCardBgColor}
+            emptyStateBorderStyle={emptyStateBorderStyle}
+            emptyStateCardBorderColor={emptyStateCardBorderColor}
+            emptyStateTextColor={emptyStateTextColor}
+            addToCartButtonBgColor={addToCartButtonBgColor}
+            addToCartButtonTextColor={addToCartButtonTextColor}
+            buttonAddToCartText={buttonAddToCartText}
+            toastBgColor={toastBgColor}
+            toastTextColor={toastTextColor}
+            filterBgColor={filterBgColor}
+            filterIconColor={filterIconColor}
+            filterTextColor={filterTextColor}
+          />
         );
       }
     }
 
     // Product Card subsections (default)
     return (
-      <div style={{ textAlign: "center" }}>
-        {/* Product Card Preview */}
-        <div
-          style={{
-            backgroundColor: productCardBgColor,
-            borderRadius: "12px",
-            padding: "16px",
-            width: "280px",
-            minHeight: "420px",
-            maxHeight: "420px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          {/* Checkmark Badge for Selected State */}
-          <div
-            style={{
-              position: "absolute",
-              top: "8px",
-              right: "8px",
-              width: "24px",
-              height: "24px",
-              borderRadius: "50%",
-              backgroundColor: "#4CAF50",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "white",
-              fontSize: "14px",
-              fontWeight: "bold",
-              zIndex: 1,
-            }}
-          >
-            ✓
-          </div>
-
-          {/* Product Image */}
-          <div
-            style={{
-              width: "100%",
-              height: "200px",
-              backgroundColor: "#FFFFFF",
-              borderRadius: "8px",
-              marginBottom: "12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden",
-              flexShrink: 0,
-            }}
-          >
-            <img
-              src="/bundle.png"
-              alt="Product"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-              }}
-            />
-          </div>
-
-          {/* Content Container with Flex Grow */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-            {/* Product Title - Conditional Rendering */}
-            {productTitleVisibility && (
-              <div
-                style={{
-                  color: productCardFontColor,
-                  fontSize: `${productCardFontSize}px`,
-                  fontWeight: productCardFontWeight,
-                  textAlign: "center",
-                  marginBottom: "8px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                PRODUCT NAME
-              </div>
-            )}
-
-            {/* Prices */}
-            {productPriceVisibility && (
-              <div style={{ margin: "8px 0", textAlign: "center", flexShrink: 0 }}>
-                <span
-                  style={{
-                    color: productStrikePriceColor,
-                    fontSize: `${productStrikeFontSize}px`,
-                    fontWeight: productStrikeFontWeight,
-                    textDecoration: "line-through",
-                    marginRight: "8px",
-                  }}
-                >
-                  $19.99
-                </span>
-                <span
-                  style={{
-                    color: productFinalPriceColor,
-                    fontSize: `${productFinalPriceFontSize}px`,
-                    fontWeight: productFinalPriceFontWeight,
-                  }}
-                >
-                  $14.99
-                </span>
-              </div>
-            )}
-
-            {/* Spacer */}
-            <div style={{ flex: 1, minHeight: "8px" }} />
-
-            {/* Variant Selector */}
-            <div style={{ marginBottom: "12px", flexShrink: 0 }}>
-              <select
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: `${variantSelectorBorderRadius}px`,
-                  border: "1px solid #D1D1D1",
-                  backgroundColor: variantSelectorBgColor,
-                  color: variantSelectorTextColor,
-                  fontSize: "14px",
-                  cursor: "pointer",
-                  appearance: "none",
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23303030' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 12px center",
-                }}
-              >
-                <option>Select Variant</option>
-              </select>
-            </div>
-
-            {/* Add to Cart Button */}
-            <button
-              style={{
-                width: "100%",
-                backgroundColor: buttonBgColor,
-                color: buttonTextColor,
-                border: "none",
-                borderRadius: `${buttonBorderRadius}px`,
-                padding: "12px 24px",
-                fontSize: `${buttonFontSize}px`,
-                fontWeight: buttonFontWeight,
-                cursor: "pointer",
-                flexShrink: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {buttonAddToCartText}
-            </button>
-          </div>
-        </div>
-
-        {/* Annotation Labels */}
-        <div style={{ marginTop: "40px" }}>
-          <Text as="p" variant="bodySm" tone="subdued">
-            Preview updates as you customize
-          </Text>
-        </div>
-      </div>
+      <ProductCardPreview
+        productCardBgColor={productCardBgColor}
+        productCardFontColor={productCardFontColor}
+        productCardFontSize={productCardFontSize}
+        productCardFontWeight={productCardFontWeight}
+        productTitleVisibility={productTitleVisibility}
+        productPriceVisibility={productPriceVisibility}
+        productStrikePriceColor={productStrikePriceColor}
+        productStrikeFontSize={productStrikeFontSize}
+        productStrikeFontWeight={productStrikeFontWeight}
+        productFinalPriceColor={productFinalPriceColor}
+        productFinalPriceFontSize={productFinalPriceFontSize}
+        productFinalPriceFontWeight={productFinalPriceFontWeight}
+        variantSelectorBgColor={variantSelectorBgColor}
+        variantSelectorTextColor={variantSelectorTextColor}
+        variantSelectorBorderRadius={variantSelectorBorderRadius}
+        buttonBgColor={buttonBgColor}
+        buttonTextColor={buttonTextColor}
+        buttonBorderRadius={buttonBorderRadius}
+        buttonFontSize={buttonFontSize}
+        buttonFontWeight={buttonFontWeight}
+        buttonAddToCartText={buttonAddToCartText}
+      />
     );
   };
 
@@ -4668,10 +3676,8 @@ export default function DesignControlPanel() {
             </BlockStack>
 
             <BlockStack gap="200">
-              <Text as="p" variant="bodyMd" fontWeight="medium">
-                Button Text
-              </Text>
               <TextField
+                label="Button Text"
                 value={buttonAddToCartText}
                 onChange={setButtonAddToCartText}
                 autoComplete="off"
@@ -4824,6 +3830,8 @@ export default function DesignControlPanel() {
                 label="Global Colors"
                 sectionKey="globalColors"
                 onClick={() => handleSubSectionClick("globalColors")}
+                isExpanded={expandedSection === "globalColors"}
+                isActive={activeSubSection === "globalColors"}
               />
 
               <Divider />
@@ -4833,6 +3841,9 @@ export default function DesignControlPanel() {
                 label="Product Card"
                 sectionKey="productCard"
                 hasChildren
+                onClick={() => toggleSection("productCard")}
+                isExpanded={expandedSection === "productCard"}
+                isActive={false}
               />
               <Collapsible open={expandedSection === "productCard"} id="productCard-collapsible">
                 <NavigationItem
@@ -4840,30 +3851,35 @@ export default function DesignControlPanel() {
                   sectionKey="productCard"
                   isChild
                   onClick={() => handleSubSectionClick("productCard")}
+                  isActive={activeSubSection === "productCard"}
                 />
                 <NavigationItem
                   label="Product Card Typography"
                   sectionKey="productCardTypography"
                   isChild
                   onClick={() => handleSubSectionClick("productCardTypography")}
+                  isActive={activeSubSection === "productCardTypography"}
                 />
                 <NavigationItem
                   label="Button"
                   sectionKey="button"
                   isChild
                   onClick={() => handleSubSectionClick("button")}
+                  isActive={activeSubSection === "button"}
                 />
                 <NavigationItem
                   label="Quantity Selector"
                   sectionKey="quantitySelector"
                   isChild
                   onClick={() => handleSubSectionClick("quantitySelector")}
+                  isActive={activeSubSection === "quantitySelector"}
                 />
                 <NavigationItem
                   label="Variant Selector"
                   sectionKey="variantSelector"
                   isChild
                   onClick={() => handleSubSectionClick("variantSelector")}
+                  isActive={activeSubSection === "variantSelector"}
                 />
               </Collapsible>
 
@@ -4872,6 +3888,9 @@ export default function DesignControlPanel() {
                 label="Bundle Footer"
                 sectionKey="bundleFooter"
                 hasChildren
+                onClick={() => toggleSection("bundleFooter")}
+                isExpanded={expandedSection === "bundleFooter"}
+                isActive={false}
               />
               <Collapsible open={expandedSection === "bundleFooter"} id="bundleFooter-collapsible">
                 <NavigationItem
@@ -4879,24 +3898,28 @@ export default function DesignControlPanel() {
                   sectionKey="footer"
                   isChild
                   onClick={() => handleSubSectionClick("footer")}
+                  isActive={activeSubSection === "footer"}
                 />
                 <NavigationItem
                   label="Price"
                   sectionKey="footerPrice"
                   isChild
                   onClick={() => handleSubSectionClick("footerPrice")}
+                  isActive={activeSubSection === "footerPrice"}
                 />
                 <NavigationItem
                   label="Button"
                   sectionKey="footerButton"
                   isChild
                   onClick={() => handleSubSectionClick("footerButton")}
+                  isActive={activeSubSection === "footerButton"}
                 />
                 <NavigationItem
                   label="Discount Text & Progress Bar"
                   sectionKey="footerDiscountProgress"
                   isChild
                   onClick={() => handleSubSectionClick("footerDiscountProgress")}
+                  isActive={activeSubSection === "footerDiscountProgress"}
                 />
               </Collapsible>
 
@@ -4905,6 +3928,9 @@ export default function DesignControlPanel() {
                 label="Bundle Header"
                 sectionKey="bundleHeader"
                 hasChildren
+                onClick={() => toggleSection("bundleHeader")}
+                isExpanded={expandedSection === "bundleHeader"}
+                isActive={false}
               />
               <Collapsible open={expandedSection === "bundleHeader"} id="bundleHeader-collapsible">
                 <NavigationItem
@@ -4912,12 +3938,14 @@ export default function DesignControlPanel() {
                   sectionKey="headerTabs"
                   isChild
                   onClick={() => handleSubSectionClick("headerTabs")}
+                  isActive={activeSubSection === "headerTabs"}
                 />
                 <NavigationItem
                   label="Header Text"
                   sectionKey="headerText"
                   isChild
                   onClick={() => handleSubSectionClick("headerText")}
+                  isActive={activeSubSection === "headerText"}
                 />
               </Collapsible>
 
@@ -4926,6 +3954,9 @@ export default function DesignControlPanel() {
                 label="General"
                 sectionKey="general"
                 hasChildren
+                onClick={() => toggleSection("general")}
+                isExpanded={expandedSection === "general"}
+                isActive={false}
               />
               <Collapsible open={expandedSection === "general"} id="general-collapsible">
                 <NavigationItem
@@ -4933,18 +3964,21 @@ export default function DesignControlPanel() {
                   sectionKey="emptyState"
                   isChild
                   onClick={() => handleSubSectionClick("emptyState")}
+                  isActive={activeSubSection === "emptyState"}
                 />
                 <NavigationItem
                   label="Add to Cart Button"
                   sectionKey="addToCartButton"
                   isChild
                   onClick={() => handleSubSectionClick("addToCartButton")}
+                  isActive={activeSubSection === "addToCartButton"}
                 />
                 <NavigationItem
                   label="Toasts"
                   sectionKey="toasts"
                   isChild
                   onClick={() => handleSubSectionClick("toasts")}
+                  isActive={activeSubSection === "toasts"}
                 />
               </Collapsible>
             </div>
