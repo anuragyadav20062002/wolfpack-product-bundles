@@ -111,32 +111,32 @@ export function GeneralPreview(props: GeneralPreviewProps) {
     );
   }
 
-  // Toasts - Only show the toast notification
+  // Toasts
   if (activeSubSection === "toasts") {
     return (
-      <div style={{ maxWidth: "600px", width: "100%", textAlign: "center", marginTop: "80px" }}>
-        <div
-          style={{
-            backgroundColor: toastBgColor,
-            color: toastTextColor,
-            width: "495px",
-            height: "81px",
-            borderRadius: "11px",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-            position: "relative",
-          }}
-        >
-          <span style={{ fontSize: "24px", fontWeight: 500 }}>
-            Add at least 1 product on this step
-          </span>
-        </div>
-        <div style={{ marginTop: "40px" }}>
-          <Text as="p" variant="bodySm" tone="subdued">
-            Preview updates as you customize
-          </Text>
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Toasts
+        </Text>
+        <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
+          <div
+            style={{
+              backgroundColor: toastBgColor,
+              color: toastTextColor,
+              width: "495px",
+              height: "81px",
+              borderRadius: "11px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              position: "relative",
+            }}
+          >
+            <span style={{ fontSize: "24px", fontWeight: 400 }}>
+              Add at least 1 product on this step
+            </span>
+          </div>
         </div>
       </div>
     );
