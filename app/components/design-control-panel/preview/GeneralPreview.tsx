@@ -1,4 +1,5 @@
 import { Text } from "@shopify/polaris";
+import { PlusIcon } from "../icons";
 
 interface GeneralPreviewProps {
   activeSubSection: string;
@@ -60,10 +61,7 @@ export function GeneralPreview(props: GeneralPreviewProps) {
                   }}
                 >
                   {/* Plus icon */}
-                  <svg width="69" height="69" viewBox="0 0 69 69" fill="none">
-                    <line x1="34.5" y1="15" x2="34.5" y2="54" stroke={emptyStateTextColor} strokeWidth="4" strokeLinecap="round"/>
-                    <line x1="15" y1="34.5" x2="54" y2="34.5" stroke={emptyStateTextColor} strokeWidth="4" strokeLinecap="round"/>
-                  </svg>
+                  <PlusIcon width={69} height={69} color={emptyStateTextColor} />
                 </div>
 
                 {/* Label below card */}
