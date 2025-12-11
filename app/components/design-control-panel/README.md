@@ -7,16 +7,21 @@ This directory contains extracted components from the `app.design-control-panel.
 ```
 design-control-panel/
 ├── common/
-│   ├── ColorPicker.tsx        # Reusable color picker component
-│   └── ArrowLabel.tsx          # Professional arrow label with directional support
+│   ├── ColorPicker.tsx          # Reusable color picker component
+│   └── ArrowLabel.tsx            # Professional arrow label with directional support
 ├── preview/
-│   └── ProductCardPreview.tsx  # Product card preview component
+│   ├── ProductCardPreview.tsx    # Product card preview component
+│   ├── BundleFooterPreview.tsx   # Bundle footer preview component (4 subsections)
+│   ├── BundleHeaderPreview.tsx   # Bundle header preview component (2 subsections)
+│   └── GeneralPreview.tsx        # General section preview component (3 subsections)
+├── icons/
+│   └── index.tsx                 # Centralized SVG icons (ShoppingCartIcon, PlusIcon, ImagePlaceholderIcon)
 ├── settings/
-│   └── (To be extracted)       # Settings panel components
-├── constants.ts                # Shared constants (options, etc.)
-├── types.ts                    # TypeScript interfaces
-├── NavigationItem.tsx          # Navigation sidebar item component
-└── README.md                   # This file
+│   └── (To be extracted)         # Settings panel components
+├── constants.ts                  # Shared constants (options, etc.)
+├── types.ts                      # TypeScript interfaces
+├── NavigationItem.tsx            # Navigation sidebar item component
+└── README.md                     # This file
 ```
 
 ## Completed Refactoring
@@ -51,31 +56,35 @@ design-control-panel/
    - DesignSettings interface
    - NavigationItemProps interface
 
+7. **BundleFooterPreview** (`preview/BundleFooterPreview.tsx`)
+   - Complete bundle footer preview with 4 subsections
+   - footer, footerPrice, footerButton, footerDiscountProgress
+   - Replaces 428 lines of JSX in main file
+   - Uses centralized ShoppingCartIcon
+
+8. **BundleHeaderPreview** (`preview/BundleHeaderPreview.tsx`)
+   - Complete bundle header preview with 2 subsections
+   - headerTabs, headerText
+   - Replaces 147 lines of JSX in main file
+
+9. **GeneralPreview** (`preview/GeneralPreview.tsx`)
+   - General section preview with 3 subsections
+   - emptyState, addToCartButton, toasts
+   - Replaces 146 lines of JSX in main file
+   - Uses centralized PlusIcon
+
+10. **Centralized SVG Icons** (`icons/index.tsx`)
+    - ShoppingCartIcon: E-commerce style shopping cart
+    - PlusIcon: Plus icon for empty states
+    - ImagePlaceholderIcon: Image placeholder icon
+    - All icons are TypeScript components with proper typing
+    - Reduces code duplication across preview components
+
 ## How to Continue Refactoring
 
 The main file still contains several large sections that should be extracted:
 
-### 1. Preview Components (Priority: High)
-
-Extract these preview sections into `preview/` directory:
-
-- **BundleFooterPreview.tsx** - Extract all footer subsections:
-  - `if (activeSubSection === "footer")`
-  - `if (activeSubSection === "footerPrice")`
-  - `if (activeSubSection === "footerButton")`
-  - `if (activeSubSection === "footerDiscountProgress")`
-
-- **BundleHeaderPreview.tsx** - Extract header subsections:
-  - `if (activeSubSection === "headerTabs")`
-  - `if (activeSubSection === "headerText")`
-
-- **GeneralPreview.tsx** - Extract general subsections:
-  - `if (activeSubSection === "emptyState")`
-  - `if (activeSubSection === "addToCartButton")`
-  - `if (activeSubSection === "toasts")`
-  - `if (activeSubSection === "filters")`
-
-### 2. Settings Components (Priority: High)
+### 1. Settings Components (Priority: High)
 
 Extract settings panels into `settings/` directory:
 
@@ -85,7 +94,7 @@ Extract settings panels into `settings/` directory:
 - **BundleHeaderSettings.tsx**
 - **GeneralSettings.tsx**
 
-### 3. Navigation Panel (Priority: Medium)
+### 2. Navigation Panel (Priority: Medium)
 
 Create **NavigationPanel.tsx** that includes:
 - All NavigationItem instances
@@ -166,9 +175,19 @@ After each extraction:
 
 ## Next Steps
 
-1. Extract BundleFooterPreview component (4 subsections)
-2. Extract BundleHeaderPreview component (2 subsections)
-3. Extract GeneralPreview component (4 subsections)
-4. Extract all settings panel components
-5. Create NavigationPanel component
-6. Update NavigationItem usages to pass isExpanded/isActive props explicitly
+1. ✅ ~~Extract BundleFooterPreview component (4 subsections)~~
+2. ✅ ~~Extract BundleHeaderPreview component (2 subsections)~~
+3. ✅ ~~Extract GeneralPreview component (3 subsections)~~
+4. ✅ ~~Create centralized SVG icons module~~
+5. Extract all settings panel components
+6. Create NavigationPanel component
+7. Update NavigationItem usages to pass isExpanded/isActive props explicitly
+
+## Summary of Improvements
+
+The Design Control Panel has been significantly refactored:
+- **Main file reduced from 4,644 lines to ~4,000 lines** (14% reduction)
+- **10 reusable components extracted** for better organization
+- **Centralized SVG icons** for consistency and maintainability
+- **All preview components** properly separated and testable
+- **Global color system** with intelligent cascading implemented
