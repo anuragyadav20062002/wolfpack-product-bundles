@@ -1819,25 +1819,25 @@ export default function DesignControlPanel() {
           </div>
         );
       }
+    }
 
-      // General subsections
-      if (["emptyState", "addToCartButton", "toasts"].includes(activeSubSection)) {
-        return (
-          <GeneralPreview
-            activeSubSection={activeSubSection}
-            emptyStateCardBgColor={emptyStateCardBgColor}
-            emptyStateBorderStyle={emptyStateBorderStyle}
-            emptyStateCardBorderColor={emptyStateCardBorderColor}
-            emptyStateTextColor={emptyStateTextColor}
-            addToCartButtonBgColor={addToCartButtonBgColor}
-            addToCartButtonTextColor={addToCartButtonTextColor}
-            addToCartButtonBorderRadius={addToCartButtonBorderRadius}
-            buttonAddToCartText={buttonAddToCartText}
-            toastBgColor={toastBgColor}
-            toastTextColor={toastTextColor}
-          />
-        );
-      }
+    // General subsections
+    if (["emptyState", "addToCartButton", "toasts"].includes(activeSubSection)) {
+      return (
+        <GeneralPreview
+          activeSubSection={activeSubSection}
+          emptyStateCardBgColor={emptyStateCardBgColor}
+          emptyStateBorderStyle={emptyStateBorderStyle}
+          emptyStateCardBorderColor={emptyStateCardBorderColor}
+          emptyStateTextColor={emptyStateTextColor}
+          addToCartButtonBgColor={addToCartButtonBgColor}
+          addToCartButtonTextColor={addToCartButtonTextColor}
+          addToCartButtonBorderRadius={addToCartButtonBorderRadius}
+          buttonAddToCartText={buttonAddToCartText}
+          toastBgColor={toastBgColor}
+          toastTextColor={toastTextColor}
+        />
+      );
     }
 
     // Product Card subsections (default)
@@ -1847,6 +1847,7 @@ export default function DesignControlPanel() {
         productCardFontColor={productCardFontColor}
         productCardFontSize={productCardFontSize}
         productCardFontWeight={productCardFontWeight}
+        productCardImageFit={productCardImageFit}
         productTitleVisibility={productTitleVisibility}
         productPriceVisibility={productPriceVisibility}
         productStrikePriceColor={productStrikePriceColor}

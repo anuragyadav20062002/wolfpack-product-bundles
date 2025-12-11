@@ -5,6 +5,7 @@ interface ProductCardPreviewProps {
   productCardFontColor: string;
   productCardFontSize: number;
   productCardFontWeight: number;
+  productCardImageFit: string;
   productTitleVisibility: boolean;
   productPriceVisibility: boolean;
   productStrikePriceColor: string;
@@ -33,6 +34,7 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
     productCardFontColor,
     productCardFontSize,
     productCardFontWeight,
+    productCardImageFit,
     productTitleVisibility,
     productPriceVisibility,
     productStrikePriceColor,
@@ -115,7 +117,7 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "contain",
+              objectFit: productCardImageFit as any,
             }}
           />
         </div>
