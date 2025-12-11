@@ -1,5 +1,4 @@
 import { Text } from "@shopify/polaris";
-import { ArrowLabel } from "../common/ArrowLabel";
 
 interface BundleHeaderPreviewProps {
   activeSubSection: string;
@@ -118,8 +117,6 @@ export function BundleHeaderPreview(props: BundleHeaderPreviewProps) {
                 position: "relative",
               }}>
                 Choose 3 products
-                {/* Arrow pointing to Conditions Text */}
-                <ArrowLabel label="Conditions Text" position="top" verticalDistance={150} />
               </h2>
             </div>
 
@@ -134,8 +131,6 @@ export function BundleHeaderPreview(props: BundleHeaderPreviewProps) {
                 position: "relative",
               }}>
                 Add 2 product(s) to get the bundle at $45
-                {/* Arrow pointing to Discount Text */}
-                <ArrowLabel label="Discount Text" position="bottom" verticalDistance={150} />
               </p>
             </div>
           </div>

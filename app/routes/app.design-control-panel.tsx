@@ -27,6 +27,7 @@ import { prisma } from "../db.server";
 
 // Import extracted components
 import { ColorPicker } from "../components/design-control-panel/common/ColorPicker";
+import { ArrowLabel } from "../components/design-control-panel/common/ArrowLabel";
 import { NavigationItem } from "../components/design-control-panel/NavigationItem";
 import { ProductCardPreview } from "../components/design-control-panel/preview/ProductCardPreview";
 import { BundleFooterPreview } from "../components/design-control-panel/preview/BundleFooterPreview";
@@ -1852,6 +1853,71 @@ export default function DesignControlPanel() {
         buttonAddToCartText={buttonAddToCartText}
       />
     );
+  };
+
+  // Render arrow overlays based on active subsection
+  const renderArrows = () => {
+    // Product Card arrows (default when no specific subsection is selected)
+    if (!activeSubSection || activeSubSection === "") {
+      return (
+        <>
+          <ArrowLabel label="Product Card" position="left" horizontalDistance={160} />
+          <ArrowLabel label="Product Image" position="top" verticalDistance={150} />
+          <ArrowLabel label="Product Title" position="right" horizontalDistance={140} />
+          <ArrowLabel label="Product Prices" position="left" horizontalDistance={160} />
+          <ArrowLabel label="Variant Selector" position="right" horizontalDistance={160} />
+          <ArrowLabel label="Button" position="bottom" verticalDistance={150} />
+        </>
+      );
+    }
+
+    // Bundle Footer arrows
+    if (activeSubSection === "footer") {
+      return (
+        <>
+          <ArrowLabel label="Total Pill" position="top" verticalDistance={150} />
+          <ArrowLabel label="Footer" position="top" verticalDistance={150} horizontalOffset={20} />
+        </>
+      );
+    }
+
+    if (activeSubSection === "footerPrice") {
+      return <ArrowLabel label="Price" position="right" horizontalDistance={140} />;
+    }
+
+    if (activeSubSection === "footerButton") {
+      return (
+        <>
+          <ArrowLabel label="Back Button" position="left" horizontalDistance={140} />
+          <ArrowLabel label="Next Button" position="right" horizontalDistance={140} />
+        </>
+      );
+    }
+
+    // Bundle Header arrows
+    if (activeSubSection === "headerText") {
+      return (
+        <>
+          <ArrowLabel label="Conditions Text" position="top" verticalDistance={150} />
+          <ArrowLabel label="Discount Text" position="bottom" verticalDistance={150} />
+        </>
+      );
+    }
+
+    // General section arrows
+    if (activeSubSection === "emptyState") {
+      return <ArrowLabel label="Empty State Card" position="top" verticalDistance={150} />;
+    }
+
+    if (activeSubSection === "addToCartButton") {
+      return <ArrowLabel label="Add to Cart Button" position="top" verticalDistance={150} />;
+    }
+
+    if (activeSubSection === "toasts") {
+      return <ArrowLabel label="Toast Notification" position="top" verticalDistance={150} />;
+    }
+
+    return null;
   };
 
   // Render settings panel based on active subsection
@@ -3995,7 +4061,11 @@ export default function DesignControlPanel() {
                   overflowX: "hidden",
                 }}
               >
-                {renderPreviewContent()}
+                {/* Preview with Arrow Overlay */}
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  {renderPreviewContent()}
+                  {renderArrows()}
+                </div>
               </div>
 
               {/* Right Panel - Settings Controls */}

@@ -1,5 +1,4 @@
 import { Text } from "@shopify/polaris";
-import { ArrowLabel } from "../common/ArrowLabel";
 
 interface GeneralPreviewProps {
   activeSubSection: string;
@@ -64,11 +63,6 @@ export function GeneralPreview(props: GeneralPreviewProps) {
                     <path d="M24.5 34.5L28.5 30.5L37.5 39.5L44.5 32.5" stroke={emptyStateTextColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4"/>
                     <circle cx="40" cy="28" r="2.5" fill={emptyStateTextColor} opacity="0.4"/>
                   </svg>
-
-                  {/* Arrow pointing to middle card */}
-                  {index === 1 && (
-                    <ArrowLabel label="Empty State Card" position="top" verticalDistance={150} />
-                  )}
                 </div>
 
                 {/* Label below card */}
@@ -110,8 +104,6 @@ export function GeneralPreview(props: GeneralPreviewProps) {
             }}
           >
             {buttonAddToCartText || "Add to Cart"}
-            {/* Arrow pointing to Add to Cart Button */}
-            <ArrowLabel label="Add to Cart Button" position="top" verticalDistance={150} />
           </button>
         </div>
       </div>
@@ -139,8 +131,6 @@ export function GeneralPreview(props: GeneralPreviewProps) {
           <span style={{ fontSize: "24px", fontWeight: 500 }}>
             Add at least 1 product on this step
           </span>
-          {/* Arrow pointing to Toast */}
-          <ArrowLabel label="Toast Notification" position="top" verticalDistance={150} />
         </div>
         <div style={{ marginTop: "40px" }}>
           <Text as="p" variant="bodySm" tone="subdued">

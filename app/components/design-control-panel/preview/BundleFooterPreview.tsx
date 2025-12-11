@@ -1,5 +1,4 @@
 import { Text } from "@shopify/polaris";
-import { ArrowLabel } from "../common/ArrowLabel";
 
 interface BundleFooterPreviewProps {
   activeSubSection: string;
@@ -117,9 +116,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                     <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
                   </svg>
                 </span>
-
-                {/* Arrow pointing to Total Pill */}
-                <ArrowLabel label="Total Pill" position="top" verticalDistance={150} />
               </div>
 
               {/* Buttons Row */}
@@ -167,9 +163,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                 </button>
               </div>
             </div>
-
-            {/* Arrow pointing to Footer Background (left side) */}
-            <ArrowLabel label="Footer" position="top" verticalDistance={150} horizontalOffset={20} />
           </div>
         </div>
       </div>
@@ -246,9 +239,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                       <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
                     </svg>
                   </span>
-
-                  {/* Arrow pointing to Price */}
-                  <ArrowLabel label="Price" position="right" horizontalDistance={140} />
                 </div>
               )}
 
@@ -398,9 +388,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                   }}
                 >
                   BACK
-
-                  {/* Arrow pointing to Back Button (left side) */}
-                  <ArrowLabel label="Back Button" position="left" horizontalDistance={140} />
                 </button>
 
                 {/* Next Button */}
@@ -420,9 +407,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                   }}
                 >
                   NEXT
-
-                  {/* Arrow pointing to Next Button (right side) */}
-                  <ArrowLabel label="Next Button" position="right" horizontalDistance={140} />
                 </button>
               </div>
             </div>

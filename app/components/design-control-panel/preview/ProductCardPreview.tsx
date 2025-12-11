@@ -1,5 +1,4 @@
 import { Text } from "@shopify/polaris";
-import { ArrowLabel } from "../common/ArrowLabel";
 
 interface ProductCardPreviewProps {
   productCardBgColor: string;
@@ -68,8 +67,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
           overflow: "hidden",
         }}
       >
-        {/* Arrow pointing to Product Card */}
-        <ArrowLabel label="Product Card" position="left" horizontalDistance={160} />
         {/* Checkmark Badge for Selected State */}
         <div
           style={{
@@ -117,8 +114,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               objectFit: "contain",
             }}
           />
-          {/* Arrow pointing to Product Image */}
-          <ArrowLabel label="Product Image" position="top" verticalDistance={150} />
         </div>
 
         {/* Content Container with Flex Grow */}
@@ -140,8 +135,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               }}
             >
               PRODUCT NAME
-              {/* Arrow pointing to Product Title */}
-              <ArrowLabel label="Product Title" position="right" horizontalDistance={140} />
             </div>
           )}
 
@@ -168,8 +161,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               >
                 $14.99
               </span>
-              {/* Arrow pointing to Product Prices */}
-              <ArrowLabel label="Product Prices" position="left" horizontalDistance={160} />
             </div>
           )}
 
@@ -196,8 +187,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
             >
               <option>Select Variant</option>
             </select>
-            {/* Arrow pointing to Variant Selector */}
-            <ArrowLabel label="Variant Selector" position="right" horizontalDistance={160} />
           </div>
 
           {/* Add to Cart Button */}
@@ -220,8 +209,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
             }}
           >
             {buttonAddToCartText}
-            {/* Arrow pointing to Add to Cart Button */}
-            <ArrowLabel label="Button" position="bottom" verticalDistance={150} />
           </button>
         </div>
       </div>
