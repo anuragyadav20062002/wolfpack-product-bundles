@@ -189,7 +189,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
               backgroundColor: footerBgColor,
               borderRadius: `${footerBorderRadius}px`,
               padding: `${footerPadding}px`,
-              minWidth: "422px",
+              minWidth: "561px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

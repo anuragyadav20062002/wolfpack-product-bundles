@@ -65,12 +65,10 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
           padding: "16px",
           width: "280px",
           minHeight: "420px",
-          maxHeight: "420px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
           position: "relative",
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
         }}
       >
         {/* Checkmark Badge for Selected State */}
@@ -260,7 +258,7 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
             </div>
           </div>
 
-          {/* Add to Cart Button */}
+          {/* Add to Bundle Button */}
           <button
             style={{
               width: "100%",

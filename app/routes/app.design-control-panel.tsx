@@ -82,7 +82,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       buttonFontWeight: 600,
       buttonBorderRadius: 8,
       buttonHoverBgColor: "#333333",
-      buttonAddToCartText: "Add to cart",
+      buttonAddToCartText: "Add to bundle",
       // Quantity Selector
       quantitySelectorBgColor: "#000000",
       quantitySelectorTextColor: "#FFFFFF",
@@ -162,6 +162,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // Add to Cart Button
       addToCartButtonBgColor: "#000000",
       addToCartButtonTextColor: "#FFFFFF",
+      addToCartButtonBorderRadius: 67,
       // Toasts
       toastBgColor: "#000000",
       toastTextColor: "#FFFFFF",
@@ -209,7 +210,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       buttonFontWeight: 700,
       buttonBorderRadius: 12,
       buttonHoverBgColor: "#5F2DD8",
-      buttonAddToCartText: "Add Bundle to Cart",
+      buttonAddToCartText: "Add to bundle",
       quantitySelectorBgColor: "#7132FF",
       quantitySelectorTextColor: "#FFFFFF",
       quantitySelectorFontSize: 18,
@@ -288,6 +289,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // Add to Cart Button
       addToCartButtonBgColor: "#7132FF",
       addToCartButtonTextColor: "#FFFFFF",
+      addToCartButtonBorderRadius: 67,
       // Toasts
       toastBgColor: "#7132FF",
       toastTextColor: "#FFFFFF",
@@ -434,6 +436,7 @@ export async function action({ request }: ActionFunctionArgs) {
       // Add to Cart Button
       addToCartButtonBgColor: settings.addToCartButtonBgColor,
       addToCartButtonTextColor: settings.addToCartButtonTextColor,
+      addToCartButtonBorderRadius: settings.addToCartButtonBorderRadius,
       // Toasts
       toastBgColor: settings.toastBgColor,
       toastTextColor: settings.toastTextColor,
@@ -650,6 +653,7 @@ export default function DesignControlPanel() {
   // Add to Cart Button
   const [addToCartButtonBgColor, setAddToCartButtonBgColor] = useState(currentSettings.addToCartButtonBgColor || "#000000");
   const [addToCartButtonTextColor, setAddToCartButtonTextColor] = useState(currentSettings.addToCartButtonTextColor || "#FFFFFF");
+  const [addToCartButtonBorderRadius, setAddToCartButtonBorderRadius] = useState(currentSettings.addToCartButtonBorderRadius || 67);
   // Toasts
   const [toastBgColor, setToastBgColor] = useState(currentSettings.toastBgColor || "#000000");
   const [toastTextColor, setToastTextColor] = useState(currentSettings.toastTextColor || "#FFFFFF");
@@ -1827,6 +1831,7 @@ export default function DesignControlPanel() {
             emptyStateTextColor={emptyStateTextColor}
             addToCartButtonBgColor={addToCartButtonBgColor}
             addToCartButtonTextColor={addToCartButtonTextColor}
+            addToCartButtonBorderRadius={addToCartButtonBorderRadius}
             buttonAddToCartText={buttonAddToCartText}
             toastBgColor={toastBgColor}
             toastTextColor={toastTextColor}
@@ -1890,6 +1895,31 @@ export default function DesignControlPanel() {
           <ArrowLabel label="Quantity Selector" position="right" horizontalDistance={160} verticalOffset={10} />
         </>
       );
+    }
+
+    // Product Card subsection arrows
+    if (activeSubSection === "productCard") {
+      return (
+        <>
+          <ArrowLabel label="Product Card" position="left" horizontalDistance={160} verticalOffset={-80} />
+          <ArrowLabel label="Product Image" position="top" verticalDistance={150} />
+        </>
+      );
+    }
+
+    // Product Card Typography subsection arrows
+    if (activeSubSection === "productCardTypography") {
+      return (
+        <>
+          <ArrowLabel label="Product Title" position="top" verticalDistance={140} />
+          <ArrowLabel label="Product Prices" position="bottom" verticalDistance={140} />
+        </>
+      );
+    }
+
+    // Button subsection arrows
+    if (activeSubSection === "button") {
+      return <ArrowLabel label="Add to Bundle Button" position="bottom" verticalDistance={130} />;
     }
 
     // Bundle Footer arrows
@@ -3488,6 +3518,17 @@ export default function DesignControlPanel() {
                   </Text>
                 </BlockStack>
               </InlineStack>
+            </BlockStack>
+
+            <BlockStack gap="200">
+              <TextField
+                label="Button Corner Radius"
+                type="number"
+                value={String(addToCartButtonBorderRadius)}
+                onChange={(value) => setAddToCartButtonBorderRadius(Number(value))}
+                autoComplete="off"
+                suffix="px"
+              />
             </BlockStack>
 
             <BlockStack gap="200">

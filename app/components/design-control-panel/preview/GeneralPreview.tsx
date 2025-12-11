@@ -8,6 +8,7 @@ interface GeneralPreviewProps {
   emptyStateTextColor: string;
   addToCartButtonBgColor: string;
   addToCartButtonTextColor: string;
+  addToCartButtonBorderRadius: number;
   buttonAddToCartText: string;
   toastBgColor: string;
   toastTextColor: string;
@@ -22,6 +23,7 @@ export function GeneralPreview(props: GeneralPreviewProps) {
     emptyStateTextColor,
     addToCartButtonBgColor,
     addToCartButtonTextColor,
+    addToCartButtonBorderRadius,
     buttonAddToCartText,
     toastBgColor,
     toastTextColor,
@@ -57,11 +59,10 @@ export function GeneralPreview(props: GeneralPreviewProps) {
                     position: "relative",
                   }}
                 >
-                  {/* Image placeholder icon */}
+                  {/* Plus icon */}
                   <svg width="69" height="69" viewBox="0 0 69 69" fill="none">
-                    <rect width="69" height="69" rx="8" fill={emptyStateTextColor} opacity="0.1"/>
-                    <path d="M24.5 34.5L28.5 30.5L37.5 39.5L44.5 32.5" stroke={emptyStateTextColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4"/>
-                    <circle cx="40" cy="28" r="2.5" fill={emptyStateTextColor} opacity="0.4"/>
+                    <line x1="34.5" y1="15" x2="34.5" y2="54" stroke={emptyStateTextColor} strokeWidth="4" strokeLinecap="round"/>
+                    <line x1="15" y1="34.5" x2="54" y2="34.5" stroke={emptyStateTextColor} strokeWidth="4" strokeLinecap="round"/>
                   </svg>
                 </div>
 
@@ -92,7 +93,7 @@ export function GeneralPreview(props: GeneralPreviewProps) {
               color: addToCartButtonTextColor,
               width: "578px",
               height: "87px",
-              borderRadius: "8px",
+              borderRadius: `${addToCartButtonBorderRadius}px`,
               fontSize: "34px",
               fontWeight: "bold",
               border: "none",
