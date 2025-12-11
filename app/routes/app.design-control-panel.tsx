@@ -27,6 +27,7 @@ import { prisma } from "../db.server";
 
 // Import extracted components
 import { ColorPicker } from "../components/design-control-panel/common/ColorPicker";
+import { ArrowLabel } from "../components/design-control-panel/common/ArrowLabel";
 import { NavigationItem } from "../components/design-control-panel/NavigationItem";
 import { ProductCardPreview } from "../components/design-control-panel/preview/ProductCardPreview";
 import { BundleFooterPreview } from "../components/design-control-panel/preview/BundleFooterPreview";
@@ -1262,6 +1263,11 @@ export default function DesignControlPanel() {
 
   // Render preview content based on active subsection
   const renderPreviewContent = () => {
+    // Global Colors - No preview
+    if (activeSubSection === "globalColors") {
+      return null;
+    }
+
     // Bundle Footer subsections
     if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
       return (
@@ -1286,6 +1292,9 @@ export default function DesignControlPanel() {
           footerNextButtonTextColor={footerNextButtonTextColor}
           footerNextButtonBorderColor={footerNextButtonBorderColor}
           footerNextButtonBorderRadius={footerNextButtonBorderRadius}
+          footerDiscountTextVisibility={footerDiscountTextVisibility}
+          footerProgressBarFilledColor={footerProgressBarFilledColor}
+          footerProgressBarEmptyColor={footerProgressBarEmptyColor}
         />
       );
     }
@@ -1821,9 +1830,6 @@ export default function DesignControlPanel() {
             buttonAddToCartText={buttonAddToCartText}
             toastBgColor={toastBgColor}
             toastTextColor={toastTextColor}
-            filterBgColor={filterBgColor}
-            filterIconColor={filterIconColor}
-            filterTextColor={filterTextColor}
           />
         );
       }
@@ -1847,6 +1853,9 @@ export default function DesignControlPanel() {
         variantSelectorBgColor={variantSelectorBgColor}
         variantSelectorTextColor={variantSelectorTextColor}
         variantSelectorBorderRadius={variantSelectorBorderRadius}
+        quantitySelectorBgColor={quantitySelectorBgColor}
+        quantitySelectorTextColor={quantitySelectorTextColor}
+        quantitySelectorBorderRadius={quantitySelectorBorderRadius}
         buttonBgColor={buttonBgColor}
         buttonTextColor={buttonTextColor}
         buttonBorderRadius={buttonBorderRadius}
@@ -1855,6 +1864,90 @@ export default function DesignControlPanel() {
         buttonAddToCartText={buttonAddToCartText}
       />
     );
+  };
+
+  // Render arrow overlays based on active subsection
+  const renderArrows = () => {
+    // Product Card arrows (default when no specific subsection is selected)
+    if (!activeSubSection || activeSubSection === "") {
+      return (
+        <>
+          <ArrowLabel label="Product Card" position="left" horizontalDistance={160} />
+          <ArrowLabel label="Product Image" position="top" verticalDistance={150} />
+          <ArrowLabel label="Product Title" position="right" horizontalDistance={140} />
+          <ArrowLabel label="Product Prices" position="left" horizontalDistance={160} />
+          <ArrowLabel label="Variant Selector" position="right" horizontalDistance={160} />
+          <ArrowLabel label="Button" position="bottom" verticalDistance={150} />
+        </>
+      );
+    }
+
+    // Quantity & Variant Selector arrows
+    if (activeSubSection === "quantityVariantSelector") {
+      return (
+        <>
+          <ArrowLabel label="Variant Selector" position="left" horizontalDistance={160} verticalOffset={-40} />
+          <ArrowLabel label="Quantity Selector" position="right" horizontalDistance={160} verticalOffset={10} />
+        </>
+      );
+    }
+
+    // Bundle Footer arrows
+    if (activeSubSection === "footer") {
+      return (
+        <>
+          <ArrowLabel label="Total Pill" position="top" verticalDistance={150} />
+          <ArrowLabel label="Footer" position="top" verticalDistance={150} horizontalOffset={20} />
+        </>
+      );
+    }
+
+    if (activeSubSection === "footerPrice") {
+      return <ArrowLabel label="Price" position="right" horizontalDistance={140} />;
+    }
+
+    if (activeSubSection === "footerButton") {
+      return (
+        <>
+          <ArrowLabel label="Back Button" position="left" horizontalDistance={140} />
+          <ArrowLabel label="Next Button" position="right" horizontalDistance={140} />
+        </>
+      );
+    }
+
+    if (activeSubSection === "footerDiscountProgress") {
+      return (
+        <>
+          <ArrowLabel label="Discount Text" position="top" verticalDistance={120} />
+          <ArrowLabel label="Progress Bar" position="bottom" verticalDistance={120} />
+        </>
+      );
+    }
+
+    // Bundle Header arrows
+    if (activeSubSection === "headerText") {
+      return (
+        <>
+          <ArrowLabel label="Conditions Text" position="top" verticalDistance={150} />
+          <ArrowLabel label="Discount Text" position="bottom" verticalDistance={150} />
+        </>
+      );
+    }
+
+    // General section arrows
+    if (activeSubSection === "emptyState") {
+      return <ArrowLabel label="Empty State Card" position="top" verticalDistance={150} />;
+    }
+
+    if (activeSubSection === "addToCartButton") {
+      return <ArrowLabel label="Add to Cart Button" position="top" verticalDistance={150} />;
+    }
+
+    if (activeSubSection === "toasts") {
+      return <ArrowLabel label="Toast Notification" position="top" verticalDistance={150} />;
+    }
+
+    return null;
   };
 
   // Render settings panel based on active subsection
@@ -1895,48 +1988,14 @@ export default function DesignControlPanel() {
                   Primary Button Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Main color for all primary action buttons in the bundle
+                  Main color for all primary action buttons (Add to Cart, Next, etc.)
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalPrimaryButtonColor}
-                  onChange={setGlobalPrimaryButtonColor}
-                  autoComplete="off"
-                  placeholder="#000000"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalPrimaryButtonColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalPrimaryButtonColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalPrimaryButtonColorInput"
-                    type="color"
-                    value={globalPrimaryButtonColor}
-                    onChange={(e) => setGlobalPrimaryButtonColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label=""
+                value={globalPrimaryButtonColor}
+                onChange={setGlobalPrimaryButtonColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -1947,48 +2006,13 @@ export default function DesignControlPanel() {
                   Button Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Text color for all button labels and call-to-actions
+                  Text color for all button labels and call-to-actions across the bundle
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalButtonTextColor}
-                  onChange={setGlobalButtonTextColor}
-                  autoComplete="off"
-                  placeholder="#FFFFFF"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalButtonTextColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalButtonTextColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalButtonTextColorInput"
-                    type="color"
-                    value={globalButtonTextColor}
-                    onChange={(e) => setGlobalButtonTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalButtonTextColor}
+                onChange={setGlobalButtonTextColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -1999,48 +2023,13 @@ export default function DesignControlPanel() {
                   Primary Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Main text color for headings and important content
+                  Main text color for product titles, headings, and important content
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalPrimaryTextColor}
-                  onChange={setGlobalPrimaryTextColor}
-                  autoComplete="off"
-                  placeholder="#000000"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalPrimaryTextColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalPrimaryTextColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalPrimaryTextColorInput"
-                    type="color"
-                    value={globalPrimaryTextColor}
-                    onChange={(e) => setGlobalPrimaryTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalPrimaryTextColor}
+                onChange={setGlobalPrimaryTextColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -2051,48 +2040,13 @@ export default function DesignControlPanel() {
                   Secondary Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Supporting text color for descriptions and helper text
+                  Supporting text for product descriptions, helper text, and subdued content
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalSecondaryTextColor}
-                  onChange={setGlobalSecondaryTextColor}
-                  autoComplete="off"
-                  placeholder="#6B7280"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalSecondaryTextColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalSecondaryTextColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalSecondaryTextColorInput"
-                    type="color"
-                    value={globalSecondaryTextColor}
-                    onChange={(e) => setGlobalSecondaryTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalSecondaryTextColor}
+                onChange={setGlobalSecondaryTextColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -2103,48 +2057,13 @@ export default function DesignControlPanel() {
                   Footer Background
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Background color for footer sections in the bundle
+                  Background color for all footer sections in the bundle widget
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalFooterBgColor}
-                  onChange={setGlobalFooterBgColor}
-                  autoComplete="off"
-                  placeholder="#FFFFFF"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalFooterBgColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalFooterBgColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalFooterBgColorInput"
-                    type="color"
-                    value={globalFooterBgColor}
-                    onChange={(e) => setGlobalFooterBgColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalFooterBgColor}
+                onChange={setGlobalFooterBgColor}
+              />
             </InlineStack>
             <Divider />
 
@@ -2155,48 +2074,13 @@ export default function DesignControlPanel() {
                   Footer Text Color
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  Text color for all footer content and labels
+                  Text color for all content and labels within footer sections
                 </Text>
               </BlockStack>
-              <InlineStack gap="300" align="end" blockAlign="center">
-                <TextField
-                  label=""
-                  labelHidden
-                  value={globalFooterTextColor}
-                  onChange={setGlobalFooterTextColor}
-                  autoComplete="off"
-                  placeholder="#000000"
-                />
-                <div
-                  onClick={() => {
-                    const input = document.getElementById("globalFooterTextColorInput");
-                    if (input) input.click();
-                  }}
-                  style={{
-                    width: "68px",
-                    height: "68px",
-                    borderRadius: "50%",
-                    backgroundColor: globalFooterTextColor,
-                    border: "1px solid #E3E3E3",
-                    flexShrink: 0,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                >
-                  <input
-                    id="globalFooterTextColorInput"
-                    type="color"
-                    value={globalFooterTextColor}
-                    onChange={(e) => setGlobalFooterTextColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-              </InlineStack>
+              <ColorPicker
+                label="" value={globalFooterTextColor}
+                onChange={setGlobalFooterTextColor}
+              />
             </InlineStack>
           </BlockStack>
         );
@@ -2457,74 +2341,73 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
-      case "quantitySelector":
+      case "quantityVariantSelector":
         return (
           <BlockStack gap="400">
             <Text as="h2" variant="headingMd">
-              Quantity Selector
+              Quantity & Variant Selector
             </Text>
             <Divider />
 
-            <ColorPicker
-              label="Background Color"
-              value={quantitySelectorBgColor}
-              onChange={setQuantitySelectorBgColor}
-            />
+            {/* Quantity Selector Section */}
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingSm">
+                Quantity Selector
+              </Text>
 
-            <ColorPicker
-              label="Text Color"
-              value={quantitySelectorTextColor}
-              onChange={setQuantitySelectorTextColor}
-            />
+              <ColorPicker
+                label="Background Color"
+                value={quantitySelectorBgColor}
+                onChange={setQuantitySelectorBgColor}
+              />
 
-            <RangeSlider
-              label="Font Size"
-              value={quantitySelectorFontSize}
-              onChange={(value) => setQuantitySelectorFontSize(value as number)}
-              min={12}
-              max={24}
-              output
-            />
+              <ColorPicker
+                label="Text Color"
+                value={quantitySelectorTextColor}
+                onChange={setQuantitySelectorTextColor}
+              />
 
-            <RangeSlider
-              label="Border Radius"
-              value={quantitySelectorBorderRadius}
-              onChange={(value) => setQuantitySelectorBorderRadius(value as number)}
-              min={0}
-              max={24}
-              output
-            />
-          </BlockStack>
-        );
+              <RangeSlider
+                label="Border Radius"
+                value={quantitySelectorBorderRadius}
+                onChange={(value) => setQuantitySelectorBorderRadius(value as number)}
+                min={0}
+                max={67}
+                output
+                suffix="px"
+              />
+            </BlockStack>
 
-      case "variantSelector":
-        return (
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">
-              Variant Selector
-            </Text>
             <Divider />
 
-            <ColorPicker
-              label="Background Color"
-              value={variantSelectorBgColor}
-              onChange={setVariantSelectorBgColor}
-            />
+            {/* Variant Selector Section */}
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingSm">
+                Variant Selector
+              </Text>
 
-            <ColorPicker
-              label="Text Color"
-              value={variantSelectorTextColor}
-              onChange={setVariantSelectorTextColor}
-            />
+              <ColorPicker
+                label="Background Color"
+                value={variantSelectorBgColor}
+                onChange={setVariantSelectorBgColor}
+              />
 
-            <RangeSlider
-              label="Border Radius"
-              value={variantSelectorBorderRadius}
-              onChange={(value) => setVariantSelectorBorderRadius(value as number)}
-              min={0}
-              max={24}
-              output
-            />
+              <ColorPicker
+                label="Text Color"
+                value={variantSelectorTextColor}
+                onChange={setVariantSelectorTextColor}
+              />
+
+              <RangeSlider
+                label="Border Radius"
+                value={variantSelectorBorderRadius}
+                onChange={(value) => setVariantSelectorBorderRadius(value as number)}
+                min={0}
+                max={67}
+                output
+                suffix="px"
+              />
+            </BlockStack>
           </BlockStack>
         );
 
@@ -2704,87 +2587,19 @@ export default function DesignControlPanel() {
               </ButtonGroup>
             </BlockStack>
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerProgressBarFilledColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerProgressBarFilledColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerProgressBarFilledColorInput"
-                    type="color"
-                    value={footerProgressBarFilledColor}
-                    onChange={(e) => setFooterProgressBarFilledColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Progress Bar Filled Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerProgressBarFilledColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <Divider />
 
-            <BlockStack gap="300">
-              <InlineStack gap="300" align="start" blockAlign="center">
-                <div
-                  style={{
-                    width: "41px",
-                    height: "41px",
-                    borderRadius: "50%",
-                    backgroundColor: footerProgressBarEmptyColor,
-                    border: "1px solid #E3E3E3",
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    const input = document.getElementById("footerProgressBarEmptyColorInput");
-                    if (input) input.click();
-                  }}
-                >
-                  <input
-                    id="footerProgressBarEmptyColorInput"
-                    type="color"
-                    value={footerProgressBarEmptyColor}
-                    onChange={(e) => setFooterProgressBarEmptyColor(e.target.value)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      width: 0,
-                      height: 0,
-                    }}
-                  />
-                </div>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd" fontWeight="medium">
-                    Progress Bar Empty Color
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    {footerProgressBarEmptyColor}
-                  </Text>
-                </BlockStack>
-              </InlineStack>
-            </BlockStack>
+            <ColorPicker
+              label="Progress Bar Filled Color"
+              value={footerProgressBarFilledColor}
+              onChange={setFooterProgressBarFilledColor}
+            />
+
+            <ColorPicker
+              label="Progress Bar Empty Color"
+              value={footerProgressBarEmptyColor}
+              onChange={setFooterProgressBarEmptyColor}
+            />
           </BlockStack>
         );
 
@@ -3868,18 +3683,11 @@ export default function DesignControlPanel() {
                   isActive={activeSubSection === "button"}
                 />
                 <NavigationItem
-                  label="Quantity Selector"
-                  sectionKey="quantitySelector"
+                  label="Quantity & Variant Selector"
+                  sectionKey="quantityVariantSelector"
                   isChild
-                  onClick={() => handleSubSectionClick("quantitySelector")}
-                  isActive={activeSubSection === "quantitySelector"}
-                />
-                <NavigationItem
-                  label="Variant Selector"
-                  sectionKey="variantSelector"
-                  isChild
-                  onClick={() => handleSubSectionClick("variantSelector")}
-                  isActive={activeSubSection === "variantSelector"}
+                  onClick={() => handleSubSectionClick("quantityVariantSelector")}
+                  isActive={activeSubSection === "quantityVariantSelector"}
                 />
               </Collapsible>
 
@@ -3998,7 +3806,11 @@ export default function DesignControlPanel() {
                   overflowX: "hidden",
                 }}
               >
-                {renderPreviewContent()}
+                {/* Preview with Arrow Overlay */}
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  {renderPreviewContent()}
+                  {renderArrows()}
+                </div>
               </div>
 
               {/* Right Panel - Settings Controls */}

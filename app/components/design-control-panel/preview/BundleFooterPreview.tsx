@@ -1,5 +1,4 @@
 import { Text } from "@shopify/polaris";
-import { ArrowLabel } from "../common/ArrowLabel";
 
 interface BundleFooterPreviewProps {
   activeSubSection: string;
@@ -22,6 +21,9 @@ interface BundleFooterPreviewProps {
   footerNextButtonTextColor: string;
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
+  footerDiscountTextVisibility: boolean;
+  footerProgressBarFilledColor: string;
+  footerProgressBarEmptyColor: string;
 }
 
 export function BundleFooterPreview(props: BundleFooterPreviewProps) {
@@ -46,6 +48,9 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonTextColor,
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
+    footerDiscountTextVisibility,
+    footerProgressBarFilledColor,
+    footerProgressBarEmptyColor,
   } = props;
 
   // Bundle Footer - Main footer subsection
@@ -117,9 +122,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                     <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
                   </svg>
                 </span>
-
-                {/* Arrow pointing to Total Pill */}
-                <ArrowLabel label="Total Pill" position="top" verticalDistance={150} />
               </div>
 
               {/* Buttons Row */}
@@ -167,9 +169,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                 </button>
               </div>
             </div>
-
-            {/* Arrow pointing to Footer Background (left side) */}
-            <ArrowLabel label="Footer" position="top" verticalDistance={150} horizontalOffset={20} />
           </div>
         </div>
       </div>
@@ -246,9 +245,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                       <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
                     </svg>
                   </span>
-
-                  {/* Arrow pointing to Price */}
-                  <ArrowLabel label="Price" position="right" horizontalDistance={140} />
                 </div>
               )}
 
@@ -398,9 +394,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                   }}
                 >
                   BACK
-
-                  {/* Arrow pointing to Back Button (left side) */}
-                  <ArrowLabel label="Back Button" position="left" horizontalDistance={140} />
                 </button>
 
                 {/* Next Button */}
@@ -420,9 +413,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                   }}
                 >
                   NEXT
-
-                  {/* Arrow pointing to Next Button (right side) */}
-                  <ArrowLabel label="Next Button" position="right" horizontalDistance={140} />
                 </button>
               </div>
             </div>
@@ -439,10 +429,81 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
         <Text as="h3" variant="headingLg" fontWeight="semibold">
           Discount Text & Progress Bar
         </Text>
-        <div style={{ marginTop: "48px", display: "inline-block", position: "relative" }}>
-          <Text as="p" variant="bodySm" tone="subdued">
-            Preview updates as you customize
-          </Text>
+        <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
+          {/* Bundle Footer Messaging Container */}
+          <div
+            style={{
+              backgroundColor: footerBgColor,
+              borderRadius: `${footerBorderRadius}px`,
+              padding: `${footerPadding}px`,
+              minWidth: "422px",
+              maxWidth: "500px",
+              position: "relative",
+            }}
+          >
+            {/* Discount Text */}
+            {footerDiscountTextVisibility && (
+              <div
+                style={{
+                  textAlign: "center",
+                  marginBottom: "16px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  position: "relative",
+                }}
+              >
+                Add 2 more items to get <strong>10% off</strong>
+              </div>
+            )}
+
+            {/* Progress Bar Container */}
+            <div style={{ position: "relative" }}>
+              {/* Progress Bar */}
+              <div
+                style={{
+                  width: "100%",
+                  height: "8px",
+                  backgroundColor: footerProgressBarEmptyColor,
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                  marginBottom: "8px",
+                  position: "relative",
+                }}
+              >
+                {/* Progress Fill */}
+                <div
+                  style={{
+                    width: "50%",
+                    height: "100%",
+                    backgroundColor: footerProgressBarFilledColor,
+                    borderRadius: "4px",
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
+
+              {/* Progress Details */}
+              <div
+                style={{
+                  textAlign: "center",
+                  fontSize: "12px",
+                  color: "#6B7280",
+                  fontWeight: 500,
+                  position: "relative",
+                }}
+              >
+                <span style={{ color: "#374151", fontWeight: 600 }}>2</span> / <span style={{ color: "#374151", fontWeight: 600 }}>4</span> items
+              </div>
+            </div>
+          </div>
+
+          {/* Annotation Label */}
+          <div style={{ marginTop: "24px" }}>
+            <Text as="p" variant="bodySm" tone="subdued">
+              Preview updates as you customize
+            </Text>
+          </div>
         </div>
       </div>
     );

@@ -1,5 +1,4 @@
 import { Text } from "@shopify/polaris";
-import { ArrowLabel } from "../common/ArrowLabel";
 
 interface ProductCardPreviewProps {
   productCardBgColor: string;
@@ -17,6 +16,9 @@ interface ProductCardPreviewProps {
   variantSelectorBgColor: string;
   variantSelectorTextColor: string;
   variantSelectorBorderRadius: number;
+  quantitySelectorBgColor: string;
+  quantitySelectorTextColor: string;
+  quantitySelectorBorderRadius: number;
   buttonBgColor: string;
   buttonTextColor: string;
   buttonBorderRadius: number;
@@ -42,6 +44,9 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
     variantSelectorBgColor,
     variantSelectorTextColor,
     variantSelectorBorderRadius,
+    quantitySelectorBgColor,
+    quantitySelectorTextColor,
+    quantitySelectorBorderRadius,
     buttonBgColor,
     buttonTextColor,
     buttonBorderRadius,
@@ -68,8 +73,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
           overflow: "hidden",
         }}
       >
-        {/* Arrow pointing to Product Card */}
-        <ArrowLabel label="Product Card" position="left" horizontalDistance={160} />
         {/* Checkmark Badge for Selected State */}
         <div
           style={{
@@ -117,8 +120,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               objectFit: "contain",
             }}
           />
-          {/* Arrow pointing to Product Image */}
-          <ArrowLabel label="Product Image" position="top" verticalDistance={150} />
         </div>
 
         {/* Content Container with Flex Grow */}
@@ -140,8 +141,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               }}
             >
               PRODUCT NAME
-              {/* Arrow pointing to Product Title */}
-              <ArrowLabel label="Product Title" position="right" horizontalDistance={140} />
             </div>
           )}
 
@@ -168,8 +167,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               >
                 $14.99
               </span>
-              {/* Arrow pointing to Product Prices */}
-              <ArrowLabel label="Product Prices" position="left" horizontalDistance={160} />
             </div>
           )}
 
@@ -194,10 +191,73 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
                 backgroundPosition: "right 12px center",
               }}
             >
-              <option>Select Variant</option>
+              <option>Size: M</option>
             </select>
-            {/* Arrow pointing to Variant Selector */}
-            <ArrowLabel label="Variant Selector" position="right" horizontalDistance={160} />
+          </div>
+
+          {/* Quantity Selector */}
+          <div style={{ marginBottom: "12px", flexShrink: 0, position: "relative", display: "flex", justifyContent: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0px",
+                backgroundColor: quantitySelectorBgColor,
+                borderRadius: `${quantitySelectorBorderRadius}px`,
+                overflow: "hidden",
+                border: "1px solid #D1D1D1",
+              }}
+            >
+              {/* Minus Button */}
+              <button
+                style={{
+                  backgroundColor: "transparent",
+                  color: quantitySelectorTextColor,
+                  border: "none",
+                  padding: "10px 16px",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                −
+              </button>
+
+              {/* Quantity Display */}
+              <div
+                style={{
+                  color: quantitySelectorTextColor,
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  padding: "0 16px",
+                  minWidth: "40px",
+                  textAlign: "center",
+                }}
+              >
+                1
+              </div>
+
+              {/* Plus Button */}
+              <button
+                style={{
+                  backgroundColor: "transparent",
+                  color: quantitySelectorTextColor,
+                  border: "none",
+                  padding: "10px 16px",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                +
+              </button>
+            </div>
           </div>
 
           {/* Add to Cart Button */}
@@ -220,8 +280,6 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
             }}
           >
             {buttonAddToCartText}
-            {/* Arrow pointing to Add to Cart Button */}
-            <ArrowLabel label="Button" position="bottom" verticalDistance={150} />
           </button>
         </div>
       </div>
