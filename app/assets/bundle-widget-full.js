@@ -1427,11 +1427,14 @@ class BundleWidget {
 
   // Helper method to get formatted header text
   getFormattedHeaderText() {
-    const { totalQuantity, totalPrice } = this.calculateBundleTotals();
+    const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
-      totalQuantity,
-      totalPrice
+      totalPrice,
+      totalQuantity
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.buildTemplateVariables(
