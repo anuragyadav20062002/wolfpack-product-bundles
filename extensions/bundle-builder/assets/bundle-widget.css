@@ -672,10 +672,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
   background: #ffffff;
   border-radius: 6px;
   border: 1px solid #f0f0f0;
+  z-index: 1;
 }
 
 .modal-body .product-card .image-wrapper img {
@@ -873,6 +874,7 @@
   font-weight: bold;
   pointer-events: none;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 10;
 }
 
 /* Modal Footer - Centered Grouped Layout */
