@@ -1437,7 +1437,9 @@ class BundleWidget {
       totalQuantity
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variables = TemplateManager.buildTemplateVariables(
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
       totalQuantity,
       discountInfo,
       currencyInfo
