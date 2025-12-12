@@ -1756,28 +1756,37 @@ class BundleWidget {
       return `
         <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? `
-            <div class="selected-overlay">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
+            <div class="selected-overlay">✓</div>
           ` : ''}
 
-          <div class="image-wrapper">
+          <div class="product-image">
             <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
           </div>
 
-          <div class="product-info">
-            <p class="product-title">${product.title}</p>
-            ${product.price ? `<p class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</p>` : ''}
-          </div>
+          <div class="product-content-wrapper">
+            <div class="product-title">${product.title}</div>
 
-          ${this.renderVariantSelector(product)}
+            ${product.price ? `
+              <div class="product-price-row">
+                <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+              </div>
+            ` : ''}
 
-          <div class="quantity-controls">
-            <button class="quantity-control-button" data-product-id="${selectionKey}" data-action="decrease">−</button>
-            <span class="quantity-display">${currentQuantity}</span>
-            <button class="quantity-control-button" data-product-id="${selectionKey}" data-action="increase">+</button>
+            <div class="product-spacer"></div>
+
+            ${this.renderVariantSelector(product)}
+
+            <div class="product-quantity-wrapper">
+              <div class="product-quantity-selector">
+                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                <span class="qty-display">${currentQuantity}</span>
+                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+              </div>
+            </div>
+
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
+              ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
+            </button>
           </div>
         </div>
       `;
@@ -1810,27 +1819,23 @@ class BundleWidget {
 
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
-      if (e.target.classList.contains('quantity-control-button')) {
+      if (e.target.classList.contains('qty-btn')) {
         const productId = e.target.dataset.productId;
-        const action = e.target.dataset.action;
+        const isIncrease = e.target.classList.contains('qty-increase');
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
 
-        const newQuantity = action === 'increase' ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
+        const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
         this.updateProductSelection(stepIndex, productId, newQuantity);
       }
     });
 
-    // Product card click handler - click anywhere on card to select
+    // Add to Bundle button handler
     newProductGrid.addEventListener('click', (e) => {
-      // Only handle clicks on the card itself, not on buttons or inputs
-      if (e.target.classList.contains('product-card') || e.target.closest('.product-card') && !e.target.closest('.quantity-control-button') && !e.target.closest('.variant-selector')) {
-        const card = e.target.classList.contains('product-card') ? e.target : e.target.closest('.product-card');
-        const productId = card.dataset.productId;
+      if (e.target.classList.contains('product-add-btn')) {
+        const productId = e.target.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
         // Toggle between 0 and 1
-        if (currentQuantity === 0) {
-          this.updateProductSelection(stepIndex, productId, 1);
-        }
+        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
       }
     });
 
@@ -1892,17 +1897,27 @@ class BundleWidget {
     // Update quantity display without full re-render
     const productCard = document.querySelector(`[data-product-id="${productId}"]`);
     if (productCard) {
-      const quantityDisplay = productCard.querySelector('.quantity-display');
+      const quantityDisplay = productCard.querySelector('.qty-display');
+      const addBtn = productCard.querySelector('.product-add-btn');
       const selectedOverlay = productCard.querySelector('.selected-overlay');
 
       if (quantityDisplay) {
         quantityDisplay.textContent = quantity;
       }
 
+      if (addBtn) {
+        if (quantity > 0) {
+          addBtn.textContent = 'Added to Bundle';
+          addBtn.classList.add('added');
+        } else {
+          addBtn.textContent = 'Add to Bundle';
+          addBtn.classList.remove('added');
+        }
+      }
+
       if (selectedOverlay) {
         if (quantity > 0) {
-          selectedOverlay.textContent = quantity;
-          selectedOverlay.style.display = 'block';
+          selectedOverlay.style.display = 'flex';
         } else {
           selectedOverlay.style.display = 'none';
         }
