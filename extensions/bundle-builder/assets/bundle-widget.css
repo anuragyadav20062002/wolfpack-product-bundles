@@ -1061,8 +1061,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   min-height: 200px;
+  cursor: default;
+  box-sizing: border-box;
+}
+
+/* Empty state cards in modal grid */
+.modal-body .product-grid .empty-state-card {
+  height: var(--modal-product-card-height, 280px);
+  min-height: var(--modal-product-card-height, 280px);
+  max-height: var(--modal-product-card-height, 280px);
 }
 
 .empty-state-card-icon {
@@ -1070,12 +1079,15 @@
   opacity: 1;
   width: 69px;
   height: 69px;
+  flex-shrink: 0;
 }
 
 .empty-state-card-text {
   color: var(--bundle-empty-state-text, #9CA3AF);
   font-size: 14px;
+  font-weight: 600;
   text-align: center;
+  margin: 0;
 }
 
 /* Toast Notifications */
