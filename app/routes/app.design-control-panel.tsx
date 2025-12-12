@@ -2751,8 +2751,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -2792,8 +2793,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -2833,8 +2835,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -2893,8 +2896,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -2934,8 +2938,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -2994,8 +2999,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3035,8 +3041,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3086,8 +3093,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3127,8 +3135,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3168,8 +3177,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3209,8 +3219,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3250,8 +3261,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3311,8 +3323,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3352,8 +3365,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3393,8 +3407,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3464,8 +3479,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3505,8 +3521,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3577,8 +3594,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
@@ -3618,8 +3636,9 @@ export default function DesignControlPanel() {
                     style={{
                       position: "absolute",
                       opacity: 0,
-                      width: 0,
-                      height: 0,
+                      width: "100%",
+                      height: "100%",
+                      cursor: "pointer",
                     }}
                   />
                 </div>
