@@ -1736,13 +1736,11 @@ class BundleWidget {
       // Show empty state cards like in DCP preview
       const emptyStateCards = Array(3).fill(0).map((_, index) => `
         <div class="empty-state-card">
-          <div class="empty-card-icon">
-            <svg width="69" height="69" viewBox="0 0 69 69" fill="none">
-              <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-              <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div class="empty-card-label">Select Product</div>
+          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-state-card-text">Select Product</p>
         </div>
       `).join('');
 
@@ -1758,39 +1756,28 @@ class BundleWidget {
       return `
         <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? `
-            <div class="checkmark-badge">
+            <div class="selected-overlay">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M13.5 4.5L6 12L2.5 8.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
           ` : ''}
 
-          <div class="product-image-wrapper">
+          <div class="image-wrapper">
             <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
           </div>
 
-          <div class="product-content">
-            <div class="product-title">${product.title}</div>
-            <div class="product-price">
-              <span class="price-original">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
-              <span class="price-final">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
-            </div>
+          <div class="product-info">
+            <p class="product-title">${product.title}</p>
+            ${product.price ? `<p class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</p>` : ''}
+          </div>
 
-            <div class="spacer"></div>
+          ${this.renderVariantSelector(product)}
 
-            ${this.renderVariantSelector(product)}
-
-            <div class="quantity-selector-wrapper">
-              <div class="quantity-selector">
-                <button class="quantity-btn decrease-quantity" data-product-id="${selectionKey}">−</button>
-                <span class="quantity-value">${currentQuantity}</span>
-                <button class="quantity-btn increase-quantity" data-product-id="${selectionKey}">+</button>
-              </div>
-            </div>
-
-            <button class="add-to-bundle-btn" data-product-id="${selectionKey}">
-              ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
-            </button>
+          <div class="quantity-controls">
+            <button class="quantity-control-button" data-product-id="${selectionKey}" data-action="decrease">−</button>
+            <span class="quantity-display">${currentQuantity}</span>
+            <button class="quantity-control-button" data-product-id="${selectionKey}" data-action="increase">+</button>
           </div>
         </div>
       `;
@@ -1823,24 +1810,27 @@ class BundleWidget {
 
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
-      if (e.target.classList.contains('quantity-btn')) {
+      if (e.target.classList.contains('quantity-control-button')) {
         const productId = e.target.dataset.productId;
+        const action = e.target.dataset.action;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-        const isIncrease = e.target.classList.contains('increase-quantity');
 
-        const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
+        const newQuantity = action === 'increase' ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
         this.updateProductSelection(stepIndex, productId, newQuantity);
       }
     });
 
-    // Add to Bundle button handler
+    // Product card click handler - click anywhere on card to select
     newProductGrid.addEventListener('click', (e) => {
-      if (e.target.classList.contains('add-to-bundle-btn')) {
-        e.stopPropagation();
-        const productId = e.target.dataset.productId;
+      // Only handle clicks on the card itself, not on buttons or inputs
+      if (e.target.classList.contains('product-card') || e.target.closest('.product-card') && !e.target.closest('.quantity-control-button') && !e.target.closest('.variant-selector')) {
+        const card = e.target.classList.contains('product-card') ? e.target : e.target.closest('.product-card');
+        const productId = card.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
         // Toggle between 0 and 1
-        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+        if (currentQuantity === 0) {
+          this.updateProductSelection(stepIndex, productId, 1);
+        }
       }
     });
 
