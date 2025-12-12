@@ -259,6 +259,7 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   /* Add to Cart Button */
   --bundle-add-to-cart-button-bg: ${s.addToCartButtonBgColor || globalPrimaryButton};
   --bundle-add-to-cart-button-text: ${s.addToCartButtonTextColor || globalButtonText};
+  --bundle-add-to-cart-button-radius: ${s.addToCartButtonBorderRadius || 8}px;
   /* Toasts */
   --bundle-toast-bg: ${s.toastBgColor || globalPrimaryButton};
   --bundle-toast-text: ${s.toastTextColor || globalButtonText};

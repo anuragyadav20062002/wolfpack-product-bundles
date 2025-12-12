@@ -301,19 +301,19 @@
 .add-bundle-to-cart {
   background-color: var(--bundle-add-to-cart-button-bg, var(--bundle-button-bg, var(--bundle-global-primary-button, #000)));
   color: var(--bundle-add-to-cart-button-text, var(--bundle-button-text-color, var(--bundle-global-button-text, #fff)));
-  height: var(--button-height, 55px);
+  height: var(--bundle-add-to-cart-button-height, 87px);
   border: none;
-  border-radius: var(--bundle-button-border-radius, 4px);
-  font-size: var(--bundle-button-font-size, 1em);
-  font-weight: var(--bundle-button-font-weight, 600);
+  border-radius: var(--bundle-add-to-cart-button-radius, var(--bundle-button-border-radius, 8px));
+  font-size: var(--bundle-add-to-cart-button-font-size, 34px);
+  font-weight: var(--bundle-add-to-cart-button-font-weight, bold);
   cursor: pointer;
   width: 100%;
-  max-width: 100%;
+  max-width: var(--bundle-add-to-cart-button-width, 578px);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: var(--button-spacing, 25px) auto;
-  padding: var(--button-spacing, 25px);
+  padding: 0;
   transition: background-color 0.25s ease;
 }
 
@@ -1054,8 +1054,8 @@
 /* Empty State Cards */
 .empty-state-card {
   background-color: var(--bundle-empty-state-card-bg, #FFFFFF);
-  border: 2px var(--bundle-empty-state-border-style, dashed) var(--bundle-empty-state-card-border, #F6F6F6);
-  border-radius: 8px;
+  border: 2.6px var(--bundle-empty-state-border-style, dashed) var(--bundle-empty-state-card-border, #F6F6F6);
+  border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -1067,9 +1067,9 @@
 
 .empty-state-card-icon {
   color: var(--bundle-empty-state-text, #9CA3AF);
-  opacity: 0.4;
-  width: 60px;
-  height: 60px;
+  opacity: 1;
+  width: 69px;
+  height: 69px;
 }
 
 .empty-state-card-text {
@@ -1086,17 +1086,21 @@
   transform: translateX(-50%);
   background-color: var(--bundle-toast-bg, #000000);
   color: var(--bundle-toast-text, #FFFFFF);
-  padding: 12px 20px;
-  border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 20px 40px;
+  border-radius: 11px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   z-index: 10000;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 24px;
+  font-weight: 400;
   animation: slideDown 0.3s ease-out;
   max-width: 90%;
+  min-height: 81px;
+  width: auto;
+  max-width: 495px;
 }
 
 @keyframes slideDown {
@@ -1282,24 +1286,24 @@
 /* Progress bar styling - Modern minimal design */
 .progress-bar {
   width: 100%;
-  height: var(--progress-bar-height, 12px);
-  background: #f3f4f6;
-  border-radius: var(--progress-bar-border-radius, 999px);
+  height: var(--progress-bar-height, 8px);
+  background: var(--bundle-footer-progress-empty, #E3E3E3);
+  border-radius: var(--progress-bar-border-radius, 4px);
   overflow: hidden;
   position: relative;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   border: none;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
-  border-radius: var(--progress-bar-border-radius, 999px);
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--bundle-footer-progress-filled, #000000);
+  border-radius: var(--progress-bar-border-radius, 4px);
+  transition: width 0.3s ease;
   width: 0%;
   position: relative;
   display: block !important;
-  box-shadow: 0 0 12px rgba(124, 58, 237, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: none;
 }
 
 /* Progress details below the bar */
@@ -1309,29 +1313,7 @@
   align-items: center;
 }
 
-/* Animated shimmer effect */
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.4) 50%,
-    transparent 100%
-  );
-  animation: progressShimmer 2.5s ease-in-out infinite;
-}
-
-@keyframes progressShimmer {
-  0% { transform: translateX(-100%); opacity: 0; }
-  20% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { transform: translateX(100%); opacity: 0; }
-}
+/* Removed shimmer effect to match preview */
 
 .progress-text {
   font-size: 11px;
@@ -1348,23 +1330,14 @@
 
 /* Qualified state - green theme */
 .bundle-footer-messaging.qualified .progress-fill {
-  background: linear-gradient(90deg, #10b981 0%, #059669 50%, #047857 100%);
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: var(--bundle-footer-progress-filled, #000000);
+  box-shadow: none;
 }
 
 .bundle-footer-messaging.qualified .progress-text {
   color: #059669;
   background: #ecfdf5;
   border-color: #a7f3d0;
-}
-
-.bundle-footer-messaging.qualified .progress-fill::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.5) 50%,
-    transparent 100%
-  );
 }
 
 .footer-savings-display {
