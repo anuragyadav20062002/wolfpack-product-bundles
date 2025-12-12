@@ -748,10 +748,10 @@
 .modal-body .product-card .variant-selector {
   width: 100%;
   padding: 10px 12px;
-  border-radius: var(--bundle-quantity-selector-border-radius, 8px);
+  border-radius: var(--bundle-variant-selector-border-radius, 8px);
   border: 1px solid #D1D1D1;
-  background-color: var(--bundle-product-card-bg, #FFFFFF);
-  color: var(--bundle-product-card-font-color, #000000);
+  background-color: var(--bundle-variant-selector-bg, #FFFFFF);
+  color: var(--bundle-variant-selector-text-color, #000000);
   font-size: 14px;
   cursor: pointer;
   appearance: none;
@@ -1061,6 +1061,64 @@
   color: #666;
   font-weight: 400;
 }
+
+/* Modal Footer Discount Messaging */
+.modal-footer-discount-messaging {
+  display: block;
+  text-align: center;
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+.modal-footer-discount-messaging .footer-discount-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.modal-footer-discount-messaging.qualified .footer-discount-text {
+  color: #059669;
+  font-weight: 600;
+}
+
+/* Modal Footer Progress Bar */
+.modal-footer-progress-section {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: 12px;
+}
+
+.modal-footer-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bundle-footer-progress-empty, #E3E3E3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.modal-footer-progress-fill {
+  width: 0%;
+  height: 100%;
+  background-color: var(--bundle-footer-progress-filled, #000000);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.modal-footer-progress-details {
+  text-align: center;
+  font-size: 12px;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.modal-footer-progress-details .current-quantity,
+.modal-footer-progress-details .target-quantity {
+  color: #374151;
+  font-weight: 600;
+}
+
 /* Navigation Buttons - New Centered Layout Design */
 .modal-nav-button {
   display: flex;

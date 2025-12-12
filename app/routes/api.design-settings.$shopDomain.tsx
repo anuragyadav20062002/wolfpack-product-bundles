@@ -190,6 +190,11 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-button-border-radius: ${s.buttonBorderRadius || 8}px;
   --bundle-button-hover-bg: ${s.buttonHoverBgColor || s.buttonBgColor || globalPrimaryButton};
 
+  /* VARIANT SELECTOR */
+  --bundle-variant-selector-bg: ${s.variantSelectorBgColor || '#FFFFFF'};
+  --bundle-variant-selector-text-color: ${s.variantSelectorTextColor || globalPrimaryText};
+  --bundle-variant-selector-border-radius: ${s.variantSelectorBorderRadius || 8}px;
+
   /* QUANTITY SELECTOR */
   --bundle-quantity-selector-bg: ${s.quantitySelectorBgColor || globalPrimaryButton};
   --bundle-quantity-selector-text-color: ${s.quantitySelectorTextColor || globalButtonText};
@@ -226,6 +231,7 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-header-tab-inactive-bg: ${s.headerTabInactiveBgColor || '#FFFFFF'};
   --bundle-header-tab-inactive-text: ${s.headerTabInactiveTextColor || globalPrimaryText};
   --bundle-header-tab-radius: ${s.headerTabRadius || 67}px;
+  --modal-step-title-color: ${s.modalStepTitleColor || globalPrimaryText};
 
   /* BUNDLE STEP BAR */
   --bundle-step-name-font-color: ${s.stepNameFontColor || globalPrimaryText};
@@ -315,6 +321,27 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   display: grid;
   grid-template-columns: repeat(var(--bundle-product-cards-per-row), 1fr);
   gap: 16px;
+}
+
+/* PRODUCT CARD SUB-ELEMENTS IN MODAL */
+.bundle-builder-modal .modal-body .product-card .product-quantity-selector {
+  background-color: var(--bundle-quantity-selector-bg);
+  color: var(--bundle-quantity-selector-text-color);
+  border-radius: var(--bundle-quantity-selector-border-radius);
+}
+
+.bundle-builder-modal .modal-body .product-card .variant-selector {
+  background-color: var(--bundle-variant-selector-bg);
+  color: var(--bundle-variant-selector-text-color);
+  border-radius: var(--bundle-variant-selector-border-radius);
+}
+
+.bundle-builder-modal .modal-body .product-card .product-add-btn {
+  background-color: var(--bundle-button-bg);
+  color: var(--bundle-button-text-color);
+  font-size: var(--bundle-button-font-size);
+  font-weight: var(--bundle-button-font-weight);
+  border-radius: var(--bundle-button-border-radius);
 }
 
 /* BUTTON STYLING */
@@ -450,6 +477,26 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
 .bundle-builder-modal .progress-bar,
 #bundle-builder-app .progress-bar {
   background-color: var(--bundle-footer-progress-empty);
+}
+
+/* EMPTY STATE CARDS IN MODAL */
+.bundle-builder-modal .modal-body .empty-state-card {
+  background-color: var(--bundle-empty-state-card-bg);
+  border: 2.6px var(--bundle-empty-state-border-style) var(--bundle-empty-state-card-border);
+}
+
+.bundle-builder-modal .modal-body .empty-state-card-icon,
+.bundle-builder-modal .modal-body .empty-state-card-text {
+  color: var(--bundle-empty-state-text);
+}
+
+/* MODAL HEADER STYLING */
+.bundle-builder-modal .modal-step-title {
+  color: var(--modal-step-title-color);
+}
+
+.bundle-builder-modal .modal-step-subtitle {
+  color: var(--bundle-global-secondary-text);
 }
 
 /* BUNDLE HEADER TABS STYLING */
