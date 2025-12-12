@@ -1125,6 +1125,21 @@ class BundleWidget {
                 <button class="modal-nav-button prev-button">BACK</button>
                 <button class="modal-nav-button next-button">NEXT</button>
               </div>
+
+              <!-- Discount Messaging Section -->
+              <div class="modal-footer-discount-messaging">
+                <div class="footer-discount-text"></div>
+              </div>
+
+              <!-- Progress Bar Section -->
+              <div class="modal-footer-progress-section">
+                <div class="modal-footer-progress-bar">
+                  <div class="modal-footer-progress-fill"></div>
+                </div>
+                <div class="modal-footer-progress-details">
+                  <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2067,6 +2082,84 @@ class BundleWidget {
 
     // Update total prices in the footer pill
     this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+
+    // Update discount messaging and progress bar
+    this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+  }
+
+  updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
+    const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
+    const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
+    const progressBar = this.elements.modal.querySelector('.modal-footer-progress-bar');
+    const currentQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .current-quantity');
+    const targetQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .target-quantity');
+    const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
+    const progressSection = this.elements.modal.querySelector('.modal-footer-progress-section');
+
+    if (!footerDiscountText || !progressFill) return;
+
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
+
+    if (discountInfo.qualifiesForDiscount) {
+      // Success message
+      const successMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate,
+        variables
+      );
+      footerDiscountText.innerHTML = successMessage;
+      if (discountSection) discountSection.classList.add('qualified');
+    } else {
+      // Progress message
+      const progressMessage = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate,
+        variables
+      );
+      footerDiscountText.innerHTML = progressMessage;
+      if (discountSection) discountSection.classList.remove('qualified');
+    }
+
+    // Update progress bar
+    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
+    const ruleToUse = discountInfo.applicableRule || nextRule;
+
+    let progressPercentage = 0;
+
+    if (ruleToUse) {
+      const conditionType = ruleToUse.condition?.type || 'quantity';
+      const targetValue = ruleToUse.condition?.value || 0;
+
+      if (conditionType === 'amount') {
+        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
+        if (currentQuantitySpan && targetQuantitySpan) {
+          currentQuantitySpan.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+          targetQuantitySpan.textContent = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
+        }
+      } else {
+        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
+        if (currentQuantitySpan && targetQuantitySpan) {
+          currentQuantitySpan.textContent = totalQuantity.toString();
+          targetQuantitySpan.textContent = targetValue.toString();
+        }
+      }
+    }
+
+    if (progressFill) {
+      progressFill.style.width = `${progressPercentage}%`;
+    }
+
+    // Show/hide sections based on config
+    if (discountSection) {
+      discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
+    }
+    if (progressSection) {
+      progressSection.style.display = this.config.showProgressBar ? 'block' : 'none';
+    }
   }
 
   updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {
