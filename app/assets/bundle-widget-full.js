@@ -1287,14 +1287,10 @@ class BundleWidget {
       stepBox.appendChild(plusIcon);
     }
 
-    // Add step name
+    // Add step name (without step number)
     const stepName = document.createElement('p');
     stepName.className = 'step-name';
-    if (this.config.showStepNumbers) {
-      stepName.textContent = `${index + 1}. ${step.name || `Step ${index + 1}`}`;
-    } else {
-      stepName.textContent = step.name || `Step ${index + 1}`;
-    }
+    stepName.textContent = step.name || `Step ${index + 1}`;
     stepBox.appendChild(stepName);
 
     // Add selection count
