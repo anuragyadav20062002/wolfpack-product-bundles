@@ -146,7 +146,16 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
 
           {/* Prices */}
           {productPriceVisibility && (
-            <div style={{ margin: "8px 0", textAlign: "center", flexShrink: 0, position: "relative" }}>
+            <div style={{
+              margin: "12px 0",
+              textAlign: "center",
+              flexShrink: 0,
+              position: "relative",
+              background: "linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%)",
+              padding: "10px 12px",
+              borderRadius: "10px",
+              border: "1px solid rgba(0, 0, 0, 0.06)"
+            }}>
               <span
                 style={{
                   color: productStrikePriceColor,
@@ -163,6 +172,7 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
                   color: productFinalPriceColor,
                   fontSize: `${productFinalPriceFontSize}px`,
                   fontWeight: productFinalPriceFontWeight,
+                  letterSpacing: "0.3px"
                 }}
               >
                 $14.99

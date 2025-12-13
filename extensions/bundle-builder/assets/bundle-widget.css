@@ -476,23 +476,6 @@
   letter-spacing: -0.3px;
 }
 
-.modal-step-subtitle {
-  font-size: 15px;
-  color: #1f2937;
-  text-align: center;
-  margin-bottom: 20px;
-  padding: 12px 32px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 1px solid #fbbf24;
-  border-radius: 12px;
-  margin-left: 40px;
-  margin-right: 40px;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
-  letter-spacing: 0.3px;
-  line-height: 1.6;
-}
-
 .modal-tabs {
   display: flex;
   justify-content: center;
@@ -788,6 +771,14 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.modal-body .product-card .product-price-strike {
+  color: var(--bundle-product-strike-price-color, #9CA3AF);
+  font-size: var(--bundle-product-strike-price-font-size, 16px);
+  font-weight: var(--bundle-product-strike-price-font-weight, 500);
+  text-decoration: line-through;
+  margin-right: 8px;
 }
 
 .modal-body .product-card .product-price {
@@ -1344,13 +1335,16 @@
   min-height: 200px;
   cursor: default;
   box-sizing: border-box;
+  width: 176px;
+  height: 233px;
 }
 
 /* Empty state cards in modal grid */
 .modal-body .product-grid .empty-state-card {
-  height: var(--modal-product-card-height, 280px);
-  min-height: var(--modal-product-card-height, 280px);
-  max-height: var(--modal-product-card-height, 280px);
+  height: 233px;
+  min-height: 233px;
+  max-height: 233px;
+  width: 176px;
 }
 
 .empty-state-card-icon {

@@ -43,31 +43,36 @@ export function GeneralPreview(props: GeneralPreviewProps) {
           {/* 3 Empty Cards */}
           <div style={{ display: "flex", gap: "20px", justifyContent: "center", alignItems: "flex-start" }}>
             {cardLabels.map((label, index) => (
-              <div key={index} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                <div
-                  style={{
-                    width: "176px",
-                    height: "233px",
-                    backgroundColor: emptyStateCardBgColor,
-                    border: `2.6px ${emptyStateBorderStyle} ${emptyStateCardBorderColor}`,
-                    borderRadius: "12px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "16px",
-                    padding: "20px",
-                    position: "relative",
-                  }}
-                >
-                  {/* Plus icon */}
-                  <PlusIcon width={69} height={69} color={emptyStateTextColor} />
-                </div>
+              <div
+                key={index}
+                style={{
+                  width: "176px",
+                  height: "233px",
+                  backgroundColor: emptyStateCardBgColor,
+                  border: `2.6px ${emptyStateBorderStyle} ${emptyStateCardBorderColor}`,
+                  borderRadius: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "16px",
+                  padding: "20px",
+                  position: "relative",
+                }}
+              >
+                {/* Plus icon */}
+                <PlusIcon width={69} height={69} color={emptyStateTextColor} />
 
-                {/* Label below card */}
-                <Text as="p" variant="bodyLg" fontWeight="bold" tone="subdued">
+                {/* Label inside card */}
+                <p style={{
+                  color: emptyStateTextColor,
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  textAlign: "center",
+                  margin: 0,
+                }}>
                   {label}
-                </Text>
+                </p>
               </div>
             ))}
           </div>
