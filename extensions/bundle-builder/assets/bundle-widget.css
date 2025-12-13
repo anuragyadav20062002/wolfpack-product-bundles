@@ -330,8 +330,8 @@
   width: 100vw;
   height: 100vh;
   z-index: 999999;
-  /* Complete overlay background that covers everything */
-  background-color: rgba(0, 0, 0, 0.9);
+  /* Semi-transparent overlay background (like Shopify native) */
+  background-color: rgba(0, 0, 0, 0.5);
   /* Center the modal content with flex */
   justify-content: center;
   align-items: center;
@@ -366,86 +366,94 @@
 
 .modal-content {
   background-color: var(--bundle-drawer-bg, #fefefe);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.3);
 
-  /* Absolute positioning for fine-tuned centering */
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  /* Bottom drawer positioning */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 1000000;
 
-  /* Fixed margin from edges */
-  margin: 20px;
-
-  /* Responsive sizing with 20px margin constraint */
-  width: calc(100% - 40px);
-  height: calc(100% - 40px);
-  max-width: 1400px;
-  max-height: 900px;
+  /* Full width, near-full height drawer */
+  width: 100%;
+  max-width: 100%;
+  height: 95vh;
+  max-height: 95vh;
 
   /* Layout */
   display: flex;
   flex-direction: column;
   overflow: hidden;
 
-  /* Animation - opacity and scale only to work with transform */
-  -webkit-animation: modalFadeIn 0.3s ease-out;
-  animation: modalFadeIn 0.3s ease-out;
+  /* Slide up animation */
+  -webkit-animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Reset any inherited styles */
   padding: 0;
+  margin: 0;
   border: none;
   box-sizing: border-box;
 }
 
 /* Remove old animation keyframes - replaced above */
 
-/* Updated animation keyframes - opacity and scale only */
-@-webkit-keyframes modalFadeIn {
+/* Slide up animation from bottom (like Shopify native modals) */
+@-webkit-keyframes modalSlideUp {
   from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9);
+    transform: translateY(100%);
   }
   to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0);
   }
 }
 
-@keyframes modalFadeIn {
+@keyframes modalSlideUp {
   from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9);
+    transform: translateY(100%);
   }
   to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0);
   }
 }
 
-/* Responsive sizing with absolute positioning */
-@media (min-width: 768px) {
+/* Desktop: slightly narrower drawer with rounded corners */
+@media (min-width: 1024px) {
   .modal-content {
-    width: calc(100vw - 40px);
-    height: calc(100vh - 40px);
-    max-width: 1300px;
-    max-height: 800px;
-  }
-}
-
-@media (max-width: 767px) {
-  .modal-content {
-    width: calc(100vw - 40px);
-    height: calc(100vh - 40px);
-    max-width: none;
-    max-height: none;
-    border-radius: 8px;
-    /* Ensure proper centering on mobile */
-    top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 1400px;
+    border-radius: 20px 20px 0 0;
+  }
+
+  /* Update animation to account for centering */
+  @-webkit-keyframes modalSlideUp {
+    from {
+      transform: translateX(-50%) translateY(100%);
+    }
+    to {
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  @keyframes modalSlideUp {
+    from {
+      transform: translateX(-50%) translateY(100%);
+    }
+    to {
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+}
+
+/* Mobile: Full width drawer */
+@media (max-width: 1023px) {
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
   }
 }
 

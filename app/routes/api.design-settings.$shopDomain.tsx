@@ -303,8 +303,8 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   font-weight: var(--bundle-product-card-font-weight);
 }
 
-#bundle-builder-app .product-card .image-wrapper img,
-.bundle-builder-modal .modal-body .product-card .image-wrapper img {
+#bundle-builder-app .product-card .product-image img,
+.bundle-builder-modal .modal-body .product-card .product-image img {
   object-fit: var(--bundle-product-card-image-fit);
 }
 
