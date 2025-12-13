@@ -1094,7 +1094,11 @@ class BundleWidget {
         <div class="modal-content">
           <div class="modal-header">
             <div class="modal-step-title"></div>
-            <div class="modal-tabs"></div>
+            <div class="modal-tabs-wrapper">
+              <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
+              <div class="modal-tabs"></div>
+              <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
+            </div>
             <span class="close-button">&times;</span>
           </div>
           <div class="modal-body">
@@ -1144,9 +1148,49 @@ class BundleWidget {
       `;
 
       document.body.appendChild(modal);
+
+      // Setup tab scroll arrows
+      this.setupTabScrollArrows(modal);
     }
 
     return modal;
+  }
+
+  setupTabScrollArrows(modal) {
+    const tabsContainer = modal.querySelector('.modal-tabs');
+    const leftArrow = modal.querySelector('.tab-arrow-left');
+    const rightArrow = modal.querySelector('.tab-arrow-right');
+
+    if (!tabsContainer || !leftArrow || !rightArrow) return;
+
+    const scrollAmount = 200;
+
+    // Left arrow click
+    leftArrow.addEventListener('click', () => {
+      tabsContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    });
+
+    // Right arrow click
+    rightArrow.addEventListener('click', () => {
+      tabsContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    });
+
+    // Update arrow visibility based on scroll position
+    const updateArrowVisibility = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainer;
+
+      leftArrow.style.display = scrollLeft > 0 ? 'flex' : 'none';
+      rightArrow.style.display = scrollLeft + clientWidth < scrollWidth - 1 ? 'flex' : 'none';
+    };
+
+    // Listen to scroll events
+    tabsContainer.addEventListener('scroll', updateArrowVisibility);
+
+    // Initial check
+    setTimeout(updateArrowVisibility, 100);
+
+    // Store for later updates
+    this.updateTabArrows = updateArrowVisibility;
   }
   //========================================================================
   // UI RENDERING
@@ -1192,6 +1236,17 @@ class BundleWidget {
 
     if (hasSelections) {
       stepBox.classList.add('step-completed');
+
+      // Add cross badge at top right to clear all selections
+      const clearBadge = document.createElement('div');
+      clearBadge.className = 'step-clear-badge';
+      clearBadge.innerHTML = '&times;';
+      clearBadge.title = 'Remove all products from this step';
+      clearBadge.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent opening modal
+        this.clearStepSelections(index);
+      });
+      stepBox.appendChild(clearBadge);
 
       // Show product images if available
       const productImages = this.getStepProductImages(index);
@@ -1276,6 +1331,19 @@ class BundleWidget {
   getStepSelectionText(selectedProducts) {
     const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
     return totalSelected > 0 ? `${totalSelected} selected` : '';
+  }
+
+  clearStepSelections(stepIndex) {
+    // Clear all product selections for this step
+    this.selectedProducts[stepIndex] = {};
+
+    // Update UI
+    this.renderSteps();
+    this.updateAddToCartButton();
+    this.updateFooterMessaging();
+
+    // Show toast notification
+    ToastManager.show(`All selections cleared from this step`);
   }
 
   renderFooter() {
@@ -1737,6 +1805,11 @@ class BundleWidget {
 
       tabsContainer.appendChild(tabButton);
     });
+
+    // Update arrow visibility after rendering tabs
+    if (this.updateTabArrows) {
+      setTimeout(() => this.updateTabArrows(), 50);
+    }
   }
 
   renderModalProducts(stepIndex, productsToRender = null) {
