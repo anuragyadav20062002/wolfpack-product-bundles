@@ -672,8 +672,9 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  max-width: 100%;
+  max-width: 1200px;
   width: 100%;
+  margin: 0 auto;
 }
 
 @media (min-width: 769px) {
@@ -764,29 +765,36 @@
 }
 
 .modal-body .product-card .product-title {
-  color: var(--bundle-product-card-font-color, #000000);
+  color: var(--bundle-product-card-font-color, #111827);
   font-size: var(--bundle-product-card-font-size, 16px);
-  font-weight: var(--bundle-product-card-font-weight, 600);
+  font-weight: var(--bundle-product-card-font-weight, 700);
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 0;
   position: relative;
+  letter-spacing: 0.2px;
+  line-height: 1.4;
 }
 
 .modal-body .product-card .product-price-row {
-  margin: 8px 0;
+  margin: 12px 0;
   text-align: center;
   flex-shrink: 0;
   position: relative;
+  background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .modal-body .product-card .product-price {
   color: var(--bundle-product-final-price-color, #000000);
-  font-size: var(--bundle-product-final-price-font-size, 18px);
+  font-size: var(--bundle-product-final-price-font-size, 20px);
   font-weight: var(--bundle-product-final-price-font-weight, 700);
+  letter-spacing: 0.3px;
 }
 
 .modal-body .product-card .product-spacer {
@@ -803,31 +811,34 @@
 
 .modal-body .product-card .variant-selector {
   width: 100%;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border-radius: var(--bundle-variant-selector-border-radius, 10px);
-  border: 1px solid #E5E5E5;
+  border: 2px solid #E5E7EB;
   background-color: var(--bundle-variant-selector-bg, #FFFFFF);
+  background-image: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
   color: var(--bundle-variant-selector-text-color, #000000);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23303030' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  background-image: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%), url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23303030' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat;
+  background-position: center, right 16px center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .modal-body .product-card .variant-selector:hover {
-  border-color: #D0D0D0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-color: #9CA3AF;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .modal-body .product-card .variant-selector:focus {
   outline: none;
   border-color: var(--bundle-global-primary-button, #000000);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 /* Quantity Selector in Modal */
@@ -843,25 +854,36 @@
   display: flex;
   align-items: center;
   gap: 0px;
-  background-color: var(--bundle-quantity-selector-bg, #000000);
+  background: linear-gradient(135deg, var(--bundle-quantity-selector-bg, #000000) 0%, rgba(0, 0, 0, 0.9) 100%);
   color: var(--bundle-quantity-selector-text-color, #FFFFFF);
   border-radius: var(--bundle-quantity-selector-border-radius, 10px);
   overflow: hidden;
-  border: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
 }
 
 .modal-body .product-card .qty-btn {
   background-color: transparent;
   color: inherit;
   border: none;
-  padding: 10px 16px;
-  font-size: 18px;
+  padding: 12px 18px;
+  font-size: 20px;
   font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 44px;
+}
+
+.modal-body .product-card .qty-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.modal-body .product-card .qty-btn:active {
+  transform: scale(0.95);
 }
 
 .modal-body .product-card .qty-display {
@@ -873,34 +895,40 @@
   text-align: center;
 }
 
-/* Add to Bundle Button in Modal */
+/* Add to Bundle Button in Modal - Enhanced */
 .modal-body .product-card .product-add-btn {
   width: 100%;
-  background-color: var(--bundle-button-bg, #000000);
+  background: linear-gradient(135deg, var(--bundle-button-bg, #000000) 0%, rgba(0, 0, 0, 0.9) 100%);
   color: var(--bundle-button-text-color, #FFFFFF);
   border: none;
   border-radius: var(--bundle-button-border-radius, 10px);
-  padding: 14px 24px;
-  font-size: var(--bundle-button-font-size, 15px);
-  font-weight: var(--bundle-button-font-weight, 600);
+  padding: 16px 24px;
+  font-size: var(--bundle-button-font-size, 16px);
+  font-weight: var(--bundle-button-font-weight, 700);
   cursor: pointer;
   flex-shrink: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  letter-spacing: 0.3px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .modal-body .product-card .product-add-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-body .product-card .product-add-btn:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 .modal-body .product-card .product-add-btn.added {
-  background-color: #4CAF50;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 .product-grid {

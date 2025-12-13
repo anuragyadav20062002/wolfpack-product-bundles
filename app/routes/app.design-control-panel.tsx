@@ -863,7 +863,12 @@ export default function DesignControlPanel() {
       conditionsTextColor !== current.conditionsTextColor ||
       conditionsTextFontSize !== current.conditionsTextFontSize ||
       discountTextColor !== current.discountTextColor ||
-      discountTextFontSize !== current.discountTextFontSize
+      discountTextFontSize !== current.discountTextFontSize ||
+      headerTabActiveBgColor !== current.headerTabActiveBgColor ||
+      headerTabActiveTextColor !== current.headerTabActiveTextColor ||
+      headerTabInactiveBgColor !== current.headerTabInactiveBgColor ||
+      headerTabInactiveTextColor !== current.headerTabInactiveTextColor ||
+      headerTabRadius !== current.headerTabRadius
     );
   }, [
     settings,
