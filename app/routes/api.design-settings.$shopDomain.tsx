@@ -495,10 +495,6 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   color: var(--modal-step-title-color);
 }
 
-.bundle-builder-modal .modal-step-subtitle {
-  color: var(--bundle-global-secondary-text);
-}
-
 /* BUNDLE HEADER TABS STYLING */
 .bundle-builder-modal .modal-tabs .bundle-header-tab {
   border-radius: var(--bundle-header-tab-radius);

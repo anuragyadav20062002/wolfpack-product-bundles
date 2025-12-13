@@ -253,6 +253,38 @@
   height: 26px;
 }
 
+/* Clear badge - top right cross button */
+.step-clear-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: #EF4444;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+  line-height: 1;
+}
+
+.step-clear-badge:hover {
+  background: #DC2626;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.step-clear-badge:active {
+  transform: scale(0.95);
+}
+
 /* Show count badge for many images */
 .image-count-badge {
   position: absolute;
@@ -476,33 +508,77 @@
   letter-spacing: -0.3px;
 }
 
-.modal-step-subtitle {
-  font-size: 15px;
-  color: #1f2937;
-  text-align: center;
-  margin-bottom: 20px;
-  padding: 12px 32px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 1px solid #fbbf24;
-  border-radius: 12px;
-  margin-left: 40px;
-  margin-right: 40px;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
-  letter-spacing: 0.3px;
-  line-height: 1.6;
+/* Modal tabs wrapper with arrows */
+.modal-tabs-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Tab scroll arrows */
+.tab-arrow {
+  background: #FFFFFF;
+  border: 2px solid #E5E7EB;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 28px;
+  font-weight: 700;
+  color: #6B7280;
+  transition: all 0.2s ease;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.tab-arrow:hover {
+  background: #F9FAFB;
+  border-color: #9CA3AF;
+  color: #374151;
+  transform: scale(1.1);
+}
+
+.tab-arrow:active {
+  transform: scale(0.95);
+}
+
+.tab-arrow-left {
+  margin-left: 20px;
+}
+
+.tab-arrow-right {
+  margin-right: 20px;
+}
+
+/* Modal tabs container - now scrollable */
+.modal-tabs {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 20px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar */
+.modal-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .modal-tabs {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 24px;
-  padding: 0 40px;
-  box-sizing: border-box;
-  gap: 20px;
-  flex-wrap: wrap;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Bundle Header Tab - Bigger with Shopify Style */
@@ -557,8 +633,23 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  .tab-arrow {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 24px;
+  }
+
+  .tab-arrow-left {
+    margin-left: 10px;
+  }
+
+  .tab-arrow-right {
+    margin-right: 10px;
+  }
+
   .modal-tabs {
-    padding: 0 20px;
+    padding: 0 10px;
     gap: 10px;
   }
 
@@ -570,8 +661,23 @@
 }
 
 @media (max-width: 480px) {
+  .tab-arrow {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    font-size: 20px;
+  }
+
+  .tab-arrow-left {
+    margin-left: 5px;
+  }
+
+  .tab-arrow-right {
+    margin-right: 5px;
+  }
+
   .modal-tabs {
-    padding: 0 15px;
+    padding: 0 8px;
     gap: 8px;
   }
 
@@ -579,8 +685,7 @@
     font-size: 12px;
     padding: 8px 16px;
     min-height: 32px;
-    flex: 1;
-    min-width: 0;
+    min-width: 100px;
   }
 }
 
@@ -788,6 +893,14 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.modal-body .product-card .product-price-strike {
+  color: var(--bundle-product-strike-price-color, #9CA3AF);
+  font-size: var(--bundle-product-strike-price-font-size, 16px);
+  font-weight: var(--bundle-product-strike-price-font-weight, 500);
+  text-decoration: line-through;
+  margin-right: 8px;
 }
 
 .modal-body .product-card .product-price {
@@ -1344,13 +1457,16 @@
   min-height: 200px;
   cursor: default;
   box-sizing: border-box;
+  width: 176px;
+  height: 233px;
 }
 
 /* Empty state cards in modal grid */
 .modal-body .product-grid .empty-state-card {
-  height: var(--modal-product-card-height, 280px);
-  min-height: var(--modal-product-card-height, 280px);
-  max-height: var(--modal-product-card-height, 280px);
+  height: 233px;
+  min-height: 233px;
+  max-height: 233px;
+  width: 176px;
 }
 
 .empty-state-card-icon {

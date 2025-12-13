@@ -520,9 +520,9 @@ class TemplateManager {
       // Wrap conditionText and discountText with styled spans
       let replacementValue = value;
       if (key === 'conditionText') {
-        replacementValue = `<span class="bundle-conditions-text" style="color: var(--bundle-conditions-text-color, inherit); font-size: var(--bundle-conditions-text-font-size, inherit);">${value}</span>`;
+        replacementValue = `<span class="bundle-conditions-text" style="color: var(--bundle-conditions-text-color, inherit);">${value}</span>`;
       } else if (key === 'discountText') {
-        replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit); font-size: var(--bundle-discount-text-font-size, inherit);">${value}</span>`;
+        replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit);">${value}</span>`;
       }
 
       result = result.replace(singleBrace, replacementValue);
@@ -1094,8 +1094,11 @@ class BundleWidget {
         <div class="modal-content">
           <div class="modal-header">
             <div class="modal-step-title"></div>
-            <div class="modal-step-subtitle"></div>
-            <div class="modal-tabs"></div>
+            <div class="modal-tabs-wrapper">
+              <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
+              <div class="modal-tabs"></div>
+              <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
+            </div>
             <span class="close-button">&times;</span>
           </div>
           <div class="modal-body">
@@ -1111,11 +1114,10 @@ class BundleWidget {
                 <span class="price-cart-separator">|</span>
                 <span class="cart-badge-wrapper">
                   <span class="cart-badge-count">0</span>
-                  <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 2L11 8M15 8L17 2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M1 7H21L19 21H3L1 7Z" stroke-linecap="round" stroke-linejoin="round"/>
+                  <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    <circle cx="17" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
                   </svg>
                 </span>
               </div>
@@ -1146,9 +1148,49 @@ class BundleWidget {
       `;
 
       document.body.appendChild(modal);
+
+      // Setup tab scroll arrows
+      this.setupTabScrollArrows(modal);
     }
 
     return modal;
+  }
+
+  setupTabScrollArrows(modal) {
+    const tabsContainer = modal.querySelector('.modal-tabs');
+    const leftArrow = modal.querySelector('.tab-arrow-left');
+    const rightArrow = modal.querySelector('.tab-arrow-right');
+
+    if (!tabsContainer || !leftArrow || !rightArrow) return;
+
+    const scrollAmount = 200;
+
+    // Left arrow click
+    leftArrow.addEventListener('click', () => {
+      tabsContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    });
+
+    // Right arrow click
+    rightArrow.addEventListener('click', () => {
+      tabsContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    });
+
+    // Update arrow visibility based on scroll position
+    const updateArrowVisibility = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainer;
+
+      leftArrow.style.display = scrollLeft > 0 ? 'flex' : 'none';
+      rightArrow.style.display = scrollLeft + clientWidth < scrollWidth - 1 ? 'flex' : 'none';
+    };
+
+    // Listen to scroll events
+    tabsContainer.addEventListener('scroll', updateArrowVisibility);
+
+    // Initial check
+    setTimeout(updateArrowVisibility, 100);
+
+    // Store for later updates
+    this.updateTabArrows = updateArrowVisibility;
   }
   //========================================================================
   // UI RENDERING
@@ -1194,6 +1236,17 @@ class BundleWidget {
 
     if (hasSelections) {
       stepBox.classList.add('step-completed');
+
+      // Add cross badge at top right to clear all selections
+      const clearBadge = document.createElement('div');
+      clearBadge.className = 'step-clear-badge';
+      clearBadge.innerHTML = '&times;';
+      clearBadge.title = 'Remove all products from this step';
+      clearBadge.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent opening modal
+        this.clearStepSelections(index);
+      });
+      stepBox.appendChild(clearBadge);
 
       // Show product images if available
       const productImages = this.getStepProductImages(index);
@@ -1278,6 +1331,19 @@ class BundleWidget {
   getStepSelectionText(selectedProducts) {
     const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
     return totalSelected > 0 ? `${totalSelected} selected` : '';
+  }
+
+  clearStepSelections(stepIndex) {
+    // Clear all product selections for this step
+    this.selectedProducts[stepIndex] = {};
+
+    // Update UI
+    this.renderSteps();
+    this.updateAddToCartButton();
+    this.updateFooterMessaging();
+
+    // Show toast notification
+    ToastManager.show(`All selections cleared from this step`);
   }
 
   renderFooter() {
@@ -1474,7 +1540,6 @@ class BundleWidget {
     const headerText = this.getFormattedHeaderText();
 
     modal.querySelector('.modal-step-title').innerHTML = headerText;
-    modal.querySelector('.modal-step-subtitle').textContent = `Step ${stepIndex + 1} of ${this.selectedBundle.steps.length}`;
 
     // Load and render products for this step
     this.loadStepProducts(stepIndex).then(() => {
@@ -1658,6 +1723,7 @@ class BundleWidget {
               title: `${product.title} - ${variant.title}`,
               imageUrl,
               price: parseFloat(variant.price || '0') * 100,
+              compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
               available: variant.available === true // Store availability (always boolean)
             };
@@ -1679,6 +1745,7 @@ class BundleWidget {
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
+          compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           available: defaultVariant?.available === true // Store availability (always boolean from API)
         }];
@@ -1725,7 +1792,6 @@ class BundleWidget {
         // Update modal header
         const headerText = this.getFormattedHeaderText();
         this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
-        this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${index + 1} of ${this.selectedBundle.steps.length}`;
 
         // Load products for this step if not already loaded
         await this.loadStepProducts(index);
@@ -1739,6 +1805,11 @@ class BundleWidget {
 
       tabsContainer.appendChild(tabButton);
     });
+
+    // Update arrow visibility after rendering tabs
+    if (this.updateTabArrows) {
+      setTimeout(() => this.updateTabArrows(), 50);
+    }
   }
 
   renderModalProducts(stepIndex, productsToRender = null) {
@@ -1749,13 +1820,17 @@ class BundleWidget {
 
     if (products.length === 0) {
       // Show empty state cards like in DCP preview
+      const currentStep = this.selectedBundle.steps[stepIndex];
+      const stepName = currentStep?.name || `Step ${stepIndex + 1}`;
+      const labelText = `Select ${stepName}`;
+
       const emptyStateCards = Array(3).fill(0).map((_, index) => `
         <div class="empty-state-card">
           <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
             <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
             <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
           </svg>
-          <p class="empty-state-card-text">Select Product</p>
+          <p class="empty-state-card-text">${labelText}</p>
         </div>
       `).join('');
 
@@ -1783,6 +1858,7 @@ class BundleWidget {
 
             ${product.price ? `
               <div class="product-price-row">
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
                 <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
               </div>
             ` : ''}
@@ -2387,7 +2463,6 @@ class BundleWidget {
         // Update modal header
         const headerText = this.getFormattedHeaderText();
         this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
-        this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${newStepIndex + 1} of ${this.selectedBundle.steps.length}`;
 
         // Load products for this step
         await this.loadStepProducts(newStepIndex);
@@ -2408,7 +2483,6 @@ class BundleWidget {
           // Update modal header
           const headerText = this.getFormattedHeaderText();
           this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
-          this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${newStepIndex + 1} of ${this.selectedBundle.steps.length}`;
 
           // Load products for this step
           await this.loadStepProducts(newStepIndex);
