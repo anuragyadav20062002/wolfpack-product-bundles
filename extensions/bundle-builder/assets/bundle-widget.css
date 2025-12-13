@@ -352,35 +352,49 @@
 }
 
 .modal-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   width: 100%;
   height: 100%;
-  background: transparent; /* Redundant as parent handles background */
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 999998;
   cursor: pointer;
+  -webkit-animation: overlayFadeIn 0.3s ease-out;
+  animation: overlayFadeIn 0.3s ease-out;
+}
+
+@-webkit-keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-content {
-  background-color: var(--bundle-drawer-bg, #FFFFFF);
+  background-color: #FFFFFF;
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.15), 0 -2px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.2), 0 -2px 16px rgba(0, 0, 0, 0.1);
 
-  /* Bottom drawer positioning */
+  /* Bottom drawer positioning - FULL WIDTH */
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1000000;
 
-  /* Full width, near-full height drawer */
-  width: 100%;
-  max-width: 100%;
-  height: 95vh;
-  max-height: 95vh;
+  /* Full width, max height drawer */
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
 
   /* Layout */
   display: flex;
@@ -388,72 +402,39 @@
   overflow: hidden;
 
   /* Slide up animation */
-  -webkit-animation: modalSlideUp 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  animation: modalSlideUp 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  -webkit-animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Reset any inherited styles */
   padding: 0;
   margin: 0;
   border: none;
   box-sizing: border-box;
+  transform: translateY(0) !important;
 }
 
 /* Remove old animation keyframes - replaced above */
 
-/* Slide up animation from bottom (like Shopify native modals) */
+/* Slide up animation from bottom - NO CENTERING */
 @-webkit-keyframes modalSlideUp {
   from {
     transform: translateY(100%);
+    opacity: 0;
   }
   to {
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
 @keyframes modalSlideUp {
   from {
     transform: translateY(100%);
+    opacity: 0;
   }
   to {
     transform: translateY(0);
-  }
-}
-
-/* Desktop: slightly narrower drawer with rounded corners */
-@media (min-width: 1024px) {
-  .modal-content {
-    left: 50%;
-    width: 90%;
-    max-width: 1400px;
-    border-radius: 20px 20px 0 0;
-  }
-
-  /* Update animation to account for centering */
-  @-webkit-keyframes modalSlideUp {
-    from {
-      transform: translateX(-50%) translateY(100%);
-    }
-    to {
-      transform: translateX(-50%) translateY(0);
-    }
-  }
-
-  @keyframes modalSlideUp {
-    from {
-      transform: translateX(-50%) translateY(100%);
-    }
-    to {
-      transform: translateX(-50%) translateY(0);
-    }
-  }
-}
-
-/* Mobile: Full width drawer */
-@media (max-width: 1023px) {
-  .modal-content {
-    width: 100%;
-    max-width: 100%;
-    border-radius: 20px 20px 0 0;
+    opacity: 1;
   }
 }
 
@@ -461,11 +442,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 32px 16px;
-  border-bottom: 1px solid #F0F0F0;
+  padding: 20px 40px 20px;
+  border-bottom: 1px solid #E5E7EB;
   margin-bottom: 0;
   position: relative;
-  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 10;
 }
 
 /* Drawer Handle */
@@ -494,12 +477,20 @@
 }
 
 .modal-step-subtitle {
-  font-size: 0.95em;
-  color: #555;
+  font-size: 15px;
+  color: #1f2937;
   text-align: center;
-  margin-bottom: 12px;
-  padding: 0 20px;
-  font-weight: 500;
+  margin-bottom: 20px;
+  padding: 12px 32px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  margin-left: 40px;
+  margin-right: 40px;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+  letter-spacing: 0.3px;
+  line-height: 1.6;
 }
 
 .modal-tabs {
@@ -507,28 +498,31 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-bottom: 20px;
-  padding: 0 30px;
+  margin-bottom: 24px;
+  padding: 0 40px;
   box-sizing: border-box;
-  gap: 12px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
-/* Bundle Header Tab */
+/* Bundle Header Tab - Bigger with Shopify Style */
 .bundle-header-tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 24px;
-  border-radius: var(--bundle-header-tab-radius, 67px);
-  font-size: 14px;
+  padding: 14px 32px;
+  border-radius: var(--bundle-header-tab-radius, 8px);
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  min-height: 40px;
+  min-height: 48px;
+  min-width: 140px;
   border: none;
   outline: none;
+  letter-spacing: 0.2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* Inactive Tab */
@@ -538,12 +532,13 @@
   border: 1px solid #e5e7eb;
 }
 
-/* Active Tab */
+/* Active Tab - Enhanced */
 .bundle-header-tab.active {
   background-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #000000));
   color: var(--bundle-header-tab-active-text, var(--bundle-global-button-text, #FFFFFF));
-  border: 1px solid var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #000000));
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #000000));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
 
 /* Locked Tab */
@@ -552,12 +547,12 @@
   opacity: 0.4;
 }
 
-/* Hover Effects */
+/* Hover Effects - Enhanced */
 .bundle-header-tab:not(.locked):not(.active):hover {
   background-color: #f9fafb;
-  border-color: #d1d5db;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-color: #9ca3af;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* Mobile Responsive */
@@ -639,33 +634,36 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px 32px 24px;
+  padding: 32px 40px 32px;
   box-sizing: border-box;
-  background-color: #FAFAFA;
+  background-color: #F3F4F6;
   /* Ensure proper scrolling within the modal content */
   min-height: 0;
   /* Use available space minus header and footer */
   max-height: none;
   /* Custom scrollbar for webkit browsers */
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
 }
 
 .modal-body::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .modal-body::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 5px;
 }
 
 .modal-body::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 .modal-body::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
 /* Modal product cards - compact design with proper sizing */
@@ -696,26 +694,28 @@
   }
 }
 
-/* Modal product cards - EXACT DCP Preview Design */
+/* Modal product cards - Floating Effect */
 .modal-body .product-card {
   background-color: var(--bundle-product-card-bg, #FFFFFF);
   border-radius: 16px;
   padding: 20px;
   width: 100%;
   min-height: 420px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
   position: relative;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transform: translateY(0);
 }
 
 .modal-body .product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
-  border-color: rgba(0, 0, 0, 0.1);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 6px 12px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.12);
+  z-index: 10;
 }
 
 .modal-body .product-card .selected-overlay {
@@ -1060,18 +1060,19 @@
   z-index: 10;
 }
 
-/* Modal Footer - Centered Grouped Layout */
+/* Modal Footer - Floating Effect */
 .modal-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--bundle-footer-padding, 24px 32px);
-  border-top: 1px solid #F0F0F0;
+  padding: var(--bundle-footer-padding, 24px 40px);
+  border-top: 1px solid #E5E7EB;
   margin-top: 0;
-  background: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%);
+  background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
   border-radius: var(--bundle-footer-border-radius, 0px);
   min-width: 600px;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 10;
 }
 
 /* Centered Grouped Content Container */
