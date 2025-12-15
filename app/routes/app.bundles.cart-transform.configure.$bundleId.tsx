@@ -60,6 +60,7 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { ThemeTemplateService } from "../services/theme-template.server";
+import { WidgetInstallationService } from "../services/widget-installation.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -115,6 +116,13 @@ interface LoaderData {
   shop: string;
   apiKey: string;
   blockHandle: string;
+  widgetInstallation?: {
+    installed: boolean;
+    bundleConfigured: boolean;
+    recommendedAction: 'install_widget' | 'add_bundle' | 'configured' | 'update_bundle';
+    themeName?: string;
+    installationLink: string;
+  };
 }
 
 
@@ -204,10 +212,24 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
   // Per Shopify docs: addAppBlockId={api_key}/{handle}
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
-  const apiKey = process.env.SHOPIFY_API_KEY;
+  const apiKey = process.env.SHOPIFY_API_KEY || '';
   // Block handle must match the liquid filename (without .liquid extension)
   // File: extensions/bundle-builder/blocks/bundle.liquid
   const blockHandle = 'bundle';
+
+  // Get smart installation context for this specific bundle
+  const installationContext = await WidgetInstallationService.getBundleInstallationContext(
+    admin,
+    session.shop,
+    bundleId
+  );
+
+  // Generate bundle-specific installation link (pre-populates bundle ID)
+  const bundleInstallLink = WidgetInstallationService.generateBundleInstallationLink(
+    session.shop,
+    apiKey,
+    bundleId
+  );
 
   return json({
     bundle,
@@ -215,6 +237,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     shop: session.shop,
     apiKey,
     blockHandle,
+    widgetInstallation: {
+      installed: installationContext.widgetInstalled,
+      bundleConfigured: installationContext.bundleConfigured,
+      recommendedAction: installationContext.recommendedAction,
+      themeName: installationContext.themeName,
+      installationLink: bundleInstallLink,
+    },
   });
 };
 
@@ -1703,7 +1732,7 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
 }
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle } = useLoaderData<LoaderData>();
+  const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle, widgetInstallation } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -2828,6 +2857,79 @@ export default function ConfigureBundleFlow() {
 
 
         <Layout>
+          {/* Smart Widget Installation Banner - Context-Aware */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && (
+            <Layout.Section>
+              <Banner
+                title="🎯 Place This Bundle Widget in Your Theme"
+                tone="info"
+                action={{
+                  content: "Place Widget Now",
+                  onAction: () => window.open(widgetInstallation.installationLink, '_top'),
+                }}
+                secondaryAction={{
+                  content: "Setup Guide",
+                  onAction: () => navigate('/app/installation-guide'),
+                }}
+              >
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodyMd">
+                    This bundle is ready! Click "Place Widget Now" to add it to your theme.
+                    The theme editor will open with <strong>this bundle pre-selected</strong> for easy placement.
+                  </Text>
+                  {widgetInstallation.themeName && (
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Theme: {widgetInstallation.themeName}
+                    </Text>
+                  )}
+                </BlockStack>
+              </Banner>
+            </Layout.Section>
+          )}
+
+          {/* Add Bundle to Existing Widget */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && (
+            <Layout.Section>
+              <Banner
+                title="📝 Add This Bundle to Your Widget"
+                tone="warning"
+                action={{
+                  content: "Configure Widget",
+                  onAction: () => window.open(widgetInstallation.installationLink, '_top'),
+                }}
+                secondaryAction={{
+                  content: "Setup Guide",
+                  onAction: () => navigate('/app/installation-guide'),
+                }}
+              >
+                <BlockStack gap="200">
+                  <Text as="p" variant="bodyMd">
+                    Your bundle widget is installed in {widgetInstallation.themeName || 'your theme'}, but this bundle isn't configured yet.
+                    Click "Configure Widget" to update the bundle ID in your theme editor.
+                  </Text>
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    The widget will open with <strong>this bundle's ID pre-filled</strong> - just update the "Bundle configuration ID" field and save.
+                  </Text>
+                </BlockStack>
+              </Banner>
+            </Layout.Section>
+          )}
+
+          {/* Bundle Already Configured - Success */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'configured' && (
+            <Layout.Section>
+              <Banner
+                title="✅ This Bundle is Live"
+                tone="success"
+              >
+                <Text as="p" variant="bodyMd">
+                  This bundle is configured in your theme ({widgetInstallation.themeName || 'theme'}) and visible to customers.
+                  Any changes you save here will automatically update on your storefront.
+                </Text>
+              </Banner>
+            </Layout.Section>
+          )}
+
           {/* Left Sidebar */}
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
