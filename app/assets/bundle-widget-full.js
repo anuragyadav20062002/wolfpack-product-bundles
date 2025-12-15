@@ -3,7 +3,7 @@
  * Handles bundle product selection, pricing, and cart operations
  * Supports both cart transform and discount function bundles
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * @author Wolfpack Team
  * 
  */
@@ -15,7 +15,7 @@
 // ============================================================================
 
 const BUNDLE_WIDGET = {
-  VERSION: '3.0.0',
+  VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
 
   // DOM Selectors
@@ -62,79 +62,26 @@ const BUNDLE_WIDGET = {
 
 class CurrencyManager {
   static getShopBaseCurrency() {
-    // Shop's base currency - used for calculations
+    // Shop's base currency from Shopify object (official source)
     return {
-      code: window.Shopify?.shop?.currency || window.shopCurrency || 'USD',
+      code: window.Shopify?.shop?.currency || 'USD',
       format: window.shopMoneyFormat || '{{amount}}'
     };
   }
 
   static detectCustomerCurrency() {
-    // Priority 1: Shopify Markets active currency
+    // Primary: Shopify Markets active currency (official method)
+    // Shopify Markets handles geolocation and user preferences automatically
     if (window.Shopify?.currency?.active) {
-      const currency = {
+      return {
         code: window.Shopify.currency.active,
-        format: window.Shopify.currency.format || window.shopMoneyFormat,
+        format: window.Shopify.currency.format || window.shopMoneyFormat || '{{amount}}',
         rate: window.Shopify.currency.rate || 1
       };
-      return currency;
-    }
-
-    // Priority 2: Currency cookie
-    const currencyCookie = this.getCurrencyFromCookie();
-    if (currencyCookie) {
-      const currency = {
-        code: currencyCookie,
-        format: window.shopMoneyFormat,
-        rate: 1
-      };
-      return currency;
-    }
-
-    // Priority 3: URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const currencyParam = urlParams.get('currency');
-    if (currencyParam) {
-      const currency = {
-        code: currencyParam,
-        format: window.shopMoneyFormat,
-        rate: 1
-      };
-      return currency;
-    }
-
-    // Priority 4: localStorage
-    try {
-      const storedCurrency = localStorage.getItem('shopify_currency') || localStorage.getItem('currency');
-      if (storedCurrency) {
-        const currency = {
-          code: storedCurrency,
-          format: window.shopMoneyFormat,
-          rate: 1
-        };
-        return currency;
-      }
-    } catch (e) {
     }
 
     // Fallback: Shop base currency
-    const fallbackCurrency = {
-      code: window.shopCurrency || 'USD',
-      format: window.shopMoneyFormat,
-      rate: 1
-    };
-    return fallbackCurrency;
-  }
-
-  static getCurrencyFromCookie() {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'currency' || name === 'shopify_currency') {
-        return value;
-      }
-    }
-    return null;
+    return this.getShopBaseCurrency();
   }
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
@@ -522,28 +469,25 @@ class PricingCalculator {
 // ============================================================================
 
 class ToastManager {
-  static show(message, type = 'info', duration = 4000) {
+  static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
     if (existingToast) {
       existingToast.remove();
     }
 
-    // Create toast element
+    // Create toast element - now uses DCP CSS variables
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
-    toast.className = `bundle-toast bundle-toast-${type}`;
+    toast.className = `bundle-toast`;
     toast.innerHTML = `
-      <div class="bundle-toast-content">
-        <span class="bundle-toast-message">${message}</span>
-        <button class="bundle-toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
-      </div>
+      <span>${message}</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;" onclick="this.parentElement.remove()">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     `;
 
-    // Add CSS styles if not already present
-    this.ensureStyles();
-
-    // Add to page
+    // Add to page (styles come from bundle-widget.css with DCP CSS variables)
     document.body.appendChild(toast);
 
     // Auto-remove after duration
@@ -556,81 +500,6 @@ class ToastManager {
     }
   }
 
-  static ensureStyles() {
-    if (document.getElementById('bundle-toast-styles')) return;
-
-    const styles = document.createElement('style');
-    styles.id = 'bundle-toast-styles';
-    styles.textContent = `
-      .bundle-toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000001;
-        max-width: 400px;
-        padding: 16px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
-        line-height: 1.4;
-        animation: slideInRight 0.3s ease-out;
-      }
-      .bundle-toast-info {
-        background-color: #f0f8ff;
-        border-left: 4px solid #007ace;
-        color: #003d82;
-      }
-      .bundle-toast-warning {
-        background-color: #fff8e1;
-        border-left: 4px solid #ff9800;
-        color: #e65100;
-      }
-      .bundle-toast-error {
-        background-color: #ffebee;
-        border-left: 4px solid #f44336;
-        color: #c62828;
-      }
-      .bundle-toast-success {
-        background-color: #e8f5e8;
-        border-left: 4px solid #4caf50;
-        color: #2e7d32;
-      }
-      .bundle-toast-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-      }
-      .bundle-toast-message {
-        flex: 1;
-      }
-      .bundle-toast-close {
-        background: none;
-        border: none;
-        font-size: 18px;
-        font-weight: bold;
-        cursor: pointer;
-        padding: 0;
-        line-height: 1;
-        opacity: 0.7;
-      }
-      .bundle-toast-close:hover {
-        opacity: 1;
-      }
-      @keyframes slideInRight {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-    `;
-    document.head.appendChild(styles);
-  }
 }
 
 // ============================================================================
@@ -648,8 +517,16 @@ class TemplateManager {
       const singleBrace = new RegExp(`\\{${key}\\}`, 'g');
       const doubleBrace = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
 
-      result = result.replace(singleBrace, value);
-      result = result.replace(doubleBrace, value);
+      // Wrap conditionText and discountText with styled spans
+      let replacementValue = value;
+      if (key === 'conditionText') {
+        replacementValue = `<span class="bundle-conditions-text" style="color: var(--bundle-conditions-text-color, inherit);">${value}</span>`;
+      } else if (key === 'discountText') {
+        replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit);">${value}</span>`;
+      }
+
+      result = result.replace(singleBrace, replacementValue);
+      result = result.replace(doubleBrace, replacementValue);
     });
     return result;
   }
@@ -931,32 +808,14 @@ class BundleWidget {
         return;
       }
 
-      // Get bundle type (defaults to product_page)
-      const bundleType = this.selectedBundle?.bundleType || 'product_page';
-
-      // Check if design CSS is already loaded
-      const existingLink = document.getElementById('bundle-design-settings-css');
+      // CSS is loaded by the small loader (bundle-widget.js) for better performance
+      // No need to load it here - just verify it's present
+      const existingLink = document.querySelector('link[href*="design-settings"]');
       if (existingLink) {
-        existingLink.remove();
+        console.log('[BUNDLE_WIDGET] ✅ Design CSS already loaded by loader script');
+      } else {
+        console.warn('[BUNDLE_WIDGET] ⚠️ Design CSS not found - loader script may have failed');
       }
-
-      // Get app URL from metafield or use current domain
-      const appUrl = this.container.dataset.appUrl || window.location.origin;
-
-      // Build CSS URL
-      const cssUrl = `${appUrl}/api/design-settings/${shopDomain}.css?bundleType=${bundleType}`;
-
-      // Create and inject link element
-      const linkElement = document.createElement('link');
-      linkElement.id = 'bundle-design-settings-css';
-      linkElement.rel = 'stylesheet';
-      linkElement.href = cssUrl;
-      linkElement.type = 'text/css';
-
-      // Add to document head
-      document.head.appendChild(linkElement);
-
-      console.log('[BUNDLE_WIDGET] ✅ Design settings CSS loaded:', cssUrl);
 
     } catch (error) {
       console.warn('[BUNDLE_WIDGET] Failed to load design settings CSS:', error);
@@ -975,52 +834,13 @@ class BundleWidget {
       showTitle: dataset.showTitle !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       showFooterMessaging: dataset.showFooterMessaging !== 'false',
-      discountTextTemplate: this.normalizeDiscountTemplate(dataset.discountTextTemplate),
-      successMessageTemplate: this.normalizeSuccessTemplate(dataset.successMessageTemplate),
-      progressTextTemplate: dataset.progressTextTemplate || '{currentQuantity} / {targetQuantity} items',
+      // Messages will be set from bundle.pricing.messages after bundle loads
+      discountTextTemplate: 'Add {conditionText} to get {discountText}',
+      successMessageTemplate: 'Congratulations! You got {discountText}!',
       currentProductId: window.currentProductId,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections
     };
-  }
-
-  normalizeDiscountTemplate(template) {
-    // Professional template normalization with comprehensive old variable detection
-    const modernTemplate = 'Add {conditionText} to get {discountText}';
-
-    // If no template provided, use modern default
-    if (!template) {
-      return modernTemplate;
-    }
-
-    // Detect old variable patterns and normalize to modern format
-    const oldVariablePatterns = [
-      'discountConditionDiff',
-      'discountUnit',
-      'discountValue',
-      'discountValueUnit'
-    ];
-
-    const hasOldVariables = oldVariablePatterns.some(pattern => template.includes(pattern));
-
-    if (hasOldVariables) {
-      return modernTemplate;
-    }
-
-    // Template is already modern, return as-is
-    return template;
-  }
-
-  normalizeSuccessTemplate(template) {
-    // Use template as-is, or fall back to modern default
-    const modernTemplate = 'Congratulations! You got {discountText}!';
-
-    if (!template || template.trim() === '') {
-      return modernTemplate;
-    }
-
-    // Return the template without modification - let merchants control the message
-    return template;
   }
 
   async loadBundleData() {
@@ -1080,6 +900,31 @@ class BundleWidget {
 
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
+
+    // Update message templates from bundle pricing messages
+    this.updateMessagesFromBundle();
+  }
+
+  updateMessagesFromBundle() {
+    // Use bundle pricing messages if available, otherwise keep defaults
+    if (this.selectedBundle?.pricing?.messages) {
+      const messages = this.selectedBundle.pricing.messages;
+
+      if (messages.progress) {
+        this.config.discountTextTemplate = messages.progress;
+      }
+
+      if (messages.qualified) {
+        this.config.successMessageTemplate = messages.qualified;
+      }
+
+      console.log('[BUNDLE_MESSAGES] Using bundle pricing messages:', {
+        progress: this.config.discountTextTemplate,
+        qualified: this.config.successMessageTemplate
+      });
+    } else {
+      console.log('[BUNDLE_MESSAGES] No pricing messages in bundle, using defaults');
+    }
   }
 
   initializeDataStructures() {
@@ -1235,42 +1080,103 @@ class BundleWidget {
         <div class="modal-content">
           <div class="modal-header">
             <div class="modal-step-title"></div>
-            <div class="modal-step-subtitle"></div>
-            <div class="modal-tabs"></div>
+            <div class="modal-tabs-wrapper">
+              <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
+              <div class="modal-tabs"></div>
+              <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
+            </div>
             <span class="close-button">&times;</span>
           </div>
           <div class="modal-body">
             <div class="product-grid"></div>
           </div>
           <div class="modal-footer">
-            <button class="modal-nav-button prev-button">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Prev
-            </button>
-            <div class="modal-footer-discount-messaging">
-              <div class="modal-footer-progress-wrapper">
+            <!-- Centered Grouped Content Container -->
+            <div class="modal-footer-grouped-content">
+              <!-- Total Pill - Sits Above Buttons -->
+              <div class="modal-footer-total-pill">
+                <span class="total-price-strike"></span>
+                <span class="total-price-final"></span>
+                <span class="price-cart-separator">|</span>
+                <span class="cart-badge-wrapper">
+                  <span class="cart-badge-count">0</span>
+                  <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- Buttons Row - Below Pill -->
+              <div class="modal-footer-buttons-row">
+                <button class="modal-nav-button prev-button">BACK</button>
+                <button class="modal-nav-button next-button">NEXT</button>
+              </div>
+
+              <!-- Discount Messaging Section -->
+              <div class="modal-footer-discount-messaging">
+                <div class="footer-discount-text"></div>
+              </div>
+
+              <!-- Progress Bar Section -->
+              <div class="modal-footer-progress-section">
                 <div class="modal-footer-progress-bar">
                   <div class="modal-footer-progress-fill"></div>
                 </div>
+                <div class="modal-footer-progress-details">
+                  <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
+                </div>
               </div>
-              <div class="modal-footer-discount-text"></div>
             </div>
-            <button class="modal-nav-button next-button">
-              Next
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
           </div>
         </div>
       `;
 
       document.body.appendChild(modal);
+
+      // Setup tab scroll arrows
+      this.setupTabScrollArrows(modal);
     }
 
     return modal;
+  }
+
+  setupTabScrollArrows(modal) {
+    const tabsContainer = modal.querySelector('.modal-tabs');
+    const leftArrow = modal.querySelector('.tab-arrow-left');
+    const rightArrow = modal.querySelector('.tab-arrow-right');
+
+    if (!tabsContainer || !leftArrow || !rightArrow) return;
+
+    const scrollAmount = 200;
+
+    // Left arrow click
+    leftArrow.addEventListener('click', () => {
+      tabsContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    });
+
+    // Right arrow click
+    rightArrow.addEventListener('click', () => {
+      tabsContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    });
+
+    // Update arrow visibility based on scroll position
+    const updateArrowVisibility = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainer;
+
+      leftArrow.style.display = scrollLeft > 0 ? 'flex' : 'none';
+      rightArrow.style.display = scrollLeft + clientWidth < scrollWidth - 1 ? 'flex' : 'none';
+    };
+
+    // Listen to scroll events
+    tabsContainer.addEventListener('scroll', updateArrowVisibility);
+
+    // Initial check
+    setTimeout(updateArrowVisibility, 100);
+
+    // Store for later updates
+    this.updateTabArrows = updateArrowVisibility;
   }
   //========================================================================
   // UI RENDERING
@@ -1317,6 +1223,22 @@ class BundleWidget {
     if (hasSelections) {
       stepBox.classList.add('step-completed');
 
+      // Add close icon badge at top right to clear all selections
+      const clearBadge = document.createElement('div');
+      clearBadge.className = 'step-clear-badge';
+      clearBadge.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
+          <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+      clearBadge.title = 'Remove all products from this step';
+      clearBadge.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent opening modal
+        this.clearStepSelections(index);
+      });
+      stepBox.appendChild(clearBadge);
+
       // Show product images if available
       const productImages = this.getStepProductImages(index);
       if (productImages.length > 0) {
@@ -1356,21 +1278,20 @@ class BundleWidget {
       stepBox.appendChild(plusIcon);
     }
 
-    // Add step name
-    const stepName = document.createElement('p');
-    stepName.className = 'step-name';
-    if (this.config.showStepNumbers) {
-      stepName.textContent = `${index + 1}. ${step.name || `Step ${index + 1}`}`;
-    } else {
+    // Only show step name and selection count if no selections made
+    if (!hasSelections) {
+      // Add step name (without step number)
+      const stepName = document.createElement('p');
+      stepName.className = 'step-name';
       stepName.textContent = step.name || `Step ${index + 1}`;
-    }
-    stepBox.appendChild(stepName);
+      stepBox.appendChild(stepName);
 
-    // Add selection count
-    const selectionCount = document.createElement('div');
-    selectionCount.className = 'step-selection-count';
-    selectionCount.textContent = this.getStepSelectionText(selectedProducts);
-    stepBox.appendChild(selectionCount);
+      // Add selection count
+      const selectionCount = document.createElement('div');
+      selectionCount.className = 'step-selection-count';
+      selectionCount.textContent = this.getStepSelectionText(selectedProducts);
+      stepBox.appendChild(selectionCount);
+    }
 
     // Add click handler
     stepBox.addEventListener('click', () => this.openModal(index));
@@ -1400,6 +1321,19 @@ class BundleWidget {
   getStepSelectionText(selectedProducts) {
     const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
     return totalSelected > 0 ? `${totalSelected} selected` : '';
+  }
+
+  clearStepSelections(stepIndex) {
+    // Clear all product selections for this step
+    this.selectedProducts[stepIndex] = {};
+
+    // Update UI
+    this.renderSteps();
+    this.updateAddToCartButton();
+    this.updateFooterMessaging();
+
+    // Show toast notification
+    ToastManager.show(`All selections cleared from this step`);
   }
 
   renderFooter() {
@@ -1528,8 +1462,7 @@ class BundleWidget {
         button.textContent = 'Complete All Steps to Continue';
       }
       button.disabled = true;
-      button.style.opacity = '0.6';
-      button.style.cursor = 'not-allowed';
+      button.classList.add('disabled');
     } else {
       // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
@@ -1545,9 +1478,9 @@ class BundleWidget {
         const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
         console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
         button.innerHTML = `
-          <span style="display: flex; flex-direction: column; align-items: center;">
-            <span style="text-decoration: line-through; font-size: 0.8em; opacity: 0.7;">${originalPrice}</span>
-            <span>Add Bundle to Cart • ${formattedPrice}</span>
+          <span class="button-price-wrapper">
+            <span class="button-price-strike">${originalPrice}</span>
+            <span class="button-price-final">Add Bundle to Cart • ${formattedPrice}</span>
           </span>
         `;
       } else {
@@ -1556,22 +1489,53 @@ class BundleWidget {
       }
 
       button.disabled = false;
-      button.style.opacity = '1';
-      button.style.cursor = 'pointer';
+      button.classList.remove('disabled');
     }
   }
   // ========================================================================
   // MODAL FUNCTIONALITY
   // ========================================================================
 
+  // Helper method to get formatted header text
+  getFormattedHeaderText() {
+    // If discount is not enabled, show step name
+    if (!this.selectedBundle?.pricing?.enabled) {
+      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+      return currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+    }
+
+    const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
+
+    return TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+  }
+
   openModal(stepIndex) {
     this.currentStepIndex = stepIndex;
-    const step = this.selectedBundle.steps[stepIndex];
 
     // Update modal header
     const modal = this.elements.modal;
-    modal.querySelector('.modal-step-title').textContent = step.name;
-    modal.querySelector('.modal-step-subtitle').textContent = `Step ${stepIndex + 1} of ${this.selectedBundle.steps.length}`;
+    const headerText = this.getFormattedHeaderText();
+
+    modal.querySelector('.modal-step-title').innerHTML = headerText;
 
     // Load and render products for this step
     this.loadStepProducts(stepIndex).then(() => {
@@ -1585,7 +1549,7 @@ class BundleWidget {
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
     }).catch(error => {
-      ToastManager.show('Failed to load products for this step', 'error');
+      ToastManager.show('Failed to load products for this step');
     });
   }
 
@@ -1626,8 +1590,7 @@ class BundleWidget {
       const shop = window.Shopify?.shop || window.location.host;
 
       // Get app URL from widget data attribute or window global
-      const widgetContainer = document.querySelector('#bundle-builder-app');
-      const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+      const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
 
       console.log('[LOAD_PRODUCTS] Fetching products from Storefront API. IDs:', productIds);
@@ -1664,8 +1627,7 @@ class BundleWidget {
         console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
 
         // Get app URL (same as above)
-        const widgetContainer = document.querySelector('#bundle-builder-app');
-        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const appUrl = window.__BUNDLE_APP_URL__ || '';
         const apiBaseUrl = appUrl || window.location.origin;
 
         try {
@@ -1694,8 +1656,7 @@ class BundleWidget {
 
       if (collectionHandles.length > 0) {
         const shop = window.Shopify?.shop || window.location.host;
-        const widgetContainer = document.querySelector('#bundle-builder-app');
-        const appUrl = widgetContainer?.dataset?.appUrl || window.__BUNDLE_APP_URL__ || '';
+        const appUrl = window.__BUNDLE_APP_URL__ || '';
         const apiBaseUrl = appUrl || window.location.origin;
 
         console.log('[LOAD_PRODUCTS] Fetching products from collections via Storefront API:', collectionHandles);
@@ -1758,6 +1719,7 @@ class BundleWidget {
               title: `${product.title} - ${variant.title}`,
               imageUrl,
               price: parseFloat(variant.price || '0') * 100,
+              compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
               available: variant.available === true // Store availability (always boolean)
             };
@@ -1779,6 +1741,7 @@ class BundleWidget {
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
+          compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           available: defaultVariant?.available === true // Store availability (always boolean from API)
         }];
@@ -1804,39 +1767,27 @@ class BundleWidget {
     tabsContainer.innerHTML = '';
 
     this.selectedBundle.steps.forEach((step, index) => {
-      const stepContainer = document.createElement('div');
-      stepContainer.className = 'milestone-step-container';
-
-      const stepTotalQuantity = Object.values(this.selectedProducts[index]).reduce((sum, qty) => sum + qty, 0);
-      const isStepCompleted = this.validateStep(index);
-      const isStepStarted = stepTotalQuantity > 0;
       const isAccessible = this.isStepAccessible(index);
+      const isActive = index === this.currentStepIndex;
 
-      stepContainer.innerHTML = `
-        <div class="milestone-step ${index === this.currentStepIndex ? 'active' : ''} ${isStepCompleted ? 'completed' : ''} ${isStepStarted && !isStepCompleted ? 'in-progress' : ''} ${!isAccessible ? 'locked' : ''}">
-          <div class="milestone-circle">
-            <span class="milestone-number">${isStepCompleted ? '✓' : index + 1}</span>
-          </div>
-          <div class="milestone-label">${step.name || `Step ${index + 1}`}</div>
-        </div>
-        ${index < this.selectedBundle.steps.length - 1 ? `<div class="milestone-connector ${isStepCompleted ? 'completed' : (isStepStarted ? 'in-progress' : '')}"></div>` : ''}
-      `;
-
-      stepContainer.dataset.stepIndex = index.toString();
+      // Create tab button
+      const tabButton = document.createElement('button');
+      tabButton.className = `bundle-header-tab ${isActive ? 'active' : ''} ${!isAccessible ? 'locked' : ''}`;
+      tabButton.textContent = step.name || `Step ${index + 1}`;
+      tabButton.dataset.stepIndex = index.toString();
 
       // Click handler
-      const stepElement = stepContainer.querySelector('.milestone-step');
-      stepElement.addEventListener('click', async () => {
+      tabButton.addEventListener('click', async () => {
         if (!isAccessible) {
-          ToastManager.show('Please complete the previous steps first.', 'warning');
+          ToastManager.show('Please complete the previous steps first.');
           return;
         }
 
         this.currentStepIndex = index;
 
         // Update modal header
-        this.elements.modal.querySelector('.modal-step-title').textContent = step.name;
-        this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${index + 1} of ${this.selectedBundle.steps.length}`;
+        const headerText = this.getFormattedHeaderText();
+        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
         // Load products for this step if not already loaded
         await this.loadStepProducts(index);
@@ -1848,17 +1799,38 @@ class BundleWidget {
         this.updateModalFooterMessaging();
       });
 
-      tabsContainer.appendChild(stepContainer);
+      tabsContainer.appendChild(tabButton);
     });
+
+    // Update arrow visibility after rendering tabs
+    if (this.updateTabArrows) {
+      setTimeout(() => this.updateTabArrows(), 50);
+    }
   }
 
-  renderModalProducts(stepIndex) {
-    const products = this.stepProductData[stepIndex];
+  renderModalProducts(stepIndex, productsToRender = null) {
+    // Use all products from step data
+    const products = productsToRender || this.stepProductData[stepIndex];
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
     if (products.length === 0) {
-      productGrid.innerHTML = '<p style="text-align: center; padding: 20px;">No products configured for this step.</p>';
+      // Show empty state cards like in DCP preview
+      const currentStep = this.selectedBundle.steps[stepIndex];
+      const stepName = currentStep?.name || `Step ${stepIndex + 1}`;
+      const labelText = `Select ${stepName}`;
+
+      const emptyStateCards = Array(3).fill(0).map((_, index) => `
+        <div class="empty-state-card">
+          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-state-card-text">${labelText}</p>
+        </div>
+      `).join('');
+
+      productGrid.innerHTML = emptyStateCards;
       return;
     }
 
@@ -1869,19 +1841,39 @@ class BundleWidget {
 
       return `
         <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
-          <div class="image-wrapper">
+          ${currentQuantity > 0 ? `
+            <div class="selected-overlay">✓</div>
+          ` : ''}
+
+          <div class="product-image">
             <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
           </div>
-          <div class="product-info">
-            <p class="product-title">${product.title}</p>
-            <p class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</p>
+
+          <div class="product-content-wrapper">
+            <div class="product-title">${product.title}</div>
+
+            ${product.price ? `
+              <div class="product-price-row">
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
+                <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+              </div>
+            ` : ''}
+
+            <div class="product-spacer"></div>
+
             ${this.renderVariantSelector(product)}
-          </div>
-          ${currentQuantity > 0 ? `<div class="selected-overlay">${currentQuantity}</div>` : ''}
-          <div class="quantity-controls">
-            <button class="quantity-control-button decrease-quantity" data-product-id="${selectionKey}">-</button>
-            <span class="quantity-display">${currentQuantity}</span>
-            <button class="quantity-control-button increase-quantity" data-product-id="${selectionKey}">+</button>
+
+            <div class="product-quantity-wrapper">
+              <div class="product-quantity-selector">
+                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                <span class="qty-display">${currentQuantity}</span>
+                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+              </div>
+            </div>
+
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
+              ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
+            </button>
           </div>
         </div>
       `;
@@ -1897,11 +1889,13 @@ class BundleWidget {
     }
 
     return `
-      <select class="variant-selector" data-base-product-id="${product.id}">
-        ${product.variants.map(v => `
-          <option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>
-        `).join('')}
-      </select>
+      <div class="variant-selector-wrapper">
+        <select class="variant-selector" data-base-product-id="${product.id}">
+          ${product.variants.map(v => `
+            <option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>
+          `).join('')}
+        </select>
+      </div>
     `;
   }
 
@@ -1912,25 +1906,23 @@ class BundleWidget {
 
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
-      if (e.target.classList.contains('quantity-control-button')) {
+      if (e.target.classList.contains('qty-btn')) {
         const productId = e.target.dataset.productId;
+        const isIncrease = e.target.classList.contains('qty-increase');
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-        const isIncrease = e.target.classList.contains('increase-quantity');
 
         const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
         this.updateProductSelection(stepIndex, productId, newQuantity);
       }
     });
 
-    // Product card click handler
+    // Add to Bundle button handler
     newProductGrid.addEventListener('click', (e) => {
-      if (!e.target.closest('.quantity-control-button') && !e.target.closest('.variant-selector')) {
-        const productCard = e.target.closest('.product-card');
-        if (productCard) {
-          const productId = productCard.dataset.productId;
-          const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-          this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
-        }
+      if (e.target.classList.contains('product-add-btn')) {
+        const productId = e.target.dataset.productId;
+        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+        // Toggle between 0 and 1
+        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
       }
     });
 
@@ -1992,17 +1984,27 @@ class BundleWidget {
     // Update quantity display without full re-render
     const productCard = document.querySelector(`[data-product-id="${productId}"]`);
     if (productCard) {
-      const quantityDisplay = productCard.querySelector('.quantity-display');
+      const quantityDisplay = productCard.querySelector('.qty-display');
+      const addBtn = productCard.querySelector('.product-add-btn');
       const selectedOverlay = productCard.querySelector('.selected-overlay');
 
       if (quantityDisplay) {
         quantityDisplay.textContent = quantity;
       }
 
+      if (addBtn) {
+        if (quantity > 0) {
+          addBtn.textContent = 'Added to Bundle';
+          addBtn.classList.add('added');
+        } else {
+          addBtn.textContent = 'Add to Bundle';
+          addBtn.classList.remove('added');
+        }
+      }
+
       if (selectedOverlay) {
         if (quantity > 0) {
-          selectedOverlay.textContent = quantity;
-          selectedOverlay.style.display = 'block';
+          selectedOverlay.style.display = 'flex';
         } else {
           selectedOverlay.style.display = 'none';
         }
@@ -2065,7 +2067,7 @@ class BundleWidget {
       };
 
       const limitText = operatorText[step.conditionOperator] || requiredQuantity;
-      ToastManager.show(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`, 'warning');
+      ToastManager.show(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`);
       return false;
     }
 
@@ -2143,6 +2145,34 @@ class BundleWidget {
     );
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+    // Update modal header text dynamically
+    this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
+
+    // Update cart badge with total item count
+    const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
+    if (cartBadge) {
+      cartBadge.textContent = totalQuantity.toString();
+    }
+
+    // Update total prices in the footer pill
+    this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+
+    // Update discount messaging and progress bar
+    this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+  }
+
+  updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
+    const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
+    if (!modalStepTitle) return;
+
+    // If discount is not enabled, show step name
+    if (!this.selectedBundle?.pricing?.enabled) {
+      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+      modalStepTitle.innerHTML = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+      return;
+    }
+
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
       totalPrice,
@@ -2151,31 +2181,52 @@ class BundleWidget {
       currencyInfo
     );
 
-    const footerMessaging = this.elements.modal.querySelector('.modal-footer-discount-messaging');
+    const headerText = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+
+    modalStepTitle.innerHTML = headerText;
+  }
+
+  updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
+    const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
     const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
-    const discountText = this.elements.modal.querySelector('.modal-footer-discount-text');
+    const progressBar = this.elements.modal.querySelector('.modal-footer-progress-bar');
+    const currentQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .current-quantity');
+    const targetQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .target-quantity');
+    const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
+    const progressSection = this.elements.modal.querySelector('.modal-footer-progress-section');
 
-    if (!footerMessaging || !this.selectedBundle.pricing?.enabled) {
-      if (footerMessaging) footerMessaging.style.display = 'none';
-      return;
-    }
+    if (!footerDiscountText || !progressFill) return;
 
-    // Show appropriate message
-    let messageText = '';
-    let messageState = 'progress';
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
 
     if (discountInfo.qualifiesForDiscount) {
-      messageState = 'success';
-      messageText = TemplateManager.replaceVariables(this.config.successMessageTemplate, variables);
+      // Success message
+      const successMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate,
+        variables
+      );
+      footerDiscountText.innerHTML = successMessage;
+      if (discountSection) discountSection.classList.add('qualified');
     } else {
-      messageText = TemplateManager.replaceVariables(this.config.discountTextTemplate, variables);
+      // Progress message
+      const progressMessage = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate,
+        variables
+      );
+      footerDiscountText.innerHTML = progressMessage;
+      if (discountSection) discountSection.classList.remove('qualified');
     }
 
-    if (discountText) {
-      discountText.textContent = messageText;
-    }
-
-    // Update progress bar based on condition type
+    // Update progress bar
     const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
     const ruleToUse = discountInfo.applicableRule || nextRule;
 
@@ -2187,8 +2238,16 @@ class BundleWidget {
 
       if (conditionType === 'amount') {
         progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
+        if (currentQuantitySpan && targetQuantitySpan) {
+          currentQuantitySpan.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+          targetQuantitySpan.textContent = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
+        }
       } else {
         progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
+        if (currentQuantitySpan && targetQuantitySpan) {
+          currentQuantitySpan.textContent = totalQuantity.toString();
+          targetQuantitySpan.textContent = targetValue.toString();
+        }
       }
     }
 
@@ -2196,9 +2255,31 @@ class BundleWidget {
       progressFill.style.width = `${progressPercentage}%`;
     }
 
-    // Apply state class
-    footerMessaging.className = `modal-footer-discount-messaging ${messageState}`;
-    footerMessaging.style.display = 'flex';
+    // Show/hide sections based on config
+    if (discountSection) {
+      discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
+    }
+    if (progressSection) {
+      progressSection.style.display = this.config.showProgressBar ? 'block' : 'none';
+    }
+  }
+
+  updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {
+    const strikePriceEl = this.elements.modal.querySelector('.total-price-strike');
+    const finalPriceEl = this.elements.modal.querySelector('.total-price-final');
+
+    if (!strikePriceEl || !finalPriceEl) return;
+
+    if (discountInfo.qualifiesForDiscount && discountInfo.discountedPrice < totalPrice) {
+      // Show strike-through original price and discounted price
+      strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      strikePriceEl.style.display = 'inline';
+      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.discountedPrice, currencyInfo.display.format);
+    } else {
+      // Show only regular price
+      strikePriceEl.style.display = 'none';
+      finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+    }
   }
 
   // ========================================================================
@@ -2213,14 +2294,14 @@ class BundleWidget {
       );
 
       if (totalQuantity === 0) {
-        ToastManager.show('Please select products for your bundle before adding to cart.', 'warning');
+        ToastManager.show('Please select products for your bundle before adding to cart.');
         return;
       }
 
       // Validate all steps
       const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
       if (!allStepsValid) {
-        ToastManager.show('Please complete all bundle steps before adding to cart.', 'warning');
+        ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;
       }
 
@@ -2246,14 +2327,14 @@ class BundleWidget {
       const result = await response.json();
 
       // Show success message and redirect
-      ToastManager.show('Bundle added to cart successfully!', 'success');
+      ToastManager.show('Bundle added to cart successfully!');
 
       setTimeout(() => {
         window.location.href = '/cart';
       }, 1000);
 
     } catch (error) {
-      ToastManager.show(`Failed to add bundle to cart: ${error.message}`, 'error');
+      ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
     } finally {
       // Re-enable button
       this.updateAddToCartButton();
@@ -2404,11 +2485,10 @@ class BundleWidget {
       // Previous step
       if (this.validateStep(this.currentStepIndex)) {
         this.currentStepIndex = newStepIndex;
-        const step = this.selectedBundle.steps[newStepIndex];
 
         // Update modal header
-        this.elements.modal.querySelector('.modal-step-title').textContent = step.name;
-        this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${newStepIndex + 1} of ${this.selectedBundle.steps.length}`;
+        const headerText = this.getFormattedHeaderText();
+        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
         // Load products for this step
         await this.loadStepProducts(newStepIndex);
@@ -2418,18 +2498,17 @@ class BundleWidget {
         this.updateModalNavigation();
         this.updateModalFooterMessaging();
       } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before going back.', 'warning');
+        ToastManager.show('Please meet the quantity conditions for the current step before going back.');
       }
     } else if (direction > 0) {
       if (newStepIndex < this.selectedBundle.steps.length) {
         // Next step
         if (this.validateStep(this.currentStepIndex)) {
           this.currentStepIndex = newStepIndex;
-          const step = this.selectedBundle.steps[newStepIndex];
 
           // Update modal header
-          this.elements.modal.querySelector('.modal-step-title').textContent = step.name;
-          this.elements.modal.querySelector('.modal-step-subtitle').textContent = `Step ${newStepIndex + 1} of ${this.selectedBundle.steps.length}`;
+          const headerText = this.getFormattedHeaderText();
+          this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
           // Load products for this step
           await this.loadStepProducts(newStepIndex);
@@ -2439,14 +2518,14 @@ class BundleWidget {
           this.updateModalNavigation();
           this.updateModalFooterMessaging();
         } else {
-          ToastManager.show('Please meet the quantity conditions for the current step before proceeding.', 'warning');
+          ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
         }
       } else {
         // Done button clicked on last step
         if (this.validateStep(this.currentStepIndex)) {
           this.closeModal();
         } else {
-          ToastManager.show('Please meet the quantity conditions for the current step before finishing.', 'warning');
+          ToastManager.show('Please meet the quantity conditions for the current step before finishing.');
         }
       }
     }
@@ -2543,7 +2622,7 @@ function handleAutomaticBundleConfiguration() {
     bundleContainers.forEach(container => {
       if (!container.dataset.bundleId) {
         container.dataset.bundleId = bundleId;
-        ToastManager.show(`Bundle widget configured with ID: ${bundleId}`, 'info', 6000);
+        ToastManager.show(`Bundle widget configured with ID: ${bundleId}`, 6000);
       }
     });
   }

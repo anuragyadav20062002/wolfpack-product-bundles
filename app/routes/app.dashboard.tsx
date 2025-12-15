@@ -14,14 +14,17 @@ import {
   Modal,
   FormLayout,
   TextField,
+  Banner,
+  Icon,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, CheckCircleIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 import { SubscriptionGuard } from "../services/subscription-guard.server";
 import { BillingService } from "../services/billing.server";
+import { WidgetInstallationService } from "../services/widget-installation.server";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
@@ -44,7 +47,7 @@ interface Bundle {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
 
   // Get active and draft bundles for the shop (exclude archived/deleted)
   const bundles = await db.bundle.findMany({
@@ -68,6 +71,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get subscription info for upgrade prompt
   const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
 
+  // Check widget installation status
+  const widgetStatus = await WidgetInstallationService.checkWidgetInstallation(admin, session.shop);
+
+  // Get API key for deep linking
+  const apiKey = process.env.SHOPIFY_API_KEY || '';
+
+  // Generate generic installation link
+  const installationLink = WidgetInstallationService.generateGenericInstallationLink(
+    session.shop,
+    apiKey
+  );
+
   return json({
     bundles,
     shop: session.shop,
@@ -77,6 +92,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       bundleLimit: subscriptionInfo.bundleLimit,
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
+    widgetInstallation: {
+      installed: widgetStatus.installed,
+      themeName: widgetStatus.themeName,
+      showPrompt: WidgetInstallationService.shouldShowInstallationPrompt(widgetStatus),
+      installationLink,
+    },
+    apiKey,
   });
 };
 
@@ -429,7 +451,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Dashboard() {
-  const { bundles, subscription } = useLoaderData<typeof loader>();
+  const { bundles, subscription, widgetInstallation, apiKey } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -606,6 +628,21 @@ export default function Dashboard() {
                 bundleLimit={subscription.bundleLimit}
                 canCreateBundle={subscription.canCreateBundle}
               />
+            </Layout.Section>
+          )}
+
+          {/* Widget Installation Success - Informational Only */}
+          {widgetInstallation?.installed && (
+            <Layout.Section>
+              <Banner
+                title="✅ Bundle Widget is Installed"
+                tone="success"
+              >
+                <Text as="p" variant="bodyMd">
+                  Your bundle widget is active in {widgetInstallation.themeName || 'your theme'}.
+                  Edit any bundle to configure which one displays on your product pages.
+                </Text>
+              </Banner>
             </Layout.Section>
           )}
 

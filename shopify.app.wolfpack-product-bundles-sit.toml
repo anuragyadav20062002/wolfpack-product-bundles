@@ -5,9 +5,6 @@ name = "Wolfpack: Product Bundles -SIT"
 application_url = "https://wolfpack-product-bundle-app-sit.onrender.com"
 embedded = true
 
-[build]
-automatically_update_urls_on_dev = false
-
 [webhooks]
 api_version = "2025-10"
 
@@ -23,7 +20,7 @@ api_version = "2025-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_content,read_product_listings,read_products,read_themes,unauthenticated_read_content,unauthenticated_read_product_listings,write_cart_transforms,write_discounts,write_products,write_themes"
+scopes = "read_content,read_product_listings,read_products,read_themes,unauthenticated_read_content,unauthenticated_read_product_listings,write_cart_transforms,write_discounts,write_products,write_themes, write_app_proxy"
 optional_scopes = [ ]
 use_legacy_install_flow = false
 
@@ -33,6 +30,11 @@ redirect_urls = [
   "https://wolfpack-product-bundle-app-sit.onrender.com/auth/shopify/callback",
   "https://wolfpack-product-bundle-app-sit.onrender.com/api/auth/callback"
 ]
+
+[app_proxy]
+url = "https://wolfpack-product-bundle-app-sit.onrender.com"
+subpath = "product-bundles"
+prefix = "apps"
 
 [metafields]
 api_version = "2025-10"
