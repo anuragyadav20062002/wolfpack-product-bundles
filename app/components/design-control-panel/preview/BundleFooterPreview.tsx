@@ -25,6 +25,10 @@ interface BundleFooterPreviewProps {
   footerDiscountTextVisibility: boolean;
   footerProgressBarFilledColor: string;
   footerProgressBarEmptyColor: string;
+  successMessageFontSize: number;
+  successMessageFontWeight: number;
+  successMessageTextColor: string;
+  successMessageBgColor: string;
 }
 
 export function BundleFooterPreview(props: BundleFooterPreviewProps) {
@@ -52,6 +56,10 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
+    successMessageFontSize,
+    successMessageFontWeight,
+    successMessageTextColor,
+    successMessageBgColor,
   } = props;
 
   // Bundle Footer - Main footer subsection
@@ -480,6 +488,28 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                 }}
               >
                 <span style={{ color: "#374151", fontWeight: 600 }}>2</span> / <span style={{ color: "#374151", fontWeight: 600 }}>4</span> items
+              </div>
+            </div>
+
+            {/* Success Message Preview */}
+            <div
+              style={{
+                marginTop: "16px",
+                padding: "12px 16px",
+                backgroundColor: successMessageBgColor,
+                borderRadius: "8px",
+                textAlign: "center",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: `${successMessageFontSize}px`,
+                  fontWeight: successMessageFontWeight,
+                  color: successMessageTextColor,
+                }}
+              >
+                Congratulations! You got 10% off!
               </div>
             </div>
           </div>
