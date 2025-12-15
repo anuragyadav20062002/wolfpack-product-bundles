@@ -834,52 +834,13 @@ class BundleWidget {
       showTitle: dataset.showTitle !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       showFooterMessaging: dataset.showFooterMessaging !== 'false',
-      discountTextTemplate: this.normalizeDiscountTemplate(dataset.discountTextTemplate),
-      successMessageTemplate: this.normalizeSuccessTemplate(dataset.successMessageTemplate),
-      progressTextTemplate: dataset.progressTextTemplate || '{currentQuantity} / {targetQuantity} items',
+      // Messages will be set from bundle.pricing.messages after bundle loads
+      discountTextTemplate: 'Add {conditionText} to get {discountText}',
+      successMessageTemplate: 'Congratulations! You got {discountText}!',
       currentProductId: window.currentProductId,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections
     };
-  }
-
-  normalizeDiscountTemplate(template) {
-    // Professional template normalization with comprehensive old variable detection
-    const modernTemplate = 'Add {conditionText} to get {discountText}';
-
-    // If no template provided, use modern default
-    if (!template) {
-      return modernTemplate;
-    }
-
-    // Detect old variable patterns and normalize to modern format
-    const oldVariablePatterns = [
-      'discountConditionDiff',
-      'discountUnit',
-      'discountValue',
-      'discountValueUnit'
-    ];
-
-    const hasOldVariables = oldVariablePatterns.some(pattern => template.includes(pattern));
-
-    if (hasOldVariables) {
-      return modernTemplate;
-    }
-
-    // Template is already modern, return as-is
-    return template;
-  }
-
-  normalizeSuccessTemplate(template) {
-    // Use template as-is, or fall back to modern default
-    const modernTemplate = 'Congratulations! You got {discountText}!';
-
-    if (!template || template.trim() === '') {
-      return modernTemplate;
-    }
-
-    // Return the template without modification - let merchants control the message
-    return template;
   }
 
   async loadBundleData() {
@@ -939,6 +900,31 @@ class BundleWidget {
 
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
+
+    // Update message templates from bundle pricing messages
+    this.updateMessagesFromBundle();
+  }
+
+  updateMessagesFromBundle() {
+    // Use bundle pricing messages if available, otherwise keep defaults
+    if (this.selectedBundle?.pricing?.messages) {
+      const messages = this.selectedBundle.pricing.messages;
+
+      if (messages.progress) {
+        this.config.discountTextTemplate = messages.progress;
+      }
+
+      if (messages.qualified) {
+        this.config.successMessageTemplate = messages.qualified;
+      }
+
+      console.log('[BUNDLE_MESSAGES] Using bundle pricing messages:', {
+        progress: this.config.discountTextTemplate,
+        qualified: this.config.successMessageTemplate
+      });
+    } else {
+      console.log('[BUNDLE_MESSAGES] No pricing messages in bundle, using defaults');
+    }
   }
 
   initializeDataStructures() {
@@ -1237,10 +1223,15 @@ class BundleWidget {
     if (hasSelections) {
       stepBox.classList.add('step-completed');
 
-      // Add cross badge at top right to clear all selections
+      // Add close icon badge at top right to clear all selections
       const clearBadge = document.createElement('div');
       clearBadge.className = 'step-clear-badge';
-      clearBadge.innerHTML = '&times;';
+      clearBadge.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
+          <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
       clearBadge.title = 'Remove all products from this step';
       clearBadge.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent opening modal
@@ -1287,17 +1278,20 @@ class BundleWidget {
       stepBox.appendChild(plusIcon);
     }
 
-    // Add step name (without step number)
-    const stepName = document.createElement('p');
-    stepName.className = 'step-name';
-    stepName.textContent = step.name || `Step ${index + 1}`;
-    stepBox.appendChild(stepName);
+    // Only show step name and selection count if no selections made
+    if (!hasSelections) {
+      // Add step name (without step number)
+      const stepName = document.createElement('p');
+      stepName.className = 'step-name';
+      stepName.textContent = step.name || `Step ${index + 1}`;
+      stepBox.appendChild(stepName);
 
-    // Add selection count
-    const selectionCount = document.createElement('div');
-    selectionCount.className = 'step-selection-count';
-    selectionCount.textContent = this.getStepSelectionText(selectedProducts);
-    stepBox.appendChild(selectionCount);
+      // Add selection count
+      const selectionCount = document.createElement('div');
+      selectionCount.className = 'step-selection-count';
+      selectionCount.textContent = this.getStepSelectionText(selectedProducts);
+      stepBox.appendChild(selectionCount);
+    }
 
     // Add click handler
     stepBox.addEventListener('click', () => this.openModal(index));
@@ -1504,6 +1498,12 @@ class BundleWidget {
 
   // Helper method to get formatted header text
   getFormattedHeaderText() {
+    // If discount is not enabled, show step name
+    if (!this.selectedBundle?.pricing?.enabled) {
+      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+      return currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+    }
+
     const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
@@ -2146,6 +2146,9 @@ class BundleWidget {
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
+    // Update modal header text dynamically
+    this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
+
     // Update cart badge with total item count
     const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
     if (cartBadge) {
@@ -2157,6 +2160,33 @@ class BundleWidget {
 
     // Update discount messaging and progress bar
     this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+  }
+
+  updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
+    const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
+    if (!modalStepTitle) return;
+
+    // If discount is not enabled, show step name
+    if (!this.selectedBundle?.pricing?.enabled) {
+      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+      modalStepTitle.innerHTML = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+      return;
+    }
+
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
+
+    const headerText = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+
+    modalStepTitle.innerHTML = headerText;
   }
 
   updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {

@@ -224,6 +224,10 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-footer-discount-display: ${s.footerDiscountTextVisibility !== false ? 'block' : 'none'};
   --bundle-footer-progress-filled: ${s.footerProgressBarFilledColor || globalPrimaryButton};
   --bundle-footer-progress-empty: ${s.footerProgressBarEmptyColor || '#E3E3E3'};
+  --bundle-success-message-font-size: ${s.successMessageFontSize || 16}px;
+  --bundle-success-message-font-weight: ${s.successMessageFontWeight || 600};
+  --bundle-success-message-text-color: ${s.successMessageTextColor || '#065F46'};
+  --bundle-success-message-bg-color: ${s.successMessageBgColor || '#D1FAE5'};
 
   /* BUNDLE HEADER */
   --bundle-header-tab-active-bg: ${s.headerTabActiveBgColor || globalPrimaryButton};

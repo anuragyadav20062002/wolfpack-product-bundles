@@ -102,39 +102,7 @@
     },
     {
       "type": "header",
-      "content": "Discount messaging"
-    },
-    {
-      "type": "textarea",
-      "id": "discount_text_template",
-      "label": "Progress encouragement message",
-      "default": "Add {conditionText} to get {discountText}",
-      "info": "Text shown to encourage customers to complete their bundle. Available variables: {conditionText}, {discountText}, {amountNeeded}, {itemsNeeded}, {progressPercentage}, {bundleName}"
-    },
-    {
-      "type": "textarea",
-      "id": "success_message_template",
-      "label": "Bundle completion message",
-      "default": "Congratulations! You got {discountText}!",
-      "info": "Celebratory message displayed when the customer has qualified for the bundle discount. Available variables: {discountText}, {bundleName}, {amountSaved}, {progressPercentage}"
-    },
-    {
-      "type": "text",
-      "id": "progress_text_template",
-      "label": "Progress counter format",
-      "default": "{selectedQuantity} / {targetQuantity} items",
-      "info": "Format for the progress counter display. Available variables: {selectedQuantity}, {targetQuantity}"
-    },
-    {
-      "type": "header",
       "content": "Progress bar styling"
-    },
-    {
-      "type": "color",
-      "id": "progress_bar_color",
-      "label": "Progress bar fill color",
-      "info": "Primary color for the progress bar fill gradient",
-      "default": "#7132FF"
     },
     {
       "type": "color",
@@ -167,6 +135,65 @@
     },
     {
       "type": "header",
+      "content": "Spacing & layout"
+    },
+    {
+      "type": "range",
+      "id": "container_spacing",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Container spacing",
+      "default": 20,
+      "info": "Margin and padding around the entire widget container"
+    },
+    {
+      "type": "range",
+      "id": "element_spacing",
+      "min": 0,
+      "max": 30,
+      "step": 5,
+      "unit": "px",
+      "label": "Element spacing",
+      "default": 15,
+      "info": "Space between major sections (header, steps, footer)"
+    },
+    {
+      "type": "range",
+      "id": "step_card_gap",
+      "min": 0,
+      "max": 30,
+      "step": 5,
+      "unit": "px",
+      "label": "Step card gap",
+      "default": 15,
+      "info": "Gap between product step cards in the grid"
+    },
+    {
+      "type": "range",
+      "id": "modal_header_padding",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "unit": "px",
+      "label": "Modal header padding",
+      "default": 40,
+      "info": "Internal padding for modal header section"
+    },
+    {
+      "type": "range",
+      "id": "modal_body_padding",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "unit": "px",
+      "label": "Modal body padding",
+      "default": 40,
+      "info": "Internal padding for modal content area"
+    },
+    {
+      "type": "header",
       "content": "Step navigation styling"
     },
     {
@@ -179,20 +206,6 @@
       "label": "Step tab border radius",
       "default": 10,
       "info": "Rounded corners for step navigation tabs"
-    },
-    {
-      "type": "color",
-      "id": "step_tab_active_color",
-      "label": "Active step background",
-      "info": "Background color for the currently active step",
-      "default": "#111827"
-    },
-    {
-      "type": "color",
-      "id": "step_tab_completed_color",
-      "label": "Completed step color",
-      "info": "Color for completed step indicators",
-      "default": "#10b981"
     },
     {
       "type": "header",
@@ -219,13 +232,6 @@
       "label": "Modal product image height",
       "default": 70,
       "info": "Height of product images in the modal"
-    },
-    {
-      "type": "color",
-      "id": "modal_step_title_color",
-      "label": "Modal step title color",
-      "info": "Color for step titles in the modal",
-      "default": "#2c5530"
     },
     {
       "type": "color",
@@ -335,41 +341,28 @@
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
       data-show-footer-messaging="{{ block.settings.show_footer_messaging }}"
-      data-discount-text-template="{{ block.settings.discount_text_template | escape }}"
-      data-success-message-template="{{ block.settings.success_message_template | escape }}"
-      data-progress-text-template="{{ block.settings.progress_text_template | escape }}"
       style="
         --step-box-size: {{ block.settings.step_box_size }}px;
         --button-height: {{ block.settings.button_height }}px;
         --widget-max-width: {{ block.settings.widget_max_width }}px;
         --step-cards-per-row: {{ block.settings.step_cards_per_row }};
-        --container-spacing: 20px;
-        --element-spacing: 15px;
-        --step-card-spacing: 15px;
+        --container-spacing: {{ block.settings.container_spacing | default: 20 }}px;
+        --element-spacing: {{ block.settings.element_spacing | default: 15 }}px;
+        --step-card-spacing: {{ block.settings.step_card_gap | default: 15 }}px;
+        --modal-header-padding: {{ block.settings.modal_header_padding | default: 40 }}px;
+        --modal-body-padding: {{ block.settings.modal_body_padding | default: 40 }}px;
         --button-spacing: 25px;
         --modal-footer-bg-color: #ffffff;
         --modal-footer-text-color: #2d3748;
-        --modal-footer-accent-color: {{ block.settings.progress_bar_color }};
         --modal-footer-success-color: {{ block.settings.success_color }};
         --footer-bg-color: #f8f9fa;
         --footer-text-color: {{ block.settings.success_color }};
-        --progress-bar-color: {{ block.settings.progress_bar_color }};
         --progress-bar-height: {{ block.settings.progress_bar_height | default: 12 }}px;
         --progress-bar-border-radius: {{ block.settings.progress_bar_border_radius | default: 999 }}px;
         --savings-badge-color: {{ block.settings.success_color }};
         --modal-tab-border-radius: {{ block.settings.step_tab_border_radius }}px;
-        --modal-tab-active-bg-start: {{ block.settings.step_tab_active_color }};
-        --modal-tab-active-bg-end: {{ block.settings.step_tab_active_color }};
-        --modal-tab-active-border-color: {{ block.settings.step_tab_active_color }};
-        --modal-tab-completed-border-color: {{ block.settings.step_tab_completed_color }};
-        --modal-tab-completed-number-bg: {{ block.settings.step_tab_completed_color }};
-        --modal-tab-checkmark-bg: {{ block.settings.step_tab_completed_color }};
-        --modal-tab-completed-progress-fill-start: {{ block.settings.step_tab_completed_color }};
-        --modal-tab-progress-fill-start: {{ block.settings.progress_bar_color }};
-        --modal-tab-progress-fill-end: {{ block.settings.progress_bar_color }};
         --modal-product-card-height: {{ block.settings.modal_product_card_height }}px;
         --modal-product-image-height: {{ block.settings.modal_product_image_height }}px;
-        --modal-step-title-color: {{ block.settings.modal_step_title_color }};
         --modal-product-price-color: {{ block.settings.modal_product_price_color }};
         --modal-product-price-bg: {{ block.settings.modal_product_price_bg }};
         --modal-product-title-size: {{ block.settings.modal_product_title_size }}%;

@@ -129,6 +129,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerDiscountTextVisibility: true,
       footerProgressBarFilledColor: "#000000",
       footerProgressBarEmptyColor: "#E3E3E3",
+      // Success Message Styling
+      successMessageFontSize: 16,
+      successMessageFontWeight: 600,
+      successMessageTextColor: "#065F46",
+      successMessageBgColor: "#D1FAE5",
       // Bundle Step Bar - Step Name
       stepNameFontColor: "#000000",
       stepNameFontSize: 16,
@@ -256,6 +261,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
       footerDiscountTextVisibility: true,
       footerProgressBarFilledColor: "#7132FF",
       footerProgressBarEmptyColor: "#E5E7EB",
+      // Success Message Styling
+      successMessageFontSize: 16,
+      successMessageFontWeight: 600,
+      successMessageTextColor: "#065F46",
+      successMessageBgColor: "#D1FAE5",
       // Bundle Step Bar - Step Name
       stepNameFontColor: "#111827",
       stepNameFontSize: 18,
@@ -629,6 +639,12 @@ export default function DesignControlPanel() {
   const [footerProgressBarFilledColor, setFooterProgressBarFilledColor] = useState(currentSettings.footerProgressBarFilledColor);
   const [footerProgressBarEmptyColor, setFooterProgressBarEmptyColor] = useState(currentSettings.footerProgressBarEmptyColor);
 
+  // Success Message Styling
+  const [successMessageFontSize, setSuccessMessageFontSize] = useState(currentSettings.successMessageFontSize || 16);
+  const [successMessageFontWeight, setSuccessMessageFontWeight] = useState(currentSettings.successMessageFontWeight || 600);
+  const [successMessageTextColor, setSuccessMessageTextColor] = useState(currentSettings.successMessageTextColor || "#065F46");
+  const [successMessageBgColor, setSuccessMessageBgColor] = useState(currentSettings.successMessageBgColor || "#D1FAE5");
+
   // Bundle Header Section
   // Tabs
   const [headerTabActiveBgColor, setHeaderTabActiveBgColor] = useState(currentSettings.headerTabActiveBgColor || "#000000");
@@ -739,6 +755,10 @@ export default function DesignControlPanel() {
     setFooterDiscountTextVisibility(newSettings.footerDiscountTextVisibility);
     setFooterProgressBarFilledColor(newSettings.footerProgressBarFilledColor);
     setFooterProgressBarEmptyColor(newSettings.footerProgressBarEmptyColor);
+    setSuccessMessageFontSize(newSettings.successMessageFontSize);
+    setSuccessMessageFontWeight(newSettings.successMessageFontWeight);
+    setSuccessMessageTextColor(newSettings.successMessageTextColor);
+    setSuccessMessageBgColor(newSettings.successMessageBgColor);
     // Bundle Step Bar
     setStepNameFontColor(newSettings.stepNameFontColor);
     setStepNameFontSize(newSettings.stepNameFontSize);
@@ -825,6 +845,10 @@ export default function DesignControlPanel() {
       footerDiscountTextVisibility !== current.footerDiscountTextVisibility ||
       footerProgressBarFilledColor !== current.footerProgressBarFilledColor ||
       footerProgressBarEmptyColor !== current.footerProgressBarEmptyColor ||
+      successMessageFontSize !== current.successMessageFontSize ||
+      successMessageFontWeight !== current.successMessageFontWeight ||
+      successMessageTextColor !== current.successMessageTextColor ||
+      successMessageBgColor !== current.successMessageBgColor ||
       stepNameFontColor !== current.stepNameFontColor ||
       stepNameFontSize !== current.stepNameFontSize ||
       completedStepCheckMarkColor !== current.completedStepCheckMarkColor ||
@@ -922,6 +946,10 @@ export default function DesignControlPanel() {
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
+    successMessageFontSize,
+    successMessageFontWeight,
+    successMessageTextColor,
+    successMessageBgColor,
     headerTabActiveBgColor,
     headerTabActiveTextColor,
     headerTabInactiveBgColor,
@@ -1003,6 +1031,10 @@ export default function DesignControlPanel() {
     setFooterDiscountTextVisibility(savedSettings.footerDiscountTextVisibility);
     setFooterProgressBarFilledColor(savedSettings.footerProgressBarFilledColor);
     setFooterProgressBarEmptyColor(savedSettings.footerProgressBarEmptyColor);
+    setSuccessMessageFontSize(savedSettings.successMessageFontSize || 16);
+    setSuccessMessageFontWeight(savedSettings.successMessageFontWeight || 600);
+    setSuccessMessageTextColor(savedSettings.successMessageTextColor || "#065F46");
+    setSuccessMessageBgColor(savedSettings.successMessageBgColor || "#D1FAE5");
     setStepNameFontColor(savedSettings.stepNameFontColor);
     setStepNameFontSize(savedSettings.stepNameFontSize);
     setCompletedStepCheckMarkColor(savedSettings.completedStepCheckMarkColor);
@@ -1152,6 +1184,10 @@ export default function DesignControlPanel() {
       footerDiscountTextVisibility,
       footerProgressBarFilledColor,
       footerProgressBarEmptyColor,
+      successMessageFontSize,
+      successMessageFontWeight,
+      successMessageTextColor,
+      successMessageBgColor,
       stepNameFontColor,
       stepNameFontSize,
       completedStepCheckMarkColor,
@@ -1249,6 +1285,10 @@ export default function DesignControlPanel() {
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
+    successMessageFontSize,
+    successMessageFontWeight,
+    successMessageTextColor,
+    successMessageBgColor,
     headerTabActiveBgColor,
     headerTabActiveTextColor,
     headerTabInactiveBgColor,
@@ -1304,6 +1344,10 @@ export default function DesignControlPanel() {
           footerDiscountTextVisibility={footerDiscountTextVisibility}
           footerProgressBarFilledColor={footerProgressBarFilledColor}
           footerProgressBarEmptyColor={footerProgressBarEmptyColor}
+          successMessageFontSize={successMessageFontSize}
+          successMessageFontWeight={successMessageFontWeight}
+          successMessageTextColor={successMessageTextColor}
+          successMessageBgColor={successMessageBgColor}
         />
       );
     }
@@ -2635,6 +2679,60 @@ export default function DesignControlPanel() {
               label="Progress Bar Empty Color"
               value={footerProgressBarEmptyColor}
               onChange={setFooterProgressBarEmptyColor}
+            />
+
+            <Divider />
+
+            <Text as="p" variant="headingSm" fontWeight="semibold">
+              Success Message Styling
+            </Text>
+
+            <RangeSlider
+              label="Font Size"
+              value={successMessageFontSize}
+              onChange={setSuccessMessageFontSize}
+              min={10}
+              max={24}
+              output
+              suffix={successMessageFontSize ? `${successMessageFontSize}px` : ""}
+            />
+
+            <BlockStack gap="200">
+              <Text as="p" variant="bodySm">
+                Font Weight
+              </Text>
+              <ButtonGroup variant="segmented">
+                <Button
+                  pressed={successMessageFontWeight === 400}
+                  onClick={() => setSuccessMessageFontWeight(400)}
+                >
+                  Normal
+                </Button>
+                <Button
+                  pressed={successMessageFontWeight === 600}
+                  onClick={() => setSuccessMessageFontWeight(600)}
+                >
+                  Semi-Bold
+                </Button>
+                <Button
+                  pressed={successMessageFontWeight === 700}
+                  onClick={() => setSuccessMessageFontWeight(700)}
+                >
+                  Bold
+                </Button>
+              </ButtonGroup>
+            </BlockStack>
+
+            <ColorPicker
+              label="Text Color"
+              value={successMessageTextColor}
+              onChange={setSuccessMessageTextColor}
+            />
+
+            <ColorPicker
+              label="Background Color"
+              value={successMessageBgColor}
+              onChange={setSuccessMessageBgColor}
             />
           </BlockStack>
         );
