@@ -597,8 +597,8 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         AppLogger.debug(`🔄 [PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
 
         const UPDATE_PRODUCT_STATUS = `
-          mutation UpdateProductStatus($input: ProductInput!) {
-            productUpdate(input: $input) {
+          mutation UpdateProductStatus($id: ID!, $status: ProductStatus!) {
+            productUpdate(input: {id: $id, status: $status}) {
               product {
                 id
                 status
@@ -611,16 +611,39 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
           }
         `;
 
-        await admin.graphql(UPDATE_PRODUCT_STATUS, {
+        const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
           variables: {
-            input: {
-              id: updatedBundle.shopifyProductId,
-              status: shopifyStatus
-            }
+            id: updatedBundle.shopifyProductId,
+            status: shopifyStatus
           }
         });
+
+        const responseData = await response.json();
+
+        if (responseData.data?.productUpdate?.userErrors?.length > 0) {
+          const errors = responseData.data.productUpdate.userErrors;
+          AppLogger.error("❌ [PRODUCT_SYNC] Shopify returned errors while updating product status:", {
+            component: "app.bundles.cart-transform.configure",
+            operation: "sync-product-status",
+            productId: updatedBundle.shopifyProductId,
+            targetStatus: shopifyStatus
+          }, { errors });
+        } else {
+          const actualStatus = responseData.data?.productUpdate?.product?.status;
+          AppLogger.info("✅ [PRODUCT_SYNC] Successfully synced product status to Shopify", {
+            component: "app.bundles.cart-transform.configure",
+            productId: updatedBundle.shopifyProductId,
+            requestedStatus: shopifyStatus,
+            actualStatus: actualStatus
+          });
+        }
       } catch (error) {
-        AppLogger.error("❌ [PRODUCT_SYNC] Failed to sync product status:", {}, error as any);
+        AppLogger.error("❌ [PRODUCT_SYNC] Failed to sync product status (exception):", {
+          component: "app.bundles.cart-transform.configure",
+          operation: "sync-product-status",
+          productId: updatedBundle.shopifyProductId,
+          targetStatus: finalStatus.toUpperCase()
+        }, error as any);
       }
 
       // Create optimized configuration with only essential data for functions
@@ -2854,66 +2877,57 @@ export default function ConfigureBundleFlow() {
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
 
-
-
-        <Layout>
-          {/* Smart Widget Installation Banner - Context-Aware */}
+        {/* Smart Widget Installation Banner - Slim, Top-Positioned, Context-Aware */}
+        <BlockStack gap="400">
           {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && (
-            <Layout.Section>
-              <Banner
-                title="🎯 Place This Bundle Widget in Your Theme"
-                tone="info"
-                action={{
-                  content: "Place Widget Now",
-                  onAction: () => window.open(widgetInstallation.installationLink, '_top'),
-                }}
-                secondaryAction={{
-                  content: "Setup Guide",
-                  onAction: () => navigate('/app/installation-guide'),
-                }}
-              >
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd">
-                    This bundle is ready! Click "Place Widget Now" to add it to your theme.
-                    The theme editor will open with <strong>this bundle pre-selected</strong> for easy placement.
+            <Banner
+              tone="info"
+              onDismiss={() => {/* Optional: Add dismiss functionality */}}
+            >
+              <InlineStack gap="400" align="space-between" blockAlign="center">
+                <InlineStack gap="200" blockAlign="center">
+                  <Text as="span" variant="bodyMd" fontWeight="semibold">
+                    🎯 Place This Bundle Widget in Your Theme
                   </Text>
-                  {widgetInstallation.themeName && (
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Theme: {widgetInstallation.themeName}
-                    </Text>
-                  )}
-                </BlockStack>
-              </Banner>
-            </Layout.Section>
+                  <Text as="span" variant="bodySm" tone="subdued">
+                    Click to add this bundle to {widgetInstallation.themeName || 'your theme'}
+                  </Text>
+                </InlineStack>
+                <Button
+                  onClick={() => window.open(widgetInstallation.installationLink, '_blank')}
+                >
+                  Place Widget Now
+                </Button>
+              </InlineStack>
+            </Banner>
           )}
 
           {/* Add Bundle to Existing Widget */}
           {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && (
-            <Layout.Section>
-              <Banner
-                title="📝 Add This Bundle to Your Widget"
-                tone="warning"
-                action={{
-                  content: "Configure Widget",
-                  onAction: () => window.open(widgetInstallation.installationLink, '_top'),
-                }}
-                secondaryAction={{
-                  content: "Setup Guide",
-                  onAction: () => navigate('/app/installation-guide'),
-                }}
-              >
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd">
-                    Your bundle widget is installed in {widgetInstallation.themeName || 'your theme'}, but this bundle isn't configured yet.
-                    Click "Configure Widget" to update the bundle ID in your theme editor.
+            <Banner
+              tone="warning"
+              onDismiss={() => {/* Optional: Add dismiss functionality */}}
+            >
+              <InlineStack gap="400" align="space-between" blockAlign="center">
+                <InlineStack gap="200" blockAlign="center">
+                  <Text as="span" variant="bodyMd" fontWeight="semibold">
+                    📝 Add This Bundle to Your Widget
                   </Text>
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    The widget will open with <strong>this bundle's ID pre-filled</strong> - just update the "Bundle configuration ID" field and save.
+                  <Text as="span" variant="bodySm" tone="subdued">
+                    Update your widget in {widgetInstallation.themeName || 'your theme'} with this bundle ID
                   </Text>
-                </BlockStack>
-              </Banner>
-            </Layout.Section>
+                </InlineStack>
+                <Button
+                  onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                >
+                  Configure Widget
+                </Button>
+              </InlineStack>
+            </Banner>
           )}
+        </BlockStack>
+
+        <Layout>
 
           {/* Bundle Already Configured - Success */}
           {widgetInstallation && widgetInstallation.recommendedAction === 'configured' && (
@@ -3100,24 +3114,6 @@ export default function ConfigureBundleFlow() {
                   <Text variant="headingSm" as="h3">
                     Take your bundle live
                   </Text>
-
-                  {/* Installation Guide Banner */}
-                  <Banner tone="info">
-                    <BlockStack gap="200">
-                      <Text as="p" variant="bodyMd">
-                        <strong>New to installing bundles?</strong> Check out our comprehensive installation guide
-                        with step-by-step instructions, screenshots, and troubleshooting tips.
-                      </Text>
-                      <InlineStack gap="200">
-                        <Button
-                          onClick={() => navigate('/app/installation-guide')}
-                          icon={ExternalIcon}
-                        >
-                          View Installation Guide
-                        </Button>
-                      </InlineStack>
-                    </BlockStack>
-                  </Banner>
 
                   {/* Template Selection */}
                   <BlockStack gap="200">

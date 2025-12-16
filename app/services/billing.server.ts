@@ -519,8 +519,7 @@ export class BillingService {
               status: "active",
               name: PLANS.free.name,
               price: 0,
-              currencyCode: "USD",
-              test: false
+              currencyCode: "USD"
             }
           }
         },

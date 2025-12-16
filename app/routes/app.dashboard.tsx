@@ -193,11 +193,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           shopId: session.shop,
           bundleType: 'product_page',
           status: 'draft',
-          active: false,
           shopifyProductId: shopifyProductId,
           templateName: originalBundle.templateName,
-          settings: originalBundle.settings as any,
-          matching: originalBundle.matching as any,
         },
       });
 
@@ -216,7 +213,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               minQuantity: step.minQuantity,
               maxQuantity: step.maxQuantity,
               enabled: step.enabled,
-              productCategory: step.productCategory,
               conditionType: step.conditionType,
               conditionOperator: step.conditionOperator,
               conditionValue: step.conditionValue,

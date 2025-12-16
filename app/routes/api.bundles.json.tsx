@@ -41,8 +41,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         bundleType: bundle.bundleType,
         shopifyProductId: bundle.shopifyProductId,
         steps: bundle.steps || [],
-        pricing: bundle.pricing || {},
-        matching: bundle.matching || {}
+        pricing: bundle.pricing || {}
       };
     });
 

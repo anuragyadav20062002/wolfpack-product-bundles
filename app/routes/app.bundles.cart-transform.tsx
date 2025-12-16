@@ -218,11 +218,8 @@ export async function action({ request }: ActionFunctionArgs) {
           shopId: shop,
           bundleType: 'product_page', // Default to product-page bundle
           status: 'draft',
-          active: false,
           shopifyProductId: shopifyProductId,
           templateName: originalBundle.templateName,
-          settings: originalBundle.settings as any,
-          matching: originalBundle.matching as any,
         },
       });
 
@@ -241,7 +238,6 @@ export async function action({ request }: ActionFunctionArgs) {
               minQuantity: step.minQuantity,
               maxQuantity: step.maxQuantity,
               enabled: step.enabled,
-              productCategory: step.productCategory,
               conditionType: step.conditionType,
               conditionOperator: step.conditionOperator,
               conditionValue: step.conditionValue,

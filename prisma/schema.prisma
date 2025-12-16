@@ -83,10 +83,6 @@ model Bundle {
   templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
   bundleType       BundleType        @default(product_page)
   status           BundleStatus      @default(draft)
-  active           Boolean           @default(false)
-  publishedAt      DateTime?
-  settings         Json?
-  matching         Json?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   steps            BundleStep[]
@@ -106,7 +102,6 @@ model BundleStep {
   minQuantity                 Int           @default(1)
   maxQuantity                 Int           @default(1)
   enabled                     Boolean       @default(true)
-  productCategory             String?
   collections                 Json?
   products                    Json?
   displayVariantsAsIndividual Boolean       @default(false)
@@ -324,7 +319,6 @@ model Subscription {
   currentPeriodStart    DateTime?          // Start of current billing period
   currentPeriodEnd      DateTime?          // End of current billing period
   cancelledAt           DateTime?          // When subscription was cancelled
-  test                  Boolean            @default(false) // Test mode flag
   confirmationUrl       String?            // Shopify confirmation URL
   returnUrl             String?            // Return URL after approval
   createdAt             DateTime           @default(now())
