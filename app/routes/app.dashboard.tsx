@@ -383,8 +383,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       title: bundleName,
       descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
       productType: "Bundle",
-      vendor: "Bundle Builder",
-      status: "ACTIVE",
+      vendor: "Wolfpack: Product Bundles",
+      status: "DRAFT",
       tags: ["bundle", "cart-transform"],
     };
 
@@ -423,11 +423,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
-        description: typeof description === 'string' ? description : null,
+        description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: session.shop,
         bundleType: 'product_page',
         status: 'draft',
-        active: false,
         shopifyProductId: shopifyProductId,
       },
     });

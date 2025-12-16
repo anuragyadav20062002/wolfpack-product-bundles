@@ -1088,11 +1088,6 @@ export class WebhookProcessor {
         where: { shop: shopDomain }
       });
 
-      // Delete shop settings
-      await db.shopSettings.deleteMany({
-        where: { shopId: shopDomain }
-      });
-
       // Delete queued jobs
       await db.queuedJob.deleteMany({
         where: { shopId: shopDomain }

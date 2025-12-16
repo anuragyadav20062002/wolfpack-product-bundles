@@ -166,18 +166,6 @@ model BundleAnalytics {
   @@index([createdAt])
 }
 
-model ShopSettings {
-  id                      String                     @id @default(uuid())
-  shopId                  String                     @unique
-  theme                   Json?
-  defaultSettings         Json?
-  discountImplementation  DiscountImplementationType @default(cart_transformation)
-  createdAt               DateTime                   @default(now())
-  updatedAt               DateTime                   @updatedAt
-
-  @@index([shopId])
-}
-
 // Design Control Panel Settings - Stores visual customization per bundle type
 model DesignSettings {
   id                    String     @id @default(uuid())

@@ -443,7 +443,6 @@ export async function action({ request }: ActionFunctionArgs) {
         shopId: shop,
         bundleType: 'product_page', // Default to product-page bundle
         status: 'draft',
-        active: false,
         shopifyProductId: shopifyProductId, // Link the Shopify product
       },
     });

@@ -21,3 +21,6 @@ ALTER TABLE "public"."BundleStep" DROP COLUMN "productCategory";
 
 -- AlterTable
 ALTER TABLE "public"."Subscription" DROP COLUMN "test";
+
+-- DropTable
+DROP TABLE IF EXISTS "public"."ShopSettings";
