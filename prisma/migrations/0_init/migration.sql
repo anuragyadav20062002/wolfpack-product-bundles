@@ -1,32 +1,29 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
+-- CreateEnum
+CREATE TYPE "BundleStatus" AS ENUM ('draft', 'active', 'archived');
 
 -- CreateEnum
-CREATE TYPE "public"."BundleStatus" AS ENUM ('draft', 'active', 'archived');
+CREATE TYPE "JobStatus" AS ENUM ('pending', 'processing', 'completed', 'failed');
 
 -- CreateEnum
-CREATE TYPE "public"."JobStatus" AS ENUM ('pending', 'processing', 'completed', 'failed');
+CREATE TYPE "JobType" AS ENUM ('publish', 'unpublish', 'sync');
 
 -- CreateEnum
-CREATE TYPE "public"."JobType" AS ENUM ('publish', 'unpublish', 'sync');
+CREATE TYPE "DiscountMethodType" AS ENUM ('fixed_amount_off', 'percentage_off', 'fixed_bundle_price', 'free_shipping');
 
 -- CreateEnum
-CREATE TYPE "public"."DiscountMethodType" AS ENUM ('fixed_amount_off', 'percentage_off', 'fixed_bundle_price', 'free_shipping');
+CREATE TYPE "DiscountImplementationType" AS ENUM ('cart_transformation');
 
 -- CreateEnum
-CREATE TYPE "public"."DiscountImplementationType" AS ENUM ('cart_transformation');
+CREATE TYPE "BundleType" AS ENUM ('product_page', 'full_page');
 
 -- CreateEnum
-CREATE TYPE "public"."BundleType" AS ENUM ('product_page', 'full_page');
+CREATE TYPE "SubscriptionStatus" AS ENUM ('pending', 'active', 'cancelled', 'frozen', 'expired', 'declined');
 
 -- CreateEnum
-CREATE TYPE "public"."SubscriptionStatus" AS ENUM ('pending', 'active', 'cancelled', 'frozen', 'expired', 'declined');
-
--- CreateEnum
-CREATE TYPE "public"."SubscriptionPlan" AS ENUM ('free', 'grow');
+CREATE TYPE "SubscriptionPlan" AS ENUM ('free', 'grow');
 
 -- CreateTable
-CREATE TABLE "public"."Session" (
+CREATE TABLE "Session" (
     "id" TEXT NOT NULL,
     "shop" TEXT NOT NULL,
     "state" TEXT NOT NULL,
@@ -50,15 +47,15 @@ CREATE TABLE "public"."Session" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Bundle" (
+CREATE TABLE "Bundle" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "shopId" TEXT NOT NULL,
     "shopifyProductId" TEXT,
     "templateName" TEXT,
-    "bundleType" "public"."BundleType" NOT NULL DEFAULT 'product_page',
-    "status" "public"."BundleStatus" NOT NULL DEFAULT 'draft',
+    "bundleType" "BundleType" NOT NULL DEFAULT 'product_page',
+    "status" "BundleStatus" NOT NULL DEFAULT 'draft',
     "active" BOOLEAN NOT NULL DEFAULT false,
     "publishedAt" TIMESTAMP(3),
     "settings" JSONB,
@@ -70,7 +67,7 @@ CREATE TABLE "public"."Bundle" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."BundleStep" (
+CREATE TABLE "BundleStep" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "icon" TEXT DEFAULT 'box',
@@ -93,7 +90,7 @@ CREATE TABLE "public"."BundleStep" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."StepProduct" (
+CREATE TABLE "StepProduct" (
     "id" TEXT NOT NULL,
     "stepId" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
@@ -110,11 +107,11 @@ CREATE TABLE "public"."StepProduct" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."BundlePricing" (
+CREATE TABLE "BundlePricing" (
     "id" TEXT NOT NULL,
     "bundleId" TEXT NOT NULL,
     "enabled" BOOLEAN NOT NULL DEFAULT false,
-    "method" "public"."DiscountMethodType" NOT NULL DEFAULT 'percentage_off',
+    "method" "DiscountMethodType" NOT NULL DEFAULT 'percentage_off',
     "rules" JSONB,
     "showFooter" BOOLEAN NOT NULL DEFAULT true,
     "showProgressBar" BOOLEAN NOT NULL DEFAULT false,
@@ -126,7 +123,7 @@ CREATE TABLE "public"."BundlePricing" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."BundleAnalytics" (
+CREATE TABLE "BundleAnalytics" (
     "id" TEXT NOT NULL,
     "bundleId" TEXT NOT NULL,
     "shopId" TEXT NOT NULL,
@@ -138,12 +135,12 @@ CREATE TABLE "public"."BundleAnalytics" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."ShopSettings" (
+CREATE TABLE "ShopSettings" (
     "id" TEXT NOT NULL,
     "shopId" TEXT NOT NULL,
     "theme" JSONB,
     "defaultSettings" JSONB,
-    "discountImplementation" "public"."DiscountImplementationType" NOT NULL DEFAULT 'cart_transformation',
+    "discountImplementation" "DiscountImplementationType" NOT NULL DEFAULT 'cart_transformation',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -151,10 +148,10 @@ CREATE TABLE "public"."ShopSettings" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."DesignSettings" (
+CREATE TABLE "DesignSettings" (
     "id" TEXT NOT NULL,
     "shopId" TEXT NOT NULL,
-    "bundleType" "public"."BundleType" NOT NULL DEFAULT 'product_page',
+    "bundleType" "BundleType" NOT NULL DEFAULT 'product_page',
     "productCardBgColor" TEXT DEFAULT '#FFFFFF',
     "productCardFontColor" TEXT DEFAULT '#000000',
     "productCardFontSize" INTEGER DEFAULT 16,
@@ -179,10 +176,10 @@ CREATE TABLE "public"."DesignSettings" (
     "quantitySelectorTextColor" TEXT DEFAULT '#FFFFFF',
     "quantitySelectorFontSize" INTEGER DEFAULT 16,
     "quantitySelectorBorderRadius" INTEGER DEFAULT 8,
+    "globalColorsSettings" JSONB,
     "footerSettings" JSONB,
     "stepBarSettings" JSONB,
     "generalSettings" JSONB,
-    "imagesSettings" JSONB,
     "customCss" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -191,11 +188,11 @@ CREATE TABLE "public"."DesignSettings" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."QueuedJob" (
+CREATE TABLE "QueuedJob" (
     "id" TEXT NOT NULL,
     "shopId" TEXT NOT NULL,
-    "type" "public"."JobType" NOT NULL DEFAULT 'publish',
-    "status" "public"."JobStatus" NOT NULL DEFAULT 'pending',
+    "type" "JobType" NOT NULL DEFAULT 'publish',
+    "status" "JobStatus" NOT NULL DEFAULT 'pending',
     "data" JSONB,
     "error" TEXT,
     "startedAt" TIMESTAMP(3),
@@ -207,7 +204,7 @@ CREATE TABLE "public"."QueuedJob" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."ComplianceRecord" (
+CREATE TABLE "ComplianceRecord" (
     "id" TEXT NOT NULL,
     "shop" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -220,7 +217,7 @@ CREATE TABLE "public"."ComplianceRecord" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Shop" (
+CREATE TABLE "Shop" (
     "id" TEXT NOT NULL,
     "shopDomain" TEXT NOT NULL,
     "name" TEXT,
@@ -235,12 +232,12 @@ CREATE TABLE "public"."Shop" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."Subscription" (
+CREATE TABLE "Subscription" (
     "id" TEXT NOT NULL,
     "shopId" TEXT NOT NULL,
     "shopifySubscriptionId" TEXT,
-    "plan" "public"."SubscriptionPlan" NOT NULL DEFAULT 'free',
-    "status" "public"."SubscriptionStatus" NOT NULL DEFAULT 'pending',
+    "plan" "SubscriptionPlan" NOT NULL DEFAULT 'free',
+    "status" "SubscriptionStatus" NOT NULL DEFAULT 'pending',
     "name" TEXT NOT NULL,
     "price" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "currencyCode" TEXT NOT NULL DEFAULT 'USD',
@@ -258,7 +255,7 @@ CREATE TABLE "public"."Subscription" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."WebhookEvent" (
+CREATE TABLE "WebhookEvent" (
     "id" TEXT NOT NULL,
     "shopDomain" TEXT NOT NULL,
     "topic" TEXT NOT NULL,
@@ -275,128 +272,128 @@ CREATE TABLE "public"."WebhookEvent" (
 );
 
 -- CreateIndex
-CREATE INDEX "Session_shop_idx" ON "public"."Session"("shop");
+CREATE INDEX "Session_shop_idx" ON "Session"("shop");
 
 -- CreateIndex
-CREATE INDEX "Bundle_shopId_idx" ON "public"."Bundle"("shopId");
+CREATE INDEX "Bundle_shopId_idx" ON "Bundle"("shopId");
 
 -- CreateIndex
-CREATE INDEX "Bundle_status_idx" ON "public"."Bundle"("status");
+CREATE INDEX "Bundle_status_idx" ON "Bundle"("status");
 
 -- CreateIndex
-CREATE INDEX "Bundle_bundleType_idx" ON "public"."Bundle"("bundleType");
+CREATE INDEX "Bundle_bundleType_idx" ON "Bundle"("bundleType");
 
 -- CreateIndex
-CREATE INDEX "BundleStep_bundleId_idx" ON "public"."BundleStep"("bundleId");
+CREATE INDEX "BundleStep_bundleId_idx" ON "BundleStep"("bundleId");
 
 -- CreateIndex
-CREATE INDEX "StepProduct_stepId_idx" ON "public"."StepProduct"("stepId");
+CREATE INDEX "StepProduct_stepId_idx" ON "StepProduct"("stepId");
 
 -- CreateIndex
-CREATE INDEX "StepProduct_productId_idx" ON "public"."StepProduct"("productId");
+CREATE INDEX "StepProduct_productId_idx" ON "StepProduct"("productId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BundlePricing_bundleId_key" ON "public"."BundlePricing"("bundleId");
+CREATE UNIQUE INDEX "BundlePricing_bundleId_key" ON "BundlePricing"("bundleId");
 
 -- CreateIndex
-CREATE INDEX "BundlePricing_bundleId_idx" ON "public"."BundlePricing"("bundleId");
+CREATE INDEX "BundlePricing_bundleId_idx" ON "BundlePricing"("bundleId");
 
 -- CreateIndex
-CREATE INDEX "BundleAnalytics_bundleId_idx" ON "public"."BundleAnalytics"("bundleId");
+CREATE INDEX "BundleAnalytics_bundleId_idx" ON "BundleAnalytics"("bundleId");
 
 -- CreateIndex
-CREATE INDEX "BundleAnalytics_shopId_idx" ON "public"."BundleAnalytics"("shopId");
+CREATE INDEX "BundleAnalytics_shopId_idx" ON "BundleAnalytics"("shopId");
 
 -- CreateIndex
-CREATE INDEX "BundleAnalytics_event_idx" ON "public"."BundleAnalytics"("event");
+CREATE INDEX "BundleAnalytics_event_idx" ON "BundleAnalytics"("event");
 
 -- CreateIndex
-CREATE INDEX "BundleAnalytics_createdAt_idx" ON "public"."BundleAnalytics"("createdAt");
+CREATE INDEX "BundleAnalytics_createdAt_idx" ON "BundleAnalytics"("createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ShopSettings_shopId_key" ON "public"."ShopSettings"("shopId");
+CREATE UNIQUE INDEX "ShopSettings_shopId_key" ON "ShopSettings"("shopId");
 
 -- CreateIndex
-CREATE INDEX "ShopSettings_shopId_idx" ON "public"."ShopSettings"("shopId");
+CREATE INDEX "ShopSettings_shopId_idx" ON "ShopSettings"("shopId");
 
 -- CreateIndex
-CREATE INDEX "DesignSettings_shopId_idx" ON "public"."DesignSettings"("shopId");
+CREATE INDEX "DesignSettings_shopId_idx" ON "DesignSettings"("shopId");
 
 -- CreateIndex
-CREATE INDEX "DesignSettings_bundleType_idx" ON "public"."DesignSettings"("bundleType");
+CREATE INDEX "DesignSettings_bundleType_idx" ON "DesignSettings"("bundleType");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "DesignSettings_shopId_bundleType_key" ON "public"."DesignSettings"("shopId", "bundleType");
+CREATE UNIQUE INDEX "DesignSettings_shopId_bundleType_key" ON "DesignSettings"("shopId", "bundleType");
 
 -- CreateIndex
-CREATE INDEX "QueuedJob_shopId_idx" ON "public"."QueuedJob"("shopId");
+CREATE INDEX "QueuedJob_shopId_idx" ON "QueuedJob"("shopId");
 
 -- CreateIndex
-CREATE INDEX "QueuedJob_status_idx" ON "public"."QueuedJob"("status");
+CREATE INDEX "QueuedJob_status_idx" ON "QueuedJob"("status");
 
 -- CreateIndex
-CREATE INDEX "QueuedJob_type_idx" ON "public"."QueuedJob"("type");
+CREATE INDEX "QueuedJob_type_idx" ON "QueuedJob"("type");
 
 -- CreateIndex
-CREATE INDEX "ComplianceRecord_shop_idx" ON "public"."ComplianceRecord"("shop");
+CREATE INDEX "ComplianceRecord_shop_idx" ON "ComplianceRecord"("shop");
 
 -- CreateIndex
-CREATE INDEX "ComplianceRecord_type_idx" ON "public"."ComplianceRecord"("type");
+CREATE INDEX "ComplianceRecord_type_idx" ON "ComplianceRecord"("type");
 
 -- CreateIndex
-CREATE INDEX "ComplianceRecord_status_idx" ON "public"."ComplianceRecord"("status");
+CREATE INDEX "ComplianceRecord_status_idx" ON "ComplianceRecord"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Shop_shopDomain_key" ON "public"."Shop"("shopDomain");
+CREATE UNIQUE INDEX "Shop_shopDomain_key" ON "Shop"("shopDomain");
 
 -- CreateIndex
-CREATE INDEX "Shop_shopDomain_idx" ON "public"."Shop"("shopDomain");
+CREATE INDEX "Shop_shopDomain_idx" ON "Shop"("shopDomain");
 
 -- CreateIndex
-CREATE INDEX "Shop_currentSubscriptionId_idx" ON "public"."Shop"("currentSubscriptionId");
+CREATE INDEX "Shop_currentSubscriptionId_idx" ON "Shop"("currentSubscriptionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Subscription_shopifySubscriptionId_key" ON "public"."Subscription"("shopifySubscriptionId");
+CREATE UNIQUE INDEX "Subscription_shopifySubscriptionId_key" ON "Subscription"("shopifySubscriptionId");
 
 -- CreateIndex
-CREATE INDEX "Subscription_shopId_idx" ON "public"."Subscription"("shopId");
+CREATE INDEX "Subscription_shopId_idx" ON "Subscription"("shopId");
 
 -- CreateIndex
-CREATE INDEX "Subscription_shopifySubscriptionId_idx" ON "public"."Subscription"("shopifySubscriptionId");
+CREATE INDEX "Subscription_shopifySubscriptionId_idx" ON "Subscription"("shopifySubscriptionId");
 
 -- CreateIndex
-CREATE INDEX "Subscription_status_idx" ON "public"."Subscription"("status");
+CREATE INDEX "Subscription_status_idx" ON "Subscription"("status");
 
 -- CreateIndex
-CREATE INDEX "Subscription_plan_idx" ON "public"."Subscription"("plan");
+CREATE INDEX "Subscription_plan_idx" ON "Subscription"("plan");
 
 -- CreateIndex
-CREATE INDEX "WebhookEvent_shopDomain_idx" ON "public"."WebhookEvent"("shopDomain");
+CREATE INDEX "WebhookEvent_shopDomain_idx" ON "WebhookEvent"("shopDomain");
 
 -- CreateIndex
-CREATE INDEX "WebhookEvent_topic_idx" ON "public"."WebhookEvent"("topic");
+CREATE INDEX "WebhookEvent_topic_idx" ON "WebhookEvent"("topic");
 
 -- CreateIndex
-CREATE INDEX "WebhookEvent_processed_idx" ON "public"."WebhookEvent"("processed");
+CREATE INDEX "WebhookEvent_processed_idx" ON "WebhookEvent"("processed");
 
 -- CreateIndex
-CREATE INDEX "WebhookEvent_createdAt_idx" ON "public"."WebhookEvent"("createdAt");
+CREATE INDEX "WebhookEvent_createdAt_idx" ON "WebhookEvent"("createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "WebhookEvent_shopDomain_topic_webhookId_key" ON "public"."WebhookEvent"("shopDomain", "topic", "webhookId");
+CREATE UNIQUE INDEX "WebhookEvent_shopDomain_topic_webhookId_key" ON "WebhookEvent"("shopDomain", "topic", "webhookId");
 
 -- AddForeignKey
-ALTER TABLE "public"."BundleStep" ADD CONSTRAINT "BundleStep_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "public"."Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "BundleStep" ADD CONSTRAINT "BundleStep_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."StepProduct" ADD CONSTRAINT "StepProduct_stepId_fkey" FOREIGN KEY ("stepId") REFERENCES "public"."BundleStep"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StepProduct" ADD CONSTRAINT "StepProduct_stepId_fkey" FOREIGN KEY ("stepId") REFERENCES "BundleStep"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."BundlePricing" ADD CONSTRAINT "BundlePricing_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "public"."Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "BundlePricing" ADD CONSTRAINT "BundlePricing_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."BundleAnalytics" ADD CONSTRAINT "BundleAnalytics_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "public"."Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "BundleAnalytics" ADD CONSTRAINT "BundleAnalytics_bundleId_fkey" FOREIGN KEY ("bundleId") REFERENCES "Bundle"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Subscription" ADD CONSTRAINT "Subscription_shopId_fkey" FOREIGN KEY ("shopId") REFERENCES "public"."Shop"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_shopId_fkey" FOREIGN KEY ("shopId") REFERENCES "Shop"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
