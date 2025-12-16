@@ -113,7 +113,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   return json({
     bundles: cartTransformBundles,
-    bundleType: "product_page", // Default display mode
     subscription: subscriptionInfo ? {
       plan: subscriptionInfo.plan,
       currentBundleCount: subscriptionInfo.currentBundleCount,
@@ -439,7 +438,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
-        description: typeof description === 'string' ? description : null,
+        description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: shop,
         bundleType: 'product_page', // Default to product-page bundle
         status: 'draft',

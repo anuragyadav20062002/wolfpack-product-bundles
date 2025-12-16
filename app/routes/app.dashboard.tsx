@@ -77,12 +77,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get API key for deep linking
   const apiKey = process.env.SHOPIFY_API_KEY || '';
 
-  // Generate generic installation link
-  const installationLink = WidgetInstallationService.generateGenericInstallationLink(
-    session.shop,
-    apiKey
-  );
-
   return json({
     bundles,
     shop: session.shop,
@@ -96,7 +90,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       installed: widgetStatus.installed,
       themeName: widgetStatus.themeName,
       showPrompt: WidgetInstallationService.shouldShowInstallationPrompt(widgetStatus),
-      installationLink,
     },
     apiKey,
   });
@@ -158,9 +151,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             title: clonedBundleName,
             descriptionHtml: originalBundle.description || `${clonedBundleName} - Bundle Product`,
             productType: "Bundle",
-            vendor: "Bundle Builder",
+            vendor: "Wolfpack: Product Bundles",
             status: "DRAFT",
-            tags: ["bundle", "cart-transform"],
+            tags: ["bundle", "Wolfpack: Product Bundles"],
             variants: [
               {
                 price: "0.00",

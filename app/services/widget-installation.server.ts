@@ -38,10 +38,10 @@ export class WidgetInstallationService {
         shop
       });
 
-      // Query for the current published theme
+      // 1. Get Current Theme (No changes needed to query, but ensure variable usage)
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
-          themes(first: 1, query: "role:main") {
+          themes(first: 1, role: [MAIN]) {
             edges {
               node {
                 id
@@ -57,31 +57,28 @@ export class WidgetInstallationService {
       const themeData = await themeResponse.json();
 
       if (!themeData?.data?.themes?.edges?.length) {
-        AppLogger.warn('No published theme found', {
-          component: 'WidgetInstallationService',
-          shop
-        });
-        return {
-          installed: false,
-          lastChecked: new Date()
-        };
+        AppLogger.warn('No published theme found', { component: 'WidgetInstallationService', shop });
+        return { installed: false, lastChecked: new Date() };
       }
 
       const theme = themeData.data.themes.edges[0].node;
       const themeId = theme.id;
       const themeName = theme.name;
 
-      // Check if product template contains bundle widget block
-      // Look for templates/product.json which would contain app block references
+      // 2. Fetch Template Files
+      // FIX: Updated structure to use edges -> node and correct fragment placement
+      // OPTIMIZATION: Added 'query' param to fetch only product templates
       const TEMPLATE_FILES_QUERY = `
-        query GetTemplateFiles($themeId: ID!) {
+        query GetTemplateFiles($themeId: ID!, $query: String) {
           theme(id: $themeId) {
-            files(first: 50) {
-              nodes {
-                filename
-                ... on OnlineStoreThemeFileBodyText {
+            files(first: 50, query: $query) {
+              edges {
+                node {
+                  filename
                   body {
-                    content
+                    ... on OnlineStoreThemeFileBodyText {
+                      content
+                    }
                   }
                 }
               }
@@ -91,26 +88,27 @@ export class WidgetInstallationService {
       `;
 
       const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
-        variables: { themeId }
+        variables: {
+          themeId,
+          query: "filename:templates/product*.json" // Only fetch product JSON templates
+        }
       });
       const filesData = await filesResponse.json();
 
-      if (!filesData?.data?.theme?.files?.nodes) {
+      // FIX: Check for 'edges' instead of 'nodes'
+      if (!filesData?.data?.theme?.files?.edges) {
         AppLogger.warn('Could not fetch theme files', {
           component: 'WidgetInstallationService',
           shop,
           themeId
         });
-        return {
-          installed: false,
-          themeId,
-          themeName,
-          lastChecked: new Date()
-        };
+        return { installed: false, themeId, themeName, lastChecked: new Date() };
       }
 
-      // Check for bundle widget in template files
-      const files = filesData.data.theme.files.nodes;
+      // FIX: Map edges to nodes
+      const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
+      
+      // Filter is now largely redundant due to the query param, but good for safety
       const productTemplateFiles = files.filter((file: any) =>
         file.filename.includes('templates/product') &&
         file.filename.endsWith('.json')
@@ -119,13 +117,12 @@ export class WidgetInstallationService {
       let widgetFound = false;
 
       for (const file of productTemplateFiles) {
+        // FIX: Access content via the nested body object
         const content = file.body?.content || '';
 
-        // Check if content contains reference to bundle widget block
-        // Look for "type": "bundle" or block handle reference
-        if (content.includes('"type": "bundle"') ||
-            content.includes('bundle-builder') ||
-            content.includes('bundle_builder')) {
+        if (content.includes('"type": "Bundle"') ||
+            content.includes('Wolfpack: Product Bundles') ||
+            content.includes('bundle')) {
           widgetFound = true;
           AppLogger.info('Widget installation detected', {
             component: 'WidgetInstallationService',
@@ -150,11 +147,7 @@ export class WidgetInstallationService {
         shop
       }, error);
 
-      // Return conservative result on error
-      return {
-        installed: false,
-        lastChecked: new Date()
-      };
+      return { installed: false, lastChecked: new Date() };
     }
   }
 
@@ -236,26 +229,6 @@ export class WidgetInstallationService {
   }
 
   /**
-   * Generate generic installation link (no bundle pre-selected)
-   * Useful for general setup instructions
-   */
-  static generateGenericInstallationLink(
-    shop: string,
-    apiKey: string
-  ): string {
-    const deepLink = this.generateThemeEditorDeepLink(
-      shop,
-      apiKey,
-      'bundle',
-      undefined,
-      'product',
-      'newAppsSection'
-    );
-
-    return deepLink.url;
-  }
-
-  /**
    * Check if widget needs installation prompt
    * Returns true if widget is not installed or check is stale
    */
@@ -298,11 +271,12 @@ export class WidgetInstallationService {
       // First get the current theme
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
-          themes(first: 1, query: "role:main") {
+          themes(first: 1, role:[MAIN]) {
             edges {
               node {
                 id
                 name
+                role
               }
             }
           }
@@ -321,13 +295,14 @@ export class WidgetInstallationService {
 
       // Get product template files
       const TEMPLATE_FILES_QUERY = `
-        query GetTemplateFiles($themeId: ID!) {
-          theme(id: $themeId) {
-            files(first: 50) {
-              nodes {
+      query GetTemplateFiles($themeId: ID!, $query: String) {
+        theme(id: $themeId) {
+          files(first: 50, query: $query) {
+            edges {
+              node {
                 filename
-                ... on OnlineStoreThemeFileBodyText {
-                  body {
+                body {
+                  ... on OnlineStoreThemeFileBodyText {
                     content
                   }
                 }
@@ -335,19 +310,23 @@ export class WidgetInstallationService {
             }
           }
         }
-      `;
+      }
+    `;
 
       const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
-        variables: { themeId }
+        variables: { 
+          themeId,
+          query: "filename:templates/product*.json" 
+        }
       });
       const filesData = await filesResponse.json();
 
-      if (!filesData?.data?.theme?.files?.nodes) {
+      if (!filesData?.data?.theme?.files?.edges) {
         return false;
       }
 
-      // Check for bundle ID in template files
-      const files = filesData.data.theme.files.nodes;
+      // Map edges to nodes
+      const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
       const productTemplateFiles = files.filter((file: any) =>
         file.filename.includes('templates/product') &&
         file.filename.endsWith('.json')
