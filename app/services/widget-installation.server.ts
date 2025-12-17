@@ -686,4 +686,251 @@ export class WidgetInstallationService {
       };
     }
   }
+
+  /**
+   * Validate and prepare widget placement for a bundle product
+   *
+   * Checks:
+   * 1. Template name is provided
+   * 2. Template exists in theme
+   * 3. Product is published to Online Store
+   *
+   * @returns Validation result with installation link or error
+   */
+  static async validateAndPrepareWidgetPlacement(
+    admin: any,
+    shop: string,
+    apiKey: string,
+    bundleId: string,
+    templateName: string | null | undefined,
+    shopifyProductId: string | null | undefined
+  ): Promise<{
+    success: boolean;
+    installationLink?: string;
+    error?: string;
+    errorType?: 'missing_template' | 'template_not_found' | 'product_not_published' | 'missing_product_id' | 'unknown';
+  }> {
+    try {
+      // 1. Check if template name is provided
+      if (!templateName || templateName.trim() === '') {
+        return {
+          success: false,
+          error: 'Please specify a Bundle Container Template name before placing the widget',
+          errorType: 'missing_template'
+        };
+      }
+
+      // 2. Check if product ID exists
+      if (!shopifyProductId) {
+        return {
+          success: false,
+          error: 'Bundle product ID not found. Please save the bundle first.',
+          errorType: 'missing_product_id'
+        };
+      }
+
+      // 3. Get current theme
+      const CURRENT_THEME_QUERY = `
+        query GetCurrentTheme {
+          themes(first: 1, roles: [MAIN]) {
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+      `;
+
+      const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
+      const themeData = await themeResponse.json();
+
+      if (!themeData?.data?.themes?.edges?.length) {
+        return {
+          success: false,
+          error: 'No published theme found',
+          errorType: 'unknown'
+        };
+      }
+
+      const theme = themeData.data.themes.edges[0].node;
+      const themeId = theme.id;
+
+      // 4. Check if template exists in theme
+      const normalizedTemplateName = templateName.startsWith('product.') ? templateName : `product.${templateName}`;
+      const templateFilename = `templates/${normalizedTemplateName}.json`;
+
+      const CHECK_TEMPLATE_QUERY = `
+        query CheckTemplate($themeId: ID!, $filename: String!) {
+          theme(id: $themeId) {
+            files(filenames: [$filename], first: 1) {
+              nodes {
+                filename
+              }
+            }
+          }
+        }
+      `;
+
+      const templateCheckResponse = await admin.graphql(CHECK_TEMPLATE_QUERY, {
+        variables: {
+          themeId,
+          filename: templateFilename
+        }
+      });
+      const templateCheckData = await templateCheckResponse.json();
+
+      const templateExists = templateCheckData?.data?.theme?.files?.nodes?.length > 0;
+
+      if (!templateExists) {
+        return {
+          success: false,
+          error: `Template "${normalizedTemplateName}" not found in your theme. Please create this template first or use an existing template name.`,
+          errorType: 'template_not_found'
+        };
+      }
+
+      // 5. Check if product is published to Online Store
+      const CHECK_PUBLICATION_QUERY = `
+        query CheckProductPublication($productId: ID!) {
+          product(id: $productId) {
+            id
+            publishedOnCurrentPublication
+            publications(first: 10) {
+              edges {
+                node {
+                  name
+                  publishDate
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const publicationResponse = await admin.graphql(CHECK_PUBLICATION_QUERY, {
+        variables: {
+          productId: shopifyProductId
+        }
+      });
+      const publicationData = await publicationResponse.json();
+
+      const isPublishedToOnlineStore = publicationData?.data?.product?.publications?.edges?.some(
+        (edge: any) => edge.node.name === 'Online Store' && edge.node.publishDate
+      );
+
+      if (!isPublishedToOnlineStore) {
+        // Try to publish it automatically
+        try {
+          const GET_PUBLICATIONS = `
+            query {
+              publications(first: 10) {
+                edges {
+                  node {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          `;
+
+          const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
+          const publicationsData = await publicationsResponse.json();
+
+          const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
+            (edge: any) => edge.node.name === 'Online Store'
+          );
+
+          if (onlineStorePublication) {
+            const PUBLISH_PRODUCT = `
+              mutation publishToOnlineStore($id: ID!, $input: [PublicationInput!]!) {
+                publishablePublish(id: $id, input: $input) {
+                  publishable {
+                    availablePublicationsCount {
+                      count
+                    }
+                  }
+                  userErrors {
+                    field
+                    message
+                  }
+                }
+              }
+            `;
+
+            await admin.graphql(PUBLISH_PRODUCT, {
+              variables: {
+                id: shopifyProductId,
+                input: [
+                  {
+                    publicationId: onlineStorePublication.node.id
+                  }
+                ]
+              }
+            });
+
+            AppLogger.info('Auto-published product to Online Store for widget placement', {
+              component: 'WidgetInstallationService',
+              productId: shopifyProductId,
+              bundleId
+            });
+          }
+        } catch (publishError) {
+          AppLogger.error('Failed to auto-publish product', {
+            component: 'WidgetInstallationService'
+          }, publishError);
+
+          return {
+            success: false,
+            error: 'Product is not published to Online Store. Please publish the bundle product first.',
+            errorType: 'product_not_published'
+          };
+        }
+      }
+
+      // 6. Extract product handle from GID
+      const productHandle = shopifyProductId.split('/').pop() || '';
+
+      // 7. Generate installation link for the specific product with the specified template
+      const shopDomain = shop.replace('.myshopify.com', '');
+      const appBlockId = `${apiKey}/bundle`;
+
+      const params = new URLSearchParams({
+        template: normalizedTemplateName,
+        addAppBlockId: appBlockId,
+        target: 'newAppsSection',
+        bundleId: bundleId
+      });
+
+      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}&productHandle=${productHandle}`;
+
+      AppLogger.info('Generated validated widget placement link', {
+        component: 'WidgetInstallationService',
+        shop,
+        templateName: normalizedTemplateName,
+        bundleId,
+        productHandle
+      });
+
+      return {
+        success: true,
+        installationLink: url
+      };
+
+    } catch (error) {
+      AppLogger.error('Failed to validate widget placement', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId
+      }, error);
+
+      return {
+        success: false,
+        error: 'Failed to validate widget placement. Please try again.',
+        errorType: 'unknown'
+      };
+    }
+  }
 }

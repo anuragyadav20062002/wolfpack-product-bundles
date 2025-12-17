@@ -281,6 +281,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleGetCurrentTheme(admin, session);
       case "ensureBundleTemplates":
         return await handleEnsureBundleTemplates(admin, session);
+      case "validateWidgetPlacement":
+        return await handleValidateWidgetPlacement(admin, session, bundleId);
       default:
         return json({ success: false, error: "Unknown action" }, { status: 400 });
     }
@@ -1754,6 +1756,56 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
   }
 }
 
+// Handle widget placement validation
+async function handleValidateWidgetPlacement(admin: any, session: any, bundleId: string) {
+  try {
+    AppLogger.debug("🎯 [WIDGET_PLACEMENT] Validating widget placement", { bundleId });
+
+    // Get bundle data
+    const bundle = await db.bundle.findUnique({
+      where: { id: bundleId, shopId: session.shop }
+    });
+
+    if (!bundle) {
+      return json({
+        success: false,
+        error: "Bundle not found"
+      }, { status: 404 });
+    }
+
+    // Validate and prepare widget placement
+    const apiKey = process.env.SHOPIFY_API_KEY || '';
+    const result = await WidgetInstallationService.validateAndPrepareWidgetPlacement(
+      admin,
+      session.shop,
+      apiKey,
+      bundleId,
+      bundle.templateName,
+      bundle.shopifyProductId
+    );
+
+    if (!result.success) {
+      return json({
+        success: false,
+        error: result.error,
+        errorType: result.errorType
+      }, { status: 400 });
+    }
+
+    return json({
+      success: true,
+      installationLink: result.installationLink
+    });
+
+  } catch (error) {
+    AppLogger.error("🔥 [WIDGET_PLACEMENT] Error validating widget placement:", {}, error as any);
+    return json({
+      success: false,
+      error: (error as Error).message || "Widget placement validation failed"
+    }, { status: 500 });
+  }
+}
+
 export default function ConfigureBundleFlow() {
   const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle, widgetInstallation } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
@@ -2697,6 +2749,49 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher, shopify]);
 
+  // Handle Place Widget Now button with validation
+  const handlePlaceWidgetNow = useCallback(async () => {
+    try {
+      // Call validation action
+      const formData = new FormData();
+      formData.append("intent", "validateWidgetPlacement");
+
+      // Submit validation request
+      fetcher.submit(formData, { method: "post" });
+
+      // Wait for response and handle it
+      // Note: Response will be handled in the useEffect below
+    } catch (error) {
+      AppLogger.error('Error validating widget placement:', {}, error as any);
+      shopify.toast.show("Failed to validate widget placement", { isError: true });
+    }
+  }, [fetcher, shopify]);
+
+  // Handle validation response
+  useEffect(() => {
+    if (fetcher.data && fetcher.state === 'idle') {
+      const data = fetcher.data as any;
+
+      // Check if this is a widget placement validation response
+      if (data.installationLink) {
+        // Success - open the validated link
+        window.open(data.installationLink, '_blank');
+      } else if (data.error && data.errorType) {
+        // Validation failed - show appropriate error message
+        let errorMessage = data.error;
+
+        // Add helpful context based on error type
+        if (data.errorType === 'missing_template') {
+          errorMessage += '\n\nPlease scroll down to the "Bundle Container Template" field and specify a template name (e.g., "cart-transform" or "product").';
+        } else if (data.errorType === 'template_not_found') {
+          errorMessage += '\n\nYou can create this template in your Shopify theme editor, or use an existing template name.';
+        }
+
+        shopify.toast.show(errorMessage, { isError: true, duration: 7000 });
+      }
+    }
+  }, [fetcher.data, fetcher.state, shopify]);
+
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
     try {
@@ -2942,7 +3037,8 @@ export default function ConfigureBundleFlow() {
                   </Text>
                 </InlineStack>
                 <Button
-                  onClick={() => window.open(widgetInstallation.installationLink, '_blank')}
+                  onClick={handlePlaceWidgetNow}
+                  loading={fetcher.state === 'submitting'}
                 >
                   Place Widget Now
                 </Button>

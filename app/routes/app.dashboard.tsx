@@ -178,6 +178,72 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
       const shopifyProductId = productData.data?.productCreate?.product?.id;
 
+      // Publish to Online Store sales channel
+      try {
+        // Get Online Store publication ID
+        const GET_PUBLICATIONS = `
+          query {
+            publications(first: 10) {
+              edges {
+                node {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        `;
+
+        const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
+        const publicationsData = await publicationsResponse.json();
+
+        // Find Online Store publication
+        const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
+          (edge: any) => edge.node.name === 'Online Store'
+        );
+
+        if (onlineStorePublication) {
+          const PUBLISH_PRODUCT = `
+            mutation publishToOnlineStore($id: ID!, $input: [PublicationInput!]!) {
+              publishablePublish(id: $id, input: $input) {
+                publishable {
+                  availablePublicationsCount {
+                    count
+                  }
+                }
+                userErrors {
+                  field
+                  message
+                }
+              }
+            }
+          `;
+
+          await admin.graphql(PUBLISH_PRODUCT, {
+            variables: {
+              id: shopifyProductId,
+              input: [
+                {
+                  publicationId: onlineStorePublication.node.id
+                }
+              ]
+            }
+          });
+
+          AppLogger.info('Product published to Online Store', {
+            component: 'app.dashboard',
+            operation: 'clone-bundle',
+            productId: shopifyProductId
+          });
+        }
+      } catch (publishError) {
+        AppLogger.error('Failed to publish product to Online Store', {
+          component: 'app.dashboard',
+          operation: 'clone-bundle'
+        }, publishError);
+        // Continue even if publishing fails
+      }
+
       // Clone the bundle
       const clonedBundle = await db.bundle.create({
         data: {
@@ -411,6 +477,82 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!shopifyProductId) {
       AppLogger.error("No product ID returned from Shopify", { component: "app.dashboard", operation: "create-bundle" });
       return json({ error: 'Failed to get product ID from Shopify' }, { status: 500 });
+    }
+
+    // Publish to Online Store sales channel
+    try {
+      // Get Online Store publication ID
+      const GET_PUBLICATIONS = `
+        query {
+          publications(first: 10) {
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+      `;
+
+      const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
+      const publicationsData = await publicationsResponse.json();
+
+      // Find Online Store publication
+      const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
+        (edge: any) => edge.node.name === 'Online Store'
+      );
+
+      if (onlineStorePublication) {
+        const PUBLISH_PRODUCT = `
+          mutation publishToOnlineStore($id: ID!, $input: [PublicationInput!]!) {
+            publishablePublish(id: $id, input: $input) {
+              publishable {
+                availablePublicationsCount {
+                  count
+                }
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const publishResponse = await admin.graphql(PUBLISH_PRODUCT, {
+          variables: {
+            id: shopifyProductId,
+            input: [
+              {
+                publicationId: onlineStorePublication.node.id
+              }
+            ]
+          }
+        });
+
+        const publishData = await publishResponse.json();
+
+        if (publishData.data?.publishablePublish?.userErrors?.length > 0) {
+          AppLogger.warn('Product publish had errors', {
+            component: 'app.dashboard',
+            operation: 'create-bundle',
+            errors: publishData.data.publishablePublish.userErrors
+          });
+        } else {
+          AppLogger.info('Product published to Online Store', {
+            component: 'app.dashboard',
+            operation: 'create-bundle',
+            productId: shopifyProductId
+          });
+        }
+      }
+    } catch (publishError) {
+      AppLogger.error('Failed to publish product to Online Store', {
+        component: 'app.dashboard',
+        operation: 'create-bundle'
+      }, publishError);
+      // Continue even if publishing fails - user can manually publish later
     }
 
     // Check if this is the first bundle (for auto-placement)
