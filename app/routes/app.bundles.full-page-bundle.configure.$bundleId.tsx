@@ -1836,6 +1836,9 @@ export default function ConfigureBundleFlow() {
     }
   }, []);
 
+  // Full-page bundle: Active tab state for tab navigation (instead of vertical steps)
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+
   // ===== CUSTOM HOOKS =====
   // Form state management
   const formState = useBundleForm({
@@ -3330,88 +3333,71 @@ export default function ConfigureBundleFlow() {
               <Card>
                 <BlockStack gap="400">
                   <BlockStack gap="200">
-                    <Text variant="headingSm" as="h3">
-                      Bundle Steps
-                    </Text>
-                    <Text variant="bodyMd" tone="subdued" as="p">
-                      Create steps for your multi-step bundle here. Select product options for each step below
-                    </Text>
+                    <InlineStack align="space-between" blockAlign="center">
+                      <BlockStack gap="100">
+                        <Text variant="headingSm" as="h3">
+                          Bundle Tabs
+                        </Text>
+                        <Text variant="bodyMd" tone="subdued" as="p">
+                          Configure each tab of your full-page bundle. Each tab represents a product selection step.
+                        </Text>
+                      </BlockStack>
+                      {/* Progress Indicator */}
+                      <Badge tone="info">
+                        {stepsState.steps.filter(step => step.StepProduct && step.StepProduct.length > 0).length} / {stepsState.steps.length} Configured
+                      </Badge>
+                    </InlineStack>
                   </BlockStack>
 
-                  {/* Steps List */}
+                  {/* Tabs Navigation */}
+                  {stepsState.steps.length > 0 && (
+                    <Tabs
+                      tabs={stepsState.steps.map((step, index) => ({
+                        id: step.id,
+                        content: step.name || `Tab ${index + 1}`,
+                        badge: step.StepProduct && step.StepProduct.length > 0 ? stepsState.getUniqueProductCount(step.StepProduct).toString() : undefined,
+                      }))}
+                      selected={activeTabIndex}
+                      onSelect={setActiveTabIndex}
+                    />
+                  )}
+
+                  {/* Active Tab Content */}
                   <BlockStack gap="300">
                     {stepsState.steps.map((step, index) => (
+                      activeTabIndex === index && (
                       <Card
                         key={step.id}
                         background="bg-surface-secondary"
                       >
-                        <div
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, step.id, index)}
-                          onDragEnd={handleDragEnd}
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, index)}
-                          style={{
-                            cursor: draggedStep === step.id ? 'grabbing' : 'grab',
-                            transition: 'all 0.2s ease',
-                            transform: dragOverIndex === index && draggedStep !== step.id ? 'translateY(-4px)' : 'translateY(0)',
-                            boxShadow: dragOverIndex === index && draggedStep !== step.id
-                              ? '0 8px 16px rgba(0,0,0,0.15), 0 0 0 2px rgba(33, 150, 243, 0.3)'
-                              : draggedStep === step.id
-                                ? '0 4px 12px rgba(0,0,0,0.2)'
-                                : 'none',
-                            opacity: draggedStep === step.id ? 0.6 : 1,
-                            border: dragOverIndex === index && draggedStep !== step.id
-                              ? '2px dashed rgba(33, 150, 243, 0.5)'
-                              : '2px solid transparent',
-                            borderRadius: '8px',
-                            position: 'relative' as const,
-                            zIndex: draggedStep === step.id ? 1000 : 1,
-                            background: dragOverIndex === index && draggedStep !== step.id
-                              ? 'rgba(33, 150, 243, 0.05)'
-                              : undefined
-                          }}
-                        >
-                          <BlockStack gap="300">
-                            {/* Step Header */}
-                            <InlineStack align="space-between" blockAlign="center" gap="300">
-                              <InlineStack gap="200" blockAlign="center">
-                                <Icon source={DragHandleIcon} tone="subdued" />
-                                <Text variant="bodyMd" fontWeight="medium" as="p">
-                                  Step {index + 1}
-                                </Text>
-                              </InlineStack>
+                        <BlockStack gap="400">
+                          {/* Tab Header */}
+                          <InlineStack align="space-between" blockAlign="center" gap="300">
+                            <Text variant="bodyLg" fontWeight="semibold" as="p">
+                              {step.name || `Tab ${index + 1}`}
+                            </Text>
 
-                              <InlineStack gap="100">
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  icon={DuplicateIcon}
-                                  onClick={() => cloneStep(step.id)}
-                                  accessibilityLabel="Clone step"
-                                />
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  tone="critical"
-                                  icon={DeleteIcon}
-                                  onClick={() => deleteStep(step.id)}
-                                  accessibilityLabel="Delete step"
-                                />
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  icon={stepsState.expandedSteps.has(step.id) ? ChevronUpIcon : ChevronDownIcon}
-                                  onClick={() => stepsState.toggleStepExpansion(step.id)}
-                                  accessibilityLabel={stepsState.expandedSteps.has(step.id) ? "Collapse step" : "Expand step"}
-                                />
-                              </InlineStack>
+                            <InlineStack gap="100">
+                              <Button
+                                variant="tertiary"
+                                size="micro"
+                                icon={DuplicateIcon}
+                                onClick={() => cloneStep(step.id)}
+                                accessibilityLabel="Clone tab"
+                              />
+                              <Button
+                                variant="tertiary"
+                                size="micro"
+                                tone="critical"
+                                icon={DeleteIcon}
+                                onClick={() => deleteStep(step.id)}
+                                accessibilityLabel="Delete tab"
+                              />
                             </InlineStack>
+                          </InlineStack>
 
-                            {/* Expanded Step Content */}
-                            <Collapsible id={`step-${step.id}`} open={stepsState.expandedSteps.has(step.id)}>
-                              <BlockStack gap="400">
+                          {/* Tab Content (always visible, no collapse) */}
+                          <BlockStack gap="400">
                                 {/* Step Name and Page Title */}
                                 <FormLayout>
                                   <TextField
@@ -3601,21 +3587,30 @@ export default function ConfigureBundleFlow() {
                                   </Button>
                                 </BlockStack>
                               </BlockStack>
-                            </Collapsible>
                           </BlockStack>
-                        </div>
+                        </BlockStack>
                       </Card>
+                      )
                     ))}
 
-                    {/* Add Step Button */}
-                    <Button
-                      variant="plain"
-                      fullWidth
-                      icon={PlusIcon}
-                      onClick={stepsState.addStep}
-                    >
-                      Add Step
-                    </Button>
+                    {/* Add Tab Button */}
+                    <InlineStack gap="200" align="center">
+                      <Button
+                        variant="primary"
+                        icon={PlusIcon}
+                        onClick={() => {
+                          stepsState.addStep();
+                          setActiveTabIndex(stepsState.steps.length); // Switch to new tab
+                        }}
+                      >
+                        Add New Tab
+                      </Button>
+                      {stepsState.steps.length > 0 && (
+                        <Text variant="bodySm" tone="subdued" as="p">
+                          {stepsState.steps.length} tab{stepsState.steps.length !== 1 ? 's' : ''} configured
+                        </Text>
+                      )}
+                    </InlineStack>
                   </BlockStack>
                 </BlockStack>
               </Card>
