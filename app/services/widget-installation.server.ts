@@ -38,14 +38,15 @@ export class WidgetInstallationService {
         shop
       });
 
-      // 1. Get Current Theme (No changes needed to query, but ensure variable usage)
+      // 1. Get Current Published Theme
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
-          themes(first: 1) {
+          themes(first: 1, roles: [MAIN]) {
             edges {
               node {
                 id
                 name
+                role
               }
             }
           }
@@ -267,14 +268,15 @@ export class WidgetInstallationService {
         bundleId
       });
 
-      // First get the current theme
+      // First get the current published theme
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
-          themes(first: 1) {
+          themes(first: 1, roles: [MAIN]) {
             edges {
               node {
                 id
                 name
+                role
               }
             }
           }
@@ -427,6 +429,259 @@ export class WidgetInstallationService {
         widgetInstalled: false,
         bundleConfigured: false,
         recommendedAction: 'install_widget'
+      };
+    }
+  }
+
+  /**
+   * Automatically place widget in theme on product template
+   * Uses Shopify Admin GraphQL API to programmatically add app block
+   *
+   * @param admin - Shopify admin API client
+   * @param shop - Shop domain
+   * @param apiKey - App API key (client_id)
+   * @param bundleId - Bundle ID to configure in the widget
+   * @param templateName - Template to add widget to (default: 'product')
+   * @returns Success status and details
+   */
+  static async autoPlaceWidget(
+    admin: any,
+    shop: string,
+    apiKey: string,
+    bundleId?: string,
+    templateName: string = 'product'
+  ): Promise<{
+    success: boolean;
+    message: string;
+    themeId?: string;
+    themeName?: string;
+    templatePath?: string;
+    error?: string;
+  }> {
+    try {
+      AppLogger.info('Auto-placing widget in theme', {
+        component: 'WidgetInstallationService',
+        shop,
+        templateName,
+        bundleId
+      });
+
+      // 1. Get current published theme
+      const CURRENT_THEME_QUERY = `
+        query GetCurrentTheme {
+          themes(first: 1, roles: [MAIN]) {
+            edges {
+              node {
+                id
+                name
+                role
+              }
+            }
+          }
+        }
+      `;
+
+      const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
+      const themeData = await themeResponse.json();
+
+      if (!themeData?.data?.themes?.edges?.length) {
+        return {
+          success: false,
+          message: 'No published theme found',
+          error: 'No published theme found'
+        };
+      }
+
+      const theme = themeData.data.themes.edges[0].node;
+      const themeId = theme.id;
+      const themeName = theme.name;
+
+      AppLogger.info('Found theme for auto-placement', {
+        component: 'WidgetInstallationService',
+        themeId,
+        themeName
+      });
+
+      // 2. Read current product template
+      const templateFilename = `templates/${templateName}.json`;
+      const READ_TEMPLATE_QUERY = `
+        query ReadTemplate($themeId: ID!, $filename: String!) {
+          theme(id: $themeId) {
+            files(filenames: [$filename], first: 1) {
+              nodes {
+                filename
+                body {
+                  ... on OnlineStoreThemeFileBodyText {
+                    content
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const templateResponse = await admin.graphql(READ_TEMPLATE_QUERY, {
+        variables: {
+          themeId,
+          filename: templateFilename
+        }
+      });
+      const templateData = await templateResponse.json();
+
+      if (!templateData?.data?.theme?.files?.nodes?.length) {
+        return {
+          success: false,
+          message: `Template ${templateFilename} not found in theme`,
+          themeId,
+          themeName,
+          error: `Template ${templateFilename} not found`
+        };
+      }
+
+      const templateFile = templateData.data.theme.files.nodes[0];
+      const templateContent = templateFile.body?.content;
+
+      if (!templateContent) {
+        return {
+          success: false,
+          message: 'Template content is empty',
+          themeId,
+          themeName,
+          error: 'Template content is empty'
+        };
+      }
+
+      // 3. Parse and modify template JSON
+      let templateJson;
+      try {
+        templateJson = JSON.parse(templateContent);
+      } catch (parseError) {
+        AppLogger.error('Failed to parse template JSON', {
+          component: 'WidgetInstallationService',
+          templateFilename
+        }, parseError);
+        return {
+          success: false,
+          message: 'Failed to parse template JSON',
+          themeId,
+          themeName,
+          error: 'Invalid template JSON'
+        };
+      }
+
+      // Check if sections exist
+      if (!templateJson.sections) {
+        templateJson.sections = {};
+      }
+
+      // Generate unique section ID for app block
+      const sectionId = `app_bundle_${Date.now()}`;
+
+      // Add bundle app block to sections
+      // Format: shopify://apps/{apiKey}/blocks/{blockHandle}/{extensionUuid}
+      // For simplicity, we'll use the pattern: apps/{apiKey}/blocks/bundle
+      const appBlockType = `shopify://apps/${apiKey}/blocks/bundle`;
+
+      templateJson.sections[sectionId] = {
+        type: appBlockType,
+        settings: {
+          enabled: true,
+          ...(bundleId && { bundle_id: bundleId })
+        }
+      };
+
+      // Add section to order (after main product section if it exists)
+      if (!templateJson.order) {
+        templateJson.order = [];
+      }
+
+      // Try to place after 'main' section, or at the beginning
+      const mainIndex = templateJson.order.indexOf('main');
+      if (mainIndex !== -1) {
+        templateJson.order.splice(mainIndex + 1, 0, sectionId);
+      } else {
+        templateJson.order.unshift(sectionId);
+      }
+
+      AppLogger.info('Modified template JSON with bundle block', {
+        component: 'WidgetInstallationService',
+        sectionId,
+        appBlockType
+      });
+
+      // 4. Write updated template back to theme
+      const UPSERT_TEMPLATE_MUTATION = `
+        mutation UpsertTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+          themeFilesUpsert(themeId: $themeId, files: $files) {
+            upsertedThemeFiles {
+              filename
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const upsertResponse = await admin.graphql(UPSERT_TEMPLATE_MUTATION, {
+        variables: {
+          themeId,
+          files: [{
+            filename: templateFilename,
+            body: {
+              type: 'TEXT',
+              value: JSON.stringify(templateJson, null, 2)
+            }
+          }]
+        }
+      });
+      const upsertData = await upsertResponse.json();
+
+      // Check for errors
+      if (upsertData?.data?.themeFilesUpsert?.userErrors?.length > 0) {
+        const errors = upsertData.data.themeFilesUpsert.userErrors;
+        AppLogger.error('Theme file upsert failed', {
+          component: 'WidgetInstallationService',
+          errors
+        });
+        return {
+          success: false,
+          message: `Failed to update template: ${errors.map((e: any) => e.message).join(', ')}`,
+          themeId,
+          themeName,
+          error: errors[0].message
+        };
+      }
+
+      AppLogger.info('Successfully auto-placed widget', {
+        component: 'WidgetInstallationService',
+        shop,
+        themeId,
+        themeName,
+        templatePath: templateFilename
+      });
+
+      return {
+        success: true,
+        message: `Widget automatically placed on ${templateName} template`,
+        themeId,
+        themeName,
+        templatePath: templateFilename
+      };
+
+    } catch (error) {
+      AppLogger.error('Failed to auto-place widget', {
+        component: 'WidgetInstallationService',
+        shop,
+        templateName
+      }, error);
+
+      return {
+        success: false,
+        message: 'Failed to automatically place widget',
+        error: (error as Error).message
       };
     }
   }

@@ -413,6 +413,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ error: 'Failed to get product ID from Shopify' }, { status: 500 });
     }
 
+    // Check if this is the first bundle (for auto-placement)
+    const existingBundleCount = await db.bundle.count({
+      where: {
+        shopId: session.shop,
+        status: {
+          in: ['active', 'draft']
+        }
+      }
+    });
+
+    const isFirstBundle = existingBundleCount === 0;
+
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
@@ -424,11 +436,53 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     });
 
+    // Auto-place widget if this is the first bundle
+    let autoPlacementResult = null;
+    if (isFirstBundle) {
+      const apiKey = process.env.SHOPIFY_API_KEY || '';
+      AppLogger.info('Auto-placing widget for first bundle', {
+        component: 'app.dashboard',
+        operation: 'create-bundle',
+        bundleId: newBundle.id
+      });
+
+      autoPlacementResult = await WidgetInstallationService.autoPlaceWidget(
+        admin,
+        session.shop,
+        apiKey,
+        newBundle.id,
+        'product'
+      );
+
+      AppLogger.info('Auto-placement result', {
+        component: 'app.dashboard',
+        operation: 'create-bundle',
+        success: autoPlacementResult.success,
+        message: autoPlacementResult.message
+      });
+    }
+
+    // Build redirect URL with auto-placement params
+    let redirectUrl = `/app/bundles/cart-transform/configure/${newBundle.id}`;
+    if (autoPlacementResult?.success) {
+      redirectUrl += `?widgetAutoPlaced=true&themeName=${encodeURIComponent(autoPlacementResult.themeName || 'your theme')}`;
+    } else if (autoPlacementResult && !autoPlacementResult.success) {
+      redirectUrl += `?widgetAutoPlaced=false`;
+    }
+
     return json({
       success: true,
       bundleId: newBundle.id,
       bundleProductId: shopifyProductId,
-      redirectTo: `/app/bundles/cart-transform/configure/${newBundle.id}`
+      redirectTo: redirectUrl,
+      autoPlacement: autoPlacementResult ? {
+        attempted: true,
+        success: autoPlacementResult.success,
+        message: autoPlacementResult.message,
+        themeName: autoPlacementResult.themeName
+      } : {
+        attempted: false
+      }
     });
 
   } catch (error) {

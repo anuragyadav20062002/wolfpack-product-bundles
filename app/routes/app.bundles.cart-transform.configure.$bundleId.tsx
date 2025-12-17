@@ -1760,6 +1760,17 @@ export default function ConfigureBundleFlow() {
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
 
+  // Check for auto-placement success from URL params
+  const [searchParams, setSearchParams] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search);
+    }
+    return new URLSearchParams();
+  });
+  const widgetAutoPlaced = searchParams.get('widgetAutoPlaced') === 'true';
+  const autoPlacedThemeName = searchParams.get('themeName') || 'your theme';
+  const [showAutoPlacementBanner, setShowAutoPlacementBanner] = useState(widgetAutoPlaced);
+
   // ===== DIRTY FLAG SYSTEM =====
   // Simple dirty flag that gets set on ANY state change
   const [isDirty, setIsDirty] = useState(false);
@@ -2879,6 +2890,43 @@ export default function ConfigureBundleFlow() {
 
         {/* Smart Widget Installation Banner - Slim, Top-Positioned, Context-Aware */}
         <BlockStack gap="400">
+          {/* Auto-Placement Success Banner */}
+          {showAutoPlacementBanner && (
+            <Banner
+              tone="success"
+              onDismiss={() => {
+                setShowAutoPlacementBanner(false);
+                // Clear URL params without reload
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('widgetAutoPlaced');
+                  url.searchParams.delete('themeName');
+                  window.history.replaceState({}, '', url.toString());
+                }
+              }}
+            >
+              <InlineStack gap="400" align="space-between" blockAlign="center">
+                <InlineStack gap="200" blockAlign="center">
+                  <Text as="span" variant="bodyMd" fontWeight="semibold">
+                    Widget Automatically Placed!
+                  </Text>
+                  <Text as="span" variant="bodySm" tone="subdued">
+                    Your bundle widget has been added to {autoPlacedThemeName}. Configure your bundle and save to see it live on your store.
+                  </Text>
+                </InlineStack>
+                <Button
+                  onClick={() => {
+                    const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
+                    window.open(themeEditorUrl, '_blank');
+                  }}
+                  variant="plain"
+                >
+                  View in Theme Editor
+                </Button>
+              </InlineStack>
+            </Banner>
+          )}
+
           {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && (
             <Banner
               tone="info"
