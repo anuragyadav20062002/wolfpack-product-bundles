@@ -16,6 +16,7 @@ import {
   TextField,
   Banner,
   Icon,
+  ChoiceList,
 } from "@shopify/polaris";
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, CheckCircleIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
@@ -406,6 +407,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
+  const bundleType = (formData.get("bundleType") as string) || 'product_page';
 
   if (typeof bundleName !== 'string' || bundleName.length === 0) {
     return json({ error: 'Bundle name is required' }, { status: 400 });
@@ -572,7 +574,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         name: bundleName,
         description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: session.shop,
-        bundleType: 'product_page',
+        bundleType: bundleType as any, // 'product_page' | 'full_page'
         status: 'draft',
         shopifyProductId: shopifyProductId,
       },
@@ -604,8 +606,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
     }
 
-    // Build redirect URL with auto-placement params
-    let redirectUrl = `/app/bundles/cart-transform/configure/${newBundle.id}`;
+    // Build redirect URL based on bundle type with auto-placement params
+    const routeBase = bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+    let redirectUrl = `/app/bundles/${routeBase}/configure/${newBundle.id}`;
     if (autoPlacementResult?.success) {
       redirectUrl += `?widgetAutoPlaced=true&themeName=${encodeURIComponent(autoPlacementResult.themeName || 'your theme')}`;
     } else if (autoPlacementResult && !autoPlacementResult.success) {
@@ -645,6 +648,7 @@ export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [bundleName, setBundleName] = useState("");
   const [description, setDescription] = useState("");
+  const [bundleType, setBundleType] = useState<string[]>(["product_page"]);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const isSubmitting = navigation.state === "submitting";
@@ -655,6 +659,7 @@ export default function Dashboard() {
       setModalOpen(false);
       setBundleName("");
       setDescription("");
+      setBundleType(["product_page"]);
       navigate(actionData.redirectTo);
     }
   }, [actionData, navigate]);
@@ -667,6 +672,7 @@ export default function Dashboard() {
     setModalOpen(false);
     setBundleName("");
     setDescription("");
+    setBundleType(["product_page"]); // Reset to default
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -682,7 +688,8 @@ export default function Dashboard() {
   };
 
   const handleEditBundle = (bundle: Bundle) => {
-    navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
+    const routeBase = bundle.bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+    navigate(`/app/bundles/${routeBase}/configure/${bundle.id}`);
   };
 
   const handleCloneBundle = useCallback((bundleId: string) => {
@@ -787,6 +794,32 @@ export default function Dashboard() {
                 autoComplete="off"
                 helpText="Optional: Add more details about what this bundle offers"
               />
+
+              {/* Bundle Type Selection */}
+              <BlockStack gap="200">
+                <Text variant="headingSm" as="h4">Bundle Type</Text>
+                <ChoiceList
+                  title=""
+                  choices={[
+                    {
+                      label: 'Product Page Bundle',
+                      value: 'product_page',
+                      helpText: 'Display bundle builder on existing product pages (recommended for most stores)'
+                    },
+                    {
+                      label: 'Full Page Bundle',
+                      value: 'full_page',
+                      helpText: 'Create a dedicated landing page for your bundle with tabs and full customization'
+                    }
+                  ]}
+                  selected={bundleType}
+                  onChange={setBundleType}
+                />
+              </BlockStack>
+
+              {/* Hidden input to pass bundleType to form */}
+              <input type="hidden" name="bundleType" value={bundleType[0]} />
+
               <button
                 ref={submitButtonRef}
                 type="submit"
@@ -921,21 +954,36 @@ export default function Dashboard() {
                       title: "Add bundle steps and choose products",
                       description: "Add steps to your bundle, select products/collections you want.",
                       isClickable: bundles.length > 0,
-                      onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                      onClick: () => {
+                        if (bundles.length > 0) {
+                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
+                        }
+                      },
                     },
                     {
                       id: "setup_pricing",
                       title: "Set discount rules and pricing",
                       description: "Choose how discounts and pricing should work for your bundle.",
                       isClickable: bundles.length > 0,
-                      onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                      onClick: () => {
+                        if (bundles.length > 0) {
+                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
+                        }
+                      },
                     },
                     {
                       id: "publish",
                       title: "Save and publish your bundle",
                       description: "Save your settings to make your bundle live on your store.",
                       isClickable: bundles.length > 0,
-                      onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                      onClick: () => {
+                        if (bundles.length > 0) {
+                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
+                        }
+                      },
                     },
                   ]}
                 />

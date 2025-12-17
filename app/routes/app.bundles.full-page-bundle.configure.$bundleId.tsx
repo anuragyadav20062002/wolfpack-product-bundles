@@ -1014,6 +1014,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
           bundleId: bundle.id,
           name: bundle.name,
           templateName: bundle.templateName || null,
+          bundleType: bundle.bundleType || 'full_page',
           type: "cart_transform",
           steps: optimizedSteps,
           pricing: {
@@ -1164,6 +1165,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
       bundleId: bundle.id,
       name: bundle.name,
       templateName: bundle.templateName || null,
+      bundleType: bundle.bundleType || 'full_page',
       type: "cart_transform",
       steps: optimizedSteps,
       pricing: {
