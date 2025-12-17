@@ -67,11 +67,12 @@ export class WidgetInstallationService {
 
       // 2. Fetch Template Files
       // FIX: Updated structure to use edges -> node and correct fragment placement
-      // OPTIMIZATION: Added 'query' param to fetch only product templates
+      // Note: 'query' parameter is not supported on files field in API 2025-10+
+      // We fetch all files and filter client-side instead
       const TEMPLATE_FILES_QUERY = `
-        query GetTemplateFiles($themeId: ID!, $query: String) {
+        query GetTemplateFiles($themeId: ID!) {
           theme(id: $themeId) {
-            files(first: 50, query: $query) {
+            files(first: 100) {
               edges {
                 node {
                   filename
@@ -89,8 +90,7 @@ export class WidgetInstallationService {
 
       const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
         variables: {
-          themeId,
-          query: "filename:templates/product*.json" // Only fetch product JSON templates
+          themeId
         }
       });
       const filesData = await filesResponse.json();
@@ -294,10 +294,12 @@ export class WidgetInstallationService {
       const themeId = theme.id;
 
       // Get product template files
+      // Note: 'query' parameter is not supported on files field in API 2025-10+
+      // We fetch all files and filter client-side instead
       const TEMPLATE_FILES_QUERY = `
-      query GetTemplateFiles($themeId: ID!, $query: String) {
+      query GetTemplateFiles($themeId: ID!) {
         theme(id: $themeId) {
-          files(first: 50, query: $query) {
+          files(first: 100) {
             edges {
               node {
                 filename
@@ -314,9 +316,8 @@ export class WidgetInstallationService {
     `;
 
       const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
-        variables: { 
-          themeId,
-          query: "filename:templates/product*.json" 
+        variables: {
+          themeId
         }
       });
       const filesData = await filesResponse.json();
