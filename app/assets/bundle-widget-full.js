@@ -2,10 +2,14 @@
  * Bundle Widget - Complete Professional Implementation
  * Handles bundle product selection, pricing, and cart operations
  * Supports both cart transform and discount function bundles
- * 
- * @version 4.0.0
+ *
+ * Bundle Types:
+ * - product_page: Embedded widget for product pages (vertical step boxes)
+ * - full_page: Dedicated landing page with tabs layout
+ *
+ * @version 4.1.0
  * @author Wolfpack Team
- * 
+ *
  */
 
 'use strict';
@@ -1206,10 +1210,41 @@ class BundleWidget {
       return;
     }
 
+    // Check bundle type and render accordingly
+    const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
+
+    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      // Full-page bundle: Render with tabs layout
+      this.renderFullPageLayout();
+    } else {
+      // Product-page bundle: Render with step boxes (current implementation)
+      this.renderProductPageLayout();
+    }
+  }
+
+  // Product-page bundle layout (original vertical step boxes)
+  renderProductPageLayout() {
     this.selectedBundle.steps.forEach((step, index) => {
       const stepElement = this.createStepElement(step, index);
       this.elements.stepsContainer.appendChild(stepElement);
     });
+  }
+
+  // Full-page bundle layout (horizontal tabs)
+  renderFullPageLayout() {
+    // TODO: Implement tabs-based layout for full-page bundles
+    // For now, use the same layout as product-page until custom UI is provided
+    console.log('[BUNDLE_WIDGET] Full-page bundle detected - using tabs layout');
+
+    // Temporary: Render same as product-page layout
+    // This will be replaced with custom tabs UI later
+    this.renderProductPageLayout();
+
+    // Add visual indicator that this is a full-page bundle
+    const indicator = document.createElement('div');
+    indicator.style.cssText = 'padding: 8px; background: #e3f2fd; border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: #1976d2;';
+    indicator.textContent = 'Full-Page Bundle Mode (Custom layout will be applied)';
+    this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }
 
   createStepElement(step, index) {
