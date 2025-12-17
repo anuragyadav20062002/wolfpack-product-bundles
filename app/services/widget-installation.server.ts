@@ -41,12 +41,11 @@ export class WidgetInstallationService {
       // 1. Get Current Theme (No changes needed to query, but ensure variable usage)
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
-          themes(first: 1, role: [MAIN]) {
+          themes(first: 1) {
             edges {
               node {
                 id
                 name
-                role
               }
             }
           }
@@ -271,12 +270,11 @@ export class WidgetInstallationService {
       // First get the current theme
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
-          themes(first: 1, role:[MAIN]) {
+          themes(first: 1) {
             edges {
               node {
                 id
                 name
-                role
               }
             }
           }
