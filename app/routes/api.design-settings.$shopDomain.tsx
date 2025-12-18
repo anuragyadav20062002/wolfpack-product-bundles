@@ -15,35 +15,54 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   try {
     const url = new URL(request.url);
-    const bundleType = url.searchParams.get("bundleType") as "product_page" | "full_page" | null;
+    const requestedBundleType = url.searchParams.get("bundleType") as "product_page" | "full_page" | null;
 
-    if (!bundleType) {
-      AppLogger.error("bundleType parameter is required", {
-        component: "api.design-settings.css",
-        shopDomain,
-      });
-      return new Response("/* bundleType parameter is required */", {
-        status: 400,
-        headers: {
-          "Content-Type": "text/css; charset=utf-8",
-        },
-      });
-    }
+    // Unified CSS Strategy: Try product_page first, then full_page, then defaults
+    // This allows merchants to use the same design for both bundle types
+    const bundleTypesToTry: ("product_page" | "full_page")[] = requestedBundleType
+      ? [requestedBundleType, requestedBundleType === "product_page" ? "full_page" : "product_page"]
+      : ["product_page", "full_page"];
 
-    AppLogger.info("Fetching design settings for CSS", {
+    AppLogger.info("Fetching design settings for CSS with fallback", {
       component: "api.design-settings.css",
       shopDomain,
-      bundleType,
+      requestedBundleType: requestedBundleType || "not specified (will try product_page first)",
+      fallbackOrder: bundleTypesToTry,
     });
 
-    const designSettings = await prisma.designSettings.findUnique({
-      where: {
-        shopId_bundleType: {
-          shopId: shopDomain,
-          bundleType,
+    let designSettings = null;
+    let usedBundleType = null;
+
+    // Try each bundle type in order until we find settings
+    for (const bundleType of bundleTypesToTry) {
+      designSettings = await prisma.designSettings.findUnique({
+        where: {
+          shopId_bundleType: {
+            shopId: shopDomain,
+            bundleType,
+          },
         },
-      },
-    });
+      });
+
+      if (designSettings) {
+        usedBundleType = bundleType;
+        AppLogger.info("Design settings found", {
+          component: "api.design-settings.css",
+          shopDomain,
+          usedBundleType,
+          requestedBundleType,
+        });
+        break;
+      }
+    }
+
+    if (!designSettings) {
+      AppLogger.info("No design settings found for any bundle type, using defaults", {
+        component: "api.design-settings.css",
+        shopDomain,
+        triedBundleTypes: bundleTypesToTry,
+      });
+    }
 
     const defaultSettings = {
       productCardBgColor: "#FFFFFF",
@@ -120,7 +139,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       };
     }
 
-    const css = generateCSSFromSettings(finalSettings, bundleType);
+    // Use the bundle type that had settings, or default to product_page for CSS generation
+    const bundleTypeForCSS = usedBundleType || requestedBundleType || "product_page";
+    const css = generateCSSFromSettings(finalSettings, bundleTypeForCSS);
 
     return new Response(css, {
       status: 200,
