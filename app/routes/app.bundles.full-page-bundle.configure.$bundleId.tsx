@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
+import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
 
 // Note: Using Polaris Checkbox component for toggle functionality
@@ -52,8 +52,6 @@ import {
   ListNumberedIcon,
   DiscountIcon,
   RefreshIcon,
-  EditIcon,
-  ImageIcon,
 } from "@shopify/polaris-icons";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
@@ -1784,7 +1782,7 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       session.shop,
       apiKey,
       bundleId,
-      bundle.templateName,
+      bundle.templateName || 'product',  // Default to 'product' template if not specified
       bundle.shopifyProductId
     );
 
@@ -1815,6 +1813,7 @@ export default function ConfigureBundleFlow() {
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
+  const revalidator = useRevalidator();
 
   // Check for auto-placement success from URL params
   const [searchParams, setSearchParams] = useState(() => {
@@ -1826,6 +1825,9 @@ export default function ConfigureBundleFlow() {
   const widgetAutoPlaced = searchParams.get('widgetAutoPlaced') === 'true';
   const autoPlacedThemeName = searchParams.get('themeName') || 'your theme';
   const [showAutoPlacementBanner, setShowAutoPlacementBanner] = useState(widgetAutoPlaced);
+
+  // Banner dismissal state
+  const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
 
   // ===== DIRTY FLAG SYSTEM =====
   // Simple dirty flag that gets set on ANY state change
@@ -1926,8 +1928,7 @@ export default function ConfigureBundleFlow() {
     markAsDirty();
   }, [markAsDirty]);
 
-  // State for bundle product editing (doesn't trigger dirty flag)
-  const [isEditingProductDetails, setIsEditingProductDetails] = useState(false);
+  // State for bundle product UI (doesn't trigger dirty flag)
   const [productTitle, setProductTitle] = useState(loadedBundleProduct?.title || "");
   const [productImageUrl, setProductImageUrl] = useState(loadedBundleProduct?.featuredImage?.url || loadedBundleProduct?.images?.[0]?.originalSrc || "");
 
@@ -2030,7 +2031,7 @@ export default function ConfigureBundleFlow() {
       return;
     } catch (error) {
       AppLogger.error("Save failed:", {}, error as any);
-      shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true });
+      shopify.toast.show((error as Error).message || "Failed to save changes", { isError: true, duration: 5000 });
     }
   }, [
     formState.bundleStatus,
@@ -2176,7 +2177,7 @@ export default function ConfigureBundleFlow() {
       } else {
         // Handle errors based on action type
         const errorMessage = ('error' in result ? result.error : null) || "Operation failed";
-        shopify.toast.show(errorMessage, { isError: true });
+        shopify.toast.show(errorMessage, { isError: true, duration: 5000 });
 
         // Handle specific error cases
         if (errorMessage.includes("pages") || errorMessage.includes("templates")) {
@@ -2222,7 +2223,7 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show("Changes discarded", { isError: false });
     } catch (error) {
       AppLogger.error("Error discarding changes:", {}, error as any);
-      shopify.toast.show("Error discarding changes", { isError: true });
+      shopify.toast.show("Error discarding changes", { isError: true, duration: 5000 });
       // Make sure to clear the flag even on error
       isResettingRef.current = false;
     }
@@ -2473,7 +2474,7 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select products", { isError: true });
+        shopify.toast.show("Failed to select products", { isError: true, duration: 5000 });
       }
     }
   }, [stepsState.steps, stepsState.setSteps, shopify]);
@@ -2494,7 +2495,7 @@ export default function ConfigureBundleFlow() {
       // Response will be handled by the existing useEffect
     } catch (error) {
       AppLogger.error("Product sync failed:", {}, error as any);
-      shopify.toast.show((error as Error).message || "Failed to sync product", { isError: true });
+      shopify.toast.show((error as Error).message || "Failed to sync product", { isError: true, duration: 5000 });
     }
   }, [fetcher, shopify]);
 
@@ -2528,55 +2529,25 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select bundle product", { isError: true });
+        shopify.toast.show("Failed to select bundle product", { isError: true, duration: 5000 });
       }
     }
   }, [shopify]);
 
-  // Handle product image upload
-  const handleProductImageUpload = useCallback(async () => {
-    try {
-      if (!bundleProduct?.id) {
-        shopify.toast.show("Please select a bundle product first", { isError: true });
-        return;
-      }
+  // Banner dismiss handler
+  const handleDismissBanner = useCallback((bannerId: string) => {
+    setDismissedBanners(prev => new Set([...prev, bannerId]));
+  }, []);
 
-      // Use Shopify's resource picker to select an image or upload new one
-      const imageUrl = window.prompt("Enter image URL (or we'll add file upload in next version):");
+  // Revalidate data when window regains focus (to check if widget was placed in theme editor)
+  useEffect(() => {
+    const handleFocus = () => {
+      revalidator.revalidate();
+    };
 
-      if (imageUrl) {
-        setProductImageUrl(imageUrl);
-        shopify.toast.show("Image will be updated when you save changes", { isError: false });
-      }
-    } catch (error) {
-      AppLogger.error("Image upload failed:", {}, error as any);
-      shopify.toast.show("Failed to upload image", { isError: true });
-    }
-  }, [bundleProduct, shopify]);
-
-  // Handle product title update
-  const handleSaveProductDetails = useCallback(async () => {
-    try {
-      if (!bundleProduct?.id) {
-        shopify.toast.show("No bundle product to update", { isError: true });
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("intent", "updateBundleProduct");
-      formData.append("productId", bundleProduct.id);
-      formData.append("productTitle", productTitle);
-      formData.append("productImageUrl", productImageUrl);
-
-      fetcher.submit(formData, { method: "post" });
-      setIsEditingProductDetails(false);
-
-      shopify.toast.show("Updating product details...", { isError: false });
-    } catch (error) {
-      AppLogger.error("Product update failed:", {}, error as any);
-      shopify.toast.show("Failed to update product details", { isError: true });
-    }
-  }, [bundleProduct, productTitle, productImageUrl, fetcher, shopify]);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [revalidator]);
 
   // Step management handlers
   const cloneStep = useCallback((stepId: string) => {
@@ -2600,7 +2571,7 @@ export default function ConfigureBundleFlow() {
 
   const deleteStep = useCallback((stepId: string) => {
     if (stepsState.steps.length <= 1) {
-      shopify.toast.show("Cannot delete the last step", { isError: true });
+      shopify.toast.show("Cannot delete the last step", { isError: true, duration: 5000 });
       return;
     }
 
@@ -2721,7 +2692,7 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select collections", { isError: true });
+        shopify.toast.show("Failed to select collections", { isError: true, duration: 5000 });
       }
     }
   }, [shopify, selectedCollections]);
@@ -2751,7 +2722,7 @@ export default function ConfigureBundleFlow() {
       // Response will be handled by the existing useEffect
     } catch (error) {
       AppLogger.error("Failed to load theme templates:", {}, error as any);
-      shopify.toast.show("Failed to load theme templates", { isError: true });
+      shopify.toast.show("Failed to load theme templates", { isError: true, duration: 5000 });
       setIsLoadingPages(false);
     }
   }, [fetcher, shopify]);
@@ -2770,7 +2741,7 @@ export default function ConfigureBundleFlow() {
       // Note: Response will be handled in the useEffect below
     } catch (error) {
       AppLogger.error('Error validating widget placement:', {}, error as any);
-      shopify.toast.show("Failed to validate widget placement", { isError: true });
+      shopify.toast.show("Failed to validate widget placement", { isError: true, duration: 5000 });
     }
   }, [fetcher, shopify]);
 
@@ -2806,7 +2777,7 @@ export default function ConfigureBundleFlow() {
       loadAvailablePages();
     } catch (error) {
       AppLogger.error('Error opening page selection:', {}, error as any);
-      shopify.toast.show("Failed to open page selection", { isError: true });
+      shopify.toast.show("Failed to open page selection", { isError: true, duration: 5000 });
     }
   }, [loadAvailablePages, shopify]);
 
@@ -2814,7 +2785,7 @@ export default function ConfigureBundleFlow() {
     try {
       if (!template || !template.handle) {
         AppLogger.error('🚨 [THEME_EDITOR] Invalid template object:', {}, template);
-        shopify.toast.show("Template data is invalid", { isError: true });
+        shopify.toast.show("Template data is invalid", { isError: true, duration: 5000 });
         return;
       }
 
@@ -2847,7 +2818,7 @@ export default function ConfigureBundleFlow() {
 
         if (!createTemplateResponse.ok) {
           AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
-          shopify.toast.show("Failed to prepare product template", { isError: true });
+          shopify.toast.show("Failed to prepare product template", { isError: true, duration: 5000 });
           return;
         }
 
@@ -2863,7 +2834,7 @@ export default function ConfigureBundleFlow() {
       // CRITICAL: Must use app's API key (client_id), not extension UUID
       if (!apiKey || !blockHandle) {
         AppLogger.error('🚨 [THEME_EDITOR] Missing app configuration');
-        shopify.toast.show("App configuration missing. Please check app setup.", { isError: true });
+        shopify.toast.show("App configuration missing. Please check app setup.", { isError: true, duration: 5000 });
         return;
       }
 
@@ -2902,7 +2873,7 @@ export default function ConfigureBundleFlow() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
-      shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true });
+      shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
   }, [shop, shopify, bundle.id]);
 
@@ -3029,53 +3000,57 @@ export default function ConfigureBundleFlow() {
             </Banner>
           )}
 
-          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && (
-            <Banner
-              tone="warning"
-              onDismiss={() => {/* Optional: Add dismiss functionality */}}
-            >
-              <InlineStack gap="400" align="space-between" blockAlign="center">
-                <BlockStack gap="100">
-                  <Text as="span" variant="bodyMd" fontWeight="semibold">
-                    Your bundle widget is not placed on storefront
-                  </Text>
-                  <Text as="span" variant="bodySm" tone="subdued">
-                    Add the bundle widget to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> to make this bundle visible to customers
-                  </Text>
-                </BlockStack>
-                <Button
-                  onClick={handlePlaceWidgetNow}
-                  loading={fetcher.state === 'submitting'}
-                  variant="primary"
-                >
-                  Place Widget Now
-                </Button>
-              </InlineStack>
-            </Banner>
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !dismissedBanners.has('install_widget') && (
+            <div style={{ marginBottom: '1rem' }}>
+              <Banner
+                tone="warning"
+                onDismiss={() => handleDismissBanner('install_widget')}
+              >
+                <InlineStack gap="400" align="space-between" blockAlign="center">
+                  <BlockStack gap="100">
+                    <Text as="span" variant="bodyMd" fontWeight="semibold">
+                      Your bundle widget is not placed on storefront
+                    </Text>
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      Add the bundle widget to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> to make this bundle visible to customers
+                    </Text>
+                  </BlockStack>
+                  <Button
+                    onClick={handlePlaceWidgetNow}
+                    loading={fetcher.state === 'submitting'}
+                    variant="primary"
+                  >
+                    Place Widget Now
+                  </Button>
+                </InlineStack>
+              </Banner>
+            </div>
           )}
 
           {/* Add Bundle to Existing Widget */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && (
-            <Banner
-              tone="warning"
-              onDismiss={() => {/* Optional: Add dismiss functionality */}}
-            >
-              <InlineStack gap="400" align="space-between" blockAlign="center">
-                <BlockStack gap="100">
-                  <Text as="span" variant="bodyMd" fontWeight="semibold">
-                    📝 Add This Bundle to Your Widget
-                  </Text>
-                  <Text as="span" variant="bodySm" tone="subdued">
-                    Update your widget in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> with this bundle ID
-                  </Text>
-                </BlockStack>
-                <Button
-                  onClick={() => window.open(widgetInstallation.installationLink, '_top')}
-                >
-                  Configure Widget
-                </Button>
-              </InlineStack>
-            </Banner>
+          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && !dismissedBanners.has('add_bundle') && (
+            <div style={{ marginBottom: '1rem' }}>
+              <Banner
+                tone="warning"
+                onDismiss={() => handleDismissBanner('add_bundle')}
+              >
+                <InlineStack gap="400" align="space-between" blockAlign="center">
+                  <BlockStack gap="100">
+                    <Text as="span" variant="bodyMd" fontWeight="semibold">
+                      📝 Add This Bundle to Your Widget
+                    </Text>
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      Update your widget in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> with this bundle ID
+                    </Text>
+                  </BlockStack>
+                  <Button
+                    onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                  >
+                    Configure Widget
+                  </Button>
+                </InlineStack>
+              </Banner>
+            </div>
           )}
         </BlockStack>
 
@@ -3145,82 +3120,31 @@ export default function ConfigureBundleFlow() {
 
                   {bundleProduct ? (
                     <BlockStack gap="300">
-                      <InlineStack gap="300" blockAlign="center">
+                      <InlineStack gap="300" blockAlign="center" wrap={false}>
                         <Thumbnail
                           source={productImageUrl || "/bundle.png"}
                           alt={productTitle || "Bundle Product"}
                           size="medium"
                         />
-                        <BlockStack gap="200">
-                          {isEditingProductDetails ? (
-                            <>
-                              <TextField
-                                label="Product Title"
-                                value={productTitle}
-                                onChange={setProductTitle}
-                                autoComplete="off"
-                                labelHidden
-                              />
-                              <InlineStack gap="200">
-                                <Button
-                                  size="slim"
-                                  onClick={handleSaveProductDetails}
-                                  variant="primary"
-                                >
-                                  Save
-                                </Button>
-                                <Button
-                                  size="slim"
-                                  onClick={() => {
-                                    setIsEditingProductDetails(false);
-                                    setProductTitle(bundleProduct.title || "");
-                                    setProductImageUrl(bundleProduct.featuredImage?.url || bundleProduct.images?.[0]?.originalSrc || "");
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                              </InlineStack>
-                            </>
-                          ) : (
-                            <>
-                              <InlineStack gap="200" blockAlign="center">
-                                <Button
-                                  variant="plain"
-                                  onClick={() => {
-                                    const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                                    window.open(productUrl, '_blank');
-                                  }}
-                                  icon={ExternalIcon}
-                                >
-                                  {productTitle || bundleProduct.title || "Untitled Product"}
-                                </Button>
-                              </InlineStack>
-                              <InlineStack gap="200">
-                                <Button
-                                  size="slim"
-                                  onClick={() => setIsEditingProductDetails(true)}
-                                  icon={EditIcon}
-                                >
-                                  Edit Details
-                                </Button>
-                                <Button
-                                  size="slim"
-                                  onClick={handleProductImageUpload}
-                                  icon={ImageIcon}
-                                >
-                                  Change Image
-                                </Button>
-                                <Button
-                                  variant="tertiary"
-                                  size="slim"
-                                  icon={RefreshIcon}
-                                  onClick={handleBundleProductSelect}
-                                  accessibilityLabel="Change bundle product"
-                                />
-                              </InlineStack>
-                            </>
-                          )}
-                        </BlockStack>
+                        <InlineStack gap="200" blockAlign="center" wrap={false}>
+                          <Button
+                            variant="plain"
+                            onClick={() => {
+                              const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
+                              window.open(productUrl, '_blank');
+                            }}
+                            icon={ExternalIcon}
+                          >
+                            {productTitle || bundleProduct.title || "Untitled Product"}
+                          </Button>
+                          <Button
+                            variant="tertiary"
+                            size="slim"
+                            icon={RefreshIcon}
+                            onClick={handleBundleProductSelect}
+                            accessibilityLabel="Change bundle product"
+                          />
+                        </InlineStack>
                       </InlineStack>
                     </BlockStack>
                   ) : (
@@ -3330,8 +3254,7 @@ export default function ConfigureBundleFlow() {
                         </Text>
                       </InlineStack>
                       <Text as="p" variant="bodySm" tone="subdued">
-                        Create a custom product template named "cart-transform" specifically for bundle products.
-                        This gives you better control and keeps bundle products separate from regular products.
+                        Create a custom product template, eg. "bundle-product". This gives you better control and keeps bundle products separate from regular products.
                       </Text>
                     </BlockStack>
                   </Card>
