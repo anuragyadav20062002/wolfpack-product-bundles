@@ -113,7 +113,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   return json({
     bundles: cartTransformBundles,
-    bundleType: "product_page", // Default display mode
     subscription: subscriptionInfo ? {
       plan: subscriptionInfo.plan,
       currentBundleCount: subscriptionInfo.currentBundleCount,
@@ -218,11 +217,8 @@ export async function action({ request }: ActionFunctionArgs) {
           shopId: shop,
           bundleType: 'product_page', // Default to product-page bundle
           status: 'draft',
-          active: false,
           shopifyProductId: shopifyProductId,
           templateName: originalBundle.templateName,
-          settings: originalBundle.settings as any,
-          matching: originalBundle.matching as any,
         },
       });
 
@@ -241,7 +237,6 @@ export async function action({ request }: ActionFunctionArgs) {
               minQuantity: step.minQuantity,
               maxQuantity: step.maxQuantity,
               enabled: step.enabled,
-              productCategory: step.productCategory,
               conditionType: step.conditionType,
               conditionOperator: step.conditionOperator,
               conditionValue: step.conditionValue,
@@ -443,11 +438,10 @@ export async function action({ request }: ActionFunctionArgs) {
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
-        description: typeof description === 'string' ? description : null,
+        description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: shop,
         bundleType: 'product_page', // Default to product-page bundle
         status: 'draft',
-        active: false,
         shopifyProductId: shopifyProductId, // Link the Shopify product
       },
     });

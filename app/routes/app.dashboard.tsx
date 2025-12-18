@@ -16,6 +16,7 @@ import {
   TextField,
   Banner,
   Icon,
+  ChoiceList,
 } from "@shopify/polaris";
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, CheckCircleIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
@@ -77,12 +78,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get API key for deep linking
   const apiKey = process.env.SHOPIFY_API_KEY || '';
 
-  // Generate generic installation link
-  const installationLink = WidgetInstallationService.generateGenericInstallationLink(
-    session.shop,
-    apiKey
-  );
-
   return json({
     bundles,
     shop: session.shop,
@@ -96,7 +91,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       installed: widgetStatus.installed,
       themeName: widgetStatus.themeName,
       showPrompt: WidgetInstallationService.shouldShowInstallationPrompt(widgetStatus),
-      installationLink,
     },
     apiKey,
   });
@@ -158,9 +152,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             title: clonedBundleName,
             descriptionHtml: originalBundle.description || `${clonedBundleName} - Bundle Product`,
             productType: "Bundle",
-            vendor: "Bundle Builder",
+            vendor: "Wolfpack: Product Bundles",
             status: "DRAFT",
-            tags: ["bundle", "cart-transform"],
+            tags: ["bundle", "Wolfpack: Product Bundles"],
             variants: [
               {
                 price: "0.00",
@@ -185,6 +179,72 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
       const shopifyProductId = productData.data?.productCreate?.product?.id;
 
+      // Publish to Online Store sales channel
+      try {
+        // Get Online Store publication ID
+        const GET_PUBLICATIONS = `
+          query {
+            publications(first: 10) {
+              edges {
+                node {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        `;
+
+        const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
+        const publicationsData = await publicationsResponse.json();
+
+        // Find Online Store publication
+        const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
+          (edge: any) => edge.node.name === 'Online Store'
+        );
+
+        if (onlineStorePublication) {
+          const PUBLISH_PRODUCT = `
+            mutation publishToOnlineStore($id: ID!, $input: [PublicationInput!]!) {
+              publishablePublish(id: $id, input: $input) {
+                publishable {
+                  availablePublicationsCount {
+                    count
+                  }
+                }
+                userErrors {
+                  field
+                  message
+                }
+              }
+            }
+          `;
+
+          await admin.graphql(PUBLISH_PRODUCT, {
+            variables: {
+              id: shopifyProductId,
+              input: [
+                {
+                  publicationId: onlineStorePublication.node.id
+                }
+              ]
+            }
+          });
+
+          AppLogger.info('Product published to Online Store', {
+            component: 'app.dashboard',
+            operation: 'clone-bundle',
+            productId: shopifyProductId
+          });
+        }
+      } catch (publishError) {
+        AppLogger.error('Failed to publish product to Online Store', {
+          component: 'app.dashboard',
+          operation: 'clone-bundle'
+        }, publishError);
+        // Continue even if publishing fails
+      }
+
       // Clone the bundle
       const clonedBundle = await db.bundle.create({
         data: {
@@ -193,11 +253,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           shopId: session.shop,
           bundleType: 'product_page',
           status: 'draft',
-          active: false,
           shopifyProductId: shopifyProductId,
           templateName: originalBundle.templateName,
-          settings: originalBundle.settings as any,
-          matching: originalBundle.matching as any,
         },
       });
 
@@ -216,7 +273,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               minQuantity: step.minQuantity,
               maxQuantity: step.maxQuantity,
               enabled: step.enabled,
-              productCategory: step.productCategory,
               conditionType: step.conditionType,
               conditionOperator: step.conditionOperator,
               conditionValue: step.conditionValue,
@@ -351,6 +407,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
+  const bundleType = (formData.get("bundleType") as string) || 'product_page';
 
   if (typeof bundleName !== 'string' || bundleName.length === 0) {
     return json({ error: 'Bundle name is required' }, { status: 400 });
@@ -387,8 +444,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       title: bundleName,
       descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
       productType: "Bundle",
-      vendor: "Bundle Builder",
-      status: "ACTIVE",
+      vendor: "Wolfpack: Product Bundles",
+      status: "DRAFT",
       tags: ["bundle", "cart-transform"],
     };
 
@@ -424,23 +481,153 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ error: 'Failed to get product ID from Shopify' }, { status: 500 });
     }
 
+    // Publish to Online Store sales channel
+    try {
+      // Get Online Store publication ID
+      const GET_PUBLICATIONS = `
+        query {
+          publications(first: 10) {
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+      `;
+
+      const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
+      const publicationsData = await publicationsResponse.json();
+
+      // Find Online Store publication
+      const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
+        (edge: any) => edge.node.name === 'Online Store'
+      );
+
+      if (onlineStorePublication) {
+        const PUBLISH_PRODUCT = `
+          mutation publishToOnlineStore($id: ID!, $input: [PublicationInput!]!) {
+            publishablePublish(id: $id, input: $input) {
+              publishable {
+                availablePublicationsCount {
+                  count
+                }
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const publishResponse = await admin.graphql(PUBLISH_PRODUCT, {
+          variables: {
+            id: shopifyProductId,
+            input: [
+              {
+                publicationId: onlineStorePublication.node.id
+              }
+            ]
+          }
+        });
+
+        const publishData = await publishResponse.json();
+
+        if (publishData.data?.publishablePublish?.userErrors?.length > 0) {
+          AppLogger.warn('Product publish had errors', {
+            component: 'app.dashboard',
+            operation: 'create-bundle',
+            errors: publishData.data.publishablePublish.userErrors
+          });
+        } else {
+          AppLogger.info('Product published to Online Store', {
+            component: 'app.dashboard',
+            operation: 'create-bundle',
+            productId: shopifyProductId
+          });
+        }
+      }
+    } catch (publishError) {
+      AppLogger.error('Failed to publish product to Online Store', {
+        component: 'app.dashboard',
+        operation: 'create-bundle'
+      }, publishError);
+      // Continue even if publishing fails - user can manually publish later
+    }
+
+    // Check if this is the first bundle (for auto-placement)
+    const existingBundleCount = await db.bundle.count({
+      where: {
+        shopId: session.shop,
+        status: {
+          in: ['active', 'draft']
+        }
+      }
+    });
+
+    const isFirstBundle = existingBundleCount === 0;
+
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
-        description: typeof description === 'string' ? description : null,
+        description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: session.shop,
-        bundleType: 'product_page',
+        bundleType: bundleType as any, // 'product_page' | 'full_page'
         status: 'draft',
-        active: false,
         shopifyProductId: shopifyProductId,
       },
     });
+
+    // Auto-place widget if this is the first bundle
+    let autoPlacementResult = null;
+    if (isFirstBundle) {
+      const apiKey = process.env.SHOPIFY_API_KEY || '';
+      AppLogger.info('Auto-placing widget for first bundle', {
+        component: 'app.dashboard',
+        operation: 'create-bundle',
+        bundleId: newBundle.id
+      });
+
+      autoPlacementResult = await WidgetInstallationService.autoPlaceWidget(
+        admin,
+        session.shop,
+        apiKey,
+        newBundle.id,
+        'product'
+      );
+
+      AppLogger.info('Auto-placement result', {
+        component: 'app.dashboard',
+        operation: 'create-bundle',
+        success: autoPlacementResult.success,
+        message: autoPlacementResult.message
+      });
+    }
+
+    // Build redirect URL based on bundle type with auto-placement params
+    const routeBase = bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+    let redirectUrl = `/app/bundles/${routeBase}/configure/${newBundle.id}`;
+    if (autoPlacementResult?.success) {
+      redirectUrl += `?widgetAutoPlaced=true&themeName=${encodeURIComponent(autoPlacementResult.themeName || 'your theme')}`;
+    } else if (autoPlacementResult && !autoPlacementResult.success) {
+      redirectUrl += `?widgetAutoPlaced=false`;
+    }
 
     return json({
       success: true,
       bundleId: newBundle.id,
       bundleProductId: shopifyProductId,
-      redirectTo: `/app/bundles/cart-transform/configure/${newBundle.id}`
+      redirectTo: redirectUrl,
+      autoPlacement: autoPlacementResult ? {
+        attempted: true,
+        success: autoPlacementResult.success,
+        message: autoPlacementResult.message,
+        themeName: autoPlacementResult.themeName
+      } : {
+        attempted: false
+      }
     });
 
   } catch (error) {
@@ -461,6 +648,7 @@ export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [bundleName, setBundleName] = useState("");
   const [description, setDescription] = useState("");
+  const [bundleType, setBundleType] = useState<string[]>(["product_page"]);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const isSubmitting = navigation.state === "submitting";
@@ -471,6 +659,7 @@ export default function Dashboard() {
       setModalOpen(false);
       setBundleName("");
       setDescription("");
+      setBundleType(["product_page"]);
       navigate(actionData.redirectTo);
     }
   }, [actionData, navigate]);
@@ -483,6 +672,7 @@ export default function Dashboard() {
     setModalOpen(false);
     setBundleName("");
     setDescription("");
+    setBundleType(["product_page"]); // Reset to default
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -498,7 +688,8 @@ export default function Dashboard() {
   };
 
   const handleEditBundle = (bundle: Bundle) => {
-    navigate(`/app/bundles/cart-transform/configure/${bundle.id}`);
+    const routeBase = bundle.bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+    navigate(`/app/bundles/${routeBase}/configure/${bundle.id}`);
   };
 
   const handleCloneBundle = useCallback((bundleId: string) => {
@@ -603,6 +794,32 @@ export default function Dashboard() {
                 autoComplete="off"
                 helpText="Optional: Add more details about what this bundle offers"
               />
+
+              {/* Bundle Type Selection */}
+              <BlockStack gap="200">
+                <Text variant="headingSm" as="h4">Bundle Type</Text>
+                <ChoiceList
+                  title=""
+                  choices={[
+                    {
+                      label: 'Product Page Bundle',
+                      value: 'product_page',
+                      helpText: 'Display bundle builder on existing product pages (recommended for most stores)'
+                    },
+                    {
+                      label: 'Full Page Bundle',
+                      value: 'full_page',
+                      helpText: 'Create a dedicated landing page for your bundle with tabs and full customization'
+                    }
+                  ]}
+                  selected={bundleType}
+                  onChange={setBundleType}
+                />
+              </BlockStack>
+
+              {/* Hidden input to pass bundleType to form */}
+              <input type="hidden" name="bundleType" value={bundleType[0]} />
+
               <button
                 ref={submitButtonRef}
                 type="submit"
@@ -737,21 +954,36 @@ export default function Dashboard() {
                       title: "Add bundle steps and choose products",
                       description: "Add steps to your bundle, select products/collections you want.",
                       isClickable: bundles.length > 0,
-                      onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                      onClick: () => {
+                        if (bundles.length > 0) {
+                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
+                        }
+                      },
                     },
                     {
                       id: "setup_pricing",
                       title: "Set discount rules and pricing",
                       description: "Choose how discounts and pricing should work for your bundle.",
                       isClickable: bundles.length > 0,
-                      onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                      onClick: () => {
+                        if (bundles.length > 0) {
+                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
+                        }
+                      },
                     },
                     {
                       id: "publish",
                       title: "Save and publish your bundle",
                       description: "Save your settings to make your bundle live on your store.",
                       isClickable: bundles.length > 0,
-                      onClick: () => bundles.length > 0 && navigate(`/app/bundles/cart-transform/configure/${bundles[0].id}`),
+                      onClick: () => {
+                        if (bundles.length > 0) {
+                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
+                        }
+                      },
                     },
                   ]}
                 />

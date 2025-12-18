@@ -38,10 +38,10 @@ export class WidgetInstallationService {
         shop
       });
 
-      // Query for the current published theme
+      // 1. Get Current Published Theme
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
-          themes(first: 1, query: "role:main") {
+          themes(first: 1, roles: [MAIN]) {
             edges {
               node {
                 id
@@ -57,31 +57,29 @@ export class WidgetInstallationService {
       const themeData = await themeResponse.json();
 
       if (!themeData?.data?.themes?.edges?.length) {
-        AppLogger.warn('No published theme found', {
-          component: 'WidgetInstallationService',
-          shop
-        });
-        return {
-          installed: false,
-          lastChecked: new Date()
-        };
+        AppLogger.warn('No published theme found', { component: 'WidgetInstallationService', shop });
+        return { installed: false, lastChecked: new Date() };
       }
 
       const theme = themeData.data.themes.edges[0].node;
       const themeId = theme.id;
       const themeName = theme.name;
 
-      // Check if product template contains bundle widget block
-      // Look for templates/product.json which would contain app block references
+      // 2. Fetch Template Files
+      // FIX: Updated structure to use edges -> node and correct fragment placement
+      // Note: 'query' parameter is not supported on files field in API 2025-10+
+      // We fetch all files and filter client-side instead
       const TEMPLATE_FILES_QUERY = `
         query GetTemplateFiles($themeId: ID!) {
           theme(id: $themeId) {
-            files(first: 50) {
-              nodes {
-                filename
-                ... on OnlineStoreThemeFileBodyText {
+            files(first: 100) {
+              edges {
+                node {
+                  filename
                   body {
-                    content
+                    ... on OnlineStoreThemeFileBodyText {
+                      content
+                    }
                   }
                 }
               }
@@ -91,26 +89,26 @@ export class WidgetInstallationService {
       `;
 
       const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
-        variables: { themeId }
+        variables: {
+          themeId
+        }
       });
       const filesData = await filesResponse.json();
 
-      if (!filesData?.data?.theme?.files?.nodes) {
+      // FIX: Check for 'edges' instead of 'nodes'
+      if (!filesData?.data?.theme?.files?.edges) {
         AppLogger.warn('Could not fetch theme files', {
           component: 'WidgetInstallationService',
           shop,
           themeId
         });
-        return {
-          installed: false,
-          themeId,
-          themeName,
-          lastChecked: new Date()
-        };
+        return { installed: false, themeId, themeName, lastChecked: new Date() };
       }
 
-      // Check for bundle widget in template files
-      const files = filesData.data.theme.files.nodes;
+      // FIX: Map edges to nodes
+      const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
+      
+      // Filter is now largely redundant due to the query param, but good for safety
       const productTemplateFiles = files.filter((file: any) =>
         file.filename.includes('templates/product') &&
         file.filename.endsWith('.json')
@@ -119,13 +117,12 @@ export class WidgetInstallationService {
       let widgetFound = false;
 
       for (const file of productTemplateFiles) {
+        // FIX: Access content via the nested body object
         const content = file.body?.content || '';
 
-        // Check if content contains reference to bundle widget block
-        // Look for "type": "bundle" or block handle reference
-        if (content.includes('"type": "bundle"') ||
-            content.includes('bundle-builder') ||
-            content.includes('bundle_builder')) {
+        if (content.includes('"type": "Bundle"') ||
+            content.includes('Wolfpack: Product Bundles') ||
+            content.includes('bundle')) {
           widgetFound = true;
           AppLogger.info('Widget installation detected', {
             component: 'WidgetInstallationService',
@@ -150,11 +147,7 @@ export class WidgetInstallationService {
         shop
       }, error);
 
-      // Return conservative result on error
-      return {
-        installed: false,
-        lastChecked: new Date()
-      };
+      return { installed: false, lastChecked: new Date() };
     }
   }
 
@@ -221,38 +214,27 @@ export class WidgetInstallationService {
   static generateBundleInstallationLink(
     shop: string,
     apiKey: string,
-    bundleId: string
+    bundleId: string,
+    productHandle?: string
   ): string {
-    const deepLink = this.generateThemeEditorDeepLink(
-      shop,
-      apiKey,
-      'bundle',
-      bundleId,
-      'product',
-      'newAppsSection'
-    );
+    const shopDomain = shop.replace('.myshopify.com', '');
+    const appBlockId = `${apiKey}/bundle`;
 
-    return deepLink.url;
-  }
+    const params = new URLSearchParams({
+      template: 'product',
+      addAppBlockId: appBlockId,
+      target: 'newAppsSection',
+      bundleId: bundleId
+    });
 
-  /**
-   * Generate generic installation link (no bundle pre-selected)
-   * Useful for general setup instructions
-   */
-  static generateGenericInstallationLink(
-    shop: string,
-    apiKey: string
-  ): string {
-    const deepLink = this.generateThemeEditorDeepLink(
-      shop,
-      apiKey,
-      'bundle',
-      undefined,
-      'product',
-      'newAppsSection'
-    );
+    // Add product handle if provided
+    if (productHandle) {
+      params.append('productHandle', productHandle);
+    }
 
-    return deepLink.url;
+    const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+
+    return url;
   }
 
   /**
@@ -295,14 +277,15 @@ export class WidgetInstallationService {
         bundleId
       });
 
-      // First get the current theme
+      // First get the current published theme
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
-          themes(first: 1, query: "role:main") {
+          themes(first: 1, roles: [MAIN]) {
             edges {
               node {
                 id
                 name
+                role
               }
             }
           }
@@ -320,14 +303,17 @@ export class WidgetInstallationService {
       const themeId = theme.id;
 
       // Get product template files
+      // Note: 'query' parameter is not supported on files field in API 2025-10+
+      // We fetch all files and filter client-side instead
       const TEMPLATE_FILES_QUERY = `
-        query GetTemplateFiles($themeId: ID!) {
-          theme(id: $themeId) {
-            files(first: 50) {
-              nodes {
+      query GetTemplateFiles($themeId: ID!) {
+        theme(id: $themeId) {
+          files(first: 100) {
+            edges {
+              node {
                 filename
-                ... on OnlineStoreThemeFileBodyText {
-                  body {
+                body {
+                  ... on OnlineStoreThemeFileBodyText {
                     content
                   }
                 }
@@ -335,19 +321,22 @@ export class WidgetInstallationService {
             }
           }
         }
-      `;
+      }
+    `;
 
       const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
-        variables: { themeId }
+        variables: {
+          themeId
+        }
       });
       const filesData = await filesResponse.json();
 
-      if (!filesData?.data?.theme?.files?.nodes) {
+      if (!filesData?.data?.theme?.files?.edges) {
         return false;
       }
 
-      // Check for bundle ID in template files
-      const files = filesData.data.theme.files.nodes;
+      // Map edges to nodes
+      const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
       const productTemplateFiles = files.filter((file: any) =>
         file.filename.includes('templates/product') &&
         file.filename.endsWith('.json')
@@ -450,6 +439,538 @@ export class WidgetInstallationService {
         widgetInstalled: false,
         bundleConfigured: false,
         recommendedAction: 'install_widget'
+      };
+    }
+  }
+
+  /**
+   * Automatically place widget in theme on product template
+   * Uses Shopify Admin GraphQL API to programmatically add app block
+   *
+   * @param admin - Shopify admin API client
+   * @param shop - Shop domain
+   * @param apiKey - App API key (client_id)
+   * @param bundleId - Bundle ID to configure in the widget
+   * @param templateName - Template to add widget to (default: 'product')
+   * @returns Success status and details
+   */
+  static async autoPlaceWidget(
+    admin: any,
+    shop: string,
+    apiKey: string,
+    bundleId?: string,
+    templateName: string = 'product'
+  ): Promise<{
+    success: boolean;
+    message: string;
+    themeId?: string;
+    themeName?: string;
+    templatePath?: string;
+    error?: string;
+  }> {
+    try {
+      AppLogger.info('Auto-placing widget in theme', {
+        component: 'WidgetInstallationService',
+        shop,
+        templateName,
+        bundleId
+      });
+
+      // 1. Get current published theme
+      const CURRENT_THEME_QUERY = `
+        query GetCurrentTheme {
+          themes(first: 1, roles: [MAIN]) {
+            edges {
+              node {
+                id
+                name
+                role
+              }
+            }
+          }
+        }
+      `;
+
+      const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
+      const themeData = await themeResponse.json();
+
+      if (!themeData?.data?.themes?.edges?.length) {
+        return {
+          success: false,
+          message: 'No published theme found',
+          error: 'No published theme found'
+        };
+      }
+
+      const theme = themeData.data.themes.edges[0].node;
+      const themeId = theme.id;
+      const themeName = theme.name;
+
+      AppLogger.info('Found theme for auto-placement', {
+        component: 'WidgetInstallationService',
+        themeId,
+        themeName
+      });
+
+      // 2. Read current product template
+      const templateFilename = `templates/${templateName}.json`;
+      const READ_TEMPLATE_QUERY = `
+        query ReadTemplate($themeId: ID!, $filename: String!) {
+          theme(id: $themeId) {
+            files(filenames: [$filename], first: 1) {
+              nodes {
+                filename
+                body {
+                  ... on OnlineStoreThemeFileBodyText {
+                    content
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const templateResponse = await admin.graphql(READ_TEMPLATE_QUERY, {
+        variables: {
+          themeId,
+          filename: templateFilename
+        }
+      });
+      const templateData = await templateResponse.json();
+
+      if (!templateData?.data?.theme?.files?.nodes?.length) {
+        return {
+          success: false,
+          message: `Template ${templateFilename} not found in theme`,
+          themeId,
+          themeName,
+          error: `Template ${templateFilename} not found`
+        };
+      }
+
+      const templateFile = templateData.data.theme.files.nodes[0];
+      const templateContent = templateFile.body?.content;
+
+      if (!templateContent) {
+        return {
+          success: false,
+          message: 'Template content is empty',
+          themeId,
+          themeName,
+          error: 'Template content is empty'
+        };
+      }
+
+      // 3. Parse and modify template JSON
+      let templateJson;
+      try {
+        templateJson = JSON.parse(templateContent);
+      } catch (parseError) {
+        AppLogger.error('Failed to parse template JSON', {
+          component: 'WidgetInstallationService',
+          templateFilename
+        }, parseError);
+        return {
+          success: false,
+          message: 'Failed to parse template JSON',
+          themeId,
+          themeName,
+          error: 'Invalid template JSON'
+        };
+      }
+
+      // Check if sections exist
+      if (!templateJson.sections) {
+        templateJson.sections = {};
+      }
+
+      // Generate unique section ID for app block
+      const sectionId = `app_bundle_${Date.now()}`;
+
+      // Add bundle app block to sections
+      // Format: shopify://apps/{apiKey}/blocks/{blockHandle}/{extensionUuid}
+      // For simplicity, we'll use the pattern: apps/{apiKey}/blocks/bundle
+      const appBlockType = `shopify://apps/${apiKey}/blocks/bundle`;
+
+      templateJson.sections[sectionId] = {
+        type: appBlockType,
+        settings: {
+          enabled: true,
+          ...(bundleId && { bundle_id: bundleId })
+        }
+      };
+
+      // Add section to order (after main product section if it exists)
+      if (!templateJson.order) {
+        templateJson.order = [];
+      }
+
+      // Try to place after 'main' section, or at the beginning
+      const mainIndex = templateJson.order.indexOf('main');
+      if (mainIndex !== -1) {
+        templateJson.order.splice(mainIndex + 1, 0, sectionId);
+      } else {
+        templateJson.order.unshift(sectionId);
+      }
+
+      AppLogger.info('Modified template JSON with bundle block', {
+        component: 'WidgetInstallationService',
+        sectionId,
+        appBlockType
+      });
+
+      // 4. Write updated template back to theme
+      const UPSERT_TEMPLATE_MUTATION = `
+        mutation UpsertTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+          themeFilesUpsert(themeId: $themeId, files: $files) {
+            upsertedThemeFiles {
+              filename
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const upsertResponse = await admin.graphql(UPSERT_TEMPLATE_MUTATION, {
+        variables: {
+          themeId,
+          files: [{
+            filename: templateFilename,
+            body: {
+              type: 'TEXT',
+              value: JSON.stringify(templateJson, null, 2)
+            }
+          }]
+        }
+      });
+      const upsertData = await upsertResponse.json();
+
+      // Check for errors
+      if (upsertData?.data?.themeFilesUpsert?.userErrors?.length > 0) {
+        const errors = upsertData.data.themeFilesUpsert.userErrors;
+        AppLogger.error('Theme file upsert failed', {
+          component: 'WidgetInstallationService',
+          errors
+        });
+        return {
+          success: false,
+          message: `Failed to update template: ${errors.map((e: any) => e.message).join(', ')}`,
+          themeId,
+          themeName,
+          error: errors[0].message
+        };
+      }
+
+      AppLogger.info('Successfully auto-placed widget', {
+        component: 'WidgetInstallationService',
+        shop,
+        themeId,
+        themeName,
+        templatePath: templateFilename
+      });
+
+      return {
+        success: true,
+        message: `Widget automatically placed on ${templateName} template`,
+        themeId,
+        themeName,
+        templatePath: templateFilename
+      };
+
+    } catch (error) {
+      AppLogger.error('Failed to auto-place widget', {
+        component: 'WidgetInstallationService',
+        shop,
+        templateName
+      }, error);
+
+      return {
+        success: false,
+        message: 'Failed to automatically place widget',
+        error: (error as Error).message
+      };
+    }
+  }
+
+  /**
+   * Validate and prepare widget placement for a bundle product
+   *
+   * Checks:
+   * 1. Template name is provided
+   * 2. Template exists in theme
+   * 3. Product is published to Online Store
+   *
+   * @returns Validation result with installation link or error
+   */
+  static async validateAndPrepareWidgetPlacement(
+    admin: any,
+    shop: string,
+    apiKey: string,
+    bundleId: string,
+    templateName: string | null | undefined,
+    shopifyProductId: string | null | undefined
+  ): Promise<{
+    success: boolean;
+    installationLink?: string;
+    error?: string;
+    errorType?: 'missing_template' | 'template_not_found' | 'product_not_published' | 'missing_product_id' | 'unknown';
+  }> {
+    try {
+      // 1. Check if template name is provided
+      if (!templateName || templateName.trim() === '') {
+        return {
+          success: false,
+          error: 'Please specify a Bundle Container Template name before placing the widget',
+          errorType: 'missing_template'
+        };
+      }
+
+      // 2. Check if product ID exists
+      if (!shopifyProductId) {
+        return {
+          success: false,
+          error: 'Bundle product ID not found. Please save the bundle first.',
+          errorType: 'missing_product_id'
+        };
+      }
+
+      // 3. Get current theme
+      const CURRENT_THEME_QUERY = `
+        query GetCurrentTheme {
+          themes(first: 1, roles: [MAIN]) {
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+      `;
+
+      const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
+      const themeData = await themeResponse.json();
+
+      if (!themeData?.data?.themes?.edges?.length) {
+        return {
+          success: false,
+          error: 'No published theme found',
+          errorType: 'unknown'
+        };
+      }
+
+      const theme = themeData.data.themes.edges[0].node;
+      const themeId = theme.id;
+
+      // 4. Check if template exists in theme
+      const normalizedTemplateName = templateName.startsWith('product.') ? templateName : `product.${templateName}`;
+      const templateFilename = `templates/${normalizedTemplateName}.json`;
+
+      const CHECK_TEMPLATE_QUERY = `
+        query CheckTemplate($themeId: ID!, $filename: String!) {
+          theme(id: $themeId) {
+            files(filenames: [$filename], first: 1) {
+              nodes {
+                filename
+              }
+            }
+          }
+        }
+      `;
+
+      const templateCheckResponse = await admin.graphql(CHECK_TEMPLATE_QUERY, {
+        variables: {
+          themeId,
+          filename: templateFilename
+        }
+      });
+      const templateCheckData = await templateCheckResponse.json();
+
+      const templateExists = templateCheckData?.data?.theme?.files?.nodes?.length > 0;
+
+      if (!templateExists) {
+        return {
+          success: false,
+          error: `Template "${normalizedTemplateName}" not found in your theme. Please create this template first or use an existing template name.`,
+          errorType: 'template_not_found'
+        };
+      }
+
+      // 5. Check if product is published to Online Store and auto-publish if needed
+      // First, get all available publications to find Online Store publication ID
+      const GET_PUBLICATIONS = `
+        query GetPublications {
+          publications(first: 10) {
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+      `;
+
+      const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
+      const publicationsData = await publicationsResponse.json();
+
+      const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
+        (edge: any) => edge.node.name === 'Online Store'
+      );
+
+      if (onlineStorePublication) {
+        // Check if product is published to this specific publication
+        const CHECK_PUBLICATION_QUERY = `
+          query CheckProductPublication($productId: ID!, $publicationId: ID!) {
+            product(id: $productId) {
+              id
+              publishedOnPublication(publicationId: $publicationId)
+            }
+          }
+        `;
+
+        const publicationResponse = await admin.graphql(CHECK_PUBLICATION_QUERY, {
+          variables: {
+            productId: shopifyProductId,
+            publicationId: onlineStorePublication.node.id
+          }
+        });
+        const publicationData = await publicationResponse.json();
+
+        const isPublishedToOnlineStore = publicationData?.data?.product?.publishedOnPublication === true;
+
+        if (!isPublishedToOnlineStore) {
+          // Try to publish it automatically
+          try {
+            const PUBLISH_PRODUCT = `
+              mutation publishToOnlineStore($id: ID!, $input: [PublicationInput!]!) {
+                publishablePublish(id: $id, input: $input) {
+                  publishable {
+                    availablePublicationsCount {
+                      count
+                    }
+                  }
+                  userErrors {
+                    field
+                    message
+                  }
+                }
+              }
+            `;
+
+            const publishResult = await admin.graphql(PUBLISH_PRODUCT, {
+              variables: {
+                id: shopifyProductId,
+                input: [
+                  {
+                    publicationId: onlineStorePublication.node.id
+                  }
+                ]
+              }
+            });
+
+            const publishData = await publishResult.json();
+
+            if (publishData?.data?.publishablePublish?.userErrors?.length > 0) {
+              AppLogger.error('Failed to auto-publish product', {
+                component: 'WidgetInstallationService',
+                errors: publishData.data.publishablePublish.userErrors
+              });
+
+              return {
+                success: false,
+                error: 'Product is not published to Online Store. Please publish the bundle product first.',
+                errorType: 'product_not_published'
+              };
+            }
+
+            AppLogger.info('Auto-published product to Online Store for widget placement', {
+              component: 'WidgetInstallationService',
+              productId: shopifyProductId,
+              bundleId
+            });
+          } catch (publishError) {
+            AppLogger.error('Failed to auto-publish product', {
+              component: 'WidgetInstallationService'
+            }, publishError);
+
+            return {
+              success: false,
+              error: 'Product is not published to Online Store. Please publish the bundle product first.',
+              errorType: 'product_not_published'
+            };
+          }
+        }
+      }
+
+      // 6. Fetch the actual product handle (not just the ID)
+      const GET_PRODUCT_HANDLE = `
+        query GetProductHandle($id: ID!) {
+          product(id: $id) {
+            id
+            handle
+          }
+        }
+      `;
+
+      const productHandleResponse = await admin.graphql(GET_PRODUCT_HANDLE, {
+        variables: {
+          id: shopifyProductId
+        }
+      });
+      const productHandleData = await productHandleResponse.json();
+      const productHandle = productHandleData?.data?.product?.handle;
+
+      if (!productHandle) {
+        return {
+          success: false,
+          error: 'Could not fetch product handle. Please try again.',
+          errorType: 'unknown'
+        };
+      }
+
+      // 7. Generate installation link for the specific product with the specified template
+      const shopDomain = shop.replace('.myshopify.com', '');
+      const appBlockId = `${apiKey}/bundle`;
+
+      const params = new URLSearchParams({
+        template: normalizedTemplateName,
+        addAppBlockId: appBlockId,
+        target: 'newAppsSection',
+        bundleId: bundleId,
+        productHandle: productHandle  // Include product handle in params
+      });
+
+      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+
+      AppLogger.info('Generated validated widget placement link', {
+        component: 'WidgetInstallationService',
+        shop,
+        templateName: normalizedTemplateName,
+        bundleId,
+        productHandle
+      });
+
+      return {
+        success: true,
+        installationLink: url
+      };
+
+    } catch (error) {
+      AppLogger.error('Failed to validate widget placement', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId
+      }, error);
+
+      return {
+        success: false,
+        error: 'Failed to validate widget placement. Please try again.',
+        errorType: 'unknown'
       };
     }
   }

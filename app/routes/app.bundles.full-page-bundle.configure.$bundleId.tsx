@@ -224,11 +224,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     bundleId
   );
 
-  // Generate bundle-specific installation link (pre-populates bundle ID)
+  // Generate bundle-specific installation link (pre-populates bundle ID and product)
   const bundleInstallLink = WidgetInstallationService.generateBundleInstallationLink(
     session.shop,
     apiKey,
-    bundleId
+    bundleId,
+    bundleProduct?.handle  // Pass product handle to open theme editor with correct product selected
   );
 
   return json({
@@ -281,6 +282,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleGetCurrentTheme(admin, session);
       case "ensureBundleTemplates":
         return await handleEnsureBundleTemplates(admin, session);
+      case "validateWidgetPlacement":
+        return await handleValidateWidgetPlacement(admin, session, bundleId);
       default:
         return json({ success: false, error: "Unknown action" }, { status: 400 });
     }
@@ -597,8 +600,8 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         AppLogger.debug(`🔄 [PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
 
         const UPDATE_PRODUCT_STATUS = `
-          mutation UpdateProductStatus($input: ProductInput!) {
-            productUpdate(input: $input) {
+          mutation UpdateProductStatus($id: ID!, $status: ProductStatus!) {
+            productUpdate(input: {id: $id, status: $status}) {
               product {
                 id
                 status
@@ -611,16 +614,39 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
           }
         `;
 
-        await admin.graphql(UPDATE_PRODUCT_STATUS, {
+        const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
           variables: {
-            input: {
-              id: updatedBundle.shopifyProductId,
-              status: shopifyStatus
-            }
+            id: updatedBundle.shopifyProductId,
+            status: shopifyStatus
           }
         });
+
+        const responseData = await response.json();
+
+        if (responseData.data?.productUpdate?.userErrors?.length > 0) {
+          const errors = responseData.data.productUpdate.userErrors;
+          AppLogger.error("❌ [PRODUCT_SYNC] Shopify returned errors while updating product status:", {
+            component: "app.bundles.cart-transform.configure",
+            operation: "sync-product-status",
+            productId: updatedBundle.shopifyProductId,
+            targetStatus: shopifyStatus
+          }, { errors });
+        } else {
+          const actualStatus = responseData.data?.productUpdate?.product?.status;
+          AppLogger.info("✅ [PRODUCT_SYNC] Successfully synced product status to Shopify", {
+            component: "app.bundles.cart-transform.configure",
+            productId: updatedBundle.shopifyProductId,
+            requestedStatus: shopifyStatus,
+            actualStatus: actualStatus
+          });
+        }
       } catch (error) {
-        AppLogger.error("❌ [PRODUCT_SYNC] Failed to sync product status:", {}, error as any);
+        AppLogger.error("❌ [PRODUCT_SYNC] Failed to sync product status (exception):", {
+          component: "app.bundles.cart-transform.configure",
+          operation: "sync-product-status",
+          productId: updatedBundle.shopifyProductId,
+          targetStatus: finalStatus.toUpperCase()
+        }, error as any);
       }
 
       // Create optimized configuration with only essential data for functions
@@ -696,6 +722,29 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       const configSize = JSON.stringify(baseConfiguration).length;
       AppLogger.debug("📏 [METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);
 
+      // VALIDATION: Check bundle has steps and products BEFORE attempting metafield updates
+      // This validation must fail the save operation if not met
+      const fullBundleConfig = {
+        ...baseConfiguration,
+        steps: updatedBundle.steps  // Use database steps with StepProduct array
+      };
+
+      if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {
+        AppLogger.error("❌ [VALIDATION] Cannot save bundle: No steps defined");
+        throw new Error("Please add at least one step to your bundle before saving");
+      }
+
+      // Validate at least one step has products
+      const hasProducts = fullBundleConfig.steps.some((step: any) =>
+        (step.StepProduct && step.StepProduct.length > 0) ||
+        (step.products && step.products.length > 0)
+      );
+
+      if (!hasProducts) {
+        AppLogger.error("❌ [VALIDATION] Cannot save bundle: No products found in any step");
+        throw new Error("Please add products to at least one step before saving");
+      }
+
       try {
         // STANDARD METAFIELDS: For Shopify cart transform compatibility
         AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
@@ -717,29 +766,6 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         // COMPONENT METAFIELDS: Update component products with component_parents metafield
         // CRITICAL: This metafield is required for cart transform MERGE operation
         AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
-
-        // Validate bundle has steps and products before setting metafields
-        const fullBundleConfig = {
-          ...baseConfiguration,
-          steps: updatedBundle.steps  // Use database steps with StepProduct array
-        };
-
-        if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {
-          AppLogger.error("❌ [COMPONENT_METAFIELD] Cannot set component_parents: No steps defined in bundle");
-          throw new Error("Bundle must have at least one step with products to set component metafields");
-        }
-
-        // Validate at least one step has products
-        const hasProducts = fullBundleConfig.steps.some((step: any) =>
-          (step.StepProduct && step.StepProduct.length > 0) ||
-          (step.products && step.products.length > 0)
-        );
-
-        if (!hasProducts) {
-          AppLogger.error("❌ [COMPONENT_METAFIELD] Cannot set component_parents: No products found in any step");
-          throw new Error("Bundle must have at least one product in steps to set component metafields");
-        }
-
         await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
         AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
 
@@ -752,6 +778,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       } catch (error) {
         AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
         // Don't fail the entire operation - just log the error
+        // Metafield update failures shouldn't block the save
       }
     }
 
@@ -989,6 +1016,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
           bundleId: bundle.id,
           name: bundle.name,
           templateName: bundle.templateName || null,
+          bundleType: bundle.bundleType || 'full_page',
           type: "cart_transform",
           steps: optimizedSteps,
           pricing: {
@@ -1139,6 +1167,7 @@ async function handleSyncProduct(admin: any, session: any, bundleId: string, _fo
       bundleId: bundle.id,
       name: bundle.name,
       templateName: bundle.templateName || null,
+      bundleType: bundle.bundleType || 'full_page',
       type: "cart_transform",
       steps: optimizedSteps,
       pricing: {
@@ -1731,11 +1760,72 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
   }
 }
 
+// Handle widget placement validation
+async function handleValidateWidgetPlacement(admin: any, session: any, bundleId: string) {
+  try {
+    AppLogger.debug("🎯 [WIDGET_PLACEMENT] Validating widget placement", { bundleId });
+
+    // Get bundle data
+    const bundle = await db.bundle.findUnique({
+      where: { id: bundleId, shopId: session.shop }
+    });
+
+    if (!bundle) {
+      return json({
+        success: false,
+        error: "Bundle not found"
+      }, { status: 404 });
+    }
+
+    // Validate and prepare widget placement
+    const apiKey = process.env.SHOPIFY_API_KEY || '';
+    const result = await WidgetInstallationService.validateAndPrepareWidgetPlacement(
+      admin,
+      session.shop,
+      apiKey,
+      bundleId,
+      bundle.templateName,
+      bundle.shopifyProductId
+    );
+
+    if (!result.success) {
+      return json({
+        success: false,
+        error: result.error,
+        errorType: result.errorType
+      }, { status: 400 });
+    }
+
+    return json({
+      success: true,
+      installationLink: result.installationLink
+    });
+
+  } catch (error) {
+    AppLogger.error("🔥 [WIDGET_PLACEMENT] Error validating widget placement:", {}, error as any);
+    return json({
+      success: false,
+      error: (error as Error).message || "Widget placement validation failed"
+    }, { status: 500 });
+  }
+}
+
 export default function ConfigureBundleFlow() {
   const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle, widgetInstallation } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
+
+  // Check for auto-placement success from URL params
+  const [searchParams, setSearchParams] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search);
+    }
+    return new URLSearchParams();
+  });
+  const widgetAutoPlaced = searchParams.get('widgetAutoPlaced') === 'true';
+  const autoPlacedThemeName = searchParams.get('themeName') || 'your theme';
+  const [showAutoPlacementBanner, setShowAutoPlacementBanner] = useState(widgetAutoPlaced);
 
   // ===== DIRTY FLAG SYSTEM =====
   // Simple dirty flag that gets set on ANY state change
@@ -1747,6 +1837,9 @@ export default function ConfigureBundleFlow() {
       setIsDirty(true);
     }
   }, []);
+
+  // Full-page bundle: Active tab state for tab navigation (instead of vertical steps)
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
 
   // ===== CUSTOM HOOKS =====
   // Form state management
@@ -2663,6 +2756,49 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher, shopify]);
 
+  // Handle Place Widget Now button with validation
+  const handlePlaceWidgetNow = useCallback(async () => {
+    try {
+      // Call validation action
+      const formData = new FormData();
+      formData.append("intent", "validateWidgetPlacement");
+
+      // Submit validation request
+      fetcher.submit(formData, { method: "post" });
+
+      // Wait for response and handle it
+      // Note: Response will be handled in the useEffect below
+    } catch (error) {
+      AppLogger.error('Error validating widget placement:', {}, error as any);
+      shopify.toast.show("Failed to validate widget placement", { isError: true });
+    }
+  }, [fetcher, shopify]);
+
+  // Handle validation response
+  useEffect(() => {
+    if (fetcher.data && fetcher.state === 'idle') {
+      const data = fetcher.data as any;
+
+      // Check if this is a widget placement validation response
+      if (data.installationLink) {
+        // Success - open the validated link
+        window.open(data.installationLink, '_blank');
+      } else if (data.error && data.errorType) {
+        // Validation failed - show appropriate error message
+        let errorMessage = data.error;
+
+        // Add helpful context based on error type
+        if (data.errorType === 'missing_template') {
+          errorMessage += '\n\nPlease scroll down to the "Bundle Container Template" field and specify a template name (e.g., "cart-transform" or "product").';
+        } else if (data.errorType === 'template_not_found') {
+          errorMessage += '\n\nYou can create this template in your Shopify theme editor, or use an existing template name.';
+        }
+
+        shopify.toast.show(errorMessage, { isError: true, duration: 7000 });
+      }
+    }
+  }, [fetcher.data, fetcher.state, shopify]);
+
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
     try {
@@ -2854,66 +2990,96 @@ export default function ConfigureBundleFlow() {
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
 
-
-
-        <Layout>
-          {/* Smart Widget Installation Banner - Context-Aware */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && (
-            <Layout.Section>
-              <Banner
-                title="🎯 Place This Bundle Widget in Your Theme"
-                tone="info"
-                action={{
-                  content: "Place Widget Now",
-                  onAction: () => window.open(widgetInstallation.installationLink, '_top'),
-                }}
-                secondaryAction={{
-                  content: "Setup Guide",
-                  onAction: () => navigate('/app/installation-guide'),
-                }}
-              >
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd">
-                    This bundle is ready! Click "Place Widget Now" to add it to your theme.
-                    The theme editor will open with <strong>this bundle pre-selected</strong> for easy placement.
+        {/* Smart Widget Installation Banner - Slim, Top-Positioned, Context-Aware */}
+        <BlockStack gap="400">
+          {/* Auto-Placement Success Banner */}
+          {showAutoPlacementBanner && (
+            <Banner
+              tone="success"
+              onDismiss={() => {
+                setShowAutoPlacementBanner(false);
+                // Clear URL params without reload
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('widgetAutoPlaced');
+                  url.searchParams.delete('themeName');
+                  window.history.replaceState({}, '', url.toString());
+                }
+              }}
+            >
+              <InlineStack gap="400" align="space-between" blockAlign="center">
+                <BlockStack gap="100">
+                  <Text as="span" variant="bodyMd" fontWeight="semibold">
+                    Widget Automatically Placed!
                   </Text>
-                  {widgetInstallation.themeName && (
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Theme: {widgetInstallation.themeName}
-                    </Text>
-                  )}
+                  <Text as="span" variant="bodySm" tone="subdued">
+                    Your bundle widget has been added to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{autoPlacedThemeName}</span>. Configure your bundle and save to see it live on your store.
+                  </Text>
                 </BlockStack>
-              </Banner>
-            </Layout.Section>
+                <Button
+                  onClick={() => {
+                    const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
+                    window.open(themeEditorUrl, '_blank');
+                  }}
+                  variant="plain"
+                >
+                  View in Theme Editor
+                </Button>
+              </InlineStack>
+            </Banner>
+          )}
+
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && (
+            <Banner
+              tone="warning"
+              onDismiss={() => {/* Optional: Add dismiss functionality */}}
+            >
+              <InlineStack gap="400" align="space-between" blockAlign="center">
+                <BlockStack gap="100">
+                  <Text as="span" variant="bodyMd" fontWeight="semibold">
+                    Your bundle widget is not placed on storefront
+                  </Text>
+                  <Text as="span" variant="bodySm" tone="subdued">
+                    Add the bundle widget to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> to make this bundle visible to customers
+                  </Text>
+                </BlockStack>
+                <Button
+                  onClick={handlePlaceWidgetNow}
+                  loading={fetcher.state === 'submitting'}
+                  variant="primary"
+                >
+                  Place Widget Now
+                </Button>
+              </InlineStack>
+            </Banner>
           )}
 
           {/* Add Bundle to Existing Widget */}
           {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && (
-            <Layout.Section>
-              <Banner
-                title="📝 Add This Bundle to Your Widget"
-                tone="warning"
-                action={{
-                  content: "Configure Widget",
-                  onAction: () => window.open(widgetInstallation.installationLink, '_top'),
-                }}
-                secondaryAction={{
-                  content: "Setup Guide",
-                  onAction: () => navigate('/app/installation-guide'),
-                }}
-              >
-                <BlockStack gap="200">
-                  <Text as="p" variant="bodyMd">
-                    Your bundle widget is installed in {widgetInstallation.themeName || 'your theme'}, but this bundle isn't configured yet.
-                    Click "Configure Widget" to update the bundle ID in your theme editor.
+            <Banner
+              tone="warning"
+              onDismiss={() => {/* Optional: Add dismiss functionality */}}
+            >
+              <InlineStack gap="400" align="space-between" blockAlign="center">
+                <BlockStack gap="100">
+                  <Text as="span" variant="bodyMd" fontWeight="semibold">
+                    📝 Add This Bundle to Your Widget
                   </Text>
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    The widget will open with <strong>this bundle's ID pre-filled</strong> - just update the "Bundle configuration ID" field and save.
+                  <Text as="span" variant="bodySm" tone="subdued">
+                    Update your widget in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> with this bundle ID
                   </Text>
                 </BlockStack>
-              </Banner>
-            </Layout.Section>
+                <Button
+                  onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                >
+                  Configure Widget
+                </Button>
+              </InlineStack>
+            </Banner>
           )}
+        </BlockStack>
+
+        <Layout>
 
           {/* Bundle Already Configured - Success */}
           {widgetInstallation && widgetInstallation.recommendedAction === 'configured' && (
@@ -2923,7 +3089,7 @@ export default function ConfigureBundleFlow() {
                 tone="success"
               >
                 <Text as="p" variant="bodyMd">
-                  This bundle is configured in your theme ({widgetInstallation.themeName || 'theme'}) and visible to customers.
+                  This bundle is configured in your theme (<span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'theme'}</span>) and visible to customers.
                   Any changes you save here will automatically update on your storefront.
                 </Text>
               </Banner>
@@ -3101,24 +3267,6 @@ export default function ConfigureBundleFlow() {
                     Take your bundle live
                   </Text>
 
-                  {/* Installation Guide Banner */}
-                  <Banner tone="info">
-                    <BlockStack gap="200">
-                      <Text as="p" variant="bodyMd">
-                        <strong>New to installing bundles?</strong> Check out our comprehensive installation guide
-                        with step-by-step instructions, screenshots, and troubleshooting tips.
-                      </Text>
-                      <InlineStack gap="200">
-                        <Button
-                          onClick={() => navigate('/app/installation-guide')}
-                          icon={ExternalIcon}
-                        >
-                          View Installation Guide
-                        </Button>
-                      </InlineStack>
-                    </BlockStack>
-                  </Banner>
-
                   {/* Template Selection */}
                   <BlockStack gap="200">
                     <Text variant="headingSm" as="h4">
@@ -3163,20 +3311,30 @@ export default function ConfigureBundleFlow() {
                   </BlockStack>
 
                   {/* Pro Tip */}
-                  <Banner tone="success">
-                    <BlockStack gap="200">
+                  <Card background="bg-surface-info">
+                    <BlockStack gap="300">
                       <InlineStack gap="200" blockAlign="center">
-                        <Icon source={RefreshIcon} />
-                        <Text as="span" variant="bodyMd" fontWeight="semibold">
-                          💡 Pro Tip: Custom Templates
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--p-color-bg-fill-info)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Icon source={ViewIcon} tone="info" />
+                        </div>
+                        <Text as="h3" variant="headingSm" fontWeight="semibold">
+                          Pro Tip: Custom Templates
                         </Text>
                       </InlineStack>
-                      <Text as="p" variant="bodySm">
+                      <Text as="p" variant="bodySm" tone="subdued">
                         Create a custom product template named "cart-transform" specifically for bundle products.
                         This gives you better control and keeps bundle products separate from regular products.
                       </Text>
                     </BlockStack>
-                  </Banner>
+                  </Card>
                 </BlockStack>
               </Card>
             </BlockStack>
@@ -3188,88 +3346,71 @@ export default function ConfigureBundleFlow() {
               <Card>
                 <BlockStack gap="400">
                   <BlockStack gap="200">
-                    <Text variant="headingSm" as="h3">
-                      Bundle Steps
-                    </Text>
-                    <Text variant="bodyMd" tone="subdued" as="p">
-                      Create steps for your multi-step bundle here. Select product options for each step below
-                    </Text>
+                    <InlineStack align="space-between" blockAlign="center">
+                      <BlockStack gap="100">
+                        <Text variant="headingSm" as="h3">
+                          Bundle Tabs
+                        </Text>
+                        <Text variant="bodyMd" tone="subdued" as="p">
+                          Configure each tab of your full-page bundle. Each tab represents a product selection step.
+                        </Text>
+                      </BlockStack>
+                      {/* Progress Indicator */}
+                      <Badge tone="info">
+                        {stepsState.steps.filter(step => step.StepProduct && step.StepProduct.length > 0).length} / {stepsState.steps.length} Configured
+                      </Badge>
+                    </InlineStack>
                   </BlockStack>
 
-                  {/* Steps List */}
+                  {/* Tabs Navigation */}
+                  {stepsState.steps.length > 0 && (
+                    <Tabs
+                      tabs={stepsState.steps.map((step, index) => ({
+                        id: step.id,
+                        content: step.name || `Tab ${index + 1}`,
+                        badge: step.StepProduct && step.StepProduct.length > 0 ? stepsState.getUniqueProductCount(step.StepProduct).toString() : undefined,
+                      }))}
+                      selected={activeTabIndex}
+                      onSelect={setActiveTabIndex}
+                    />
+                  )}
+
+                  {/* Active Tab Content */}
                   <BlockStack gap="300">
                     {stepsState.steps.map((step, index) => (
+                      activeTabIndex === index && (
                       <Card
                         key={step.id}
                         background="bg-surface-secondary"
                       >
-                        <div
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, step.id, index)}
-                          onDragEnd={handleDragEnd}
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, index)}
-                          style={{
-                            cursor: draggedStep === step.id ? 'grabbing' : 'grab',
-                            transition: 'all 0.2s ease',
-                            transform: dragOverIndex === index && draggedStep !== step.id ? 'translateY(-4px)' : 'translateY(0)',
-                            boxShadow: dragOverIndex === index && draggedStep !== step.id
-                              ? '0 8px 16px rgba(0,0,0,0.15), 0 0 0 2px rgba(33, 150, 243, 0.3)'
-                              : draggedStep === step.id
-                                ? '0 4px 12px rgba(0,0,0,0.2)'
-                                : 'none',
-                            opacity: draggedStep === step.id ? 0.6 : 1,
-                            border: dragOverIndex === index && draggedStep !== step.id
-                              ? '2px dashed rgba(33, 150, 243, 0.5)'
-                              : '2px solid transparent',
-                            borderRadius: '8px',
-                            position: 'relative' as const,
-                            zIndex: draggedStep === step.id ? 1000 : 1,
-                            background: dragOverIndex === index && draggedStep !== step.id
-                              ? 'rgba(33, 150, 243, 0.05)'
-                              : undefined
-                          }}
-                        >
-                          <BlockStack gap="300">
-                            {/* Step Header */}
-                            <InlineStack align="space-between" blockAlign="center" gap="300">
-                              <InlineStack gap="200" blockAlign="center">
-                                <Icon source={DragHandleIcon} tone="subdued" />
-                                <Text variant="bodyMd" fontWeight="medium" as="p">
-                                  Step {index + 1}
-                                </Text>
-                              </InlineStack>
+                        <BlockStack gap="400">
+                          {/* Tab Header */}
+                          <InlineStack align="space-between" blockAlign="center" gap="300">
+                            <Text variant="bodyLg" fontWeight="semibold" as="p">
+                              {step.name || `Tab ${index + 1}`}
+                            </Text>
 
-                              <InlineStack gap="100">
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  icon={DuplicateIcon}
-                                  onClick={() => cloneStep(step.id)}
-                                  accessibilityLabel="Clone step"
-                                />
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  tone="critical"
-                                  icon={DeleteIcon}
-                                  onClick={() => deleteStep(step.id)}
-                                  accessibilityLabel="Delete step"
-                                />
-                                <Button
-                                  variant="tertiary"
-                                  size="micro"
-                                  icon={stepsState.expandedSteps.has(step.id) ? ChevronUpIcon : ChevronDownIcon}
-                                  onClick={() => stepsState.toggleStepExpansion(step.id)}
-                                  accessibilityLabel={stepsState.expandedSteps.has(step.id) ? "Collapse step" : "Expand step"}
-                                />
-                              </InlineStack>
+                            <InlineStack gap="100">
+                              <Button
+                                variant="tertiary"
+                                size="micro"
+                                icon={DuplicateIcon}
+                                onClick={() => cloneStep(step.id)}
+                                accessibilityLabel="Clone tab"
+                              />
+                              <Button
+                                variant="tertiary"
+                                size="micro"
+                                tone="critical"
+                                icon={DeleteIcon}
+                                onClick={() => deleteStep(step.id)}
+                                accessibilityLabel="Delete tab"
+                              />
                             </InlineStack>
+                          </InlineStack>
 
-                            {/* Expanded Step Content */}
-                            <Collapsible id={`step-${step.id}`} open={stepsState.expandedSteps.has(step.id)}>
-                              <BlockStack gap="400">
+                          {/* Tab Content (always visible, no collapse) */}
+                          <BlockStack gap="400">
                                 {/* Step Name and Page Title */}
                                 <FormLayout>
                                   <TextField
@@ -3458,22 +3599,30 @@ export default function ConfigureBundleFlow() {
                                     Add Rule
                                   </Button>
                                 </BlockStack>
-                              </BlockStack>
-                            </Collapsible>
                           </BlockStack>
-                        </div>
+                        </BlockStack>
                       </Card>
+                      )
                     ))}
 
-                    {/* Add Step Button */}
-                    <Button
-                      variant="plain"
-                      fullWidth
-                      icon={PlusIcon}
-                      onClick={stepsState.addStep}
-                    >
-                      Add Step
-                    </Button>
+                    {/* Add Tab Button */}
+                    <InlineStack gap="200" align="center">
+                      <Button
+                        variant="primary"
+                        icon={PlusIcon}
+                        onClick={() => {
+                          stepsState.addStep();
+                          setActiveTabIndex(stepsState.steps.length); // Switch to new tab
+                        }}
+                      >
+                        Add New Tab
+                      </Button>
+                      {stepsState.steps.length > 0 && (
+                        <Text variant="bodySm" tone="subdued" as="p">
+                          {stepsState.steps.length} tab{stepsState.steps.length !== 1 ? 's' : ''} configured
+                        </Text>
+                      )}
+                    </InlineStack>
                   </BlockStack>
                 </BlockStack>
               </Card>
