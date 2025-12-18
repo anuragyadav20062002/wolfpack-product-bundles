@@ -157,8 +157,9 @@
 
   /**
    * Loads design settings CSS from the app server (via app proxy for scale)
+   * @param {string} bundleType - The bundle type ('product_page' or 'full_page')
    */
-  function loadDesignCSS() {
+  function loadDesignCSS(bundleType) {
     const shopDomain = window.Shopify?.shop || null;
 
     if (!shopDomain) {
@@ -166,11 +167,16 @@
       return;
     }
 
-    // Use app proxy path (without .css) - route will set Content-Type: text/css
-    // Add version parameter for cache control (static per deployment for optimal CDN caching)
-    const cssUrl = getAssetUrl(`/api/design-settings/${shopDomain}`) + `?v=${CONFIG.version}`;
+    if (!bundleType) {
+      console.error("[Bundle Widget] ❌ Cannot load design CSS: bundleType is required");
+      return;
+    }
 
-    console.log("[Bundle Widget] Loading design CSS from:", cssUrl);
+    // Use app proxy path (without .css) - route will set Content-Type: text/css
+    // Add bundleType and version parameters for cache control
+    const cssUrl = getAssetUrl(`/api/design-settings/${shopDomain}`) + `?bundleType=${bundleType}&v=${CONFIG.version}`;
+
+    console.log("[Bundle Widget] Loading design CSS from:", cssUrl, "for bundle type:", bundleType);
 
     const link = document.createElement("link");
     link.rel = "stylesheet";
@@ -372,8 +378,14 @@
     console.log("[Bundle Widget] Container check result:", hasContainer ? "FOUND" : "NOT FOUND");
 
     if (hasContainer) {
-      console.log("[Bundle Widget] ✅ Container found, loading design CSS and widgets...");
-      loadDesignCSS();
+      console.log("[Bundle Widget] ✅ Container found, detecting bundle type...");
+      // Detect bundle type first
+      const bundleType = detectBundleType();
+      console.log("[Bundle Widget] Bundle type detected:", bundleType);
+
+      // Load design CSS with the detected bundle type
+      loadDesignCSS(bundleType);
+
       // Load components library first, then appropriate widget
       loadComponentsLibrary(() => {
         loadAppropriateWidget();

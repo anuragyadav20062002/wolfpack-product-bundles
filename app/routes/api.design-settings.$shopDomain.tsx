@@ -15,7 +15,20 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   try {
     const url = new URL(request.url);
-    const bundleType = (url.searchParams.get("bundleType")) as "product_page" | "full_page";
+    const bundleType = url.searchParams.get("bundleType") as "product_page" | "full_page" | null;
+
+    if (!bundleType) {
+      AppLogger.error("bundleType parameter is required", {
+        component: "api.design-settings.css",
+        shopDomain,
+      });
+      return new Response("/* bundleType parameter is required */", {
+        status: 400,
+        headers: {
+          "Content-Type": "text/css; charset=utf-8",
+        },
+      });
+    }
 
     AppLogger.info("Fetching design settings for CSS", {
       component: "api.design-settings.css",
