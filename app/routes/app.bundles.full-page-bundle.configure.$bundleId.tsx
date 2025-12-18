@@ -721,6 +721,29 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       const configSize = JSON.stringify(baseConfiguration).length;
       AppLogger.debug("📏 [METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);
 
+      // VALIDATION: Check bundle has steps and products BEFORE attempting metafield updates
+      // This validation must fail the save operation if not met
+      const fullBundleConfig = {
+        ...baseConfiguration,
+        steps: updatedBundle.steps  // Use database steps with StepProduct array
+      };
+
+      if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {
+        AppLogger.error("❌ [VALIDATION] Cannot save bundle: No steps defined");
+        throw new Error("Please add at least one step to your bundle before saving");
+      }
+
+      // Validate at least one step has products
+      const hasProducts = fullBundleConfig.steps.some((step: any) =>
+        (step.StepProduct && step.StepProduct.length > 0) ||
+        (step.products && step.products.length > 0)
+      );
+
+      if (!hasProducts) {
+        AppLogger.error("❌ [VALIDATION] Cannot save bundle: No products found in any step");
+        throw new Error("Please add products to at least one step before saving");
+      }
+
       try {
         // STANDARD METAFIELDS: For Shopify cart transform compatibility
         AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
@@ -742,29 +765,6 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         // COMPONENT METAFIELDS: Update component products with component_parents metafield
         // CRITICAL: This metafield is required for cart transform MERGE operation
         AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
-
-        // Validate bundle has steps and products before setting metafields
-        const fullBundleConfig = {
-          ...baseConfiguration,
-          steps: updatedBundle.steps  // Use database steps with StepProduct array
-        };
-
-        if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {
-          AppLogger.error("❌ [COMPONENT_METAFIELD] Cannot set component_parents: No steps defined in bundle");
-          throw new Error("Bundle must have at least one step with products to set component metafields");
-        }
-
-        // Validate at least one step has products
-        const hasProducts = fullBundleConfig.steps.some((step: any) =>
-          (step.StepProduct && step.StepProduct.length > 0) ||
-          (step.products && step.products.length > 0)
-        );
-
-        if (!hasProducts) {
-          AppLogger.error("❌ [COMPONENT_METAFIELD] Cannot set component_parents: No products found in any step");
-          throw new Error("Bundle must have at least one product in steps to set component metafields");
-        }
-
         await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
         AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
 
@@ -777,6 +777,7 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
       } catch (error) {
         AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
         // Don't fail the entire operation - just log the error
+        // Metafield update failures shouldn't block the save
       }
     }
 
@@ -3006,14 +3007,14 @@ export default function ConfigureBundleFlow() {
               }}
             >
               <InlineStack gap="400" align="space-between" blockAlign="center">
-                <InlineStack gap="200" blockAlign="center">
+                <BlockStack gap="100">
                   <Text as="span" variant="bodyMd" fontWeight="semibold">
                     Widget Automatically Placed!
                   </Text>
                   <Text as="span" variant="bodySm" tone="subdued">
-                    Your bundle widget has been added to {autoPlacedThemeName}. Configure your bundle and save to see it live on your store.
+                    Your bundle widget has been added to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{autoPlacedThemeName}</span>. Configure your bundle and save to see it live on your store.
                   </Text>
-                </InlineStack>
+                </BlockStack>
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
@@ -3029,21 +3030,22 @@ export default function ConfigureBundleFlow() {
 
           {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && (
             <Banner
-              tone="info"
+              tone="warning"
               onDismiss={() => {/* Optional: Add dismiss functionality */}}
             >
               <InlineStack gap="400" align="space-between" blockAlign="center">
-                <InlineStack gap="200" blockAlign="center">
+                <BlockStack gap="100">
                   <Text as="span" variant="bodyMd" fontWeight="semibold">
-                    🎯 Place This Bundle Widget in Your Theme
+                    Your bundle widget is not placed on storefront
                   </Text>
                   <Text as="span" variant="bodySm" tone="subdued">
-                    Click to add this bundle to {widgetInstallation.themeName || 'your theme'}
+                    Add the bundle widget to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> to make this bundle visible to customers
                   </Text>
-                </InlineStack>
+                </BlockStack>
                 <Button
                   onClick={handlePlaceWidgetNow}
                   loading={fetcher.state === 'submitting'}
+                  variant="primary"
                 >
                   Place Widget Now
                 </Button>
@@ -3058,14 +3060,14 @@ export default function ConfigureBundleFlow() {
               onDismiss={() => {/* Optional: Add dismiss functionality */}}
             >
               <InlineStack gap="400" align="space-between" blockAlign="center">
-                <InlineStack gap="200" blockAlign="center">
+                <BlockStack gap="100">
                   <Text as="span" variant="bodyMd" fontWeight="semibold">
                     📝 Add This Bundle to Your Widget
                   </Text>
                   <Text as="span" variant="bodySm" tone="subdued">
-                    Update your widget in {widgetInstallation.themeName || 'your theme'} with this bundle ID
+                    Update your widget in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> with this bundle ID
                   </Text>
-                </InlineStack>
+                </BlockStack>
                 <Button
                   onClick={() => window.open(widgetInstallation.installationLink, '_top')}
                 >
@@ -3086,7 +3088,7 @@ export default function ConfigureBundleFlow() {
                 tone="success"
               >
                 <Text as="p" variant="bodyMd">
-                  This bundle is configured in your theme ({widgetInstallation.themeName || 'theme'}) and visible to customers.
+                  This bundle is configured in your theme (<span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'theme'}</span>) and visible to customers.
                   Any changes you save here will automatically update on your storefront.
                 </Text>
               </Banner>
@@ -3308,20 +3310,30 @@ export default function ConfigureBundleFlow() {
                   </BlockStack>
 
                   {/* Pro Tip */}
-                  <Banner tone="success">
-                    <BlockStack gap="200">
+                  <Card background="bg-surface-info">
+                    <BlockStack gap="300">
                       <InlineStack gap="200" blockAlign="center">
-                        <Icon source={RefreshIcon} />
-                        <Text as="span" variant="bodyMd" fontWeight="semibold">
-                          💡 Pro Tip: Custom Templates
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--p-color-bg-fill-info)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Icon source={ViewIcon} tone="info" />
+                        </div>
+                        <Text as="h3" variant="headingSm" fontWeight="semibold">
+                          Pro Tip: Custom Templates
                         </Text>
                       </InlineStack>
-                      <Text as="p" variant="bodySm">
+                      <Text as="p" variant="bodySm" tone="subdued">
                         Create a custom product template named "cart-transform" specifically for bundle products.
                         This gives you better control and keeps bundle products separate from regular products.
                       </Text>
                     </BlockStack>
-                  </Banner>
+                  </Card>
                 </BlockStack>
               </Card>
             </BlockStack>
