@@ -3586,7 +3586,6 @@ export default function ConfigureBundleFlow() {
                                     Add Rule
                                   </Button>
                                 </BlockStack>
-                              </BlockStack>
                           </BlockStack>
                         </BlockStack>
                       </Card>

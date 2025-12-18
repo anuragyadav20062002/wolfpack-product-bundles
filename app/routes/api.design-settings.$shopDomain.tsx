@@ -15,7 +15,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   try {
     const url = new URL(request.url);
-    const bundleType = (url.searchParams.get("bundleType") || "product_page") as "product_page" | "full_page";
+    const bundleType = (url.searchParams.get("bundleType")) as "product_page" | "full_page";
 
     AppLogger.info("Fetching design settings for CSS", {
       component: "api.design-settings.css",
