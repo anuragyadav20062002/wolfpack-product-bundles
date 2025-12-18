@@ -800,7 +800,10 @@ export class WidgetInstallationService {
             publications(first: 10) {
               edges {
                 node {
-                  name
+                  publication {
+                    id
+                    name
+                  }
                   publishDate
                 }
               }
@@ -817,7 +820,7 @@ export class WidgetInstallationService {
       const publicationData = await publicationResponse.json();
 
       const isPublishedToOnlineStore = publicationData?.data?.product?.publications?.edges?.some(
-        (edge: any) => edge.node.name === 'Online Store' && edge.node.publishDate
+        (edge: any) => edge.node.publication?.name === 'Online Store' && edge.node.publishDate
       );
 
       if (!isPublishedToOnlineStore) {
