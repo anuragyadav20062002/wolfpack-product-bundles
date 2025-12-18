@@ -791,62 +791,52 @@ export class WidgetInstallationService {
         };
       }
 
-      // 5. Check if product is published to Online Store
-      const CHECK_PUBLICATION_QUERY = `
-        query CheckProductPublication($productId: ID!) {
-          product(id: $productId) {
-            id
-            publishedOnCurrentPublication
-            publications(first: 10) {
-              edges {
-                node {
-                  publication {
-                    id
-                    name
-                  }
-                  publishDate
-                }
+      // 5. Check if product is published to Online Store and auto-publish if needed
+      // First, get all available publications to find Online Store publication ID
+      const GET_PUBLICATIONS = `
+        query GetPublications {
+          publications(first: 10) {
+            edges {
+              node {
+                id
+                name
               }
             }
           }
         }
       `;
 
-      const publicationResponse = await admin.graphql(CHECK_PUBLICATION_QUERY, {
-        variables: {
-          productId: shopifyProductId
-        }
-      });
-      const publicationData = await publicationResponse.json();
+      const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
+      const publicationsData = await publicationsResponse.json();
 
-      const isPublishedToOnlineStore = publicationData?.data?.product?.publications?.edges?.some(
-        (edge: any) => edge.node.publication?.name === 'Online Store' && edge.node.publishDate
+      const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
+        (edge: any) => edge.node.name === 'Online Store'
       );
 
-      if (!isPublishedToOnlineStore) {
-        // Try to publish it automatically
-        try {
-          const GET_PUBLICATIONS = `
-            query {
-              publications(first: 10) {
-                edges {
-                  node {
-                    id
-                    name
-                  }
-                }
-              }
+      if (onlineStorePublication) {
+        // Check if product is published to this specific publication
+        const CHECK_PUBLICATION_QUERY = `
+          query CheckProductPublication($productId: ID!, $publicationId: ID!) {
+            product(id: $productId) {
+              id
+              publishedOnPublication(publicationId: $publicationId)
             }
-          `;
+          }
+        `;
 
-          const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
-          const publicationsData = await publicationsResponse.json();
+        const publicationResponse = await admin.graphql(CHECK_PUBLICATION_QUERY, {
+          variables: {
+            productId: shopifyProductId,
+            publicationId: onlineStorePublication.node.id
+          }
+        });
+        const publicationData = await publicationResponse.json();
 
-          const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
-            (edge: any) => edge.node.name === 'Online Store'
-          );
+        const isPublishedToOnlineStore = publicationData?.data?.product?.publishedOnPublication === true;
 
-          if (onlineStorePublication) {
+        if (!isPublishedToOnlineStore) {
+          // Try to publish it automatically
+          try {
             const PUBLISH_PRODUCT = `
               mutation publishToOnlineStore($id: ID!, $input: [PublicationInput!]!) {
                 publishablePublish(id: $id, input: $input) {
@@ -863,7 +853,7 @@ export class WidgetInstallationService {
               }
             `;
 
-            await admin.graphql(PUBLISH_PRODUCT, {
+            const publishResult = await admin.graphql(PUBLISH_PRODUCT, {
               variables: {
                 id: shopifyProductId,
                 input: [
@@ -874,22 +864,37 @@ export class WidgetInstallationService {
               }
             });
 
+            const publishData = await publishResult.json();
+
+            if (publishData?.data?.publishablePublish?.userErrors?.length > 0) {
+              AppLogger.error('Failed to auto-publish product', {
+                component: 'WidgetInstallationService',
+                errors: publishData.data.publishablePublish.userErrors
+              });
+
+              return {
+                success: false,
+                error: 'Product is not published to Online Store. Please publish the bundle product first.',
+                errorType: 'product_not_published'
+              };
+            }
+
             AppLogger.info('Auto-published product to Online Store for widget placement', {
               component: 'WidgetInstallationService',
               productId: shopifyProductId,
               bundleId
             });
-          }
-        } catch (publishError) {
-          AppLogger.error('Failed to auto-publish product', {
-            component: 'WidgetInstallationService'
-          }, publishError);
+          } catch (publishError) {
+            AppLogger.error('Failed to auto-publish product', {
+              component: 'WidgetInstallationService'
+            }, publishError);
 
-          return {
-            success: false,
-            error: 'Product is not published to Online Store. Please publish the bundle product first.',
-            errorType: 'product_not_published'
-          };
+            return {
+              success: false,
+              error: 'Product is not published to Online Store. Please publish the bundle product first.',
+              errorType: 'product_not_published'
+            };
+          }
         }
       }
 
