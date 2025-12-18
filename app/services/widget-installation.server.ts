@@ -214,18 +214,27 @@ export class WidgetInstallationService {
   static generateBundleInstallationLink(
     shop: string,
     apiKey: string,
-    bundleId: string
+    bundleId: string,
+    productHandle?: string
   ): string {
-    const deepLink = this.generateThemeEditorDeepLink(
-      shop,
-      apiKey,
-      'bundle',
-      bundleId,
-      'product',
-      'newAppsSection'
-    );
+    const shopDomain = shop.replace('.myshopify.com', '');
+    const appBlockId = `${apiKey}/bundle`;
 
-    return deepLink.url;
+    const params = new URLSearchParams({
+      template: 'product',
+      addAppBlockId: appBlockId,
+      target: 'newAppsSection',
+      bundleId: bundleId
+    });
+
+    // Add product handle if provided
+    if (productHandle) {
+      params.append('productHandle', productHandle);
+    }
+
+    const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+
+    return url;
   }
 
   /**
@@ -898,8 +907,31 @@ export class WidgetInstallationService {
         }
       }
 
-      // 6. Extract product handle from GID
-      const productHandle = shopifyProductId.split('/').pop() || '';
+      // 6. Fetch the actual product handle (not just the ID)
+      const GET_PRODUCT_HANDLE = `
+        query GetProductHandle($id: ID!) {
+          product(id: $id) {
+            id
+            handle
+          }
+        }
+      `;
+
+      const productHandleResponse = await admin.graphql(GET_PRODUCT_HANDLE, {
+        variables: {
+          id: shopifyProductId
+        }
+      });
+      const productHandleData = await productHandleResponse.json();
+      const productHandle = productHandleData?.data?.product?.handle;
+
+      if (!productHandle) {
+        return {
+          success: false,
+          error: 'Could not fetch product handle. Please try again.',
+          errorType: 'unknown'
+        };
+      }
 
       // 7. Generate installation link for the specific product with the specified template
       const shopDomain = shop.replace('.myshopify.com', '');
@@ -909,10 +941,11 @@ export class WidgetInstallationService {
         template: normalizedTemplateName,
         addAppBlockId: appBlockId,
         target: 'newAppsSection',
-        bundleId: bundleId
+        bundleId: bundleId,
+        productHandle: productHandle  // Include product handle in params
       });
 
-      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}&productHandle=${productHandle}`;
+      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
 
       AppLogger.info('Generated validated widget placement link', {
         component: 'WidgetInstallationService',

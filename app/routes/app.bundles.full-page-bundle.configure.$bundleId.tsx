@@ -224,11 +224,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     bundleId
   );
 
-  // Generate bundle-specific installation link (pre-populates bundle ID)
+  // Generate bundle-specific installation link (pre-populates bundle ID and product)
   const bundleInstallLink = WidgetInstallationService.generateBundleInstallationLink(
     session.shop,
     apiKey,
-    bundleId
+    bundleId,
+    bundleProduct?.handle  // Pass product handle to open theme editor with correct product selected
   );
 
   return json({
