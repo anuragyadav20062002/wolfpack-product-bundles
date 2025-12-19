@@ -581,19 +581,378 @@ class BundleWidgetFullPage {
 
   // Full-page bundle layout (horizontal tabs)
   renderFullPageLayout() {
-    // TODO: Implement tabs-based layout for full-page bundles
-    // For now, use the same layout as product-page until custom UI is provided
-    console.log('[BUNDLE_WIDGET] Full-page bundle detected - using tabs layout');
+    console.log('[FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
 
-    // Temporary: Render same as product-page layout
-    // This will be replaced with custom tabs UI later
-    this.renderProductPageLayout();
+    // Clear existing content
+    this.elements.stepsContainer.innerHTML = '';
+    this.elements.stepsContainer.classList.add('full-page-layout');
 
-    // Add visual indicator that this is a full-page bundle
-    const indicator = document.createElement('div');
-    indicator.style.cssText = 'padding: 8px; background: #e3f2fd; border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: #1976d2;';
-    indicator.textContent = 'Full-Page Bundle Mode (Custom layout will be applied)';
-    this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
+    // 1. Render step timeline at top
+    const stepTimeline = this.createStepTimeline();
+    this.elements.stepsContainer.appendChild(stepTimeline);
+
+    // 2. Render bundle header (instruction text)
+    const bundleHeader = this.createBundleInstructions();
+    this.elements.stepsContainer.appendChild(bundleHeader);
+
+    // 3. Render category/collection tabs if step has collections
+    const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+    if (categoryTabs) {
+      this.elements.stepsContainer.appendChild(categoryTabs);
+    }
+
+    // 4. Render product grid for current step
+    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+    this.elements.stepsContainer.appendChild(productGrid);
+
+    // 5. Render fixed footer with selected products
+    this.renderFullPageFooter();
+  }
+
+  // Create horizontal step timeline with state-based icons
+  createStepTimeline() {
+    const timeline = document.createElement('div');
+    timeline.className = 'step-timeline';
+
+    this.bundleData.steps.forEach((step, index) => {
+      const stepItem = document.createElement('div');
+      stepItem.className = 'timeline-step';
+
+      // Determine step state
+      const isCompleted = this.isStepCompleted(index);
+      const isCurrent = index === this.currentStepIndex;
+      const isAccessible = this.isStepAccessible(index);
+
+      if (isCompleted) stepItem.classList.add('completed');
+      if (isCurrent) stepItem.classList.add('current');
+      if (!isAccessible) stepItem.classList.add('locked');
+
+      // Create step circle with icon
+      const circle = document.createElement('div');
+      circle.className = 'timeline-circle';
+
+      if (isCompleted) {
+        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M13 4L6 11L3 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+      } else if (isCurrent) {
+        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="3" y="3" width="10" height="10" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <rect x="5" y="5" width="6" height="6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        </svg>`;
+      } else if (!isAccessible) {
+        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
+        </svg>`;
+      } else {
+        circle.textContent = (index + 1).toString();
+      }
+
+      stepItem.appendChild(circle);
+
+      // Add connecting line (except for last step)
+      if (index < this.bundleData.steps.length - 1) {
+        const line = document.createElement('div');
+        line.className = 'timeline-line';
+        if (isCompleted) line.classList.add('completed');
+        stepItem.appendChild(line);
+      }
+
+      // Add step name
+      const stepName = document.createElement('div');
+      stepName.className = 'timeline-step-name';
+      stepName.textContent = step.name;
+      stepItem.appendChild(stepName);
+
+      // Make clickable if accessible
+      if (isAccessible) {
+        stepItem.style.cursor = 'pointer';
+        stepItem.addEventListener('click', () => {
+          this.currentStepIndex = index;
+          this.renderFullPageLayout();
+        });
+      }
+
+      timeline.appendChild(stepItem);
+    });
+
+    return timeline;
+  }
+
+  // Create bundle instructions header
+  createBundleInstructions() {
+    const header = document.createElement('div');
+    header.className = 'bundle-header';
+
+    const currentStep = this.bundleData.steps[this.currentStepIndex];
+    const instructionText = currentStep.instruction || `Select ${currentStep.minQuantity} or more items from ${currentStep.name}`;
+
+    header.innerHTML = `
+      <h3 class="bundle-title">${this.bundleData.name}</h3>
+      <p class="bundle-instruction">${instructionText}</p>
+    `;
+
+    return header;
+  }
+
+  // Create category/collection tabs
+  createCategoryTabs(stepIndex) {
+    const step = this.bundleData.steps[stepIndex];
+
+    if (!step.collections || step.collections.length === 0) {
+      return null;
+    }
+
+    const tabsContainer = document.createElement('div');
+    tabsContainer.className = 'category-tabs';
+
+    // Add "All" tab
+    const allTab = document.createElement('div');
+    allTab.className = 'category-tab';
+    if (!this.activeCollectionId) {
+      allTab.classList.add('active');
+    }
+    allTab.innerHTML = `
+      <div class="tab-indicator"></div>
+      <span class="tab-label">All</span>
+    `;
+    allTab.addEventListener('click', () => {
+      this.activeCollectionId = null;
+      this.renderFullPageLayout();
+    });
+    tabsContainer.appendChild(allTab);
+
+    // Add collection tabs
+    step.collections.forEach(collection => {
+      const tab = document.createElement('div');
+      tab.className = 'category-tab';
+      if (this.activeCollectionId === collection.id) {
+        tab.classList.add('active');
+      }
+      tab.innerHTML = `
+        <div class="tab-indicator"></div>
+        <span class="tab-label">${collection.title}</span>
+      `;
+      tab.addEventListener('click', () => {
+        this.activeCollectionId = collection.id;
+        this.renderFullPageLayout();
+      });
+      tabsContainer.appendChild(tab);
+    });
+
+    return tabsContainer;
+  }
+
+  // Create horizontal scrollable product grid
+  createFullPageProductGrid(stepIndex) {
+    const grid = document.createElement('div');
+    grid.className = 'full-page-product-grid';
+
+    const step = this.bundleData.steps[stepIndex];
+    let products = step.products || [];
+
+    // Filter by active collection if selected
+    if (this.activeCollectionId && step.collections) {
+      const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
+      if (activeCollection && activeCollection.products) {
+        products = activeCollection.products;
+      }
+    }
+
+    if (products.length === 0) {
+      grid.innerHTML = '<p class="no-products">No products available in this step.</p>';
+      return grid;
+    }
+
+    // Reuse ComponentGenerator.createProductCard for each product
+    products.forEach(product => {
+      const productCard = window.BUNDLE_WIDGET.ComponentGenerator.createProductCard(
+        product,
+        stepIndex,
+        this.selectedProducts,
+        (variantId, quantity) => this.updateProductSelection(stepIndex, variantId, quantity),
+        this.bundleData
+      );
+      grid.appendChild(productCard);
+    });
+
+    return grid;
+  }
+
+  // Render fixed footer with selected products and navigation
+  renderFullPageFooter() {
+    if (!this.elements.footer) {
+      console.error('[FOOTER] Footer element not found');
+      return;
+    }
+
+    this.elements.footer.innerHTML = '';
+    this.elements.footer.className = 'full-page-footer';
+
+    // Left section: Scrollable selected products
+    const leftSection = document.createElement('div');
+    leftSection.className = 'footer-left';
+
+    const selectedProductsContainer = document.createElement('div');
+    selectedProductsContainer.className = 'footer-selected-products';
+
+    const allSelectedProducts = this.getAllSelectedProductsData();
+
+    if (allSelectedProducts.length === 0) {
+      selectedProductsContainer.innerHTML = '<p class="no-selections">No products selected yet</p>';
+    } else {
+      allSelectedProducts.forEach(item => {
+        const productItem = document.createElement('div');
+        productItem.className = 'footer-product-item';
+        productItem.innerHTML = `
+          <img src="${item.image}" alt="${item.title}" class="footer-product-image">
+          <div class="footer-product-info">
+            <span class="footer-product-title">${item.title}</span>
+            <span class="footer-product-quantity">Qty: ${item.quantity}</span>
+          </div>
+          <button class="footer-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">×</button>
+        `;
+
+        const removeBtn = productItem.querySelector('.footer-product-remove');
+        removeBtn.addEventListener('click', () => {
+          this.updateProductSelection(item.stepIndex, item.variantId, 0);
+          this.renderFullPageLayout();
+        });
+
+        selectedProductsContainer.appendChild(productItem);
+      });
+    }
+
+    leftSection.appendChild(selectedProductsContainer);
+
+    // Right section: Total and navigation
+    const rightSection = document.createElement('div');
+    rightSection.className = 'footer-right';
+
+    const total = window.BUNDLE_WIDGET.PricingCalculator.calculateTotal(
+      this.selectedProducts,
+      this.bundleData
+    );
+
+    const totalDisplay = document.createElement('div');
+    totalDisplay.className = 'footer-total';
+    totalDisplay.innerHTML = `
+      <span class="total-label">Total:</span>
+      <span class="total-price">${window.BUNDLE_WIDGET.CurrencyManager.formatPrice(total.finalPrice)}</span>
+    `;
+
+    const navButtons = document.createElement('div');
+    navButtons.className = 'footer-nav-buttons';
+
+    // Back button
+    const backBtn = document.createElement('button');
+    backBtn.className = 'footer-nav-btn footer-back-btn';
+    backBtn.textContent = 'Back';
+    backBtn.disabled = this.currentStepIndex === 0;
+    backBtn.addEventListener('click', () => {
+      if (this.currentStepIndex > 0) {
+        this.currentStepIndex--;
+        this.renderFullPageLayout();
+      }
+    });
+
+    // Next/Add to Cart button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'footer-nav-btn footer-next-btn';
+
+    const isLastStep = this.currentStepIndex === this.bundleData.steps.length - 1;
+    const canProceed = this.canProceedToNextStep();
+
+    if (isLastStep) {
+      nextBtn.textContent = 'Add to Cart';
+      nextBtn.disabled = !this.areBundleConditionsMet();
+      nextBtn.addEventListener('click', () => this.addBundleToCart());
+    } else {
+      nextBtn.textContent = 'Next';
+      nextBtn.disabled = !canProceed;
+      nextBtn.addEventListener('click', () => {
+        if (canProceed) {
+          this.currentStepIndex++;
+          this.renderFullPageLayout();
+        }
+      });
+    }
+
+    navButtons.appendChild(backBtn);
+    navButtons.appendChild(nextBtn);
+
+    rightSection.appendChild(totalDisplay);
+    rightSection.appendChild(navButtons);
+
+    this.elements.footer.appendChild(leftSection);
+    this.elements.footer.appendChild(rightSection);
+  }
+
+  // Helper: Get all selected products data for footer display
+  getAllSelectedProductsData() {
+    const allProducts = [];
+
+    this.bundleData.steps.forEach((step, stepIndex) => {
+      const stepSelections = this.selectedProducts[stepIndex] || {};
+
+      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+        if (quantity > 0) {
+          const product = this.findProductByVariantId(step, variantId);
+          if (product) {
+            const variant = product.variants?.find(v => v.id === variantId);
+            allProducts.push({
+              stepIndex,
+              variantId,
+              quantity,
+              title: variant?.title || product.title,
+              image: product.images?.[0]?.url || product.featuredImage?.url || '',
+              price: variant?.price || product.price
+            });
+          }
+        }
+      });
+    });
+
+    return allProducts;
+  }
+
+  // Helper: Find product by variant ID in a step
+  findProductByVariantId(step, variantId) {
+    return step.products?.find(p =>
+      p.variants?.some(v => v.id === variantId) || p.id === variantId
+    );
+  }
+
+  // Helper: Check if step is completed
+  isStepCompleted(stepIndex) {
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
+    const step = this.bundleData.steps[stepIndex];
+    return totalQuantity >= (step.minQuantity || 1);
+  }
+
+  // Helper: Check if step is accessible
+  isStepAccessible(stepIndex) {
+    if (stepIndex === 0) return true;
+
+    // Check if all previous steps meet minimum requirements
+    for (let i = 0; i < stepIndex; i++) {
+      if (!this.isStepCompleted(i)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Helper: Check if can proceed to next step
+  canProceedToNextStep() {
+    return this.isStepCompleted(this.currentStepIndex);
+  }
+
+  // Helper: Check if all bundle conditions are met
+  areBundleConditionsMet() {
+    return this.bundleData.steps.every((step, index) => this.isStepCompleted(index));
   }
 
   createStepElement(step, index) {
