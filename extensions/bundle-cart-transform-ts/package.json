@@ -11,7 +11,6 @@
     "test:watch": "vitest watch"
   },
   "codegen": {
-    "overwrite": true,
     "schema": "schema.graphql",
     "documents": "src/*.graphql",
     "generates": {
@@ -19,11 +18,11 @@
         "plugins": [
           "typescript",
           "typescript-operations"
-        ],
-        "config": {
-          "omitOperationSuffix": true
-        }
+        ]
       }
+    },
+    "config": {
+      "omitOperationSuffix": true
     }
   },
   "devDependencies": {
