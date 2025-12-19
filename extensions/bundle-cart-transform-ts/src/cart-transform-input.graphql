@@ -32,6 +32,11 @@ query Input {
             value
           }
 
+          # Custom bundle configuration (our app-specific format)
+          bundleConfig: metafield(namespace: "$app", key: "bundle_config") {
+            value
+          }
+
           # Price adjustment configuration for discounting
           price_adjustment: metafield(namespace: "$app", key: "price_adjustment") {
             value
