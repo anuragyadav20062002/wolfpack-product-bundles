@@ -1775,22 +1775,21 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 404 });
     }
 
-    // Validate and prepare widget placement
+    // Validate and prepare widget placement for full-page bundles
+    // Full-page bundles use PAGE templates, not product templates
     const apiKey = process.env.SHOPIFY_API_KEY || '';
-    const result = await WidgetInstallationService.validateAndPrepareWidgetPlacement(
+    const result = await WidgetInstallationService.validateAndPrepareFullPageWidgetPlacement(
       admin,
       session.shop,
       apiKey,
       bundleId,
-      bundle.templateName || 'product',  // Default to 'product' template if not specified
-      bundle.shopifyProductId
+      bundle.templateName || undefined  // Optional page handle
     );
 
     if (!result.success) {
       return json({
         success: false,
-        error: result.error,
-        errorType: result.errorType
+        error: result.error
       }, { status: 400 });
     }
 
@@ -3102,75 +3101,95 @@ export default function ConfigureBundleFlow() {
                 </BlockStack>
               </Card>
 
-              {/* Bundle Product Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text variant="headingSm" as="h3">
-                      Bundle Product
-                    </Text>
-                    <Button
-                      variant="plain"
-                      tone="critical"
-                      onClick={handleSyncProduct}
-                    >
-                      Sync Product
-                    </Button>
-                  </InlineStack>
+              {/* Bundle Product Card - Only for product-page bundles */}
+              {bundle.bundleType !== 'full_page' && (
+                <Card>
+                  <BlockStack gap="300">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <Text variant="headingSm" as="h3">
+                        Bundle Product
+                      </Text>
+                      <Button
+                        variant="plain"
+                        tone="critical"
+                        onClick={handleSyncProduct}
+                      >
+                        Sync Product
+                      </Button>
+                    </InlineStack>
 
-                  {bundleProduct ? (
-                    <BlockStack gap="300">
-                      <InlineStack gap="300" blockAlign="center" wrap={false}>
-                        <Thumbnail
-                          source={productImageUrl || "/bundle.png"}
-                          alt={productTitle || "Bundle Product"}
-                          size="medium"
-                        />
-                        <InlineStack gap="200" blockAlign="center" wrap={false}>
+                    {bundleProduct ? (
+                      <BlockStack gap="300">
+                        <InlineStack gap="300" blockAlign="center" wrap={false}>
+                          <Thumbnail
+                            source={productImageUrl || "/bundle.png"}
+                            alt={productTitle || "Bundle Product"}
+                            size="medium"
+                          />
+                          <InlineStack gap="200" blockAlign="center" wrap={false}>
+                            <Button
+                              variant="plain"
+                              onClick={() => {
+                                const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
+                                window.open(productUrl, '_blank');
+                              }}
+                              icon={ExternalIcon}
+                            >
+                              {productTitle || bundleProduct.title || "Untitled Product"}
+                            </Button>
+                            <Button
+                              variant="tertiary"
+                              size="slim"
+                              icon={RefreshIcon}
+                              onClick={handleBundleProductSelect}
+                              accessibilityLabel="Change bundle product"
+                            />
+                          </InlineStack>
+                        </InlineStack>
+                      </BlockStack>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '80px',
+                        border: '1px dashed #ccc',
+                        borderRadius: '8px'
+                      }}>
+                        <BlockStack gap="100" inlineAlign="center">
+                          <Icon source={ProductIcon} />
                           <Button
                             variant="plain"
-                            onClick={() => {
-                              const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                              window.open(productUrl, '_blank');
-                            }}
-                            icon={ExternalIcon}
-                          >
-                            {productTitle || bundleProduct.title || "Untitled Product"}
-                          </Button>
-                          <Button
-                            variant="tertiary"
-                            size="slim"
-                            icon={RefreshIcon}
                             onClick={handleBundleProductSelect}
-                            accessibilityLabel="Change bundle product"
-                          />
-                        </InlineStack>
-                      </InlineStack>
-                    </BlockStack>
-                  ) : (
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: '80px',
-                      border: '1px dashed #ccc',
-                      borderRadius: '8px'
-                    }}>
-                      <BlockStack gap="100" inlineAlign="center">
-                        <Icon source={ProductIcon} />
-                        <Button
-                          variant="plain"
-                          onClick={handleBundleProductSelect}
-                        >
-                          Select Bundle Product
-                        </Button>
-                      </BlockStack>
-                    </div>
-                  )}
+                          >
+                            Select Bundle Product
+                          </Button>
+                        </BlockStack>
+                      </div>
+                    )}
 
-                  {/* Bundle Status Dropdown */}
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h4">
+                    {/* Bundle Status Dropdown */}
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h4">
+                        Bundle Status
+                      </Text>
+                      <Select
+                        label="Bundle Status"
+                        options={statusOptions}
+                        value={formState.bundleStatus}
+                        onChange={(selected: string) => formState.setBundleStatus(selected as 'active' | 'draft' | 'archived')}
+                        labelHidden
+                      />
+                    </BlockStack>
+                  </BlockStack>
+                </Card>
+              )}
+
+              {/* Bundle Status Card - For full-page bundles */}
+              {bundle.bundleType === 'full_page' && (
+                <Card>
+                  <BlockStack gap="300">
+                    <Text variant="headingSm" as="h3">
                       Bundle Status
                     </Text>
                     <Select
@@ -3181,8 +3200,8 @@ export default function ConfigureBundleFlow() {
                       labelHidden
                     />
                   </BlockStack>
-                </BlockStack>
-              </Card>
+                </Card>
+              )}
 
               {/* Take your bundle live Card */}
               <Card>
@@ -3191,24 +3210,26 @@ export default function ConfigureBundleFlow() {
                     Take your bundle live
                   </Text>
 
-                  {/* Template Selection */}
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h4">
-                      Bundle Container Template
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Select which product template will display this bundle widget
-                    </Text>
-                    <TextField
-                      label="Template Name"
-                      value={formState.templateName}
-                      onChange={formState.setTemplateName}
-                      placeholder="e.g., cart-transform, product, bundle-special"
-                      helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
-                      labelHidden
-                      autoComplete="off"
-                    />
-                  </BlockStack>
+                  {/* Template Selection - Only for product-page bundles */}
+                  {bundle.bundleType !== 'full_page' && (
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h4">
+                        Bundle Container Template
+                      </Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Select which product template will display this bundle widget
+                      </Text>
+                      <TextField
+                        label="Template Name"
+                        value={formState.templateName}
+                        onChange={formState.setTemplateName}
+                        placeholder="e.g., cart-transform, product, bundle-special"
+                        helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
+                        labelHidden
+                        autoComplete="off"
+                      />
+                    </BlockStack>
+                  )}
 
                   {/* Quick Setup Action */}
                   <BlockStack gap="300">
@@ -3220,7 +3241,9 @@ export default function ConfigureBundleFlow() {
                           Install Widget in Theme
                         </Text>
                         <Text as="p" variant="bodySm" tone="subdued">
-                          Opens theme editor with bundle widget pre-selected. Simply drag & drop to position.
+                          {bundle.bundleType === 'full_page'
+                            ? 'Opens theme editor with page template. Add the "Bundle - Full Page" block and enter your Bundle ID.'
+                            : 'Opens theme editor with bundle widget pre-selected. Simply drag & drop to position.'}
                         </Text>
                       </BlockStack>
                       <Button
@@ -3234,30 +3257,32 @@ export default function ConfigureBundleFlow() {
                     </InlineStack>
                   </BlockStack>
 
-                  {/* Pro Tip */}
-                  <Card background="bg-surface-info">
-                    <BlockStack gap="300">
-                      <InlineStack gap="200" blockAlign="center">
-                        <div style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          backgroundColor: 'var(--p-color-bg-fill-info)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <Icon source={ViewIcon} tone="info" />
-                        </div>
-                        <Text as="h3" variant="headingSm" fontWeight="semibold">
-                          Pro Tip: Custom Templates
+                  {/* Pro Tip - Only for product-page bundles */}
+                  {bundle.bundleType !== 'full_page' && (
+                    <Card background="bg-surface-info">
+                      <BlockStack gap="300">
+                        <InlineStack gap="200" blockAlign="center">
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--p-color-bg-fill-info)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <Icon source={ViewIcon} tone="info" />
+                          </div>
+                          <Text as="h3" variant="headingSm" fontWeight="semibold">
+                            Pro Tip: Custom Templates
+                          </Text>
+                        </InlineStack>
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          Create a custom product template, eg. "bundle-product". This gives you better control and keeps bundle products separate from regular products.
                         </Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Create a custom product template, eg. "bundle-product". This gives you better control and keeps bundle products separate from regular products.
-                      </Text>
-                    </BlockStack>
-                  </Card>
+                      </BlockStack>
+                    </Card>
+                  )}
                 </BlockStack>
               </Card>
             </BlockStack>

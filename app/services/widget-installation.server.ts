@@ -697,6 +697,87 @@ export class WidgetInstallationService {
   }
 
   /**
+   * Validate and prepare widget placement for FULL-PAGE bundles (on pages, not products)
+   *
+   * For full-page bundles:
+   * - No product template needed
+   * - No container product required
+   * - Opens page editor instead of product editor
+   *
+   * @param admin - Shopify admin API client
+   * @param shop - Shop domain
+   * @param apiKey - App API key
+   * @param bundleId - Bundle ID to configure
+   * @param pageHandle - Optional page handle to navigate to
+   * @returns Validation result with installation link
+   */
+  static async validateAndPrepareFullPageWidgetPlacement(
+    admin: any,
+    shop: string,
+    apiKey: string,
+    bundleId: string,
+    pageHandle?: string
+  ): Promise<{
+    success: boolean;
+    installationLink?: string;
+    error?: string;
+    message?: string;
+  }> {
+    try {
+      AppLogger.info('Preparing full-page bundle widget placement', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId,
+        pageHandle
+      });
+
+      const shopDomain = shop.replace('.myshopify.com', '');
+      const appBlockId = `${apiKey}/bundle-full-page`;
+
+      // Build theme editor URL for page template
+      const params = new URLSearchParams({
+        template: 'page',  // Page template, not product
+        addAppBlockId: appBlockId,
+        target: 'newAppsSection',
+        bundleId: bundleId
+      });
+
+      // Add page handle if provided
+      if (pageHandle) {
+        params.append('pageHandle', pageHandle);
+      }
+
+      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+
+      AppLogger.info('Generated full-page widget placement link', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId,
+        pageHandle,
+        url
+      });
+
+      return {
+        success: true,
+        installationLink: url,
+        message: 'Ready to place widget on page template'
+      };
+
+    } catch (error) {
+      AppLogger.error('Failed to prepare full-page widget placement', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId
+      }, error);
+
+      return {
+        success: false,
+        error: 'Failed to prepare widget placement. Please try again.'
+      };
+    }
+  }
+
+  /**
    * Validate and prepare widget placement for a bundle product
    *
    * Checks:
