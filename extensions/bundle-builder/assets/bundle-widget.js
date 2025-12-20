@@ -1,15 +1,11 @@
 (function () {
   "use strict";
 
-  console.log("[Bundle Widget] 🚀 Small loader script executing...");
-
   // Prevent multiple initializations
   if (window.__bundleWidgetLoading || window.__bundleWidgetLoaded) {
-    console.log("[Bundle Widget] Already loading or loaded");
     return;
   }
   window.__bundleWidgetLoading = true;
-  console.log("[Bundle Widget] ✅ Initialization flag set");
 
   // Dynamic app URL detection
   function getAppUrl() {
@@ -20,15 +16,11 @@
       window.location.search.includes('preview_key') ||
       window.location.pathname.includes('/editor');
 
-    // 1. Check global variable from Liquid (auto-updated from shop metafield)
     if (window.__BUNDLE_APP_URL__) {
-      console.log('[Bundle Widget] Using app URL from server config:', window.__BUNDLE_APP_URL__);
       return window.__BUNDLE_APP_URL__;
     }
 
-    // 2. Fallback to production URL (will show warning)
     const productionUrl = "https://wolfpack-product-bundle-app.onrender.com";
-    console.warn('[Bundle Widget] ⚠️ No app URL configured in shop metafield or theme settings, using production fallback');
 
     return productionUrl;
   }
@@ -64,13 +56,8 @@
     const isDevelopmentStore = shopDomain.includes('.myshopify.com');
 
     if (isShopifyStorefront && !isDevelopmentStore) {
-      // PRODUCTION: Use app proxy for better scale and performance
-      console.log('[Bundle Widget] 🚀 Using Shopify App Proxy (CDN-cached)');
       return `/apps/product-bundles${path}`;
     } else {
-      // DEVELOPMENT: Use direct URL for dev stores or testing outside Shopify
-      const reason = isDevelopmentStore ? 'development store (password protected)' : 'testing outside Shopify';
-      console.log(`[Bundle Widget] 🔧 Using direct app URL (${reason})`);
       return `${CONFIG.appUrl}${path}`;
     }
   }
@@ -96,20 +83,10 @@
     // Add bundleType and version parameters for cache control
     const cssUrl = getAssetUrl(`/api/design-settings/${shopDomain}`) + `?bundleType=${bundleType}&v=${CONFIG.version}`;
 
-    console.log("[Bundle Widget] Loading design CSS from:", cssUrl, "for bundle type:", bundleType);
-
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = cssUrl;
     link.type = "text/css";
-
-    link.onload = function () {
-      console.log("[Bundle Widget] ✅ Design CSS loaded successfully");
-    };
-
-    link.onerror = function () {
-      console.warn("[Bundle Widget] ⚠️ Failed to load design CSS, using default styles");
-    };
 
     document.head.appendChild(link);
   }
@@ -135,19 +112,15 @@
   function loadComponentsLibrary(callback) {
     const scriptUrl = getAssetUrl('/assets/bundle-widget-components') + `?v=${CONFIG.version}`;
 
-    console.log('[Bundle Widget] Loading components library:', scriptUrl);
-
     const script = document.createElement("script");
     script.src = scriptUrl;
-    script.type = "module"; // ES6 module with exports
+    script.type = "module";
 
     script.onload = function () {
-      console.log("[Bundle Widget] ✅ Components library loaded");
       callback();
     };
 
-    script.onerror = function (error) {
-      console.error("[Bundle Widget] ❌ Failed to load components library", error);
+    script.onerror = function () {
       showLoadError();
     };
 
@@ -235,44 +208,24 @@
    * Initialize with retry logic
    */
   function init(retryCount = 0, maxRetries = 3) {
-    console.log(`[Bundle Widget] Init called (attempt ${retryCount + 1}/${maxRetries + 1})`);
-
     const hasContainer = document.querySelector("#bundle-builder-app");
-    console.log("[Bundle Widget] Container check result:", hasContainer ? "FOUND" : "NOT FOUND");
 
     if (hasContainer) {
-      console.log("[Bundle Widget] ✅ Container found, detecting bundle type...");
-      // Detect bundle type first
       const bundleType = detectBundleType();
-      console.log("[Bundle Widget] Bundle type detected:", bundleType);
-
-      // Load design CSS with the detected bundle type
       loadDesignCSS(bundleType);
-
-      // Load components library first, then appropriate widget
       loadComponentsLibrary(() => {
         loadAppropriateWidget();
       });
     } else if (retryCount < maxRetries) {
-      console.log(`[Bundle Widget] ⏳ Retrying in 300ms... (attempt ${retryCount + 2}/${maxRetries + 1})`);
       setTimeout(() => init(retryCount + 1, maxRetries), 300);
     } else {
-      console.log("[Bundle Widget] ❌ No container found after all retries");
       window.__bundleWidgetLoading = false;
     }
   }
 
-  // Wait for DOM, then initialize
-  console.log("[Bundle Widget] 📋 DOM ready state:", document.readyState);
-
   if (document.readyState === "loading") {
-    console.log("[Bundle Widget] ⏳ Waiting for DOMContentLoaded...");
-    document.addEventListener("DOMContentLoaded", () => {
-      console.log("[Bundle Widget] 🎯 DOMContentLoaded fired, starting init...");
-      init();
-    });
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    console.log("[Bundle Widget] ✅ DOM already ready, starting init...");
     init();
   }
 })();
