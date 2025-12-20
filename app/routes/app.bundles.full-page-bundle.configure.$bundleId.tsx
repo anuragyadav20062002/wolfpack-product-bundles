@@ -280,6 +280,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleGetCurrentTheme(admin, session);
       case "ensureBundleTemplates":
         return await handleEnsureBundleTemplates(admin, session);
+      case "checkFullPageTemplate":
+        return await handleCheckFullPageTemplate(admin, session);
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
       default:
@@ -1758,10 +1760,89 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
   }
 }
 
-// Handle widget placement validation
+// Check if full-page-bundle template exists in the theme
+async function handleCheckFullPageTemplate(admin: any, session: any) {
+  try {
+    AppLogger.debug("🔍 [TEMPLATE_CHECK] Checking for full-page-bundle template");
+
+    // Get current theme
+    const GET_THEME = `
+      query {
+        themes(first: 1, roles: MAIN) {
+          nodes {
+            id
+            name
+            role
+          }
+        }
+      }
+    `;
+
+    const themeResponse = await admin.graphql(GET_THEME);
+    const themeData = await themeResponse.json();
+    const theme = themeData.data?.themes?.nodes?.[0];
+
+    if (!theme) {
+      return json({
+        success: false,
+        templateExists: false,
+        error: "No active theme found"
+      });
+    }
+
+    const themeId = theme.id.split('/').pop();
+
+    // Fetch theme assets
+    const session = await admin.rest.session;
+    const accessToken = session.accessToken;
+    const shop = session.shop;
+
+    const assetsResponse = await fetch(
+      `https://${shop}/admin/api/2024-10/themes/${themeId}/assets.json`,
+      {
+        method: 'GET',
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!assetsResponse.ok) {
+      throw new Error(`Failed to fetch theme assets: ${assetsResponse.status}`);
+    }
+
+    const assetsData = await assetsResponse.json();
+
+    // Check if full-page-bundle template exists
+    const templateExists = assetsData.assets.some((asset: any) =>
+      asset.key === 'templates/page.full-page-bundle.json' ||
+      asset.key === 'templates/page.full-page-bundle.liquid'
+    );
+
+    AppLogger.debug(`🔍 [TEMPLATE_CHECK] Template exists: ${templateExists}`);
+
+    return json({
+      success: true,
+      templateExists,
+      themeName: theme.name,
+      themeId: theme.id
+    });
+
+  } catch (error) {
+    AppLogger.error("🔥 [TEMPLATE_CHECK] Error checking template:", {}, error as any);
+    return json({
+      success: false,
+      templateExists: false,
+      error: (error as Error).message || "Failed to check template"
+    }, { status: 500 });
+  }
+}
+
+// Handle widget placement validation with automated page creation
 async function handleValidateWidgetPlacement(admin: any, session: any, bundleId: string) {
   try {
-    AppLogger.debug("🎯 [WIDGET_PLACEMENT] Validating widget placement", { bundleId });
+    AppLogger.debug("🎯 [WIDGET_PLACEMENT] Validating widget placement (automated)", { bundleId });
 
     // Get bundle data
     const bundle = await db.bundle.findUnique({
@@ -1775,31 +1856,46 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 404 });
     }
 
-    // Validate and prepare widget placement for full-page bundles
-    // Full-page bundles use PAGE templates, not product templates
+    // Use automated page creation workflow for full-page bundles
+    // This will:
+    // 1. Check if full-page-bundle template exists
+    // 2. Create a new Shopify page
+    // 3. Assign it to the template
+    // 4. Store bundle ID in page metafield (auto-configuration)
+    // 5. Open theme editor with the page
     const apiKey = process.env.SHOPIFY_API_KEY || '';
-    const result = await WidgetInstallationService.validateAndPrepareFullPageWidgetPlacement(
+    const result = await WidgetInstallationService.createFullPageBundlePageAutomated(
       admin,
       session.shop,
       apiKey,
       bundleId,
-      bundle.templateName || undefined  // Optional page handle
+      bundle.name
     );
 
     if (!result.success) {
       return json({
         success: false,
-        error: result.error
+        error: result.error,
+        errorType: result.errorType
       }, { status: 400 });
     }
 
+    AppLogger.info("✅ [WIDGET_PLACEMENT] Automated page created successfully", {
+      bundleId,
+      pageId: result.pageId,
+      pageHandle: result.pageHandle
+    });
+
     return json({
       success: true,
-      installationLink: result.installationLink
+      installationLink: result.installationLink,
+      pageId: result.pageId,
+      pageHandle: result.pageHandle,
+      message: `Page created: ${result.pageHandle}`
     });
 
   } catch (error) {
-    AppLogger.error("🔥 [WIDGET_PLACEMENT] Error validating widget placement:", {}, error as any);
+    AppLogger.error("🔥 [WIDGET_PLACEMENT] Error in automated widget placement:", {}, error as any);
     return json({
       success: false,
       error: (error as Error).message || "Widget placement validation failed"
@@ -3280,6 +3376,77 @@ export default function ConfigureBundleFlow() {
                         <Text as="p" variant="bodySm" tone="subdued">
                           Create a custom product template, eg. "bundle-product". This gives you better control and keeps bundle products separate from regular products.
                         </Text>
+                      </BlockStack>
+                    </Card>
+                  )}
+
+                  {/* Setup Guide - Only for full-page bundles */}
+                  {bundle.bundleType === 'full_page' && (
+                    <Card background="bg-surface-info">
+                      <BlockStack gap="400">
+                        <InlineStack gap="200" blockAlign="center">
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--p-color-bg-fill-info)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <Icon source={ViewIcon} tone="info" />
+                          </div>
+                          <Text as="h3" variant="headingSm" fontWeight="semibold">
+                            One-Time Setup Required
+                          </Text>
+                        </InlineStack>
+
+                        <BlockStack gap="300">
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            To enable automated bundle page creation, you need to create a page template in your theme (one-time setup):
+                          </Text>
+
+                          <BlockStack gap="200">
+                            <Text as="p" variant="bodySm" fontWeight="semibold">
+                              Setup Steps:
+                            </Text>
+                            <ol style={{
+                              marginLeft: '20px',
+                              fontSize: '13px',
+                              lineHeight: '1.6',
+                              color: 'var(--p-color-text-subdued)'
+                            }}>
+                              <li>Go to <strong>Online Store → Themes → Customize</strong></li>
+                              <li>In the theme editor, click the <strong>page icon</strong> at the top</li>
+                              <li>Click <strong>"Create template"</strong></li>
+                              <li>Enter template name: <strong>"full-page-bundle"</strong> (exactly as shown)</li>
+                              <li>Based on: <strong>"Default page"</strong></li>
+                              <li>Click <strong>"Create template"</strong></li>
+                              <li>Add the <strong>"Bundle - Full Page"</strong> block to the template</li>
+                              <li>Save the template</li>
+                            </ol>
+                          </BlockStack>
+
+                          <Text as="p" variant="bodySm" tone="subdued" fontWeight="semibold">
+                            After this one-time setup, clicking "Place Widget" will automatically:
+                          </Text>
+
+                          <ul style={{
+                            marginLeft: '20px',
+                            fontSize: '13px',
+                            lineHeight: '1.6',
+                            color: 'var(--p-color-text-subdued)'
+                          }}>
+                            <li>Create a new page for your bundle</li>
+                            <li>Assign it to the "full-page-bundle" template</li>
+                            <li>Configure the bundle automatically (no manual Bundle ID entry)</li>
+                            <li>Open the page in the theme editor</li>
+                          </ul>
+
+                          <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium" style={{ fontStyle: 'italic' }}>
+                            Note: You only need to create the template once. After that, all your full-page bundles will use it automatically.
+                          </Text>
+                        </BlockStack>
                       </BlockStack>
                     </Card>
                   )}

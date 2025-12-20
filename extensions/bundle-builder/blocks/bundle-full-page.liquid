@@ -10,13 +10,13 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "This block is for full-page bundles on standalone pages. Use the regular 'Bundle Builder' block for product-page bundles."
+      "content": "This block is for full-page bundles on standalone pages. The Bundle ID is automatically configured when you use 'Place Widget Now' from the app admin."
     },
     {
       "type": "text",
       "id": "bundle_id",
-      "label": "Bundle ID",
-      "info": "Enter the bundle ID for the full-page bundle you want to display on this page"
+      "label": "Bundle ID (Auto-configured)",
+      "info": "This is automatically set when using 'Place Widget Now'. Only enter manually if you're setting up a custom page."
     },
     {
       "type": "text",
@@ -56,12 +56,32 @@
   Full-Page Bundle Widget
   For standalone bundle pages (not product pages)
   Merchants create a page and assign this template
+
+  AUTOMATED WORKFLOW:
+  1. Bundle ID is automatically set via page metafield when using "Place Widget Now"
+  2. Falls back to manual block setting for backwards compatibility
 {% endcomment %}
 
-{% assign bundle_id = block.settings.bundle_id %}
+{% comment %} Try to get bundle ID from page metafield (automated) {% endcomment %}
+{% assign app_namespace = '$app' %}
+{% assign bundle_id_from_metafield = page.metafields[app_namespace].bundle_id %}
+{% assign bundle_id_from_setting = block.settings.bundle_id %}
+
+{% comment %} Priority: Page metafield (automated) > Block setting (manual) {% endcomment %}
+{% if bundle_id_from_metafield and bundle_id_from_metafield != blank %}
+  {% assign bundle_id = bundle_id_from_metafield %}
+  {% assign bundle_id_source = "page_metafield_automated" %}
+{% elsif bundle_id_from_setting and bundle_id_from_setting != blank %}
+  {% assign bundle_id = bundle_id_from_setting %}
+  {% assign bundle_id_source = "block_setting_manual" %}
+{% else %}
+  {% assign bundle_id = nil %}
+  {% assign bundle_id_source = "none" %}
+{% endif %}
+
 {% assign should_show_widget = false %}
 
-{% comment %} Check if bundle ID is provided {% endcomment %}
+{% comment %} Check if bundle ID is provided from any source {% endcomment %}
 {% if bundle_id and bundle_id != blank %}
   {% assign should_show_widget = true %}
 {% endif %}
@@ -95,10 +115,12 @@
   <script>
     console.log('🎯 [FULL_PAGE_BUNDLE] Widget Loading:', {
       bundleId: {{ bundle_id | json }},
+      bundleIdSource: {{ bundle_id_source | json }},
       bundleType: 'full_page',
       pageHandle: {{ page.handle | json }},
       pageTitle: {{ page.title | json }},
-      isThemeEditor: (window.Shopify && window.Shopify.designMode) || false
+      isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
+      automated: {{ bundle_id_source | json }} === 'page_metafield_automated'
     });
 
     // Initialize Shopify context for full-page bundles

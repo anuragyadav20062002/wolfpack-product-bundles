@@ -711,6 +711,226 @@ export class WidgetInstallationService {
    * @param pageHandle - Optional page handle to navigate to
    * @returns Validation result with installation link
    */
+  /**
+   * Create a Shopify page automatically for full-page bundle with automated bundle ID configuration
+   * This method fully automates the setup process - no manual Bundle ID entry required
+   */
+  static async createFullPageBundlePageAutomated(
+    admin: any,
+    shop: string,
+    apiKey: string,
+    bundleId: string,
+    bundleName: string
+  ): Promise<{
+    success: boolean;
+    installationLink?: string;
+    pageId?: string;
+    pageHandle?: string;
+    error?: string;
+    errorType?: 'template_not_found' | 'page_creation_failed' | 'metafield_failed' | 'unknown';
+  }> {
+    try {
+      AppLogger.info('Creating automated full-page bundle page', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId,
+        bundleName
+      });
+
+      // Step 1: Check if full-page-bundle template exists
+      const GET_THEME_ASSETS = `
+        query {
+          themes(first: 1, roles: MAIN) {
+            nodes {
+              id
+              name
+              files(first: 250) {
+                nodes {
+                  filename
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const themeResponse = await admin.graphql(GET_THEME_ASSETS);
+      const themeData = await themeResponse.json();
+      const theme = themeData.data?.themes?.nodes?.[0];
+
+      if (!theme) {
+        return {
+          success: false,
+          error: 'No active theme found',
+          errorType: 'unknown'
+        };
+      }
+
+      // Check if full-page-bundle template exists
+      const templateExists = theme.files?.nodes?.some((file: any) =>
+        file.filename === 'templates/page.full-page-bundle.json' ||
+        file.filename === 'templates/page.full-page-bundle.liquid'
+      );
+
+      if (!templateExists) {
+        return {
+          success: false,
+          error: 'Template "full-page-bundle" not found. Please create it first following the setup instructions.',
+          errorType: 'template_not_found'
+        };
+      }
+
+      // Step 2: Create the page with a clean handle
+      const pageHandle = `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      const pageTitle = bundleName || `Bundle ${bundleId}`;
+
+      const CREATE_PAGE = `
+        mutation createPage($page: PageCreateInput!) {
+          pageCreate(page: $page) {
+            page {
+              id
+              title
+              handle
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const pageResponse = await admin.graphql(CREATE_PAGE, {
+        variables: {
+          page: {
+            title: pageTitle,
+            handle: pageHandle,
+            body: `<p>Loading ${bundleName}...</p>`,
+            templateSuffix: 'full-page-bundle',  // Assign to our template
+            isPublished: true
+          }
+        }
+      });
+
+      const pageData = await pageResponse.json();
+
+      if (pageData.data?.pageCreate?.userErrors?.length > 0) {
+        const errors = pageData.data.pageCreate.userErrors;
+        AppLogger.error('Page creation failed', {
+          component: 'WidgetInstallationService',
+          errors
+        });
+        return {
+          success: false,
+          error: `Failed to create page: ${errors[0].message}`,
+          errorType: 'page_creation_failed'
+        };
+      }
+
+      const createdPage = pageData.data?.pageCreate?.page;
+
+      if (!createdPage) {
+        return {
+          success: false,
+          error: 'Page creation failed - no page returned',
+          errorType: 'page_creation_failed'
+        };
+      }
+
+      AppLogger.info('Page created successfully', {
+        component: 'WidgetInstallationService',
+        pageId: createdPage.id,
+        pageHandle: createdPage.handle
+      });
+
+      // Step 3: Add bundle ID as page metafield
+      const SET_METAFIELD = `
+        mutation setPageMetafield($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              key
+              value
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const metafieldResponse = await admin.graphql(SET_METAFIELD, {
+        variables: {
+          metafields: [{
+            ownerId: createdPage.id,
+            namespace: '$app',
+            key: 'bundle_id',
+            value: bundleId,
+            type: 'single_line_text_field'
+          }]
+        }
+      });
+
+      const metafieldData = await metafieldResponse.json();
+
+      if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
+        AppLogger.warn('Metafield creation failed (non-critical)', {
+          component: 'WidgetInstallationService',
+          errors: metafieldData.data.metafieldsSet.userErrors
+        });
+      } else {
+        AppLogger.info('Bundle ID metafield added to page', {
+          component: 'WidgetInstallationService',
+          pageId: createdPage.id,
+          bundleId
+        });
+      }
+
+      // Step 4: Build theme editor URL
+      const shopDomain = shop.replace('.myshopify.com', '');
+      const appBlockId = `${apiKey}/bundle-full-page`;
+
+      const params = new URLSearchParams({
+        template: 'page.full-page-bundle',
+        pageId: createdPage.id.split('/').pop() || '',
+        addAppBlockId: appBlockId,
+        target: 'newAppsSection'
+      });
+
+      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+
+      AppLogger.info('Automated page creation completed', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId,
+        pageId: createdPage.id,
+        pageHandle: createdPage.handle,
+        url
+      });
+
+      return {
+        success: true,
+        installationLink: url,
+        pageId: createdPage.id,
+        pageHandle: createdPage.handle
+      };
+
+    } catch (error) {
+      AppLogger.error('Failed to create automated full-page bundle', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId
+      }, error);
+
+      return {
+        success: false,
+        error: `Failed to create page: ${(error as Error).message}`,
+        errorType: 'unknown'
+      };
+    }
+  }
+
   static async validateAndPrepareFullPageWidgetPlacement(
     admin: any,
     shop: string,
