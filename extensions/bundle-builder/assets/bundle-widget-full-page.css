@@ -1,0 +1,592 @@
+/**
+ * Full-Page Bundle Widget Styles
+ * Matches Figma design specifications
+ * Background: #f0f3eb (light green-gray)
+ */
+
+/* ============================================================================
+   CONTAINER & LAYOUT
+   ============================================================================ */
+
+.bundle-widget-full-page {
+  width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
+  background: #f0f3eb;
+  padding: 40px 20px 0;
+  min-height: 100vh;
+}
+
+/* ============================================================================
+   STEP TIMELINE (Top Section)
+   ============================================================================ */
+
+.step-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 50px auto 40px;
+  max-width: 1200px;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.timeline-circle {
+  width: 69px;
+  height: 69px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #1e1e1e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  font-weight: bold;
+  font-size: 20px;
+  color: #1e1e1e;
+}
+
+/* Completed step */
+.timeline-step.completed .timeline-circle {
+  background: #1e1e1e;
+  color: #fff;
+}
+
+/* Current step */
+.timeline-step.current .timeline-circle {
+  background: #fff;
+  border-color: #1e1e1e;
+}
+
+/* Locked step */
+.timeline-step.locked .timeline-circle {
+  background: #fff;
+  border-color: #808080;
+  color: #808080;
+}
+
+/* Connecting line between steps */
+.timeline-line {
+  position: absolute;
+  height: 3px;
+  background: #808080;
+  top: 33px;
+  left: 69px;
+  width: 308px;
+  z-index: 1;
+  border-radius: 4px;
+}
+
+.timeline-step.completed .timeline-line {
+  background: #1e1e1e;
+}
+
+/* Step name label */
+.timeline-step-name {
+  margin-top: 16px;
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 19.788px;
+  color: #1e1e1e;
+  white-space: nowrap;
+}
+
+.timeline-step.locked .timeline-step-name {
+  color: #808080;
+}
+
+/* ============================================================================
+   BUNDLE HEADER (Instructions)
+   ============================================================================ */
+
+.bundle-header {
+  text-align: center;
+  margin: 30px auto;
+  max-width: 800px;
+}
+
+.bundle-title {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 20px;
+  color: #1e1e1e;
+  margin: 0 0 10px;
+}
+
+.bundle-instruction {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-size: 20px;
+  color: #1e1e1e;
+  margin: 0;
+}
+
+/* ============================================================================
+   CATEGORY TABS
+   ============================================================================ */
+
+.category-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin: 30px auto;
+  max-width: 1200px;
+  position: relative;
+}
+
+.category-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.category-tab .tab-indicator {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+}
+
+/* Color variants */
+.category-tab[data-color="blue"] {
+  color: #4a90e2;
+}
+
+.category-tab[data-color="red"] {
+  color: #e24a4a;
+}
+
+.category-tab[data-color="green"] {
+  color: #4ae267;
+}
+
+.category-tab .tab-label {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 20px;
+  color: #1e1e1e;
+}
+
+/* Inactive state */
+.category-tab:not(.active) .tab-label {
+  opacity: 0.5;
+  font-weight: normal;
+}
+
+/* Active state - underline */
+.category-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 177px;
+  height: 5.5px;
+  background: #1e1e1e;
+  border-radius: 2.952px 2.952px 0 0;
+}
+
+/* ============================================================================
+   PRODUCT GRID
+   ============================================================================ */
+
+.full-page-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(198px, 1fr));
+  gap: 20px;
+  margin: 40px auto;
+  max-width: 1400px;
+  padding: 0 20px;
+}
+
+.product-card {
+  background: #fff;
+  border: 1px solid #808080;
+  border-radius: 5.905px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.product-image {
+  width: 100%;
+  height: 190px;
+  background: #fff;
+  border-radius: 5.905px 5.905px 0 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-content-wrapper {
+  padding: 16px;
+}
+
+.product-title {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-size: 14.605px;
+  color: #1e1e1e;
+  margin: 0 0 8px;
+  line-height: 1.4;
+  min-height: 40px;
+}
+
+.product-price {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 14.605px;
+  color: #1e1e1e;
+  margin: 0 0 12px;
+}
+
+.product-quantity-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0;
+  border: 1px solid #808080;
+  border-radius: 2.952px;
+  overflow: hidden;
+}
+
+.qty-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #1e1e1e;
+}
+
+.qty-btn:hover {
+  background: #f0f0f0;
+}
+
+.qty-display {
+  min-width: 40px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14.605px;
+}
+
+.product-add-btn {
+  width: 100%;
+  background: #1e1e1e;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 2.952px;
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 14.605px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.product-add-btn:hover {
+  background: #000;
+}
+
+.product-add-btn.added {
+  background: #4caf50;
+}
+
+/* ============================================================================
+   FOOTER (Fixed at Bottom)
+   ============================================================================ */
+
+.full-page-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #f4f7ff;
+  border-top: 1px solid #808080;
+  border-radius: 8px 8px 0 0;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  z-index: 1000;
+  max-height: 158px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Left section - Horizontal scroll */
+.footer-left {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+}
+
+.footer-selected-products {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+/* Custom scrollbar styling */
+.footer-left::-webkit-scrollbar {
+  height: 3.333px;
+}
+
+.footer-left::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.footer-left::-webkit-scrollbar-thumb {
+  background: #1e1e1e;
+  border-radius: 3.922px;
+}
+
+.footer-product-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 120px;
+  position: relative;
+}
+
+.footer-product-image-wrapper {
+  width: 65.766px;
+  height: 63.083px;
+  border: 0.749px solid #1e1e1e;
+  border-radius: 2.995px;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.footer-product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Quantity badge on thumbnail */
+.footer-product-quantity-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24.378px;
+  height: 24.378px;
+  border-radius: 50%;
+  background: #1e1e1e;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 14.815px;
+  z-index: 2;
+}
+
+.footer-product-info {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.footer-product-title {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-size: 14.815px;
+  color: #1e1e1e;
+  line-height: 1.2;
+  max-width: 269px;
+}
+
+.footer-product-price {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 14.815px;
+  color: #1e1e1e;
+}
+
+.footer-product-remove {
+  background: transparent;
+  border: none;
+  color: #bd0000;
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 14.815px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: none;
+}
+
+.footer-product-remove:hover {
+  text-decoration: underline;
+}
+
+/* Right section - Total and navigation */
+.footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 200px;
+}
+
+.footer-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.total-label {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-size: 19.402px;
+  color: #1e1e1e;
+}
+
+.total-price {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 19.402px;
+  color: #1e1e1e;
+}
+
+.footer-nav-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.footer-nav-btn {
+  height: 44.575px;
+  padding: 0 24px;
+  border-radius: 3.922px;
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-weight: bold;
+  font-size: 19.402px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.footer-back-btn {
+  background: #808080;
+  color: #fff;
+}
+
+.footer-back-btn:hover:not(:disabled) {
+  background: #666;
+}
+
+.footer-next-btn {
+  background: #1e1e1e;
+  color: #fff;
+  box-shadow: 0px 3.922px 7.844px 0px rgba(0, 0, 0, 0.4);
+}
+
+.footer-next-btn:hover:not(:disabled) {
+  background: #000;
+}
+
+.footer-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* No products selected state */
+.no-selections {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-size: 14.815px;
+  color: #808080;
+  font-style: italic;
+}
+
+/* ============================================================================
+   LOADING STATE
+   ============================================================================ */
+
+.bundle-loading {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f0f3eb;
+  border-top: 4px solid #1e1e1e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .step-timeline {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .timeline-line {
+    display: none;
+  }
+
+  .category-tabs {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .full-page-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+  }
+
+  .full-page-footer {
+    flex-direction: column;
+    max-height: none;
+    padding: 12px;
+  }
+
+  .footer-right {
+    width: 100%;
+    align-items: center;
+  }
+
+  .footer-nav-buttons {
+    width: 100%;
+  }
+
+  .footer-nav-btn {
+    flex: 1;
+  }
+}

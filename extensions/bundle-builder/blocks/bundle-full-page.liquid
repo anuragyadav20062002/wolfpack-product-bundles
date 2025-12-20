@@ -1,0 +1,135 @@
+{% schema %}
+{
+  "name": "Bundle Builder (Full Page)",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["page"]
+  },
+  "stylesheet": "bundle-widget-full-page.css",
+  "javascript": "bundle-widget-full-page.js",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "This block is for full-page bundles on standalone pages. Use the regular 'Bundle Builder' block for product-page bundles."
+    },
+    {
+      "type": "text",
+      "id": "bundle_id",
+      "label": "Bundle ID",
+      "info": "Enter the bundle ID for the full-page bundle you want to display on this page"
+    },
+    {
+      "type": "text",
+      "id": "app_url",
+      "label": "App server URL (optional)",
+      "info": "Override the app server URL for development/testing. Leave blank to auto-detect."
+    },
+    {
+      "type": "header",
+      "content": "Display Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bundle_title",
+      "label": "Show bundle title",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_step_timeline",
+      "label": "Show step progress timeline",
+      "info": "Display the step progress indicator at the top",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_tabs",
+      "label": "Show category tabs",
+      "info": "Display category/collection tabs for filtering products",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
+
+{% comment %}
+  Full-Page Bundle Widget
+  For standalone bundle pages (not product pages)
+  Merchants create a page and assign this template
+{% endcomment %}
+
+{% assign bundle_id = block.settings.bundle_id %}
+{% assign should_show_widget = false %}
+
+{% comment %} Check if bundle ID is provided {% endcomment %}
+{% if bundle_id and bundle_id != blank %}
+  {% assign should_show_widget = true %}
+{% endif %}
+
+{% comment %} THEME EDITOR: Allow preview even without bundle ID {% endcomment %}
+{% if request.design_mode %}
+  {% assign should_show_widget = true %}
+  {% unless bundle_id and bundle_id != blank %}
+    {% assign bundle_id = "preview" %}
+  {% endunless %}
+{% endif %}
+
+{% if should_show_widget %}
+  <div
+    {{ block.shopify_attributes }}
+    id="bundle-builder-app"
+    data-bundle-id="{{ bundle_id }}"
+    data-bundle-type="full_page"
+    data-app-url="{{ block.settings.app_url | default: '' }}"
+    data-show-title="{{ block.settings.show_bundle_title }}"
+    data-show-step-timeline="{{ block.settings.show_step_timeline }}"
+    data-show-category-tabs="{{ block.settings.show_category_tabs }}"
+    class="bundle-widget-container bundle-widget-full-page"
+  >
+    <div class="bundle-loading">
+      <div class="loading-spinner"></div>
+      <p>Loading bundle builder...</p>
+    </div>
+  </div>
+
+  <script>
+    console.log('🎯 [FULL_PAGE_BUNDLE] Widget Loading:', {
+      bundleId: {{ bundle_id | json }},
+      bundleType: 'full_page',
+      pageHandle: {{ page.handle | json }},
+      pageTitle: {{ page.title | json }},
+      isThemeEditor: (window.Shopify && window.Shopify.designMode) || false
+    });
+
+    // Initialize Shopify context for full-page bundles
+    if (!window.bundleWidgetContext) {
+      window.shopCurrency = {{ shop.currency | json }};
+      window.shopMoneyFormat = {{ shop.money_format | json }};
+      window.shopifyMultiCurrency = {
+        shopBaseCurrency: {{ shop.currency | json }},
+        shopMoneyFormat: {{ shop.money_format | json }},
+        customerCurrency: null,
+        customerMoneyFormat: null,
+        exchangeRate: 1,
+        isMultiCurrencyEnabled: false
+      };
+      window.bundleWidgetContext = true;
+    }
+  </script>
+
+  <!-- Inject app URL from shop metafield -->
+  <script>
+    {% assign app_namespace = '$app' %}
+    {% assign shop_app_metafields = shop.metafields[app_namespace] %}
+    {% assign server_url_field = nil %}
+    {% if shop_app_metafields %}
+      {% assign server_url_field = shop_app_metafields['serverUrl'] %}
+    {% endif %}
+    window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
+  </script>
+{% else %}
+  <div class="bundle-widget-placeholder" style="padding: 40px; text-align: center; background: #f0f3eb; border-radius: 8px;">
+    <h3 style="margin: 0 0 10px;">Full-Page Bundle Widget</h3>
+    <p style="margin: 0; color: #666;">Please configure a Bundle ID in the block settings to display the bundle builder.</p>
+  </div>
+{% endif %}
