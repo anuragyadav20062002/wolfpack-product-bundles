@@ -713,7 +713,8 @@ export class WidgetInstallationService {
    */
   /**
    * Create a Shopify page automatically for full-page bundle with automated bundle ID configuration
-   * This method fully automates the setup process - no manual Bundle ID entry required
+   * SIMPLIFIED VERSION - No template requirement, just creates page with Bundle ID metafield
+   * Merchant can use any template they want, the Bundle ID is auto-configured via page metafield
    */
   static async createFullPageBundlePageAutomated(
     admin: any,
@@ -727,60 +728,17 @@ export class WidgetInstallationService {
     pageId?: string;
     pageHandle?: string;
     error?: string;
-    errorType?: 'template_not_found' | 'page_creation_failed' | 'metafield_failed' | 'unknown';
+    errorType?: 'page_creation_failed' | 'metafield_failed' | 'unknown';
   }> {
     try {
-      AppLogger.info('Creating automated full-page bundle page', {
+      AppLogger.info('Creating automated full-page bundle page (simplified workflow)', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
         bundleName
       });
 
-      // Step 1: Check if full-page-bundle template exists
-      const GET_THEME_ASSETS = `
-        query {
-          themes(first: 1, roles: MAIN) {
-            nodes {
-              id
-              name
-              files(first: 250) {
-                nodes {
-                  filename
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const themeResponse = await admin.graphql(GET_THEME_ASSETS);
-      const themeData = await themeResponse.json();
-      const theme = themeData.data?.themes?.nodes?.[0];
-
-      if (!theme) {
-        return {
-          success: false,
-          error: 'No active theme found',
-          errorType: 'unknown'
-        };
-      }
-
-      // Check if full-page-bundle template exists
-      const templateExists = theme.files?.nodes?.some((file: any) =>
-        file.filename === 'templates/page.full-page-bundle.json' ||
-        file.filename === 'templates/page.full-page-bundle.liquid'
-      );
-
-      if (!templateExists) {
-        return {
-          success: false,
-          error: 'Template "full-page-bundle" not found. Please create it first following the setup instructions.',
-          errorType: 'template_not_found'
-        };
-      }
-
-      // Step 2: Create the page with a clean handle
+      // Step 1: Create the page with a clean handle
       const pageHandle = `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       const pageTitle = bundleName || `Bundle ${bundleId}`;
 
@@ -805,8 +763,10 @@ export class WidgetInstallationService {
           page: {
             title: pageTitle,
             handle: pageHandle,
-            body: `<p>Loading ${bundleName}...</p>`,
-            templateSuffix: 'full-page-bundle',  // Assign to our template
+            body: `<div style="text-align: center; padding: 60px 20px;">
+  <h1 style="font-size: 2em; margin-bottom: 20px;">${bundleName}</h1>
+  <p style="color: #666; font-size: 1.1em;">Configure this page in the theme editor to display your bundle builder.</p>
+</div>`,
             isPublished: true
           }
         }
@@ -843,7 +803,7 @@ export class WidgetInstallationService {
         pageHandle: createdPage.handle
       });
 
-      // Step 3: Add bundle ID as page metafield
+      // Step 2: Add bundle ID as page metafield (KEY AUTOMATION)
       const SET_METAFIELD = `
         mutation setPageMetafield($metafields: [MetafieldsSetInput!]!) {
           metafieldsSet(metafields: $metafields) {
@@ -887,18 +847,12 @@ export class WidgetInstallationService {
         });
       }
 
-      // Step 4: Build theme editor URL
+      // Step 3: Build theme editor URL to open the page
       const shopDomain = shop.replace('.myshopify.com', '');
-      const appBlockId = `${apiKey}/bundle-full-page`;
+      const numericPageId = createdPage.id.split('/').pop() || '';
 
-      const params = new URLSearchParams({
-        template: 'page.full-page-bundle',
-        pageId: createdPage.id.split('/').pop() || '',
-        addAppBlockId: appBlockId,
-        target: 'newAppsSection'
-      });
-
-      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+      // Open theme editor with the page selected
+      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${numericPageId}/pages/${pageHandle}`;
 
       AppLogger.info('Automated page creation completed', {
         component: 'WidgetInstallationService',

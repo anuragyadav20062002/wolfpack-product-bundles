@@ -3338,7 +3338,7 @@ export default function ConfigureBundleFlow() {
                         </Text>
                         <Text as="p" variant="bodySm" tone="subdued">
                           {bundle.bundleType === 'full_page'
-                            ? 'Opens theme editor with page template. Add the "Bundle - Full Page" block and enter your Bundle ID.'
+                            ? 'Creates a page with auto-configured Bundle ID and opens theme editor. Just add the "Bundle - Full Page" block.'
                             : 'Opens theme editor with bundle widget pre-selected. Simply drag & drop to position.'}
                         </Text>
                       </BlockStack>
@@ -3380,55 +3380,30 @@ export default function ConfigureBundleFlow() {
                     </Card>
                   )}
 
-                  {/* Setup Guide - Only for full-page bundles */}
+                  {/* Quick Setup Guide - Only for full-page bundles */}
                   {bundle.bundleType === 'full_page' && (
-                    <Card background="bg-surface-info">
-                      <BlockStack gap="400">
+                    <Card background="bg-surface-success">
+                      <BlockStack gap="300">
                         <InlineStack gap="200" blockAlign="center">
                           <div style={{
                             width: '32px',
                             height: '32px',
                             borderRadius: '50%',
-                            backgroundColor: 'var(--p-color-bg-fill-info)',
+                            backgroundColor: 'var(--p-color-bg-fill-success)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center'
                           }}>
-                            <Icon source={ViewIcon} tone="info" />
+                            <Icon source={ViewIcon} tone="success" />
                           </div>
                           <Text as="h3" variant="headingSm" fontWeight="semibold">
-                            One-Time Setup Required
+                            Automated Setup
                           </Text>
                         </InlineStack>
 
-                        <BlockStack gap="300">
+                        <BlockStack gap="200">
                           <Text as="p" variant="bodySm" tone="subdued">
-                            To enable automated bundle page creation, you need to create a page template in your theme (one-time setup):
-                          </Text>
-
-                          <BlockStack gap="200">
-                            <Text as="p" variant="bodySm" fontWeight="semibold">
-                              Setup Steps:
-                            </Text>
-                            <ol style={{
-                              marginLeft: '20px',
-                              fontSize: '13px',
-                              lineHeight: '1.6',
-                              color: 'var(--p-color-text-subdued)'
-                            }}>
-                              <li>Go to <strong>Online Store → Themes → Customize</strong></li>
-                              <li>In the theme editor, click the <strong>page icon</strong> at the top</li>
-                              <li>Click <strong>"Create template"</strong></li>
-                              <li>Enter template name: <strong>"full-page-bundle"</strong> (exactly as shown)</li>
-                              <li>Based on: <strong>"Default page"</strong></li>
-                              <li>Click <strong>"Create template"</strong></li>
-                              <li>Add the <strong>"Bundle - Full Page"</strong> block to the template</li>
-                              <li>Save the template</li>
-                            </ol>
-                          </BlockStack>
-
-                          <Text as="p" variant="bodySm" tone="subdued" fontWeight="semibold">
-                            After this one-time setup, clicking "Place Widget" will automatically:
+                            Clicking "Place Widget" will automatically:
                           </Text>
 
                           <ul style={{
@@ -3437,14 +3412,13 @@ export default function ConfigureBundleFlow() {
                             lineHeight: '1.6',
                             color: 'var(--p-color-text-subdued)'
                           }}>
-                            <li>Create a new page for your bundle</li>
-                            <li>Assign it to the "full-page-bundle" template</li>
-                            <li>Configure the bundle automatically (no manual Bundle ID entry)</li>
-                            <li>Open the page in the theme editor</li>
+                            <li>Create a new page for this bundle</li>
+                            <li>Configure the Bundle ID automatically (no manual entry needed)</li>
+                            <li>Open the page in theme editor for you to add the "Bundle - Full Page" block</li>
                           </ul>
 
-                          <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium" style={{ fontStyle: 'italic' }}>
-                            Note: You only need to create the template once. After that, all your full-page bundles will use it automatically.
+                          <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium" style={{ fontStyle: 'italic', marginTop: '8px' }}>
+                            The Bundle ID is stored in the page, so you never have to enter it manually!
                           </Text>
                         </BlockStack>
                       </BlockStack>
