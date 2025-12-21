@@ -851,8 +851,8 @@ export class WidgetInstallationService {
       const shopDomain = shop.replace('.myshopify.com', '');
       const numericPageId = createdPage.id.split('/').pop() || '';
 
-      // Open theme editor with the page selected
-      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${numericPageId}/pages/${pageHandle}`;
+      // Open theme editor with the page preview so merchant can add the bundle block
+      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?previewPath=/pages/${pageHandle}`;
 
       AppLogger.info('Automated page creation completed', {
         component: 'WidgetInstallationService',
