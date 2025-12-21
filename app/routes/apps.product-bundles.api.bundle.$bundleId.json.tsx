@@ -11,17 +11,33 @@ import { AppLogger } from "../lib/logger";
  * GET /apps/product-bundles/api/bundle/:bundleId.json
  */
 export const loader: LoaderFunction = async ({ request, params }) => {
+  const url = new URL(request.url);
+
+  // Log all incoming requests for debugging
+  console.log('[APP_PROXY] Incoming request:', {
+    url: url.href,
+    pathname: url.pathname,
+    params,
+    searchParams: Object.fromEntries(url.searchParams.entries())
+  });
+
   try {
     const { bundleId } = params;
 
     if (!bundleId) {
+      console.log('[APP_PROXY] No bundleId in params');
       return json({ error: "Bundle ID is required" }, { status: 400 });
     }
+
+    console.log('[APP_PROXY] Attempting authentication for bundleId:', bundleId);
 
     // Authenticate the request via app proxy
     const { session } = await authenticate.public.appProxy(request);
 
+    console.log('[APP_PROXY] Authentication result:', { hasSession: !!session, shop: session?.shop });
+
     if (!session?.shop) {
+      console.log('[APP_PROXY] No shop in session');
       return json({ error: "Shop not found" }, { status: 400 });
     }
 
