@@ -104,7 +104,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         maxQuantity: step.maxQuantity,
         enabled: step.enabled,
         displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-        products: step.products || [],
+        products: step.StepProduct || step.products || [],
         collections: step.collections || [],
         StepProduct: step.StepProduct || [],
         conditionType: step.conditionType,
