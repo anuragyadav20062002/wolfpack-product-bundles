@@ -1363,30 +1363,59 @@ class BundleWidgetFullPage {
     }
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-      const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
-      const shop = window.Shopify?.shop || window.location.host;
+      // Check if StepProduct already has enriched data (for full-page bundles)
+      const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
 
-      if (productGids.length > 0) {
-        console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
+      if (hasEnrichedData) {
+        console.log('[LOAD_PRODUCTS] Using enriched StepProduct data directly (full-page bundle)');
 
-        // Get app URL (same as above)
-        const appUrl = window.__BUNDLE_APP_URL__ || '';
-        const apiBaseUrl = appUrl || window.location.origin;
+        // Transform StepProduct to match expected product format
+        const enrichedProducts = step.StepProduct.map(sp => ({
+          id: sp.productId,
+          title: sp.title,
+          handle: sp.handle,
+          imageUrl: sp.imageUrl,
+          price: sp.price,
+          compareAtPrice: sp.compareAtPrice,
+          available: true,
+          variants: sp.variants || [{
+            id: sp.productId.replace('Product', 'ProductVariant'),
+            title: 'Default Title',
+            price: sp.price,
+            compareAtPrice: sp.compareAtPrice,
+            available: true,
+            image: sp.imageUrl ? { src: sp.imageUrl } : null
+          }]
+        }));
 
-        try {
-          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
+        allProducts = allProducts.concat(enrichedProducts);
+        console.log('[LOAD_PRODUCTS] Added', enrichedProducts.length, 'enriched StepProducts');
+      } else {
+        // Fetch from storefront API if data is not enriched
+        const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
+        const shop = window.Shopify?.shop || window.location.host;
 
-          if (!response.ok) {
-            console.error('[LOAD_PRODUCTS] API request failed for StepProduct:', response.status);
-          } else {
-            const data = await response.json();
-            if (data.products && data.products.length > 0) {
-              allProducts = allProducts.concat(data.products);
-              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'StepProducts');
+        if (productGids.length > 0) {
+          console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
+
+          const appUrl = window.__BUNDLE_APP_URL__ || '';
+          const apiBaseUrl = appUrl || window.location.origin;
+
+          try {
+            const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
+
+            if (!response.ok) {
+              console.error('[LOAD_PRODUCTS] API request failed for StepProduct:', response.status);
+            } else {
+              const data = await response.json();
+              if (data.products && data.products.length > 0) {
+                allProducts = allProducts.concat(data.products);
+                console.log('[LOAD_PRODUCTS] Added', data.products.length, 'StepProducts');
+              }
             }
+          } catch (error) {
+            console.error('[LOAD_PRODUCTS] Error fetching StepProduct:', error);
           }
-        } catch (error) {
-          console.error('[LOAD_PRODUCTS] Error fetching StepProduct:', error);
         }
       }
     }
