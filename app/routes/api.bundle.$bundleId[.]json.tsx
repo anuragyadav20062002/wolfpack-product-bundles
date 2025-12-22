@@ -131,7 +131,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
                   }
                 }
                 compareAtPriceRange {
-                  minVariantPrice {
+                  maxVariantPrice {
                     amount
                     currencyCode
                   }
@@ -202,7 +202,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
               handle: productDetails.handle,
               imageUrl: productDetails.featuredImage?.url || null,
               price: productDetails.priceRange?.minVariantPrice?.amount || "0",
-              compareAtPrice: productDetails.compareAtPriceRange?.minVariantPrice?.amount || null,
+              compareAtPrice: productDetails.compareAtPriceRange?.maxVariantPrice?.amount || null,
               currencyCode: productDetails.priceRange?.minVariantPrice?.currencyCode || "INR",
               variants: productDetails.variants?.edges?.map((edge: any) => ({
                 id: edge.node.id,
