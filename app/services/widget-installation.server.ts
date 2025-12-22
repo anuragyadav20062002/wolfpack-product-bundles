@@ -712,9 +712,11 @@ export class WidgetInstallationService {
    * @returns Validation result with installation link
    */
   /**
-   * Create a Shopify page automatically for full-page bundle with automated bundle ID configuration
-   * SIMPLIFIED VERSION - No template requirement, just creates page with Bundle ID metafield
-   * Merchant can use any template they want, the Bundle ID is auto-configured via page metafield
+   * Create a Shopify page automatically for full-page bundle with FULL AUTOMATION
+   * - Creates page with bundle ID metafield
+   * - Creates/updates page template with app block pre-installed
+   * - Assigns template to page
+   * - Merchant just needs to publish - no manual setup required!
    */
   static async createFullPageBundlePageAutomated(
     admin: any,
@@ -728,19 +730,124 @@ export class WidgetInstallationService {
     pageId?: string;
     pageHandle?: string;
     error?: string;
-    errorType?: 'page_creation_failed' | 'metafield_failed' | 'unknown';
+    errorType?: 'page_creation_failed' | 'metafield_failed' | 'template_failed' | 'unknown';
   }> {
     try {
-      AppLogger.info('Creating automated full-page bundle page (simplified workflow)', {
+      AppLogger.info('Creating FULLY AUTOMATED full-page bundle page', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
         bundleName
       });
 
-      // Step 1: Create the page with a clean handle
+      // Step 1: Get current published theme
+      const CURRENT_THEME_QUERY = `
+        query GetCurrentTheme {
+          themes(first: 1, roles: [MAIN]) {
+            edges {
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+      `;
+
+      const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
+      const themeData = await themeResponse.json();
+
+      if (!themeData?.data?.themes?.edges?.length) {
+        return {
+          success: false,
+          error: 'No published theme found',
+          errorType: 'template_failed'
+        };
+      }
+
+      const theme = themeData.data.themes.edges[0].node;
+      const themeId = theme.id;
+
+      AppLogger.info('Found published theme', {
+        component: 'WidgetInstallationService',
+        themeId,
+        themeName: theme.name
+      });
+
+      // Step 2: Create custom page template with app block pre-installed
+      const templateName = 'page.bundle.json';
+      const appBlockType = `shopify://apps/${apiKey}/blocks/bundle-full-page`;
+      const sectionId = 'bundle_full_page_section';
+
+      const pageTemplate = {
+        name: 'Bundle Page',
+        sections: {
+          main: {
+            type: 'main-page',
+            settings: {}
+          },
+          [sectionId]: {
+            type: appBlockType,
+            settings: {}
+          }
+        },
+        order: ['main', sectionId]
+      };
+
+      const UPSERT_TEMPLATE_MUTATION = `
+        mutation UpsertTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+          themeFilesUpsert(themeId: $themeId, files: $files) {
+            upsertedThemeFiles {
+              filename
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const templateResponse = await admin.graphql(UPSERT_TEMPLATE_MUTATION, {
+        variables: {
+          themeId,
+          files: [{
+            filename: `templates/${templateName}`,
+            body: {
+              type: 'TEXT',
+              value: JSON.stringify(pageTemplate, null, 2)
+            }
+          }]
+        }
+      });
+
+      const templateData = await templateResponse.json();
+
+      if (templateData?.data?.themeFilesUpsert?.userErrors?.length > 0) {
+        const errors = templateData.data.themeFilesUpsert.userErrors;
+        AppLogger.error('Template creation failed', {
+          component: 'WidgetInstallationService',
+          errors
+        });
+        return {
+          success: false,
+          error: `Failed to create page template: ${errors[0].message}`,
+          errorType: 'template_failed'
+        };
+      }
+
+      AppLogger.info('Page template created with app block', {
+        component: 'WidgetInstallationService',
+        template: templateName,
+        appBlockType
+      });
+
+      // Step 3: Create the page with the custom template
       const pageHandle = `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       const pageTitle = bundleName || `Bundle ${bundleId}`;
+
+      // Extract template suffix (bundle) from page.bundle.json
+      const templateSuffix = 'bundle';
 
       const CREATE_PAGE = `
         mutation createPage($page: PageCreateInput!) {
@@ -763,10 +870,8 @@ export class WidgetInstallationService {
           page: {
             title: pageTitle,
             handle: pageHandle,
-            body: `<div style="text-align: center; padding: 60px 20px;">
-  <h1 style="font-size: 2em; margin-bottom: 20px;">${bundleName}</h1>
-  <p style="color: #666; font-size: 1.1em;">Configure this page in the theme editor to display your bundle builder.</p>
-</div>`,
+            body: '',  // Empty body since template handles layout
+            templateSuffix: templateSuffix,
             isPublished: true
           }
         }
@@ -797,13 +902,14 @@ export class WidgetInstallationService {
         };
       }
 
-      AppLogger.info('Page created successfully', {
+      AppLogger.info('Page created with bundle template', {
         component: 'WidgetInstallationService',
         pageId: createdPage.id,
-        pageHandle: createdPage.handle
+        pageHandle: createdPage.handle,
+        template: templateSuffix
       });
 
-      // Step 2: Add bundle ID as page metafield (KEY AUTOMATION)
+      // Step 4: Add bundle ID as page metafield (for widget to read)
       const SET_METAFIELD = `
         mutation setPageMetafield($metafields: [MetafieldsSetInput!]!) {
           metafieldsSet(metafields: $metafields) {
@@ -847,31 +953,31 @@ export class WidgetInstallationService {
         });
       }
 
-      // Step 3: Build theme editor URL to open the page
+      // Step 5: Build storefront URL to view the page
       const shopDomain = shop.replace('.myshopify.com', '');
-      const numericPageId = createdPage.id.split('/').pop() || '';
 
-      // Open theme editor with the page preview so merchant can add the bundle block
-      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?previewPath=/pages/${pageHandle}`;
+      // Direct storefront URL - page is ready to view!
+      const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
 
-      AppLogger.info('Automated page creation completed', {
+      AppLogger.info('FULL AUTOMATION completed successfully!', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
-        url
+        template: templateSuffix,
+        storefrontUrl
       });
 
       return {
         success: true,
-        installationLink: url,
+        installationLink: storefrontUrl,
         pageId: createdPage.id,
         pageHandle: createdPage.handle
       };
 
     } catch (error) {
-      AppLogger.error('Failed to create automated full-page bundle', {
+      AppLogger.error('Failed to create fully automated full-page bundle', {
         component: 'WidgetInstallationService',
         shop,
         bundleId
