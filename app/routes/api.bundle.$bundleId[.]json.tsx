@@ -196,13 +196,16 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           const productDetails = productDetailsMap.get(productId);
 
           if (productDetails) {
+            // Use first variant price for consistency (already in major currency unit)
+            const firstVariant = productDetails.variants?.edges?.[0]?.node;
+
             return {
               ...sp,
               title: productDetails.title,
               handle: productDetails.handle,
               imageUrl: productDetails.featuredImage?.url || null,
-              price: productDetails.priceRange?.minVariantPrice?.amount || "0",
-              compareAtPrice: productDetails.compareAtPriceRange?.maxVariantCompareAtPrice?.amount || null,
+              price: firstVariant?.price || "0",
+              compareAtPrice: firstVariant?.compareAtPrice || null,
               currencyCode: productDetails.priceRange?.minVariantPrice?.currencyCode || "INR",
               variants: productDetails.variants?.edges?.map((edge: any) => ({
                 id: edge.node.id,
