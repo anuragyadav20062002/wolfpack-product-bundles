@@ -88,7 +88,100 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       bundleName: bundle.name
     });
 
-    // Format bundle for JavaScript widget
+    // Fetch full product details from Shopify for all products in the bundle
+    const authResult = await authenticate.public.appProxy(request);
+    const admin = authResult.admin;
+
+    // Collect all unique product IDs from all steps
+    const allProductIds = new Set<string>();
+    bundle.steps.forEach(step => {
+      step.StepProduct?.forEach(sp => {
+        if (sp.productId) {
+          allProductIds.add(sp.productId);
+        }
+      });
+    });
+
+    // Fetch product details from Shopify
+    const productDetailsMap = new Map();
+
+    if (admin && allProductIds.size > 0) {
+      const productIdsArray = Array.from(allProductIds);
+
+      // Query products in batches (max 250 per query)
+      const BATCH_SIZE = 250;
+      for (let i = 0; i < productIdsArray.length; i += BATCH_SIZE) {
+        const batch = productIdsArray.slice(i, i + BATCH_SIZE);
+
+        const PRODUCTS_QUERY = `
+          query getProducts($ids: [ID!]!) {
+            nodes(ids: $ids) {
+              ... on Product {
+                id
+                title
+                handle
+                featuredImage {
+                  url
+                  altText
+                }
+                priceRange {
+                  minVariantPrice {
+                    amount
+                    currencyCode
+                  }
+                }
+                compareAtPriceRange {
+                  minVariantPrice {
+                    amount
+                    currencyCode
+                  }
+                }
+                variants(first: 100) {
+                  edges {
+                    node {
+                      id
+                      title
+                      price
+                      compareAtPrice
+                      image {
+                        url
+                        altText
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+
+        try {
+          const response = await admin.graphql(PRODUCTS_QUERY, {
+            variables: {
+              ids: batch.map(id => id.startsWith('gid://') ? id : `gid://shopify/Product/${id}`)
+            }
+          });
+
+          const data = await response.json();
+
+          if (data.data?.nodes) {
+            data.data.nodes.forEach((product: any) => {
+              if (product?.id) {
+                productDetailsMap.set(product.id, product);
+              }
+            });
+          }
+        } catch (error) {
+          AppLogger.error("Error fetching product details", {
+            component: "apps.product-bundles.api.bundle",
+            operation: "loader",
+            batch: batch
+          }, error);
+        }
+      }
+    }
+
+    // Format bundle for JavaScript widget with enriched product data
     const formattedBundle = {
       id: bundle.id,
       name: bundle.name,
@@ -96,21 +189,50 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       status: bundle.status,
       bundleType: bundle.bundleType,
       shopifyProductId: bundle.shopifyProductId,
-      steps: bundle.steps.map(step => ({
-        id: step.id,
-        name: step.name,
-        position: step.position,
-        minQuantity: step.minQuantity,
-        maxQuantity: step.maxQuantity,
-        enabled: step.enabled,
-        displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-        products: step.StepProduct || step.products || [],
-        collections: step.collections || [],
-        StepProduct: step.StepProduct || [],
-        conditionType: step.conditionType,
-        conditionOperator: step.conditionOperator,
-        conditionValue: step.conditionValue
-      })),
+      steps: bundle.steps.map(step => {
+        // Enrich StepProduct with Shopify product details
+        const enrichedStepProducts = step.StepProduct?.map(sp => {
+          const productId = sp.productId?.startsWith('gid://') ? sp.productId : `gid://shopify/Product/${sp.productId}`;
+          const productDetails = productDetailsMap.get(productId);
+
+          if (productDetails) {
+            return {
+              ...sp,
+              title: productDetails.title,
+              handle: productDetails.handle,
+              imageUrl: productDetails.featuredImage?.url || null,
+              price: productDetails.priceRange?.minVariantPrice?.amount || "0",
+              compareAtPrice: productDetails.compareAtPriceRange?.minVariantPrice?.amount || null,
+              currencyCode: productDetails.priceRange?.minVariantPrice?.currencyCode || "INR",
+              variants: productDetails.variants?.edges?.map((edge: any) => ({
+                id: edge.node.id,
+                title: edge.node.title,
+                price: edge.node.price,
+                compareAtPrice: edge.node.compareAtPrice,
+                imageUrl: edge.node.image?.url || null
+              })) || []
+            };
+          }
+
+          return sp;
+        }) || [];
+
+        return {
+          id: step.id,
+          name: step.name,
+          position: step.position,
+          minQuantity: step.minQuantity,
+          maxQuantity: step.maxQuantity,
+          enabled: step.enabled,
+          displayVariantsAsIndividual: step.displayVariantsAsIndividual,
+          products: step.products || [],
+          collections: step.collections || [],
+          StepProduct: enrichedStepProducts,
+          conditionType: step.conditionType,
+          conditionOperator: step.conditionOperator,
+          conditionValue: step.conditionValue
+        };
+      }),
       pricing: bundle.pricing ? {
         enabled: bundle.pricing.enabled,
         method: bundle.pricing.method,
