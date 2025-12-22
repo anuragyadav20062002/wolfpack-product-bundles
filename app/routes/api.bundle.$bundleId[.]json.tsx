@@ -220,6 +220,18 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           return sp;
         }) || [];
 
+        // BACKWARDS COMPATIBILITY: Also populate products array for old widget code
+        const productsArray = enrichedStepProducts.map(sp => ({
+          id: sp.productId,
+          title: sp.title || '',
+          handle: sp.handle || '',
+          imageUrl: sp.imageUrl || null,
+          price: sp.price || '0',
+          compareAtPrice: sp.compareAtPrice || null,
+          available: true,
+          variants: sp.variants || []
+        }));
+
         return {
           id: step.id,
           name: step.name,
@@ -228,7 +240,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           maxQuantity: step.maxQuantity,
           enabled: step.enabled,
           displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-          products: step.products || [],
+          products: productsArray.length > 0 ? productsArray : (step.products || []),
           collections: step.collections || [],
           StepProduct: enrichedStepProducts,
           conditionType: step.conditionType,
