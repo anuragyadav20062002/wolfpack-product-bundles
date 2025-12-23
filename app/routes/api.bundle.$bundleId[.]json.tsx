@@ -306,6 +306,26 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           }))
         });
 
+        // Populate products array for loader (transforms enriched StepProduct to products format)
+        const productsArray = enrichedStepProducts.map(esp => ({
+          id: esp.productId,
+          title: esp.title,
+          handle: esp.handle,
+          images: esp.imageUrl ? [{ url: esp.imageUrl }] : [],
+          featuredImage: esp.imageUrl ? { url: esp.imageUrl } : null,
+          price: Math.round(parseFloat(esp.price || "0") * 100), // Convert to cents for loader
+          compareAtPrice: esp.compareAtPrice ? Math.round(parseFloat(esp.compareAtPrice) * 100) : null,
+          available: true,
+          variants: esp.variants?.map(v => ({
+            id: v.id, // Already numeric
+            title: v.title,
+            price: Math.round(parseFloat(v.price || "0") * 100),
+            compareAtPrice: v.compareAtPrice ? Math.round(parseFloat(v.compareAtPrice) * 100) : null,
+            image: v.imageUrl ? { url: v.imageUrl } : null,
+            available: true
+          })) || []
+        }));
+
         return {
           id: step.id,
           name: step.name,
@@ -314,7 +334,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           maxQuantity: step.maxQuantity,
           enabled: step.enabled,
           displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-          products: [], // Empty - widget will use enriched StepProduct instead
+          products: productsArray, // Populate for loader compatibility
           collections: step.collections || [],
           StepProduct: enrichedStepProducts,
           conditionType: step.conditionType,
