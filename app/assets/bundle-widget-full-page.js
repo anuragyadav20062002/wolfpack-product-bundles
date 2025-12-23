@@ -199,56 +199,91 @@ class BundleWidgetFullPage {
   async loadBundleData() {
     let bundleData = null;
 
-    // Single source: data-bundle-config attribute (from product metafield)
-    const configValue = this.container.dataset.bundleConfig;
-    if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
+    // Check if this is a full-page bundle (needs to fetch from API)
+    const bundleType = this.container.dataset.bundleType;
+    const bundleId = this.container.dataset.bundleId;
+
+    if (bundleType === 'full_page' && bundleId) {
+      console.log('[WIDGET_INIT] 📄 Full-page bundle detected, fetching from API:', bundleId);
+
       try {
-        const singleBundle = JSON.parse(configValue);
-        // Validate parsed result is a valid object with an id
-        if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
-          bundleData = { [singleBundle.id]: singleBundle };
-          console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
+        const shop = window.Shopify?.shop || window.location.host;
+        const appUrl = window.__BUNDLE_APP_URL__ || this.container.dataset.appUrl || '';
+        const apiBaseUrl = appUrl || window.location.origin;
+        const apiUrl = `${apiBaseUrl}/api/bundle/${bundleId}.json?shop=${encodeURIComponent(shop)}`;
+
+        console.log('[WIDGET_INIT] Fetching bundle from:', apiUrl);
+
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('[WIDGET_INIT] API response:', data);
+
+        if (data.success && data.bundle) {
+          bundleData = { [data.bundle.id]: data.bundle };
+          console.log('[WIDGET_INIT] ✅ Loaded full-page bundle from API:', data.bundle.id);
         } else {
-          console.warn('[WIDGET_INIT] ⚠️ Parsed bundle config is invalid (missing id):', singleBundle);
+          throw new Error('Invalid API response structure');
         }
       } catch (error) {
-        console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error, 'Value:', configValue.substring(0, 100));
+        console.error('[WIDGET_INIT] ❌ Failed to fetch full-page bundle from API:', error);
+        throw error;
       }
     } else {
-      console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
-    }
-
-    // Widget only works on container products with bundleConfig metafield
-    if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
-      // Check if we're in theme editor mode
-      const isThemeEditor = window.Shopify?.designMode ||
-                           window.isThemeEditorContext ||
-                           window.location.pathname.includes('/editor') ||
-                           window.location.search.includes('preview_theme_id');
-
-      const bundleIdFromDataset = this.container.dataset.bundleId;
-
-      // Show helpful preview in theme editor instead of error
-      if (isThemeEditor && bundleIdFromDataset) {
-        console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
-        this.showThemeEditorPreview(bundleIdFromDataset);
-        return; // Don't throw error, just show preview
+      // Product-page bundle: load from data-bundle-config attribute
+      const configValue = this.container.dataset.bundleConfig;
+      if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
+        try {
+          const singleBundle = JSON.parse(configValue);
+          // Validate parsed result is a valid object with an id
+          if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
+            bundleData = { [singleBundle.id]: singleBundle };
+            console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
+          } else {
+            console.warn('[WIDGET_INIT] ⚠️ Parsed bundle config is invalid (missing id):', singleBundle);
+          }
+        } catch (error) {
+          console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error, 'Value:', configValue.substring(0, 100));
+        }
+      } else {
+        console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
       }
 
-      // For production/storefront: show proper error
-      const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
-      console.error('[WIDGET_INIT] ❌', errorMsg);
-      console.error('[WIDGET_INIT] 🔍 Debug info:', {
-        isContainerProduct: !!configValue,
-        configValue: configValue?.substring(0, 100),
-        containerDataset: this.container.dataset,
-        bundleIdFromDataset: bundleIdFromDataset
-      });
-      throw new Error(errorMsg);
+      // Widget only works on container products with bundleConfig metafield
+      if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+        // Check if we're in theme editor mode
+        const isThemeEditor = window.Shopify?.designMode ||
+                             window.isThemeEditorContext ||
+                             window.location.pathname.includes('/editor') ||
+                             window.location.search.includes('preview_theme_id');
+
+        const bundleIdFromDataset = this.container.dataset.bundleId;
+
+        // Show helpful preview in theme editor instead of error
+        if (isThemeEditor && bundleIdFromDataset) {
+          console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
+          this.showThemeEditorPreview(bundleIdFromDataset);
+          return; // Don't throw error, just show preview
+        }
+
+        // For production/storefront: show proper error
+        const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
+        console.error('[WIDGET_INIT] ❌', errorMsg);
+        console.error('[WIDGET_INIT] 🔍 Debug info:', {
+          isContainerProduct: !!configValue,
+          configValue: configValue?.substring(0, 100),
+          containerDataset: this.container.dataset,
+          bundleIdFromDataset: bundleIdFromDataset
+        });
+        throw new Error(errorMsg);
+      }
     }
 
     this.bundleData = bundleData;
-    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully from container product metafield');
+    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully');
   }
 
   selectBundle() {
