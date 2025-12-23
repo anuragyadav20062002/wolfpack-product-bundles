@@ -1097,14 +1097,7 @@
 
 'use strict';
 
-// Import shared components and utilities
-  BUNDLE_WIDGET,
-  CurrencyManager,
-  BundleDataManager,
-  PricingCalculator,
-  ToastManager,
-  TemplateManager,
-  ComponentGenerator
+// Components are already loaded above (inlined from bundle-widget-components.js)
 
 console.log('[FULL_PAGE_WIDGET] Initializing...');
 
