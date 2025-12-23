@@ -88,6 +88,23 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       bundleName: bundle.name
     });
 
+    console.log('[API_DEBUG] Bundle found:', {
+      bundleId: bundle.id,
+      bundleName: bundle.name,
+      stepsCount: bundle.steps.length,
+      steps: bundle.steps.map(s => ({
+        stepId: s.id,
+        stepName: s.name,
+        stepProductCount: s.StepProduct?.length || 0,
+        stepProducts: s.StepProduct?.map(sp => ({
+          id: sp.id,
+          productId: sp.productId,
+          title: sp.title,
+          hasImageUrl: !!sp.imageUrl
+        }))
+      }))
+    });
+
     // Fetch full product details from Shopify for all products in the bundle
     const authResult = await authenticate.public.appProxy(request);
     const admin = authResult.admin;
@@ -100,6 +117,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           allProductIds.add(sp.productId);
         }
       });
+    });
+
+    console.log('[API_DEBUG] Collected product IDs:', {
+      totalUniqueProducts: allProductIds.size,
+      productIds: Array.from(allProductIds)
     });
 
     // Fetch product details from Shopify
@@ -164,6 +186,20 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
           const data = await response.json();
 
+          console.log('[API_DEBUG] GraphQL response for batch:', {
+            batchSize: batch.length,
+            batchIds: batch,
+            hasData: !!data.data,
+            hasNodes: !!data.data?.nodes,
+            nodesCount: data.data?.nodes?.length || 0,
+            nodes: data.data?.nodes?.map((n: any) => ({
+              id: n?.id,
+              title: n?.title,
+              hasVariants: !!n?.variants,
+              variantsCount: n?.variants?.edges?.length || 0
+            }))
+          });
+
           if (data.data?.nodes) {
             data.data.nodes.forEach((product: any) => {
               if (product?.id) {
@@ -172,6 +208,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
             });
           }
         } catch (error) {
+          console.error('[API_DEBUG] GraphQL query failed:', error);
           AppLogger.error("Error fetching product details", {
             component: "apps.product-bundles.api.bundle",
             operation: "loader",
@@ -180,6 +217,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         }
       }
     }
+
+    console.log('[API_DEBUG] Product details map:', {
+      mapSize: productDetailsMap.size,
+      mapKeys: Array.from(productDetailsMap.keys())
+    });
 
     // Format bundle for JavaScript widget with enriched product data
     const formattedBundle = {
@@ -190,10 +232,25 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       bundleType: bundle.bundleType,
       shopifyProductId: bundle.shopifyProductId,
       steps: bundle.steps.map(step => {
+        console.log('[API_DEBUG] Processing step:', {
+          stepId: step.id,
+          stepName: step.name,
+          stepProductCount: step.StepProduct?.length || 0
+        });
+
         // Enrich StepProduct with Shopify product details
         const enrichedStepProducts = step.StepProduct?.map(sp => {
           const productId = sp.productId?.startsWith('gid://') ? sp.productId : `gid://shopify/Product/${sp.productId}`;
           const productDetails = productDetailsMap.get(productId);
+
+          console.log('[API_DEBUG] Enriching product:', {
+            stepProductId: sp.id,
+            originalProductId: sp.productId,
+            normalizedProductId: productId,
+            foundInMap: !!productDetails,
+            dbTitle: sp.title,
+            dbImageUrl: sp.imageUrl
+          });
 
           if (productDetails) {
             // Use first variant price for consistency (already in major currency unit)
@@ -205,7 +262,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
               return match ? match[1] : gid;
             };
 
-            return {
+            const enrichedProduct = {
               ...sp,
               title: productDetails.title,
               handle: productDetails.handle,
@@ -222,10 +279,32 @@ export const loader: LoaderFunction = async ({ request, params }) => {
                 imageUrl: edge.node.image?.url || null
               })) || []
             };
+
+            console.log('[API_DEBUG] Enriched product result:', {
+              stepProductId: sp.id,
+              title: enrichedProduct.title,
+              hasImageUrl: !!enrichedProduct.imageUrl,
+              price: enrichedProduct.price,
+              variantsCount: enrichedProduct.variants.length
+            });
+
+            return enrichedProduct;
           }
 
+          console.log('[API_DEBUG] No product details found, returning original StepProduct');
           return sp;
         }) || [];
+
+        console.log('[API_DEBUG] Enriched step products:', {
+          stepId: step.id,
+          enrichedCount: enrichedStepProducts.length,
+          enrichedProducts: enrichedStepProducts.map(esp => ({
+            title: esp.title,
+            hasImageUrl: !!esp.imageUrl,
+            hasPrice: !!esp.price,
+            hasVariants: !!esp.variants && esp.variants.length > 0
+          }))
+        });
 
         return {
           id: step.id,
@@ -251,6 +330,25 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         messages: bundle.pricing.messages || {}
       } : null
     };
+
+    console.log('[API_DEBUG] Final response structure:', {
+      success: true,
+      bundleId: formattedBundle.id,
+      bundleName: formattedBundle.name,
+      stepsCount: formattedBundle.steps.length,
+      steps: formattedBundle.steps.map(s => ({
+        stepId: s.id,
+        stepName: s.name,
+        productsArrayLength: s.products.length,
+        stepProductLength: s.StepProduct.length,
+        stepProductSample: s.StepProduct[0] ? {
+          title: s.StepProduct[0].title,
+          hasImageUrl: !!s.StepProduct[0].imageUrl,
+          hasPrice: !!s.StepProduct[0].price,
+          hasVariants: !!s.StepProduct[0].variants
+        } : null
+      }))
+    });
 
     return json({
       success: true,
