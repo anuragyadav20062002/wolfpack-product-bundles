@@ -1,111 +1,650 @@
 /**
- * Full-Page Bundle Widget
- * For standalone Shopify pages (not product pages)
- * Fetches bundle configuration from API and renders full-page layout
+ * Bundle Widget - Full Page Version
+ *
+ * This widget is specifically for full page bundles with horizontal tabs layout.
+ * It imports shared components and utilities from bundle-widget-components.js.
+ *
+ * ============================================================================
+ * ARCHITECTURE ROLE
+ * ============================================================================
+ * This is the THIRD file loaded for FULL PAGE bundles:
+ * 1. bundle-widget.js (loader) - Detects bundle type as 'full_page'
+ * 2. bundle-widget-components.js - Provides shared utilities
+ * 3. THIS FILE (full-page widget) - Implements full page UI/UX
+ *
+ * ============================================================================
+ * WHEN THIS FILE IS LOADED
+ * ============================================================================
+ * This file loads when:
+ * - Container explicitly has data-bundle-type="full_page"
+ *
+ * Example container:
+ * <div id="bundle-builder-app" data-bundle-type="full_page"></div>
+ *
+ * NOTE: This is OPT-IN only. Without the attribute, product-page widget loads instead.
+ *
+ * ============================================================================
+ * UI LAYOUT: HORIZONTAL TABS
+ * ============================================================================
+ * - Steps displayed as horizontal tabs at the top
+ * - All tabs visible simultaneously (overview of all steps)
+ * - Click any tab to jump between steps
+ * - Modal overlay for product selection
+ * - Progress tracked with tab completion indicators
+ * - Best for: Dedicated bundle pages with full horizontal space
+ *
+ * ============================================================================
+ * SHARED CODE IMPORTS
+ * ============================================================================
+ * All business logic is imported from bundle-widget-components.js:
+ * - Currency formatting
+ * - Price calculations
+ * - Discount logic
+ * - Product card rendering
+ * - Toast notifications
+ *
+ * This file ONLY contains:
+ * - Full page specific UI rendering
+ * - Horizontal tabs layout management
+ * - Modal-based product selection
+ * - Event handlers for full page flow
+ *
+ * ============================================================================
+ * UNIFIED DESIGN WITH PRODUCT PAGE WIDGET
+ * ============================================================================
+ * Both widgets:
+ * - Use the same CSS variables (from unified design settings API)
+ * - Import the same utilities (from bundle-widget-components.js)
+ * - Implement the same business logic (pricing, discounts, cart)
+ * - Differ ONLY in UI layout and interaction patterns
+ *
+ * Result: Merchants configure design ONCE, applies to BOTH bundle types
+ *
+ * @version 1.0.0
+ * @author Wolfpack Team
  */
 
 'use strict';
 
-console.log('[FULL_PAGE_BUNDLE] Loading widget...');
+// Import shared components and utilities
+import {
+  BUNDLE_WIDGET,
+  CurrencyManager,
+  BundleDataManager,
+  PricingCalculator,
+  ToastManager,
+  TemplateManager,
+  ComponentGenerator
+} from './bundle-widget-components.js';
 
-class FullPageBundleWidget {
-  constructor(container) {
-    this.container = container;
-    this.bundleData = null;
+console.log('[FULL_PAGE_WIDGET] Initializing...');
+
+class BundleWidgetFullPage {
+
+  constructor(containerElement) {
+    this.container = containerElement;
+    this.selectedBundle = null;
     this.selectedProducts = [];
+    this.stepProductData = [];
     this.currentStepIndex = 0;
-    this.activeCollectionId = null;
+    this.isInitialized = false;
+    this.config = {};
+    this.elements = {};
 
-    this.init();
+    // Call async init but don't block constructor
+    this.init().catch(error => {
+      console.error('[WIDGET_INIT] ❌ Initialization failed:', error);
+      this.showError(error.message);
+    });
   }
+
+  // ========================================================================
+  // INITIALIZATION
+  // ========================================================================
 
   async init() {
     try {
-      const bundleId = this.container.dataset.bundleId;
-
-      if (!bundleId || bundleId === 'preview') {
-        this.showPreview();
+      // Check if already initialized
+      if (this.container.dataset.initialized === 'true') {
         return;
       }
 
-      // Fetch bundle data from API
-      await this.loadBundleFromAPI(bundleId);
+      // Parse configuration
+      this.parseConfiguration();
 
-      if (!this.bundleData) {
-        throw new Error('Failed to load bundle data');
+      // Load design settings CSS
+      await this.loadDesignSettingsCSS();
+
+      // Load and validate bundle data
+      await this.loadBundleData();
+
+      // Select appropriate bundle
+      this.selectBundle();
+
+      if (!this.selectedBundle) {
+        this.showFallbackUI();
+        return;
       }
 
-      // Initialize product selections
-      this.selectedProducts = Array(this.bundleData.steps.length).fill(null).map(() => ({}));
+      // Initialize data structures
+      this.initializeDataStructures();
 
-      // Render the UI
-      this.render();
+      // Setup DOM elements
+      this.setupDOMElements();
+
+      // Render initial UI
+      this.renderUI();
+
+      // Attach event listeners
+      this.attachEventListeners();
+
+      // Mark as initialized
+      this.container.dataset.initialized = 'true';
+      this.isInitialized = true;
 
     } catch (error) {
-      console.error('[FULL_PAGE_BUNDLE] Initialization error:', error);
-      this.showError(error.message);
+      this.showErrorUI(error);
     }
   }
 
-  async loadBundleFromAPI(bundleId) {
+  /**
+   * Load Design Control Panel CSS settings
+   * Injects custom CSS from Design Control Panel into the page
+   */
+  async loadDesignSettingsCSS() {
     try {
-      const appUrl = this.container.dataset.appUrl || window.__BUNDLE_APP_URL__ || '';
-      const shop = window.Shopify?.shop || window.location.hostname;
+      // Get shop domain from bundle data or window
+      const shopDomain = window.Shopify?.shop || this.container.dataset.shop;
 
-      console.log('[FULL_PAGE_BUNDLE] Fetching bundle:', bundleId);
-
-      // Use Shopify App Proxy format: /apps/product-bundles/api/bundle/{id}.json
-      const apiPath = `/apps/product-bundles/api/bundle/${bundleId}.json`;
-      const response = await fetch(apiPath);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch bundle: ${response.status}`);
+      if (!shopDomain) {
+        console.warn('[BUNDLE_WIDGET] No shop domain found, skipping design settings');
+        return;
       }
 
-      const data = await response.json();
-
-      if (!data.success || !data.bundle) {
-        throw new Error(data.error || 'Bundle data not found');
+      // CSS is loaded by the small loader (bundle-widget.js) for better performance
+      // No need to load it here - just verify it's present
+      const existingLink = document.querySelector('link[href*="design-settings"]');
+      if (existingLink) {
+        console.log('[BUNDLE_WIDGET] ✅ Design CSS already loaded by loader script');
+      } else {
+        console.warn('[BUNDLE_WIDGET] ⚠️ Design CSS not found - loader script may have failed');
       }
-
-      this.bundleData = data.bundle;
-
-      console.log('[FULL_PAGE_BUNDLE] Bundle loaded:', this.bundleData);
 
     } catch (error) {
-      console.error('[FULL_PAGE_BUNDLE] API fetch error:', error);
-      throw error;
+      console.warn('[BUNDLE_WIDGET] Failed to load design settings CSS:', error);
+      // Don't throw - widget should work even if design CSS fails to load
     }
   }
 
-  render() {
-    // Clear container
-    this.container.innerHTML = '';
+  parseConfiguration() {
+    const dataset = this.container.dataset;
 
-    // Render step timeline
-    const timeline = this.createStepTimeline();
-    this.container.appendChild(timeline);
-
-    // Render bundle header/instructions
-    const header = this.createBundleHeader();
-    this.container.appendChild(header);
-
-    // Render category tabs if step has collections
-    const currentStep = this.bundleData.steps[this.currentStepIndex];
-    if (currentStep.collections && currentStep.collections.length > 0) {
-      const tabs = this.createCategoryTabs();
-      this.container.appendChild(tabs);
-    }
-
-    // Render product grid
-    const grid = this.createProductGrid();
-    this.container.appendChild(grid);
-
-    // Render footer
-    const footer = this.createFooter();
-    this.container.appendChild(footer);
+    this.config = {
+      bundleId: dataset.bundleId || null,
+      isContainerProduct: dataset.isContainerProduct === 'true',
+      containerBundleId: dataset.containerBundleId || null,
+      hideDefaultButtons: dataset.hideDefaultButtons === 'true',
+      showTitle: dataset.showTitle !== 'false',
+      showStepNumbers: dataset.showStepNumbers !== 'false',
+      showFooterMessaging: dataset.showFooterMessaging !== 'false',
+      // Messages will be set from bundle.pricing.messages after bundle loads
+      discountTextTemplate: 'Add {conditionText} to get {discountText}',
+      successMessageTemplate: 'Congratulations! You got {discountText}!',
+      currentProductId: window.currentProductId,
+      currentProductHandle: window.currentProductHandle,
+      currentProductCollections: window.currentProductCollections
+    };
   }
 
+  async loadBundleData() {
+    let bundleData = null;
+
+    // Check if this is a full-page bundle (needs to fetch from API)
+    const bundleType = this.container.dataset.bundleType;
+    const bundleId = this.container.dataset.bundleId;
+
+    if (bundleType === 'full_page' && bundleId) {
+      console.log('[WIDGET_INIT] 📄 Full-page bundle detected, fetching from API:', bundleId);
+
+      try {
+        const shop = window.Shopify?.shop || window.location.host;
+        const appUrl = window.__BUNDLE_APP_URL__ || this.container.dataset.appUrl || '';
+        const apiBaseUrl = appUrl || window.location.origin;
+        const apiUrl = `${apiBaseUrl}/api/bundle/${bundleId}.json?shop=${encodeURIComponent(shop)}`;
+
+        console.log('[WIDGET_INIT] Fetching bundle from:', apiUrl);
+
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('[WIDGET_INIT] API response:', data);
+
+        if (data.success && data.bundle) {
+          bundleData = { [data.bundle.id]: data.bundle };
+          console.log('[WIDGET_INIT] ✅ Loaded full-page bundle from API:', data.bundle.id);
+        } else {
+          throw new Error('Invalid API response structure');
+        }
+      } catch (error) {
+        console.error('[WIDGET_INIT] ❌ Failed to fetch full-page bundle from API:', error);
+        throw error;
+      }
+    } else {
+      // Product-page bundle: load from data-bundle-config attribute
+      const configValue = this.container.dataset.bundleConfig;
+      if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
+        try {
+          const singleBundle = JSON.parse(configValue);
+          // Validate parsed result is a valid object with an id
+          if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
+            bundleData = { [singleBundle.id]: singleBundle };
+            console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
+          } else {
+            console.warn('[WIDGET_INIT] ⚠️ Parsed bundle config is invalid (missing id):', singleBundle);
+          }
+        } catch (error) {
+          console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error, 'Value:', configValue.substring(0, 100));
+        }
+      } else {
+        console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
+      }
+
+      // Widget only works on container products with bundleConfig metafield
+      if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+        // Check if we're in theme editor mode
+        const isThemeEditor = window.Shopify?.designMode ||
+                             window.isThemeEditorContext ||
+                             window.location.pathname.includes('/editor') ||
+                             window.location.search.includes('preview_theme_id');
+
+        const bundleIdFromDataset = this.container.dataset.bundleId;
+
+        // Show helpful preview in theme editor instead of error
+        if (isThemeEditor && bundleIdFromDataset) {
+          console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
+          this.showThemeEditorPreview(bundleIdFromDataset);
+          return; // Don't throw error, just show preview
+        }
+
+        // For production/storefront: show proper error
+        const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
+        console.error('[WIDGET_INIT] ❌', errorMsg);
+        console.error('[WIDGET_INIT] 🔍 Debug info:', {
+          isContainerProduct: !!configValue,
+          configValue: configValue?.substring(0, 100),
+          containerDataset: this.container.dataset,
+          bundleIdFromDataset: bundleIdFromDataset
+        });
+        throw new Error(errorMsg);
+      }
+    }
+
+    this.bundleData = bundleData;
+    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully');
+  }
+
+  selectBundle() {
+    this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
+
+    // Update message templates from bundle pricing messages
+    this.updateMessagesFromBundle();
+  }
+
+  updateMessagesFromBundle() {
+    // Use bundle pricing messages if available, otherwise keep defaults
+    if (this.selectedBundle?.pricing?.messages) {
+      const messages = this.selectedBundle.pricing.messages;
+
+      if (messages.progress) {
+        this.config.discountTextTemplate = messages.progress;
+      }
+
+      if (messages.qualified) {
+        this.config.successMessageTemplate = messages.qualified;
+      }
+
+      console.log('[BUNDLE_MESSAGES] Using bundle pricing messages:', {
+        progress: this.config.discountTextTemplate,
+        qualified: this.config.successMessageTemplate
+      });
+    } else {
+      console.log('[BUNDLE_MESSAGES] No pricing messages in bundle, using defaults');
+    }
+  }
+
+  initializeDataStructures() {
+    const stepsCount = this.selectedBundle.steps.length;
+
+    // Initialize selected products array (one object per step)
+    this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
+
+    // Initialize step product data cache
+    this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
+  }
+
+  /**
+   * Show a helpful preview in theme editor when testing on non-bundle products
+   */
+  showThemeEditorPreview(bundleId) {
+    console.log('[WIDGET_PREVIEW] Showing theme editor preview for bundle:', bundleId);
+
+    this.container.innerHTML = `
+      <div style="
+        padding: 32px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 2px dashed #667eea;
+        border-radius: 12px;
+        text-align: center;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      ">
+        <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+        <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
+        <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
+          Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
+        </p>
+        <div style="
+          margin: 20px auto 0;
+          padding: 16px;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 8px;
+          max-width: 400px;
+          text-align: left;
+          font-size: 13px;
+          line-height: 1.6;
+        ">
+          <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
+          <div style="opacity: 0.9;">
+            This widget will automatically display on <strong>bundle container products</strong>.
+            <br><br>
+            <strong>To see it in action:</strong>
+            <ol style="margin: 8px 0; padding-left: 20px;">
+              <li>Save your theme</li>
+              <li>Navigate to a bundle product page</li>
+              <li>The widget will appear with product selection steps</li>
+            </ol>
+          </div>
+        </div>
+        <div style="
+          margin-top: 20px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          font-size: 12px;
+          opacity: 0.8;
+        ">
+          💡 <strong>Tip:</strong> You're currently previewing on a regular product. The widget only activates on products configured as bundle containers.
+        </div>
+      </div>
+    `;
+  }
+
+  // ========================================================================
+  // DOM SETUP
+  // ========================================================================
+
+  setupDOMElements() {
+    // Get or create main UI elements
+    this.elements = {
+      header: this.container.querySelector('.bundle-header') || this.createHeader(),
+      stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
+      footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
+      addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
+      modal: this.ensureModal()
+    };
+
+    // Append elements if they were created
+    if (!this.container.querySelector('.bundle-header')) {
+      this.container.appendChild(this.elements.header);
+    }
+    if (!this.container.querySelector('.bundle-steps')) {
+      this.container.appendChild(this.elements.stepsContainer);
+    }
+    if (!this.container.querySelector('.bundle-footer-messaging')) {
+      this.container.appendChild(this.elements.footer);
+    }
+    if (!this.container.querySelector('.add-bundle-to-cart')) {
+      this.container.appendChild(this.elements.addToCartButton);
+    }
+  }
+
+  createHeader() {
+    const header = document.createElement('div');
+    header.className = 'bundle-header';
+    header.innerHTML = `
+      <h2 class="bundle-title">${this.selectedBundle.name}</h2>
+      ${this.selectedBundle.description ? `<p class="bundle-description">${this.selectedBundle.description}</p>` : ''}
+    `;
+    return header;
+  }
+
+  createStepsContainer() {
+    const container = document.createElement('div');
+    container.className = 'bundle-steps';
+    return container;
+  }
+
+  createFooter() {
+    const footer = document.createElement('div');
+    footer.className = 'bundle-footer-messaging';
+    footer.style.display = 'none';
+    footer.innerHTML = `
+      <div class="footer-discount-text"></div>
+      <div class="footer-progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+        <div class="progress-details">
+          <span class="progress-text">
+            <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
+          </span>
+        </div>
+      </div>
+    `;
+    return footer;
+  }
+
+  createAddToCartButton() {
+    const button = document.createElement('button');
+    button.className = 'add-bundle-to-cart';
+    button.textContent = 'Add Bundle to Cart';
+    button.type = 'button';
+    return button;
+  }
+
+  ensureModal() {
+    let modal = document.getElementById('bundle-builder-modal');
+
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'bundle-builder-modal';
+      modal.className = 'bundle-builder-modal';
+      modal.style.display = 'none';
+      modal.innerHTML = `
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="modal-step-title"></div>
+            <div class="modal-tabs-wrapper">
+              <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
+              <div class="modal-tabs"></div>
+              <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
+            </div>
+            <span class="close-button">&times;</span>
+          </div>
+          <div class="modal-body">
+            <div class="product-grid"></div>
+          </div>
+          <div class="modal-footer">
+            <!-- Centered Grouped Content Container -->
+            <div class="modal-footer-grouped-content">
+              <!-- Total Pill - Sits Above Buttons -->
+              <div class="modal-footer-total-pill">
+                <span class="total-price-strike"></span>
+                <span class="total-price-final"></span>
+                <span class="price-cart-separator">|</span>
+                <span class="cart-badge-wrapper">
+                  <span class="cart-badge-count">0</span>
+                  <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- Buttons Row - Below Pill -->
+              <div class="modal-footer-buttons-row">
+                <button class="modal-nav-button prev-button">BACK</button>
+                <button class="modal-nav-button next-button">NEXT</button>
+              </div>
+
+              <!-- Discount Messaging Section -->
+              <div class="modal-footer-discount-messaging">
+                <div class="footer-discount-text"></div>
+              </div>
+
+              <!-- Progress Bar Section -->
+              <div class="modal-footer-progress-section">
+                <div class="modal-footer-progress-bar">
+                  <div class="modal-footer-progress-fill"></div>
+                </div>
+                <div class="modal-footer-progress-details">
+                  <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Setup tab scroll arrows
+      this.setupTabScrollArrows(modal);
+    }
+
+    return modal;
+  }
+
+  setupTabScrollArrows(modal) {
+    const tabsContainer = modal.querySelector('.modal-tabs');
+    const leftArrow = modal.querySelector('.tab-arrow-left');
+    const rightArrow = modal.querySelector('.tab-arrow-right');
+
+    if (!tabsContainer || !leftArrow || !rightArrow) return;
+
+    const scrollAmount = 200;
+
+    // Left arrow click
+    leftArrow.addEventListener('click', () => {
+      tabsContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    });
+
+    // Right arrow click
+    rightArrow.addEventListener('click', () => {
+      tabsContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    });
+
+    // Update arrow visibility based on scroll position
+    const updateArrowVisibility = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = tabsContainer;
+
+      leftArrow.style.display = scrollLeft > 0 ? 'flex' : 'none';
+      rightArrow.style.display = scrollLeft + clientWidth < scrollWidth - 1 ? 'flex' : 'none';
+    };
+
+    // Listen to scroll events
+    tabsContainer.addEventListener('scroll', updateArrowVisibility);
+
+    // Initial check
+    setTimeout(updateArrowVisibility, 100);
+
+    // Store for later updates
+    this.updateTabArrows = updateArrowVisibility;
+  }
+  //========================================================================
+  // UI RENDERING
+  // ========================================================================
+
+  renderUI() {
+    this.renderHeader();
+    this.renderSteps();
+    this.renderFooter();
+    this.updateAddToCartButton();
+  }
+
+  renderHeader() {
+    if (!this.config.showTitle) {
+      this.elements.header.style.display = 'none';
+      return;
+    }
+
+    this.elements.header.style.display = 'block';
+  }
+
+  renderSteps() {
+    // Clear existing steps
+    this.elements.stepsContainer.innerHTML = '';
+
+    if (!this.selectedBundle || !this.selectedBundle.steps) {
+      return;
+    }
+
+    // Check bundle type and render accordingly
+    const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
+
+    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      // Full-page bundle: Render with tabs layout
+      this.renderFullPageLayout();
+    } else {
+      // Product-page bundle: Render with step boxes (current implementation)
+      this.renderProductPageLayout();
+    }
+  }
+
+  // Product-page bundle layout (original vertical step boxes)
+  renderProductPageLayout() {
+    this.selectedBundle.steps.forEach((step, index) => {
+      const stepElement = this.createStepElement(step, index);
+      this.elements.stepsContainer.appendChild(stepElement);
+    });
+  }
+
+  // Full-page bundle layout (horizontal tabs)
+  renderFullPageLayout() {
+    console.log('[FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
+
+    // Clear existing content
+    this.elements.stepsContainer.innerHTML = '';
+    this.elements.stepsContainer.classList.add('full-page-layout');
+
+    // 1. Render step timeline at top
+    const stepTimeline = this.createStepTimeline();
+    this.elements.stepsContainer.appendChild(stepTimeline);
+
+    // 2. Render bundle header (instruction text)
+    const bundleHeader = this.createBundleInstructions();
+    this.elements.stepsContainer.appendChild(bundleHeader);
+
+    // 3. Render category/collection tabs if step has collections
+    const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+    if (categoryTabs) {
+      this.elements.stepsContainer.appendChild(categoryTabs);
+    }
+
+    // 4. Render product grid for current step
+    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+    this.elements.stepsContainer.appendChild(productGrid);
+
+    // 5. Render fixed footer with selected products
+    this.renderFullPageFooter();
+  }
+
+  // Create horizontal step timeline with state-based icons
   createStepTimeline() {
     const timeline = document.createElement('div');
     timeline.className = 'step-timeline';
@@ -114,6 +653,7 @@ class FullPageBundleWidget {
       const stepItem = document.createElement('div');
       stepItem.className = 'timeline-step';
 
+      // Determine step state
       const isCompleted = this.isStepCompleted(index);
       const isCurrent = index === this.currentStepIndex;
       const isAccessible = this.isStepAccessible(index);
@@ -122,23 +662,30 @@ class FullPageBundleWidget {
       if (isCurrent) stepItem.classList.add('current');
       if (!isAccessible) stepItem.classList.add('locked');
 
-      // Circle with icon
+      // Create step circle with icon
       const circle = document.createElement('div');
       circle.className = 'timeline-circle';
 
       if (isCompleted) {
-        // Checkmark icon
-        circle.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 4L6 11L3 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M13 4L6 11L3 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
       } else if (isCurrent) {
-        // Stacked layers icon
-        circle.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="3" width="10" height="10" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="5" y="5" width="6" height="6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>';
+        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="3" y="3" width="10" height="10" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <rect x="5" y="5" width="6" height="6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        </svg>`;
+      } else if (!isAccessible) {
+        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
+        </svg>`;
       } else {
         circle.textContent = (index + 1).toString();
       }
 
       stepItem.appendChild(circle);
 
-      // Connecting line (except for last step)
+      // Add connecting line (except for last step)
       if (index < this.bundleData.steps.length - 1) {
         const line = document.createElement('div');
         line.className = 'timeline-line';
@@ -146,18 +693,18 @@ class FullPageBundleWidget {
         stepItem.appendChild(line);
       }
 
-      // Step name
+      // Add step name
       const stepName = document.createElement('div');
       stepName.className = 'timeline-step-name';
       stepName.textContent = step.name;
       stepItem.appendChild(stepName);
 
-      // Click handler
+      // Make clickable if accessible
       if (isAccessible) {
         stepItem.style.cursor = 'pointer';
         stepItem.addEventListener('click', () => {
           this.currentStepIndex = index;
-          this.render();
+          this.renderFullPageLayout();
         });
       }
 
@@ -167,203 +714,217 @@ class FullPageBundleWidget {
     return timeline;
   }
 
-  createBundleHeader() {
+  // Create bundle instructions header
+  createBundleInstructions() {
     const header = document.createElement('div');
     header.className = 'bundle-header';
 
     const currentStep = this.bundleData.steps[this.currentStepIndex];
-    const instructionText = currentStep.description || `Start with choosing your base board to start customization`;
+    const instructionText = currentStep.instruction || `Select ${currentStep.minQuantity} or more items from ${currentStep.name}`;
 
     header.innerHTML = `
+      <h3 class="bundle-title">${this.bundleData.name}</h3>
       <p class="bundle-instruction">${instructionText}</p>
     `;
 
     return header;
   }
 
-  createCategoryTabs() {
-    const currentStep = this.bundleData.steps[this.currentStepIndex];
+  // Create category/collection tabs
+  createCategoryTabs(stepIndex) {
+    const step = this.bundleData.steps[stepIndex];
+
+    if (!step.collections || step.collections.length === 0) {
+      return null;
+    }
+
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'category-tabs';
 
     // Add "All" tab
-    const allTab = this.createTab('All', null, !this.activeCollectionId);
+    const allTab = document.createElement('div');
+    allTab.className = 'category-tab';
+    if (!this.activeCollectionId) {
+      allTab.classList.add('active');
+    }
+    allTab.innerHTML = `
+      <div class="tab-indicator"></div>
+      <span class="tab-label">All</span>
+    `;
+    allTab.addEventListener('click', () => {
+      this.activeCollectionId = null;
+      this.renderFullPageLayout();
+    });
     tabsContainer.appendChild(allTab);
 
     // Add collection tabs
-    currentStep.collections.forEach((collection, index) => {
-      const colors = ['blue', 'red', 'green'];
-      const color = colors[index % colors.length];
-      const tab = this.createTab(collection.title, collection.id, this.activeCollectionId === collection.id, color);
+    step.collections.forEach(collection => {
+      const tab = document.createElement('div');
+      tab.className = 'category-tab';
+      if (this.activeCollectionId === collection.id) {
+        tab.classList.add('active');
+      }
+      tab.innerHTML = `
+        <div class="tab-indicator"></div>
+        <span class="tab-label">${collection.title}</span>
+      `;
+      tab.addEventListener('click', () => {
+        this.activeCollectionId = collection.id;
+        this.renderFullPageLayout();
+      });
       tabsContainer.appendChild(tab);
     });
 
     return tabsContainer;
   }
 
-  createTab(label, collectionId, isActive, color = null) {
-    const tab = document.createElement('div');
-    tab.className = 'category-tab';
-    if (isActive) tab.classList.add('active');
-    if (color) tab.dataset.color = color;
-
-    const indicator = document.createElement('div');
-    indicator.className = 'tab-indicator';
-
-    const labelEl = document.createElement('span');
-    labelEl.className = 'tab-label';
-    labelEl.textContent = label;
-
-    tab.appendChild(indicator);
-    tab.appendChild(labelEl);
-
-    tab.addEventListener('click', () => {
-      this.activeCollectionId = collectionId;
-      this.render();
-    });
-
-    return tab;
-  }
-
-  createProductGrid() {
+  // Create horizontal scrollable product grid
+  createFullPageProductGrid(stepIndex) {
     const grid = document.createElement('div');
     grid.className = 'full-page-product-grid';
 
-    const currentStep = this.bundleData.steps[this.currentStepIndex];
-    let products = currentStep.products || [];
+    const step = this.bundleData.steps[stepIndex];
+    let products = step.products || [];
 
-    // Filter by collection if active
-    if (this.activeCollectionId && currentStep.collections) {
-      const activeCollection = currentStep.collections.find(c => c.id === this.activeCollectionId);
+    // Filter by active collection if selected
+    if (this.activeCollectionId && step.collections) {
+      const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
       if (activeCollection && activeCollection.products) {
         products = activeCollection.products;
       }
     }
 
     if (products.length === 0) {
-      grid.innerHTML = '<p style="text-align: center; color: #808080;">No products available</p>';
+      grid.innerHTML = '<p class="no-products">No products available in this step.</p>';
       return grid;
     }
 
+    // Reuse ComponentGenerator.createProductCard for each product
     products.forEach(product => {
-      const card = this.createProductCard(product);
-      grid.appendChild(card);
+      const productCard = window.BUNDLE_WIDGET.ComponentGenerator.createProductCard(
+        product,
+        stepIndex,
+        this.selectedProducts,
+        (variantId, quantity) => this.updateProductSelection(stepIndex, variantId, quantity),
+        this.bundleData
+      );
+      grid.appendChild(productCard);
     });
 
     return grid;
   }
 
-  createProductCard(product) {
-    const card = document.createElement('div');
-    card.className = 'product-card';
+  // Render fixed footer with selected products and navigation
+  renderFullPageFooter() {
+    if (!this.elements.footer) {
+      console.error('[FOOTER] Footer element not found');
+      return;
+    }
 
-    const variantId = product.variants?.[0]?.id || product.id;
-    const quantity = this.selectedProducts[this.currentStepIndex][variantId] || 0;
+    this.elements.footer.innerHTML = '';
+    this.elements.footer.className = 'full-page-footer';
 
-    if (quantity > 0) card.classList.add('selected');
-
-    card.innerHTML = `
-      <div class="product-image">
-        <img src="${product.images?.[0]?.url || product.featuredImage?.url || ''}" alt="${product.title}">
-      </div>
-      <div class="product-content-wrapper">
-        <div class="product-title">${product.title}</div>
-        <div class="product-price">Rs. ${(product.price / 100).toFixed(2)}</div>
-        <div class="product-quantity-selector">
-          <button class="qty-btn qty-decrease" data-variant-id="${variantId}">−</button>
-          <span class="qty-display">${quantity}</span>
-          <button class="qty-btn qty-increase" data-variant-id="${variantId}">+</button>
-        </div>
-        <button class="product-add-btn ${quantity > 0 ? 'added' : ''}" data-variant-id="${variantId}">
-          ${quantity > 0 ? 'Added to Bundle' : 'Add to Box'}
-        </button>
-      </div>
-    `;
-
-    // Attach event listeners
-    card.querySelector('.qty-decrease').addEventListener('click', () => this.updateQuantity(variantId, -1));
-    card.querySelector('.qty-increase').addEventListener('click', () => this.updateQuantity(variantId, 1));
-    card.querySelector('.product-add-btn').addEventListener('click', () => this.toggleProduct(variantId));
-
-    return card;
-  }
-
-  createFooter() {
-    const footer = document.createElement('div');
-    footer.className = 'full-page-footer';
-
-    // Left section - selected products
+    // Left section: Scrollable selected products
     const leftSection = document.createElement('div');
     leftSection.className = 'footer-left';
 
-    const productsContainer = document.createElement('div');
-    productsContainer.className = 'footer-selected-products';
+    const selectedProductsContainer = document.createElement('div');
+    selectedProductsContainer.className = 'footer-selected-products';
 
-    const allSelected = this.getAllSelectedProducts();
+    const allSelectedProducts = this.getAllSelectedProductsData();
 
-    if (allSelected.length === 0) {
-      productsContainer.innerHTML = '<p class="no-selections">No products selected yet</p>';
+    if (allSelectedProducts.length === 0) {
+      selectedProductsContainer.innerHTML = '<p class="no-selections">No products selected yet</p>';
     } else {
-      allSelected.forEach(item => {
-        const productItem = this.createFooterProductItem(item);
-        productsContainer.appendChild(productItem);
+      allSelectedProducts.forEach(item => {
+        const productItem = document.createElement('div');
+        productItem.className = 'footer-product-item';
+        productItem.innerHTML = `
+          <img src="${item.image}" alt="${item.title}" class="footer-product-image">
+          <div class="footer-product-info">
+            <span class="footer-product-title">${item.title}</span>
+            <span class="footer-product-quantity">Qty: ${item.quantity}</span>
+          </div>
+          <button class="footer-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">×</button>
+        `;
+
+        const removeBtn = productItem.querySelector('.footer-product-remove');
+        removeBtn.addEventListener('click', () => {
+          this.updateProductSelection(item.stepIndex, item.variantId, 0);
+          this.renderFullPageLayout();
+        });
+
+        selectedProductsContainer.appendChild(productItem);
       });
     }
 
-    leftSection.appendChild(productsContainer);
+    leftSection.appendChild(selectedProductsContainer);
 
-    // Right section - total and navigation
+    // Right section: Total and navigation
     const rightSection = document.createElement('div');
     rightSection.className = 'footer-right';
 
-    const total = this.calculateTotal();
+    const total = window.BUNDLE_WIDGET.PricingCalculator.calculateTotal(
+      this.selectedProducts,
+      this.bundleData
+    );
 
-    rightSection.innerHTML = `
-      <div class="footer-total">
-        <span class="total-label">Total</span>
-        <span class="total-price">Rs. ${(total / 100).toFixed(2)}</span>
-      </div>
-      <div class="footer-nav-buttons">
-        <button class="footer-nav-btn footer-back-btn" ${this.currentStepIndex === 0 ? 'disabled' : ''}>Back</button>
-        <button class="footer-nav-btn footer-next-btn">${this.currentStepIndex === this.bundleData.steps.length - 1 ? 'Add to Cart' : 'Next'}</button>
-      </div>
+    const totalDisplay = document.createElement('div');
+    totalDisplay.className = 'footer-total';
+    totalDisplay.innerHTML = `
+      <span class="total-label">Total:</span>
+      <span class="total-price">${window.BUNDLE_WIDGET.CurrencyManager.formatPrice(total.finalPrice)}</span>
     `;
 
-    // Attach navigation listeners
-    rightSection.querySelector('.footer-back-btn').addEventListener('click', () => this.navigateBack());
-    rightSection.querySelector('.footer-next-btn').addEventListener('click', () => this.navigateNext());
+    const navButtons = document.createElement('div');
+    navButtons.className = 'footer-nav-buttons';
 
-    footer.appendChild(leftSection);
-    footer.appendChild(rightSection);
-
-    return footer;
-  }
-
-  createFooterProductItem(item) {
-    const productItem = document.createElement('div');
-    productItem.className = 'footer-product-item';
-
-    productItem.innerHTML = `
-      <div class="footer-product-image-wrapper">
-        <img src="${item.image}" alt="${item.title}" class="footer-product-image">
-        <div class="footer-product-quantity-badge">${item.quantity}</div>
-      </div>
-      <div class="footer-product-info">
-        <div class="footer-product-title">${item.title}</div>
-        <div class="footer-product-price">Rs. ${(item.price / 100).toFixed(2)}</div>
-        <button class="footer-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">Delete</button>
-      </div>
-    `;
-
-    productItem.querySelector('.footer-product-remove').addEventListener('click', () => {
-      this.selectedProducts[item.stepIndex][item.variantId] = 0;
-      this.render();
+    // Back button
+    const backBtn = document.createElement('button');
+    backBtn.className = 'footer-nav-btn footer-back-btn';
+    backBtn.textContent = 'Back';
+    backBtn.disabled = this.currentStepIndex === 0;
+    backBtn.addEventListener('click', () => {
+      if (this.currentStepIndex > 0) {
+        this.currentStepIndex--;
+        this.renderFullPageLayout();
+      }
     });
 
-    return productItem;
+    // Next/Add to Cart button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'footer-nav-btn footer-next-btn';
+
+    const isLastStep = this.currentStepIndex === this.bundleData.steps.length - 1;
+    const canProceed = this.canProceedToNextStep();
+
+    if (isLastStep) {
+      nextBtn.textContent = 'Add to Cart';
+      nextBtn.disabled = !this.areBundleConditionsMet();
+      nextBtn.addEventListener('click', () => this.addBundleToCart());
+    } else {
+      nextBtn.textContent = 'Next';
+      nextBtn.disabled = !canProceed;
+      nextBtn.addEventListener('click', () => {
+        if (canProceed) {
+          this.currentStepIndex++;
+          this.renderFullPageLayout();
+        }
+      });
+    }
+
+    navButtons.appendChild(backBtn);
+    navButtons.appendChild(nextBtn);
+
+    rightSection.appendChild(totalDisplay);
+    rightSection.appendChild(navButtons);
+
+    this.elements.footer.appendChild(leftSection);
+    this.elements.footer.appendChild(rightSection);
   }
 
-  getAllSelectedProducts() {
+  // Helper: Get all selected products data for footer display
+  getAllSelectedProductsData() {
     const allProducts = [];
 
     this.bundleData.steps.forEach((step, stepIndex) => {
@@ -371,15 +932,16 @@ class FullPageBundleWidget {
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
-          const product = step.products?.find(p => p.id === variantId || p.variants?.some(v => v.id === variantId));
+          const product = this.findProductByVariantId(step, variantId);
           if (product) {
+            const variant = product.variants?.find(v => v.id === variantId);
             allProducts.push({
               stepIndex,
               variantId,
               quantity,
-              title: product.title,
+              title: variant?.title || product.title,
               image: product.images?.[0]?.url || product.featuredImage?.url || '',
-              price: product.price
+              price: variant?.price || product.price
             });
           }
         }
@@ -389,34 +951,14 @@ class FullPageBundleWidget {
     return allProducts;
   }
 
-  updateQuantity(variantId, delta) {
-    const current = this.selectedProducts[this.currentStepIndex][variantId] || 0;
-    const newQuantity = Math.max(0, current + delta);
-
-    this.selectedProducts[this.currentStepIndex][variantId] = newQuantity;
-    this.render();
+  // Helper: Find product by variant ID in a step
+  findProductByVariantId(step, variantId) {
+    return step.products?.find(p =>
+      p.variants?.some(v => v.id === variantId) || p.id === variantId
+    );
   }
 
-  toggleProduct(variantId) {
-    const current = this.selectedProducts[this.currentStepIndex][variantId] || 0;
-    this.selectedProducts[this.currentStepIndex][variantId] = current > 0 ? 0 : 1;
-    this.render();
-  }
-
-  calculateTotal() {
-    let total = 0;
-    this.bundleData.steps.forEach((step, stepIndex) => {
-      const stepSelections = this.selectedProducts[stepIndex] || {};
-      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        const product = step.products?.find(p => p.id === variantId || p.variants?.some(v => v.id === variantId));
-        if (product && quantity > 0) {
-          total += product.price * quantity;
-        }
-      });
-    });
-    return total;
-  }
-
+  // Helper: Check if step is completed
   isStepCompleted(stepIndex) {
     const stepSelections = this.selectedProducts[stepIndex] || {};
     const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
@@ -424,114 +966,1432 @@ class FullPageBundleWidget {
     return totalQuantity >= (step.minQuantity || 1);
   }
 
+  // Helper: Check if step is accessible
   isStepAccessible(stepIndex) {
     if (stepIndex === 0) return true;
+
+    // Check if all previous steps meet minimum requirements
+    for (let i = 0; i < stepIndex; i++) {
+      if (!this.isStepCompleted(i)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Helper: Check if can proceed to next step
+  canProceedToNextStep() {
+    return this.isStepCompleted(this.currentStepIndex);
+  }
+
+  // Helper: Check if all bundle conditions are met
+  areBundleConditionsMet() {
+    return this.bundleData.steps.every((step, index) => this.isStepCompleted(index));
+  }
+
+  createStepElement(step, index) {
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box';
+    stepBox.dataset.stepIndex = index;
+
+    const selectedProducts = this.selectedProducts[index] || {};
+    const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
+
+    if (hasSelections) {
+      stepBox.classList.add('step-completed');
+
+      // Add close icon badge at top right to clear all selections
+      const clearBadge = document.createElement('div');
+      clearBadge.className = 'step-clear-badge';
+      clearBadge.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
+          <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+      clearBadge.title = 'Remove all products from this step';
+      clearBadge.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent opening modal
+        this.clearStepSelections(index);
+      });
+      stepBox.appendChild(clearBadge);
+
+      // Show product images if available
+      const productImages = this.getStepProductImages(index);
+      if (productImages.length > 0) {
+        const imagesContainer = document.createElement('div');
+        imagesContainer.className = 'step-images';
+
+        productImages.slice(0, 4).forEach(imageData => {
+          const img = document.createElement('img');
+          img.src = imageData.url;
+          img.alt = imageData.alt;
+          img.className = 'step-image';
+          imagesContainer.appendChild(img);
+        });
+
+        stepBox.appendChild(imagesContainer);
+
+        // Add count badge if more than 4 products
+        const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
+        if (productImages.length > 4 || totalQuantity > 4) {
+          const countBadge = document.createElement('div');
+          countBadge.className = 'image-count-badge';
+          countBadge.textContent = totalQuantity.toString();
+          stepBox.appendChild(countBadge);
+        }
+      } else {
+        // Fallback checkmark icon
+        const checkIcon = document.createElement('span');
+        checkIcon.className = 'check-icon';
+        checkIcon.textContent = '✓';
+        stepBox.appendChild(checkIcon);
+      }
+    } else {
+      // Plus icon for empty steps
+      const plusIcon = document.createElement('span');
+      plusIcon.className = 'plus-icon';
+      plusIcon.textContent = '+';
+      stepBox.appendChild(plusIcon);
+    }
+
+    // Only show step name and selection count if no selections made
+    if (!hasSelections) {
+      // Add step name (without step number)
+      const stepName = document.createElement('p');
+      stepName.className = 'step-name';
+      stepName.textContent = step.name || `Step ${index + 1}`;
+      stepBox.appendChild(stepName);
+
+      // Add selection count
+      const selectionCount = document.createElement('div');
+      selectionCount.className = 'step-selection-count';
+      selectionCount.textContent = this.getStepSelectionText(selectedProducts);
+      stepBox.appendChild(selectionCount);
+    }
+
+    // Add click handler
+    stepBox.addEventListener('click', () => this.openModal(index));
+
+    return stepBox;
+  }
+
+  getStepProductImages(stepIndex) {
+    const selectedProducts = this.selectedProducts[stepIndex] || {};
+    const productImages = [];
+
+    Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
+      if (quantity > 0) {
+        const product = this.stepProductData[stepIndex].find(p => (p.variantId || p.id) === variantId);
+        if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
+          productImages.push({
+            url: product.imageUrl,
+            alt: product.title || ''
+          });
+        }
+      }
+    });
+
+    return productImages;
+  }
+
+  getStepSelectionText(selectedProducts) {
+    const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
+    return totalSelected > 0 ? `${totalSelected} selected` : '';
+  }
+
+  clearStepSelections(stepIndex) {
+    // Clear all product selections for this step
+    this.selectedProducts[stepIndex] = {};
+
+    // Update UI
+    this.renderSteps();
+    this.updateAddToCartButton();
+    this.updateFooterMessaging();
+
+    // Show toast notification
+    ToastManager.show(`All selections cleared from this step`);
+  }
+
+  renderFooter() {
+    if (!this.config.showFooterMessaging) {
+      this.elements.footer.style.display = 'none';
+      return;
+    }
+
+    this.updateFooterMessaging();
+    this.elements.footer.style.display = 'block';
+  }
+
+  updateFooterMessaging() {
+    // Check if discount is enabled before showing messaging
+    if (!this.selectedBundle?.pricing?.enabled) {
+      this.elements.footer.style.display = 'none';
+      return;
+    }
+
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity
+    );
+
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
+
+    const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
+    const progressFill = this.elements.footer.querySelector('.progress-fill');
+    const currentQuantitySpan = this.elements.footer.querySelector('.current-quantity');
+    const targetQuantitySpan = this.elements.footer.querySelector('.target-quantity');
+
+    if (discountInfo.qualifiesForDiscount) {
+      // Success message
+      const successMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate,
+        variables
+      );
+      footerDiscountText.innerHTML = successMessage;
+      this.elements.footer.classList.add('qualified');
+    } else {
+      // Progress message
+      const progressMessage = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate,
+        variables
+      );
+      footerDiscountText.innerHTML = progressMessage;
+      this.elements.footer.classList.remove('qualified');
+    }
+
+    // Update progress bar based on condition type
+    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
+    const ruleToUse = discountInfo.applicableRule || nextRule;
+
+    let progressPercentage = 0;
+
+    if (ruleToUse) {
+      const conditionType = ruleToUse.condition?.type || 'quantity';
+      const targetValue = ruleToUse.condition?.value || 0;
+
+      if (conditionType === 'amount') {
+        // Amount-based condition
+        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
+
+        // Update text to show formatted currency values
+        if (currentQuantitySpan && targetQuantitySpan) {
+          const currentFormatted = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+          const targetFormatted = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
+          currentQuantitySpan.textContent = currentFormatted;
+          targetQuantitySpan.textContent = targetFormatted; // No "items" suffix for amount
+        }
+      } else {
+        // Quantity-based condition
+        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
+
+        // Update text to show quantity values
+        if (currentQuantitySpan && targetQuantitySpan) {
+          currentQuantitySpan.textContent = totalQuantity.toString();
+          targetQuantitySpan.textContent = targetValue.toString(); // Remove "items" suffix, add via CSS
+        }
+      }
+    }
+
+    console.log('[PROGRESS] Progress:', progressPercentage + '%', 'Total:', totalPrice, 'Target:', ruleToUse?.condition?.value);
+
+    if (progressFill) {
+      progressFill.style.width = `${progressPercentage}%`;
+    }
+  }
+
+  updateAddToCartButton() {
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity
+    );
+
+    const button = this.elements.addToCartButton;
+
+    // Check if all steps are complete (required)
+    const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+
+    // Disable button if no products selected OR if not all steps are complete
+    if (totalQuantity === 0 || !allStepsValid) {
+      if (totalQuantity === 0) {
+        button.textContent = 'Add Bundle to Cart';
+      } else {
+        // Some products selected but not all steps complete
+        button.textContent = 'Complete All Steps to Continue';
+      }
+      button.disabled = true;
+      button.classList.add('disabled');
+    } else {
+      // All steps valid and products selected - enable button
+      const currencyInfo = CurrencyManager.getCurrencyInfo();
+      const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+
+      console.log('[ADD_TO_CART_BUTTON] Discount info:', {
+        hasDiscount: discountInfo.hasDiscount,
+        showDiscountDisplay: this.selectedBundle.pricing?.messages?.showDiscountDisplay,
+        shouldShowStrikethrough: discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false
+      });
+
+      if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
+        const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+        console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
+        button.innerHTML = `
+          <span class="button-price-wrapper">
+            <span class="button-price-strike">${originalPrice}</span>
+            <span class="button-price-final">Add Bundle to Cart • ${formattedPrice}</span>
+          </span>
+        `;
+      } else {
+        console.log('[ADD_TO_CART_BUTTON] No strikethrough shown');
+        button.textContent = `Add Bundle to Cart • ${formattedPrice}`;
+      }
+
+      button.disabled = false;
+      button.classList.remove('disabled');
+    }
+  }
+  // ========================================================================
+  // MODAL FUNCTIONALITY
+  // ========================================================================
+
+  // Helper method to get formatted header text
+  getFormattedHeaderText() {
+    // If discount is not enabled, show step name
+    if (!this.selectedBundle?.pricing?.enabled) {
+      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+      return currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+    }
+
+    const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
+
+    return TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+  }
+
+  openModal(stepIndex) {
+    this.currentStepIndex = stepIndex;
+
+    // Update modal header
+    const modal = this.elements.modal;
+    const headerText = this.getFormattedHeaderText();
+
+    modal.querySelector('.modal-step-title').innerHTML = headerText;
+
+    // Load and render products for this step
+    this.loadStepProducts(stepIndex).then(() => {
+      this.renderModalTabs();
+      this.renderModalProducts(stepIndex);
+      this.updateModalNavigation();
+      this.updateModalFooterMessaging();
+
+      // Show modal
+      modal.style.display = 'block';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }).catch(error => {
+      ToastManager.show('Failed to load products for this step');
+    });
+  }
+
+  closeModal() {
+    this.elements.modal.style.display = 'none';
+    this.elements.modal.classList.remove('active');
+    document.body.style.overflow = '';
+
+    // Update main UI
+    this.renderSteps();
+    this.updateAddToCartButton();
+    this.updateFooterMessaging();
+  }
+
+  async loadStepProducts(stepIndex) {
+    const step = this.selectedBundle.steps[stepIndex];
+
+    if (this.stepProductData[stepIndex].length > 0) {
+      return;
+    }
+
+    console.log('[LOAD_PRODUCTS] Step data:', {
+      stepIndex,
+      hasProducts: !!step.products,
+      productsLength: step.products?.length,
+      hasStepProduct: !!step.StepProduct,
+      stepProductLength: step.StepProduct?.length,
+      hasCollections: !!step.collections,
+      collectionsLength: step.collections?.length,
+      fullStep: step
+    });
+
+    let allProducts = [];
+
+    // Process explicit products - fetch using Storefront API via our backend
+    if (step.products && Array.isArray(step.products) && step.products.length > 0) {
+      const productIds = step.products.map(p => p.id); // Keep full GID format
+      const shop = window.Shopify?.shop || window.location.host;
+
+      // Get app URL from widget data attribute or window global
+      const appUrl = window.__BUNDLE_APP_URL__ || '';
+      const apiBaseUrl = appUrl || window.location.origin;
+
+      console.log('[LOAD_PRODUCTS] Fetching products from Storefront API. IDs:', productIds);
+      console.log('[LOAD_PRODUCTS] Using API base URL:', apiBaseUrl);
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[LOAD_PRODUCTS] API request failed:', response.status, errorText);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('[LOAD_PRODUCTS] API response:', data);
+
+        if (data.products && data.products.length > 0) {
+          allProducts = allProducts.concat(data.products);
+          console.log('[LOAD_PRODUCTS] Added', data.products.length, 'products');
+        } else {
+          console.warn('[LOAD_PRODUCTS] No products returned');
+        }
+      } catch (error) {
+        console.error('[LOAD_PRODUCTS] Error fetching products:', error);
+      }
+    }
+
+    if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+      // Check if StepProduct already has enriched data (for full-page bundles)
+      const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
+
+      if (hasEnrichedData) {
+        console.log('[LOAD_PRODUCTS] Using enriched StepProduct data directly (full-page bundle)');
+
+        // Transform StepProduct to match expected product format
+        const enrichedProducts = step.StepProduct.map(sp => ({
+          id: sp.productId,
+          title: sp.title,
+          handle: sp.handle,
+          imageUrl: sp.imageUrl,
+          price: sp.price,
+          compareAtPrice: sp.compareAtPrice,
+          available: true,
+          variants: sp.variants || [{
+            id: sp.productId.replace('Product', 'ProductVariant'),
+            title: 'Default Title',
+            price: sp.price,
+            compareAtPrice: sp.compareAtPrice,
+            available: true,
+            image: sp.imageUrl ? { src: sp.imageUrl } : null
+          }]
+        }));
+
+        allProducts = allProducts.concat(enrichedProducts);
+        console.log('[LOAD_PRODUCTS] Added', enrichedProducts.length, 'enriched StepProducts');
+      } else {
+        // Fetch from storefront API if data is not enriched
+        const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
+        const shop = window.Shopify?.shop || window.location.host;
+
+        if (productGids.length > 0) {
+          console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
+
+          const appUrl = window.__BUNDLE_APP_URL__ || '';
+          const apiBaseUrl = appUrl || window.location.origin;
+
+          try {
+            const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
+
+            if (!response.ok) {
+              console.error('[LOAD_PRODUCTS] API request failed for StepProduct:', response.status);
+            } else {
+              const data = await response.json();
+              if (data.products && data.products.length > 0) {
+                allProducts = allProducts.concat(data.products);
+                console.log('[LOAD_PRODUCTS] Added', data.products.length, 'StepProducts');
+              }
+            }
+          } catch (error) {
+            console.error('[LOAD_PRODUCTS] Error fetching StepProduct:', error);
+          }
+        }
+      }
+    }
+
+    // Process collection products using Storefront API (not legacy REST endpoint)
+    if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
+      const collectionHandles = step.collections
+        .map(c => c.handle)
+        .filter(Boolean);
+
+      if (collectionHandles.length > 0) {
+        const shop = window.Shopify?.shop || window.location.host;
+        const appUrl = window.__BUNDLE_APP_URL__ || '';
+        const apiBaseUrl = appUrl || window.location.origin;
+
+        console.log('[LOAD_PRODUCTS] Fetching products from collections via Storefront API:', collectionHandles);
+
+        try {
+          const response = await fetch(
+            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'products from collections');
+            }
+          } else {
+            console.error('[LOAD_PRODUCTS] Failed to fetch collection products:', response.status);
+          }
+        } catch (error) {
+          console.error('[LOAD_PRODUCTS] Error fetching collection products:', error);
+        }
+      }
+    }
+
+    // Process and normalize product data
+    console.log('[LOAD_PRODUCTS] Raw products for step', stepIndex, ':', allProducts.length, 'products');
+    console.log('[LOAD_PRODUCTS] First product sample:', allProducts[0]);
+
+    const processedProducts = this.processProductsForStep(allProducts, step);
+
+    console.log('[LOAD_PRODUCTS] Processed products:', processedProducts.length);
+    console.log('[LOAD_PRODUCTS] First processed:', processedProducts[0]);
+
+    // Remove duplicates
+    const seen = new Set();
+    this.stepProductData[stepIndex] = processedProducts.filter(product => {
+      const key = product.variantId || product.id;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+
+    console.log('[LOAD_PRODUCTS] Final stepProductData[' + stepIndex + ']:', this.stepProductData[stepIndex]);
+  }
+
+  processProductsForStep(products, step) {
+    return products.flatMap(product => {
+      if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
+        // Display each variant as separate product - filter out unavailable variants
+        return product.variants
+          .filter(variant => variant.available === true) // Only show available variants
+          .map(variant => {
+            // Storefront API: prioritize variant image, fallback to product featured image
+            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+
+            return {
+              id: this.extractId(variant.id),
+              title: `${product.title} - ${variant.title}`,
+              imageUrl,
+              price: parseFloat(variant.price || '0') * 100,
+              compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
+              variantId: this.extractId(variant.id),
+              available: variant.available === true // Store availability (always boolean)
+            };
+          });
+      } else {
+        // Display product with default variant - check availability
+        const defaultVariant = product.variants?.[0];
+
+        // Skip product if default variant is not available
+        if (defaultVariant && defaultVariant.available !== true) {
+          return [];
+        }
+
+        // Storefront API: prioritize variant image, fallback to product featured image
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+
+        return [{
+          id: this.extractId(defaultVariant?.id || product.id),
+          title: product.title,
+          imageUrl,
+          price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
+          compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
+          variantId: this.extractId(defaultVariant?.id || product.id),
+          available: defaultVariant?.available === true // Store availability (always boolean from API)
+        }];
+      }
+    });
+  }
+
+  extractId(idString) {
+    if (!idString) return null;
+
+    // Handle GID format
+    const gidMatch = idString.toString().match(/gid:\/\/shopify\/\w+\/(\d+)/);
+    if (gidMatch) {
+      return gidMatch[1];
+    }
+
+    // Handle numeric string
+    return idString.toString().split('/').pop();
+  }
+
+  renderModalTabs() {
+    const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
+    tabsContainer.innerHTML = '';
+
+    this.selectedBundle.steps.forEach((step, index) => {
+      const isAccessible = this.isStepAccessible(index);
+      const isActive = index === this.currentStepIndex;
+
+      // Create tab button
+      const tabButton = document.createElement('button');
+      tabButton.className = `bundle-header-tab ${isActive ? 'active' : ''} ${!isAccessible ? 'locked' : ''}`;
+      tabButton.textContent = step.name || `Step ${index + 1}`;
+      tabButton.dataset.stepIndex = index.toString();
+
+      // Click handler
+      tabButton.addEventListener('click', async () => {
+        if (!isAccessible) {
+          ToastManager.show('Please complete the previous steps first.');
+          return;
+        }
+
+        this.currentStepIndex = index;
+
+        // Update modal header
+        const headerText = this.getFormattedHeaderText();
+        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+
+        // Load products for this step if not already loaded
+        await this.loadStepProducts(index);
+
+        // Re-render everything
+        this.renderModalTabs();
+        this.renderModalProducts(index);
+        this.updateModalNavigation();
+        this.updateModalFooterMessaging();
+      });
+
+      tabsContainer.appendChild(tabButton);
+    });
+
+    // Update arrow visibility after rendering tabs
+    if (this.updateTabArrows) {
+      setTimeout(() => this.updateTabArrows(), 50);
+    }
+  }
+
+  renderModalProducts(stepIndex, productsToRender = null) {
+    // Use all products from step data
+    const products = productsToRender || this.stepProductData[stepIndex];
+    const selectedProducts = this.selectedProducts[stepIndex];
+    const productGrid = this.elements.modal.querySelector('.product-grid');
+
+    if (products.length === 0) {
+      // Show empty state cards like in DCP preview
+      const currentStep = this.selectedBundle.steps[stepIndex];
+      const stepName = currentStep?.name || `Step ${stepIndex + 1}`;
+      const labelText = `Select ${stepName}`;
+
+      const emptyStateCards = Array(3).fill(0).map((_, index) => `
+        <div class="empty-state-card">
+          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-state-card-text">${labelText}</p>
+        </div>
+      `).join('');
+
+      productGrid.innerHTML = emptyStateCards;
+      return;
+    }
+
+    productGrid.innerHTML = products.map(product => {
+      const selectionKey = product.variantId || product.id;
+      const currentQuantity = selectedProducts[selectionKey] || 0;
+      const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+      return `
+        <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
+          ${currentQuantity > 0 ? `
+            <div class="selected-overlay">✓</div>
+          ` : ''}
+
+          <div class="product-image">
+            <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+          </div>
+
+          <div class="product-content-wrapper">
+            <div class="product-title">${product.title}</div>
+
+            ${product.price ? `
+              <div class="product-price-row">
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
+                <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+              </div>
+            ` : ''}
+
+            <div class="product-spacer"></div>
+
+            ${this.renderVariantSelector(product)}
+
+            <div class="product-quantity-wrapper">
+              <div class="product-quantity-selector">
+                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                <span class="qty-display">${currentQuantity}</span>
+                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+              </div>
+            </div>
+
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
+              ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach event handlers
+    this.attachProductEventHandlers(productGrid, stepIndex);
+  }
+
+  renderVariantSelector(product) {
+    if (!product.variants || product.variants.length <= 1) {
+      return '';
+    }
+
+    return `
+      <div class="variant-selector-wrapper">
+        <select class="variant-selector" data-base-product-id="${product.id}">
+          ${product.variants.map(v => `
+            <option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>
+          `).join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  attachProductEventHandlers(productGrid, stepIndex) {
+    // Remove existing event listeners to prevent duplicates
+    const newProductGrid = productGrid.cloneNode(true);
+    productGrid.parentNode.replaceChild(newProductGrid, productGrid);
+
+    // Quantity button handlers
+    newProductGrid.addEventListener('click', (e) => {
+      if (e.target.classList.contains('qty-btn')) {
+        const productId = e.target.dataset.productId;
+        const isIncrease = e.target.classList.contains('qty-increase');
+        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+
+        const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
+        this.updateProductSelection(stepIndex, productId, newQuantity);
+      }
+    });
+
+    // Add to Bundle button handler
+    newProductGrid.addEventListener('click', (e) => {
+      if (e.target.classList.contains('product-add-btn')) {
+        const productId = e.target.dataset.productId;
+        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+        // Toggle between 0 and 1
+        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+      }
+    });
+
+    // Variant selector handler
+    newProductGrid.addEventListener('change', (e) => {
+      if (e.target.classList.contains('variant-selector')) {
+        const newVariantId = e.target.value;
+        const baseProductId = e.target.dataset.baseProductId;
+
+        // Find the product and update its variant
+        const product = this.stepProductData[stepIndex].find(p => p.id === baseProductId);
+        if (product) {
+          const variantData = product.variants.find(v => v.id === newVariantId);
+          if (variantData) {
+            // Move quantity from old variant to new variant
+            const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
+            if (oldQuantity > 0) {
+              delete this.selectedProducts[stepIndex][product.variantId];
+              this.selectedProducts[stepIndex][newVariantId] = oldQuantity;
+            }
+
+            // Update product properties
+            product.variantId = newVariantId;
+            product.price = variantData.price;
+
+            // Update UI without full re-render
+            this.updateModalNavigation();
+            this.updateModalFooterMessaging();
+          }
+        }
+      }
+    });
+  }
+  updateProductSelection(stepIndex, productId, newQuantity) {
+    const quantity = Math.max(0, newQuantity);
+
+    // Validate step conditions
+    if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+      return;
+    }
+
+    // Update selection
+    if (quantity > 0) {
+      this.selectedProducts[stepIndex][productId] = quantity;
+    } else {
+      delete this.selectedProducts[stepIndex][productId];
+    }
+
+    // Update UI without re-rendering the entire modal (prevents event listener duplication)
+    this.updateProductQuantityDisplay(stepIndex, productId, quantity);
+    this.renderModalTabs();
+    this.updateModalNavigation();
+    this.updateModalFooterMessaging();
+    this.updateAddToCartButton();
+    this.updateFooterMessaging();
+  }
+
+  updateProductQuantityDisplay(stepIndex, productId, quantity) {
+    // Update quantity display without full re-render
+    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+    if (productCard) {
+      const quantityDisplay = productCard.querySelector('.qty-display');
+      const addBtn = productCard.querySelector('.product-add-btn');
+      const selectedOverlay = productCard.querySelector('.selected-overlay');
+
+      if (quantityDisplay) {
+        quantityDisplay.textContent = quantity;
+      }
+
+      if (addBtn) {
+        if (quantity > 0) {
+          addBtn.textContent = 'Added to Bundle';
+          addBtn.classList.add('added');
+        } else {
+          addBtn.textContent = 'Add to Bundle';
+          addBtn.classList.remove('added');
+        }
+      }
+
+      if (selectedOverlay) {
+        if (quantity > 0) {
+          selectedOverlay.style.display = 'flex';
+        } else {
+          selectedOverlay.style.display = 'none';
+        }
+      }
+
+      // Update card visual state
+      if (quantity > 0) {
+        productCard.classList.add('selected');
+      } else {
+        productCard.classList.remove('selected');
+      }
+    }
+  }
+
+  validateStepCondition(stepIndex, productId, newQuantity) {
+    const step = this.selectedBundle.steps[stepIndex];
+
+    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
+      return true; // No conditions to validate
+    }
+
+    // Calculate what the total would be with this change
+    let totalQuantityWouldBe = 0;
+    for (const [pid, qty] of Object.entries(this.selectedProducts[stepIndex])) {
+      if (pid === productId) {
+        totalQuantityWouldBe += newQuantity;
+      } else {
+        totalQuantityWouldBe += qty;
+      }
+    }
+
+    const requiredQuantity = step.conditionValue;
+    let allowUpdate = false;
+
+    switch (step.conditionOperator) {
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
+        allowUpdate = totalQuantityWouldBe <= requiredQuantity;
+        break;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
+        allowUpdate = totalQuantityWouldBe < requiredQuantity;
+        break;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        allowUpdate = totalQuantityWouldBe <= requiredQuantity;
+        break;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+        allowUpdate = true; // Allow any increase
+        break;
+      default:
+        allowUpdate = true;
+    }
+
+    if (!allowUpdate && newQuantity > (this.selectedProducts[stepIndex][productId] || 0)) {
+      const operatorText = {
+        [BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO]: `exactly ${requiredQuantity}`,
+        [BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN]: `less than ${requiredQuantity}`,
+        [BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO]: `at most ${requiredQuantity}`,
+        [BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN]: `more than ${requiredQuantity}`,
+        [BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO]: `at least ${requiredQuantity}`
+      };
+
+      const limitText = operatorText[step.conditionOperator] || requiredQuantity;
+      ToastManager.show(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`);
+      return false;
+    }
+
+    return true;
+  }
+
+  validateStep(stepIndex) {
+    const step = this.selectedBundle.steps[stepIndex];
+    const selectedProductsInStep = this.selectedProducts[stepIndex];
+
+    let totalQuantitySelected = 0;
+    for (const quantity of Object.values(selectedProductsInStep)) {
+      totalQuantitySelected += quantity;
+    }
+
+    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
+      return totalQuantitySelected > 0; // Any selection is valid
+    }
+
+    const requiredQuantity = step.conditionValue;
+
+    switch (step.conditionOperator) {
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
+        return totalQuantitySelected === requiredQuantity;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
+        return totalQuantitySelected > requiredQuantity;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
+        return totalQuantitySelected < requiredQuantity;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+        return totalQuantitySelected >= requiredQuantity;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        return totalQuantitySelected <= requiredQuantity;
+      default:
+        return totalQuantitySelected > 0;
+    }
+  }
+
+  isStepAccessible(stepIndex) {
     // Check if all previous steps are completed
     for (let i = 0; i < stepIndex; i++) {
-      if (!this.isStepCompleted(i)) return false;
+      if (!this.validateStep(i)) {
+        return false;
+      }
     }
     return true;
   }
 
-  navigateBack() {
-    if (this.currentStepIndex > 0) {
-      this.currentStepIndex--;
-      this.render();
+  updateModalNavigation() {
+    const prevButton = this.elements.modal.querySelector('.prev-button');
+    const nextButton = this.elements.modal.querySelector('.next-button');
+
+    prevButton.disabled = this.currentStepIndex === 0;
+
+    const isCurrentStepValid = this.validateStep(this.currentStepIndex);
+
+    if (this.currentStepIndex === this.selectedBundle.steps.length - 1) {
+      nextButton.textContent = 'Done';
+      nextButton.disabled = !isCurrentStepValid;
+    } else {
+      nextButton.textContent = 'Next';
+      nextButton.disabled = !isCurrentStepValid;
     }
   }
 
-  navigateNext() {
-    if (this.currentStepIndex < this.bundleData.steps.length - 1) {
-      if (this.isStepCompleted(this.currentStepIndex)) {
-        this.currentStepIndex++;
-        this.render();
-      } else {
-        alert('Please select at least one product to continue');
-      }
+  updateModalFooterMessaging() {
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity
+    );
+
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+    // Update modal header text dynamically
+    this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
+
+    // Update cart badge with total item count
+    const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
+    if (cartBadge) {
+      cartBadge.textContent = totalQuantity.toString();
+    }
+
+    // Update total prices in the footer pill
+    this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+
+    // Update discount messaging and progress bar
+    this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+  }
+
+  updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
+    const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
+    if (!modalStepTitle) return;
+
+    // If discount is not enabled, show step name
+    if (!this.selectedBundle?.pricing?.enabled) {
+      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+      modalStepTitle.innerHTML = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+      return;
+    }
+
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
+
+    const headerText = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+
+    modalStepTitle.innerHTML = headerText;
+  }
+
+  updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
+    const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
+    const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
+    const progressBar = this.elements.modal.querySelector('.modal-footer-progress-bar');
+    const currentQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .current-quantity');
+    const targetQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .target-quantity');
+    const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
+    const progressSection = this.elements.modal.querySelector('.modal-footer-progress-section');
+
+    if (!footerDiscountText || !progressFill) return;
+
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      discountInfo,
+      currencyInfo
+    );
+
+    if (discountInfo.qualifiesForDiscount) {
+      // Success message
+      const successMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate,
+        variables
+      );
+      footerDiscountText.innerHTML = successMessage;
+      if (discountSection) discountSection.classList.add('qualified');
     } else {
-      // Add to cart
-      this.addToCart();
+      // Progress message
+      const progressMessage = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate,
+        variables
+      );
+      footerDiscountText.innerHTML = progressMessage;
+      if (discountSection) discountSection.classList.remove('qualified');
+    }
+
+    // Update progress bar
+    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
+    const ruleToUse = discountInfo.applicableRule || nextRule;
+
+    let progressPercentage = 0;
+
+    if (ruleToUse) {
+      const conditionType = ruleToUse.condition?.type || 'quantity';
+      const targetValue = ruleToUse.condition?.value || 0;
+
+      if (conditionType === 'amount') {
+        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
+        if (currentQuantitySpan && targetQuantitySpan) {
+          currentQuantitySpan.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+          targetQuantitySpan.textContent = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
+        }
+      } else {
+        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
+        if (currentQuantitySpan && targetQuantitySpan) {
+          currentQuantitySpan.textContent = totalQuantity.toString();
+          targetQuantitySpan.textContent = targetValue.toString();
+        }
+      }
+    }
+
+    if (progressFill) {
+      progressFill.style.width = `${progressPercentage}%`;
+    }
+
+    // Show/hide sections based on config
+    if (discountSection) {
+      discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
+    }
+    if (progressSection) {
+      progressSection.style.display = this.config.showProgressBar ? 'block' : 'none';
     }
   }
+
+  updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {
+    const strikePriceEl = this.elements.modal.querySelector('.total-price-strike');
+    const finalPriceEl = this.elements.modal.querySelector('.total-price-final');
+
+    if (!strikePriceEl || !finalPriceEl) return;
+
+    if (discountInfo.qualifiesForDiscount && discountInfo.discountedPrice < totalPrice) {
+      // Show strike-through original price and discounted price
+      strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      strikePriceEl.style.display = 'inline';
+      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.discountedPrice, currencyInfo.display.format);
+    } else {
+      // Show only regular price
+      strikePriceEl.style.display = 'none';
+      finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+    }
+  }
+
+  // ========================================================================
+  // CART OPERATIONS
+  // ========================================================================
 
   async addToCart() {
     try {
-      const items = [];
-      const bundleInstanceId = `${this.bundleData.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+        this.selectedProducts,
+        this.stepProductData
+      );
 
-      this.bundleData.steps.forEach((step, stepIndex) => {
-        const stepSelections = this.selectedProducts[stepIndex] || {};
+      if (totalQuantity === 0) {
+        ToastManager.show('Please select products for your bundle before adding to cart.');
+        return;
+      }
 
-        Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-          if (quantity > 0) {
-            items.push({
+      // Validate all steps
+      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+      if (!allStepsValid) {
+        ToastManager.show('Please complete all bundle steps before adding to cart.');
+        return;
+      }
+
+      const cartItems = this.buildCartItems();
+
+      // Disable button during request
+      this.elements.addToCartButton.disabled = true;
+      this.elements.addToCartButton.textContent = 'Adding to Cart...';
+
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items: cartItems })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Cart add failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Show success message and redirect
+      ToastManager.show('Bundle added to cart successfully!');
+
+      setTimeout(() => {
+        window.location.href = '/cart';
+      }, 1000);
+
+    } catch (error) {
+      ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
+    } finally {
+      // Re-enable button
+      this.updateAddToCartButton();
+    }
+  }
+
+  buildCartItems() {
+    // Shopify Standard Bundle approach for configurable bundles:
+    // Add ACTUAL selected component products to cart with _bundle_id property
+    // Cart transform MERGE groups by _bundle_id and combines into bundle parent
+    // See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
+
+    const cartItems = [];
+    const bundleInstanceId = this.generateBundleInstanceId();
+
+    console.log('[CART] Building cart items for bundle:', {
+      bundleId: this.selectedBundle.id,
+      bundleName: this.selectedBundle.name,
+      bundleInstanceId
+    });
+
+    // Add ACTUAL selected component products to cart
+    // Each component gets _bundle_id property for grouping in cart transform
+    const unavailableProducts = []; // Track unavailable products
+
+    this.selectedProducts.forEach((stepSelections, stepIndex) => {
+      const productsInStep = this.stepProductData[stepIndex];
+
+      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+        if (quantity > 0) {
+          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+          if (product) {
+            // Check availability before adding to cart
+            if (product.available !== true) {
+              console.warn('[CART] Product not available for sale:', {
+                stepIndex,
+                variantId,
+                productTitle: product.title,
+                availabilityStatus: product.available
+              });
+              unavailableProducts.push(product.title);
+              return; // Skip this product
+            }
+
+            console.log('[CART] Adding component:', {
+              stepIndex,
+              variantId,
+              quantity,
+              productTitle: product.title,
+              bundleInstanceId,
+              available: product.available
+            });
+
+            const cartItem = {
               id: parseInt(variantId),
               quantity: quantity,
               properties: {
                 '_bundle_id': bundleInstanceId,
-                '_bundle_name': this.bundleData.name,
+                '_bundle_name': this.selectedBundle.name,
                 '_step_index': stepIndex.toString()
               }
-            });
+            };
+
+            cartItems.push(cartItem);
           }
-        });
+        }
       });
+    });
 
-      console.log('[FULL_PAGE_BUNDLE] Adding to cart:', items);
+    console.log('[CART] Cart items to add (components with _bundle_id property):', cartItems);
 
-      const response = await fetch('/cart/add.js', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items })
-      });
+    // Throw error if any products are unavailable
+    if (unavailableProducts.length > 0) {
+      const productList = unavailableProducts.join(', ');
+      throw new Error(`The following product${unavailableProducts.length > 1 ? 's are' : ' is'} currently unavailable: ${productList}. Please remove ${unavailableProducts.length > 1 ? 'them' : 'it'} from your bundle or try again later.`);
+    }
 
-      if (!response.ok) {
-        throw new Error('Failed to add to cart');
+    return cartItems;
+  }
+
+  generateBundleInstanceId() {
+    // Generate unique bundle instance ID using UUID (recommended by Shopify)
+    // This prevents hash collisions and ensures each bundle instance is truly unique
+    // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
+
+    // Use crypto.randomUUID() if available (modern browsers)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      const uuid = crypto.randomUUID();
+      const bundleInstanceId = `${this.selectedBundle.id}_${uuid}`;
+
+      console.log('[CART] Generated UUID-based bundle instance ID:', bundleInstanceId);
+      return bundleInstanceId;
+    }
+
+    // Fallback for older browsers: use timestamp + random number
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000000);
+    const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
+
+    console.warn('[CART] crypto.randomUUID() not available, using fallback ID generation');
+    console.log('[CART] Generated fallback bundle instance ID:', bundleInstanceId);
+    return bundleInstanceId;
+  }
+  // ========================================================================
+  // EVENT HANDLERS
+  // ========================================================================
+
+  attachEventListeners() {
+    // Add to cart button
+    this.elements.addToCartButton.addEventListener('click', () => this.addToCart());
+
+    // Modal close handlers
+    const modal = this.elements.modal;
+    const closeButton = modal.querySelector('.close-button');
+    const overlay = modal.querySelector('.modal-overlay');
+    const prevButton = modal.querySelector('.prev-button');
+    const nextButton = modal.querySelector('.next-button');
+
+    if (closeButton) {
+      closeButton.addEventListener('click', () => this.closeModal());
+    }
+
+    if (overlay) {
+      overlay.addEventListener('click', () => this.closeModal());
+    }
+
+    // Modal navigation
+    if (prevButton) {
+      prevButton.addEventListener('click', () => this.navigateModal(-1));
+    }
+
+    if (nextButton) {
+      nextButton.addEventListener('click', () => this.navigateModal(1));
+    }
+
+    // Keyboard handlers
+    document.addEventListener('keydown', (e) => {
+      if (modal.style.display === 'block' && e.key === 'Escape') {
+        this.closeModal();
       }
+    });
+  }
 
-      alert('Bundle added to cart!');
-      window.location.href = '/cart';
+  async navigateModal(direction) {
+    const newStepIndex = this.currentStepIndex + direction;
 
-    } catch (error) {
-      console.error('[FULL_PAGE_BUNDLE] Cart error:', error);
-      alert('Failed to add bundle to cart: ' + error.message);
+    if (direction < 0 && newStepIndex >= 0) {
+      // Previous step
+      if (this.validateStep(this.currentStepIndex)) {
+        this.currentStepIndex = newStepIndex;
+
+        // Update modal header
+        const headerText = this.getFormattedHeaderText();
+        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+
+        // Load products for this step
+        await this.loadStepProducts(newStepIndex);
+
+        this.renderModalTabs();
+        this.renderModalProducts(this.currentStepIndex);
+        this.updateModalNavigation();
+        this.updateModalFooterMessaging();
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before going back.');
+      }
+    } else if (direction > 0) {
+      if (newStepIndex < this.selectedBundle.steps.length) {
+        // Next step
+        if (this.validateStep(this.currentStepIndex)) {
+          this.currentStepIndex = newStepIndex;
+
+          // Update modal header
+          const headerText = this.getFormattedHeaderText();
+          this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+
+          // Load products for this step
+          await this.loadStepProducts(newStepIndex);
+
+          this.renderModalTabs();
+          this.renderModalProducts(this.currentStepIndex);
+          this.updateModalNavigation();
+          this.updateModalFooterMessaging();
+        } else {
+          ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+        }
+      } else {
+        // Done button clicked on last step
+        if (this.validateStep(this.currentStepIndex)) {
+          this.closeModal();
+        } else {
+          ToastManager.show('Please meet the quantity conditions for the current step before finishing.');
+        }
+      }
     }
   }
 
-  showPreview() {
+  // ========================================================================
+  // UTILITY METHODS
+  // ========================================================================
+
+  showFallbackUI() {
     this.container.innerHTML = `
-      <div style="padding: 60px; text-align: center;">
-        <h2>Full-Page Bundle Widget</h2>
-        <p>Configure a Bundle ID in the theme editor to see your bundle here.</p>
+      <div class="bundle-fallback">
+        <h3>Bundle Configuration</h3>
+        <p>No active bundles found for this product.</p>
+        <details>
+          <summary>Debug Information</summary>
+          <pre>${JSON.stringify({
+      config: this.config,
+      bundleDataKeys: this.bundleData ? Object.keys(this.bundleData) : 'No data',
+      currentProductId: this.config.currentProductId
+    }, null, 2)}</pre>
+        </details>
       </div>
     `;
   }
 
-  showError(message) {
+  showErrorUI(error) {
     this.container.innerHTML = `
-      <div style="padding: 40px; text-align: center; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">
-        <h3 style="color: #856404;">Error Loading Bundle</h3>
-        <p style="color: #856404;">${message}</p>
+      <div class="bundle-error">
+        <h3>Bundle Widget Error</h3>
+        <p>Failed to initialize bundle widget.</p>
+        <details>
+          <summary>Error Details</summary>
+          <pre>${error.message}\n${error.stack}</pre>
+        </details>
       </div>
     `;
   }
 }
 
-// Initialize widget when DOM is ready
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initFullPageWidget);
+  document.addEventListener('DOMContentLoaded', initializeFullPageWidget);
 } else {
-  initFullPageWidget();
+  initializeFullPageWidget();
 }
 
-function initFullPageWidget() {
-  const containers = document.querySelectorAll('#bundle-builder-app[data-bundle-type="full_page"]');
+function initializeFullPageWidget() {
+  const containers = document.querySelectorAll('#bundle-builder-app');
   containers.forEach(container => {
     if (!container.dataset.initialized) {
-      new FullPageBundleWidget(container);
-      container.dataset.initialized = 'true';
+      const bundleType = container.dataset.bundleType || 'full_page';
+      if (bundleType === 'full_page') {
+        new BundleWidgetFullPage(container);
+      }
     }
   });
 }
 
-console.log('[FULL_PAGE_BUNDLE] Module loaded');
+console.log('[FULL_PAGE_WIDGET] Module loaded');
