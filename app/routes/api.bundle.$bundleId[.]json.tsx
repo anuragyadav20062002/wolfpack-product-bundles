@@ -199,6 +199,12 @@ export const loader: LoaderFunction = async ({ request, params }) => {
             // Use first variant price for consistency (already in major currency unit)
             const firstVariant = productDetails.variants?.edges?.[0]?.node;
 
+            // Extract numeric ID from variant GID for cart API compatibility
+            const extractNumericId = (gid: string) => {
+              const match = gid.match(/\/(\d+)$/);
+              return match ? match[1] : gid;
+            };
+
             return {
               ...sp,
               title: productDetails.title,
@@ -208,7 +214,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
               compareAtPrice: firstVariant?.compareAtPrice || null,
               currencyCode: productDetails.priceRange?.minVariantPrice?.currencyCode || "INR",
               variants: productDetails.variants?.edges?.map((edge: any) => ({
-                id: edge.node.id,
+                id: extractNumericId(edge.node.id), // Extract numeric ID for cart compatibility
+                gid: edge.node.id, // Keep full GID for reference
                 title: edge.node.title,
                 price: edge.node.price,
                 compareAtPrice: edge.node.compareAtPrice,
@@ -220,18 +227,6 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           return sp;
         }) || [];
 
-        // BACKWARDS COMPATIBILITY: Also populate products array for old widget code
-        const productsArray = enrichedStepProducts.map(sp => ({
-          id: sp.productId,
-          title: sp.title || '',
-          handle: sp.handle || '',
-          imageUrl: sp.imageUrl || null,
-          price: sp.price || '0',
-          compareAtPrice: sp.compareAtPrice || null,
-          available: true,
-          variants: sp.variants || []
-        }));
-
         return {
           id: step.id,
           name: step.name,
@@ -240,7 +235,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           maxQuantity: step.maxQuantity,
           enabled: step.enabled,
           displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-          products: productsArray.length > 0 ? productsArray : (step.products || []),
+          products: step.products || [], // Keep original products array (for legacy compatibility)
           collections: step.collections || [],
           StepProduct: enrichedStepProducts,
           conditionType: step.conditionType,
