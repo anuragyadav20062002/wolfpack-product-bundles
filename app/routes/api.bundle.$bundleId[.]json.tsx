@@ -235,7 +235,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           maxQuantity: step.maxQuantity,
           enabled: step.enabled,
           displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-          products: step.products || [], // Keep original products array (for legacy compatibility)
+          products: [], // Empty - widget will use enriched StepProduct instead
           collections: step.collections || [],
           StepProduct: enrichedStepProducts,
           conditionType: step.conditionType,
