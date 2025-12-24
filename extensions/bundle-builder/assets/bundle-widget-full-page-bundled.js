@@ -1963,9 +1963,9 @@ class BundleWidgetFullPage {
     const rightSection = document.createElement('div');
     rightSection.className = 'footer-right';
 
-    const total = PricingCalculator.calculateTotal(
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.bundleData
+      this.stepProductData
     );
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
@@ -1974,7 +1974,7 @@ class BundleWidgetFullPage {
     totalDisplay.className = 'footer-total';
     totalDisplay.innerHTML = `
       <span class="total-label">Total:</span>
-      <span class="total-price">${CurrencyManager.formatMoney(total.finalPrice, currencyInfo.display.format)}</span>
+      <span class="total-price">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>
     `;
 
     const navButtons = document.createElement('div');
