@@ -1845,6 +1845,9 @@ class BundleWidgetFullPage {
     });
     if (isSelected) card.classList.add('selected');
 
+    // Get currency info for formatting
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+
     // Product image
     const imageUrl = product.featuredImage?.url || product.imageUrl || product.images?.[0]?.url || '';
     card.innerHTML = `
@@ -1854,8 +1857,8 @@ class BundleWidgetFullPage {
       <div class="product-info">
         <h4 class="product-title">${product.title}</h4>
         <div class="product-price">
-          ${product.compareAtPrice ? `<span class="compare-price">${CurrencyManager.formatPrice(product.compareAtPrice)}</span>` : ''}
-          <span class="current-price">${CurrencyManager.formatPrice(product.price)}</span>
+          ${product.compareAtPrice ? `<span class="compare-price">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
+          <span class="current-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
         </div>
       </div>
       <div class="product-actions">
@@ -1871,11 +1874,13 @@ class BundleWidgetFullPage {
   createVariantSelector(product) {
     if (!product.variants || product.variants.length <= 1) return '';
 
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+
     return `
       <div class="variant-selector">
         <select class="variant-select" data-product-id="${product.id}">
           ${product.variants.map(variant => `
-            <option value="${variant.id}">${variant.title} - ${CurrencyManager.formatPrice(variant.price)}</option>
+            <option value="${variant.id}">${variant.title} - ${CurrencyManager.formatMoney(variant.price, currencyInfo.display.format)}</option>
           `).join('')}
         </select>
       </div>
@@ -1963,11 +1968,13 @@ class BundleWidgetFullPage {
       this.bundleData
     );
 
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+
     const totalDisplay = document.createElement('div');
     totalDisplay.className = 'footer-total';
     totalDisplay.innerHTML = `
       <span class="total-label">Total:</span>
-      <span class="total-price">${CurrencyManager.formatPrice(total.finalPrice)}</span>
+      <span class="total-price">${CurrencyManager.formatMoney(total.finalPrice, currencyInfo.display.format)}</span>
     `;
 
     const navButtons = document.createElement('div');
