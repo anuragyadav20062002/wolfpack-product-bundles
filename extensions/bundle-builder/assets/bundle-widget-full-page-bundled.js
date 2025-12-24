@@ -1822,7 +1822,7 @@ class BundleWidgetFullPage {
 
     // Reuse ComponentGenerator.createProductCard for each product
     products.forEach(product => {
-      const productCard = window.BUNDLE_WIDGET.ComponentGenerator.createProductCard(
+      const productCard = ComponentGenerator.createProductCard(
         product,
         stepIndex,
         this.selectedProducts,
@@ -1885,7 +1885,7 @@ class BundleWidgetFullPage {
     const rightSection = document.createElement('div');
     rightSection.className = 'footer-right';
 
-    const total = window.BUNDLE_WIDGET.PricingCalculator.calculateTotal(
+    const total = PricingCalculator.calculateTotal(
       this.selectedProducts,
       this.bundleData
     );
@@ -1894,7 +1894,7 @@ class BundleWidgetFullPage {
     totalDisplay.className = 'footer-total';
     totalDisplay.innerHTML = `
       <span class="total-label">Total:</span>
-      <span class="total-price">${window.BUNDLE_WIDGET.CurrencyManager.formatPrice(total.finalPrice)}</span>
+      <span class="total-price">${CurrencyManager.formatPrice(total.finalPrice)}</span>
     `;
 
     const navButtons = document.createElement('div');
