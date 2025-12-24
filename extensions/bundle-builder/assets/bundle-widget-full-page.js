@@ -614,34 +614,41 @@ class BundleWidgetFullPage {
     });
   }
 
-  // Full-page bundle layout (horizontal tabs)
+  // Full-page bundle layout (LEFT section + RIGHT sidebar)
   renderFullPageLayout() {
-    console.log('[FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
+    console.log('[FULL_PAGE_LAYOUT] Rendering full-page bundle layout with sidebar');
 
     // Clear existing content
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
 
-    // 1. Render step timeline at top
+    // Create LEFT section (65% width)
+    const leftSection = document.createElement('div');
+    leftSection.className = 'full-page-left-section';
+
+    // 1. Render step timeline at top of left section
     const stepTimeline = this.createStepTimeline();
-    this.elements.stepsContainer.appendChild(stepTimeline);
+    leftSection.appendChild(stepTimeline);
 
     // 2. Render bundle header (instruction text)
     const bundleHeader = this.createBundleInstructions();
-    this.elements.stepsContainer.appendChild(bundleHeader);
+    leftSection.appendChild(bundleHeader);
 
     // 3. Render category/collection tabs if step has collections
     const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
     if (categoryTabs) {
-      this.elements.stepsContainer.appendChild(categoryTabs);
+      leftSection.appendChild(categoryTabs);
     }
 
     // 4. Render product grid for current step
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
-    this.elements.stepsContainer.appendChild(productGrid);
+    leftSection.appendChild(productGrid);
 
-    // 5. Render fixed footer with selected products
-    this.renderFullPageFooter();
+    this.elements.stepsContainer.appendChild(leftSection);
+
+    // 5. Render RIGHT sidebar (25% width) with selected products
+    const rightSidebar = this.createFullPageRightSidebar();
+    this.elements.stepsContainer.appendChild(rightSidebar);
   }
 
   // Create horizontal step timeline with state-based icons
@@ -649,7 +656,7 @@ class BundleWidgetFullPage {
     const timeline = document.createElement('div');
     timeline.className = 'step-timeline';
 
-    this.bundleData.steps.forEach((step, index) => {
+    this.selectedBundle.steps.forEach((step, index) => {
       const stepItem = document.createElement('div');
       stepItem.className = 'timeline-step';
 
@@ -686,7 +693,7 @@ class BundleWidgetFullPage {
       stepItem.appendChild(circle);
 
       // Add connecting line (except for last step)
-      if (index < this.bundleData.steps.length - 1) {
+      if (index < this.selectedBundle.steps.length - 1) {
         const line = document.createElement('div');
         line.className = 'timeline-line';
         if (isCompleted) line.classList.add('completed');
@@ -719,11 +726,14 @@ class BundleWidgetFullPage {
     const header = document.createElement('div');
     header.className = 'bundle-header';
 
-    const currentStep = this.bundleData.steps[this.currentStepIndex];
-    const instructionText = currentStep.instruction || `Select ${currentStep.minQuantity} or more items from ${currentStep.name}`;
+    const currentStep = this.selectedBundle.steps[this.currentStepIndex];
+    // Fix: Add fallback for undefined instruction/description
+    const instructionText = currentStep.description ||
+                            currentStep.instruction ||
+                            `Select ${currentStep.minQuantity || 1} or more items from ${currentStep.name}`;
 
     header.innerHTML = `
-      <h3 class="bundle-title">${this.bundleData.name}</h3>
+      <h3 class="bundle-title">${this.selectedBundle.name}</h3>
       <p class="bundle-instruction">${instructionText}</p>
     `;
 
@@ -732,7 +742,7 @@ class BundleWidgetFullPage {
 
   // Create category/collection tabs
   createCategoryTabs(stepIndex) {
-    const step = this.bundleData.steps[stepIndex];
+    const step = this.selectedBundle.steps[stepIndex];
 
     if (!step.collections || step.collections.length === 0) {
       return null;
@@ -778,12 +788,12 @@ class BundleWidgetFullPage {
     return tabsContainer;
   }
 
-  // Create horizontal scrollable product grid
+  // Create 3-column product grid for full-page layout
   createFullPageProductGrid(stepIndex) {
     const grid = document.createElement('div');
     grid.className = 'full-page-product-grid';
 
-    const step = this.bundleData.steps[stepIndex];
+    const step = this.selectedBundle.steps[stepIndex];
     let products = step.products || [];
 
     // Filter by active collection if selected
@@ -799,37 +809,89 @@ class BundleWidgetFullPage {
       return grid;
     }
 
-    // Reuse ComponentGenerator.createProductCard for each product
+    // Render each product as a card in the grid
     products.forEach(product => {
-      const productCard = window.BUNDLE_WIDGET.ComponentGenerator.createProductCard(
-        product,
-        stepIndex,
-        this.selectedProducts,
-        (variantId, quantity) => this.updateProductSelection(stepIndex, variantId, quantity),
-        this.bundleData
-      );
+      const variantId = product.variants?.[0]?.id || product.id;
+      const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
+
+      const productCard = this.createFullPageProductCard(product, stepIndex, currentQuantity);
       grid.appendChild(productCard);
     });
 
     return grid;
   }
 
-  // Render fixed footer with selected products and navigation
-  renderFullPageFooter() {
-    if (!this.elements.footer) {
-      console.error('[FOOTER] Footer element not found');
-      return;
+  // Create individual product card for full-page layout
+  createFullPageProductCard(product, stepIndex, currentQuantity) {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    if (currentQuantity > 0) {
+      card.classList.add('selected');
     }
 
-    this.elements.footer.innerHTML = '';
-    this.elements.footer.className = 'full-page-footer';
+    const variantId = product.variants?.[0]?.id || product.id;
+    const imageUrl = product.images?.[0]?.url || product.featuredImage?.url || '';
+    const price = product.price || (product.variants?.[0]?.price || 0);
 
-    // Left section: Scrollable selected products
-    const leftSection = document.createElement('div');
-    leftSection.className = 'footer-left';
+    card.innerHTML = `
+      <div class="product-image">
+        <img src="${imageUrl}" alt="${product.title}" loading="lazy">
+      </div>
+      <div class="product-content-wrapper">
+        <div class="product-title">${product.title}</div>
+        <div class="product-price">Rs. ${(price / 100).toFixed(2)}</div>
 
+        <div class="product-quantity-selector" data-variant-id="${variantId}">
+          <button class="qty-btn qty-decrease">−</button>
+          <span class="qty-display">${currentQuantity}</span>
+          <button class="qty-btn qty-increase">+</button>
+        </div>
+
+        <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-variant-id="${variantId}">
+          ${currentQuantity > 0 ? 'Added' : 'Add to Box'}
+        </button>
+      </div>
+    `;
+
+    // Attach event listeners
+    const qtyDecrease = card.querySelector('.qty-decrease');
+    const qtyIncrease = card.querySelector('.qty-increase');
+    const addBtn = card.querySelector('.product-add-btn');
+
+    qtyDecrease.addEventListener('click', () => {
+      const newQty = Math.max(0, currentQuantity - 1);
+      this.updateProductSelection(stepIndex, variantId, newQty);
+      this.renderFullPageLayout(); // Re-render to update all UI
+    });
+
+    qtyIncrease.addEventListener('click', () => {
+      this.updateProductSelection(stepIndex, variantId, currentQuantity + 1);
+      this.renderFullPageLayout(); // Re-render to update all UI
+    });
+
+    addBtn.addEventListener('click', () => {
+      const newQty = currentQuantity > 0 ? 0 : 1;
+      this.updateProductSelection(stepIndex, variantId, newQty);
+      this.renderFullPageLayout(); // Re-render to update all UI
+    });
+
+    return card;
+  }
+
+  // Create RIGHT sidebar with selected products and navigation
+  createFullPageRightSidebar() {
+    const sidebar = document.createElement('div');
+    sidebar.className = 'full-page-right-sidebar';
+
+    // Sidebar header
+    const sidebarHeader = document.createElement('div');
+    sidebarHeader.className = 'sidebar-header';
+    sidebarHeader.innerHTML = '<h3>Your Bundle</h3>';
+    sidebar.appendChild(sidebarHeader);
+
+    // Selected products section (scrollable)
     const selectedProductsContainer = document.createElement('div');
-    selectedProductsContainer.className = 'footer-selected-products';
+    selectedProductsContainer.className = 'sidebar-selected-products';
 
     const allSelectedProducts = this.getAllSelectedProductsData();
 
@@ -838,17 +900,20 @@ class BundleWidgetFullPage {
     } else {
       allSelectedProducts.forEach(item => {
         const productItem = document.createElement('div');
-        productItem.className = 'footer-product-item';
+        productItem.className = 'sidebar-product-item';
         productItem.innerHTML = `
-          <img src="${item.image}" alt="${item.title}" class="footer-product-image">
-          <div class="footer-product-info">
-            <span class="footer-product-title">${item.title}</span>
-            <span class="footer-product-quantity">Qty: ${item.quantity}</span>
+          <div class="sidebar-product-image-wrapper">
+            <img src="${item.image}" alt="${item.title}" class="sidebar-product-image">
+            <div class="sidebar-product-quantity-badge">${item.quantity}</div>
           </div>
-          <button class="footer-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">×</button>
+          <div class="sidebar-product-info">
+            <div class="sidebar-product-title">${item.title}</div>
+            <div class="sidebar-product-price">Rs. ${(item.price / 100).toFixed(2)}</div>
+            <button class="sidebar-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">Delete</button>
+          </div>
         `;
 
-        const removeBtn = productItem.querySelector('.footer-product-remove');
+        const removeBtn = productItem.querySelector('.sidebar-product-remove');
         removeBtn.addEventListener('click', () => {
           this.updateProductSelection(item.stepIndex, item.variantId, 0);
           this.renderFullPageLayout();
@@ -858,30 +923,36 @@ class BundleWidgetFullPage {
       });
     }
 
-    leftSection.appendChild(selectedProductsContainer);
+    sidebar.appendChild(selectedProductsContainer);
 
-    // Right section: Total and navigation
-    const rightSection = document.createElement('div');
-    rightSection.className = 'footer-right';
-
-    const total = window.BUNDLE_WIDGET.PricingCalculator.calculateTotal(
-      this.selectedProducts,
-      this.bundleData
-    );
+    // Total section
+    let totalPrice = 0;
+    this.selectedBundle.steps.forEach((step, stepIndex) => {
+      const stepSelections = this.selectedProducts[stepIndex] || {};
+      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+        const product = this.findProductByVariantId(step, variantId);
+        if (product && quantity > 0) {
+          const variant = product.variants?.find(v => v.id === variantId);
+          totalPrice += (variant?.price || product.price || 0) * quantity;
+        }
+      });
+    });
 
     const totalDisplay = document.createElement('div');
-    totalDisplay.className = 'footer-total';
+    totalDisplay.className = 'sidebar-total';
     totalDisplay.innerHTML = `
-      <span class="total-label">Total:</span>
-      <span class="total-price">${window.BUNDLE_WIDGET.CurrencyManager.formatPrice(total.finalPrice)}</span>
+      <span class="total-label">Total</span>
+      <span class="total-price">Rs. ${(totalPrice / 100).toFixed(2)}</span>
     `;
+    sidebar.appendChild(totalDisplay);
 
+    // Navigation buttons
     const navButtons = document.createElement('div');
-    navButtons.className = 'footer-nav-buttons';
+    navButtons.className = 'sidebar-nav-buttons';
 
     // Back button
     const backBtn = document.createElement('button');
-    backBtn.className = 'footer-nav-btn footer-back-btn';
+    backBtn.className = 'sidebar-nav-btn sidebar-back-btn';
     backBtn.textContent = 'Back';
     backBtn.disabled = this.currentStepIndex === 0;
     backBtn.addEventListener('click', () => {
@@ -893,9 +964,9 @@ class BundleWidgetFullPage {
 
     // Next/Add to Cart button
     const nextBtn = document.createElement('button');
-    nextBtn.className = 'footer-nav-btn footer-next-btn';
+    nextBtn.className = 'sidebar-nav-btn sidebar-next-btn';
 
-    const isLastStep = this.currentStepIndex === this.bundleData.steps.length - 1;
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
     const canProceed = this.canProceedToNextStep();
 
     if (isLastStep) {
@@ -915,12 +986,51 @@ class BundleWidgetFullPage {
 
     navButtons.appendChild(backBtn);
     navButtons.appendChild(nextBtn);
+    sidebar.appendChild(navButtons);
 
-    rightSection.appendChild(totalDisplay);
-    rightSection.appendChild(navButtons);
+    return sidebar;
+  }
 
-    this.elements.footer.appendChild(leftSection);
-    this.elements.footer.appendChild(rightSection);
+  // Add to cart method for full-page bundles
+  async addBundleToCart() {
+    try {
+      const cartItems = [];
+      const bundleInstanceId = `${this.selectedBundle.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      this.selectedBundle.steps.forEach((step, stepIndex) => {
+        const stepSelections = this.selectedProducts[stepIndex] || {};
+        Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+          if (quantity > 0) {
+            cartItems.push({
+              id: parseInt(variantId),
+              quantity: quantity,
+              properties: {
+                '_bundle_id': bundleInstanceId,
+                '_bundle_name': this.selectedBundle.name,
+                '_step_index': stepIndex.toString()
+              }
+            });
+          }
+        });
+      });
+
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: cartItems })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add to cart');
+      }
+
+      alert('Bundle added to cart!');
+      window.location.href = '/cart';
+
+    } catch (error) {
+      console.error('[FULL_PAGE_BUNDLE]', error);
+      alert('Error: ' + error.message);
+    }
   }
 
   // Helper: Get all selected products data for footer display
