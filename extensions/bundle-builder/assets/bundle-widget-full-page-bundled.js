@@ -1755,7 +1755,7 @@ class BundleWidgetFullPage {
   createCategoryTabs(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
 
-    if (!step.collections || step.collections.length === 0) {
+    if (!step.collections || !Array.isArray(step.collections) || step.collections.length === 0) {
       return null;
     }
 
@@ -1808,9 +1808,9 @@ class BundleWidgetFullPage {
     let products = step.products || [];
 
     // Filter by active collection if selected
-    if (this.activeCollectionId && step.collections) {
+    if (this.activeCollectionId && step.collections && Array.isArray(step.collections)) {
       const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
-      if (activeCollection && activeCollection.products) {
+      if (activeCollection && activeCollection.products && Array.isArray(activeCollection.products)) {
         products = activeCollection.products;
       }
     }
@@ -1837,8 +1837,12 @@ class BundleWidgetFullPage {
     card.dataset.stepIndex = stepIndex;
 
     // Get current selection for this step
-    const stepSelections = this.selectedProducts[stepIndex] || [];
-    const isSelected = stepSelections.some(sel => sel.productId === product.id || sel.variantId === product.id);
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    // Check if any variant of this product is selected (stepSelections is { variantId: quantity })
+    const isSelected = Object.keys(stepSelections).some(variantId => {
+      // Check if this variantId belongs to this product
+      return variantId === product.id || product.variants?.some(v => v.id === variantId);
+    });
     if (isSelected) card.classList.add('selected');
 
     // Product image
@@ -1880,9 +1884,20 @@ class BundleWidgetFullPage {
 
   // Create quantity selector HTML
   createQuantitySelector(product, stepIndex) {
-    const stepSelections = this.selectedProducts[stepIndex] || [];
-    const selection = stepSelections.find(sel => sel.productId === product.id || sel.variantId === product.id);
-    const currentQuantity = selection?.quantity || 0;
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    // Find the quantity for this product's variant (stepSelections is { variantId: quantity })
+    let currentQuantity = 0;
+    // Check direct product ID or any of its variants
+    if (stepSelections[product.id]) {
+      currentQuantity = stepSelections[product.id];
+    } else if (product.variants && Array.isArray(product.variants)) {
+      for (const variant of product.variants) {
+        if (stepSelections[variant.id]) {
+          currentQuantity = stepSelections[variant.id];
+          break;
+        }
+      }
+    }
 
     return `
       <div class="quantity-selector">
@@ -2161,7 +2176,7 @@ class BundleWidgetFullPage {
     const productImages = [];
 
     Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
-      if (quantity > 0) {
+      if (quantity > 0 && this.stepProductData[stepIndex] && Array.isArray(this.stepProductData[stepIndex])) {
         const product = this.stepProductData[stepIndex].find(p => (p.variantId || p.id) === variantId);
         if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
           productImages.push({
@@ -2424,7 +2439,7 @@ class BundleWidgetFullPage {
   async loadStepProducts(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
 
-    if (this.stepProductData[stepIndex].length > 0) {
+    if (this.stepProductData[stepIndex] && Array.isArray(this.stepProductData[stepIndex]) && this.stepProductData[stepIndex].length > 0) {
       return;
     }
 
@@ -2696,8 +2711,8 @@ class BundleWidgetFullPage {
 
   renderModalProducts(stepIndex, productsToRender = null) {
     // Use all products from step data
-    const products = productsToRender || this.stepProductData[stepIndex];
-    const selectedProducts = this.selectedProducts[stepIndex];
+    const products = productsToRender || (this.stepProductData[stepIndex] && Array.isArray(this.stepProductData[stepIndex]) ? this.stepProductData[stepIndex] : []);
+    const selectedProducts = this.selectedProducts[stepIndex] || {};
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
     if (products.length === 0) {
@@ -2819,8 +2834,12 @@ class BundleWidgetFullPage {
         const baseProductId = e.target.dataset.baseProductId;
 
         // Find the product and update its variant
+        if (!this.stepProductData[stepIndex] || !Array.isArray(this.stepProductData[stepIndex])) {
+          console.error('[VARIANT_CHANGE] stepProductData not available for step', stepIndex);
+          return;
+        }
         const product = this.stepProductData[stepIndex].find(p => p.id === baseProductId);
-        if (product) {
+        if (product && product.variants && Array.isArray(product.variants)) {
           const variantData = product.variants.find(v => v.id === newVariantId);
           if (variantData) {
             // Move quantity from old variant to new variant
@@ -3247,7 +3266,12 @@ class BundleWidgetFullPage {
     const unavailableProducts = []; // Track unavailable products
 
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
-      const productsInStep = this.stepProductData[stepIndex];
+      const productsInStep = this.stepProductData[stepIndex] || [];
+
+      if (!Array.isArray(productsInStep)) {
+        console.error('[ADD_TO_CART] productsInStep is not an array for step', stepIndex);
+        return;
+      }
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
