@@ -1820,19 +1820,77 @@ class BundleWidgetFullPage {
       return grid;
     }
 
-    // Reuse ComponentGenerator.createProductCard for each product
+    // Create product cards
     products.forEach(product => {
-      const productCard = ComponentGenerator.createProductCard(
-        product,
-        stepIndex,
-        this.selectedProducts,
-        (variantId, quantity) => this.updateProductSelection(stepIndex, variantId, quantity),
-        this.bundleData
-      );
+      const productCard = this.createProductCardElement(product, stepIndex);
       grid.appendChild(productCard);
     });
 
     return grid;
+  }
+
+  // Create a product card DOM element
+  createProductCardElement(product, stepIndex) {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.dataset.productId = product.id;
+    card.dataset.stepIndex = stepIndex;
+
+    // Get current selection for this step
+    const stepSelections = this.selectedProducts[stepIndex] || [];
+    const isSelected = stepSelections.some(sel => sel.productId === product.id || sel.variantId === product.id);
+    if (isSelected) card.classList.add('selected');
+
+    // Product image
+    const imageUrl = product.featuredImage?.url || product.imageUrl || product.images?.[0]?.url || '';
+    card.innerHTML = `
+      <div class="product-image">
+        <img src="${imageUrl}" alt="${product.title}" loading="lazy" />
+      </div>
+      <div class="product-info">
+        <h4 class="product-title">${product.title}</h4>
+        <div class="product-price">
+          ${product.compareAtPrice ? `<span class="compare-price">${CurrencyManager.formatPrice(product.compareAtPrice)}</span>` : ''}
+          <span class="current-price">${CurrencyManager.formatPrice(product.price)}</span>
+        </div>
+      </div>
+      <div class="product-actions">
+        ${product.variants && product.variants.length > 1 ? this.createVariantSelector(product) : ''}
+        ${this.createQuantitySelector(product, stepIndex)}
+      </div>
+    `;
+
+    return card;
+  }
+
+  // Create variant selector HTML
+  createVariantSelector(product) {
+    if (!product.variants || product.variants.length <= 1) return '';
+
+    return `
+      <div class="variant-selector">
+        <select class="variant-select" data-product-id="${product.id}">
+          ${product.variants.map(variant => `
+            <option value="${variant.id}">${variant.title} - ${CurrencyManager.formatPrice(variant.price)}</option>
+          `).join('')}
+        </select>
+      </div>
+    `;
+  }
+
+  // Create quantity selector HTML
+  createQuantitySelector(product, stepIndex) {
+    const stepSelections = this.selectedProducts[stepIndex] || [];
+    const selection = stepSelections.find(sel => sel.productId === product.id || sel.variantId === product.id);
+    const currentQuantity = selection?.quantity || 0;
+
+    return `
+      <div class="quantity-selector">
+        <button class="qty-btn qty-minus" data-product-id="${product.id}" data-step="${stepIndex}">−</button>
+        <span class="qty-display">${currentQuantity}</span>
+        <button class="qty-btn qty-plus" data-product-id="${product.id}" data-step="${stepIndex}">+</button>
+      </div>
+    `;
   }
 
   // Render fixed footer with selected products and navigation
