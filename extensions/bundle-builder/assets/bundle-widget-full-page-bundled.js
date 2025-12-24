@@ -1230,9 +1230,8 @@ class BundleWidgetFullPage {
 
       try {
         const shop = window.Shopify?.shop || window.location.host;
-        const appUrl = window.__BUNDLE_APP_URL__ || this.container.dataset.appUrl || '';
-        const apiBaseUrl = appUrl || window.location.origin;
-        const apiUrl = `${apiBaseUrl}/api/bundle/${bundleId}.json?shop=${encodeURIComponent(shop)}`;
+        // Use app proxy path for full-page bundles (avoids CORS issues)
+        const apiUrl = `/apps/product-bundles/api/bundle/${bundleId}.json?shop=${encodeURIComponent(shop)}`;
 
         console.log('[WIDGET_INIT] Fetching bundle from:', apiUrl);
 
