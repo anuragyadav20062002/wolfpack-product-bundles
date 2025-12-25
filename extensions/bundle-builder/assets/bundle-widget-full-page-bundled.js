@@ -207,9 +207,23 @@ class BundleWidgetFullPage {
 
       try {
         const shop = window.Shopify?.shop || window.location.host;
-        const appUrl = window.__BUNDLE_APP_URL__ || this.container.dataset.appUrl || '';
-        const apiBaseUrl = appUrl || window.location.origin;
-        const apiUrl = `${apiBaseUrl}/api/bundle/${bundleId}.json?shop=${encodeURIComponent(shop)}`;
+
+        // Determine if we're on a live Shopify store (use app proxy) or development
+        const isShopifyStorefront = window.Shopify && window.Shopify.shop;
+        const isDevelopmentStore = shop.includes('.myshopify.com');
+
+        let apiUrl;
+        if (isShopifyStorefront && !isDevelopmentStore) {
+          // Production store - Use Shopify app proxy to avoid CORS
+          apiUrl = `/apps/product-bundles/api/bundle/${bundleId}.json`;
+          console.log('[WIDGET_INIT] Using app proxy path (production)');
+        } else {
+          // Development or testing - Use direct app server URL
+          const appUrl = window.__BUNDLE_APP_URL__ || this.container.dataset.appUrl || '';
+          const apiBaseUrl = appUrl || window.location.origin;
+          apiUrl = `${apiBaseUrl}/api/bundle/${bundleId}.json?shop=${encodeURIComponent(shop)}`;
+          console.log('[WIDGET_INIT] Using direct app server (development)');
+        }
 
         console.log('[WIDGET_INIT] Fetching bundle from:', apiUrl);
 
