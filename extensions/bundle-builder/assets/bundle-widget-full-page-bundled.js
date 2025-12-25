@@ -614,10 +614,18 @@ class BundleWidgetFullPage {
   // ========================================================================
 
   renderUI() {
-    this.renderHeader();
-    this.renderSteps();
-    this.renderFooter();
-    this.updateAddToCartButton();
+    const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
+
+    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      // For FULL_PAGE bundles: Only render steps (which calls renderFullPageLayout)
+      this.renderSteps();
+    } else {
+      // For PRODUCT_PAGE bundles: Render all UI elements
+      this.renderHeader();
+      this.renderSteps();
+      this.renderFooter();
+      this.updateAddToCartButton();
+    }
   }
 
   renderHeader() {
@@ -2403,10 +2411,14 @@ class BundleWidgetFullPage {
   // ========================================================================
 
   attachEventListeners() {
-    // Add to cart button
-    this.elements.addToCartButton.addEventListener('click', () => this.addToCart());
+    const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
 
-    // Modal close handlers
+    // Add to cart button (only for product-page bundles)
+    if (bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE && this.elements.addToCartButton) {
+      this.elements.addToCartButton.addEventListener('click', () => this.addToCart());
+    }
+
+    // Modal close handlers (only for product-page bundles - full-page doesn't use modal)
     const modal = this.elements.modal;
     const closeButton = modal.querySelector('.close-button');
     const overlay = modal.querySelector('.modal-overlay');
