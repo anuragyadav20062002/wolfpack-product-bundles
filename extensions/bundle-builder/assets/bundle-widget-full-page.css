@@ -9,14 +9,16 @@
    ============================================================================ */
 
 .bundle-widget-full-page {
-  width: 100%;
+  width: 100vw !important;
   min-height: 100vh;
   background: #ECF4EC;
-  margin: 0;
+  margin: 0 !important;
+  margin-left: calc(-50vw + 50%) !important;
   padding: 0;
   display: flex;
   flex-direction: row;
   position: relative;
+  max-width: none !important;
 }
 
 /* ============================================================================
