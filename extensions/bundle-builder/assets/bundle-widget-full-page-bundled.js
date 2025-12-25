@@ -417,28 +417,23 @@ class BundleWidgetFullPage {
   // ========================================================================
 
   setupDOMElements() {
-    // Get or create main UI elements
+    // CRITICAL: Clear loading state and any existing content
+    this.container.innerHTML = '';
+
+    // Create fresh UI elements
     this.elements = {
-      header: this.container.querySelector('.bundle-header') || this.createHeader(),
-      stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
-      footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
-      addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
+      header: this.createHeader(),
+      stepsContainer: this.createStepsContainer(),
+      footer: this.createFooter(),
+      addToCartButton: this.createAddToCartButton(),
       modal: this.ensureModal()
     };
 
-    // Append elements if they were created
-    if (!this.container.querySelector('.bundle-header')) {
-      this.container.appendChild(this.elements.header);
-    }
-    if (!this.container.querySelector('.bundle-steps')) {
-      this.container.appendChild(this.elements.stepsContainer);
-    }
-    if (!this.container.querySelector('.bundle-footer-messaging')) {
-      this.container.appendChild(this.elements.footer);
-    }
-    if (!this.container.querySelector('.add-bundle-to-cart')) {
-      this.container.appendChild(this.elements.addToCartButton);
-    }
+    // Append all elements to container
+    this.container.appendChild(this.elements.header);
+    this.container.appendChild(this.elements.stepsContainer);
+    this.container.appendChild(this.elements.footer);
+    this.container.appendChild(this.elements.addToCartButton);
   }
 
   createHeader() {
