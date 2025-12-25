@@ -49,6 +49,12 @@ const PricingCalculator = {
   calculateBundleTotal: function(selectedProducts, bundle) {
     let totalPrice = 0;
     let totalQuantity = 0;
+
+    if (!bundle || !bundle.steps || !Array.isArray(bundle.steps)) {
+      console.error('[PRICING] Invalid bundle data:', bundle);
+      return { totalPrice, totalQuantity, totalSavings: 0 };
+    }
+
     bundle.steps.forEach((step, stepIndex) => {
       const stepSelections = selectedProducts[stepIndex] || {};
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
@@ -233,11 +239,17 @@ class BundleWidgetFullPage {
 
         const data = await response.json();
         console.log('[WIDGET_INIT] API response:', data);
+        console.log('[WIDGET_INIT] Bundle steps:', data.bundle?.steps);
 
         if (data.success && data.bundle) {
+          // Validate bundle has required fields
+          if (!data.bundle.steps || !Array.isArray(data.bundle.steps) || data.bundle.steps.length === 0) {
+            throw new Error('Bundle data incomplete: steps array is missing or empty');
+          }
+
           // For full-page bundles, set bundle directly (not wrapped in object)
           bundleData = data.bundle;
-          console.log('[WIDGET_INIT] ✅ Loaded full-page bundle from API:', data.bundle.id);
+          console.log('[WIDGET_INIT] ✅ Loaded full-page bundle from API:', data.bundle.id, 'with', data.bundle.steps.length, 'steps');
         } else {
           throw new Error('Invalid API response structure');
         }
@@ -329,6 +341,11 @@ class BundleWidgetFullPage {
   }
 
   initializeDataStructures() {
+    if (!this.selectedBundle || !this.selectedBundle.steps || !Array.isArray(this.selectedBundle.steps)) {
+      console.error('[INIT] Invalid selectedBundle:', this.selectedBundle);
+      throw new Error('Bundle data is invalid or missing steps array');
+    }
+
     const stepsCount = this.selectedBundle.steps.length;
 
     // Initialize selected products array (one object per step)
