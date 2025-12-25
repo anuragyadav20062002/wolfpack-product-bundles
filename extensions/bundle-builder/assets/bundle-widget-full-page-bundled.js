@@ -235,7 +235,8 @@ class BundleWidgetFullPage {
         console.log('[WIDGET_INIT] API response:', data);
 
         if (data.success && data.bundle) {
-          bundleData = { [data.bundle.id]: data.bundle };
+          // For full-page bundles, set bundle directly (not wrapped in object)
+          bundleData = data.bundle;
           console.log('[WIDGET_INIT] ✅ Loaded full-page bundle from API:', data.bundle.id);
         } else {
           throw new Error('Invalid API response structure');
