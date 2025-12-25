@@ -249,6 +249,10 @@ class BundleWidgetFullPage {
 
           // For full-page bundles, set bundle directly (not wrapped in object)
           bundleData = data.bundle;
+
+          // CRITICAL: Set bundleType to 'full_page' so setupDOMElements knows what structure to create
+          bundleData.bundleType = BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE;
+
           console.log('[WIDGET_INIT] ✅ Loaded full-page bundle from API:', data.bundle.id, 'with', data.bundle.steps.length, 'steps');
         } else {
           throw new Error('Invalid API response structure');
@@ -420,20 +424,34 @@ class BundleWidgetFullPage {
     // CRITICAL: Clear loading state and any existing content
     this.container.innerHTML = '';
 
-    // Create fresh UI elements
-    this.elements = {
-      header: this.createHeader(),
-      stepsContainer: this.createStepsContainer(),
-      footer: this.createFooter(),
-      addToCartButton: this.createAddToCartButton(),
-      modal: this.ensureModal()
-    };
+    // Check if this is a full-page bundle
+    const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
 
-    // Append all elements to container
-    this.container.appendChild(this.elements.header);
-    this.container.appendChild(this.elements.stepsContainer);
-    this.container.appendChild(this.elements.footer);
-    this.container.appendChild(this.elements.addToCartButton);
+    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      // For FULL-PAGE bundles: Don't create wrapper elements
+      // renderFullPageLayout() will create .full-page-left-section and .full-page-right-sidebar directly
+      this.elements = {
+        stepsContainer: this.container, // Use container directly
+        modal: this.ensureModal()
+      };
+      console.log('[DOM_SETUP] Full-page bundle - skipping wrapper creation');
+    } else {
+      // For PRODUCT-PAGE bundles: Create wrapper structure
+      this.elements = {
+        header: this.createHeader(),
+        stepsContainer: this.createStepsContainer(),
+        footer: this.createFooter(),
+        addToCartButton: this.createAddToCartButton(),
+        modal: this.ensureModal()
+      };
+
+      // Append all elements to container
+      this.container.appendChild(this.elements.header);
+      this.container.appendChild(this.elements.stepsContainer);
+      this.container.appendChild(this.elements.footer);
+      this.container.appendChild(this.elements.addToCartButton);
+      console.log('[DOM_SETUP] Product-page bundle - created wrapper structure');
+    }
   }
 
   createHeader() {
