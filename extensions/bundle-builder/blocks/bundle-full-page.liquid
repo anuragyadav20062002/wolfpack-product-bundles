@@ -6,7 +6,6 @@
     "templates": ["page"]
   },
   "stylesheet": "bundle-widget-full-page.css",
-  "javascript": "bundle-widget-full-page-bundled.js",
   "settings": [
     {
       "type": "paragraph",
@@ -159,6 +158,16 @@
     href="{{ shop.url }}/apps/product-bundles/api/design-settings/{{ shop.domain }}?bundleType=full_page&v={{ 'now' | date: '%s' }}"
     type="text/css"
   >
+
+  <!-- Load widget JavaScript dynamically to bypass 10KB Shopify limit -->
+  <script>
+    (function() {
+      var script = document.createElement('script');
+      script.src = '{{ 'bundle-widget-full-page-bundled.js' | asset_url }}';
+      script.async = false;
+      document.head.appendChild(script);
+    })();
+  </script>
 {% else %}
   <div class="bundle-widget-placeholder" style="padding: 40px; text-align: center; background: #f0f3eb; border-radius: 8px;">
     <h3 style="margin: 0 0 10px;">Full-Page Bundle Widget</h3>
