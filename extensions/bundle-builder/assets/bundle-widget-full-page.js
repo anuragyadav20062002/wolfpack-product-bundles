@@ -104,45 +104,63 @@ class BundleWidgetFullPage {
 
   async init() {
     try {
+      console.log('🚀 [FULL_PAGE_INIT] Starting initialization...');
+
       // Check if already initialized
       if (this.container.dataset.initialized === 'true') {
+        console.log('⚠️ [FULL_PAGE_INIT] Already initialized, skipping');
         return;
       }
 
       // Parse configuration
+      console.log('⚙️ [FULL_PAGE_INIT] Step 1: Parsing configuration...');
       this.parseConfiguration();
+      console.log('✅ [FULL_PAGE_INIT] Configuration parsed:', this.config);
 
       // Load design settings CSS
+      console.log('🎨 [FULL_PAGE_INIT] Step 2: Loading design settings CSS...');
       await this.loadDesignSettingsCSS();
 
       // Load and validate bundle data
+      console.log('📦 [FULL_PAGE_INIT] Step 3: Loading bundle data...');
       await this.loadBundleData();
+      console.log('✅ [FULL_PAGE_INIT] Bundle data loaded:', this.bundleData);
 
       // Select appropriate bundle
+      console.log('🎯 [FULL_PAGE_INIT] Step 4: Selecting bundle...');
       this.selectBundle();
 
       if (!this.selectedBundle) {
+        console.error('❌ [FULL_PAGE_INIT] No bundle selected, showing fallback UI');
         this.showFallbackUI();
         return;
       }
+      console.log('✅ [FULL_PAGE_INIT] Bundle selected:', this.selectedBundle.name, 'with', this.selectedBundle.steps.length, 'steps');
 
       // Initialize data structures
+      console.log('🔧 [FULL_PAGE_INIT] Step 5: Initializing data structures...');
       this.initializeDataStructures();
 
       // Setup DOM elements
+      console.log('🏗️ [FULL_PAGE_INIT] Step 6: Setting up DOM elements...');
       this.setupDOMElements();
 
       // Render initial UI
+      console.log('🎨 [FULL_PAGE_INIT] Step 7: Rendering UI...');
       this.renderUI();
 
       // Attach event listeners
+      console.log('🔌 [FULL_PAGE_INIT] Step 8: Attaching event listeners...');
       this.attachEventListeners();
 
       // Mark as initialized
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
 
+      console.log('✅ [FULL_PAGE_INIT] Initialization complete! Widget ready.');
+
     } catch (error) {
+      console.error('❌ [FULL_PAGE_INIT] Initialization failed:', error);
       this.showErrorUI(error);
     }
   }
@@ -317,12 +335,15 @@ class BundleWidgetFullPage {
 
   initializeDataStructures() {
     const stepsCount = this.selectedBundle.steps.length;
+    console.log(`📊 [DATA_STRUCTURES] Initializing for ${stepsCount} steps`);
 
     // Initialize selected products array (one object per step)
     this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
+    console.log('✅ [DATA_STRUCTURES] Selected products initialized:', this.selectedProducts);
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
+    console.log('✅ [DATA_STRUCTURES] Step product data cache initialized:', this.stepProductData);
   }
 
   /**
@@ -616,7 +637,10 @@ class BundleWidgetFullPage {
 
   // Full-page bundle layout (LEFT section + RIGHT sidebar)
   renderFullPageLayout() {
-    console.log('[FULL_PAGE_LAYOUT] Rendering full-page bundle layout with sidebar');
+    console.log('🎨 [FULL_PAGE_LAYOUT] ========================================');
+    console.log('🎨 [FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
+    console.log('🎨 [FULL_PAGE_LAYOUT] Current step:', this.currentStepIndex);
+    console.log('🎨 [FULL_PAGE_LAYOUT] Step name:', this.selectedBundle.steps[this.currentStepIndex]?.name);
 
     // Clear existing content
     this.elements.stepsContainer.innerHTML = '';
@@ -627,28 +651,36 @@ class BundleWidgetFullPage {
     leftSection.className = 'full-page-left-section';
 
     // 1. Render step timeline at top of left section
+    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating step timeline...');
     const stepTimeline = this.createStepTimeline();
     leftSection.appendChild(stepTimeline);
 
     // 2. Render bundle header (instruction text)
+    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating bundle instructions...');
     const bundleHeader = this.createBundleInstructions();
     leftSection.appendChild(bundleHeader);
 
     // 3. Render category/collection tabs if step has collections
+    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating category tabs...');
     const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
     if (categoryTabs) {
       leftSection.appendChild(categoryTabs);
     }
 
     // 4. Render product grid for current step
+    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating product grid for step', this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
     leftSection.appendChild(productGrid);
 
     this.elements.stepsContainer.appendChild(leftSection);
 
     // 5. Render RIGHT sidebar (25% width) with selected products
+    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating right sidebar...');
     const rightSidebar = this.createFullPageRightSidebar();
     this.elements.stepsContainer.appendChild(rightSidebar);
+
+    console.log('✅ [FULL_PAGE_LAYOUT] Layout rendering complete');
+    console.log('🎨 [FULL_PAGE_LAYOUT] ========================================');
   }
 
   // Create horizontal step timeline with state-based icons
@@ -790,34 +822,42 @@ class BundleWidgetFullPage {
 
   // Create 3-column product grid for full-page layout
   createFullPageProductGrid(stepIndex) {
+    console.log(`📦 [PRODUCT_GRID] Creating product grid for step ${stepIndex}`);
     const grid = document.createElement('div');
     grid.className = 'full-page-product-grid';
 
     const step = this.selectedBundle.steps[stepIndex];
     let products = step.products || [];
+    console.log(`📦 [PRODUCT_GRID] Step has ${products.length} products`);
 
     // Filter by active collection if selected
     if (this.activeCollectionId && step.collections) {
       const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
       if (activeCollection && activeCollection.products) {
+        console.log(`📦 [PRODUCT_GRID] Filtering by collection: ${activeCollection.name}`);
         products = activeCollection.products;
+        console.log(`📦 [PRODUCT_GRID] Filtered to ${products.length} products`);
       }
     }
 
     if (products.length === 0) {
+      console.warn(`⚠️ [PRODUCT_GRID] No products available in step ${stepIndex}`);
       grid.innerHTML = '<p class="no-products">No products available in this step.</p>';
       return grid;
     }
 
     // Render each product as a card in the grid
-    products.forEach(product => {
+    console.log(`📦 [PRODUCT_GRID] Rendering ${products.length} product cards...`);
+    products.forEach((product, index) => {
       const variantId = product.variants?.[0]?.id || product.id;
       const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
 
+      console.log(`  → Product ${index + 1}: ${product.title}, Variant: ${variantId}, Qty: ${currentQuantity}`);
       const productCard = this.createFullPageProductCard(product, stepIndex, currentQuantity);
       grid.appendChild(productCard);
     });
 
+    console.log(`✅ [PRODUCT_GRID] Product grid created with ${products.length} products`);
     return grid;
   }
 
@@ -859,26 +899,61 @@ class BundleWidgetFullPage {
     const addBtn = card.querySelector('.product-add-btn');
 
     qtyDecrease.addEventListener('click', () => {
+      console.log('🔽 [QTY_DECREASE] ========================================');
+      console.log('🔽 [QTY_DECREASE] Button clicked!');
+      console.log('🔽 [QTY_DECREASE] Product:', product.title);
+      console.log('🔽 [QTY_DECREASE] Step:', stepIndex, '| Variant:', variantId);
+
       // Get the current quantity from the data source, not the stale parameter
       const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
       const newQty = Math.max(0, currentQty - 1);
+
+      console.log('🔽 [QTY_DECREASE] Current qty:', currentQty, '→ New qty:', newQty);
+      console.log('🔽 [QTY_DECREASE] Calling updateProductSelection...');
+
       this.updateProductSelection(stepIndex, variantId, newQty);
       this.renderFullPageLayout(); // Re-render to update all UI
+
+      console.log('🔽 [QTY_DECREASE] ========================================');
     });
 
     qtyIncrease.addEventListener('click', () => {
+      console.log('🔼 [QTY_INCREASE] ========================================');
+      console.log('🔼 [QTY_INCREASE] Button clicked!');
+      console.log('🔼 [QTY_INCREASE] Product:', product.title);
+      console.log('🔼 [QTY_INCREASE] Step:', stepIndex, '| Variant:', variantId);
+
       // Get the current quantity from the data source, not the stale parameter
       const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
-      this.updateProductSelection(stepIndex, variantId, currentQty + 1);
+      const newQty = currentQty + 1;
+
+      console.log('🔼 [QTY_INCREASE] Current qty:', currentQty, '→ New qty:', newQty);
+      console.log('🔼 [QTY_INCREASE] Calling updateProductSelection...');
+
+      this.updateProductSelection(stepIndex, variantId, newQty);
       this.renderFullPageLayout(); // Re-render to update all UI
+
+      console.log('🔼 [QTY_INCREASE] ========================================');
     });
 
     addBtn.addEventListener('click', () => {
+      console.log('📦 [ADD_TO_BOX] ========================================');
+      console.log('📦 [ADD_TO_BOX] Button clicked!');
+      console.log('📦 [ADD_TO_BOX] Product:', product.title);
+      console.log('📦 [ADD_TO_BOX] Step:', stepIndex, '| Variant:', variantId);
+
       // Get the current quantity from the data source, not the stale parameter
       const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
       const newQty = currentQty > 0 ? 0 : 1;
+
+      console.log('📦 [ADD_TO_BOX] Current qty:', currentQty, '→ New qty:', newQty);
+      console.log('📦 [ADD_TO_BOX] Action:', newQty > 0 ? 'ADDING to box' : 'REMOVING from box');
+      console.log('📦 [ADD_TO_BOX] Calling updateProductSelection...');
+
       this.updateProductSelection(stepIndex, variantId, newQty);
       this.renderFullPageLayout(); // Re-render to update all UI
+
+      console.log('📦 [ADD_TO_BOX] ========================================');
     });
 
     return card;
@@ -886,6 +961,9 @@ class BundleWidgetFullPage {
 
   // Create RIGHT sidebar with selected products and navigation
   createFullPageRightSidebar() {
+    console.log('📋 [RIGHT_SIDEBAR] ========================================');
+    console.log('📋 [RIGHT_SIDEBAR] Creating right sidebar...');
+
     const sidebar = document.createElement('div');
     sidebar.className = 'full-page-right-sidebar';
 
@@ -899,12 +977,18 @@ class BundleWidgetFullPage {
     const selectedProductsContainer = document.createElement('div');
     selectedProductsContainer.className = 'sidebar-selected-products';
 
+    console.log('📋 [RIGHT_SIDEBAR] Getting all selected products...');
     const allSelectedProducts = this.getAllSelectedProductsData();
+    console.log('📋 [RIGHT_SIDEBAR] Found', allSelectedProducts.length, 'selected products');
 
     if (allSelectedProducts.length === 0) {
+      console.log('📋 [RIGHT_SIDEBAR] No products selected - showing empty state');
       selectedProductsContainer.innerHTML = '<p class="no-selections">No products selected yet</p>';
     } else {
-      allSelectedProducts.forEach(item => {
+      console.log('📋 [RIGHT_SIDEBAR] Rendering', allSelectedProducts.length, 'products in sidebar:');
+      allSelectedProducts.forEach((item, index) => {
+        console.log(`  → ${index + 1}. ${item.title} (Qty: ${item.quantity}, Step: ${item.stepIndex})`);
+
         const productItem = document.createElement('div');
         productItem.className = 'sidebar-product-item';
         productItem.innerHTML = `
@@ -1886,27 +1970,44 @@ class BundleWidgetFullPage {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
+    console.log('💾 [UPDATE_SELECTION] ========================================');
+    console.log('💾 [UPDATE_SELECTION] Updating product selection');
+    console.log('💾 [UPDATE_SELECTION] Step:', stepIndex, '| Product ID:', productId);
+    console.log('💾 [UPDATE_SELECTION] New quantity:', newQuantity);
+
     const quantity = Math.max(0, newQuantity);
+    console.log('💾 [UPDATE_SELECTION] Normalized quantity:', quantity);
 
     // Validate step conditions
+    console.log('💾 [UPDATE_SELECTION] Validating step conditions...');
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+      console.warn('⚠️ [UPDATE_SELECTION] Step condition validation FAILED');
       return;
     }
+    console.log('✅ [UPDATE_SELECTION] Step condition validation PASSED');
 
     // Update selection
+    console.log('💾 [UPDATE_SELECTION] Before update:', JSON.stringify(this.selectedProducts[stepIndex]));
     if (quantity > 0) {
       this.selectedProducts[stepIndex][productId] = quantity;
+      console.log('✅ [UPDATE_SELECTION] Product ADDED/UPDATED with quantity:', quantity);
     } else {
       delete this.selectedProducts[stepIndex][productId];
+      console.log('✅ [UPDATE_SELECTION] Product REMOVED from selection');
     }
+    console.log('💾 [UPDATE_SELECTION] After update:', JSON.stringify(this.selectedProducts[stepIndex]));
 
     // Update UI without re-rendering the entire modal (prevents event listener duplication)
+    console.log('💾 [UPDATE_SELECTION] Updating UI components...');
     this.updateProductQuantityDisplay(stepIndex, productId, quantity);
     this.renderModalTabs();
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
     this.updateAddToCartButton();
     this.updateFooterMessaging();
+
+    console.log('✅ [UPDATE_SELECTION] Selection update complete');
+    console.log('💾 [UPDATE_SELECTION] ========================================');
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
