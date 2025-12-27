@@ -1247,6 +1247,12 @@ class BundleWidgetFullPage {
       return;
     }
 
+    // Guard: Don't calculate if stepProductData is not yet populated
+    if (!this.stepProductData || this.stepProductData.length === 0 || !this.stepProductData.some(step => step && step.length > 0)) {
+      console.log('[FOOTER_MESSAGING] Skipping - product data not yet loaded');
+      return;
+    }
+
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
@@ -2056,6 +2062,12 @@ class BundleWidgetFullPage {
   }
 
   updateModalFooterMessaging() {
+    // Guard: Don't calculate if stepProductData is not yet populated
+    if (!this.stepProductData || this.stepProductData.length === 0 || !this.stepProductData.some(step => step && step.length > 0)) {
+      console.log('[MODAL_FOOTER_MESSAGING] Skipping - product data not yet loaded');
+      return;
+    }
+
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
