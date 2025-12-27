@@ -859,18 +859,24 @@ class BundleWidgetFullPage {
     const addBtn = card.querySelector('.product-add-btn');
 
     qtyDecrease.addEventListener('click', () => {
-      const newQty = Math.max(0, currentQuantity - 1);
+      // Get the current quantity from the data source, not the stale parameter
+      const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
+      const newQty = Math.max(0, currentQty - 1);
       this.updateProductSelection(stepIndex, variantId, newQty);
       this.renderFullPageLayout(); // Re-render to update all UI
     });
 
     qtyIncrease.addEventListener('click', () => {
-      this.updateProductSelection(stepIndex, variantId, currentQuantity + 1);
+      // Get the current quantity from the data source, not the stale parameter
+      const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
+      this.updateProductSelection(stepIndex, variantId, currentQty + 1);
       this.renderFullPageLayout(); // Re-render to update all UI
     });
 
     addBtn.addEventListener('click', () => {
-      const newQty = currentQuantity > 0 ? 0 : 1;
+      // Get the current quantity from the data source, not the stale parameter
+      const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
+      const newQty = currentQty > 0 ? 0 : 1;
       this.updateProductSelection(stepIndex, variantId, newQty);
       this.renderFullPageLayout(); // Re-render to update all UI
     });
