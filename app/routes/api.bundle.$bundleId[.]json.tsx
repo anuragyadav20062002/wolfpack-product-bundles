@@ -10,6 +10,20 @@ import { AppLogger } from "../lib/logger";
  *
  * GET /apps/product-bundles/api/bundle/:bundleId.json
  */
+
+// Handle OPTIONS preflight requests for CORS
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
+}
+
 export const loader: LoaderFunction = async ({ request, params }) => {
   const url = new URL(request.url);
 
@@ -26,7 +40,14 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
     if (!bundleId) {
       console.log('[APP_PROXY] No bundleId in params');
-      return json({ error: "Bundle ID is required" }, { status: 400 });
+      return json({ error: "Bundle ID is required" }, {
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      });
     }
 
     console.log('[APP_PROXY] Attempting authentication for bundleId:', bundleId);
@@ -38,7 +59,14 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
     if (!session?.shop) {
       console.log('[APP_PROXY] No shop in session');
-      return json({ error: "Shop not found" }, { status: 400 });
+      return json({ error: "Shop not found" }, {
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      });
     }
 
     AppLogger.info("Fetching single bundle data", {
@@ -78,7 +106,14 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       return json({
         success: false,
         error: "Bundle not found or not active"
-      }, { status: 404 });
+      }, {
+        status: 404,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      });
     }
 
     AppLogger.info("Found bundle", {
@@ -378,7 +413,10 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate',
         'Pragma': 'no-cache',
-        'Expires': '0'
+        'Expires': '0',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
       }
     });
 
@@ -391,6 +429,13 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     return json({
       success: false,
       error: (error as Error).message
-    }, { status: 500 });
+    }, {
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
+    });
   }
 };
