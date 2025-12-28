@@ -326,6 +326,95 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
   --bundle-discount-text-color: ${s.discountTextColor || globalPrimaryText};
   --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
+
+  /* ========================================================================
+     FULL-PAGE BUNDLE SPECIFIC VARIABLES
+     These control the appearance of full-page standalone bundle pages
+     ======================================================================== */
+
+  /* Full-Page Layout Colors */
+  --bundle-full-page-bg-color: ${s.fullPageBgColor || '#ECF4EC'};
+  --bundle-full-page-footer-bg-color: ${s.fullPageFooterBgColor || '#ECF4EC'};
+  --bundle-full-page-footer-border-color: ${s.fullPageFooterBorderColor || 'rgba(0, 0, 0, 0.1)'};
+
+  /* Step Timeline */
+  --bundle-step-timeline-circle-size: ${s.stepTimelineCircleSize || 69}px;
+  --bundle-step-timeline-circle-bg: ${s.stepTimelineCircleBg || '#FFFFFF'};
+  --bundle-step-timeline-circle-border: ${s.stepTimelineCircleBorder || globalPrimaryButton};
+  --bundle-step-timeline-circle-border-width: ${s.stepTimelineCircleBorderWidth || 3}px;
+  --bundle-step-timeline-circle-text-color: ${s.stepTimelineCircleTextColor || globalPrimaryText};
+  --bundle-step-timeline-circle-font-size: ${s.stepTimelineCircleFontSize || 20}px;
+  --bundle-step-timeline-completed-bg: ${s.stepTimelineCompletedBg || globalPrimaryButton};
+  --bundle-step-timeline-completed-text: ${s.stepTimelineCompletedText || globalButtonText};
+  --bundle-step-timeline-locked-border: ${s.stepTimelineLockedBorder || '#808080'};
+  --bundle-step-timeline-locked-text: ${s.stepTimelineLockedText || '#808080'};
+  --bundle-step-timeline-line-color: ${s.stepTimelineLineColor || '#808080'};
+  --bundle-step-timeline-line-completed: ${s.stepTimelineLineCompleted || globalPrimaryButton};
+  --bundle-step-timeline-line-width: ${s.stepTimelineLineWidth || 308}px;
+  --bundle-step-timeline-line-height: ${s.stepTimelineLineHeight || 3}px;
+  --bundle-step-timeline-gap: ${s.stepTimelineGap || 308}px;
+  --bundle-step-timeline-name-font-size: ${s.stepTimelineNameFontSize || 19.788}px;
+  --bundle-step-timeline-name-color: ${s.stepTimelineNameColor || globalPrimaryText};
+
+  /* Bundle Header (Instructions) */
+  --bundle-full-page-title-font-size: ${s.fullPageTitleFontSize || 20}px;
+  --bundle-full-page-title-color: ${s.fullPageTitleColor || globalPrimaryText};
+  --bundle-full-page-instruction-font-size: ${s.fullPageInstructionFontSize || 20}px;
+  --bundle-full-page-instruction-color: ${s.fullPageInstructionColor || globalPrimaryText};
+
+  /* Category Tabs */
+  --bundle-category-tab-indicator-size: ${s.categoryTabIndicatorSize || 28}px;
+  --bundle-category-tab-label-font-size: ${s.categoryTabLabelFontSize || 20}px;
+  --bundle-category-tab-label-color: ${s.categoryTabLabelColor || globalPrimaryText};
+  --bundle-category-tab-active-underline-width: ${s.categoryTabActiveUnderlineWidth || 177}px;
+  --bundle-category-tab-active-underline-height: ${s.categoryTabActiveUnderlineHeight || 5.5}px;
+  --bundle-category-tab-active-underline-color: ${s.categoryTabActiveUnderlineColor || globalPrimaryButton};
+
+  /* Product Grid */
+  --bundle-full-page-product-grid-columns: ${s.fullPageProductGridColumns || 3};
+  --bundle-full-page-product-image-height: ${s.fullPageProductImageHeight || 200}px;
+  --bundle-full-page-product-image-bg: ${s.fullPageProductImageBg || '#FFFFFF'};
+  --bundle-full-page-product-image-border-radius: ${s.fullPageProductImageBorderRadius || 8}px;
+  --bundle-full-page-product-image-border-color: ${s.fullPageProductImageBorderColor || 'rgba(0, 0, 0, 0.04)'};
+  --bundle-full-page-selected-badge-bg: ${s.fullPageSelectedBadgeBg || '#DE4139'};
+  --bundle-full-page-selected-badge-color: ${s.fullPageSelectedBadgeColor || '#FFFFFF'};
+  --bundle-full-page-price-row-gradient-start: ${s.fullPagePriceRowGradientStart || '#F9FAFB'};
+  --bundle-full-page-price-row-gradient-end: ${s.fullPagePriceRowGradientEnd || '#F3F4F6'};
+  --bundle-full-page-price-row-border: ${s.fullPagePriceRowBorder || 'rgba(0, 0, 0, 0.06)'};
+  --bundle-full-page-variant-border: ${s.fullPageVariantBorder || '#E5E7EB'};
+  --bundle-full-page-variant-border-hover: ${s.fullPageVariantBorderHover || '#9CA3AF'};
+  --bundle-full-page-added-button-gradient-start: ${s.fullPageAddedButtonGradientStart || '#10B981'};
+  --bundle-full-page-added-button-gradient-end: ${s.fullPageAddedButtonGradientEnd || '#059669'};
+
+  /* Bottom Footer */
+  --bundle-full-page-footer-header-font-size: ${s.fullPageFooterHeaderFontSize || 20}px;
+  --bundle-full-page-footer-header-color: ${s.fullPageFooterHeaderColor || globalPrimaryText};
+  --bundle-full-page-footer-scrollbar-color: ${s.fullPageFooterScrollbarColor || globalPrimaryButton};
+  --bundle-full-page-footer-product-bg: ${s.fullPageFooterProductBg || '#FFFFFF'};
+  --bundle-full-page-footer-product-border: ${s.fullPageFooterProductBorder || globalPrimaryButton};
+  --bundle-full-page-footer-product-border-radius: ${s.fullPageFooterProductBorderRadius || 8}px;
+  --bundle-full-page-footer-quantity-badge-bg: ${s.fullPageFooterQuantityBadgeBg || globalPrimaryButton};
+  --bundle-full-page-footer-quantity-badge-color: ${s.fullPageFooterQuantityBadgeColor || globalButtonText};
+  --bundle-full-page-footer-product-title-color: ${s.fullPageFooterProductTitleColor || globalPrimaryText};
+  --bundle-full-page-footer-product-price-color: ${s.fullPageFooterProductPriceColor || globalPrimaryText};
+  --bundle-full-page-footer-remove-color: ${s.fullPageFooterRemoveColor || '#BD0000'};
+  --bundle-full-page-footer-total-label-color: ${s.fullPageFooterTotalLabelColor || globalPrimaryText};
+  --bundle-full-page-footer-total-label-font-size: ${s.fullPageFooterTotalLabelFontSize || 16}px;
+  --bundle-full-page-footer-total-price-color: ${s.fullPageFooterTotalPriceColor || globalPrimaryText};
+  --bundle-full-page-footer-total-price-font-size: ${s.fullPageFooterTotalPriceFontSize || 24}px;
+  --bundle-full-page-footer-back-btn-bg: ${s.fullPageFooterBackBtnBg || '#808080'};
+  --bundle-full-page-footer-back-btn-color: ${s.fullPageFooterBackBtnColor || '#FFFFFF'};
+  --bundle-full-page-footer-back-btn-hover: ${s.fullPageFooterBackBtnHover || '#666666'};
+  --bundle-full-page-footer-next-btn-bg: ${s.fullPageFooterNextBtnBg || globalPrimaryButton};
+  --bundle-full-page-footer-next-btn-color: ${s.fullPageFooterNextBtnColor || globalButtonText};
+  --bundle-full-page-footer-next-btn-hover: ${s.fullPageFooterNextBtnHover || '#000000'};
+  --bundle-full-page-footer-nav-btn-font-size: ${s.fullPageFooterNavBtnFontSize || 16}px;
+  --bundle-full-page-footer-nav-btn-radius: ${s.fullPageFooterNavBtnRadius || 4}px;
+  --bundle-full-page-footer-no-selections-color: ${s.fullPageFooterNoSelectionsColor || '#808080'};
+
+  /* Loading State */
+  --bundle-full-page-loading-spinner-border: ${s.fullPageLoadingSpinnerBorder || '#F0F3EB'};
+  --bundle-full-page-loading-spinner-active: ${s.fullPageLoadingSpinnerActive || globalPrimaryButton};
 }
 
 /* PRODUCT CARD STYLING */

@@ -2,7 +2,7 @@
  * Bundle Widget - Full Page (Standalone Bundled Version)
  * This file contains all dependencies inlined for standalone use
  * Auto-generated - DO NOT EDIT MANUALLY
- * Edit bundle-widget-full-page.js and run: node bundle-full-page.cjs
+ * Edit bundle-widget-full-page.js and run: node create-bundle.cjs
  */
 
 'use strict';
@@ -82,7 +82,7 @@
 // GLOBAL CONSTANTS AND CONFIGURATION
 // ============================================================================
 
-const BUNDLE_WIDGET = {
+export const BUNDLE_WIDGET = {
   VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
 
@@ -128,7 +128,7 @@ const BUNDLE_WIDGET = {
 // CURRENCY MANAGEMENT SYSTEM
 // ============================================================================
 
-class CurrencyManager {
+export class CurrencyManager {
   static getShopBaseCurrency() {
     // Shop's base currency from Shopify object (official source)
     return {
@@ -217,7 +217,7 @@ class CurrencyManager {
 // BUNDLE DATA MANAGER
 // ============================================================================
 
-class BundleDataManager {
+export class BundleDataManager {
   static validateBundleData(bundles) {
     if (!Array.isArray(bundles) || bundles.length === 0) {
       throw new Error('No bundles available');
@@ -397,7 +397,7 @@ class BundleDataManager {
 // PRICING CALCULATOR
 // ============================================================================
 
-class PricingCalculator {
+export class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData) {
     let totalPrice = 0;
     let totalQuantity = 0;
@@ -607,7 +607,7 @@ class PricingCalculator {
 // TOAST NOTIFICATION SYSTEM
 // ============================================================================
 
-class ToastManager {
+export class ToastManager {
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -639,7 +639,7 @@ class ToastManager {
     }
   }
 }
-class TemplateManager {
+export class TemplateManager {
   static replaceVariables(template, variables) {
     if (!template) return '';
 
@@ -862,7 +862,7 @@ class TemplateManager {
 // COMPONENT GENERATORS
 // ============================================================================
 
-class ComponentGenerator {
+export class ComponentGenerator {
   /**
    * Generates HTML for a product card with variant selector and quantity controls
    */
@@ -1045,7 +1045,7 @@ class ComponentGenerator {
 
 
 // ============================================================================
-// FULL PAGE WIDGET IMPLEMENTATION
+// INLINED: bundle-widget-full-page.js
 // ============================================================================
 
 /**
@@ -1117,6 +1117,16 @@ class ComponentGenerator {
 'use strict';
 
 // Import shared components and utilities
+import {
+  BUNDLE_WIDGET,
+  CurrencyManager,
+  BundleDataManager,
+  PricingCalculator,
+  ToastManager,
+  TemplateManager,
+  ComponentGenerator
+} from './bundle-widget-components.js';
+
 console.log('[FULL_PAGE_WIDGET] Initializing...');
 
 class BundleWidgetFullPage {
@@ -1196,6 +1206,13 @@ class BundleWidgetFullPage {
       // Mark as initialized
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
+
+      // Hide loading indicator
+      const loadingElement = this.container.querySelector('.bundle-loading');
+      if (loadingElement) {
+        loadingElement.style.display = 'none';
+        console.log('✅ [FULL_PAGE_INIT] Loading indicator hidden');
+      }
 
       console.log('✅ [FULL_PAGE_INIT] Initialization complete! Widget ready.');
 
@@ -1643,6 +1660,14 @@ class BundleWidgetFullPage {
   }
 
   renderHeader() {
+    // Always hide header for full-page bundles (they have their own title in the layout)
+    const bundleType = this.selectedBundle?.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
+    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      this.elements.header.style.display = 'none';
+      return;
+    }
+
+    // For product-page bundles, respect the showTitle config
     if (!this.config.showTitle) {
       this.elements.header.style.display = 'none';
       return;
@@ -1679,7 +1704,7 @@ class BundleWidgetFullPage {
     });
   }
 
-  // Full-page bundle layout (LEFT section + RIGHT sidebar)
+  // Full-page bundle layout (VERTICAL: Content section + Bottom footer)
   renderFullPageLayout() {
     console.log('🎨 [FULL_PAGE_LAYOUT] ========================================');
     console.log('🎨 [FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
@@ -1690,38 +1715,38 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
 
-    // Create LEFT section (65% width)
-    const leftSection = document.createElement('div');
-    leftSection.className = 'full-page-left-section';
+    // Create CONTENT section (full width)
+    const contentSection = document.createElement('div');
+    contentSection.className = 'full-page-content-section';
 
-    // 1. Render step timeline at top of left section
+    // 1. Render step timeline at top
     console.log('🎨 [FULL_PAGE_LAYOUT] → Creating step timeline...');
     const stepTimeline = this.createStepTimeline();
-    leftSection.appendChild(stepTimeline);
+    contentSection.appendChild(stepTimeline);
 
     // 2. Render bundle header (instruction text)
     console.log('🎨 [FULL_PAGE_LAYOUT] → Creating bundle instructions...');
     const bundleHeader = this.createBundleInstructions();
-    leftSection.appendChild(bundleHeader);
+    contentSection.appendChild(bundleHeader);
 
     // 3. Render category/collection tabs if step has collections
     console.log('🎨 [FULL_PAGE_LAYOUT] → Creating category tabs...');
     const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
     if (categoryTabs) {
-      leftSection.appendChild(categoryTabs);
+      contentSection.appendChild(categoryTabs);
     }
 
     // 4. Render product grid for current step
     console.log('🎨 [FULL_PAGE_LAYOUT] → Creating product grid for step', this.currentStepIndex);
     const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
-    leftSection.appendChild(productGrid);
+    contentSection.appendChild(productGrid);
 
-    this.elements.stepsContainer.appendChild(leftSection);
+    this.elements.stepsContainer.appendChild(contentSection);
 
-    // 5. Render RIGHT sidebar (25% width) with selected products
-    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating right sidebar...');
-    const rightSidebar = this.createFullPageRightSidebar();
-    this.elements.stepsContainer.appendChild(rightSidebar);
+    // 5. Render BOTTOM footer (full width) with selected products
+    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating bottom footer...');
+    const bottomFooter = this.createFullPageBottomFooter();
+    this.elements.stepsContainer.appendChild(bottomFooter);
 
     console.log('✅ [FULL_PAGE_LAYOUT] Layout rendering complete');
     console.log('🎨 [FULL_PAGE_LAYOUT] ========================================');
@@ -2004,50 +2029,50 @@ class BundleWidgetFullPage {
   }
 
   // Create RIGHT sidebar with selected products and navigation
-  createFullPageRightSidebar() {
-    console.log('📋 [RIGHT_SIDEBAR] ========================================');
-    console.log('📋 [RIGHT_SIDEBAR] Creating right sidebar...');
+  createFullPageBottomFooter() {
+    console.log('📋 [BOTTOM_FOOTER] ========================================');
+    console.log('📋 [BOTTOM_FOOTER] Creating bottom footer...');
 
-    const sidebar = document.createElement('div');
-    sidebar.className = 'full-page-right-sidebar';
+    const footer = document.createElement('div');
+    footer.className = 'full-page-bottom-footer';
 
-    // Sidebar header
-    const sidebarHeader = document.createElement('div');
-    sidebarHeader.className = 'sidebar-header';
-    sidebarHeader.innerHTML = '<h3>Your Bundle</h3>';
-    sidebar.appendChild(sidebarHeader);
+    // Footer header
+    const footerHeader = document.createElement('div');
+    footerHeader.className = 'footer-header';
+    footerHeader.innerHTML = '<h3>Your Bundle</h3>';
+    footer.appendChild(footerHeader);
 
     // Selected products section (scrollable)
     const selectedProductsContainer = document.createElement('div');
-    selectedProductsContainer.className = 'sidebar-selected-products';
+    selectedProductsContainer.className = 'footer-selected-products';
 
-    console.log('📋 [RIGHT_SIDEBAR] Getting all selected products...');
+    console.log('📋 [BOTTOM_FOOTER] Getting all selected products...');
     const allSelectedProducts = this.getAllSelectedProductsData();
-    console.log('📋 [RIGHT_SIDEBAR] Found', allSelectedProducts.length, 'selected products');
+    console.log('📋 [BOTTOM_FOOTER] Found', allSelectedProducts.length, 'selected products');
 
     if (allSelectedProducts.length === 0) {
-      console.log('📋 [RIGHT_SIDEBAR] No products selected - showing empty state');
+      console.log('📋 [BOTTOM_FOOTER] No products selected - showing empty state');
       selectedProductsContainer.innerHTML = '<p class="no-selections">No products selected yet</p>';
     } else {
-      console.log('📋 [RIGHT_SIDEBAR] Rendering', allSelectedProducts.length, 'products in sidebar:');
+      console.log('📋 [BOTTOM_FOOTER] Rendering', allSelectedProducts.length, 'products in footer:');
       allSelectedProducts.forEach((item, index) => {
         console.log(`  → ${index + 1}. ${item.title} (Qty: ${item.quantity}, Step: ${item.stepIndex})`);
 
         const productItem = document.createElement('div');
-        productItem.className = 'sidebar-product-item';
+        productItem.className = 'footer-product-item';
         productItem.innerHTML = `
-          <div class="sidebar-product-image-wrapper">
-            <img src="${item.image}" alt="${item.title}" class="sidebar-product-image">
-            <div class="sidebar-product-quantity-badge">${item.quantity}</div>
+          <div class="footer-product-image-wrapper">
+            <img src="${item.image}" alt="${item.title}" class="footer-product-image">
+            <div class="footer-product-quantity-badge">${item.quantity}</div>
           </div>
-          <div class="sidebar-product-info">
-            <div class="sidebar-product-title">${item.title}</div>
-            <div class="sidebar-product-price">Rs. ${(item.price / 100).toFixed(2)}</div>
-            <button class="sidebar-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">Delete</button>
+          <div class="footer-product-info">
+            <div class="footer-product-title">${item.title}</div>
+            <div class="footer-product-price">Rs. ${(item.price / 100).toFixed(2)}</div>
+            <button class="footer-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">Delete</button>
           </div>
         `;
 
-        const removeBtn = productItem.querySelector('.sidebar-product-remove');
+        const removeBtn = productItem.querySelector('.footer-product-remove');
         removeBtn.addEventListener('click', () => {
           this.updateProductSelection(item.stepIndex, item.variantId, 0);
           this.renderFullPageLayout();
@@ -2057,7 +2082,7 @@ class BundleWidgetFullPage {
       });
     }
 
-    sidebar.appendChild(selectedProductsContainer);
+    footer.appendChild(selectedProductsContainer);
 
     // Total section
     let totalPrice = 0;
@@ -2073,20 +2098,20 @@ class BundleWidgetFullPage {
     });
 
     const totalDisplay = document.createElement('div');
-    totalDisplay.className = 'sidebar-total';
+    totalDisplay.className = 'footer-total';
     totalDisplay.innerHTML = `
       <span class="total-label">Total</span>
       <span class="total-price">Rs. ${(totalPrice / 100).toFixed(2)}</span>
     `;
-    sidebar.appendChild(totalDisplay);
+    footer.appendChild(totalDisplay);
 
     // Navigation buttons
     const navButtons = document.createElement('div');
-    navButtons.className = 'sidebar-nav-buttons';
+    navButtons.className = 'footer-nav-buttons';
 
     // Back button
     const backBtn = document.createElement('button');
-    backBtn.className = 'sidebar-nav-btn sidebar-back-btn';
+    backBtn.className = 'footer-nav-btn footer-back-btn';
     backBtn.textContent = 'Back';
     backBtn.disabled = this.currentStepIndex === 0;
     backBtn.addEventListener('click', () => {
@@ -2098,7 +2123,7 @@ class BundleWidgetFullPage {
 
     // Next/Add to Cart button
     const nextBtn = document.createElement('button');
-    nextBtn.className = 'sidebar-nav-btn sidebar-next-btn';
+    nextBtn.className = 'footer-nav-btn footer-next-btn';
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
     const canProceed = this.canProceedToNextStep();
@@ -2120,9 +2145,9 @@ class BundleWidgetFullPage {
 
     navButtons.appendChild(backBtn);
     navButtons.appendChild(nextBtn);
-    sidebar.appendChild(navButtons);
+    footer.appendChild(navButtons);
 
-    return sidebar;
+    return footer;
   }
 
   // Add to cart method for full-page bundles
