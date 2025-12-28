@@ -1265,12 +1265,16 @@ class BundleWidgetFullPage {
       console.log('[WIDGET_INIT] 📄 Full-page bundle detected, fetching from API:', bundleId);
 
       try {
-        const shop = window.Shopify?.shop || window.location.host;
-        const appUrl = window.__BUNDLE_APP_URL__ || this.container.dataset.appUrl || '';
-        const apiBaseUrl = appUrl || window.location.origin;
-        const apiUrl = `${apiBaseUrl}/api/bundle/${bundleId}.json?shop=${encodeURIComponent(shop)}`;
+        // Use Shopify store URL with app proxy path (not direct backend URL)
+        // App proxy routes requests through Shopify with proper authentication
+        const shop = window.Shopify?.shop || window.location.hostname;
+        const shopDomain = shop.includes('.myshopify.com') ? shop : `${shop}.myshopify.com`;
+        const protocol = window.location.protocol;
 
-        console.log('[WIDGET_INIT] Fetching bundle from:', apiUrl);
+        // Construct app proxy URL: https://{shop}/apps/product-bundles/api/bundle/{bundleId}.json
+        const apiUrl = `${protocol}//${shopDomain}/apps/product-bundles/api/bundle/${bundleId}.json`;
+
+        console.log('[WIDGET_INIT] Fetching bundle via app proxy from:', apiUrl);
 
         const response = await fetch(apiUrl);
         if (!response.ok) {
