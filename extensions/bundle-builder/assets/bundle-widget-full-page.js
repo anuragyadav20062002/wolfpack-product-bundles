@@ -1131,7 +1131,7 @@ class BundleWidgetFullPage {
   getAllSelectedProductsData() {
     const allProducts = [];
 
-    this.bundleData.steps.forEach((step, stepIndex) => {
+    this.selectedBundle?.steps?.forEach((step, stepIndex) => {
       const stepSelections = this.selectedProducts[stepIndex] || {};
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
@@ -1166,7 +1166,8 @@ class BundleWidgetFullPage {
   isStepCompleted(stepIndex) {
     const stepSelections = this.selectedProducts[stepIndex] || {};
     const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
-    const step = this.bundleData.steps[stepIndex];
+    const step = this.selectedBundle?.steps?.[stepIndex];
+    if (!step) return false; // Guard: if step doesn't exist, it's not completed
     return totalQuantity >= (step.minQuantity || 1);
   }
 
@@ -1191,7 +1192,7 @@ class BundleWidgetFullPage {
 
   // Helper: Check if all bundle conditions are met
   areBundleConditionsMet() {
-    return this.bundleData.steps.every((step, index) => this.isStepCompleted(index));
+    return this.selectedBundle?.steps?.every((step, index) => this.isStepCompleted(index)) || false;
   }
 
   createStepElement(step, index) {
