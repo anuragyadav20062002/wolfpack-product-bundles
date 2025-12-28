@@ -22,6 +22,19 @@
 }
 
 /* ============================================================================
+   FULL PAGE LAYOUT WRAPPER (CRITICAL FIX)
+   ============================================================================ */
+
+.full-page-layout {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  min-height: 100vh;
+  gap: 0;
+  position: relative;
+}
+
+/* ============================================================================
    LEFT SECTION - PRODUCTS & CONTENT (65% WIDTH)
    ============================================================================ */
 
@@ -733,7 +746,8 @@
    ============================================================================ */
 
 @media (max-width: 768px) {
-  .bundle-widget-full-page {
+  .bundle-widget-full-page,
+  .full-page-layout {
     flex-direction: column;
   }
 
