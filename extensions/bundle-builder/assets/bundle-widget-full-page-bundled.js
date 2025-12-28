@@ -73,7 +73,7 @@
 // GLOBAL CONSTANTS AND CONFIGURATION
 // ============================================================================
 
-export const BUNDLE_WIDGET = {
+const BUNDLE_WIDGET = {
   VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
 
@@ -119,7 +119,7 @@ export const BUNDLE_WIDGET = {
 // CURRENCY MANAGEMENT SYSTEM
 // ============================================================================
 
-export class CurrencyManager {
+class CurrencyManager {
   static getShopBaseCurrency() {
     // Shop's base currency from Shopify object (official source)
     return {
@@ -208,7 +208,7 @@ export class CurrencyManager {
 // BUNDLE DATA MANAGER
 // ============================================================================
 
-export class BundleDataManager {
+class BundleDataManager {
   static validateBundleData(bundles) {
     if (!Array.isArray(bundles) || bundles.length === 0) {
       throw new Error('No bundles available');
@@ -388,7 +388,7 @@ export class BundleDataManager {
 // PRICING CALCULATOR
 // ============================================================================
 
-export class PricingCalculator {
+class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData) {
     let totalPrice = 0;
     let totalQuantity = 0;
@@ -598,7 +598,7 @@ export class PricingCalculator {
 // TOAST NOTIFICATION SYSTEM
 // ============================================================================
 
-export class ToastManager {
+class ToastManager {
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -630,7 +630,7 @@ export class ToastManager {
     }
   }
 }
-export class TemplateManager {
+class TemplateManager {
   static replaceVariables(template, variables) {
     if (!template) return '';
 
@@ -853,7 +853,7 @@ export class TemplateManager {
 // COMPONENT GENERATORS
 // ============================================================================
 
-export class ComponentGenerator {
+class ComponentGenerator {
   /**
    * Generates HTML for a product card with variant selector and quantity controls
    */
