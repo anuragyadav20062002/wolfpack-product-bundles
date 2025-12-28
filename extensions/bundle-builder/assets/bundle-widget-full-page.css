@@ -53,12 +53,10 @@
 
 .full-page-bottom-footer {
   width: 100%;
-  background: var(--bundle-full-page-footer-bg-color, #ECF4EC);
-  padding: 30px 80px;
+  background: var(--bundle-full-page-footer-bg-color, #FFFFFF);
+  padding: 0;
   display: flex;
-  flex-direction: row;
-  gap: 40px;
-  align-items: center;
+  flex-direction: column;
   border-top: 1px solid var(--bundle-full-page-footer-border-color, rgba(0, 0, 0, 0.1));
   position: sticky;
   bottom: 0;
@@ -717,6 +715,99 @@
   font-style: italic;
   text-align: center;
   padding: 40px 20px;
+}
+
+/* ============================================================================
+   FOOTER NEW ELEMENTS (Figma Design)
+   ============================================================================ */
+
+/* Promotional message section */
+.footer-promo-message {
+  width: 100%;
+  text-align: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--bundle-full-page-footer-border-color, rgba(0, 0, 0, 0.1));
+}
+
+.footer-promo-message p {
+  font-family: 'Quattrocento Sans', sans-serif;
+  font-size: 18px;
+  color: var(--bundle-full-page-footer-product-title-color, #1E1E1E);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Footer content wrapper */
+.footer-content-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 40px;
+  align-items: center;
+  flex: 1;
+  padding: 20px 0;
+}
+
+/* Close button circle on product thumbnail */
+.footer-product-remove-circle {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bundle-full-page-footer-quantity-badge-bg, #1E1E1E);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  transition: transform 0.2s, background 0.2s;
+  padding: 0;
+}
+
+.footer-product-remove-circle:hover {
+  transform: scale(1.1);
+  background: var(--bundle-full-page-footer-remove-color, #BD0000);
+}
+
+.footer-product-remove-circle svg {
+  display: block;
+}
+
+/* Progress bar section */
+.footer-progress-section {
+  width: 100%;
+  padding: 16px 80px;
+  border-top: 1px solid var(--bundle-full-page-footer-border-color, rgba(0, 0, 0, 0.1));
+}
+
+.footer-progress-bar-container {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.footer-progress-bar-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #DEDEDE;
+  border-radius: 20px;
+}
+
+.footer-progress-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--bundle-full-page-footer-quantity-badge-bg, #1E1E1E);
+  border-radius: 20px;
+  transition: width 0.3s ease;
 }
 
 /* ============================================================================

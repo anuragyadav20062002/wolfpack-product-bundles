@@ -725,20 +725,17 @@ class BundleWidgetFullPage {
       circle.className = 'timeline-circle';
 
       if (isCompleted) {
-        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M13 4L6 11L3 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>`;
-      } else if (isCurrent) {
-        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="3" y="3" width="10" height="10" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <rect x="5" y="5" width="6" height="6" stroke="currentColor" stroke-width="1.5" fill="none"/>
-        </svg>`;
-      } else if (!isAccessible) {
-        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
+        // Completed step: White checkmark on black circle
+        circle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M20 6L9 17L4 12" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`;
       } else {
-        circle.textContent = (index + 1).toString();
+        // Current and locked steps: Layers icon (color controlled by CSS)
+        circle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>`;
       }
 
       stepItem.appendChild(circle);
@@ -986,11 +983,41 @@ class BundleWidgetFullPage {
     const footer = document.createElement('div');
     footer.className = 'full-page-bottom-footer';
 
+    // Promotional message section
+    const promoSection = document.createElement('div');
+    promoSection.className = 'footer-promo-message';
+
+    // Get promotional message from bundle pricing settings
+    let promoMessage = '';
+    if (this.selectedBundle.pricing && this.selectedBundle.pricing.enabled) {
+      const messages = this.selectedBundle.pricing.messages || {};
+      promoMessage = messages.footer || messages.default || '';
+    }
+
+    if (!promoMessage) {
+      // Default promotional message
+      const totalSelected = this.getAllSelectedProductsData().length;
+      const totalRequired = this.selectedBundle.steps.reduce((sum, step) => sum + (step.minQuantity || 1), 0);
+      const remaining = Math.max(0, totalRequired - totalSelected);
+      if (remaining > 0) {
+        promoMessage = `Add ${remaining} more product${remaining > 1 ? 's' : ''} to complete your bundle`;
+      } else {
+        promoMessage = 'Bundle complete! Add to cart to proceed.';
+      }
+    }
+
+    promoSection.innerHTML = `<p>${promoMessage}</p>`;
+    footer.appendChild(promoSection);
+
+    // Main content wrapper (products + total + buttons)
+    const footerContent = document.createElement('div');
+    footerContent.className = 'footer-content-wrapper';
+
     // Footer header
     const footerHeader = document.createElement('div');
     footerHeader.className = 'footer-header';
     footerHeader.innerHTML = '<h3>Your Bundle</h3>';
-    footer.appendChild(footerHeader);
+    footerContent.appendChild(footerHeader);
 
     // Selected products section (scrollable)
     const selectedProductsContainer = document.createElement('div');
@@ -1014,16 +1041,21 @@ class BundleWidgetFullPage {
           <div class="footer-product-image-wrapper">
             <img src="${item.image}" alt="${item.title}" class="footer-product-image">
             <div class="footer-product-quantity-badge">${item.quantity}</div>
+            <button class="footer-product-remove-circle" data-step="${item.stepIndex}" data-variant="${item.variantId}">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M9 3L3 9M3 3L9 9" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
           </div>
           <div class="footer-product-info">
             <div class="footer-product-title">${item.title}</div>
-            <div class="footer-product-price">Rs. ${(item.price / 100).toFixed(2)}</div>
-            <button class="footer-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">Delete</button>
+            <div class="footer-product-price">Rs. ${(item.price / 100).toFixed(2)} x ${item.quantity}</div>
           </div>
         `;
 
-        const removeBtn = productItem.querySelector('.footer-product-remove');
-        removeBtn.addEventListener('click', () => {
+        const removeBtn = productItem.querySelector('.footer-product-remove-circle');
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
           this.updateProductSelection(item.stepIndex, item.variantId, 0);
           this.renderFullPageLayout();
         });
@@ -1032,7 +1064,7 @@ class BundleWidgetFullPage {
       });
     }
 
-    footer.appendChild(selectedProductsContainer);
+    footerContent.appendChild(selectedProductsContainer);
 
     // Total section
     let totalPrice = 0;
@@ -1053,7 +1085,7 @@ class BundleWidgetFullPage {
       <span class="total-label">Total</span>
       <span class="total-price">Rs. ${(totalPrice / 100).toFixed(2)}</span>
     `;
-    footer.appendChild(totalDisplay);
+    footerContent.appendChild(totalDisplay);
 
     // Navigation buttons
     const navButtons = document.createElement('div');
@@ -1095,7 +1127,27 @@ class BundleWidgetFullPage {
 
     navButtons.appendChild(backBtn);
     navButtons.appendChild(nextBtn);
-    footer.appendChild(navButtons);
+    footerContent.appendChild(navButtons);
+
+    // Append footer content wrapper to footer
+    footer.appendChild(footerContent);
+
+    // Progress bar section
+    const progressSection = document.createElement('div');
+    progressSection.className = 'footer-progress-section';
+
+    // Calculate progress percentage
+    const totalSteps = this.selectedBundle.steps.length;
+    const completedSteps = this.selectedBundle.steps.filter((_, index) => this.isStepCompleted(index)).length;
+    const progressPercentage = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
+
+    progressSection.innerHTML = `
+      <div class="footer-progress-bar-container">
+        <div class="footer-progress-bar-bg"></div>
+        <div class="footer-progress-bar-fill" style="width: ${progressPercentage}%"></div>
+      </div>
+    `;
+    footer.appendChild(progressSection);
 
     return footer;
   }
