@@ -1,6 +1,6 @@
 {% schema %}
 {
-  "name": "Bundle - Full Page",
+  "name": "t:bundle_full_page.name",
   "target": "section",
   "enabled_on": {
     "templates": ["page"]
@@ -9,42 +9,70 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "This block is for full-page bundles on standalone pages. The Bundle ID is automatically configured when you use 'Place Widget Now' from the app admin."
+      "content": "t:bundle_full_page.settings.paragraph_content"
     },
     {
       "type": "text",
       "id": "bundle_id",
-      "label": "Bundle ID (Auto-configured)",
-      "info": "This is automatically set when using 'Place Widget Now'. Only enter manually if you're setting up a custom page."
+      "label": "t:bundle_full_page.settings.bundle_id_label",
+      "info": "t:bundle_full_page.settings.bundle_id_info"
     },
     {
       "type": "text",
       "id": "app_url",
-      "label": "App server URL (optional)",
-      "info": "Override the app server URL for development/testing. Leave blank to auto-detect."
+      "label": "t:bundle_full_page.settings.app_url_label",
+      "info": "t:bundle_full_page.settings.app_url_info"
     },
     {
       "type": "header",
-      "content": "Display Settings"
+      "content": "t:bundle_full_page.settings.content_customization_header"
+    },
+    {
+      "type": "text",
+      "id": "custom_title",
+      "label": "t:bundle_full_page.settings.custom_title_label",
+      "info": "t:bundle_full_page.settings.custom_title_info"
+    },
+    {
+      "type": "textarea",
+      "id": "custom_description",
+      "label": "t:bundle_full_page.settings.custom_description_label",
+      "info": "t:bundle_full_page.settings.custom_description_info"
+    },
+    {
+      "type": "text",
+      "id": "custom_instruction",
+      "label": "t:bundle_full_page.settings.custom_instruction_label",
+      "info": "t:bundle_full_page.settings.custom_instruction_info"
+    },
+    {
+      "type": "header",
+      "content": "t:bundle_full_page.settings.display_header"
     },
     {
       "type": "checkbox",
       "id": "show_bundle_title",
-      "label": "Show bundle title",
+      "label": "t:bundle_full_page.settings.show_bundle_title_label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bundle_description",
+      "label": "t:bundle_full_page.settings.show_bundle_description_label",
       "default": true
     },
     {
       "type": "checkbox",
       "id": "show_step_timeline",
-      "label": "Show step progress timeline",
-      "info": "Display the step progress indicator at the top",
+      "label": "t:bundle_full_page.settings.show_step_timeline_label",
+      "info": "t:bundle_full_page.settings.show_step_timeline_info",
       "default": true
     },
     {
       "type": "checkbox",
       "id": "show_category_tabs",
-      "label": "Show category tabs",
-      "info": "Display category/collection tabs for filtering products",
+      "label": "t:bundle_full_page.settings.show_category_tabs_label",
+      "info": "t:bundle_full_page.settings.show_category_tabs_info",
       "default": true
     }
   ]
@@ -101,13 +129,16 @@
     data-bundle-type="full_page"
     data-app-url="{{ block.settings.app_url | default: '' }}"
     data-show-title="{{ block.settings.show_bundle_title }}"
+    data-show-description="{{ block.settings.show_bundle_description }}"
     data-show-step-timeline="{{ block.settings.show_step_timeline }}"
     data-show-category-tabs="{{ block.settings.show_category_tabs }}"
+    data-custom-title="{{ block.settings.custom_title | escape }}"
+    data-custom-description="{{ block.settings.custom_description | escape }}"
+    data-custom-instruction="{{ block.settings.custom_instruction | escape }}"
     class="bundle-widget-container bundle-widget-full-page"
   >
     <div class="bundle-loading">
       <div class="loading-spinner"></div>
-      <p>Loading bundle builder...</p>
     </div>
   </div>
 
@@ -152,11 +183,15 @@
   <!-- Load Design Control Panel Settings (Dynamic CSS from Database) -->
   <!-- This injects CSS variables from DesignSettings table for full_page bundle type -->
   <!-- CRITICAL: Without this, DCP settings won't apply to full-page bundles! -->
+  <!-- NOTE: Using app proxy URL instead of asset_url because design settings are dynamically -->
+  <!-- generated from database, not static theme assets. This is intentional. -->
+  {% # theme-check-disable RemoteAsset %}
   <link
     rel="stylesheet"
     href="{{ shop.url }}/apps/product-bundles/api/design-settings/{{ shop.domain }}?bundleType=full_page&v={{ 'now' | date: '%s' }}"
     type="text/css"
   >
+  {% # theme-check-enable RemoteAsset %}
 
   <!-- Load widget JavaScript dynamically to bypass 10KB Shopify limit -->
   <script>
