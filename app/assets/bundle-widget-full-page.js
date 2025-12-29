@@ -184,7 +184,7 @@ class BundleWidgetFullPage {
       isContainerProduct: dataset.isContainerProduct === 'true',
       containerBundleId: dataset.containerBundleId || null,
       hideDefaultButtons: dataset.hideDefaultButtons === 'true',
-      showTitle: dataset.showTitle !== 'false',
+      showTitle: dataset.showTitle === 'true', // Default to false to avoid duplicate with main header
       showDescription: dataset.showDescription !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       showFooterMessaging: dataset.showFooterMessaging !== 'false',

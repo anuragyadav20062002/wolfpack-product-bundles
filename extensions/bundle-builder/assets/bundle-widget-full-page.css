@@ -51,16 +51,41 @@
    BOTTOM FOOTER - BUNDLE SUMMARY & NAVIGATION (FULL WIDTH)
    ============================================================================ */
 
-.full-page-bottom-footer {
+.full-page-bottom-footer,
+.full-page-footer {
   width: 100%;
   background: var(--bundle-full-page-footer-bg-color, #FFFFFF);
-  padding: 0;
+  padding: 20px 40px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
   border-top: 1px solid var(--bundle-full-page-footer-border-color, rgba(0, 0, 0, 0.1));
   position: sticky;
   bottom: 0;
   z-index: 100;
+  box-sizing: border-box;
+}
+
+/* Footer Left Section - Selected Products */
+.footer-left {
+  flex: 1;
+  min-width: 0; /* Allow flex item to shrink below content size */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+/* Footer Right Section - Total & Navigation */
+.footer-right {
+  flex-shrink: 0; /* Prevent right section from shrinking */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
 }
 
 /* ============================================================================
@@ -533,11 +558,14 @@
 /* Selected Products Section (Scrollable Horizontally) */
 .footer-selected-products {
   flex: 1;
+  min-width: 0; /* Allow shrinking to prevent overflow */
   overflow-x: auto;
+  overflow-y: hidden;
   display: flex;
   flex-direction: row;
-  gap: 16px;
-  padding: 0 20px;
+  gap: 12px;
+  padding: 0;
+  align-items: center;
 }
 
 .footer-selected-products::-webkit-scrollbar {
@@ -713,8 +741,9 @@
   font-size: 14px;
   color: var(--bundle-full-page-footer-no-selections-color, #808080);
   font-style: italic;
-  text-align: center;
-  padding: 40px 20px;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
 }
 
 /* ============================================================================
@@ -881,14 +910,24 @@ body:has(.bundle-widget-full-page) #MainContent {
     padding: 20px;
   }
 
-  .full-page-bottom-footer {
+  .full-page-bottom-footer,
+  .full-page-footer {
     flex-direction: column;
     padding: 20px;
     gap: 20px;
+    align-items: stretch;
+  }
+
+  .footer-left,
+  .footer-right {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
   }
 
   .footer-selected-products {
     padding: 0;
+    width: 100%;
   }
 
   .footer-total {
