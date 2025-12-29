@@ -219,7 +219,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const installationContext = await WidgetInstallationService.getBundleInstallationContext(
     admin,
     session.shop,
-    bundleId
+    bundleId,
+    bundle.bundleType as 'full_page' | 'product_page'
   );
 
   // Generate bundle-specific installation link (pre-populates bundle ID and product)
@@ -3743,11 +3744,6 @@ export default function ConfigureBundleFlow() {
                       >
                         Add New Tab
                       </Button>
-                      {stepsState.steps.length > 0 && (
-                        <Text variant="bodySm" tone="subdued" as="p">
-                          {stepsState.steps.length} tab{stepsState.steps.length !== 1 ? 's' : ''} configured
-                        </Text>
-                      )}
                     </InlineStack>
                   </BlockStack>
                 </BlockStack>

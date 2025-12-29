@@ -379,13 +379,149 @@ export class WidgetInstallationService {
   }
 
   /**
+   * Check if full-page bundle widget exists in page templates
+   * Full-page bundles are placed on 'page' templates, not 'product' templates
+   */
+  static async checkFullPageBundleInstallation(
+    admin: any,
+    shop: string,
+    bundleId: string
+  ): Promise<{
+    installed: boolean;
+    bundleConfigured: boolean;
+    themeId?: string;
+    themeName?: string;
+  }> {
+    try {
+      AppLogger.debug('Checking full-page bundle installation', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId
+      });
+
+      // Get current published theme
+      const CURRENT_THEME_QUERY = `
+        query GetCurrentTheme {
+          themes(first: 1, roles: [MAIN]) {
+            edges {
+              node {
+                id
+                name
+                role
+              }
+            }
+          }
+        }
+      `;
+
+      const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
+      const themeData = await themeResponse.json();
+
+      if (!themeData?.data?.themes?.edges?.length) {
+        return { installed: false, bundleConfigured: false };
+      }
+
+      const theme = themeData.data.themes.edges[0].node;
+      const themeId = theme.id;
+      const themeName = theme.name;
+
+      // Fetch page template files (not product templates!)
+      const TEMPLATE_FILES_QUERY = `
+        query GetTemplateFiles($themeId: ID!) {
+          theme(id: $themeId) {
+            files(first: 100) {
+              edges {
+                node {
+                  filename
+                  body {
+                    ... on OnlineStoreThemeFileBodyText {
+                      content
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
+        variables: { themeId }
+      });
+      const filesData = await filesResponse.json();
+
+      if (!filesData?.data?.theme?.files?.edges) {
+        return { installed: false, bundleConfigured: false, themeId, themeName };
+      }
+
+      const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
+
+      // Filter for PAGE templates (not product templates)
+      const pageTemplateFiles = files.filter((file: any) =>
+        file.filename.includes('templates/page') &&
+        file.filename.endsWith('.json')
+      );
+
+      let widgetFound = false;
+      let bundleConfigured = false;
+
+      for (const file of pageTemplateFiles) {
+        const content = file.body?.content || '';
+
+        // Check if page template contains full-page bundle block
+        if (content.includes('bundle-full-page') || content.includes('Bundle - Full Page')) {
+          widgetFound = true;
+          AppLogger.info('Full-page widget installation detected', {
+            component: 'WidgetInstallationService',
+            shop,
+            themeId,
+            file: file.filename
+          });
+
+          // Check if THIS specific bundle is configured
+          if (content.includes(`"${bundleId}"`)) {
+            bundleConfigured = true;
+            AppLogger.info('Bundle configured in full-page widget', {
+              component: 'WidgetInstallationService',
+              shop,
+              bundleId,
+              file: file.filename
+            });
+          }
+          break;
+        }
+      }
+
+      return {
+        installed: widgetFound,
+        bundleConfigured: bundleConfigured,
+        themeId,
+        themeName
+      };
+
+    } catch (error) {
+      AppLogger.error('Failed to check full-page bundle installation', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId
+      }, error);
+
+      return { installed: false, bundleConfigured: false };
+    }
+  }
+
+  /**
    * Get smart installation status for a specific bundle
    * Returns contextual information about what action the merchant should take
+   *
+   * For FULL-PAGE bundles: checks page templates
+   * For PRODUCT-PAGE bundles: checks product templates
    */
   static async getBundleInstallationContext(
     admin: any,
     shop: string,
-    bundleId: string
+    bundleId: string,
+    bundleType?: 'full_page' | 'product_page'
   ): Promise<{
     widgetInstalled: boolean;
     bundleConfigured: boolean;
@@ -393,11 +529,40 @@ export class WidgetInstallationService {
     themeName?: string;
   }> {
     try {
-      // Check if widget is installed
+      // For full-page bundles, check page templates
+      if (bundleType === 'full_page') {
+        const fullPageStatus = await this.checkFullPageBundleInstallation(admin, shop, bundleId);
+
+        if (!fullPageStatus.installed) {
+          return {
+            widgetInstalled: false,
+            bundleConfigured: false,
+            recommendedAction: 'install_widget',
+            themeName: fullPageStatus.themeName
+          };
+        }
+
+        if (fullPageStatus.bundleConfigured) {
+          return {
+            widgetInstalled: true,
+            bundleConfigured: true,
+            recommendedAction: 'configured',
+            themeName: fullPageStatus.themeName
+          };
+        } else {
+          return {
+            widgetInstalled: true,
+            bundleConfigured: false,
+            recommendedAction: 'add_bundle',
+            themeName: fullPageStatus.themeName
+          };
+        }
+      }
+
+      // For product-page bundles, check product templates (existing logic)
       const widgetStatus = await this.checkWidgetInstallation(admin, shop);
 
       if (!widgetStatus.installed) {
-        // Widget not installed at all
         return {
           widgetInstalled: false,
           bundleConfigured: false,
@@ -406,11 +571,9 @@ export class WidgetInstallationService {
         };
       }
 
-      // Widget is installed, check if THIS bundle is configured
       const bundleConfigured = await this.checkBundleInWidget(admin, shop, bundleId);
 
       if (bundleConfigured) {
-        // Widget installed and this bundle is already configured
         return {
           widgetInstalled: true,
           bundleConfigured: true,
@@ -418,7 +581,6 @@ export class WidgetInstallationService {
           themeName: widgetStatus.themeName
         };
       } else {
-        // Widget installed but this bundle is NOT configured
         return {
           widgetInstalled: true,
           bundleConfigured: false,
@@ -434,7 +596,6 @@ export class WidgetInstallationService {
         bundleId
       }, error);
 
-      // Default to install_widget on error
       return {
         widgetInstalled: false,
         bundleConfigured: false,

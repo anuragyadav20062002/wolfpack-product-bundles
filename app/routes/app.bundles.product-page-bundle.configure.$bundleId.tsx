@@ -219,7 +219,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const installationContext = await WidgetInstallationService.getBundleInstallationContext(
     admin,
     session.shop,
-    bundleId
+    bundleId,
+    'product_page'
   );
 
   // Generate bundle-specific installation link (pre-populates bundle ID and product)
