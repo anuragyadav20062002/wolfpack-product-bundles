@@ -2267,8 +2267,22 @@ export default function ConfigureBundleFlow() {
 
           // Note: Removed forced page reload to preserve unsaved UI changes
           // The sync updates metafields but doesn't affect the current UI state
+        } else if ('pages' in result && result.pages) {
+          // This is a get Shopify pages response (for full-page bundles)
+          const pages = (result as any).pages || [];
+
+          // Transform pages to match the template format expected by the modal
+          const formattedPages = pages.map((page: any) => ({
+            handle: page.handle,
+            title: page.title,
+            type: 'page',
+            isPage: true // Flag to identify this as a Shopify page vs template
+          }));
+
+          setAvailablePages(formattedPages);
+          setIsLoadingPages(false);
         } else if ('templates' in result && result.templates) {
-          // This is a get theme templates response
+          // This is a get theme templates response (for product-page bundles)
           const rawTemplates = (result as any).templates || [];
           const enhancedTemplates = enhanceTemplateListWithUserSelection(rawTemplates);
           setAvailablePages(enhancedTemplates);
@@ -2844,21 +2858,29 @@ export default function ConfigureBundleFlow() {
     }));
   }, []);
 
-  // Function to load available theme templates
+  // Function to load available pages or templates based on bundle type
   const loadAvailablePages = useCallback(() => {
     setIsLoadingPages(true);
     try {
       const formData = new FormData();
-      formData.append("intent", "getThemeTemplates");
+
+      // For full-page bundles, fetch Shopify pages (under /pages/ route)
+      // For product-page bundles, fetch product templates
+      if (bundle.bundleType === 'full_page') {
+        formData.append("intent", "getPages");
+      } else {
+        formData.append("intent", "getThemeTemplates");
+      }
 
       fetcher.submit(formData, { method: "post" });
       // Response will be handled by the existing useEffect
     } catch (error) {
-      AppLogger.error("Failed to load theme templates:", {}, error as any);
-      shopify.toast.show("Failed to load theme templates", { isError: true, duration: 5000 });
+      const resourceType = bundle.bundleType === 'full_page' ? 'pages' : 'theme templates';
+      AppLogger.error(`Failed to load ${resourceType}:`, {}, error as any);
+      shopify.toast.show(`Failed to load ${resourceType}`, { isError: true, duration: 5000 });
       setIsLoadingPages(false);
     }
-  }, [fetcher, shopify]);
+  }, [fetcher, shopify, bundle.bundleType]);
 
   // Handle Place Widget Now button with validation
   const handlePlaceWidgetNow = useCallback(async () => {
@@ -2985,10 +3007,16 @@ export default function ConfigureBundleFlow() {
       //
       // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
       // the bundle_id setting in the theme editor, making setup seamless for merchants
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
+      //
+      // For Shopify pages, template format is: page.{handle}
+      // For product templates, template format is just: {handle}
+      const templateParam = template.isPage ? `page.${template.handle}` : template.handle;
+
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
 
       AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
-        template: template.handle,
+        templateParam,
+        isPage: template.isPage,
         bundleId: bundle.id,
         url: themeEditorUrl
       });
@@ -4036,18 +4064,22 @@ export default function ConfigureBundleFlow() {
         <Modal.Section>
           <BlockStack gap="300">
             <Text as="p" variant="bodySm" tone="subdued">
-              Select a template to open the theme editor with widget placement.
+              {bundle.bundleType === 'full_page'
+                ? 'Select a page to open the theme editor with widget placement.'
+                : 'Select a template to open the theme editor with widget placement.'}
             </Text>
 
             {isLoadingPages ? (
               <BlockStack gap="300" inlineAlign="center">
                 <Spinner size="small" />
-                <Text as="p" variant="bodySm" tone="subdued">Loading templates...</Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  {bundle.bundleType === 'full_page' ? 'Loading pages...' : 'Loading templates...'}
+                </Text>
               </BlockStack>
             ) : availablePages.length > 0 ? (
               <BlockStack gap="200">
                 {availablePages.map((template) => (
-                  <Card key={template.id} padding="300">
+                  <Card key={template.id || template.handle} padding="300">
                     <InlineStack wrap={false} gap="300" align="space-between" blockAlign="center">
                       <BlockStack gap="100">
                         <InlineStack gap="200" blockAlign="center">
@@ -4080,7 +4112,7 @@ export default function ConfigureBundleFlow() {
               <Card padding="400">
                 <BlockStack gap="300" inlineAlign="center">
                   <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                    No templates available
+                    {bundle.bundleType === 'full_page' ? 'No pages available' : 'No templates available'}
                   </Text>
                   <Button
                     url="https://admin.shopify.com/admin/pages"
