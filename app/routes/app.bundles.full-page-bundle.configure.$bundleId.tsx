@@ -1880,6 +1880,15 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 400 });
     }
 
+    // Save page handle and page ID to bundle record
+    await db.bundle.update({
+      where: { id: bundleId, shopId: session.shop },
+      data: {
+        shopifyPageHandle: result.pageHandle,
+        shopifyPageId: result.pageId
+      }
+    });
+
     AppLogger.info("✅ [WIDGET_PLACEMENT] Automated page created successfully", {
       bundleId,
       pageId: result.pageId,
@@ -2362,7 +2371,35 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    // Check if bundle product exists
+    // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
+    if (bundle.bundleType === 'full_page') {
+      if (!bundle.shopifyPageHandle) {
+        shopify.toast.show("Bundle page not created yet. Please use 'Place Widget Now' to create the bundle page first.", {
+          isError: true,
+          duration: 5000
+        });
+        return;
+      }
+
+      // Construct page URL
+      const shopDomain = shop.includes('.myshopify.com')
+        ? shop.replace('.myshopify.com', '')
+        : shop.split('.')[0];
+
+      const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+
+      AppLogger.debug('Opening full-page bundle preview:', {
+        bundleId: bundle.id,
+        pageHandle: bundle.shopifyPageHandle,
+        pageUrl
+      });
+
+      window.open(pageUrl, '_blank');
+      shopify.toast.show("Bundle page opened in new tab", { isError: false });
+      return;
+    }
+
+    // FOR PRODUCT-PAGE BUNDLES: Use product URL
     if (!bundleProduct) {
       shopify.toast.show("Bundle product not found. Please select a bundle product first.", {
         isError: true,
@@ -2435,7 +2472,7 @@ export default function ConfigureBundleFlow() {
         duration: 5000
       });
     }
-  }, [isDirty, bundleProduct, shop, shopify]);
+  }, [isDirty, bundle, bundleProduct, shop, shopify]);
 
   const handleSectionChange = useCallback((section: string) => {
     if (isDirty) {

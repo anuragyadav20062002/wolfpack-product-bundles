@@ -1,37 +1,1074 @@
+(function() {
+  "use strict";
+
+  // ========== Shared Components ==========
 /**
- * Bundle Widget - Full Page Version
+ * Bundle Widget - Shared Components Library
  *
- * This widget is specifically for full page bundles with horizontal tabs layout.
+ * This library contains all reusable components and utilities used by both
+ * product-page and full-page bundle widgets.
+ *
+ * ============================================================================
+ * ARCHITECTURE ROLE
+ * ============================================================================
+ * This is the SECOND file loaded in the bundle widget system:
+ * 1. bundle-widget.js (loader) - Detects bundle type
+ * 2. THIS FILE (components) - Provides shared utilities
+ * 3. bundle-widget-{type}.js - Widget-specific implementation
+ *
+ * ============================================================================
+ * EXPORTED MODULES
+ * ============================================================================
+ *
+ * CONSTANTS:
+ * - BUNDLE_WIDGET: Global configuration and constants
+ *
+ * UTILITIES:
+ * - CurrencyManager: Multi-currency handling and money formatting
+ * - BundleDataManager: Fetching and managing bundle data from Shopify
+ * - PricingCalculator: Bundle pricing, discounts, and totals
+ * - ToastManager: User notifications and feedback
+ * - TemplateManager: Dynamic message templating with variables
+ *
+ * UI COMPONENTS:
+ * - ComponentGenerator: Generates HTML for all UI elements
+ *   - Product cards (with variants, quantities, pricing)
+ *   - Empty state cards (placeholder UI)
+ *   - Modal structure (for full-page bundles)
+ *   - Progress bars (discount progress tracking)
+ *   - Tabs (step navigation)
+ *   - Footer components (pricing summary, CTA buttons)
+ *
+ * ============================================================================
+ * USAGE BY WIDGETS
+ * ============================================================================
+ * Both product-page and full-page widgets import from this library:
+ *
+ * import {
+ *   BUNDLE_WIDGET,
+ *   CurrencyManager,
+ *   BundleDataManager,
+ *   PricingCalculator,
+ *   ToastManager,
+ *   TemplateManager,
+ *   ComponentGenerator
+ * } from './bundle-widget-components.js';
+ *
+ * ============================================================================
+ * BENEFITS OF THIS ARCHITECTURE
+ * ============================================================================
+ * 1. NO CODE DUPLICATION: Shared code written once, used everywhere
+ * 2. CONSISTENCY: Same business logic across both bundle types
+ * 3. MAINTAINABILITY: Fix bugs in one place, applies to all widgets
+ * 4. SMALLER FILES: Widget files only contain layout-specific code
+ * 5. TESTABILITY: Can test utilities independently of widgets
+ *
+ * @version 1.0.0
+ * @author Wolfpack Team
+ */
+
+'use strict';
+
+// ============================================================================
+// GLOBAL CONSTANTS AND CONFIGURATION
+// ============================================================================
+
+const BUNDLE_WIDGET = {
+  VERSION: '4.0.0',
+  LOG_PREFIX: '[BUNDLE_WIDGET]',
+
+  // DOM Selectors
+  SELECTORS: {
+    WIDGET_CONTAINER: '#bundle-builder-app',
+    STEPS_CONTAINER: '.bundle-steps',
+    MODAL: '#bundle-builder-modal',
+    ADD_TO_CART: '.add-bundle-to-cart',
+    FOOTER_MESSAGING: '.bundle-footer-messaging'
+  },
+
+  // Cart Properties for Bundle Items
+  CART_PROPERTIES: {
+    BUNDLE_ID: '_bundle_id',
+    BUNDLE_CONFIG: '_bundle_config'
+  },
+
+  // Bundle Types (Display Modes)
+  BUNDLE_TYPES: {
+    PRODUCT_PAGE: 'product_page',  // Widget embedded in product page
+    FULL_PAGE: 'full_page'         // Dedicated bundle page
+  },
+
+  // Step Condition Operators
+  CONDITION_OPERATORS: {
+    EQUAL_TO: 'equal_to',
+    GREATER_THAN: 'greater_than',
+    LESS_THAN: 'less_than',
+    GREATER_THAN_OR_EQUAL_TO: 'greater_than_or_equal_to',
+    LESS_THAN_OR_EQUAL_TO: 'less_than_or_equal_to'
+  },
+
+  // Discount Methods
+  DISCOUNT_METHODS: {
+    PERCENTAGE_OFF: 'percentage_off',
+    FIXED_AMOUNT_OFF: 'fixed_amount_off',
+    FIXED_BUNDLE_PRICE: 'fixed_bundle_price'
+  }
+};
+
+// ============================================================================
+// CURRENCY MANAGEMENT SYSTEM
+// ============================================================================
+
+class CurrencyManager {
+  static getShopBaseCurrency() {
+    // Shop's base currency from Shopify object (official source)
+    return {
+      code: window.Shopify?.shop?.currency || 'USD',
+      format: window.shopMoneyFormat || '{{amount}}'
+    };
+  }
+
+  static detectCustomerCurrency() {
+    // Primary: Shopify Markets active currency (official method)
+    // Shopify Markets handles geolocation and user preferences automatically
+    if (window.Shopify?.currency?.active) {
+      return {
+        code: window.Shopify.currency.active,
+        format: window.Shopify.currency.format || window.shopMoneyFormat || '{{amount}}',
+        rate: window.Shopify.currency.rate || 1
+      };
+    }
+
+    // Fallback: Shop base currency
+    return this.getShopBaseCurrency();
+  }
+
+  static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
+    if (fromCurrency === toCurrency) return amount;
+
+    // Use Shopify's conversion if available
+    if (window.Shopify?.currency?.convert) {
+      try {
+        return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
+      } catch (e) {
+        // Fallback to manual conversion
+      }
+    }
+
+    return Math.round(amount * rate);
+  }
+
+  static formatMoney(amount, format) {
+    if (typeof Shopify !== 'undefined' && window.Shopify.formatMoney) {
+      return window.Shopify.formatMoney(amount, format);
+    }
+
+    // Fallback formatting
+    const formatted = (amount / 100).toFixed(2);
+    return format ? format.replace('{{amount}}', formatted) : `$${formatted}`;
+  }
+
+  static getCurrencySymbol(currencyCode) {
+    const symbols = {
+      'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥',
+      'CAD': 'C$', 'AUD': 'A$', 'INR': '₹', 'CNY': '¥',
+      'CHF': 'CHF', 'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr',
+      'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft', 'RUB': '₽',
+      'BRL': 'R$', 'MXN': '$', 'ZAR': 'R', 'SGD': 'S$',
+      'HKD': 'HK$', 'NZD': 'NZ$', 'KRW': '₩', 'THB': '฿'
+    };
+    return symbols[currencyCode] || currencyCode;
+  }
+
+  static getCurrencyInfo() {
+    const customerCurrency = this.detectCustomerCurrency();
+    const shopBaseCurrency = this.getShopBaseCurrency();
+
+    return {
+      // For calculations (always use shop's base currency)
+      calculation: {
+        code: shopBaseCurrency.code,
+        symbol: this.getCurrencySymbol(shopBaseCurrency.code),
+        format: shopBaseCurrency.format
+      },
+      // For display (use customer's viewing currency)
+      display: {
+        code: customerCurrency.code,
+        symbol: this.getCurrencySymbol(customerCurrency.code),
+        format: customerCurrency.format,
+        rate: customerCurrency.rate
+      },
+      // Multi-currency status
+      isMultiCurrency: customerCurrency.code !== shopBaseCurrency.code
+    };
+  }
+}
+
+// ============================================================================
+// BUNDLE DATA MANAGER
+// ============================================================================
+
+class BundleDataManager {
+  static validateBundleData(bundles) {
+    if (!Array.isArray(bundles) || bundles.length === 0) {
+      throw new Error('No bundles available');
+    }
+
+    const required = ['id', 'name', 'status', 'bundleType', 'steps'];
+    bundles.forEach((bundle, index) => {
+      required.forEach(field => {
+        if (!bundle[field]) {
+          throw new Error(`Bundle ${index} missing required field: ${field}`);
+        }
+      });
+
+      // Validate bundle type
+      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+        // Valid bundle type
+      } else {
+        console.warn(`Unknown bundle type: ${bundle.bundleType}`);
+      }
+
+      // Validate steps
+      if (!Array.isArray(bundle.steps) || bundle.steps.length === 0) {
+        throw new Error(`Bundle ${bundle.id} has no steps`);
+      }
+    });
+
+    return bundles;
+  }
+
+  static validateSingleBundle(bundle) {
+    if (!bundle || typeof bundle !== 'object') {
+      return false;
+    }
+
+    const required = ['id', 'name', 'status', 'bundleType', 'steps'];
+    for (const field of required) {
+      if (bundle[field] === undefined || bundle[field] === null) {
+        return false;
+      }
+    }
+
+    if (!Array.isArray(bundle.steps)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static filterActivePublishedBundles(bundles) {
+    return bundles.filter(bundle =>
+      bundle.status === 'active' || bundle.status === 'published'
+    );
+  }
+
+  static getProductPageBundles(bundles) {
+    return bundles.filter(bundle =>
+      bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE
+    );
+  }
+
+  static getFullPageBundles(bundles) {
+    return bundles.filter(bundle =>
+      bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE
+    );
+  }
+
+  static getBundleById(bundles, bundleId) {
+    return bundles.find(bundle => bundle.id === bundleId);
+  }
+
+  static getContainerBundle(bundles, productId) {
+    return bundles.find(bundle =>
+      bundle.containerProductId &&
+      bundle.containerProductId.toString() === productId?.toString()
+    );
+  }
+
+  static extractStepData(steps) {
+    return steps.map(step => ({
+      id: step.id,
+      name: step.name || 'Unnamed Step',
+      required: step.required || false,
+      allowMultiple: step.allowMultiple || false,
+      products: step.StepProduct || [],
+      conditions: step.StepCondition || []
+    }));
+  }
+
+  static extractProductData(stepProducts) {
+    return stepProducts.map(sp => ({
+      id: sp.product?.id || sp.productId,
+      shopifyProductId: sp.product?.shopifyProductId || sp.shopifyProductId,
+      title: sp.product?.title || 'Untitled Product',
+      imageUrl: sp.product?.imageUrl || '/placeholder.png',
+      price: sp.product?.price || 0,
+      compareAtPrice: sp.product?.compareAtPrice || null,
+      variants: sp.product?.variants || [],
+      variantId: sp.variantId || null,
+      quantity: sp.quantity || 1
+    }));
+  }
+
+  static selectBundle(bundlesData, config) {
+    if (!bundlesData || typeof bundlesData !== 'object') {
+      return null;
+    }
+
+    const bundles = Object.values(bundlesData).filter(bundle =>
+      this.validateSingleBundle(bundle) && bundle.status === 'active'
+    );
+
+    if (bundles.length === 0) {
+      return null;
+    }
+
+    // Selection priority for bundles (both product-page and full-page types)
+    for (const bundle of bundles) {
+      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+        // Priority 1: Manual bundle ID
+        if (config.bundleId && bundle.id === config.bundleId) {
+          return bundle;
+        }
+
+        // Priority 2: Container product bundle ID
+        if (config.isContainerProduct && config.containerBundleId && bundle.id === config.containerBundleId) {
+          return bundle;
+        }
+
+        // Priority 3: Product ID matching
+        if (config.currentProductId) {
+          const productIdStr = config.currentProductId.toString();
+          const productGid = `gid://shopify/Product/${config.currentProductId}`;
+
+          if (bundle.shopifyProductId === productGid || bundle.shopifyProductId === productIdStr) {
+            return bundle;
+          }
+
+          // Extract numeric ID from GID for comparison
+          const bundleProductId = bundle.shopifyProductId ? bundle.shopifyProductId.split('/').pop() : null;
+          if (bundleProductId === productIdStr) {
+            return bundle;
+          }
+        }
+
+        // Priority 4: Theme editor context (show any bundle)
+        const isThemeEditor = this.isThemeEditorContext();
+        if (isThemeEditor) {
+          return bundle;
+        }
+      }
+    }
+
+    // Fallback: First active bundle
+    const fallbackBundle = bundles[0];
+    if (fallbackBundle) {
+      return fallbackBundle;
+    }
+    return null;
+  }
+
+  static isThemeEditorContext() {
+    return window.isThemeEditorContext ||
+      window.location.pathname.includes('/editor') ||
+      window.location.search.includes('preview_theme_id') ||
+      window.location.search.includes('previewPath') ||
+      document.referrer.includes('admin.shopify.com') ||
+      window.parent !== window ||
+      window.autoDetectedBundleId;
+  }
+}
+
+// Continue in next part...
+
+// ============================================================================
+// PRICING CALCULATOR
+// ============================================================================
+
+class PricingCalculator {
+  static calculateBundleTotal(selectedProducts, stepProductData) {
+    let totalPrice = 0;
+    let totalQuantity = 0;
+
+    console.log('[CALCULATE_TOTAL_DEBUG] Starting calculation', {
+      selectedProductsLength: selectedProducts.length,
+      stepProductDataLength: stepProductData.length,
+      step0Length: stepProductData[0]?.length,
+      step0FirstProduct: stepProductData[0]?.[0]
+    });
+
+    selectedProducts.forEach((stepSelections, stepIndex) => {
+      const productsInStep = stepProductData[stepIndex] || [];
+
+      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+        const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+
+        if (product && quantity > 0) {
+          const price = product.price || 0; // Already in cents from processProductsForStep
+          totalPrice += price * quantity;
+          totalQuantity += quantity;
+        }
+      });
+    });
+
+    console.log('[CALCULATE_TOTAL_DEBUG] Final:', { totalPrice, totalQuantity, step0Data: stepProductData[0] });
+    return { totalPrice, totalQuantity };
+  }
+
+  static calculateDiscount(bundle, totalPrice, totalQuantity) {
+    if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
+      console.log('[DISCOUNT] No pricing enabled or no rules', {
+        enabled: bundle?.pricing?.enabled,
+        rulesLength: bundle?.pricing?.rules?.length
+      });
+      return {
+        hasDiscount: false,
+        discountAmount: 0,
+        finalPrice: totalPrice,
+        discountPercentage: 0,
+        qualifiesForDiscount: false,
+        applicableRule: null
+      };
+    }
+
+    const rules = bundle.pricing.rules;
+    let bestRule = null;
+
+    // Find the best applicable rule using nested structure
+    for (const rule of rules) {
+      // Access nested condition structure
+      const conditionType = rule.condition.type; // 'quantity' or 'amount'
+      const conditionOperator = rule.condition.operator; // 'gte', 'gt', 'lte', 'lt', 'eq'
+      const conditionValue = rule.condition.value; // threshold
+
+      let conditionMet = false;
+
+      if (conditionType === 'amount') {
+        // Amount-based condition (value is in cents)
+        conditionMet = this.checkCondition(totalPrice, conditionOperator, conditionValue);
+      } else {
+        // Quantity-based condition
+        conditionMet = this.checkCondition(totalQuantity, conditionOperator, conditionValue);
+      }
+
+      if (conditionMet) {
+        if (!bestRule || conditionValue > bestRule.condition.value) {
+          bestRule = rule;
+        }
+      }
+    }
+
+    if (!bestRule) {
+      console.log('[DISCOUNT] No rule matched conditions', {
+        totalPrice,
+        totalQuantity,
+        rulesChecked: rules.length
+      });
+      return {
+        hasDiscount: false,
+        discountAmount: 0,
+        finalPrice: totalPrice,
+        discountPercentage: 0,
+        qualifiesForDiscount: false,
+        applicableRule: null
+      };
+    }
+
+    // Calculate discount amount using nested discount structure
+    let discountAmount = 0;
+    const discountMethod = bestRule.discount.method;
+    const discountValue = bestRule.discount.value; // Already in cents for amount methods
+
+    switch (discountMethod) {
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
+        // discountValue is percentage (e.g., 50 for 50%)
+        discountAmount = Math.round(totalPrice * (discountValue / 100));
+        break;
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
+        // discountValue is already in cents
+        discountAmount = discountValue;
+        break;
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
+        // discountValue is fixed bundle price in cents
+        discountAmount = Math.max(0, totalPrice - discountValue);
+        break;
+      default:
+        discountAmount = 0;
+    }
+
+    const finalPrice = Math.max(0, totalPrice - discountAmount);
+    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+
+    const result = {
+      hasDiscount: discountAmount > 0,
+      discountAmount,
+      finalPrice,
+      discountPercentage,
+      qualifiesForDiscount: true,
+      applicableRule: bestRule,
+      discountMethod
+    };
+
+    console.log('[DISCOUNT] Calculated discount:', {
+      hasDiscount: result.hasDiscount,
+      discountAmount: result.discountAmount,
+      finalPrice: result.finalPrice,
+      originalPrice: totalPrice,
+      discountPercentage: result.discountPercentage.toFixed(2) + '%',
+      method: discountMethod
+    });
+
+    return result;
+  }
+
+  static checkCondition(value, condition, targetValue) {
+    // Handle different condition formats
+    const normalizedCondition = this.normalizeCondition(condition);
+
+    switch (normalizedCondition) {
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
+        return value === targetValue;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
+        return value > targetValue;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
+        return value < targetValue;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+        return value >= targetValue;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        return value <= targetValue;
+      default:
+        // Default to >= for backward compatibility
+        return value >= targetValue;
+    }
+  }
+
+  static normalizeCondition(condition) {
+    // Handle different condition formats from admin
+    const conditionMap = {
+      'gte': BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO,
+      'gt': BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN,
+      'lte': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO,
+      'lt': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN,
+      'eq': BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO,
+      'equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO,
+      'greater_than': BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN,
+      'less_than': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN,
+      'greater_than_or_equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO,
+      'greater_than_equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO,
+      'less_than_or_equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO,
+      'less_than_equal_to': BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO
+    };
+
+    return conditionMap[condition] || condition || BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO;
+  }
+
+  static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
+    if (!bundle?.pricing?.rules?.length) return null;
+
+    // Sort rules by condition value (ascending)
+    const rules = bundle.pricing.rules.sort((a, b) => a.condition.value - b.condition.value);
+
+    for (const rule of rules) {
+      const conditionType = rule.condition.type;
+      const conditionOperator = rule.condition.operator;
+      const conditionValue = rule.condition.value;
+
+      // Check if this rule is not yet satisfied
+      let isRuleSatisfied = false;
+
+      if (conditionType === 'amount') {
+        isRuleSatisfied = this.checkCondition(currentAmount, conditionOperator, conditionValue);
+      } else {
+        isRuleSatisfied = this.checkCondition(currentQuantity, conditionOperator, conditionValue);
+      }
+
+      // Return the first rule that is not satisfied (next target)
+      if (!isRuleSatisfied) {
+        return rule;
+      }
+    }
+    return null; // All rules satisfied
+  }
+}
+
+// ============================================================================
+// TOAST NOTIFICATION SYSTEM
+// ============================================================================
+
+class ToastManager {
+  static show(message, duration = 4000) {
+    // Remove any existing toast
+    const existingToast = document.getElementById('bundle-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    // Create toast element - uses DCP CSS variables
+    const toast = document.createElement('div');
+    toast.id = 'bundle-toast';
+    toast.className = `bundle-toast`;
+    toast.innerHTML = `
+      <span>${message}</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;" onclick="this.parentElement.remove()">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+
+    // Add to page (styles come from bundle-widget.css with DCP CSS variables)
+    document.body.appendChild(toast);
+
+    // Auto-remove after duration
+    if (duration > 0) {
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+        }
+      }, duration);
+    }
+  }
+}
+class TemplateManager {
+  static replaceVariables(template, variables) {
+    if (!template) return '';
+
+    let result = template;
+
+    // Replace variables with both single and double curly braces
+    Object.entries(variables).forEach(([key, value]) => {
+      const singleBrace = new RegExp(`\\{${key}\\}`, 'g');
+      const doubleBrace = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+
+      // Wrap conditionText and discountText with styled spans
+      let replacementValue = value;
+      if (key === 'conditionText') {
+        replacementValue = `<span class="bundle-conditions-text" style="color: var(--bundle-conditions-text-color, inherit);">${value}</span>`;
+      } else if (key === 'discountText') {
+        replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit);">${value}</span>`;
+      }
+
+      result = result.replace(singleBrace, replacementValue);
+      result = result.replace(doubleBrace, replacementValue);
+    });
+    return result;
+  }
+
+  static createDiscountVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
+    const nextRule = PricingCalculator.getNextDiscountRule(bundle, totalQuantity, totalPrice);
+    const ruleToUse = discountInfo.applicableRule || nextRule;
+
+    if (!ruleToUse) {
+      return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
+    }
+
+    // Extract rule data using nested structure
+    const conditionType = ruleToUse.condition.type;
+    const targetValue = ruleToUse.condition.value;
+    const discountMethod = ruleToUse.discount.method;
+    const rawDiscountValue = ruleToUse.discount.value;
+
+    // Calculate condition-specific values
+    const conditionData = this.calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo);
+
+    // Calculate discount-specific values  
+    const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
+
+    // Calculate progress
+    const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
+    const progressPercentage = targetValue > 0 ? Math.min(100, (currentProgress / targetValue) * 100) : 0;
+
+    const variables = {
+      // Condition-specific variables
+      amountNeeded: conditionData.amountNeeded,
+      itemsNeeded: conditionData.itemsNeeded,
+      conditionText: conditionData.conditionText,
+
+      // Discount-specific variables
+      discountText: discountData.discountText,
+
+      // Qualification status
+      alreadyQualified: conditionData.alreadyQualified || false,
+
+      // Progress variables
+      currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
+      currentQuantity: totalQuantity.toString(),
+      targetAmount: conditionType === 'amount' ? CurrencyManager.formatMoney(targetValue, currencyInfo.display.format) : '0',
+      targetQuantity: conditionType === 'quantity' ? targetValue.toString() : '0',
+      progressPercentage: Math.round(progressPercentage).toString(),
+
+      // Bundle information
+      bundleName: bundle.name || 'Bundle',
+
+      // Pricing information
+      originalPrice: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
+      finalPrice: CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format),
+      savingsAmount: CurrencyManager.formatMoney(discountInfo.discountAmount, currencyInfo.display.format),
+      savingsPercentage: Math.round(discountInfo.discountPercentage).toString(),
+
+      // Currency information
+      currencySymbol: currencyInfo.display.symbol,
+      currencyCode: currencyInfo.display.code,
+
+      // Status
+      isQualified: discountInfo.qualifiesForDiscount ? 'true' : 'false'
+    };
+
+    return variables;
+  }
+
+  static calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo) {
+    if (conditionType === 'amount') {
+      // Amount-based condition - targetValue is already in cents
+      const amountNeeded = Math.max(0, targetValue - totalPrice);
+
+      // Convert for display if needed
+      const convertedAmountNeeded = CurrencyManager.convertCurrency(
+        amountNeeded,
+        currencyInfo.calculation.code,
+        currencyInfo.display.code,
+        currencyInfo.display.rate
+      );
+
+      // Format for display (convert from cents to decimal)
+      const amountNeededFormatted = (convertedAmountNeeded / 100).toFixed(2);
+      const targetValueFormatted = CurrencyManager.convertCurrency(
+        targetValue,
+        currencyInfo.calculation.code,
+        currencyInfo.display.code,
+        currencyInfo.display.rate
+      );
+      const targetValueFormattedDecimal = (targetValueFormatted / 100).toFixed(2);
+
+      // Check if already qualified (amount needed is 0)
+      const alreadyQualified = amountNeeded <= 0;
+
+      return {
+        amountNeeded: amountNeededFormatted,
+        itemsNeeded: '0',
+        conditionText: alreadyQualified ?
+          `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met` :
+          `${currencyInfo.display.symbol}${amountNeededFormatted}`,
+        alreadyQualified
+      };
+    } else {
+      // Quantity-based condition
+      const itemsNeeded = Math.max(0, targetValue - totalQuantity);
+
+      // Check if already qualified (items needed is 0)
+      const alreadyQualified = itemsNeeded <= 0;
+
+      return {
+        amountNeeded: '0',
+        itemsNeeded: itemsNeeded.toString(),
+        conditionText: alreadyQualified ?
+          `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met` :
+          `${itemsNeeded} ${itemsNeeded === 1 ? 'item' : 'items'}`,
+        alreadyQualified
+      };
+    }
+  }
+
+  static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
+    // Add safety check for undefined/null values
+    const safeValue = parseFloat(rawDiscountValue) || 0;
+
+    switch (discountMethod) {
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
+        const percentage = Math.round(safeValue);
+        return {
+          discountText: `${percentage}% off`
+        };
+
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
+        // safeValue is already in cents
+        const convertedAmount = CurrencyManager.convertCurrency(
+          safeValue,
+          currencyInfo.calculation.code,
+          currencyInfo.display.code,
+          currencyInfo.display.rate
+        );
+        const amountOff = (convertedAmount / 100).toFixed(2);
+        return {
+          discountText: `${currencyInfo.display.symbol}${amountOff} off`
+        };
+
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
+        // safeValue is already in cents
+        const convertedPrice = CurrencyManager.convertCurrency(
+          safeValue,
+          currencyInfo.calculation.code,
+          currencyInfo.display.code,
+          currencyInfo.display.rate
+        );
+        const bundlePrice = (convertedPrice / 100).toFixed(2);
+        return {
+          discountText: `${currencyInfo.display.symbol}${bundlePrice}`
+        };
+
+      default:
+        return {
+          discountText: 'discount'
+        };
+    }
+  }
+
+  static createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
+    return {
+      // Condition-specific variables
+      amountNeeded: '0',
+      itemsNeeded: '0',
+      conditionText: '0 items',
+      discountText: 'No discount',
+
+      // Progress variables
+      currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
+      currentQuantity: totalQuantity.toString(),
+      targetAmount: '0',
+      targetQuantity: '0',
+      progressPercentage: '0',
+
+      // Bundle information
+      bundleName: bundle.name || 'Bundle',
+
+      // Pricing information
+      originalPrice: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
+      finalPrice: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
+      savingsAmount: '0',
+      savingsPercentage: '0',
+
+      // Currency information
+      currencySymbol: currencyInfo.display.symbol,
+      currencyCode: currencyInfo.display.code,
+
+      // Status
+      isQualified: 'false'
+    };
+  }
+}
+// ============================================================================
+
+// ============================================================================
+// COMPONENT GENERATORS
+// ============================================================================
+
+class ComponentGenerator {
+  /**
+   * Generates HTML for a product card with variant selector and quantity controls
+   */
+  static renderProductCard(product, currentQuantity, currencyInfo) {
+    const selectionKey = product.variantId || product.id;
+
+    return `
+      <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
+        ${currentQuantity > 0 ? `
+          <div class="selected-overlay">✓</div>
+        ` : ''}
+
+        <div class="product-image">
+          <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+        </div>
+
+        <div class="product-content-wrapper">
+          <div class="product-title">${product.title}</div>
+
+          ${product.price ? `
+            <div class="product-price-row">
+              ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
+              <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+            </div>
+          ` : ''}
+
+          <div class="product-spacer"></div>
+
+          ${this.renderVariantSelector(product)}
+
+          <div class="product-quantity-wrapper">
+            <div class="product-quantity-selector">
+              <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+              <span class="qty-display">${currentQuantity}</span>
+              <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+            </div>
+          </div>
+
+          <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
+            ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Generates HTML for empty state cards
+   */
+  static renderEmptyStateCards(labelText, count = 3) {
+    const cards = Array(count).fill(0).map(() => `
+      <div class="empty-state-card">
+        <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+          <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+        <p class="empty-state-card-text">${labelText}</p>
+      </div>
+    `).join('');
+
+    return cards;
+  }
+
+  /**
+   * Generates variant selector HTML if product has variants
+   */
+  static renderVariantSelector(product) {
+    if (!product.variants || product.variants.length <= 1) {
+      return '';
+    }
+
+    const options = product.variants.map(variant => {
+      const isAvailable = variant.available !== false;
+      const label = variant.title === 'Default Title' ? product.title : variant.title;
+      return `<option value="${variant.id}" ${!isAvailable ? 'disabled' : ''}>${label}${!isAvailable ? ' (Out of Stock)' : ''}</option>`;
+    }).join('');
+
+    return `
+      <select class="variant-selector" data-product-id="${product.variantId || product.id}">
+        ${options}
+      </select>
+    `;
+  }
+
+  /**
+   * Generates modal structure HTML
+   */
+  static createModalHTML() {
+    return `
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-step-title"></div>
+          <div class="modal-tabs-wrapper">
+            <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
+            <div class="modal-tabs"></div>
+            <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
+          </div>
+          <span class="close-button">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="product-grid"></div>
+        </div>
+        <div class="modal-footer">
+          <div class="modal-footer-grouped-content">
+            <div class="modal-footer-total-pill">
+              <span class="total-price-strike"></span>
+              <span class="total-price-final"></span>
+              <span class="price-cart-separator">|</span>
+              <span class="cart-badge-wrapper">
+                <span class="cart-badge-count">0</span>
+                <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                </svg>
+              </span>
+            </div>
+
+            <div class="modal-footer-buttons-row">
+              <button class="modal-nav-button prev-button">BACK</button>
+              <button class="modal-nav-button next-button">NEXT</button>
+            </div>
+
+            <div class="modal-footer-discount-messaging">
+              <div class="footer-discount-text"></div>
+            </div>
+
+            <div class="modal-footer-progress-section">
+              <div class="modal-footer-progress-bar">
+                <div class="modal-footer-progress-fill"></div>
+              </div>
+              <div class="modal-footer-progress-details">
+                <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Generates tab HTML for modal navigation
+   */
+  static renderTab(step, index, isActive, isCompleted, isLocked) {
+    const statusClass = isCompleted ? 'completed' : (isLocked ? 'locked' : '');
+    const activeClass = isActive ? 'active' : '';
+
+    return `
+      <button
+        class="bundle-header-tab ${activeClass} ${statusClass}"
+        data-step-index="${index}"
+        ${isLocked ? 'disabled' : ''}
+      >
+        ${step.name || `Step ${index + 1}`}
+        ${isCompleted ? '✓' : ''}
+      </button>
+    `;
+  }
+
+  /**
+   * Generates progress bar HTML
+   */
+  static renderProgressBar(currentValue, targetValue) {
+    const percentage = targetValue > 0 ? Math.min(100, (currentValue / targetValue) * 100) : 0;
+
+    return `
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${percentage}%"></div>
+      </div>
+      <div class="progress-details">
+        <span class="progress-text">
+          <span class="current-quantity">${currentValue}</span> / <span class="target-quantity">${targetValue}</span>
+        </span>
+      </div>
+    `;
+  }
+}
+
+
+  // ========== Product Page Widget ==========
+/**
+ * Bundle Widget - Product Page Version
+ *
+ * This widget is specifically for product page bundles with vertical step boxes layout.
  * It imports shared components and utilities from bundle-widget-components.js.
  *
  * ============================================================================
  * ARCHITECTURE ROLE
  * ============================================================================
- * This is the THIRD file loaded for FULL PAGE bundles:
- * 1. bundle-widget.js (loader) - Detects bundle type as 'full_page'
+ * This is the THIRD file loaded for PRODUCT PAGE bundles:
+ * 1. bundle-widget.js (loader) - Detects bundle type as 'product_page'
  * 2. bundle-widget-components.js - Provides shared utilities
- * 3. THIS FILE (full-page widget) - Implements full page UI/UX
+ * 3. THIS FILE (product-page widget) - Implements product page UI/UX
  *
  * ============================================================================
  * WHEN THIS FILE IS LOADED
  * ============================================================================
  * This file loads when:
- * - Container explicitly has data-bundle-type="full_page"
+ * - Container has data-bundle-type="product_page", OR
+ * - Container has no data-bundle-type attribute (DEFAULT for backward compatibility)
  *
  * Example container:
- * <div id="bundle-builder-app" data-bundle-type="full_page"></div>
- *
- * NOTE: This is OPT-IN only. Without the attribute, product-page widget loads instead.
+ * <div id="bundle-builder-app" data-bundle-type="product_page"></div>
+ * OR
+ * <div id="bundle-builder-app"></div>  <!-- Defaults to product_page -->
  *
  * ============================================================================
- * UI LAYOUT: HORIZONTAL TABS
+ * UI LAYOUT: VERTICAL STEP BOXES
  * ============================================================================
- * - Steps displayed as horizontal tabs at the top
- * - All tabs visible simultaneously (overview of all steps)
- * - Click any tab to jump between steps
- * - Modal overlay for product selection
- * - Progress tracked with tab completion indicators
- * - Best for: Dedicated bundle pages with full horizontal space
+ * - Steps displayed as vertical accordion/collapsible sections
+ * - One step visible at a time (step-by-step flow)
+ * - Progress tracked with step completion indicators
+ * - Best for: Product detail pages with limited vertical space
  *
  * ============================================================================
  * SHARED CODE IMPORTS
@@ -44,21 +1081,18 @@
  * - Toast notifications
  *
  * This file ONLY contains:
- * - Full page specific UI rendering
- * - Horizontal tabs layout management
- * - Modal-based product selection
- * - Event handlers for full page flow
+ * - Product page specific UI rendering
+ * - Vertical layout management
+ * - Step navigation logic
+ * - Event handlers for product page flow
  *
  * ============================================================================
- * UNIFIED DESIGN WITH PRODUCT PAGE WIDGET
+ * BACKWARD COMPATIBILITY
  * ============================================================================
- * Both widgets:
- * - Use the same CSS variables (from unified design settings API)
- * - Import the same utilities (from bundle-widget-components.js)
- * - Implement the same business logic (pricing, discounts, cart)
- * - Differ ONLY in UI layout and interaction patterns
- *
- * Result: Merchants configure design ONCE, applies to BOTH bundle types
+ * This is the DEFAULT widget loaded when:
+ * - Existing merchants have no data-bundle-type attribute
+ * - Ensures existing bundles continue working without changes
+ * - No data migration or merchant action required
  *
  * @version 1.0.0
  * @author Wolfpack Team
@@ -67,19 +1101,10 @@
 'use strict';
 
 // Import shared components and utilities
-import {
-  BUNDLE_WIDGET,
-  CurrencyManager,
-  BundleDataManager,
-  PricingCalculator,
-  ToastManager,
-  TemplateManager,
-  ComponentGenerator
-} from './bundle-widget-components.js';
 
-console.log('[FULL_PAGE_WIDGET] Initializing...');
+console.log('[PRODUCT_PAGE_WIDGET] Initializing...');
 
-class BundleWidgetFullPage {
+class BundleWidgetProductPage {
 
   constructor(containerElement) {
     this.container = containerElement;
@@ -104,70 +1129,45 @@ class BundleWidgetFullPage {
 
   async init() {
     try {
-      console.log('🚀 [FULL_PAGE_INIT] Starting initialization...');
-
       // Check if already initialized
       if (this.container.dataset.initialized === 'true') {
-        console.log('⚠️ [FULL_PAGE_INIT] Already initialized, skipping');
         return;
       }
 
       // Parse configuration
-      console.log('⚙️ [FULL_PAGE_INIT] Step 1: Parsing configuration...');
       this.parseConfiguration();
-      console.log('✅ [FULL_PAGE_INIT] Configuration parsed:', this.config);
 
       // Load design settings CSS
-      console.log('🎨 [FULL_PAGE_INIT] Step 2: Loading design settings CSS...');
       await this.loadDesignSettingsCSS();
 
       // Load and validate bundle data
-      console.log('📦 [FULL_PAGE_INIT] Step 3: Loading bundle data...');
       await this.loadBundleData();
-      console.log('✅ [FULL_PAGE_INIT] Bundle data loaded:', this.bundleData);
 
       // Select appropriate bundle
-      console.log('🎯 [FULL_PAGE_INIT] Step 4: Selecting bundle...');
       this.selectBundle();
 
       if (!this.selectedBundle) {
-        console.error('❌ [FULL_PAGE_INIT] No bundle selected, showing fallback UI');
         this.showFallbackUI();
         return;
       }
-      console.log('✅ [FULL_PAGE_INIT] Bundle selected:', this.selectedBundle.name, 'with', this.selectedBundle.steps.length, 'steps');
 
       // Initialize data structures
-      console.log('🔧 [FULL_PAGE_INIT] Step 5: Initializing data structures...');
       this.initializeDataStructures();
 
       // Setup DOM elements
-      console.log('🏗️ [FULL_PAGE_INIT] Step 6: Setting up DOM elements...');
       this.setupDOMElements();
 
       // Render initial UI
-      console.log('🎨 [FULL_PAGE_INIT] Step 7: Rendering UI...');
       this.renderUI();
 
       // Attach event listeners
-      console.log('🔌 [FULL_PAGE_INIT] Step 8: Attaching event listeners...');
       this.attachEventListeners();
 
       // Mark as initialized
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
 
-      // Hide loading indicator
-      const loadingElement = this.container.querySelector('.bundle-loading');
-      if (loadingElement) {
-        loadingElement.style.display = 'none';
-        console.log('✅ [FULL_PAGE_INIT] Loading indicator hidden');
-      }
-
-      console.log('✅ [FULL_PAGE_INIT] Initialization complete! Widget ready.');
-
     } catch (error) {
-      console.error('❌ [FULL_PAGE_INIT] Initialization failed:', error);
       this.showErrorUI(error);
     }
   }
@@ -224,95 +1224,56 @@ class BundleWidgetFullPage {
   async loadBundleData() {
     let bundleData = null;
 
-    // Check if this is a full-page bundle (needs to fetch from API)
-    const bundleType = this.container.dataset.bundleType;
-    const bundleId = this.container.dataset.bundleId;
-
-    if (bundleType === 'full_page' && bundleId) {
-      console.log('[WIDGET_INIT] 📄 Full-page bundle detected, fetching from API:', bundleId);
-
+    // Single source: data-bundle-config attribute (from product metafield)
+    const configValue = this.container.dataset.bundleConfig;
+    if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
       try {
-        // Use Shopify store URL with app proxy path (not direct backend URL)
-        // App proxy routes requests through Shopify with proper authentication
-        const shop = window.Shopify?.shop || window.location.hostname;
-        const shopDomain = shop.includes('.myshopify.com') ? shop : `${shop}.myshopify.com`;
-        const protocol = window.location.protocol;
-
-        // Construct app proxy URL: https://{shop}/apps/product-bundles/api/bundle/{bundleId}.json
-        const apiUrl = `${protocol}//${shopDomain}/apps/product-bundles/api/bundle/${bundleId}.json`;
-
-        console.log('[WIDGET_INIT] Fetching bundle via app proxy from:', apiUrl);
-
-        const response = await fetch(apiUrl);
-        if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('[WIDGET_INIT] API response:', data);
-
-        if (data.success && data.bundle) {
-          bundleData = { [data.bundle.id]: data.bundle };
-          console.log('[WIDGET_INIT] ✅ Loaded full-page bundle from API:', data.bundle.id);
+        const singleBundle = JSON.parse(configValue);
+        // Validate parsed result is a valid object with an id
+        if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
+          bundleData = { [singleBundle.id]: singleBundle };
+          console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
         } else {
-          throw new Error('Invalid API response structure');
+          console.warn('[WIDGET_INIT] ⚠️ Parsed bundle config is invalid (missing id):', singleBundle);
         }
       } catch (error) {
-        console.error('[WIDGET_INIT] ❌ Failed to fetch full-page bundle from API:', error);
-        throw error;
+        console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error, 'Value:', configValue.substring(0, 100));
       }
     } else {
-      // Product-page bundle: load from data-bundle-config attribute
-      const configValue = this.container.dataset.bundleConfig;
-      if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
-        try {
-          const singleBundle = JSON.parse(configValue);
-          // Validate parsed result is a valid object with an id
-          if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
-            bundleData = { [singleBundle.id]: singleBundle };
-            console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
-          } else {
-            console.warn('[WIDGET_INIT] ⚠️ Parsed bundle config is invalid (missing id):', singleBundle);
-          }
-        } catch (error) {
-          console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error, 'Value:', configValue.substring(0, 100));
-        }
-      } else {
-        console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
+      console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
+    }
+
+    // Widget only works on container products with bundleConfig metafield
+    if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+      // Check if we're in theme editor mode
+      const isThemeEditor = window.Shopify?.designMode ||
+                           window.isThemeEditorContext ||
+                           window.location.pathname.includes('/editor') ||
+                           window.location.search.includes('preview_theme_id');
+
+      const bundleIdFromDataset = this.container.dataset.bundleId;
+
+      // Show helpful preview in theme editor instead of error
+      if (isThemeEditor && bundleIdFromDataset) {
+        console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
+        this.showThemeEditorPreview(bundleIdFromDataset);
+        return; // Don't throw error, just show preview
       }
 
-      // Widget only works on container products with bundleConfig metafield
-      if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
-        // Check if we're in theme editor mode
-        const isThemeEditor = window.Shopify?.designMode ||
-                             window.isThemeEditorContext ||
-                             window.location.pathname.includes('/editor') ||
-                             window.location.search.includes('preview_theme_id');
-
-        const bundleIdFromDataset = this.container.dataset.bundleId;
-
-        // Show helpful preview in theme editor instead of error
-        if (isThemeEditor && bundleIdFromDataset) {
-          console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
-          this.showThemeEditorPreview(bundleIdFromDataset);
-          return; // Don't throw error, just show preview
-        }
-
-        // For production/storefront: show proper error
-        const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
-        console.error('[WIDGET_INIT] ❌', errorMsg);
-        console.error('[WIDGET_INIT] 🔍 Debug info:', {
-          isContainerProduct: !!configValue,
-          configValue: configValue?.substring(0, 100),
-          containerDataset: this.container.dataset,
-          bundleIdFromDataset: bundleIdFromDataset
-        });
-        throw new Error(errorMsg);
-      }
+      // For production/storefront: show proper error
+      const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
+      console.error('[WIDGET_INIT] ❌', errorMsg);
+      console.error('[WIDGET_INIT] 🔍 Debug info:', {
+        isContainerProduct: !!configValue,
+        configValue: configValue?.substring(0, 100),
+        containerDataset: this.container.dataset,
+        bundleIdFromDataset: bundleIdFromDataset
+      });
+      throw new Error(errorMsg);
     }
 
     this.bundleData = bundleData;
-    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully');
+    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully from container product metafield');
   }
 
   selectBundle() {
@@ -346,15 +1307,12 @@ class BundleWidgetFullPage {
 
   initializeDataStructures() {
     const stepsCount = this.selectedBundle.steps.length;
-    console.log(`📊 [DATA_STRUCTURES] Initializing for ${stepsCount} steps`);
 
     // Initialize selected products array (one object per step)
     this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
-    console.log('✅ [DATA_STRUCTURES] Selected products initialized:', this.selectedProducts);
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
-    console.log('✅ [DATA_STRUCTURES] Step product data cache initialized:', this.stepProductData);
   }
 
   /**
@@ -610,14 +1568,6 @@ class BundleWidgetFullPage {
   }
 
   renderHeader() {
-    // Always hide header for full-page bundles (they have their own title in the layout)
-    const bundleType = this.selectedBundle?.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
-    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-      this.elements.header.style.display = 'none';
-      return;
-    }
-
-    // For product-page bundles, respect the showTitle config
     if (!this.config.showTitle) {
       this.elements.header.style.display = 'none';
       return;
@@ -654,612 +1604,21 @@ class BundleWidgetFullPage {
     });
   }
 
-  // Full-page bundle layout (VERTICAL: Content section + Bottom footer)
+  // Full-page bundle layout (horizontal tabs)
   renderFullPageLayout() {
-    console.log('🎨 [FULL_PAGE_LAYOUT] ========================================');
-    console.log('🎨 [FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
-    console.log('🎨 [FULL_PAGE_LAYOUT] Current step:', this.currentStepIndex);
-    console.log('🎨 [FULL_PAGE_LAYOUT] Step name:', this.selectedBundle.steps[this.currentStepIndex]?.name);
-
-    // Clear existing content
-    this.elements.stepsContainer.innerHTML = '';
-    this.elements.stepsContainer.classList.add('full-page-layout');
-
-    // Create CONTENT section (full width)
-    const contentSection = document.createElement('div');
-    contentSection.className = 'full-page-content-section';
-
-    // 1. Render step timeline at top
-    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating step timeline...');
-    const stepTimeline = this.createStepTimeline();
-    contentSection.appendChild(stepTimeline);
-
-    // 2. Render bundle header (instruction text)
-    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating bundle instructions...');
-    const bundleHeader = this.createBundleInstructions();
-    contentSection.appendChild(bundleHeader);
-
-    // 3. Render category/collection tabs if step has collections
-    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating category tabs...');
-    const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
-    if (categoryTabs) {
-      contentSection.appendChild(categoryTabs);
-    }
-
-    // 4. Render product grid for current step
-    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating product grid for step', this.currentStepIndex);
-    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
-    contentSection.appendChild(productGrid);
-
-    this.elements.stepsContainer.appendChild(contentSection);
-
-    // 5. Render BOTTOM footer (full width) with selected products
-    console.log('🎨 [FULL_PAGE_LAYOUT] → Creating bottom footer...');
-    const bottomFooter = this.createFullPageBottomFooter();
-    this.elements.stepsContainer.appendChild(bottomFooter);
-
-    console.log('✅ [FULL_PAGE_LAYOUT] Layout rendering complete');
-    console.log('🎨 [FULL_PAGE_LAYOUT] ========================================');
-  }
-
-  // Create horizontal step timeline with state-based icons
-  createStepTimeline() {
-    const timeline = document.createElement('div');
-    timeline.className = 'step-timeline';
-
-    this.selectedBundle.steps.forEach((step, index) => {
-      const stepItem = document.createElement('div');
-      stepItem.className = 'timeline-step';
-
-      // Determine step state
-      const isCompleted = this.isStepCompleted(index);
-      const isCurrent = index === this.currentStepIndex;
-      const isAccessible = this.isStepAccessible(index);
-
-      if (isCompleted) stepItem.classList.add('completed');
-      if (isCurrent) stepItem.classList.add('current');
-      if (!isAccessible) stepItem.classList.add('locked');
-
-      // Create step circle with icon
-      const circle = document.createElement('div');
-      circle.className = 'timeline-circle';
-
-      if (isCompleted) {
-        // Completed step: White checkmark on black circle
-        circle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M20 6L9 17L4 12" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>`;
-      } else {
-        // Current and locked steps: Layers icon (color controlled by CSS)
-        circle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
-          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        </svg>`;
-      }
-
-      stepItem.appendChild(circle);
-
-      // Add connecting line (except for last step)
-      if (index < this.selectedBundle.steps.length - 1) {
-        const line = document.createElement('div');
-        line.className = 'timeline-line';
-        if (isCompleted) line.classList.add('completed');
-        stepItem.appendChild(line);
-      }
-
-      // Add step name
-      const stepName = document.createElement('div');
-      stepName.className = 'timeline-step-name';
-      stepName.textContent = step.name;
-      stepItem.appendChild(stepName);
-
-      // Make clickable if accessible
-      if (isAccessible) {
-        stepItem.style.cursor = 'pointer';
-        stepItem.addEventListener('click', () => {
-          this.currentStepIndex = index;
-          this.renderFullPageLayout();
-        });
-      }
-
-      timeline.appendChild(stepItem);
-    });
-
-    return timeline;
-  }
-
-  // Create bundle instructions header
-  createBundleInstructions() {
-    const header = document.createElement('div');
-    header.className = 'bundle-header';
-
-    const currentStep = this.selectedBundle.steps[this.currentStepIndex];
-    // Fix: Add fallback for undefined instruction/description
-    const instructionText = currentStep.description ||
-                            currentStep.instruction ||
-                            `Select ${currentStep.minQuantity || 1} or more items from ${currentStep.name}`;
-
-    header.innerHTML = `
-      <h3 class="bundle-title">${this.selectedBundle.name}</h3>
-      <p class="bundle-instruction">${instructionText}</p>
-    `;
-
-    return header;
-  }
-
-  // Create category/collection tabs
-  createCategoryTabs(stepIndex) {
-    const step = this.selectedBundle.steps[stepIndex];
-
-    if (!step.collections || step.collections.length === 0) {
-      return null;
-    }
-
-    const tabsContainer = document.createElement('div');
-    tabsContainer.className = 'category-tabs';
-
-    // Add "All" tab
-    const allTab = document.createElement('div');
-    allTab.className = 'category-tab';
-    if (!this.activeCollectionId) {
-      allTab.classList.add('active');
-    }
-    allTab.innerHTML = `
-      <div class="tab-indicator"></div>
-      <span class="tab-label">All</span>
-    `;
-    allTab.addEventListener('click', () => {
-      this.activeCollectionId = null;
-      this.renderFullPageLayout();
-    });
-    tabsContainer.appendChild(allTab);
-
-    // Add collection tabs
-    step.collections.forEach(collection => {
-      const tab = document.createElement('div');
-      tab.className = 'category-tab';
-      if (this.activeCollectionId === collection.id) {
-        tab.classList.add('active');
-      }
-      tab.innerHTML = `
-        <div class="tab-indicator"></div>
-        <span class="tab-label">${collection.title}</span>
-      `;
-      tab.addEventListener('click', () => {
-        this.activeCollectionId = collection.id;
-        this.renderFullPageLayout();
-      });
-      tabsContainer.appendChild(tab);
-    });
-
-    return tabsContainer;
-  }
-
-  // Create 3-column product grid for full-page layout
-  createFullPageProductGrid(stepIndex) {
-    console.log(`📦 [PRODUCT_GRID] Creating product grid for step ${stepIndex}`);
-    const grid = document.createElement('div');
-    grid.className = 'full-page-product-grid';
-
-    const step = this.selectedBundle.steps[stepIndex];
-    let products = step.products || [];
-    console.log(`📦 [PRODUCT_GRID] Step has ${products.length} products`);
-
-    // Filter by active collection if selected
-    if (this.activeCollectionId && step.collections) {
-      const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
-      if (activeCollection && activeCollection.products) {
-        console.log(`📦 [PRODUCT_GRID] Filtering by collection: ${activeCollection.name}`);
-        products = activeCollection.products;
-        console.log(`📦 [PRODUCT_GRID] Filtered to ${products.length} products`);
-      }
-    }
-
-    if (products.length === 0) {
-      console.warn(`⚠️ [PRODUCT_GRID] No products available in step ${stepIndex}`);
-      grid.innerHTML = '<p class="no-products">No products available in this step.</p>';
-      return grid;
-    }
-
-    // Render each product as a card in the grid
-    console.log(`📦 [PRODUCT_GRID] Rendering ${products.length} product cards...`);
-    products.forEach((product, index) => {
-      const variantId = product.variants?.[0]?.id || product.id;
-      const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
-
-      console.log(`  → Product ${index + 1}: ${product.title}, Variant: ${variantId}, Qty: ${currentQuantity}`);
-      const productCard = this.createFullPageProductCard(product, stepIndex, currentQuantity);
-      grid.appendChild(productCard);
-    });
-
-    console.log(`✅ [PRODUCT_GRID] Product grid created with ${products.length} products`);
-    return grid;
-  }
-
-  // Create individual product card for full-page layout
-  createFullPageProductCard(product, stepIndex, currentQuantity) {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    if (currentQuantity > 0) {
-      card.classList.add('selected');
-    }
-
-    const variantId = product.variants?.[0]?.id || product.id;
-    const imageUrl = product.images?.[0]?.url || product.featuredImage?.url || '';
-    const price = product.price || (product.variants?.[0]?.price || 0);
-
-    card.innerHTML = `
-      <div class="product-image">
-        <img src="${imageUrl}" alt="${product.title}" loading="lazy">
-      </div>
-      <div class="product-content-wrapper">
-        <div class="product-title">${product.title}</div>
-        <div class="product-price">Rs. ${(price / 100).toFixed(2)}</div>
-
-        <div class="product-quantity-selector" data-variant-id="${variantId}">
-          <button class="qty-btn qty-decrease">−</button>
-          <span class="qty-display">${currentQuantity}</span>
-          <button class="qty-btn qty-increase">+</button>
-        </div>
-
-        <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-variant-id="${variantId}">
-          ${currentQuantity > 0 ? 'Added' : 'Add to Box'}
-        </button>
-      </div>
-    `;
-
-    // Attach event listeners
-    const qtyDecrease = card.querySelector('.qty-decrease');
-    const qtyIncrease = card.querySelector('.qty-increase');
-    const addBtn = card.querySelector('.product-add-btn');
-
-    qtyDecrease.addEventListener('click', () => {
-      console.log('🔽 [QTY_DECREASE] ========================================');
-      console.log('🔽 [QTY_DECREASE] Button clicked!');
-      console.log('🔽 [QTY_DECREASE] Product:', product.title);
-      console.log('🔽 [QTY_DECREASE] Step:', stepIndex, '| Variant:', variantId);
-
-      // Get the current quantity from the data source, not the stale parameter
-      const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
-      const newQty = Math.max(0, currentQty - 1);
-
-      console.log('🔽 [QTY_DECREASE] Current qty:', currentQty, '→ New qty:', newQty);
-      console.log('🔽 [QTY_DECREASE] Calling updateProductSelection...');
-
-      this.updateProductSelection(stepIndex, variantId, newQty);
-      this.renderFullPageLayout(); // Re-render to update all UI
-
-      console.log('🔽 [QTY_DECREASE] ========================================');
-    });
-
-    qtyIncrease.addEventListener('click', () => {
-      console.log('🔼 [QTY_INCREASE] ========================================');
-      console.log('🔼 [QTY_INCREASE] Button clicked!');
-      console.log('🔼 [QTY_INCREASE] Product:', product.title);
-      console.log('🔼 [QTY_INCREASE] Step:', stepIndex, '| Variant:', variantId);
-
-      // Get the current quantity from the data source, not the stale parameter
-      const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
-      const newQty = currentQty + 1;
-
-      console.log('🔼 [QTY_INCREASE] Current qty:', currentQty, '→ New qty:', newQty);
-      console.log('🔼 [QTY_INCREASE] Calling updateProductSelection...');
-
-      this.updateProductSelection(stepIndex, variantId, newQty);
-      this.renderFullPageLayout(); // Re-render to update all UI
-
-      console.log('🔼 [QTY_INCREASE] ========================================');
-    });
-
-    addBtn.addEventListener('click', () => {
-      console.log('📦 [ADD_TO_BOX] ========================================');
-      console.log('📦 [ADD_TO_BOX] Button clicked!');
-      console.log('📦 [ADD_TO_BOX] Product:', product.title);
-      console.log('📦 [ADD_TO_BOX] Step:', stepIndex, '| Variant:', variantId);
-
-      // Get the current quantity from the data source, not the stale parameter
-      const currentQty = this.selectedProducts[stepIndex][variantId] || 0;
-      const newQty = currentQty > 0 ? 0 : 1;
-
-      console.log('📦 [ADD_TO_BOX] Current qty:', currentQty, '→ New qty:', newQty);
-      console.log('📦 [ADD_TO_BOX] Action:', newQty > 0 ? 'ADDING to box' : 'REMOVING from box');
-      console.log('📦 [ADD_TO_BOX] Calling updateProductSelection...');
-
-      this.updateProductSelection(stepIndex, variantId, newQty);
-      this.renderFullPageLayout(); // Re-render to update all UI
-
-      console.log('📦 [ADD_TO_BOX] ========================================');
-    });
-
-    return card;
-  }
-
-  // Create RIGHT sidebar with selected products and navigation
-  createFullPageBottomFooter() {
-    console.log('📋 [BOTTOM_FOOTER] ========================================');
-    console.log('📋 [BOTTOM_FOOTER] Creating bottom footer...');
-
-    const footer = document.createElement('div');
-    footer.className = 'full-page-bottom-footer';
-
-    // Promotional message section
-    const promoSection = document.createElement('div');
-    promoSection.className = 'footer-promo-message';
-
-    // Get promotional message from bundle pricing settings
-    let promoMessage = '';
-    if (this.selectedBundle.pricing && this.selectedBundle.pricing.enabled) {
-      const messages = this.selectedBundle.pricing.messages || {};
-      promoMessage = messages.footer || messages.default || '';
-    }
-
-    if (!promoMessage) {
-      // Default promotional message
-      const totalSelected = this.getAllSelectedProductsData().length;
-      const totalRequired = this.selectedBundle.steps.reduce((sum, step) => sum + (step.minQuantity || 1), 0);
-      const remaining = Math.max(0, totalRequired - totalSelected);
-      if (remaining > 0) {
-        promoMessage = `Add ${remaining} more product${remaining > 1 ? 's' : ''} to complete your bundle`;
-      } else {
-        promoMessage = 'Bundle complete! Add to cart to proceed.';
-      }
-    }
-
-    promoSection.innerHTML = `<p>${promoMessage}</p>`;
-    footer.appendChild(promoSection);
-
-    // Main content wrapper (products + total + buttons)
-    const footerContent = document.createElement('div');
-    footerContent.className = 'footer-content-wrapper';
-
-    // Footer header
-    const footerHeader = document.createElement('div');
-    footerHeader.className = 'footer-header';
-    footerHeader.innerHTML = '<h3>Your Bundle</h3>';
-    footerContent.appendChild(footerHeader);
-
-    // Selected products section (scrollable)
-    const selectedProductsContainer = document.createElement('div');
-    selectedProductsContainer.className = 'footer-selected-products';
-
-    console.log('📋 [BOTTOM_FOOTER] Getting all selected products...');
-    const allSelectedProducts = this.getAllSelectedProductsData();
-    console.log('📋 [BOTTOM_FOOTER] Found', allSelectedProducts.length, 'selected products');
-
-    if (allSelectedProducts.length === 0) {
-      console.log('📋 [BOTTOM_FOOTER] No products selected - showing empty state');
-      selectedProductsContainer.innerHTML = '<p class="no-selections">No products selected yet</p>';
-    } else {
-      console.log('📋 [BOTTOM_FOOTER] Rendering', allSelectedProducts.length, 'products in footer:');
-      allSelectedProducts.forEach((item, index) => {
-        console.log(`  → ${index + 1}. ${item.title} (Qty: ${item.quantity}, Step: ${item.stepIndex})`);
-
-        const productItem = document.createElement('div');
-        productItem.className = 'footer-product-item';
-        productItem.innerHTML = `
-          <div class="footer-product-image-wrapper">
-            <img src="${item.image}" alt="${item.title}" class="footer-product-image">
-            <div class="footer-product-quantity-badge">${item.quantity}</div>
-            <button class="footer-product-remove-circle" data-step="${item.stepIndex}" data-variant="${item.variantId}">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M9 3L3 9M3 3L9 9" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-          <div class="footer-product-info">
-            <div class="footer-product-title">${item.title}</div>
-            <div class="footer-product-price">Rs. ${(item.price / 100).toFixed(2)} x ${item.quantity}</div>
-          </div>
-        `;
-
-        const removeBtn = productItem.querySelector('.footer-product-remove-circle');
-        removeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.updateProductSelection(item.stepIndex, item.variantId, 0);
-          this.renderFullPageLayout();
-        });
-
-        selectedProductsContainer.appendChild(productItem);
-      });
-    }
-
-    footerContent.appendChild(selectedProductsContainer);
-
-    // Total section
-    let totalPrice = 0;
-    this.selectedBundle.steps.forEach((step, stepIndex) => {
-      const stepSelections = this.selectedProducts[stepIndex] || {};
-      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        const product = this.findProductByVariantId(step, variantId);
-        if (product && quantity > 0) {
-          const variant = product.variants?.find(v => v.id === variantId);
-          totalPrice += (variant?.price || product.price || 0) * quantity;
-        }
-      });
-    });
-
-    const totalDisplay = document.createElement('div');
-    totalDisplay.className = 'footer-total';
-    totalDisplay.innerHTML = `
-      <span class="total-label">Total</span>
-      <span class="total-price">Rs. ${(totalPrice / 100).toFixed(2)}</span>
-    `;
-    footerContent.appendChild(totalDisplay);
-
-    // Navigation buttons
-    const navButtons = document.createElement('div');
-    navButtons.className = 'footer-nav-buttons';
-
-    // Back button
-    const backBtn = document.createElement('button');
-    backBtn.className = 'footer-nav-btn footer-back-btn';
-    backBtn.textContent = 'Back';
-    backBtn.disabled = this.currentStepIndex === 0;
-    backBtn.addEventListener('click', () => {
-      if (this.currentStepIndex > 0) {
-        this.currentStepIndex--;
-        this.renderFullPageLayout();
-      }
-    });
-
-    // Next/Add to Cart button
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'footer-nav-btn footer-next-btn';
-
-    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-    const canProceed = this.canProceedToNextStep();
-
-    if (isLastStep) {
-      nextBtn.textContent = 'Add to Cart';
-      nextBtn.disabled = !this.areBundleConditionsMet();
-      nextBtn.addEventListener('click', () => this.addBundleToCart());
-    } else {
-      nextBtn.textContent = 'Next';
-      nextBtn.disabled = !canProceed;
-      nextBtn.addEventListener('click', () => {
-        if (canProceed) {
-          this.currentStepIndex++;
-          this.renderFullPageLayout();
-        }
-      });
-    }
-
-    navButtons.appendChild(backBtn);
-    navButtons.appendChild(nextBtn);
-    footerContent.appendChild(navButtons);
-
-    // Append footer content wrapper to footer
-    footer.appendChild(footerContent);
-
-    // Progress bar section
-    const progressSection = document.createElement('div');
-    progressSection.className = 'footer-progress-section';
-
-    // Calculate progress percentage
-    const totalSteps = this.selectedBundle.steps.length;
-    const completedSteps = this.selectedBundle.steps.filter((_, index) => this.isStepCompleted(index)).length;
-    const progressPercentage = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
-
-    progressSection.innerHTML = `
-      <div class="footer-progress-bar-container">
-        <div class="footer-progress-bar-bg"></div>
-        <div class="footer-progress-bar-fill" style="width: ${progressPercentage}%"></div>
-      </div>
-    `;
-    footer.appendChild(progressSection);
-
-    return footer;
-  }
-
-  // Add to cart method for full-page bundles
-  async addBundleToCart() {
-    try {
-      const cartItems = [];
-      const bundleInstanceId = `${this.selectedBundle.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      this.selectedBundle.steps.forEach((step, stepIndex) => {
-        const stepSelections = this.selectedProducts[stepIndex] || {};
-        Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-          if (quantity > 0) {
-            cartItems.push({
-              id: parseInt(variantId),
-              quantity: quantity,
-              properties: {
-                '_bundle_id': bundleInstanceId,
-                '_bundle_name': this.selectedBundle.name,
-                '_step_index': stepIndex.toString()
-              }
-            });
-          }
-        });
-      });
-
-      const response = await fetch('/cart/add.js', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cartItems })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add to cart');
-      }
-
-      alert('Bundle added to cart!');
-      window.location.href = '/cart';
-
-    } catch (error) {
-      console.error('[FULL_PAGE_BUNDLE]', error);
-      alert('Error: ' + error.message);
-    }
-  }
-
-  // Helper: Get all selected products data for footer display
-  getAllSelectedProductsData() {
-    const allProducts = [];
-
-    this.selectedBundle?.steps?.forEach((step, stepIndex) => {
-      const stepSelections = this.selectedProducts[stepIndex] || {};
-
-      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        if (quantity > 0) {
-          const product = this.findProductByVariantId(step, variantId);
-          if (product) {
-            const variant = product.variants?.find(v => v.id === variantId);
-            allProducts.push({
-              stepIndex,
-              variantId,
-              quantity,
-              title: variant?.title || product.title,
-              image: product.images?.[0]?.url || product.featuredImage?.url || '',
-              price: variant?.price || product.price
-            });
-          }
-        }
-      });
-    });
-
-    return allProducts;
-  }
-
-  // Helper: Find product by variant ID in a step
-  findProductByVariantId(step, variantId) {
-    return step.products?.find(p =>
-      p.variants?.some(v => v.id === variantId) || p.id === variantId
-    );
-  }
-
-  // Helper: Check if step is completed
-  isStepCompleted(stepIndex) {
-    const stepSelections = this.selectedProducts[stepIndex] || {};
-    const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
-    const step = this.selectedBundle?.steps?.[stepIndex];
-    if (!step) return false; // Guard: if step doesn't exist, it's not completed
-    return totalQuantity >= (step.minQuantity || 1);
-  }
-
-  // Helper: Check if step is accessible
-  isStepAccessible(stepIndex) {
-    if (stepIndex === 0) return true;
-
-    // Check if all previous steps meet minimum requirements
-    for (let i = 0; i < stepIndex; i++) {
-      if (!this.isStepCompleted(i)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  // Helper: Check if can proceed to next step
-  canProceedToNextStep() {
-    return this.isStepCompleted(this.currentStepIndex);
-  }
-
-  // Helper: Check if all bundle conditions are met
-  areBundleConditionsMet() {
-    return this.selectedBundle?.steps?.every((step, index) => this.isStepCompleted(index)) || false;
+    // TODO: Implement tabs-based layout for full-page bundles
+    // For now, use the same layout as product-page until custom UI is provided
+    console.log('[BUNDLE_WIDGET] Full-page bundle detected - using tabs layout');
+
+    // Temporary: Render same as product-page layout
+    // This will be replaced with custom tabs UI later
+    this.renderProductPageLayout();
+
+    // Add visual indicator that this is a full-page bundle
+    const indicator = document.createElement('div');
+    indicator.style.cssText = 'padding: 8px; background: #e3f2fd; border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: #1976d2;';
+    indicator.textContent = 'Full-Page Bundle Mode (Custom layout will be applied)';
+    this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }
 
   createStepElement(step, index) {
@@ -1400,12 +1759,6 @@ class BundleWidgetFullPage {
     // Check if discount is enabled before showing messaging
     if (!this.selectedBundle?.pricing?.enabled) {
       this.elements.footer.style.display = 'none';
-      return;
-    }
-
-    // Guard: Don't calculate if stepProductData is not yet populated
-    if (!this.stepProductData || this.stepProductData.length === 0 || !this.stepProductData.some(step => step && step.length > 0)) {
-      console.log('[FOOTER_MESSAGING] Skipping - product data not yet loaded');
       return;
     }
 
@@ -1676,59 +2029,30 @@ class BundleWidgetFullPage {
     }
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-      // Check if StepProduct already has enriched data (for full-page bundles)
-      const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
+      const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
+      const shop = window.Shopify?.shop || window.location.host;
 
-      if (hasEnrichedData) {
-        console.log('[LOAD_PRODUCTS] Using enriched StepProduct data directly (full-page bundle)');
+      if (productGids.length > 0) {
+        console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
 
-        // Transform StepProduct to match expected product format
-        const enrichedProducts = step.StepProduct.map(sp => ({
-          id: sp.productId,
-          title: sp.title,
-          handle: sp.handle,
-          imageUrl: sp.imageUrl,
-          price: sp.price,
-          compareAtPrice: sp.compareAtPrice,
-          available: true,
-          variants: sp.variants || [{
-            id: sp.productId.replace('Product', 'ProductVariant'),
-            title: 'Default Title',
-            price: sp.price,
-            compareAtPrice: sp.compareAtPrice,
-            available: true,
-            image: sp.imageUrl ? { src: sp.imageUrl } : null
-          }]
-        }));
+        // Get app URL (same as above)
+        const appUrl = window.__BUNDLE_APP_URL__ || '';
+        const apiBaseUrl = appUrl || window.location.origin;
 
-        allProducts = allProducts.concat(enrichedProducts);
-        console.log('[LOAD_PRODUCTS] Added', enrichedProducts.length, 'enriched StepProducts');
-      } else {
-        // Fetch from storefront API if data is not enriched
-        const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
-        const shop = window.Shopify?.shop || window.location.host;
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
 
-        if (productGids.length > 0) {
-          console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
-
-          const appUrl = window.__BUNDLE_APP_URL__ || '';
-          const apiBaseUrl = appUrl || window.location.origin;
-
-          try {
-            const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
-
-            if (!response.ok) {
-              console.error('[LOAD_PRODUCTS] API request failed for StepProduct:', response.status);
-            } else {
-              const data = await response.json();
-              if (data.products && data.products.length > 0) {
-                allProducts = allProducts.concat(data.products);
-                console.log('[LOAD_PRODUCTS] Added', data.products.length, 'StepProducts');
-              }
+          if (!response.ok) {
+            console.error('[LOAD_PRODUCTS] API request failed for StepProduct:', response.status);
+          } else {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'StepProducts');
             }
-          } catch (error) {
-            console.error('[LOAD_PRODUCTS] Error fetching StepProduct:', error);
           }
+        } catch (error) {
+          console.error('[LOAD_PRODUCTS] Error fetching StepProduct:', error);
         }
       }
     }
@@ -2042,44 +2366,27 @@ class BundleWidgetFullPage {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
-    console.log('💾 [UPDATE_SELECTION] ========================================');
-    console.log('💾 [UPDATE_SELECTION] Updating product selection');
-    console.log('💾 [UPDATE_SELECTION] Step:', stepIndex, '| Product ID:', productId);
-    console.log('💾 [UPDATE_SELECTION] New quantity:', newQuantity);
-
     const quantity = Math.max(0, newQuantity);
-    console.log('💾 [UPDATE_SELECTION] Normalized quantity:', quantity);
 
     // Validate step conditions
-    console.log('💾 [UPDATE_SELECTION] Validating step conditions...');
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {
-      console.warn('⚠️ [UPDATE_SELECTION] Step condition validation FAILED');
       return;
     }
-    console.log('✅ [UPDATE_SELECTION] Step condition validation PASSED');
 
     // Update selection
-    console.log('💾 [UPDATE_SELECTION] Before update:', JSON.stringify(this.selectedProducts[stepIndex]));
     if (quantity > 0) {
       this.selectedProducts[stepIndex][productId] = quantity;
-      console.log('✅ [UPDATE_SELECTION] Product ADDED/UPDATED with quantity:', quantity);
     } else {
       delete this.selectedProducts[stepIndex][productId];
-      console.log('✅ [UPDATE_SELECTION] Product REMOVED from selection');
     }
-    console.log('💾 [UPDATE_SELECTION] After update:', JSON.stringify(this.selectedProducts[stepIndex]));
 
     // Update UI without re-rendering the entire modal (prevents event listener duplication)
-    console.log('💾 [UPDATE_SELECTION] Updating UI components...');
     this.updateProductQuantityDisplay(stepIndex, productId, quantity);
     this.renderModalTabs();
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
     this.updateAddToCartButton();
     this.updateFooterMessaging();
-
-    console.log('✅ [UPDATE_SELECTION] Selection update complete');
-    console.log('💾 [UPDATE_SELECTION] ========================================');
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
@@ -2235,12 +2542,6 @@ class BundleWidgetFullPage {
   }
 
   updateModalFooterMessaging() {
-    // Guard: Don't calculate if stepProductData is not yet populated
-    if (!this.stepProductData || this.stepProductData.length === 0 || !this.stepProductData.some(step => step && step.length > 0)) {
-      console.log('[MODAL_FOOTER_MESSAGING] Skipping - product data not yet loaded');
-      return;
-    }
-
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
@@ -2678,21 +2979,23 @@ class BundleWidgetFullPage {
 // INITIALIZATION
 // ============================================================================
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeFullPageWidget);
+  document.addEventListener('DOMContentLoaded', initializeProductPageWidget);
 } else {
-  initializeFullPageWidget();
+  initializeProductPageWidget();
 }
 
-function initializeFullPageWidget() {
+function initializeProductPageWidget() {
   const containers = document.querySelectorAll('#bundle-builder-app');
   containers.forEach(container => {
     if (!container.dataset.initialized) {
-      const bundleType = container.dataset.bundleType || 'full_page';
-      if (bundleType === 'full_page') {
-        new BundleWidgetFullPage(container);
+      const bundleType = container.dataset.bundleType || 'product_page';
+      if (bundleType === 'product_page') {
+        new BundleWidgetProductPage(container);
       }
     }
   });
 }
 
-console.log('[FULL_PAGE_WIDGET] Module loaded');
+console.log('[PRODUCT_PAGE_WIDGET] Module loaded');
+
+})();

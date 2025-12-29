@@ -185,8 +185,13 @@ class BundleWidgetFullPage {
       containerBundleId: dataset.containerBundleId || null,
       hideDefaultButtons: dataset.hideDefaultButtons === 'true',
       showTitle: dataset.showTitle !== 'false',
+      showDescription: dataset.showDescription !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       showFooterMessaging: dataset.showFooterMessaging !== 'false',
+      // Custom content from theme editor
+      customTitle: dataset.customTitle || null,
+      customDescription: dataset.customDescription || null,
+      customInstruction: dataset.customInstruction || null,
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -392,7 +397,6 @@ class BundleWidgetFullPage {
       header: this.container.querySelector('.bundle-header') || this.createHeader(),
       stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
       footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
-      addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
       modal: this.ensureModal()
     };
 
@@ -406,17 +410,27 @@ class BundleWidgetFullPage {
     if (!this.container.querySelector('.bundle-footer-messaging')) {
       this.container.appendChild(this.elements.footer);
     }
-    if (!this.container.querySelector('.add-bundle-to-cart')) {
-      this.container.appendChild(this.elements.addToCartButton);
-    }
   }
 
   createHeader() {
     const header = document.createElement('div');
     header.className = 'bundle-header';
+
+    // Use custom title if provided, otherwise use bundle name
+    const title = this.config.customTitle || this.selectedBundle.name;
+
+    // Use custom description if provided, otherwise use bundle description
+    const description = this.config.customDescription || this.selectedBundle.description;
+
+    // Build header HTML
+    const titleHTML = `<h2 class="bundle-title">${title}</h2>`;
+    const descriptionHTML = (description && this.config.showDescription)
+      ? `<p class="bundle-description">${description}</p>`
+      : '';
+
     header.innerHTML = `
-      <h2 class="bundle-title">${this.selectedBundle.name}</h2>
-      ${this.selectedBundle.description ? `<p class="bundle-description">${this.selectedBundle.description}</p>` : ''}
+      ${titleHTML}
+      ${descriptionHTML}
     `;
     return header;
   }
@@ -445,14 +459,6 @@ class BundleWidgetFullPage {
       </div>
     `;
     return footer;
-  }
-
-  createAddToCartButton() {
-    const button = document.createElement('button');
-    button.className = 'add-bundle-to-cart';
-    button.textContent = 'Add Bundle to Cart';
-    button.type = 'button';
-    return button;
   }
 
   ensureModal() {
@@ -574,7 +580,6 @@ class BundleWidgetFullPage {
     this.renderHeader();
     this.renderSteps();
     this.renderFooter();
-    this.updateAddToCartButton();
   }
 
   renderHeader() {
@@ -720,10 +725,21 @@ class BundleWidgetFullPage {
     header.className = 'bundle-header';
 
     const currentStep = this.bundleData.steps[this.currentStepIndex];
-    const instructionText = currentStep.instruction || `Select ${currentStep.minQuantity} or more items from ${currentStep.name}`;
+
+    // Use custom instruction if provided, otherwise use step instruction or auto-generated text
+    const defaultInstruction = currentStep.instruction || `Select ${currentStep.minQuantity} or more items from ${currentStep.name}`;
+    const instructionText = this.config.customInstruction || defaultInstruction;
+
+    // Use custom title if provided, otherwise use bundle name
+    const title = this.config.customTitle || this.bundleData.name;
+
+    // Only show bundle title if showTitle is enabled
+    const bundleTitleHTML = this.config.showTitle
+      ? `<h3 class="bundle-title">${title}</h3>`
+      : '';
 
     header.innerHTML = `
-      <h3 class="bundle-title">${this.bundleData.name}</h3>
+      ${bundleTitleHTML}
       <p class="bundle-instruction">${instructionText}</p>
     `;
 
@@ -1107,7 +1123,6 @@ class BundleWidgetFullPage {
 
     // Update UI
     this.renderSteps();
-    this.updateAddToCartButton();
     this.updateFooterMessaging();
 
     // Show toast notification
@@ -1214,62 +1229,6 @@ class BundleWidgetFullPage {
     }
   }
 
-  updateAddToCartButton() {
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData
-    );
-
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity
-    );
-
-    const button = this.elements.addToCartButton;
-
-    // Check if all steps are complete (required)
-    const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
-
-    // Disable button if no products selected OR if not all steps are complete
-    if (totalQuantity === 0 || !allStepsValid) {
-      if (totalQuantity === 0) {
-        button.textContent = 'Add Bundle to Cart';
-      } else {
-        // Some products selected but not all steps complete
-        button.textContent = 'Complete All Steps to Continue';
-      }
-      button.disabled = true;
-      button.classList.add('disabled');
-    } else {
-      // All steps valid and products selected - enable button
-      const currencyInfo = CurrencyManager.getCurrencyInfo();
-      const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
-
-      console.log('[ADD_TO_CART_BUTTON] Discount info:', {
-        hasDiscount: discountInfo.hasDiscount,
-        showDiscountDisplay: this.selectedBundle.pricing?.messages?.showDiscountDisplay,
-        shouldShowStrikethrough: discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false
-      });
-
-      if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
-        const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-        console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
-        button.innerHTML = `
-          <span class="button-price-wrapper">
-            <span class="button-price-strike">${originalPrice}</span>
-            <span class="button-price-final">Add Bundle to Cart • ${formattedPrice}</span>
-          </span>
-        `;
-      } else {
-        console.log('[ADD_TO_CART_BUTTON] No strikethrough shown');
-        button.textContent = `Add Bundle to Cart • ${formattedPrice}`;
-      }
-
-      button.disabled = false;
-      button.classList.remove('disabled');
-    }
-  }
   // ========================================================================
   // MODAL FUNCTIONALITY
   // ========================================================================
@@ -1338,7 +1297,6 @@ class BundleWidgetFullPage {
 
     // Update main UI
     this.renderSteps();
-    this.updateAddToCartButton();
     this.updateFooterMessaging();
   }
 
@@ -1783,7 +1741,6 @@ class BundleWidgetFullPage {
     this.renderModalTabs();
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
-    this.updateAddToCartButton();
     this.updateFooterMessaging();
   }
 
@@ -2093,6 +2050,10 @@ class BundleWidgetFullPage {
   // CART OPERATIONS
   // ========================================================================
 
+  // NOTE: Add to cart functionality removed from full-page bundles
+  // Full-page bundles use modal-based product selection only
+  // Products are added to cart individually via modal's "Add to Cart" button
+  /*
   async addToCart() {
     try {
       const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
@@ -2113,10 +2074,6 @@ class BundleWidgetFullPage {
       }
 
       const cartItems = this.buildCartItems();
-
-      // Disable button during request
-      this.elements.addToCartButton.disabled = true;
-      this.elements.addToCartButton.textContent = 'Adding to Cart...';
 
       const response = await fetch('/cart/add.js', {
         method: 'POST',
@@ -2142,11 +2099,9 @@ class BundleWidgetFullPage {
 
     } catch (error) {
       ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
-    } finally {
-      // Re-enable button
-      this.updateAddToCartButton();
     }
   }
+  */
 
   buildCartItems() {
     // Shopify Standard Bundle approach for configurable bundles:
@@ -2250,9 +2205,6 @@ class BundleWidgetFullPage {
   // ========================================================================
 
   attachEventListeners() {
-    // Add to cart button
-    this.elements.addToCartButton.addEventListener('click', () => this.addToCart());
-
     // Modal close handlers
     const modal = this.elements.modal;
     const closeButton = modal.querySelector('.close-button');
