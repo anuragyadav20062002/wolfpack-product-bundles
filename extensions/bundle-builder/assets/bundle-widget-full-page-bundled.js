@@ -1727,7 +1727,12 @@ class BundleWidgetFullPage {
     const timeline = document.createElement('div');
     timeline.className = 'step-timeline';
 
-    this.bundleData.steps.forEach((step, index) => {
+    if (!this.selectedBundle || !this.selectedBundle.steps) {
+      console.error('[WIDGET_RENDER] Cannot create timeline: selectedBundle or steps is undefined');
+      return timeline;
+    }
+
+    this.selectedBundle.steps.forEach((step, index) => {
       const stepItem = document.createElement('div');
       stepItem.className = 'timeline-step';
 
@@ -1764,7 +1769,7 @@ class BundleWidgetFullPage {
       stepItem.appendChild(circle);
 
       // Add connecting line (except for last step)
-      if (index < this.bundleData.steps.length - 1) {
+      if (index < this.selectedBundle.steps.length - 1) {
         const line = document.createElement('div');
         line.className = 'timeline-line';
         if (isCompleted) line.classList.add('completed');
@@ -1797,14 +1802,19 @@ class BundleWidgetFullPage {
     const header = document.createElement('div');
     header.className = 'bundle-header';
 
-    const currentStep = this.bundleData.steps[this.currentStepIndex];
+    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[this.currentStepIndex]) {
+      console.error('[WIDGET_RENDER] Cannot create instructions: selectedBundle or current step is undefined');
+      return header;
+    }
+
+    const currentStep = this.selectedBundle.steps[this.currentStepIndex];
 
     // Use custom instruction if provided, otherwise use step instruction or auto-generated text
     const defaultInstruction = currentStep.instruction || `Select ${currentStep.minQuantity} or more items from ${currentStep.name}`;
     const instructionText = this.config.customInstruction || defaultInstruction;
 
     // Use custom title if provided, otherwise use bundle name
-    const title = this.config.customTitle || this.bundleData.name;
+    const title = this.config.customTitle || this.selectedBundle.name;
 
     // Only show bundle title if showTitle is enabled
     const bundleTitleHTML = this.config.showTitle
@@ -1821,7 +1831,12 @@ class BundleWidgetFullPage {
 
   // Create category/collection tabs
   createCategoryTabs(stepIndex) {
-    const step = this.bundleData.steps[stepIndex];
+    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
+      console.error('[WIDGET_RENDER] Cannot create category tabs: step is undefined');
+      return null;
+    }
+
+    const step = this.selectedBundle.steps[stepIndex];
 
     if (!step.collections || step.collections.length === 0) {
       return null;
@@ -1872,7 +1887,12 @@ class BundleWidgetFullPage {
     const grid = document.createElement('div');
     grid.className = 'full-page-product-grid';
 
-    const step = this.bundleData.steps[stepIndex];
+    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
+      console.error('[WIDGET_RENDER] Cannot create product grid: step is undefined');
+      return grid;
+    }
+
+    const step = this.selectedBundle.steps[stepIndex];
     let products = step.products || [];
 
     // Filter by active collection if selected
@@ -1984,7 +2004,7 @@ class BundleWidgetFullPage {
     const nextBtn = document.createElement('button');
     nextBtn.className = 'footer-nav-btn footer-next-btn';
 
-    const isLastStep = this.currentStepIndex === this.bundleData.steps.length - 1;
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
     const canProceed = this.canProceedToNextStep();
 
     if (isLastStep) {
@@ -2016,7 +2036,7 @@ class BundleWidgetFullPage {
   getAllSelectedProductsData() {
     const allProducts = [];
 
-    this.bundleData.steps.forEach((step, stepIndex) => {
+    this.selectedBundle.steps.forEach((step, stepIndex) => {
       const stepSelections = this.selectedProducts[stepIndex] || {};
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
@@ -2051,7 +2071,7 @@ class BundleWidgetFullPage {
   isStepCompleted(stepIndex) {
     const stepSelections = this.selectedProducts[stepIndex] || {};
     const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
-    const step = this.bundleData.steps[stepIndex];
+    const step = this.selectedBundle.steps[stepIndex];
     return totalQuantity >= (step.minQuantity || 1);
   }
 
@@ -2076,7 +2096,7 @@ class BundleWidgetFullPage {
 
   // Helper: Check if all bundle conditions are met
   areBundleConditionsMet() {
-    return this.bundleData.steps.every((step, index) => this.isStepCompleted(index));
+    return this.selectedBundle.steps.every((step, index) => this.isStepCompleted(index));
   }
 
   createStepElement(step, index) {
