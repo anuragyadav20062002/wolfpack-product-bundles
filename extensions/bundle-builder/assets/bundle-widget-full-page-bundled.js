@@ -1047,6 +1047,18 @@ class ComponentGenerator {
 }
 
 
+  // Expose components to window for use by full-page widget
+  if (!window.BUNDLE_WIDGET) {
+    window.BUNDLE_WIDGET = {};
+  }
+
+  window.BUNDLE_WIDGET.ComponentGenerator = ComponentGenerator;
+  window.BUNDLE_WIDGET.CurrencyManager = CurrencyManager;
+  window.BUNDLE_WIDGET.BundleDataManager = BundleDataManager;
+  window.BUNDLE_WIDGET.PricingCalculator = PricingCalculator;
+  window.BUNDLE_WIDGET.ToastManager = ToastManager;
+  window.BUNDLE_WIDGET.TemplateManager = TemplateManager;
+
   // ========================================
   // FULL PAGE WIDGET
   // ========================================
