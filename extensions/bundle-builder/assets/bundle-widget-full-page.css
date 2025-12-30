@@ -963,3 +963,10 @@ body:has(.bundle-widget-full-page) #MainContent {
     gap: 15px;
   }
 }
+
+/* ============================================================================
+   HIDE ADD BUNDLE TO CART BUTTON IN FULL-PAGE BUNDLES
+   ============================================================================ */
+.bundle-widget-full-page .add-bundle-to-cart {
+  display: none !important;
+}

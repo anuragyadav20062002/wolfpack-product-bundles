@@ -109,6 +109,9 @@ class BundleWidgetFullPage {
         return;
       }
 
+      // Hide page body loading content (if it exists)
+      this.hidePageLoadingContent();
+
       // Parse configuration
       this.parseConfiguration();
 
@@ -144,6 +147,35 @@ class BundleWidgetFullPage {
 
     } catch (error) {
       this.showErrorUI(error);
+    }
+  }
+
+  /**
+   * Hide the page body loading content
+   * This hides the "Loading bundle builder..." text that was added to the Shopify page body
+   */
+  hidePageLoadingContent() {
+    try {
+      // Find the parent page element that contains the loading text
+      const pageContent = this.container.parentElement;
+
+      if (pageContent) {
+        // Hide all sibling divs that contain loading text
+        const siblings = Array.from(pageContent.children);
+        siblings.forEach(sibling => {
+          // Check if this is not the widget container and contains "Loading" text
+          if (sibling !== this.container &&
+              (sibling.textContent.includes('Loading bundle builder') ||
+               sibling.textContent.includes('Loading...'))) {
+            sibling.style.display = 'none';
+          }
+        });
+      }
+
+      console.log('[BUNDLE_WIDGET] ✅ Hid page loading content');
+    } catch (error) {
+      console.warn('[BUNDLE_WIDGET] Failed to hide page loading content:', error);
+      // Don't throw - this is not critical
     }
   }
 
