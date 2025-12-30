@@ -1190,6 +1190,67 @@ class BundleWidgetFullPage {
     return this.selectedBundle.steps.every((step, index) => this.isStepCompleted(index));
   }
 
+  // Add bundle to cart
+  async addBundleToCart() {
+    try {
+      // Build cart items from selected products
+      const items = [];
+
+      this.selectedBundle.steps.forEach((step, stepIndex) => {
+        const stepSelections = this.selectedProducts[stepIndex] || {};
+
+        Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+          if (quantity > 0) {
+            items.push({
+              id: variantId,
+              quantity: quantity,
+              properties: {
+                '_bundle_id': this.selectedBundle.id,
+                '_step_index': stepIndex,
+                '_step_name': step.name
+              }
+            });
+          }
+        });
+      });
+
+      if (items.length === 0) {
+        ToastManager.show('Please select products before adding to cart');
+        return;
+      }
+
+      console.log('[ADD_TO_CART] Adding items:', items);
+
+      // Add to Shopify cart
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add to cart');
+      }
+
+      const result = await response.json();
+      console.log('[ADD_TO_CART] Success:', result);
+
+      // Show success message
+      ToastManager.show('Bundle added to cart successfully!');
+
+      // Redirect to cart page after short delay
+      setTimeout(() => {
+        window.location.href = '/cart';
+      }, 1000);
+
+    } catch (error) {
+      console.error('[ADD_TO_CART] Error:', error);
+      ToastManager.show('Failed to add bundle to cart. Please try again.');
+    }
+  }
+
   createStepElement(step, index) {
     const stepBox = document.createElement('div');
     stepBox.className = 'step-box';
