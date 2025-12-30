@@ -1004,16 +1004,25 @@ class BundleWidgetFullPage {
     const rightSection = document.createElement('div');
     rightSection.className = 'footer-right';
 
-    const total = window.BUNDLE_WIDGET.PricingCalculator.calculateTotal(
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.bundleData
+      this.stepProductData
     );
+
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity
+    );
+
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const finalPrice = discountInfo.hasDiscount ? discountInfo.discountedPrice : totalPrice;
 
     const totalDisplay = document.createElement('div');
     totalDisplay.className = 'footer-total';
     totalDisplay.innerHTML = `
       <span class="total-label">Total:</span>
-      <span class="total-price">${window.BUNDLE_WIDGET.CurrencyManager.formatPrice(total.finalPrice)}</span>
+      <span class="total-price">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
     `;
 
     const navButtons = document.createElement('div');
