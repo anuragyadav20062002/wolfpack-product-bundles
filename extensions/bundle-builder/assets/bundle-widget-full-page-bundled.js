@@ -879,7 +879,7 @@ class ComponentGenerator {
         ` : ''}
 
         <div class="product-image">
-          <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+          <img src="${product.imageUrl || product.image?.src || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'}" alt="${product.title}" loading="lazy" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'">
         </div>
 
         <div class="product-content-wrapper">
@@ -1790,10 +1790,10 @@ class BundleWidgetFullPage {
         stepItem.appendChild(line);
       }
 
-      // Add step name
+      // Add step label (use clean "Step 1" instead of full name to avoid wrapping)
       const stepName = document.createElement('div');
       stepName.className = 'timeline-step-name';
-      stepName.textContent = step.name;
+      stepName.textContent = `Step ${index + 1}`;
       stepItem.appendChild(stepName);
 
       // Make clickable if accessible

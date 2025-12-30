@@ -734,10 +734,10 @@ class BundleWidgetFullPage {
         stepItem.appendChild(line);
       }
 
-      // Add step name
+      // Add step label (use clean "Step 1" instead of full name to avoid wrapping)
       const stepName = document.createElement('div');
       stepName.className = 'timeline-step-name';
-      stepName.textContent = step.name;
+      stepName.textContent = `Step ${index + 1}`;
       stepItem.appendChild(stepName);
 
       // Make clickable if accessible
