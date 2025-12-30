@@ -1047,7 +1047,9 @@ class ComponentGenerator {
 }
 
 
-  // Expose components to window for use by full-page widget
+  // ========================================
+  // EXPOSE COMPONENTS TO WINDOW
+  // ========================================
   if (!window.BUNDLE_WIDGET) {
     window.BUNDLE_WIDGET = {};
   }
@@ -1920,19 +1922,92 @@ class BundleWidgetFullPage {
       return grid;
     }
 
-    // Reuse ComponentGenerator.createProductCard for each product
+    // Create product cards using ComponentGenerator
     products.forEach(product => {
-      const productCard = window.BUNDLE_WIDGET.ComponentGenerator.createProductCard(
-        product,
-        stepIndex,
-        this.selectedProducts,
-        (variantId, quantity) => this.updateProductSelection(stepIndex, variantId, quantity),
-        this.bundleData
-      );
+      const productCard = this.createProductCard(product, stepIndex);
       grid.appendChild(productCard);
     });
 
     return grid;
+  }
+
+  // Create a product card DOM element for full-page layout
+  createProductCard(product, stepIndex) {
+    const productId = product.variantId || product.id;
+    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+
+    // Get currency info for formatting
+    const currencyInfo = {
+      display: {
+        currency: window.shopCurrency || 'USD',
+        format: window.shopMoneyFormat || '${{amount}}'
+      }
+    };
+
+    // Use ComponentGenerator to render HTML
+    const htmlString = window.BUNDLE_WIDGET.ComponentGenerator.renderProductCard(
+      product,
+      currentQuantity,
+      currencyInfo
+    );
+
+    // Convert HTML string to DOM element
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = htmlString.trim();
+    const cardElement = wrapper.firstChild;
+
+    // Attach event listeners for full-page specific interactions
+    this.attachProductCardListeners(cardElement, product, stepIndex);
+
+    return cardElement;
+  }
+
+  // Attach event listeners to product card
+  attachProductCardListeners(cardElement, product, stepIndex) {
+    const productId = product.variantId || product.id;
+
+    // Quantity controls
+    const increaseBtn = cardElement.querySelector('.qty-increase');
+    const decreaseBtn = cardElement.querySelector('.qty-decrease');
+    const addBtn = cardElement.querySelector('.product-add-btn');
+
+    if (increaseBtn) {
+      increaseBtn.addEventListener('click', () => {
+        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+        this.updateProductSelection(stepIndex, productId, currentQty + 1);
+      });
+    }
+
+    if (decreaseBtn) {
+      decreaseBtn.addEventListener('click', () => {
+        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+        if (currentQty > 0) {
+          this.updateProductSelection(stepIndex, productId, currentQty - 1);
+        }
+      });
+    }
+
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+        if (currentQty === 0) {
+          this.updateProductSelection(stepIndex, productId, 1);
+        }
+      });
+    }
+
+    // Variant selector
+    const variantSelector = cardElement.querySelector('.variant-selector');
+    if (variantSelector) {
+      variantSelector.addEventListener('change', (e) => {
+        const newVariantId = e.target.value;
+        // Update product object with new variant
+        product.variantId = newVariantId;
+        // Re-render this card
+        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+        this.updateProductSelection(stepIndex, newVariantId, currentQty);
+      });
+    }
   }
 
   // Render fixed footer with selected products and navigation
