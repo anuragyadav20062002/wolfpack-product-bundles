@@ -2059,6 +2059,13 @@ class BundleWidgetFullPage {
       this.stepProductData
     );
 
+    console.log('[FOOTER_DEBUG] Price calculation:', {
+      selectedProducts: this.selectedProducts,
+      stepProductData: this.stepProductData,
+      totalPrice,
+      totalQuantity
+    });
+
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
@@ -2068,9 +2075,40 @@ class BundleWidgetFullPage {
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.discountedPrice : totalPrice;
 
+    // Create discount messaging section if discount is enabled
+    let discountMessageHTML = '';
+    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        discountInfo,
+        currencyInfo
+      );
+
+      const successMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate || 'You saved {{discountAmount}}!',
+        variables
+      );
+
+      discountMessageHTML = `
+        <div class="footer-discount-message" style="
+          color: var(--bundle-full-page-discount-text-color, #059669);
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 8px;
+          text-align: right;
+        ">
+          ${successMessage}
+        </div>
+      `;
+    }
+
     const totalDisplay = document.createElement('div');
     totalDisplay.className = 'footer-total';
     totalDisplay.innerHTML = `
+      ${discountMessageHTML}
+      ${discountInfo.hasDiscount ? `<span class="total-label-strike" style="text-decoration: line-through; color: #999; font-size: 14px; display: block;">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
       <span class="total-label">Total:</span>
       <span class="total-price">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
     `;
@@ -2313,6 +2351,15 @@ class BundleWidgetFullPage {
   }
 
   renderFooter() {
+    const bundleType = this.container.dataset.bundleType;
+
+    // Full-page bundles use their own footer with selected products, totals, and navigation
+    if (bundleType === 'full_page') {
+      this.renderFullPageFooter();
+      return;
+    }
+
+    // Product-page bundles use discount messaging footer
     if (!this.config.showFooterMessaging) {
       this.elements.footer.style.display = 'none';
       return;
