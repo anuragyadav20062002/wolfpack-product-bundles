@@ -1037,6 +1037,15 @@ class ComponentGenerator {
   }
 }
 
+// ============================================================================
+// ATTACH COMPONENTS TO BUNDLE_WIDGET FOR GLOBAL ACCESS
+// ============================================================================
+BUNDLE_WIDGET.CurrencyManager = CurrencyManager;
+BUNDLE_WIDGET.BundleDataManager = BundleDataManager;
+BUNDLE_WIDGET.PricingCalculator = PricingCalculator;
+BUNDLE_WIDGET.ToastManager = ToastManager;
+BUNDLE_WIDGET.TemplateManager = TemplateManager;
+BUNDLE_WIDGET.ComponentGenerator = ComponentGenerator;
 
   // ============================================================================
   // FULL-PAGE BUNDLE WIDGET
@@ -3582,5 +3591,7 @@ function initializeFullPageWidget() {
 
 console.log('[FULL_PAGE_WIDGET] Module loaded');
 
+// Expose BUNDLE_WIDGET to global scope
+window.BUNDLE_WIDGET = BUNDLE_WIDGET;
 
 })();
