@@ -41,7 +41,7 @@
 .full-page-content-section {
   flex: 1;
   width: 100%;
-  padding: 40px 80px;
+  padding: 20px 80px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -97,7 +97,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--bundle-step-timeline-gap, 308px); /* Space for connecting line between circles */
-  margin: 0 auto 40px;
+  margin: 0 auto 20px;
   max-width: 100%;
 }
 
@@ -179,7 +179,7 @@
 
 .bundle-header {
   text-align: center;
-  margin: 30px auto;
+  margin: 10px auto 20px;
   max-width: 800px;
 }
 
@@ -206,7 +206,7 @@
   display: flex;
   justify-content: center;
   gap: 40px;
-  margin: 30px auto;
+  margin: 20px auto;
   max-width: 1200px;
   position: relative;
 }
@@ -847,8 +847,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
+  min-height: 200px;
   width: 100%;
+  padding: 20px 0;
 }
 
 .loading-spinner {

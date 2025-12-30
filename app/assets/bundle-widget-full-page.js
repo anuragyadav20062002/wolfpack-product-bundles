@@ -1883,7 +1883,14 @@ class BundleWidgetFullPage {
     this.renderModalTabs();
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
-    this.updateFooterMessaging();
+
+    // For full-page bundles, re-render the footer to show selected products
+    const bundleType = this.container.dataset.bundleType;
+    if (bundleType === 'full_page') {
+      this.renderFullPageFooter();
+    } else {
+      this.updateFooterMessaging();
+    }
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
