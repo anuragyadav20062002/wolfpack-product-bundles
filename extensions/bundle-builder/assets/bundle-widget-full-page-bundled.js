@@ -1176,8 +1176,8 @@ class BundleWidgetFullPage {
       // Setup DOM elements
       this.setupDOMElements();
 
-      // Render initial UI
-      this.renderUI();
+      // Render initial UI (async for full-page bundles to load products)
+      await this.renderUI();
 
       // Attach event listeners
       this.attachEventListeners();
@@ -1648,9 +1648,9 @@ class BundleWidgetFullPage {
   // UI RENDERING
   // ========================================================================
 
-  renderUI() {
+  async renderUI() {
     this.renderHeader();
-    this.renderSteps();
+    await this.renderSteps();
     this.renderFooter();
   }
 
@@ -1663,7 +1663,7 @@ class BundleWidgetFullPage {
     this.elements.header.style.display = 'block';
   }
 
-  renderSteps() {
+  async renderSteps() {
     // Clear existing steps
     this.elements.stepsContainer.innerHTML = '';
 
@@ -1675,8 +1675,8 @@ class BundleWidgetFullPage {
     const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
 
     if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-      // Full-page bundle: Render with tabs layout
-      this.renderFullPageLayout();
+      // Full-page bundle: Render with tabs layout (async to load products)
+      await this.renderFullPageLayout();
     } else {
       // Product-page bundle: Render with step boxes (current implementation)
       this.renderProductPageLayout();
@@ -1692,12 +1692,15 @@ class BundleWidgetFullPage {
   }
 
   // Full-page bundle layout (horizontal tabs)
-  renderFullPageLayout() {
+  async renderFullPageLayout() {
     console.log('[FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
 
     // Clear existing content
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
+
+    // Load products for current step (needed for price calculation)
+    await this.loadStepProducts(this.currentStepIndex);
 
     // 1. Render step timeline at top
     const stepTimeline = this.createStepTimeline();
