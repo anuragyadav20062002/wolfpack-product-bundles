@@ -1119,16 +1119,6 @@ class ComponentGenerator {
 'use strict';
 
 // Import shared components and utilities
-import {
-  BUNDLE_WIDGET,
-  CurrencyManager,
-  BundleDataManager,
-  PricingCalculator,
-  ToastManager,
-  TemplateManager,
-  ComponentGenerator
-} from './bundle-widget-components.js';
-
 console.log('[FULL_PAGE_WIDGET] Initializing...');
 
 class BundleWidgetFullPage {
