@@ -16,7 +16,7 @@
   margin-left: calc(-50vw + 50%) !important;
   padding: 0;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   position: relative;
   max-width: none !important;
 }

@@ -880,6 +880,15 @@ class BundleWidgetFullPage {
     const productId = product.variantId || product.id;
     const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
 
+    // Ensure product has an image URL (use multiple fallbacks)
+    if (!product.imageUrl || product.imageUrl === '') {
+      product.imageUrl = product.image?.src ||
+                        product.featuredImage?.url ||
+                        product.images?.[0]?.url ||
+                        'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png';
+      console.log('[PRODUCT_CARD] Set fallback image for', product.title, ':', product.imageUrl);
+    }
+
     // Get currency info for formatting
     const currencyInfo = {
       display: {
