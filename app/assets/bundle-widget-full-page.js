@@ -975,6 +975,7 @@ class BundleWidgetFullPage {
 
     this.elements.footer.innerHTML = '';
     this.elements.footer.className = 'full-page-footer';
+    this.elements.footer.style.display = 'flex';
 
     // Left section: Scrollable selected products
     const leftSection = document.createElement('div');

@@ -1,9 +1,11 @@
-
 (function() {
   'use strict';
 
+  // ============================================================================
   // BUNDLE WIDGET COMPONENTS
-  /**
+  // ============================================================================
+
+/**
  * Bundle Widget - Shared Components Library
  *
  * This library contains all reusable components and utilities used by both
@@ -74,7 +76,7 @@
 // GLOBAL CONSTANTS AND CONFIGURATION
 // ============================================================================
 
-const BUNDLE_WIDGET = {
+export const BUNDLE_WIDGET = {
   VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
 
@@ -120,7 +122,7 @@ const BUNDLE_WIDGET = {
 // CURRENCY MANAGEMENT SYSTEM
 // ============================================================================
 
-class CurrencyManager {
+export class CurrencyManager {
   static getShopBaseCurrency() {
     // Shop's base currency from Shopify object (official source)
     return {
@@ -209,7 +211,7 @@ class CurrencyManager {
 // BUNDLE DATA MANAGER
 // ============================================================================
 
-class BundleDataManager {
+export class BundleDataManager {
   static validateBundleData(bundles) {
     if (!Array.isArray(bundles) || bundles.length === 0) {
       throw new Error('No bundles available');
@@ -389,7 +391,7 @@ class BundleDataManager {
 // PRICING CALCULATOR
 // ============================================================================
 
-class PricingCalculator {
+export class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData) {
     let totalPrice = 0;
     let totalQuantity = 0;
@@ -599,7 +601,7 @@ class PricingCalculator {
 // TOAST NOTIFICATION SYSTEM
 // ============================================================================
 
-class ToastManager {
+export class ToastManager {
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -631,7 +633,7 @@ class ToastManager {
     }
   }
 }
-class TemplateManager {
+export class TemplateManager {
   static replaceVariables(template, variables) {
     if (!template) return '';
 
@@ -854,7 +856,7 @@ class TemplateManager {
 // COMPONENT GENERATORS
 // ============================================================================
 
-class ComponentGenerator {
+export class ComponentGenerator {
   /**
    * Generates HTML for a product card with variant selector and quantity controls
    */
@@ -1036,20 +1038,11 @@ class ComponentGenerator {
 }
 
 
-  // EXPOSE COMPONENTS TO WINDOW
-  if (!window.BUNDLE_WIDGET) {
-    window.BUNDLE_WIDGET = {};
-  }
+  // ============================================================================
+  // FULL-PAGE BUNDLE WIDGET
+  // ============================================================================
 
-  window.BUNDLE_WIDGET.ComponentGenerator = ComponentGenerator;
-  window.BUNDLE_WIDGET.CurrencyManager = CurrencyManager;
-  window.BUNDLE_WIDGET.BundleDataManager = BundleDataManager;
-  window.BUNDLE_WIDGET.PricingCalculator = PricingCalculator;
-  window.BUNDLE_WIDGET.ToastManager = ToastManager;
-  window.BUNDLE_WIDGET.TemplateManager = TemplateManager;
-
-  // FULL PAGE WIDGET
-  /**
+/**
  * Bundle Widget - Full Page Version
  *
  * This widget is specifically for full page bundles with horizontal tabs layout.
@@ -2016,6 +2009,7 @@ class BundleWidgetFullPage {
 
     this.elements.footer.innerHTML = '';
     this.elements.footer.className = 'full-page-footer';
+    this.elements.footer.style.display = 'flex';
 
     // Left section: Scrollable selected products
     const leftSection = document.createElement('div');
