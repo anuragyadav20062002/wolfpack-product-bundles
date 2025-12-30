@@ -244,10 +244,9 @@ class BundleWidgetFullPage {
       console.log('[WIDGET_INIT] 📄 Full-page bundle detected, fetching from API:', bundleId);
 
       try {
-        const shop = window.Shopify?.shop || window.location.host;
-        const appUrl = window.__BUNDLE_APP_URL__ || this.container.dataset.appUrl || '';
-        const apiBaseUrl = appUrl || window.location.origin;
-        const apiUrl = `${apiBaseUrl}/api/bundle/${bundleId}.json?shop=${encodeURIComponent(shop)}`;
+        // Use Shopify app proxy path - Shopify automatically adds signature and auth params
+        // App proxy config: /apps/product-bundles -> https://wolfpack-product-bundle-app.onrender.com
+        const apiUrl = `/apps/product-bundles/api/bundle/${bundleId}.json`;
 
         console.log('[WIDGET_INIT] Fetching bundle from:', apiUrl);
 
