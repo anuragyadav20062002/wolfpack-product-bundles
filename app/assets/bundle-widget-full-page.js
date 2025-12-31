@@ -857,6 +857,14 @@ class BundleWidgetFullPage {
     // Use processed product data with proper variant IDs
     let products = this.stepProductData[stepIndex] || [];
 
+    console.log('[PRODUCT_GRID_DEBUG] Step', stepIndex, {
+      stepProductDataLength: this.stepProductData[stepIndex]?.length,
+      stepProductsLength: step.products?.length,
+      firstStepProduct: step.products?.[0],
+      firstProcessedProduct: this.stepProductData[stepIndex]?.[0],
+      usingProcessedData: products === this.stepProductData[stepIndex]
+    });
+
     // Filter by active collection if selected
     if (this.activeCollectionId && step.collections) {
       const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
@@ -883,6 +891,15 @@ class BundleWidgetFullPage {
   createProductCard(product, stepIndex) {
     const productId = product.variantId || product.id;
     const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+
+    console.log('[PRODUCT_CARD_DEBUG]', {
+      productTitle: product.title,
+      productId: productId,
+      productVariantId: product.variantId,
+      productRawId: product.id,
+      isNumeric: /^\d+$/.test(String(productId)),
+      isGID: String(productId).startsWith('gid://')
+    });
 
     // Ensure product has an image URL (use multiple fallbacks)
     if (!product.imageUrl || product.imageUrl === '') {
@@ -1200,10 +1217,18 @@ class BundleWidgetFullPage {
       this.selectedBundle.steps.forEach((step, stepIndex) => {
         const stepSelections = this.selectedProducts[stepIndex] || {};
 
+        console.log('[CART_BUILD_DEBUG] Step', stepIndex, 'selections:', stepSelections);
+
         Object.entries(stepSelections).forEach(([variantId, quantity]) => {
           if (quantity > 0) {
             // Ensure we're using a numeric variant ID (extract from GID if needed)
             const numericVariantId = this.extractId(variantId) || variantId;
+
+            console.log('[CART_ITEM_DEBUG]', {
+              originalId: variantId,
+              extractedId: numericVariantId,
+              extraction: this.extractId(variantId)
+            });
 
             items.push({
               id: numericVariantId,
@@ -1981,6 +2006,14 @@ class BundleWidgetFullPage {
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
     const quantity = Math.max(0, newQuantity);
+
+    console.log('[UPDATE_SELECTION_DEBUG]', {
+      stepIndex,
+      productId,
+      quantity,
+      isNumeric: /^\d+$/.test(String(productId)),
+      isGID: String(productId).startsWith('gid://')
+    });
 
     // Validate step conditions
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {
