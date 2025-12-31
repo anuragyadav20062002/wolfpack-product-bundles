@@ -2191,20 +2191,24 @@ class BundleWidgetFullPage {
 
     this.selectedBundle.steps.forEach((step, stepIndex) => {
       const stepSelections = this.selectedProducts[stepIndex] || {};
+      const productsInStep = this.stepProductData[stepIndex] || [];
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
-          const product = this.findProductByVariantId(step, variantId);
+          // Find product in processed stepProductData using variantId or id
+          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+
           if (product) {
-            const variant = product.variants?.find(v => v.id === variantId);
             allProducts.push({
               stepIndex,
               variantId,
               quantity,
-              title: variant?.title || product.title,
-              image: product.images?.[0]?.url || product.featuredImage?.url || '',
-              price: variant?.price || product.price
+              title: product.title || 'Untitled Product',
+              image: product.imageUrl || product.image?.src || '',
+              price: product.price || 0
             });
+          } else {
+            console.warn('[FOOTER] Could not find product for variantId:', variantId);
           }
         }
       });
