@@ -2322,6 +2322,12 @@ export default function ConfigureBundleFlow() {
     }
 
     if (productUrl) {
+      // Add template view parameter if template name is set
+      if (formState.templateName && !productUrl.includes('/admin.shopify.com/')) {
+        const separator = productUrl.includes('?') ? '&' : '?';
+        productUrl += `${separator}view=${formState.templateName}`;
+      }
+
       window.open(productUrl, '_blank');
 
       // Show appropriate success message based on the URL type used

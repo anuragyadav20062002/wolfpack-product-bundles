@@ -116,9 +116,27 @@ export class WidgetInstallationService {
 
       let widgetFound = false;
 
+      AppLogger.debug('Checking product template files for widget', {
+        component: 'WidgetInstallationService',
+        shop,
+        templateCount: productTemplateFiles.length,
+        templates: productTemplateFiles.map((f: any) => f.filename)
+      });
+
       for (const file of productTemplateFiles) {
         // FIX: Access content via the nested body object
         const content = file.body?.content || '';
+
+        AppLogger.debug('Scanning template file', {
+          component: 'WidgetInstallationService',
+          shop,
+          file: file.filename,
+          contentLength: content.length,
+          hasBundleType: content.includes('"type": "Bundle"'),
+          hasWolfpackText: content.includes('Wolfpack: Product Bundles'),
+          hasAppBlock: content.includes('"type": "app"'),
+          hasExtension: content.includes('shopify://apps/')
+        });
 
         if (content.includes('"type": "Bundle"') ||
             content.includes('Wolfpack: Product Bundles') ||
@@ -342,8 +360,25 @@ export class WidgetInstallationService {
         file.filename.endsWith('.json')
       );
 
+      AppLogger.debug('Checking templates for bundle ID', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId,
+        templateCount: productTemplateFiles.length
+      });
+
       for (const file of productTemplateFiles) {
         const content = file.body?.content || '';
+
+        AppLogger.debug('Checking template for bundle ID', {
+          component: 'WidgetInstallationService',
+          shop,
+          bundleId,
+          file: file.filename,
+          hasBundleIdKey: content.includes(`"bundle_id"`),
+          hasBundleIdValue: content.includes(`"${bundleId}"`),
+          hasAnyBundleId: content.includes('bundle_id')
+        });
 
         // Check if this template contains our bundle ID in settings
         // Look for "bundle_id": "bundleId" pattern
@@ -361,7 +396,8 @@ export class WidgetInstallationService {
       AppLogger.debug('Bundle not found in widget configuration', {
         component: 'WidgetInstallationService',
         shop,
-        bundleId
+        bundleId,
+        checkedFiles: productTemplateFiles.map((f: any) => f.filename)
       });
 
       return false;
@@ -465,8 +501,27 @@ export class WidgetInstallationService {
       let widgetFound = false;
       let bundleConfigured = false;
 
+      AppLogger.debug('Checking page template files for full-page widget', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId,
+        templateCount: pageTemplateFiles.length,
+        templates: pageTemplateFiles.map((f: any) => f.filename)
+      });
+
       for (const file of pageTemplateFiles) {
         const content = file.body?.content || '';
+
+        AppLogger.debug('Scanning page template file', {
+          component: 'WidgetInstallationService',
+          shop,
+          file: file.filename,
+          contentLength: content.length,
+          hasFullPageHandle: content.includes('bundle-full-page'),
+          hasFullPageName: content.includes('Bundle - Full Page'),
+          hasBundleId: content.includes(`"${bundleId}"`),
+          hasAppBlock: content.includes('"type": "app"')
+        });
 
         // Check if page template contains full-page bundle block
         if (content.includes('bundle-full-page') || content.includes('Bundle - Full Page')) {
