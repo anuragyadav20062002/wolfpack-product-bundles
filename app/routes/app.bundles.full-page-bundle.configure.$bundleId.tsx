@@ -3393,30 +3393,75 @@ export default function ConfigureBundleFlow() {
                     </BlockStack>
                   )}
 
-                  {/* Quick Setup Action */}
+                  {/* Setup Instructions */}
                   <BlockStack gap="300">
                     <Divider />
 
-                    <InlineStack align="space-between" blockAlign="center" gap="400">
-                      <BlockStack gap="100">
-                        <Text variant="bodyMd" as="p" fontWeight="semibold">
-                          Install Widget in Theme
-                        </Text>
-                        <Text as="p" variant="bodySm" tone="subdued">
-                          {bundle.bundleType === 'full_page'
-                            ? 'Creates a page with auto-configured Bundle ID and opens theme editor. Just add the "Bundle - Full Page" block.'
-                            : 'Opens theme editor with bundle widget pre-selected. Simply drag & drop to position.'}
-                        </Text>
-                      </BlockStack>
-                      <Button
-                        variant="primary"
-                        icon={SettingsIcon}
-                        onClick={handlePlaceWidget}
-                        size="large"
-                      >
-                        Place Widget
-                      </Button>
-                    </InlineStack>
+                    <BlockStack gap="300">
+                      <Text variant="headingSm" as="h4">
+                        How to Complete Setup
+                      </Text>
+
+                      {/* Video Placeholder */}
+                      <div style={{
+                        width: '100%',
+                        height: '200px',
+                        backgroundColor: '#f6f6f7',
+                        borderRadius: '8px',
+                        border: '1px dashed #c4cdd5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative'
+                      }}>
+                        <BlockStack gap="200" inlineAlign="center">
+                          <Icon source={ViewIcon} />
+                          <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+                            Setup Video Tutorial
+                          </Text>
+                          <Text as="p" variant="bodyXs" tone="subdued" alignment="center">
+                            (Coming Soon)
+                          </Text>
+                        </BlockStack>
+                      </div>
+
+                      {/* Step-by-step Instructions */}
+                      <Card background="bg-surface-secondary">
+                        <BlockStack gap="300">
+                          <Text variant="bodyMd" as="p" fontWeight="semibold">
+                            Setup Checklist
+                          </Text>
+                          <List type="number">
+                            <List.Item>
+                              Create bundle steps and add products
+                            </List.Item>
+                            <List.Item>
+                              Set bundle status to "Active"
+                            </List.Item>
+                            <List.Item>
+                              Click "Save" to save your configuration
+                            </List.Item>
+                            <List.Item>
+                              Click "Place Widget Now" button when it appears
+                            </List.Item>
+                            <List.Item>
+                              A new page will be created automatically with the bundle
+                            </List.Item>
+                            <List.Item>
+                              Theme editor will open - add the "Bundle - Full Page" block
+                            </List.Item>
+                            <List.Item>
+                              Adjust position and save in theme editor
+                            </List.Item>
+                          </List>
+                          <Banner tone="info">
+                            <Text as="p" variant="bodyXs">
+                              💡 The "Place Widget Now" button will appear after you save. It automatically creates a page and opens the theme editor for you - no manual configuration needed!
+                            </Text>
+                          </Banner>
+                        </BlockStack>
+                      </Card>
+                    </BlockStack>
                   </BlockStack>
 
                   {/* Pro Tip - Only for product-page bundles */}
