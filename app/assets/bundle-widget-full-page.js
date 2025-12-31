@@ -854,7 +854,8 @@ class BundleWidgetFullPage {
     }
 
     const step = this.selectedBundle.steps[stepIndex];
-    let products = step.products || [];
+    // Use processed product data with proper variant IDs
+    let products = this.stepProductData[stepIndex] || [];
 
     // Filter by active collection if selected
     if (this.activeCollectionId && step.collections) {
@@ -1201,8 +1202,11 @@ class BundleWidgetFullPage {
 
         Object.entries(stepSelections).forEach(([variantId, quantity]) => {
           if (quantity > 0) {
+            // Ensure we're using a numeric variant ID (extract from GID if needed)
+            const numericVariantId = this.extractId(variantId) || variantId;
+
             items.push({
-              id: variantId,
+              id: numericVariantId,
               quantity: quantity,
               properties: {
                 '_bundle_id': this.selectedBundle.id,
