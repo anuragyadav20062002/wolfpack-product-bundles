@@ -27,10 +27,13 @@ export class WidgetInstallationService {
    * Uses Shopify Admin GraphQL API to check for:
    * 1. Theme template files that contain the bundle widget block
    * 2. JSON template files with app block references
+   *
+   * @param apiKey - App API key to check for specific app block references
    */
   static async checkWidgetInstallation(
     admin: any,
-    shop: string
+    shop: string,
+    apiKey?: string
   ): Promise<WidgetInstallationStatus> {
     try {
       AppLogger.debug('Checking widget installation status', {
@@ -138,15 +141,27 @@ export class WidgetInstallationService {
           hasExtension: content.includes('shopify://apps/')
         });
 
-        if (content.includes('"type": "Bundle"') ||
-            content.includes('Wolfpack: Product Bundles') ||
-            content.includes('bundle')) {
+        // Check for specific bundle widget block patterns
+        // If apiKey is provided, check for our specific app block reference
+        // Otherwise fall back to generic patterns (less reliable)
+        const hasOurAppBlock = apiKey && (
+          content.includes(`shopify://apps/${apiKey}/blocks/bundle`) ||
+          content.includes(`shopify://apps/${apiKey}/blocks/bundle-full-page`)
+        );
+
+        const hasGenericBundlePattern = !apiKey && (
+          content.includes('"type": "Bundle"') ||
+          content.includes('Wolfpack: Product Bundles')
+        );
+
+        if (hasOurAppBlock || hasGenericBundlePattern) {
           widgetFound = true;
           AppLogger.info('Widget installation detected', {
             component: 'WidgetInstallationService',
             shop,
             themeId,
-            file: file.filename
+            file: file.filename,
+            detectionMethod: hasOurAppBlock ? 'specific-app-block' : 'generic-pattern'
           });
           break;
         }
@@ -417,11 +432,14 @@ export class WidgetInstallationService {
   /**
    * Check if full-page bundle widget exists in page templates
    * Full-page bundles are placed on 'page' templates, not 'product' templates
+   *
+   * @param apiKey - App API key for specific app block detection
    */
   static async checkFullPageBundleInstallation(
     admin: any,
     shop: string,
-    bundleId: string
+    bundleId: string,
+    apiKey?: string
   ): Promise<{
     installed: boolean;
     bundleConfigured: boolean;
@@ -523,14 +541,25 @@ export class WidgetInstallationService {
           hasAppBlock: content.includes('"type": "app"')
         });
 
-        // Check if page template contains full-page bundle block
-        if (content.includes('bundle-full-page') || content.includes('Bundle - Full Page')) {
+        // Check for specific full-page bundle widget block patterns
+        // If apiKey is provided, check for our specific app block reference
+        // Otherwise fall back to generic patterns (less reliable)
+        const hasOurFullPageBlock = apiKey &&
+          content.includes(`shopify://apps/${apiKey}/blocks/bundle-full-page`);
+
+        const hasGenericFullPagePattern = !apiKey && (
+          content.includes('bundle-full-page') ||
+          content.includes('Bundle - Full Page')
+        );
+
+        if (hasOurFullPageBlock || hasGenericFullPagePattern) {
           widgetFound = true;
           AppLogger.info('Full-page widget installation detected', {
             component: 'WidgetInstallationService',
             shop,
             themeId,
-            file: file.filename
+            file: file.filename,
+            detectionMethod: hasOurFullPageBlock ? 'specific-app-block' : 'generic-pattern'
           });
 
           // Check if THIS specific bundle is configured
@@ -571,12 +600,15 @@ export class WidgetInstallationService {
    *
    * For FULL-PAGE bundles: checks page templates
    * For PRODUCT-PAGE bundles: checks product templates
+   *
+   * @param apiKey - App API key for specific app block detection
    */
   static async getBundleInstallationContext(
     admin: any,
     shop: string,
     bundleId: string,
-    bundleType?: 'full_page' | 'product_page'
+    bundleType?: 'full_page' | 'product_page',
+    apiKey?: string
   ): Promise<{
     widgetInstalled: boolean;
     bundleConfigured: boolean;
@@ -586,7 +618,7 @@ export class WidgetInstallationService {
     try {
       // For full-page bundles, check page templates
       if (bundleType === 'full_page') {
-        const fullPageStatus = await this.checkFullPageBundleInstallation(admin, shop, bundleId);
+        const fullPageStatus = await this.checkFullPageBundleInstallation(admin, shop, bundleId, apiKey);
 
         if (!fullPageStatus.installed) {
           return {
@@ -615,7 +647,7 @@ export class WidgetInstallationService {
       }
 
       // For product-page bundles, check product templates (existing logic)
-      const widgetStatus = await this.checkWidgetInstallation(admin, shop);
+      const widgetStatus = await this.checkWidgetInstallation(admin, shop, apiKey);
 
       if (!widgetStatus.installed) {
         return {

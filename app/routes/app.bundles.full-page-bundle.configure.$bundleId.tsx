@@ -87,6 +87,8 @@ interface LoaderData {
     description?: string;
     shopId: string;
     shopifyProductId?: string;
+    shopifyPageHandle?: string;  // For full-page bundles
+    shopifyPageId?: string;      // For full-page bundles
     bundleType: string;
     status: string;
     templateName?: string;
@@ -220,7 +222,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     admin,
     session.shop,
     bundleId,
-    bundle.bundleType as 'full_page' | 'product_page'
+    bundle.bundleType as 'full_page' | 'product_page',
+    apiKey  // Pass API key for specific app block detection
   );
 
   // Generate bundle-specific installation link (pre-populates bundle ID and product)
@@ -2389,7 +2392,7 @@ export default function ConfigureBundleFlow() {
     // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
     if (bundle.bundleType === 'full_page') {
       if (!bundle.shopifyPageHandle) {
-        shopify.toast.show("Bundle page not created yet. Please use 'Place Widget Now' to create the bundle page first.", {
+        shopify.toast.show("Bundle page not created yet. Please use 'Add to Storefront' to create the bundle page first.", {
           isError: true,
           duration: 5000
         });
@@ -3181,7 +3184,7 @@ export default function ConfigureBundleFlow() {
                     loading={fetcher.state === 'submitting'}
                     variant="primary"
                   >
-                    Place Widget Now
+                    Add to Storefront
                   </Button>
                 </InlineStack>
               </Banner>
@@ -3442,7 +3445,7 @@ export default function ConfigureBundleFlow() {
                               Click "Save" to save your configuration
                             </List.Item>
                             <List.Item>
-                              Click "Place Widget Now" button when it appears
+                              Click "Add to Storefront" button when it appears
                             </List.Item>
                             <List.Item>
                               A new page will be created automatically with the bundle
@@ -3456,7 +3459,7 @@ export default function ConfigureBundleFlow() {
                           </List>
                           <Banner tone="info">
                             <Text as="p" variant="bodyXs">
-                              💡 The "Place Widget Now" button will appear after you save. It automatically creates a page and opens the theme editor for you - no manual configuration needed!
+                              💡 The "Add to Storefront" button will appear after you save. It automatically creates a page and opens the theme editor for you - no manual configuration needed!
                             </Text>
                           </Banner>
                         </BlockStack>

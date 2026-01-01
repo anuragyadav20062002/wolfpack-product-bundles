@@ -220,7 +220,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     admin,
     session.shop,
     bundleId,
-    'product_page'
+    'product_page',
+    apiKey  // Pass API key for specific app block detection
   );
 
   // Generate bundle-specific installation link (pre-populates bundle ID and product)
@@ -3024,7 +3025,7 @@ export default function ConfigureBundleFlow() {
                     loading={fetcher.state === 'submitting'}
                     variant="primary"
                   >
-                    Place Widget Now
+                    Add to Storefront
                   </Button>
                 </InlineStack>
               </Banner>
@@ -3269,7 +3270,7 @@ export default function ConfigureBundleFlow() {
                               Click "Save" to save your configuration
                             </List.Item>
                             <List.Item>
-                              Click "Place Widget Now" button when it appears to open theme editor
+                              Click "Add to Storefront" button when it appears to open theme editor
                             </List.Item>
                             <List.Item>
                               In theme editor, adjust the widget position and save
@@ -3277,7 +3278,7 @@ export default function ConfigureBundleFlow() {
                           </List>
                           <Banner tone="info">
                             <Text as="p" variant="bodyXs">
-                              💡 The "Place Widget Now" button will appear after you save your bundle configuration. It opens the theme editor with the widget pre-selected for easy placement.
+                              💡 The "Add to Storefront" button will appear after you save your bundle configuration. It opens the theme editor with the widget pre-selected for easy placement.
                             </Text>
                           </Banner>
                         </BlockStack>
