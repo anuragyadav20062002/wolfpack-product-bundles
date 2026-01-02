@@ -1013,10 +1013,7 @@ export class WidgetInstallationService {
           page: {
             title: pageTitle,
             handle: pageHandle,
-            body: `<div style="text-align: center; padding: 60px 20px;">
-  <h1 style="font-size: 2em; margin-bottom: 20px;">${bundleName}</h1>
-  <p style="color: #666; font-size: 1.1em;">Loading bundle builder...</p>
-</div>`,
+            body: '',  // No hardcoded content - the bundle widget block will handle all display
             isPublished: true
           }
         }

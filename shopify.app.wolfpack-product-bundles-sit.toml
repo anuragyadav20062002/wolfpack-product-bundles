@@ -10,10 +10,10 @@ api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = [
+  "products/delete",
   "products/update",
-  "app_purchases_one_time/update",
   "app_subscriptions/update",
-  "products/delete"
+  "app_purchases_one_time/update"
 ]
   uri = "pubsub://light-quest-455608-i3:wolfpack-product-bundles-staging"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]

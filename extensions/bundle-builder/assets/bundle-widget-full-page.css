@@ -380,7 +380,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--bundle-full-page-price-row-border, rgba(0, 0, 0, 0.06));
-  display: block;
+  display: var(--bundle-product-price-display, block);
   white-space: nowrap;
 }
 

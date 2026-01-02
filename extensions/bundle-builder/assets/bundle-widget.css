@@ -750,10 +750,10 @@
 }
 
 /* Modal product cards - compact design with proper sizing */
-/* Modal-specific product grid - fit 3 cards per row on desktop */
+/* Modal-specific product grid - uses DCP setting for cards per row */
 .modal-body .product-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), 1fr);
   gap: 20px;
   max-width: 1200px;
   width: 100%;
@@ -762,7 +762,7 @@
 
 @media (min-width: 769px) {
   .modal-body .product-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), 1fr);
   }
 }
 
@@ -871,7 +871,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.06);
-  display: block;
+  display: var(--bundle-product-price-display, block);
   white-space: nowrap;
 }
 
