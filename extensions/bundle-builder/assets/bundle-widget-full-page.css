@@ -307,17 +307,17 @@
 /* Selected Overlay Badge */
 .product-card .selected-overlay {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 28px;
-  height: 28px;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background-color: var(--bundle-full-page-selected-badge-bg, #DE4139);
+  background-color: #4CAF50;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--bundle-full-page-selected-badge-color, #FFFFFF);
-  font-size: 16px;
+  color: white;
+  font-size: 14px;
   font-weight: bold;
   z-index: 10;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -370,16 +370,16 @@
   font-family: 'Quattrocento Sans', sans-serif;
 }
 
-/* Price Row with Gradient Background */
+/* Price Row with Background from DCP */
 .product-price-row {
   margin: 12px 0;
   text-align: center;
   flex-shrink: 0;
   position: relative;
-  background: linear-gradient(135deg, var(--bundle-full-page-price-row-gradient-start, #F9FAFB) 0%, var(--bundle-full-page-price-row-gradient-end, #F3F4F6) 100%);
+  background: var(--bundle-product-price-bg-color, #F0F8F0);
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid var(--bundle-full-page-price-row-border, rgba(0, 0, 0, 0.06));
+  border: 1px solid rgba(0, 0, 0, 0.06);
   display: var(--bundle-product-price-display, block);
   white-space: nowrap;
 }

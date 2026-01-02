@@ -2293,6 +2293,12 @@ export default function ConfigureBundleFlow() {
           setIsLoadingPages(false);
         } else if ('themeId' in result && result.themeId) {
           // This is a get current theme response - handled by individual callbacks
+        } else if ('pageHandle' in result && result.pageHandle) {
+          // This is a widget placement response - reload to show updated banner
+          shopify.toast.show("Widget placed successfully! Refreshing...", { isError: false });
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         } else {
           // Generic success response
           shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });

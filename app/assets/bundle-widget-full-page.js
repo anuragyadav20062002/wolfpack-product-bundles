@@ -2052,7 +2052,7 @@ class BundleWidgetFullPage {
     if (productCard) {
       const quantityDisplay = productCard.querySelector('.qty-display');
       const addBtn = productCard.querySelector('.product-add-btn');
-      const selectedOverlay = productCard.querySelector('.selected-overlay');
+      let selectedOverlay = productCard.querySelector('.selected-overlay');
 
       if (quantityDisplay) {
         quantityDisplay.textContent = quantity;
@@ -2068,10 +2068,18 @@ class BundleWidgetFullPage {
         }
       }
 
-      if (selectedOverlay) {
-        if (quantity > 0) {
-          selectedOverlay.style.display = 'flex';
-        } else {
+      // Handle selected overlay (create if doesn't exist)
+      if (quantity > 0) {
+        if (!selectedOverlay) {
+          // Create the overlay if it doesn't exist
+          selectedOverlay = document.createElement('div');
+          selectedOverlay.className = 'selected-overlay';
+          selectedOverlay.textContent = '✓';
+          productCard.appendChild(selectedOverlay);
+        }
+        selectedOverlay.style.display = 'flex';
+      } else {
+        if (selectedOverlay) {
           selectedOverlay.style.display = 'none';
         }
       }
