@@ -273,7 +273,7 @@
 
 .full-page-product-grid {
   display: grid;
-  grid-template-columns: repeat(var(--bundle-full-page-product-grid-columns, 3), 1fr);
+  grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), 1fr);
   gap: 20px;
   margin: 20px 0;
   width: 100%;

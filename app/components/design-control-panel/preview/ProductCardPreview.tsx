@@ -8,6 +8,7 @@ interface ProductCardPreviewProps {
   productCardImageFit: string;
   productTitleVisibility: boolean;
   productPriceVisibility: boolean;
+  productPriceBgColor: string;
   productStrikePriceColor: string;
   productStrikeFontSize: number;
   productStrikeFontWeight: number;
@@ -37,6 +38,7 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
     productCardImageFit,
     productTitleVisibility,
     productPriceVisibility,
+    productPriceBgColor,
     productStrikePriceColor,
     productStrikeFontSize,
     productStrikeFontWeight,
@@ -151,7 +153,7 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               textAlign: "center",
               flexShrink: 0,
               position: "relative",
-              background: "linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%)",
+              backgroundColor: productPriceBgColor,
               padding: "10px 12px",
               borderRadius: "10px",
               border: "1px solid rgba(0, 0, 0, 0.06)"

@@ -1,6 +1,6 @@
 {
   "bundle_product_page": {
-    "name": "Bundle Builder",
+    "name": "Wolfpack - Product Page Bundle",
     "settings": {
       "enabled_label": "Show bundle widget",
       "enabled_info": "Display the product bundle widget on this page",
@@ -61,7 +61,7 @@
     }
   },
   "bundle_full_page": {
-    "name": "Bundle - Full Page",
+    "name": "Wolfpack - Full Page Bundle",
     "settings": {
       "paragraph_content": "This block is for full-page bundles on standalone pages. The Bundle ID is automatically configured when you use 'Place Widget Now' from the app admin.",
       "configuration_header": "Configuration",

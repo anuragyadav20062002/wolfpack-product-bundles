@@ -223,7 +223,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     session.shop,
     bundleId,
     bundle.bundleType as 'full_page' | 'product_page',
-    apiKey  // Pass API key for specific app block detection
+    apiKey,  // Pass API key for specific app block detection
+    bundle.shopifyPageHandle  // Pass page handle to check if bundle is placed
   );
 
   // Generate bundle-specific installation link (pre-populates bundle ID and product)

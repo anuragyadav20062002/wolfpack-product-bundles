@@ -608,7 +608,8 @@ export class WidgetInstallationService {
     shop: string,
     bundleId: string,
     bundleType?: 'full_page' | 'product_page',
-    apiKey?: string
+    apiKey?: string,
+    bundlePageHandle?: string | null  // Added parameter to check if bundle is placed
   ): Promise<{
     widgetInstalled: boolean;
     bundleConfigured: boolean;
@@ -629,7 +630,11 @@ export class WidgetInstallationService {
           };
         }
 
-        if (fullPageStatus.bundleConfigured) {
+        // For full-page bundles, check if shopifyPageHandle is set
+        // This is more reliable than checking template files since bundleId is stored in page metafields
+        const bundleConfigured = !!(bundlePageHandle && bundlePageHandle.trim() !== '');
+
+        if (bundleConfigured) {
           return {
             widgetInstalled: true,
             bundleConfigured: true,
@@ -658,7 +663,9 @@ export class WidgetInstallationService {
         };
       }
 
-      const bundleConfigured = await this.checkBundleInWidget(admin, shop, bundleId);
+      // For product-page bundles, check if shopifyProductId is set (means bundle is placed)
+      // This is more reliable than checking template files for container products
+      const bundleConfigured = !!(bundlePageHandle && bundlePageHandle.trim() !== '');
 
       if (bundleConfigured) {
         return {

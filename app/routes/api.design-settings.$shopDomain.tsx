@@ -72,6 +72,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       productCardImageFit: "cover",
       productCardsPerRow: 3,
       productPriceVisibility: true,
+      productPriceBgColor: "#F0F8F0",
       productStrikePriceColor: "#8D8D8D",
       productStrikeFontSize: 14,
       productStrikeFontWeight: 400,
@@ -115,6 +116,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         productCardImageFit: designSettings.productCardImageFit || defaultSettings.productCardImageFit,
         productCardsPerRow: designSettings.productCardsPerRow || defaultSettings.productCardsPerRow,
         productPriceVisibility: designSettings.productPriceVisibility !== undefined ? designSettings.productPriceVisibility : defaultSettings.productPriceVisibility,
+        productPriceBgColor: designSettings.productPriceBgColor || defaultSettings.productPriceBgColor,
         productStrikePriceColor: designSettings.productStrikePriceColor || defaultSettings.productStrikePriceColor,
         productStrikeFontSize: designSettings.productStrikeFontSize || defaultSettings.productStrikeFontSize,
         productStrikeFontWeight: designSettings.productStrikeFontWeight || defaultSettings.productStrikeFontWeight,
@@ -209,6 +211,7 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-product-card-image-fit: ${s.productCardImageFit || 'cover'};
   --bundle-product-cards-per-row: ${s.productCardsPerRow || 3};
   --bundle-product-price-display: ${s.productPriceVisibility !== false ? 'block' : 'none'};
+  --bundle-product-price-bg-color: ${s.productPriceBgColor || '#F0F8F0'};
   --bundle-product-strike-price-color: ${s.productStrikePriceColor || globalSecondaryText};
   --bundle-product-strike-font-size: ${s.productStrikeFontSize || 14}px;
   --bundle-product-strike-font-weight: ${s.productStrikeFontWeight || 400};
