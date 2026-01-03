@@ -69,6 +69,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       productCardsPerRow: 3,
       productTitleVisibility: true,
       productPriceVisibility: true,
+      productPriceBgColor: "#F0F8F0",
       productStrikePriceColor: "#8D8D8D",
       productStrikeFontSize: 14,
       productStrikeFontWeight: 400,
@@ -203,6 +204,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       productCardsPerRow: 4,
       productTitleVisibility: true,
       productPriceVisibility: true,
+      productPriceBgColor: "#F9FAFB",
       productStrikePriceColor: "#9CA3AF",
       productStrikeFontSize: 16,
       productStrikeFontWeight: 400,
@@ -337,6 +339,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       productCardImageFit: dbSettings.productCardImageFit || defaults.productCardImageFit,
       productCardsPerRow: dbSettings.productCardsPerRow || defaults.productCardsPerRow,
       productPriceVisibility: dbSettings.productPriceVisibility !== undefined ? dbSettings.productPriceVisibility : defaults.productPriceVisibility,
+      productPriceBgColor: dbSettings.productPriceBgColor || defaults.productPriceBgColor,
       productStrikePriceColor: dbSettings.productStrikePriceColor || defaults.productStrikePriceColor,
       productStrikeFontSize: dbSettings.productStrikeFontSize || defaults.productStrikeFontSize,
       productStrikeFontWeight: dbSettings.productStrikeFontWeight || defaults.productStrikeFontWeight,
@@ -488,6 +491,7 @@ export async function action({ request }: ActionFunctionArgs) {
         productCardImageFit: settings.productCardImageFit,
         productCardsPerRow: settings.productCardsPerRow,
         productPriceVisibility: settings.productPriceVisibility,
+        productPriceBgColor: settings.productPriceBgColor,
         productStrikePriceColor: settings.productStrikePriceColor,
         productStrikeFontSize: settings.productStrikeFontSize,
         productStrikeFontWeight: settings.productStrikeFontWeight,
@@ -518,6 +522,7 @@ export async function action({ request }: ActionFunctionArgs) {
         productCardImageFit: settings.productCardImageFit,
         productCardsPerRow: settings.productCardsPerRow,
         productPriceVisibility: settings.productPriceVisibility,
+        productPriceBgColor: settings.productPriceBgColor,
         productStrikePriceColor: settings.productStrikePriceColor,
         productStrikeFontSize: settings.productStrikeFontSize,
         productStrikeFontWeight: settings.productStrikeFontWeight,
@@ -581,6 +586,7 @@ export default function DesignControlPanel() {
   const [productCardsPerRow, setProductCardsPerRow] = useState(String(currentSettings.productCardsPerRow));
   const [productTitleVisibility, setProductTitleVisibility] = useState(currentSettings.productTitleVisibility);
   const [productPriceVisibility, setProductPriceVisibility] = useState(currentSettings.productPriceVisibility);
+  const [productPriceBgColor, setProductPriceBgColor] = useState(currentSettings.productPriceBgColor);
 
   // Product Card Typography
   const [productStrikePriceColor, setProductStrikePriceColor] = useState(currentSettings.productStrikePriceColor);
@@ -717,6 +723,7 @@ export default function DesignControlPanel() {
     setProductCardImageFit(newSettings.productCardImageFit);
     setProductCardsPerRow(String(newSettings.productCardsPerRow));
     setProductPriceVisibility(newSettings.productPriceVisibility);
+    setProductPriceBgColor(newSettings.productPriceBgColor);
     setProductStrikePriceColor(newSettings.productStrikePriceColor);
     setProductStrikeFontSize(newSettings.productStrikeFontSize);
     setProductStrikeFontWeight(newSettings.productStrikeFontWeight);
@@ -804,6 +811,7 @@ export default function DesignControlPanel() {
       String(productCardsPerRow) !== String(current.productCardsPerRow) ||
       productTitleVisibility !== current.productTitleVisibility ||
       productPriceVisibility !== current.productPriceVisibility ||
+      productPriceBgColor !== current.productPriceBgColor ||
       productStrikePriceColor !== current.productStrikePriceColor ||
       productStrikeFontSize !== current.productStrikeFontSize ||
       productStrikeFontWeight !== current.productStrikeFontWeight ||
@@ -905,6 +913,7 @@ export default function DesignControlPanel() {
     productCardsPerRow,
     productTitleVisibility,
     productPriceVisibility,
+    productPriceBgColor,
     productStrikePriceColor,
     productStrikeFontSize,
     productStrikeFontWeight,
@@ -990,6 +999,7 @@ export default function DesignControlPanel() {
     setProductCardsPerRow(String(savedSettings.productCardsPerRow));
     setProductTitleVisibility(savedSettings.productTitleVisibility);
     setProductPriceVisibility(savedSettings.productPriceVisibility);
+    setProductPriceBgColor(savedSettings.productPriceBgColor);
     setProductStrikePriceColor(savedSettings.productStrikePriceColor);
     setProductStrikeFontSize(savedSettings.productStrikeFontSize);
     setProductStrikeFontWeight(savedSettings.productStrikeFontWeight);
@@ -1142,6 +1152,7 @@ export default function DesignControlPanel() {
       productCardsPerRow: parseInt(productCardsPerRow),
       productPriceVisibility,
       productTitleVisibility,
+      productPriceBgColor,
       productStrikePriceColor,
       productStrikeFontSize,
       productStrikeFontWeight,
@@ -1244,6 +1255,7 @@ export default function DesignControlPanel() {
     productCardImageFit,
     productCardsPerRow,
     productPriceVisibility,
+    productPriceBgColor,
     productStrikePriceColor,
     productStrikeFontSize,
     productStrikeFontWeight,
@@ -1899,6 +1911,7 @@ export default function DesignControlPanel() {
         productCardImageFit={productCardImageFit}
         productTitleVisibility={productTitleVisibility}
         productPriceVisibility={productPriceVisibility}
+        productPriceBgColor={productPriceBgColor}
         productStrikePriceColor={productStrikePriceColor}
         productStrikeFontSize={productStrikeFontSize}
         productStrikeFontWeight={productStrikeFontWeight}
@@ -2327,6 +2340,12 @@ export default function DesignControlPanel() {
 
             {productPriceVisibility && (
               <>
+                <ColorPicker
+                  label="Price Section Background Color"
+                  value={productPriceBgColor}
+                  onChange={setProductPriceBgColor}
+                />
+
                 <ColorPicker
                   label="Strikethrough Price Color"
                   value={productStrikePriceColor}

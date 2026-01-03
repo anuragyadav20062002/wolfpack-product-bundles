@@ -1,16 +1,64 @@
-# Wolfpack Product Bundles - Documentation
+# Documentation Hub
+## Wolfpack Product Bundles - Complete Documentation
 
-## 📚 Documentation Overview
-
-This directory contains all current documentation for the Wolfpack Product Bundles Shopify app.
+**Last Updated:** December 28, 2025
+**Version:** 4.0
+**Status:** Current and Maintained
 
 ---
 
-## 📖 Current Documentation
+## 🎯 Quick Start - Choose Your Path
 
-### Core Documentation
+### 👨‍💻 For Developers (Joining the Team)
+**Start here:** [TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md)
+- Complete codebase overview in simple terms
+- Architecture explanations
+- Development workflows
+- Troubleshooting guides
 
-**[APPLICATION_ARCHITECTURE.md](./APPLICATION_ARCHITECTURE.md)** ⭐ **START HERE**
+### 📖 For Understanding the App (General Overview)
+**Start here:** [GITHUB_README.md](./GITHUB_README.md)
+- What the app does
+- Features and capabilities
+- System architecture
+- Installation and setup
+
+### 🤖 For Building From Scratch (Prompt Engineering)
+**Start here:** [PROMPT_ENGINEERING_GUIDE.md](./PROMPT_ENGINEERING_GUIDE.md)
+- Step-by-step prompts to recreate the app
+- No prior Shopify/Figma knowledge required
+- Complete with AI coding assistants
+- ~18-27 hours from start to finish
+
+---
+
+## 📚 Complete Documentation Index
+
+### ⭐ New Core Documentation (Latest Version)
+
+**[TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md)** - For Developers
+- Complete codebase overview in simple terms
+- System architecture and data flow
+- Core components explained
+- Development tasks and workflows
+- Troubleshooting guide
+
+**[GITHUB_README.md](./GITHUB_README.md)** - For Everyone
+- App overview and features
+- Installation and quick start
+- Technology stack
+- API reference
+- Contributing guidelines
+
+**[PROMPT_ENGINEERING_GUIDE.md](./PROMPT_ENGINEERING_GUIDE.md)** - For Recreating the App
+- Step-by-step prompts for AI assistants
+- No Shopify/Figma knowledge required
+- 9 phases from setup to deployment
+- Debugging prompts included
+
+### Original Core Documentation
+
+**[APPLICATION_ARCHITECTURE.md](./APPLICATION_ARCHITECTURE.md)** ⭐
 - Complete system architecture overview
 - Technology stack details
 - Database schema with all models
@@ -244,10 +292,12 @@ When updating documentation:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 4.0.0 | Dec 28, 2025 | Major documentation expansion<br>- Added TECHNICAL_DOCUMENTATION.md (developer guide)<br>- Added GITHUB_README.md (general overview)<br>- Added PROMPT_ENGINEERING_GUIDE.md (prompt-based recreation)<br>- Reorganized documentation hub |
 | 2.0.0 | Nov 27, 2025 | Complete documentation restructure<br>- Created APPLICATION_ARCHITECTURE.md<br>- Archived 19 old documents<br>- Added subscription billing docs<br>- Added Google Cloud Pub/Sub guide |
 | 1.0.0 | Nov 4, 2024 | Initial documentation |
 
 ---
 
-**Last Updated:** November 27, 2025
-**Maintained By:** Development Team
+**Last Updated:** December 28, 2025
+**Maintained By:** Wolfpack Development Team
+**Next Review:** January 28, 2026

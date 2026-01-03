@@ -1,0 +1,210 @@
+{% schema %}
+{
+  "name": "t:bundle_full_page.name",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["page"]
+  },
+  "stylesheet": "bundle-widget-full-page.css",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:bundle_full_page.settings.paragraph_content"
+    },
+    {
+      "type": "text",
+      "id": "bundle_id",
+      "label": "t:bundle_full_page.settings.bundle_id_label",
+      "info": "t:bundle_full_page.settings.bundle_id_info"
+    },
+    {
+      "type": "text",
+      "id": "app_url",
+      "label": "t:bundle_full_page.settings.app_url_label",
+      "info": "t:bundle_full_page.settings.app_url_info"
+    },
+    {
+      "type": "header",
+      "content": "t:bundle_full_page.settings.content_customization_header"
+    },
+    {
+      "type": "text",
+      "id": "custom_title",
+      "label": "t:bundle_full_page.settings.custom_title_label",
+      "info": "t:bundle_full_page.settings.custom_title_info"
+    },
+    {
+      "type": "textarea",
+      "id": "custom_description",
+      "label": "t:bundle_full_page.settings.custom_description_label",
+      "info": "t:bundle_full_page.settings.custom_description_info"
+    },
+    {
+      "type": "text",
+      "id": "custom_instruction",
+      "label": "t:bundle_full_page.settings.custom_instruction_label",
+      "info": "t:bundle_full_page.settings.custom_instruction_info"
+    },
+    {
+      "type": "header",
+      "content": "t:bundle_full_page.settings.display_header"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bundle_title",
+      "label": "t:bundle_full_page.settings.show_bundle_title_label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bundle_description",
+      "label": "t:bundle_full_page.settings.show_bundle_description_label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_step_timeline",
+      "label": "t:bundle_full_page.settings.show_step_timeline_label",
+      "info": "t:bundle_full_page.settings.show_step_timeline_info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_tabs",
+      "label": "t:bundle_full_page.settings.show_category_tabs_label",
+      "info": "t:bundle_full_page.settings.show_category_tabs_info",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
+
+{% comment %}
+  Full-Page Bundle Widget
+  For standalone bundle pages (not product pages)
+  Merchants create a page and assign this template
+
+  AUTOMATED WORKFLOW:
+  1. Bundle ID is automatically set via page metafield when using "Place Widget Now"
+  2. Falls back to manual block setting for backwards compatibility
+{% endcomment %}
+
+{% comment %} Try to get bundle ID from page metafield (automated) {% endcomment %}
+{% assign app_namespace = '$app' %}
+{% assign bundle_id_from_metafield = page.metafields[app_namespace].bundle_id %}
+{% assign bundle_id_from_setting = block.settings.bundle_id %}
+
+{% comment %} Priority: Page metafield (automated) > Block setting (manual) {% endcomment %}
+{% if bundle_id_from_metafield and bundle_id_from_metafield != blank %}
+  {% assign bundle_id = bundle_id_from_metafield %}
+  {% assign bundle_id_source = "page_metafield_automated" %}
+{% elsif bundle_id_from_setting and bundle_id_from_setting != blank %}
+  {% assign bundle_id = bundle_id_from_setting %}
+  {% assign bundle_id_source = "block_setting_manual" %}
+{% else %}
+  {% assign bundle_id = nil %}
+  {% assign bundle_id_source = "none" %}
+{% endif %}
+
+{% assign should_show_widget = false %}
+
+{% comment %} Check if bundle ID is provided from any source {% endcomment %}
+{% if bundle_id and bundle_id != blank %}
+  {% assign should_show_widget = true %}
+{% endif %}
+
+{% comment %} THEME EDITOR: Allow preview even without bundle ID {% endcomment %}
+{% if request.design_mode %}
+  {% assign should_show_widget = true %}
+  {% unless bundle_id and bundle_id != blank %}
+    {% assign bundle_id = "preview" %}
+  {% endunless %}
+{% endif %}
+
+{% if should_show_widget %}
+  <div
+    {{ block.shopify_attributes }}
+    id="bundle-builder-app"
+    data-bundle-id="{{ bundle_id }}"
+    data-bundle-type="full_page"
+    data-app-url="{{ block.settings.app_url | default: '' }}"
+    data-show-title="{{ block.settings.show_bundle_title }}"
+    data-show-description="{{ block.settings.show_bundle_description }}"
+    data-show-step-timeline="{{ block.settings.show_step_timeline }}"
+    data-show-category-tabs="{{ block.settings.show_category_tabs }}"
+    data-custom-title="{{ block.settings.custom_title | escape }}"
+    data-custom-description="{{ block.settings.custom_description | escape }}"
+    data-custom-instruction="{{ block.settings.custom_instruction | escape }}"
+    class="bundle-widget-container bundle-widget-full-page"
+  >
+    <div class="bundle-loading">
+      <div class="loading-spinner"></div>
+    </div>
+  </div>
+
+  <script>
+    console.log('🎯 [FULL_PAGE_BUNDLE] Widget Loading:', {
+      bundleId: {{ bundle_id | json }},
+      bundleIdSource: {{ bundle_id_source | json }},
+      bundleType: 'full_page',
+      pageHandle: {{ page.handle | json }},
+      pageTitle: {{ page.title | json }},
+      isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
+      automated: {{ bundle_id_source | json }} === 'page_metafield_automated'
+    });
+
+    // Initialize Shopify context for full-page bundles
+    if (!window.bundleWidgetContext) {
+      window.shopCurrency = {{ shop.currency | json }};
+      window.shopMoneyFormat = {{ shop.money_format | json }};
+      window.shopifyMultiCurrency = {
+        shopBaseCurrency: {{ shop.currency | json }},
+        shopMoneyFormat: {{ shop.money_format | json }},
+        customerCurrency: null,
+        customerMoneyFormat: null,
+        exchangeRate: 1,
+        isMultiCurrencyEnabled: false
+      };
+      window.bundleWidgetContext = true;
+    }
+  </script>
+
+  <!-- Inject app URL from shop metafield -->
+  <script>
+    {% assign app_namespace = '$app' %}
+    {% assign shop_app_metafields = shop.metafields[app_namespace] %}
+    {% assign server_url_field = nil %}
+    {% if shop_app_metafields %}
+      {% assign server_url_field = shop_app_metafields['serverUrl'] %}
+    {% endif %}
+    window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
+  </script>
+
+  <!-- Load Design Control Panel Settings (Dynamic CSS from Database) -->
+  <!-- This injects CSS variables from DesignSettings table for full_page bundle type -->
+  <!-- CRITICAL: Without this, DCP settings won't apply to full-page bundles! -->
+  <!-- NOTE: Using app proxy URL instead of asset_url because design settings are dynamically -->
+  <!-- generated from database, not static theme assets. This is intentional. -->
+  {% # theme-check-disable RemoteAsset %}
+  <link
+    rel="stylesheet"
+    href="{{ shop.url }}/apps/product-bundles/api/design-settings/{{ shop.domain }}?bundleType=full_page&v={{ 'now' | date: '%s' }}"
+    type="text/css"
+  >
+  {% # theme-check-enable RemoteAsset %}
+
+  <!-- Load widget JavaScript dynamically to bypass 10KB Shopify limit -->
+  <script>
+    (function() {
+      var script = document.createElement('script');
+      script.src = '{{ 'bundle-widget-full-page-bundled.js' | asset_url }}';
+      script.async = false;
+      document.head.appendChild(script);
+    })();
+  </script>
+{% else %}
+  <div class="bundle-widget-placeholder" style="padding: 40px; text-align: center; background: #f0f3eb; border-radius: 8px;">
+    <h3 style="margin: 0 0 10px;">Full-Page Bundle Widget</h3>
+    <p style="margin: 0; color: #666;">Please configure a Bundle ID in the block settings to display the bundle builder.</p>
+  </div>
+{% endif %}

@@ -79,7 +79,9 @@ model Bundle {
   name             String
   description      String?
   shopId           String
-  shopifyProductId String? // New field to store the Shopify Product ID (GID)
+  shopifyProductId String? // Shopify Product ID (GID) for product-page bundles
+  shopifyPageHandle String? // Shopify Page handle for full-page bundles (e.g., "build-your-bundle")
+  shopifyPageId    String? // Shopify Page ID (GID) for full-page bundles
   templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
   bundleType       BundleType        @default(product_page)
   status           BundleStatus      @default(draft)
@@ -92,6 +94,7 @@ model Bundle {
   @@index([shopId])
   @@index([status])
   @@index([bundleType])
+  @@index([shopifyPageHandle])
 }
 
 model BundleStep {
@@ -180,6 +183,7 @@ model DesignSettings {
   productCardImageFit         String? @default("cover") // cover, contain, fill
   productCardsPerRow          Int?    @default(3)
   productPriceVisibility      Boolean @default(true)
+  productPriceBgColor         String? @default("#F0F8F0") // Background color for price section
   productStrikePriceColor     String? @default("#8D8D8D")
   productStrikeFontSize       Int?    @default(14)
   productStrikeFontWeight     Int?    @default(400)

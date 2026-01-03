@@ -87,6 +87,8 @@ interface LoaderData {
     description?: string;
     shopId: string;
     shopifyProductId?: string;
+    shopifyPageHandle?: string;  // For full-page bundles
+    shopifyPageId?: string;      // For full-page bundles
     bundleType: string;
     status: string;
     templateName?: string;
@@ -219,7 +221,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const installationContext = await WidgetInstallationService.getBundleInstallationContext(
     admin,
     session.shop,
-    bundleId
+    bundleId,
+    bundle.bundleType as 'full_page' | 'product_page',
+    apiKey,  // Pass API key for specific app block detection
+    bundle.shopifyPageHandle  // Pass page handle to check if bundle is placed
   );
 
   // Generate bundle-specific installation link (pre-populates bundle ID and product)
@@ -280,6 +285,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleGetCurrentTheme(admin, session);
       case "ensureBundleTemplates":
         return await handleEnsureBundleTemplates(admin, session);
+      case "checkFullPageTemplate":
+        return await handleCheckFullPageTemplate(admin, session);
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
       default:
@@ -1758,10 +1765,89 @@ async function handleEnsureBundleTemplates(admin: any, session: any) {
   }
 }
 
-// Handle widget placement validation
+// Check if full-page-bundle template exists in the theme
+async function handleCheckFullPageTemplate(admin: any, session: any) {
+  try {
+    AppLogger.debug("🔍 [TEMPLATE_CHECK] Checking for full-page-bundle template");
+
+    // Get current theme
+    const GET_THEME = `
+      query {
+        themes(first: 1, roles: MAIN) {
+          nodes {
+            id
+            name
+            role
+          }
+        }
+      }
+    `;
+
+    const themeResponse = await admin.graphql(GET_THEME);
+    const themeData = await themeResponse.json();
+    const theme = themeData.data?.themes?.nodes?.[0];
+
+    if (!theme) {
+      return json({
+        success: false,
+        templateExists: false,
+        error: "No active theme found"
+      });
+    }
+
+    const themeId = theme.id.split('/').pop();
+
+    // Fetch theme assets
+    const session = await admin.rest.session;
+    const accessToken = session.accessToken;
+    const shop = session.shop;
+
+    const assetsResponse = await fetch(
+      `https://${shop}/admin/api/2024-10/themes/${themeId}/assets.json`,
+      {
+        method: 'GET',
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!assetsResponse.ok) {
+      throw new Error(`Failed to fetch theme assets: ${assetsResponse.status}`);
+    }
+
+    const assetsData = await assetsResponse.json();
+
+    // Check if full-page-bundle template exists
+    const templateExists = assetsData.assets.some((asset: any) =>
+      asset.key === 'templates/page.full-page-bundle.json' ||
+      asset.key === 'templates/page.full-page-bundle.liquid'
+    );
+
+    AppLogger.debug(`🔍 [TEMPLATE_CHECK] Template exists: ${templateExists}`);
+
+    return json({
+      success: true,
+      templateExists,
+      themeName: theme.name,
+      themeId: theme.id
+    });
+
+  } catch (error) {
+    AppLogger.error("🔥 [TEMPLATE_CHECK] Error checking template:", {}, error as any);
+    return json({
+      success: false,
+      templateExists: false,
+      error: (error as Error).message || "Failed to check template"
+    }, { status: 500 });
+  }
+}
+
+// Handle widget placement validation with automated page creation
 async function handleValidateWidgetPlacement(admin: any, session: any, bundleId: string) {
   try {
-    AppLogger.debug("🎯 [WIDGET_PLACEMENT] Validating widget placement", { bundleId });
+    AppLogger.debug("🎯 [WIDGET_PLACEMENT] Validating widget placement (automated)", { bundleId });
 
     // Get bundle data
     const bundle = await db.bundle.findUnique({
@@ -1775,15 +1861,20 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 404 });
     }
 
-    // Validate and prepare widget placement
+    // Use automated page creation workflow for full-page bundles
+    // This will:
+    // 1. Check if full-page-bundle template exists
+    // 2. Create a new Shopify page
+    // 3. Assign it to the template
+    // 4. Store bundle ID in page metafield (auto-configuration)
+    // 5. Open theme editor with the page
     const apiKey = process.env.SHOPIFY_API_KEY || '';
-    const result = await WidgetInstallationService.validateAndPrepareWidgetPlacement(
+    const result = await WidgetInstallationService.createFullPageBundlePageAutomated(
       admin,
       session.shop,
       apiKey,
       bundleId,
-      bundle.templateName || 'product',  // Default to 'product' template if not specified
-      bundle.shopifyProductId
+      bundle.name
     );
 
     if (!result.success) {
@@ -1794,13 +1885,31 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 400 });
     }
 
+    // Save page handle and page ID to bundle record
+    await db.bundle.update({
+      where: { id: bundleId, shopId: session.shop },
+      data: {
+        shopifyPageHandle: result.pageHandle,
+        shopifyPageId: result.pageId
+      }
+    });
+
+    AppLogger.info("✅ [WIDGET_PLACEMENT] Automated page created successfully", {
+      bundleId,
+      pageId: result.pageId,
+      pageHandle: result.pageHandle
+    });
+
     return json({
       success: true,
-      installationLink: result.installationLink
+      installationLink: result.installationLink,
+      pageId: result.pageId,
+      pageHandle: result.pageHandle,
+      message: `Page created: ${result.pageHandle}`
     });
 
   } catch (error) {
-    AppLogger.error("🔥 [WIDGET_PLACEMENT] Error validating widget placement:", {}, error as any);
+    AppLogger.error("🔥 [WIDGET_PLACEMENT] Error in automated widget placement:", {}, error as any);
     return json({
       success: false,
       error: (error as Error).message || "Widget placement validation failed"
@@ -2162,14 +2271,34 @@ export default function ConfigureBundleFlow() {
 
           // Note: Removed forced page reload to preserve unsaved UI changes
           // The sync updates metafields but doesn't affect the current UI state
+        } else if ('pages' in result && result.pages) {
+          // This is a get Shopify pages response (for full-page bundles)
+          const pages = (result as any).pages || [];
+
+          // Transform pages to match the template format expected by the modal
+          const formattedPages = pages.map((page: any) => ({
+            handle: page.handle,
+            title: page.title,
+            type: 'page',
+            isPage: true // Flag to identify this as a Shopify page vs template
+          }));
+
+          setAvailablePages(formattedPages);
+          setIsLoadingPages(false);
         } else if ('templates' in result && result.templates) {
-          // This is a get theme templates response
+          // This is a get theme templates response (for product-page bundles)
           const rawTemplates = (result as any).templates || [];
           const enhancedTemplates = enhanceTemplateListWithUserSelection(rawTemplates);
           setAvailablePages(enhancedTemplates);
           setIsLoadingPages(false);
         } else if ('themeId' in result && result.themeId) {
           // This is a get current theme response - handled by individual callbacks
+        } else if ('pageHandle' in result && result.pageHandle) {
+          // This is a widget placement response - reload to show updated banner
+          shopify.toast.show("Widget placed successfully! Refreshing...", { isError: false });
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         } else {
           // Generic success response
           shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });
@@ -2267,7 +2396,35 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    // Check if bundle product exists
+    // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
+    if (bundle.bundleType === 'full_page') {
+      if (!bundle.shopifyPageHandle) {
+        shopify.toast.show("Bundle page not created yet. Please use 'Add to Storefront' to create the bundle page first.", {
+          isError: true,
+          duration: 5000
+        });
+        return;
+      }
+
+      // Construct page URL
+      const shopDomain = shop.includes('.myshopify.com')
+        ? shop.replace('.myshopify.com', '')
+        : shop.split('.')[0];
+
+      const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+
+      AppLogger.debug('Opening full-page bundle preview:', {
+        bundleId: bundle.id,
+        pageHandle: bundle.shopifyPageHandle,
+        pageUrl
+      });
+
+      window.open(pageUrl, '_blank');
+      shopify.toast.show("Bundle page opened in new tab", { isError: false });
+      return;
+    }
+
+    // FOR PRODUCT-PAGE BUNDLES: Use product URL
     if (!bundleProduct) {
       shopify.toast.show("Bundle product not found. Please select a bundle product first.", {
         isError: true,
@@ -2340,7 +2497,7 @@ export default function ConfigureBundleFlow() {
         duration: 5000
       });
     }
-  }, [isDirty, bundleProduct, shop, shopify]);
+  }, [isDirty, bundle, bundleProduct, shop, shopify]);
 
   const handleSectionChange = useCallback((section: string) => {
     if (isDirty) {
@@ -2711,21 +2868,29 @@ export default function ConfigureBundleFlow() {
     }));
   }, []);
 
-  // Function to load available theme templates
+  // Function to load available pages or templates based on bundle type
   const loadAvailablePages = useCallback(() => {
     setIsLoadingPages(true);
     try {
       const formData = new FormData();
-      formData.append("intent", "getThemeTemplates");
+
+      // For full-page bundles, fetch Shopify pages (under /pages/ route)
+      // For product-page bundles, fetch product templates
+      if (bundle.bundleType === 'full_page') {
+        formData.append("intent", "getPages");
+      } else {
+        formData.append("intent", "getThemeTemplates");
+      }
 
       fetcher.submit(formData, { method: "post" });
       // Response will be handled by the existing useEffect
     } catch (error) {
-      AppLogger.error("Failed to load theme templates:", {}, error as any);
-      shopify.toast.show("Failed to load theme templates", { isError: true, duration: 5000 });
+      const resourceType = bundle.bundleType === 'full_page' ? 'pages' : 'theme templates';
+      AppLogger.error(`Failed to load ${resourceType}:`, {}, error as any);
+      shopify.toast.show(`Failed to load ${resourceType}`, { isError: true, duration: 5000 });
       setIsLoadingPages(false);
     }
-  }, [fetcher, shopify]);
+  }, [fetcher, shopify, bundle.bundleType]);
 
   // Handle Place Widget Now button with validation
   const handlePlaceWidgetNow = useCallback(async () => {
@@ -2852,10 +3017,16 @@ export default function ConfigureBundleFlow() {
       //
       // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
       // the bundle_id setting in the theme editor, making setup seamless for merchants
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
+      //
+      // For Shopify pages, template format is: page.{handle}
+      // For product templates, template format is just: {handle}
+      const templateParam = template.isPage ? `page.${template.handle}` : template.handle;
+
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
 
       AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
-        template: template.handle,
+        templateParam,
+        isPage: template.isPage,
         bundleId: bundle.id,
         url: themeEditorUrl
       });
@@ -3020,7 +3191,7 @@ export default function ConfigureBundleFlow() {
                     loading={fetcher.state === 'submitting'}
                     variant="primary"
                   >
-                    Place Widget Now
+                    Add to Storefront
                   </Button>
                 </InlineStack>
               </Banner>
@@ -3102,75 +3273,95 @@ export default function ConfigureBundleFlow() {
                 </BlockStack>
               </Card>
 
-              {/* Bundle Product Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text variant="headingSm" as="h3">
-                      Bundle Product
-                    </Text>
-                    <Button
-                      variant="plain"
-                      tone="critical"
-                      onClick={handleSyncProduct}
-                    >
-                      Sync Product
-                    </Button>
-                  </InlineStack>
+              {/* Bundle Product Card - Only for product-page bundles */}
+              {bundle.bundleType !== 'full_page' && (
+                <Card>
+                  <BlockStack gap="300">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <Text variant="headingSm" as="h3">
+                        Bundle Product
+                      </Text>
+                      <Button
+                        variant="plain"
+                        tone="critical"
+                        onClick={handleSyncProduct}
+                      >
+                        Sync Product
+                      </Button>
+                    </InlineStack>
 
-                  {bundleProduct ? (
-                    <BlockStack gap="300">
-                      <InlineStack gap="300" blockAlign="center" wrap={false}>
-                        <Thumbnail
-                          source={productImageUrl || "/bundle.png"}
-                          alt={productTitle || "Bundle Product"}
-                          size="medium"
-                        />
-                        <InlineStack gap="200" blockAlign="center" wrap={false}>
+                    {bundleProduct ? (
+                      <BlockStack gap="300">
+                        <InlineStack gap="300" blockAlign="center" wrap={false}>
+                          <Thumbnail
+                            source={productImageUrl || "/bundle.png"}
+                            alt={productTitle || "Bundle Product"}
+                            size="medium"
+                          />
+                          <InlineStack gap="200" blockAlign="center" wrap={false}>
+                            <Button
+                              variant="plain"
+                              onClick={() => {
+                                const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
+                                window.open(productUrl, '_blank');
+                              }}
+                              icon={ExternalIcon}
+                            >
+                              {productTitle || bundleProduct.title || "Untitled Product"}
+                            </Button>
+                            <Button
+                              variant="tertiary"
+                              size="slim"
+                              icon={RefreshIcon}
+                              onClick={handleBundleProductSelect}
+                              accessibilityLabel="Change bundle product"
+                            />
+                          </InlineStack>
+                        </InlineStack>
+                      </BlockStack>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '80px',
+                        border: '1px dashed #ccc',
+                        borderRadius: '8px'
+                      }}>
+                        <BlockStack gap="100" inlineAlign="center">
+                          <Icon source={ProductIcon} />
                           <Button
                             variant="plain"
-                            onClick={() => {
-                              const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                              window.open(productUrl, '_blank');
-                            }}
-                            icon={ExternalIcon}
-                          >
-                            {productTitle || bundleProduct.title || "Untitled Product"}
-                          </Button>
-                          <Button
-                            variant="tertiary"
-                            size="slim"
-                            icon={RefreshIcon}
                             onClick={handleBundleProductSelect}
-                            accessibilityLabel="Change bundle product"
-                          />
-                        </InlineStack>
-                      </InlineStack>
-                    </BlockStack>
-                  ) : (
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: '80px',
-                      border: '1px dashed #ccc',
-                      borderRadius: '8px'
-                    }}>
-                      <BlockStack gap="100" inlineAlign="center">
-                        <Icon source={ProductIcon} />
-                        <Button
-                          variant="plain"
-                          onClick={handleBundleProductSelect}
-                        >
-                          Select Bundle Product
-                        </Button>
-                      </BlockStack>
-                    </div>
-                  )}
+                          >
+                            Select Bundle Product
+                          </Button>
+                        </BlockStack>
+                      </div>
+                    )}
 
-                  {/* Bundle Status Dropdown */}
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h4">
+                    {/* Bundle Status Dropdown */}
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h4">
+                        Bundle Status
+                      </Text>
+                      <Select
+                        label="Bundle Status"
+                        options={statusOptions}
+                        value={formState.bundleStatus}
+                        onChange={(selected: string) => formState.setBundleStatus(selected as 'active' | 'draft' | 'archived')}
+                        labelHidden
+                      />
+                    </BlockStack>
+                  </BlockStack>
+                </Card>
+              )}
+
+              {/* Bundle Status Card - For full-page bundles */}
+              {bundle.bundleType === 'full_page' && (
+                <Card>
+                  <BlockStack gap="300">
+                    <Text variant="headingSm" as="h3">
                       Bundle Status
                     </Text>
                     <Select
@@ -3181,8 +3372,8 @@ export default function ConfigureBundleFlow() {
                       labelHidden
                     />
                   </BlockStack>
-                </BlockStack>
-              </Card>
+                </Card>
+              )}
 
               {/* Take your bundle live Card */}
               <Card>
@@ -3191,73 +3382,169 @@ export default function ConfigureBundleFlow() {
                     Take your bundle live
                   </Text>
 
-                  {/* Template Selection */}
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h4">
-                      Bundle Container Template
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Select which product template will display this bundle widget
-                    </Text>
-                    <TextField
-                      label="Template Name"
-                      value={formState.templateName}
-                      onChange={formState.setTemplateName}
-                      placeholder="e.g., cart-transform, product, bundle-special"
-                      helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
-                      labelHidden
-                      autoComplete="off"
-                    />
-                  </BlockStack>
+                  {/* Template Selection - Only for product-page bundles */}
+                  {bundle.bundleType !== 'full_page' && (
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h4">
+                        Bundle Container Template
+                      </Text>
+                      <Text as="p" variant="bodySm" tone="subdued">
+                        Select which product template will display this bundle widget
+                      </Text>
+                      <TextField
+                        label="Template Name"
+                        value={formState.templateName}
+                        onChange={formState.setTemplateName}
+                        placeholder="e.g., cart-transform, product, bundle-special"
+                        helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
+                        labelHidden
+                        autoComplete="off"
+                      />
+                    </BlockStack>
+                  )}
 
-                  {/* Quick Setup Action */}
+                  {/* Setup Instructions */}
                   <BlockStack gap="300">
                     <Divider />
 
-                    <InlineStack align="space-between" blockAlign="center" gap="400">
-                      <BlockStack gap="100">
-                        <Text variant="bodyMd" as="p" fontWeight="semibold">
-                          Install Widget in Theme
-                        </Text>
-                        <Text as="p" variant="bodySm" tone="subdued">
-                          Opens theme editor with bundle widget pre-selected. Simply drag & drop to position.
-                        </Text>
-                      </BlockStack>
-                      <Button
-                        variant="primary"
-                        icon={SettingsIcon}
-                        onClick={handlePlaceWidget}
-                        size="large"
-                      >
-                        Place Widget
-                      </Button>
-                    </InlineStack>
+                    <BlockStack gap="300">
+                      <Text variant="headingSm" as="h4">
+                        How to Complete Setup
+                      </Text>
+
+                      {/* Video Placeholder */}
+                      <div style={{
+                        width: '100%',
+                        height: '200px',
+                        backgroundColor: '#f6f6f7',
+                        borderRadius: '8px',
+                        border: '1px dashed #c4cdd5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative'
+                      }}>
+                        <BlockStack gap="200" inlineAlign="center">
+                          <Icon source={ViewIcon} />
+                          <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+                            Setup Video Tutorial
+                          </Text>
+                          <Text as="p" variant="bodyXs" tone="subdued" alignment="center">
+                            (Coming Soon)
+                          </Text>
+                        </BlockStack>
+                      </div>
+
+                      {/* Step-by-step Instructions */}
+                      <Card background="bg-surface-secondary">
+                        <BlockStack gap="300">
+                          <Text variant="bodyMd" as="p" fontWeight="semibold">
+                            Setup Checklist
+                          </Text>
+                          <List type="number">
+                            <List.Item>
+                              Create bundle steps and add products
+                            </List.Item>
+                            <List.Item>
+                              Set bundle status to "Active"
+                            </List.Item>
+                            <List.Item>
+                              Click "Save" to save your configuration
+                            </List.Item>
+                            <List.Item>
+                              Click "Add to Storefront" button when it appears
+                            </List.Item>
+                            <List.Item>
+                              A new page will be created automatically with the bundle
+                            </List.Item>
+                            <List.Item>
+                              Theme editor will open - add the "Bundle - Full Page" block
+                            </List.Item>
+                            <List.Item>
+                              Adjust position and save in theme editor
+                            </List.Item>
+                          </List>
+                          <Banner tone="info">
+                            <Text as="p" variant="bodyXs">
+                              💡 The "Add to Storefront" button will appear after you save. It automatically creates a page and opens the theme editor for you - no manual configuration needed!
+                            </Text>
+                          </Banner>
+                        </BlockStack>
+                      </Card>
+                    </BlockStack>
                   </BlockStack>
 
-                  {/* Pro Tip */}
-                  <Card background="bg-surface-info">
-                    <BlockStack gap="300">
-                      <InlineStack gap="200" blockAlign="center">
-                        <div style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          backgroundColor: 'var(--p-color-bg-fill-info)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <Icon source={ViewIcon} tone="info" />
-                        </div>
-                        <Text as="h3" variant="headingSm" fontWeight="semibold">
-                          Pro Tip: Custom Templates
+                  {/* Pro Tip - Only for product-page bundles */}
+                  {bundle.bundleType !== 'full_page' && (
+                    <Card background="bg-surface-info">
+                      <BlockStack gap="300">
+                        <InlineStack gap="200" blockAlign="center">
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--p-color-bg-fill-info)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <Icon source={ViewIcon} tone="info" />
+                          </div>
+                          <Text as="h3" variant="headingSm" fontWeight="semibold">
+                            Pro Tip: Custom Templates
+                          </Text>
+                        </InlineStack>
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          Create a custom product template, eg. "bundle-product". This gives you better control and keeps bundle products separate from regular products.
                         </Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Create a custom product template, eg. "bundle-product". This gives you better control and keeps bundle products separate from regular products.
-                      </Text>
-                    </BlockStack>
-                  </Card>
+                      </BlockStack>
+                    </Card>
+                  )}
+
+                  {/* Quick Setup Guide - Only for full-page bundles */}
+                  {bundle.bundleType === 'full_page' && (
+                    <Card background="bg-surface-success">
+                      <BlockStack gap="300">
+                        <InlineStack gap="200" blockAlign="center">
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--p-color-bg-fill-success)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <Icon source={ViewIcon} tone="success" />
+                          </div>
+                          <Text as="h3" variant="headingSm" fontWeight="semibold">
+                            Automated Setup
+                          </Text>
+                        </InlineStack>
+
+                        <BlockStack gap="200">
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            Clicking "Place Widget" will automatically:
+                          </Text>
+
+                          <ul style={{
+                            marginLeft: '20px',
+                            fontSize: '13px',
+                            lineHeight: '1.6',
+                            color: 'var(--p-color-text-subdued)'
+                          }}>
+                            <li>Create a new page for this bundle</li>
+                            <li>Configure the Bundle ID automatically (no manual entry needed)</li>
+                            <li>Open the page in theme editor for you to add the "Bundle - Full Page" block</li>
+                          </ul>
+
+                          <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium" style={{ fontStyle: 'italic', marginTop: '8px' }}>
+                            The Bundle ID is stored in the page, so you never have to enter it manually!
+                          </Text>
+                        </BlockStack>
+                      </BlockStack>
+                    </Card>
+                  )}
                 </BlockStack>
               </Card>
             </BlockStack>
@@ -3540,11 +3827,6 @@ export default function ConfigureBundleFlow() {
                       >
                         Add New Tab
                       </Button>
-                      {stepsState.steps.length > 0 && (
-                        <Text variant="bodySm" tone="subdued" as="p">
-                          {stepsState.steps.length} tab{stepsState.steps.length !== 1 ? 's' : ''} configured
-                        </Text>
-                      )}
                     </InlineStack>
                   </BlockStack>
                 </BlockStack>
@@ -3837,18 +4119,22 @@ export default function ConfigureBundleFlow() {
         <Modal.Section>
           <BlockStack gap="300">
             <Text as="p" variant="bodySm" tone="subdued">
-              Select a template to open the theme editor with widget placement.
+              {bundle.bundleType === 'full_page'
+                ? 'Select a page to open the theme editor with widget placement.'
+                : 'Select a template to open the theme editor with widget placement.'}
             </Text>
 
             {isLoadingPages ? (
               <BlockStack gap="300" inlineAlign="center">
                 <Spinner size="small" />
-                <Text as="p" variant="bodySm" tone="subdued">Loading templates...</Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  {bundle.bundleType === 'full_page' ? 'Loading pages...' : 'Loading templates...'}
+                </Text>
               </BlockStack>
             ) : availablePages.length > 0 ? (
               <BlockStack gap="200">
                 {availablePages.map((template) => (
-                  <Card key={template.id} padding="300">
+                  <Card key={template.id || template.handle} padding="300">
                     <InlineStack wrap={false} gap="300" align="space-between" blockAlign="center">
                       <BlockStack gap="100">
                         <InlineStack gap="200" blockAlign="center">
@@ -3881,7 +4167,7 @@ export default function ConfigureBundleFlow() {
               <Card padding="400">
                 <BlockStack gap="300" inlineAlign="center">
                   <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                    No templates available
+                    {bundle.bundleType === 'full_page' ? 'No pages available' : 'No templates available'}
                   </Text>
                   <Button
                     url="https://admin.shopify.com/admin/pages"

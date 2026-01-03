@@ -1,36 +1,35 @@
 {% schema %}
 {
-  "name": "Bundle Builder",
+  "name": "t:bundle_product_page.name",
   "target": "section",
   "enabled_on": {
     "templates": ["product"],
     "groups": ["*"]
   },
   "stylesheet": "bundle-widget.css",
-  "javascript": "bundle-widget.js",
   "settings": [
     {
       "type": "checkbox",
       "id": "enabled",
-      "label": "Show bundle widget",
-      "info": "Display the product bundle widget on this page",
+      "label": "t:bundle_product_page.settings.enabled_label",
+      "info": "t:bundle_product_page.settings.enabled_info",
       "default": true
     },
     {
       "type": "text",
       "id": "bundle_id",
-      "label": "Bundle configuration ID",
-      "info": "Enter the specific bundle ID to display. This is automatically populated when adding the widget from the bundle admin, or you can manually enter a bundle ID here."
+      "label": "t:bundle_product_page.settings.bundle_id_label",
+      "info": "t:bundle_product_page.settings.bundle_id_info"
     },
     {
       "type": "text",
       "id": "app_url",
-      "label": "App server URL (optional)",
-      "info": "Override the app server URL for development/testing. Leave blank to auto-detect. Example: https://your-tunnel.trycloudflare.com"
+      "label": "t:bundle_product_page.settings.app_url_label",
+      "info": "t:bundle_product_page.settings.app_url_info"
     },
     {
       "type": "header",
-      "content": "Layout and sizing"
+      "content": "t:bundle_product_page.settings.layout_sizing_header"
     },
     {
       "type": "range",
@@ -39,9 +38,9 @@
       "max": 1200,
       "step": 50,
       "unit": "px",
-      "label": "Widget maximum width",
+      "label": "t:bundle_product_page.settings.widget_max_width_label",
       "default": 800,
-      "info": "Sets the maximum width of the entire bundle widget container on larger screens"
+      "info": "t:bundle_product_page.settings.widget_max_width_info"
     },
     {
       "type": "range",
@@ -50,9 +49,9 @@
       "max": 250,
       "step": 10,
       "unit": "px",
-      "label": "Product step card size",
+      "label": "t:bundle_product_page.settings.step_box_size_label",
       "default": 150,
-      "info": "Controls the width and height of individual product selection step cards"
+      "info": "t:bundle_product_page.settings.step_box_size_info"
     },
     {
       "type": "range",
@@ -60,9 +59,9 @@
       "min": 2,
       "max": 6,
       "step": 1,
-      "label": "Step cards per row",
+      "label": "t:bundle_product_page.settings.step_cards_per_row_label",
       "default": 3,
-      "info": "Number of product step cards to display per row on larger screens"
+      "info": "t:bundle_product_page.settings.step_cards_per_row_info"
     },
     {
       "type": "range",
@@ -71,44 +70,44 @@
       "max": 80,
       "step": 5,
       "unit": "px",
-      "label": "Add to cart button height",
+      "label": "t:bundle_product_page.settings.button_height_label",
       "default": 55,
-      "info": "Controls the height of the main add to cart button"
+      "info": "t:bundle_product_page.settings.button_height_info"
     },
     {
       "type": "header",
-      "content": "Display options"
+      "content": "t:bundle_product_page.settings.display_options_header"
     },
     {
       "type": "checkbox",
       "id": "show_bundle_title",
-      "label": "Display bundle title",
-      "info": "Shows the bundle name at the top of the widget",
+      "label": "t:bundle_product_page.settings.show_bundle_title_label",
+      "info": "t:bundle_product_page.settings.show_bundle_title_info",
       "default": true
     },
     {
       "type": "checkbox",
       "id": "show_step_numbers",
-      "label": "Display step numbers",
-      "info": "Shows numbered indicators on each bundle step card",
+      "label": "t:bundle_product_page.settings.show_step_numbers_label",
+      "info": "t:bundle_product_page.settings.show_step_numbers_info",
       "default": true
     },
     {
       "type": "checkbox",
       "id": "show_footer_messaging",
-      "label": "Display discount progress messaging",
-      "info": "Shows progress indicators and discount messages to encourage bundle completion",
+      "label": "t:bundle_product_page.settings.show_footer_messaging_label",
+      "info": "t:bundle_product_page.settings.show_footer_messaging_info",
       "default": true
     },
     {
       "type": "header",
-      "content": "Progress bar styling"
+      "content": "t:bundle_product_page.settings.progress_bar_styling_header"
     },
     {
       "type": "color",
       "id": "success_color",
-      "label": "Success state color",
-      "info": "Color shown when discount goal is achieved",
+      "label": "t:bundle_product_page.settings.success_color_label",
+      "info": "t:bundle_product_page.settings.success_color_info",
       "default": "#28a745"
     },
     {
@@ -118,9 +117,9 @@
       "max": 20,
       "step": 2,
       "unit": "px",
-      "label": "Progress bar height",
+      "label": "t:bundle_product_page.settings.progress_bar_height_label",
       "default": 12,
-      "info": "Height of the discount progress bar"
+      "info": "t:bundle_product_page.settings.progress_bar_height_info"
     },
     {
       "type": "range",
@@ -129,13 +128,13 @@
       "max": 50,
       "step": 5,
       "unit": "px",
-      "label": "Progress bar roundness",
+      "label": "t:bundle_product_page.settings.progress_bar_border_radius_label",
       "default": 50,
-      "info": "Border radius for the progress bar (50 = fully rounded)"
+      "info": "t:bundle_product_page.settings.progress_bar_border_radius_info"
     },
     {
       "type": "header",
-      "content": "Spacing & layout"
+      "content": "t:bundle_product_page.settings.spacing_layout_header"
     },
     {
       "type": "range",
@@ -144,9 +143,9 @@
       "max": 50,
       "step": 5,
       "unit": "px",
-      "label": "Container spacing",
+      "label": "t:bundle_product_page.settings.container_spacing_label",
       "default": 20,
-      "info": "Margin and padding around the entire widget container"
+      "info": "t:bundle_product_page.settings.container_spacing_info"
     },
     {
       "type": "range",
@@ -155,9 +154,9 @@
       "max": 30,
       "step": 5,
       "unit": "px",
-      "label": "Element spacing",
+      "label": "t:bundle_product_page.settings.element_spacing_label",
       "default": 15,
-      "info": "Space between major sections (header, steps, footer)"
+      "info": "t:bundle_product_page.settings.element_spacing_info"
     },
     {
       "type": "range",
@@ -166,9 +165,9 @@
       "max": 30,
       "step": 5,
       "unit": "px",
-      "label": "Step card gap",
+      "label": "t:bundle_product_page.settings.step_card_gap_label",
       "default": 15,
-      "info": "Gap between product step cards in the grid"
+      "info": "t:bundle_product_page.settings.step_card_gap_info"
     },
     {
       "type": "range",
@@ -177,9 +176,9 @@
       "max": 60,
       "step": 5,
       "unit": "px",
-      "label": "Modal header padding",
+      "label": "t:bundle_product_page.settings.modal_header_padding_label",
       "default": 40,
-      "info": "Internal padding for modal header section"
+      "info": "t:bundle_product_page.settings.modal_header_padding_info"
     },
     {
       "type": "range",
@@ -188,13 +187,13 @@
       "max": 60,
       "step": 5,
       "unit": "px",
-      "label": "Modal body padding",
+      "label": "t:bundle_product_page.settings.modal_body_padding_label",
       "default": 40,
-      "info": "Internal padding for modal content area"
+      "info": "t:bundle_product_page.settings.modal_body_padding_info"
     },
     {
       "type": "header",
-      "content": "Step navigation styling"
+      "content": "t:bundle_product_page.settings.step_navigation_styling_header"
     },
     {
       "type": "range",
@@ -203,13 +202,13 @@
       "max": 20,
       "step": 2,
       "unit": "px",
-      "label": "Step tab border radius",
+      "label": "t:bundle_product_page.settings.step_tab_border_radius_label",
       "default": 10,
-      "info": "Rounded corners for step navigation tabs"
+      "info": "t:bundle_product_page.settings.step_tab_border_radius_info"
     },
     {
       "type": "header",
-      "content": "Modal UI customization"
+      "content": "t:bundle_product_page.settings.modal_ui_customization_header"
     },
     {
       "type": "range",
@@ -218,9 +217,9 @@
       "max": 200,
       "step": 10,
       "unit": "px",
-      "label": "Modal product card height",
+      "label": "t:bundle_product_page.settings.modal_product_card_height_label",
       "default": 160,
-      "info": "Height of product cards in the modal"
+      "info": "t:bundle_product_page.settings.modal_product_card_height_info"
     },
     {
       "type": "range",
@@ -229,22 +228,22 @@
       "max": 90,
       "step": 5,
       "unit": "px",
-      "label": "Modal product image height",
+      "label": "t:bundle_product_page.settings.modal_product_image_height_label",
       "default": 70,
-      "info": "Height of product images in the modal"
+      "info": "t:bundle_product_page.settings.modal_product_image_height_info"
     },
     {
       "type": "color",
       "id": "modal_product_price_color",
-      "label": "Modal product price color",
-      "info": "Color for product prices in the modal",
+      "label": "t:bundle_product_page.settings.modal_product_price_color_label",
+      "info": "t:bundle_product_page.settings.modal_product_price_color_info",
       "default": "#2c5530"
     },
     {
       "type": "color",
       "id": "modal_product_price_bg",
-      "label": "Modal product price background",
-      "info": "Background color for product price badges",
+      "label": "t:bundle_product_page.settings.modal_product_price_bg_label",
+      "info": "t:bundle_product_page.settings.modal_product_price_bg_info",
       "default": "#f0f8f0"
     },
     {
@@ -254,9 +253,9 @@
       "max": 120,
       "step": 5,
       "unit": "%",
-      "label": "Modal product title font size",
+      "label": "t:bundle_product_page.settings.modal_product_title_size_label",
       "default": 90,
-      "info": "Font size for product titles in the modal (as percentage)"
+      "info": "t:bundle_product_page.settings.modal_product_title_size_info"
     },
     {
       "type": "range",
@@ -265,9 +264,9 @@
       "max": 100,
       "step": 5,
       "unit": "%",
-      "label": "Modal product price font size",
+      "label": "t:bundle_product_page.settings.modal_product_price_size_label",
       "default": 85,
-      "info": "Font size for product prices in the modal (as percentage)"
+      "info": "t:bundle_product_page.settings.modal_product_price_size_info"
     }
   ]
 }
@@ -620,5 +619,24 @@
 
 <link rel="stylesheet" href="{{ 'bundle-widget.css' | asset_url }}">
 
-<!-- Small loader (bundle-widget.js) handles widget initialization automatically -->
-<script src="{{ 'bundle-widget.js' | asset_url }}" defer></script> 
+<!-- Load Design Control Panel Settings (Dynamic CSS from Database) -->
+<!-- This injects CSS variables from DesignSettings table for product_page bundle type -->
+<!-- NOTE: Using app proxy URL instead of asset_url because design settings are dynamically -->
+<!-- generated from database, not static theme assets. This is intentional. -->
+{% # theme-check-disable RemoteAsset %}
+<link
+  rel="stylesheet"
+  href="{{ shop.url }}/apps/product-bundles/api/design-settings/{{ shop.domain }}?bundleType=product_page&v={{ 'now' | date: '%s' }}"
+  type="text/css"
+>
+{% # theme-check-enable RemoteAsset %}
+
+<!-- Load widget JavaScript dynamically to bypass 10KB Shopify limit -->
+<script>
+  (function() {
+    var script = document.createElement('script');
+    script.src = '{{ 'bundle-widget-product-page-bundled.js' | asset_url }}';
+    script.async = false;
+    document.head.appendChild(script);
+  })();
+</script> 
