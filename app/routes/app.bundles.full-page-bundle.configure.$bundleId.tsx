@@ -1938,6 +1938,15 @@ export default function ConfigureBundleFlow() {
   // Banner dismissal state
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
 
+  // Widget installation tracking state
+  const [widgetInstallationInitiated, setWidgetInstallationInitiated] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(`widget_installation_${bundle.id}`);
+      return stored === 'true';
+    }
+    return false;
+  });
+
   // ===== DIRTY FLAG SYSTEM =====
   // Simple dirty flag that gets set on ANY state change
   const [isDirty, setIsDirty] = useState(false);
@@ -2919,6 +2928,17 @@ export default function ConfigureBundleFlow() {
       if (data.installationLink) {
         // Success - open the validated link
         window.open(data.installationLink, '_blank');
+
+        // Mark widget installation as initiated
+        setWidgetInstallationInitiated(true);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`widget_installation_${bundle.id}`, 'true');
+        }
+
+        // Show success message
+        shopify.toast.show('Theme editor opened! Add the widget block and save to complete installation.', {
+          duration: 5000
+        });
       } else if (data.error && data.errorType) {
         // Validation failed - show appropriate error message
         let errorMessage = data.error;
@@ -2933,7 +2953,7 @@ export default function ConfigureBundleFlow() {
         shopify.toast.show(errorMessage, { isError: true, duration: 7000 });
       }
     }
-  }, [fetcher.data, fetcher.state, shopify]);
+  }, [fetcher.data, fetcher.state, shopify, bundle.id]);
 
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
@@ -3173,28 +3193,60 @@ export default function ConfigureBundleFlow() {
 
           {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !dismissedBanners.has('install_widget') && (
             <div style={{ marginBottom: '1rem' }}>
-              <Banner
-                tone="warning"
-                onDismiss={() => handleDismissBanner('install_widget')}
-              >
-                <InlineStack gap="400" align="space-between" blockAlign="center">
-                  <BlockStack gap="100">
-                    <Text as="span" variant="bodyMd" fontWeight="semibold">
-                      Your bundle widget is not placed on storefront
-                    </Text>
-                    <Text as="span" variant="bodySm" tone="subdued">
-                      Add the bundle widget to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> to make this bundle visible to customers
-                    </Text>
-                  </BlockStack>
-                  <Button
-                    onClick={handlePlaceWidgetNow}
-                    loading={fetcher.state === 'submitting'}
-                    variant="primary"
-                  >
-                    Add to Storefront
-                  </Button>
-                </InlineStack>
-              </Banner>
+              {widgetInstallationInitiated ? (
+                <Banner
+                  tone="success"
+                  onDismiss={() => handleDismissBanner('install_widget')}
+                >
+                  <InlineStack gap="400" align="space-between" blockAlign="center">
+                    <BlockStack gap="100">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">
+                          ✅ Widget installation in progress
+                        </Text>
+                      </InlineStack>
+                      <Text as="span" variant="bodySm" tone="subdued">
+                        Complete the installation in the theme editor, then return here. The page will auto-refresh to confirm installation.
+                      </Text>
+                    </BlockStack>
+                    <Button
+                      onClick={() => {
+                        setWidgetInstallationInitiated(false);
+                        if (typeof window !== 'undefined') {
+                          localStorage.removeItem(`widget_installation_${bundle.id}`);
+                        }
+                        window.location.reload();
+                      }}
+                      variant="plain"
+                    >
+                      Refresh Status
+                    </Button>
+                  </InlineStack>
+                </Banner>
+              ) : (
+                <Banner
+                  tone="warning"
+                  onDismiss={() => handleDismissBanner('install_widget')}
+                >
+                  <InlineStack gap="400" align="space-between" blockAlign="center">
+                    <BlockStack gap="100">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">
+                        Your bundle widget is not placed on storefront
+                      </Text>
+                      <Text as="span" variant="bodySm" tone="subdued">
+                        Add the bundle widget to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> to make this bundle visible to customers
+                      </Text>
+                    </BlockStack>
+                    <Button
+                      onClick={handlePlaceWidgetNow}
+                      loading={fetcher.state === 'submitting'}
+                      variant="primary"
+                    >
+                      Add to Storefront
+                    </Button>
+                  </InlineStack>
+                </Banner>
+              )}
             </div>
           )}
 

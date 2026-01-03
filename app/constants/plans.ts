@@ -24,9 +24,9 @@ export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
     price: 0,
     currencyCode: "USD",
     interval: "EVERY_30_DAYS",
-    bundleLimit: 3,
+    bundleLimit: 10,
     features: [
-      "Up to 3 bundles",
+      "Up to 10 bundles",
       "Product Page Bundles",
       "Future: Full Page Bundles",
       "Discount Support",
