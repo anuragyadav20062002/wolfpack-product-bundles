@@ -1650,11 +1650,11 @@ class BundleWidgetProductPage {
 
     if (!strikePriceEl || !finalPriceEl) return;
 
-    if (discountInfo.qualifiesForDiscount && discountInfo.discountedPrice < totalPrice) {
+    if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
       // Show strike-through original price and discounted price
       strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
       strikePriceEl.style.display = 'inline';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.discountedPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
     } else {
       // Show only regular price
       strikePriceEl.style.display = 'none';
