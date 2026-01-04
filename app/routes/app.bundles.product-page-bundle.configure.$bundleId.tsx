@@ -3039,30 +3039,16 @@ export default function ConfigureBundleFlow() {
                   tone="success"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
-                  <InlineStack gap="400" align="space-between" blockAlign="center">
-                    <BlockStack gap="100">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Text as="span" variant="bodyMd" fontWeight="semibold">
-                          ✅ Widget installation in progress
-                        </Text>
-                      </InlineStack>
-                      <Text as="span" variant="bodySm" tone="subdued">
-                        Complete the installation in the theme editor, then return here. The page will auto-refresh to confirm installation.
+                  <BlockStack gap="100">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">
+                        ✅ Widget installation in progress
                       </Text>
-                    </BlockStack>
-                    <Button
-                      onClick={() => {
-                        setWidgetInstallationInitiated(false);
-                        if (typeof window !== 'undefined') {
-                          localStorage.removeItem(`widget_installation_${bundle.id}`);
-                        }
-                        window.location.reload();
-                      }}
-                      variant="plain"
-                    >
-                      Refresh Status
-                    </Button>
-                  </InlineStack>
+                    </InlineStack>
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      Complete the installation in the theme editor, then return here. The page will auto-refresh to confirm installation.
+                    </Text>
+                  </BlockStack>
                 </Banner>
               ) : (
                 <Banner

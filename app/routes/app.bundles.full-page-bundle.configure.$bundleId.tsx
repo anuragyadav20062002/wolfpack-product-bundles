@@ -3226,30 +3226,16 @@ export default function ConfigureBundleFlow() {
                   tone="success"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
-                  <InlineStack gap="400" align="space-between" blockAlign="center">
-                    <BlockStack gap="100">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Text as="span" variant="bodyMd" fontWeight="semibold">
-                          ✅ Widget installation in progress
-                        </Text>
-                      </InlineStack>
-                      <Text as="span" variant="bodySm" tone="subdued">
-                        Your bundle page is being created and configured automatically. This page will refresh shortly.
+                  <BlockStack gap="100">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">
+                        ✅ Widget installation in progress
                       </Text>
-                    </BlockStack>
-                    <Button
-                      onClick={() => {
-                        setWidgetInstallationInitiated(false);
-                        if (typeof window !== 'undefined') {
-                          localStorage.removeItem(`widget_installation_${bundle.id}`);
-                        }
-                        window.location.reload();
-                      }}
-                      variant="plain"
-                    >
-                      Refresh Status
-                    </Button>
-                  </InlineStack>
+                    </InlineStack>
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      Your bundle page is being created and configured automatically. This page will refresh shortly.
+                    </Text>
+                  </BlockStack>
                 </Banner>
               ) : (
                 <Banner
