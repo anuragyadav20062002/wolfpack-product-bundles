@@ -663,25 +663,22 @@ export class WidgetInstallationService {
         };
       }
 
-      // For product-page bundles, check if shopifyProductId is set (means bundle is placed)
-      // This is more reliable than checking template files for container products
+      // Widget is installed - now check if THIS specific bundle is configured in the widget
+      // For PDP bundles, we consider it configured if:
+      // 1. The widget is installed in product templates (already checked above)
+      // 2. The bundle has a Shopify product ID (means it's been created and can be used)
+      // Note: We can't reliably check if a specific bundle ID is in the widget settings
+      // because product-page bundles can be dynamically selected per product in the theme editor
       const bundleConfigured = !!(bundlePageHandle && bundlePageHandle.trim() !== '');
 
-      if (bundleConfigured) {
-        return {
-          widgetInstalled: true,
-          bundleConfigured: true,
-          recommendedAction: 'configured',
-          themeName: widgetStatus.themeName
-        };
-      } else {
-        return {
-          widgetInstalled: true,
-          bundleConfigured: false,
-          recommendedAction: 'add_bundle',
-          themeName: widgetStatus.themeName
-        };
-      }
+      // Always return 'configured' if widget is installed for PDP bundles
+      // The widget installation is the key requirement - bundle selection happens in theme editor
+      return {
+        widgetInstalled: true,
+        bundleConfigured: true,
+        recommendedAction: 'configured',
+        themeName: widgetStatus.themeName
+      };
 
     } catch (error) {
       AppLogger.error('Failed to get bundle installation context', {
@@ -1168,28 +1165,41 @@ export class WidgetInstallationService {
           templateContent = templateData.data.theme.files.nodes[0].body?.content;
         }
 
-        // If no default template, create a minimal one
-        if (!templateContent) {
-          templateContent = JSON.stringify({
+        // Parse template JSON - with proper fallback
+        let templateJson;
+
+        if (templateContent) {
+          try {
+            templateJson = JSON.parse(templateContent);
+          } catch (parseError) {
+            AppLogger.warn('Default page template has invalid JSON, creating minimal template', {
+              component: 'WidgetInstallationService',
+              templateFilename: defaultPageTemplateFilename
+            }, parseError);
+            // Fallback to minimal template if parsing fails
+            templateJson = {
+              "sections": {
+                "main": {
+                  "type": "main-page"
+                }
+              },
+              "order": ["main"]
+            };
+          }
+        } else {
+          // No default template exists, create a minimal one
+          AppLogger.info('No default page template found, creating minimal template', {
+            component: 'WidgetInstallationService',
+            templateFilename: defaultPageTemplateFilename
+          });
+          templateJson = {
             "sections": {
               "main": {
                 "type": "main-page"
               }
             },
             "order": ["main"]
-          }, null, 2);
-        }
-
-        // Parse template JSON
-        let templateJson;
-        try {
-          templateJson = JSON.parse(templateContent);
-        } catch (parseError) {
-          AppLogger.error('Failed to parse template JSON', {
-            component: 'WidgetInstallationService',
-            templateFilename: defaultPageTemplateFilename
-          }, parseError);
-          throw new Error('Invalid template JSON');
+          };
         }
 
         // Ensure sections and order exist

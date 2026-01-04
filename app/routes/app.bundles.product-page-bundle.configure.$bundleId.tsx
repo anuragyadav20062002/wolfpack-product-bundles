@@ -1841,6 +1841,16 @@ export default function ConfigureBundleFlow() {
     return false;
   });
 
+  // Clear widget installation flag if widget is detected as configured
+  useEffect(() => {
+    if (widgetInstallation?.recommendedAction === 'configured' && widgetInstallationInitiated) {
+      setWidgetInstallationInitiated(false);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`widget_installation_${bundle.id}`);
+      }
+    }
+  }, [widgetInstallation?.recommendedAction, widgetInstallationInitiated, bundle.id]);
+
   // ===== DIRTY FLAG SYSTEM =====
   // Simple dirty flag that gets set on ANY state change
   const [isDirty, setIsDirty] = useState(false);
