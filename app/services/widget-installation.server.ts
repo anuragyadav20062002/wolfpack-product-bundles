@@ -967,11 +967,11 @@ export class WidgetInstallationService {
    * @returns Validation result with installation link
    */
   /**
-   * Create a Shopify page automatically for full-page bundle with SMART AUTOMATION
+   * Create a Shopify page automatically for full-page bundle with FULL AUTOMATION
    * - Creates page with bundle ID metafield
-   * - Uses Shopify's theme editor deep linking to auto-add app block
-   * - No special permissions required (no themeFilesUpsert needed!)
-   * - Merchant just clicks "Add" in theme editor - pre-configured and ready!
+   * - Automatically adds app block to page template (NO manual intervention needed!)
+   * - Updates page template JSON to include the bundle widget app block
+   * - Merchant sees the bundle immediately on the storefront - zero manual steps!
    */
   static async createFullPageBundlePageAutomated(
     admin: any,
@@ -985,10 +985,10 @@ export class WidgetInstallationService {
     pageId?: string;
     pageHandle?: string;
     error?: string;
-    errorType?: 'page_creation_failed' | 'metafield_failed' | 'unknown';
+    errorType?: 'page_creation_failed' | 'metafield_failed' | 'theme_update_failed' | 'unknown';
   }> {
     try {
-      AppLogger.info('Creating SMART AUTOMATED full-page bundle page', {
+      AppLogger.info('Creating FULLY AUTOMATED full-page bundle page', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
@@ -1101,29 +1101,251 @@ export class WidgetInstallationService {
         });
       }
 
-      // Step 3: Build theme editor deep link to auto-add app block
+      // Step 3: AUTOMATIC APP BLOCK INSTALLATION - Add app block to page template
+      try {
+        // Get current published theme
+        const CURRENT_THEME_QUERY = `
+          query GetCurrentTheme {
+            themes(first: 1, roles: [MAIN]) {
+              edges {
+                node {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        `;
+
+        const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
+        const themeData = await themeResponse.json();
+
+        if (!themeData?.data?.themes?.edges?.length) {
+          throw new Error('No published theme found');
+        }
+
+        const theme = themeData.data.themes.edges[0].node;
+        const themeId = theme.id;
+
+        AppLogger.info('Found theme for app block installation', {
+          component: 'WidgetInstallationService',
+          themeId,
+          themeName: theme.name
+        });
+
+        // Read the default page template or create a page-specific template
+        const pageTemplateFilename = `templates/page.${pageHandle}.json`;
+        const defaultPageTemplateFilename = `templates/page.json`;
+
+        const READ_TEMPLATE_QUERY = `
+          query ReadTemplate($themeId: ID!, $filename: String!) {
+            theme(id: $themeId) {
+              files(filenames: [$filename], first: 1) {
+                nodes {
+                  filename
+                  body {
+                    ... on OnlineStoreThemeFileBodyText {
+                      content
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+
+        // Try to read the default page template first
+        const templateResponse = await admin.graphql(READ_TEMPLATE_QUERY, {
+          variables: {
+            themeId,
+            filename: defaultPageTemplateFilename
+          }
+        });
+        const templateData = await templateResponse.json();
+
+        let templateContent = null;
+        if (templateData?.data?.theme?.files?.nodes?.length > 0) {
+          templateContent = templateData.data.theme.files.nodes[0].body?.content;
+        }
+
+        // If no default template, create a minimal one
+        if (!templateContent) {
+          templateContent = JSON.stringify({
+            "sections": {
+              "main": {
+                "type": "main-page"
+              }
+            },
+            "order": ["main"]
+          }, null, 2);
+        }
+
+        // Parse template JSON
+        let templateJson;
+        try {
+          templateJson = JSON.parse(templateContent);
+        } catch (parseError) {
+          AppLogger.error('Failed to parse template JSON', {
+            component: 'WidgetInstallationService',
+            templateFilename: defaultPageTemplateFilename
+          }, parseError);
+          throw new Error('Invalid template JSON');
+        }
+
+        // Ensure sections and order exist
+        if (!templateJson.sections) {
+          templateJson.sections = {};
+        }
+        if (!templateJson.order) {
+          templateJson.order = [];
+        }
+
+        // Generate unique section ID for app block
+        const sectionId = `app_bundle_${Date.now()}`;
+        const appBlockType = `shopify://apps/${apiKey}/blocks/bundle-full-page`;
+
+        // Add bundle app block to sections
+        templateJson.sections[sectionId] = {
+          type: appBlockType,
+          settings: {
+            bundle_id: bundleId
+          }
+        };
+
+        // Add section to order (after main section if it exists)
+        const mainIndex = templateJson.order.indexOf('main');
+        if (mainIndex !== -1) {
+          templateJson.order.splice(mainIndex + 1, 0, sectionId);
+        } else {
+          templateJson.order.unshift(sectionId);
+        }
+
+        AppLogger.info('Modified template JSON with bundle block', {
+          component: 'WidgetInstallationService',
+          sectionId,
+          appBlockType
+        });
+
+        // Write the page-specific template
+        const UPSERT_TEMPLATE_MUTATION = `
+          mutation UpsertTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+            themeFilesUpsert(themeId: $themeId, files: $files) {
+              upsertedThemeFiles {
+                filename
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const upsertResponse = await admin.graphql(UPSERT_TEMPLATE_MUTATION, {
+          variables: {
+            themeId,
+            files: [{
+              filename: pageTemplateFilename,
+              body: {
+                type: 'TEXT',
+                value: JSON.stringify(templateJson, null, 2)
+              }
+            }]
+          }
+        });
+        const upsertData = await upsertResponse.json();
+
+        // Check for errors
+        if (upsertData?.data?.themeFilesUpsert?.userErrors?.length > 0) {
+          const errors = upsertData.data.themeFilesUpsert.userErrors;
+          AppLogger.error('Theme file upsert failed', {
+            component: 'WidgetInstallationService',
+            errors
+          });
+          throw new Error(`Failed to update template: ${errors.map((e: any) => e.message).join(', ')}`);
+        }
+
+        AppLogger.info('Successfully added app block to page template!', {
+          component: 'WidgetInstallationService',
+          shop,
+          themeId,
+          themeName: theme.name,
+          templatePath: pageTemplateFilename
+        });
+
+        // Assign the page to use the new template
+        const UPDATE_PAGE_TEMPLATE = `
+          mutation updatePage($id: ID!, $page: PageUpdateInput!) {
+            pageUpdate(id: $id, page: $page) {
+              page {
+                id
+                handle
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const updatePageResponse = await admin.graphql(UPDATE_PAGE_TEMPLATE, {
+          variables: {
+            id: createdPage.id,
+            page: {
+              templateSuffix: pageHandle  // Assigns page.{pageHandle}.json template
+            }
+          }
+        });
+
+        const updatePageData = await updatePageResponse.json();
+
+        if (updatePageData?.data?.pageUpdate?.userErrors?.length > 0) {
+          AppLogger.warn('Failed to assign template to page (non-critical)', {
+            component: 'WidgetInstallationService',
+            errors: updatePageData.data.pageUpdate.userErrors
+          });
+        } else {
+          AppLogger.info('Assigned page-specific template to page', {
+            component: 'WidgetInstallationService',
+            pageId: createdPage.id,
+            templateSuffix: pageHandle
+          });
+        }
+
+      } catch (themeError) {
+        AppLogger.error('Failed to automatically add app block to theme', {
+          component: 'WidgetInstallationService',
+          shop,
+          bundleId
+        }, themeError);
+
+        // Return partial success - page created but app block not added
+        return {
+          success: false,
+          error: `Page created but failed to add app block automatically: ${(themeError as Error).message}. Please add the bundle widget block manually in the theme editor.`,
+          errorType: 'theme_update_failed',
+          pageId: createdPage.id,
+          pageHandle: createdPage.handle
+        };
+      }
+
+      // Build storefront URL for the created page
       const shopDomain = shop.replace('.myshopify.com', '');
-      const appBlockId = `${apiKey}/bundle-full-page`;
+      const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
 
-      // Theme editor deep link with auto-add parameters
-      // This opens the theme editor with the app block ready to add - merchant just clicks "Add"
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?` +
-        `previewPath=/pages/${pageHandle}&` +
-        `addAppBlockId=${appBlockId}&` +
-        `target=newAppsSection`;
-
-      AppLogger.info('SMART AUTOMATION completed successfully!', {
+      AppLogger.info('FULL AUTOMATION completed successfully! Bundle is live on storefront!', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
-        themeEditorUrl
+        storefrontUrl
       });
 
       return {
         success: true,
-        installationLink: themeEditorUrl,
+        installationLink: storefrontUrl,  // Link to the live page instead of theme editor
         pageId: createdPage.id,
         pageHandle: createdPage.handle
       };

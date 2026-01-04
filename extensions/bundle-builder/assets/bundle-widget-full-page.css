@@ -301,7 +301,9 @@
 }
 
 .product-card.selected {
-  opacity: 0.5;
+  /* Removed opacity to keep card vibrant - selection indicated by checkmark only */
+  border: 2px solid var(--bundle-product-card-selected-border-color, #4CAF50);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 /* Selected Overlay Badge */
