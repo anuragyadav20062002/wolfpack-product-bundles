@@ -965,9 +965,10 @@ export class WidgetInstallationService {
    */
   /**
    * Create a Shopify page automatically for full-page bundle with FULL AUTOMATION
-   * - Creates page with bundle ID metafield
-   * - Automatically adds app block to page template (NO manual intervention needed!)
-   * - Updates page template JSON to include the bundle widget app block
+   * - Creates page with bundle ID metafield (stores bundle_id in page.metafields.app_bundle.bundle_id)
+   * - Adds app block to default page template (templates/page.json) - only once, shared by all pages
+   * - Block automatically reads bundle_id from page metafield and renders accordingly
+   * - Works like PDP: modifies existing template (no new files = no special permissions needed!)
    * - Merchant sees the bundle immediately on the storefront - zero manual steps!
    */
   static async createFullPageBundlePageAutomated(
@@ -1130,9 +1131,9 @@ export class WidgetInstallationService {
           themeName: theme.name
         });
 
-        // Read the default page template or create a page-specific template
-        const pageTemplateFilename = `templates/page.${pageHandle}.json`;
-        const defaultPageTemplateFilename = `templates/page.json`;
+        // Use the default page template (like PDP uses default product template)
+        // Creating new page-specific templates requires special Shopify exemption
+        const pageTemplateFilename = `templates/page.json`;
 
         const READ_TEMPLATE_QUERY = `
           query ReadTemplate($themeId: ID!, $filename: String!) {
@@ -1151,55 +1152,31 @@ export class WidgetInstallationService {
           }
         `;
 
-        // Try to read the default page template first
+        // Read the default page template (must exist, like product template for PDP)
         const templateResponse = await admin.graphql(READ_TEMPLATE_QUERY, {
           variables: {
             themeId,
-            filename: defaultPageTemplateFilename
+            filename: pageTemplateFilename
           }
         });
         const templateData = await templateResponse.json();
 
-        let templateContent = null;
-        if (templateData?.data?.theme?.files?.nodes?.length > 0) {
-          templateContent = templateData.data.theme.files.nodes[0].body?.content;
+        if (!templateData?.data?.theme?.files?.nodes?.length) {
+          throw new Error(`Template ${pageTemplateFilename} not found in theme`);
         }
 
-        // Parse template JSON - with proper fallback
-        let templateJson;
+        const templateContent = templateData.data.theme.files.nodes[0].body?.content;
 
-        if (templateContent) {
-          try {
-            templateJson = JSON.parse(templateContent);
-          } catch (parseError) {
-            AppLogger.warn('Default page template has invalid JSON, creating minimal template', {
-              component: 'WidgetInstallationService',
-              templateFilename: defaultPageTemplateFilename
-            }, parseError);
-            // Fallback to minimal template if parsing fails
-            templateJson = {
-              "sections": {
-                "main": {
-                  "type": "main-page"
-                }
-              },
-              "order": ["main"]
-            };
-          }
-        } else {
-          // No default template exists, create a minimal one
-          AppLogger.info('No default page template found, creating minimal template', {
+        // Parse template JSON
+        let templateJson;
+        try {
+          templateJson = JSON.parse(templateContent);
+        } catch (parseError) {
+          AppLogger.error('Failed to parse page template JSON', {
             component: 'WidgetInstallationService',
-            templateFilename: defaultPageTemplateFilename
-          });
-          templateJson = {
-            "sections": {
-              "main": {
-                "type": "main-page"
-              }
-            },
-            "order": ["main"]
-          };
+            templateFilename: pageTemplateFilename
+          }, parseError);
+          throw new Error('Invalid page template JSON');
         }
 
         // Ensure sections and order exist
@@ -1210,33 +1187,48 @@ export class WidgetInstallationService {
           templateJson.order = [];
         }
 
-        // Generate unique section ID for app block
-        const sectionId = `app_bundle_${Date.now()}`;
+        // Check if bundle-full-page block already exists in template
         const appBlockType = `shopify://apps/${apiKey}/blocks/bundle-full-page`;
+        const existingBundleSection = Object.keys(templateJson.sections || {}).find(
+          key => templateJson.sections[key]?.type === appBlockType
+        );
 
-        // Add bundle app block to sections
-        templateJson.sections[sectionId] = {
-          type: appBlockType,
-          settings: {
-            bundle_id: bundleId
+        let templateModified = false;
+
+        // Only add the block if it doesn't already exist
+        // Note: We don't set bundle_id here - it will be read from page metafield automatically
+        if (!existingBundleSection) {
+          const sectionId = `app_bundle_widget`;
+
+          templateJson.sections[sectionId] = {
+            type: appBlockType,
+            settings: {}  // No bundle_id - block will read from page metafield
+          };
+
+          // Add section to order (after main section if it exists)
+          const mainIndex = templateJson.order.indexOf('main');
+          if (mainIndex !== -1) {
+            templateJson.order.splice(mainIndex + 1, 0, sectionId);
+          } else {
+            templateJson.order.unshift(sectionId);
           }
-        };
 
-        // Add section to order (after main section if it exists)
-        const mainIndex = templateJson.order.indexOf('main');
-        if (mainIndex !== -1) {
-          templateJson.order.splice(mainIndex + 1, 0, sectionId);
+          templateModified = true;
+
+          AppLogger.info('Adding bundle-full-page block to default page template', {
+            component: 'WidgetInstallationService',
+            sectionId,
+            appBlockType
+          });
         } else {
-          templateJson.order.unshift(sectionId);
+          AppLogger.info('Bundle-full-page block already exists in template, skipping template update', {
+            component: 'WidgetInstallationService',
+            existingSection: existingBundleSection
+          });
         }
 
-        AppLogger.info('Modified template JSON with bundle block', {
-          component: 'WidgetInstallationService',
-          sectionId,
-          appBlockType
-        });
-
-        // Write the page-specific template
+        // Write the updated default page template only if we made changes
+        if (templateModified) {
         const UPSERT_TEMPLATE_MUTATION = `
           mutation UpsertTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
             themeFilesUpsert(themeId: $themeId, files: $files) {
@@ -1275,53 +1267,22 @@ export class WidgetInstallationService {
           throw new Error(`Failed to update template: ${errors.map((e: any) => e.message).join(', ')}`);
         }
 
-        AppLogger.info('Successfully added app block to page template!', {
-          component: 'WidgetInstallationService',
-          shop,
-          themeId,
-          themeName: theme.name,
-          templatePath: pageTemplateFilename
-        });
-
-        // Assign the page to use the new template
-        const UPDATE_PAGE_TEMPLATE = `
-          mutation updatePage($id: ID!, $page: PageUpdateInput!) {
-            pageUpdate(id: $id, page: $page) {
-              page {
-                id
-                handle
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
-
-        const updatePageResponse = await admin.graphql(UPDATE_PAGE_TEMPLATE, {
-          variables: {
-            id: createdPage.id,
-            page: {
-              templateSuffix: pageHandle  // Assigns page.{pageHandle}.json template
-            }
-          }
-        });
-
-        const updatePageData = await updatePageResponse.json();
-
-        if (updatePageData?.data?.pageUpdate?.userErrors?.length > 0) {
-          AppLogger.warn('Failed to assign template to page (non-critical)', {
+          AppLogger.info('Successfully added app block to default page template!', {
             component: 'WidgetInstallationService',
-            errors: updatePageData.data.pageUpdate.userErrors
+            shop,
+            themeId,
+            themeName: theme.name,
+            templatePath: pageTemplateFilename
           });
         } else {
-          AppLogger.info('Assigned page-specific template to page', {
+          AppLogger.info('Skipped template update - bundle block already exists', {
             component: 'WidgetInstallationService',
-            pageId: createdPage.id,
-            templateSuffix: pageHandle
+            shop,
+            themeId
           });
         }
+
+        // Page will automatically use the default page.json template (no need to assign template suffix)
 
       } catch (themeError) {
         AppLogger.error('Failed to automatically add app block to theme', {
