@@ -754,9 +754,12 @@ export class WidgetInstallationService {
       if (!widgetInstalled) {
         const appBlockId = `${apiKey}/bundle-full-page`;
 
-        // Create deep link to theme editor with the specific page pre-loaded
+        // Create deep link to theme editor with the default page template
+        // Note: Using template=page (default) instead of template=page.${pageHandle}
+        // because the specific page template file doesn't exist in the theme yet.
+        // The widget will read the bundle_id from the page's metafield at runtime.
         const installLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?` +
-          `template=page.${pageHandle}&addAppBlockId=${appBlockId}&target=mainSection`;
+          `template=page&addAppBlockId=${appBlockId}&target=mainSection`;
 
         AppLogger.info('Page created, but widget not installed - returning setup link', {
           component: 'WidgetInstallationService',

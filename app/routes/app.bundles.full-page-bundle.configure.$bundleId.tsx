@@ -3030,7 +3030,7 @@ export default function ConfigureBundleFlow() {
           // Navigate directly to theme editor with the newly created page
           // User just needs to add the widget block and save
           setTimeout(() => {
-            window.open(data.widgetInstallationLink, '_top');
+            window.open(data.widgetInstallationLink, '_blank');
           }, 1000);
 
           return; // Exit early
@@ -3404,7 +3404,7 @@ export default function ConfigureBundleFlow() {
                     </Text>
                   </BlockStack>
                   <Button
-                    onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                    onClick={() => window.open(widgetInstallation.installationLink, '_blank')}
                   >
                     Configure Widget
                   </Button>
