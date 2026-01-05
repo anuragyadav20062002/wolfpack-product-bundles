@@ -3356,23 +3356,23 @@ export default function ConfigureBundleFlow() {
                 </Banner>
               ) : (
                 <Banner
-                  tone={widgetInstallation?.recommendedAction === 'configured' ? "success" : "warning"}
+                  tone={bundle.shopifyPageHandle ? "success" : "warning"}
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
                   <InlineStack gap="400" align="space-between" blockAlign="center">
                     <BlockStack gap="100">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        {widgetInstallation?.recommendedAction === 'configured'
+                        {bundle.shopifyPageHandle
                           ? "✅ Bundle Successfully Added to Storefront!"
                           : "Ready to add your bundle to the storefront!"}
                       </Text>
                       <Text as="span" variant="bodySm" tone="subdued">
-                        {widgetInstallation?.recommendedAction === 'configured'
-                          ? "Your bundle is live and visible to customers. Any changes you save will automatically update on the storefront."
+                        {bundle.shopifyPageHandle
+                          ? "Your bundle page has been created and is live. Use the \"View on Storefront\" button to see it."
                           : "Click \"Add to Storefront\" to create your page and complete the one-time widget setup"}
                       </Text>
                     </BlockStack>
-                    {widgetInstallation?.recommendedAction !== 'configured' && (
+                    {!bundle.shopifyPageHandle && (
                       <Button
                         onClick={handlePlaceWidgetNow}
                         loading={fetcher.state === 'submitting'}
