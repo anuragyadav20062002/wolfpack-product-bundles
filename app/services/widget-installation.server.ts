@@ -8,6 +8,7 @@
  */
 
 import { AppLogger } from "../lib/logger";
+import { WidgetInstallationFlagsService } from "./widget-installation-flags.server";
 
 // ============================================================================
 // Type Definitions
@@ -64,6 +65,13 @@ export class WidgetInstallationService {
   // ==========================================================================
 
   /**
+   * @deprecated Legacy method - NO LONGER USED
+   *
+   * This method reads theme files which requires read_themes scope.
+   * For "Built for Shopify" compliance, use WidgetInstallationFlagsService instead.
+   *
+   * @see WidgetInstallationFlagsService.isWidgetInstalled()
+   *
    * Check if the Bundle Widget block exists in product templates
    *
    * Uses Shopify Admin GraphQL API to check for app block references.
@@ -204,6 +212,13 @@ export class WidgetInstallationService {
   }
 
   /**
+   * @deprecated Legacy method - NO LONGER USED
+   *
+   * This method reads theme files which requires read_themes scope.
+   * For "Built for Shopify" compliance, use WidgetInstallationFlagsService instead.
+   *
+   * @see WidgetInstallationFlagsService.isWidgetInstalled()
+   *
    * Check if full-page bundle widget exists in page templates
    *
    * Full-page bundles are placed on 'page' templates, not 'product' templates.
@@ -381,16 +396,19 @@ export class WidgetInstallationService {
     bundlePageHandle?: string | null
   ): Promise<BundleInstallationContext> {
     try {
-      // For full-page bundles, check page templates
+      // For full-page bundles, check metafield flags
       if (bundleType === 'full_page') {
-        const fullPageStatus = await this.checkFullPageWidgetInstallation(admin, shop, bundleId, apiKey);
+        const widgetInstalled = await WidgetInstallationFlagsService.isWidgetInstalled(
+          admin,
+          shop,
+          'full_page'
+        );
 
-        if (!fullPageStatus.installed) {
+        if (!widgetInstalled) {
           return {
             widgetInstalled: false,
             bundleConfigured: false,
-            recommendedAction: 'install_widget',
-            themeName: fullPageStatus.themeName
+            recommendedAction: 'install_widget'
           };
         }
 
@@ -401,28 +419,29 @@ export class WidgetInstallationService {
           return {
             widgetInstalled: true,
             bundleConfigured: true,
-            recommendedAction: 'configured',
-            themeName: fullPageStatus.themeName
+            recommendedAction: 'configured'
           };
         } else {
           return {
             widgetInstalled: true,
             bundleConfigured: false,
-            recommendedAction: 'add_bundle',
-            themeName: fullPageStatus.themeName
+            recommendedAction: 'add_bundle'
           };
         }
       }
 
-      // For product-page bundles, check product templates
-      const widgetStatus = await this.checkWidgetInstallation(admin, shop, apiKey);
+      // For product-page bundles, check metafield flags
+      const widgetInstalled = await WidgetInstallationFlagsService.isWidgetInstalled(
+        admin,
+        shop,
+        'product_page'
+      );
 
-      if (!widgetStatus.installed) {
+      if (!widgetInstalled) {
         return {
           widgetInstalled: false,
           bundleConfigured: false,
-          recommendedAction: 'install_widget',
-          themeName: widgetStatus.themeName
+          recommendedAction: 'install_widget'
         };
       }
 
@@ -431,8 +450,7 @@ export class WidgetInstallationService {
       return {
         widgetInstalled: true,
         bundleConfigured: true,
-        recommendedAction: 'configured',
-        themeName: widgetStatus.themeName
+        recommendedAction: 'configured'
       };
 
     } catch (error) {
@@ -582,11 +600,14 @@ export class WidgetInstallationService {
   /**
    * Create a full-page bundle with production-ready, App Store compliant flow
    *
-   * This method:
-   * 1. Checks if the full-page widget is installed in the theme
-   * 2. If NOT installed: Returns installation link for one-time setup
-   * 3. If installed: Creates page with bundle_id metafield
-   * 4. Returns storefront URL where bundle is live
+   * UPDATED FLOW (Single-Click Experience):
+   * 1. Creates page with bundle_id metafield immediately
+   * 2. Checks if full-page widget is installed in theme
+   * 3. If NOT installed: Returns page info + installation link to that specific page
+   * 4. If installed: Returns storefront URL where bundle is live
+   *
+   * This ensures the page exists BEFORE guiding the user to install the widget,
+   * eliminating the need for a second "Add to Storefront" click.
    *
    * NO THEME MODIFICATIONS - Fully compliant with Shopify App Store policies.
    *
@@ -605,45 +626,14 @@ export class WidgetInstallationService {
     bundleName: string
   ): Promise<FullPageBundleResult> {
     try {
-      AppLogger.info('Creating full-page bundle (production mode)', {
+      AppLogger.info('Creating full-page bundle (single-click mode)', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
         bundleName
       });
 
-      // Step 1: Check if widget is already installed
-      const widgetStatus = await this.checkFullPageWidgetInstallation(
-        admin,
-        shop,
-        bundleId,
-        apiKey
-      );
-
-      // If widget NOT installed, return installation link
-      if (!widgetStatus.installed) {
-        const shopDomain = shop.replace('.myshopify.com', '');
-        const appBlockId = `${apiKey}/bundle-full-page`;
-
-        const installLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?` +
-          `template=page&addAppBlockId=${appBlockId}&target=mainSection`;
-
-        AppLogger.info('Full-page widget not installed, returning setup link', {
-          component: 'WidgetInstallationService',
-          shop,
-          bundleId
-        });
-
-        return {
-          success: false,
-          widgetInstallationRequired: true,
-          widgetInstallationLink: installLink,
-          error: 'Please install the Bundle Widget in your theme first (one-time setup)',
-          errorType: 'widget_not_installed'
-        };
-      }
-
-      // Step 2: Widget is installed - create page with metafield
+      // Step 1: Create page with metafield FIRST (regardless of widget status)
       const pageHandle = `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       const pageTitle = bundleName || `Bundle ${bundleId}`;
 
@@ -705,7 +695,7 @@ export class WidgetInstallationService {
         pageHandle: createdPage.handle
       });
 
-      // Step 3: Add bundle ID as page metafield (for widget to read)
+      // Step 2: Add bundle ID as page metafield (for widget to read)
       const SET_METAFIELD = `
         mutation setPageMetafield($metafields: [MetafieldsSetInput!]!) {
           metafieldsSet(metafields: $metafields) {
@@ -749,11 +739,45 @@ export class WidgetInstallationService {
         });
       }
 
-      // Step 4: Return success with storefront URL
+      // Step 3: Check if widget is installed using metafield flags
+      // Built for Shopify compliant - no theme file reads required!
+      const widgetInstalled = await WidgetInstallationFlagsService.isWidgetInstalled(
+        admin,
+        shop,
+        'full_page'
+      );
+
       const shopDomain = shop.replace('.myshopify.com', '');
       const pageUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
 
-      AppLogger.info('Full-page bundle created successfully', {
+      // If widget NOT installed, return page info + installation link to this specific page
+      if (!widgetInstalled) {
+        const appBlockId = `${apiKey}/bundle-full-page`;
+
+        // Create deep link to theme editor with the specific page pre-loaded
+        const installLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?` +
+          `template=page.${pageHandle}&addAppBlockId=${appBlockId}&target=mainSection`;
+
+        AppLogger.info('Page created, but widget not installed - returning setup link', {
+          component: 'WidgetInstallationService',
+          shop,
+          bundleId,
+          pageHandle: createdPage.handle,
+          installLink
+        });
+
+        return {
+          success: true,
+          pageId: createdPage.id,
+          pageHandle: createdPage.handle,
+          pageUrl: pageUrl,
+          widgetInstallationRequired: true,
+          widgetInstallationLink: installLink
+        };
+      }
+
+      // Step 4: Widget is installed - return success with storefront URL
+      AppLogger.info('Full-page bundle created successfully (widget already installed)', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
@@ -791,10 +815,10 @@ export class WidgetInstallationService {
   /**
    * Validate product bundle widget setup and provide guidance
    *
-   * Checks if the bundle widget is installed in product templates.
+   * Checks if the bundle widget is installed using metafield flags.
    * Returns appropriate links and guidance for merchant.
    *
-   * NO THEME MODIFICATIONS - Read-only operation.
+   * Built for Shopify compliant - uses metafields instead of theme file reads.
    *
    * @param admin - Shopify admin API client
    * @param shop - Shop domain
@@ -818,10 +842,14 @@ export class WidgetInstallationService {
         shopifyProductId
       });
 
-      // Check if widget is already installed
-      const widgetStatus = await this.checkWidgetInstallation(admin, shop, apiKey);
+      // Check if widget is already installed using metafield flags
+      const widgetInstalled = await WidgetInstallationFlagsService.isWidgetInstalled(
+        admin,
+        shop,
+        'product_page'
+      );
 
-      if (!widgetStatus.installed) {
+      if (!widgetInstalled) {
         // Widget not installed - provide one-time setup link
         const installLink = this.generateProductBundleInstallationLink(
           shop,
@@ -939,6 +967,12 @@ export class WidgetInstallationService {
   }
 
   /**
+   * @deprecated Legacy method - NO LONGER USED
+   *
+   * This method reads theme files which requires read_themes scope.
+   * For "Built for Shopify" compliance, widget configuration is tracked
+   * via database records (shopifyPageHandle field) instead.
+   *
    * Check if a specific bundle is configured in the installed widget
    *
    * Looks for bundle ID references in theme template JSON.

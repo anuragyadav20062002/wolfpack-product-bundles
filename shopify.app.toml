@@ -15,8 +15,9 @@ api_version = "2025-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-# Production-ready scopes - App Store compliant (write_themes removed)
-scopes = "read_product_listings,read_products,read_publications,read_themes,unauthenticated_read_content,unauthenticated_read_product_listings,write_app_proxy,write_cart_transforms,write_content,write_discounts,write_products,write_publications"
+# "Built for Shopify" compliant - No theme access required!
+# Widget installation tracked via app metafields instead of theme file reads
+scopes = "read_product_listings,read_products,read_publications,unauthenticated_read_content,unauthenticated_read_product_listings,write_app_proxy,write_cart_transforms,write_content,write_discounts,write_products,write_publications"
 
 [auth]
 redirect_urls = [
@@ -52,4 +53,22 @@ description = "ISO timestamp of last successful sync with app server"
 
   [shop.metafields.app.lastSync.access]
   admin = "merchant_read"
+  storefront = "none"
+
+[shop.metafields.app.productPageWidgetInstalled]
+type = "boolean"
+name = "Product Page Widget Installed"
+description = "Indicates if the product page bundle widget has been installed in the theme"
+
+  [shop.metafields.app.productPageWidgetInstalled.access]
+  admin = "merchant_read_write"
+  storefront = "none"
+
+[shop.metafields.app.fullPageWidgetInstalled]
+type = "boolean"
+name = "Full Page Widget Installed"
+description = "Indicates if the full-page bundle widget has been installed in the theme"
+
+  [shop.metafields.app.fullPageWidgetInstalled.access]
+  admin = "merchant_read_write"
   storefront = "none"

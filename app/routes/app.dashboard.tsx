@@ -26,26 +26,10 @@ import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 import { SubscriptionGuard } from "../services/subscription-guard.server";
 import { BillingService } from "../services/billing.server";
 import { WidgetInstallationService } from "../services/widget-installation.server";
+import { WidgetInstallationFlagsService } from "../services/widget-installation-flags.server";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
-
-// Define a type for the bundle
-interface Bundle {
-  id: string;
-  name: string;
-  description?: string | null;
-  shopId: string;
-  shopifyProductId?: string | null;
-  bundleType: 'product_page' | 'full_page';
-  status: 'draft' | 'active' | 'archived';
-  active: boolean;
-  publishedAt?: Date | string | null;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  steps: any[];
-  pricing?: any;
-}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -72,8 +56,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get subscription info for upgrade prompt
   const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
 
-  // Check widget installation status
-  const widgetStatus = await WidgetInstallationService.checkWidgetInstallation(admin, session.shop);
+  // Check widget installation status using metafield flags (Built for Shopify compliant!)
+  const widgetFlags = await WidgetInstallationFlagsService.getInstallationFlags(admin, session.shop);
 
   // Get API key for deep linking
   const apiKey = process.env.SHOPIFY_API_KEY || '';
@@ -88,9 +72,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
     widgetInstallation: {
-      installed: widgetStatus.installed,
-      themeName: widgetStatus.themeName,
-      showPrompt: WidgetInstallationService.shouldShowInstallationPrompt(widgetStatus),
+      productPageInstalled: widgetFlags.productPageWidgetInstalled,
+      fullPageInstalled: widgetFlags.fullPageWidgetInstalled,
+      showPrompt: !widgetFlags.productPageWidgetInstalled && !widgetFlags.fullPageWidgetInstalled,
     },
     apiKey,
   });
@@ -686,7 +670,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleEditBundle = (bundle: Bundle) => {
+  const handleEditBundle = (bundle: typeof bundles[number]) => {
     const routeBase = bundle.bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
     navigate(`/app/bundles/${routeBase}/configure/${bundle.id}`);
   };
@@ -958,16 +942,27 @@ export default function Dashboard() {
           )}
 
           {/* Widget Installation Success - Informational Only */}
-          {widgetInstallation?.installed && (
+          {(widgetInstallation?.productPageInstalled || widgetInstallation?.fullPageInstalled) && (
             <Layout.Section>
               <Banner
-                title="✅ Bundle Widget is Installed"
+                title="✅ Bundle Widgets Installed"
                 tone="success"
               >
-                <Text as="p" variant="bodyMd">
-                  Your bundle widget is active in {widgetInstallation.themeName || 'your theme'}.
-                  Edit any bundle to configure which one displays on your product pages.
-                </Text>
+                <BlockStack gap="200">
+                  {widgetInstallation.productPageInstalled && (
+                    <Text as="p" variant="bodyMd">
+                      ✓ Product Page Widget is active
+                    </Text>
+                  )}
+                  {widgetInstallation.fullPageInstalled && (
+                    <Text as="p" variant="bodyMd">
+                      ✓ Full-Page Widget is active
+                    </Text>
+                  )}
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Edit any bundle to configure display settings.
+                  </Text>
+                </BlockStack>
               </Banner>
             </Layout.Section>
           )}
