@@ -1161,22 +1161,53 @@ export class WidgetInstallationService {
         });
         const templateData = await templateResponse.json();
 
+        AppLogger.debug('Page template query response', {
+          component: 'WidgetInstallationService',
+          hasData: !!templateData?.data,
+          hasTheme: !!templateData?.data?.theme,
+          hasFiles: !!templateData?.data?.theme?.files,
+          nodeCount: templateData?.data?.theme?.files?.nodes?.length || 0,
+          errors: templateData?.errors
+        });
+
+        // Check if page template exists
         if (!templateData?.data?.theme?.files?.nodes?.length) {
-          throw new Error(`Template ${pageTemplateFilename} not found in theme`);
+          AppLogger.warn('Page template not found - theme may be using legacy Liquid templates', {
+            component: 'WidgetInstallationService',
+            templateFilename: pageTemplateFilename
+          });
+          throw new Error(`Theme does not have ${pageTemplateFilename}. This theme may be using legacy Liquid templates. Please add the bundle widget manually via the theme editor.`);
         }
 
         const templateContent = templateData.data.theme.files.nodes[0].body?.content;
+
+        AppLogger.debug('Page template content retrieved', {
+          component: 'WidgetInstallationService',
+          hasContent: !!templateContent,
+          contentLength: templateContent?.length || 0,
+          contentPreview: templateContent?.substring(0, 100)
+        });
+
+        // Validate template content exists
+        if (!templateContent || templateContent.trim() === '') {
+          AppLogger.error('Page template is empty', {
+            component: 'WidgetInstallationService',
+            templateFilename: pageTemplateFilename
+          });
+          throw new Error(`Theme's ${pageTemplateFilename} is empty. Please add the bundle widget manually via the theme editor.`);
+        }
 
         // Parse template JSON
         let templateJson;
         try {
           templateJson = JSON.parse(templateContent);
         } catch (parseError) {
-          AppLogger.error('Failed to parse page template JSON', {
+          AppLogger.error('Failed to parse page template JSON - theme may have corrupted template file', {
             component: 'WidgetInstallationService',
-            templateFilename: pageTemplateFilename
+            templateFilename: pageTemplateFilename,
+            contentPreview: templateContent.substring(0, 200)
           }, parseError);
-          throw new Error('Invalid page template JSON');
+          throw new Error(`Theme's ${pageTemplateFilename} has invalid JSON format. Please add the bundle widget manually via the theme editor.`);
         }
 
         // Ensure sections and order exist
