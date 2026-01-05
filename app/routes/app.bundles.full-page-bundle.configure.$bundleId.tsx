@@ -3228,7 +3228,7 @@ export default function ConfigureBundleFlow() {
         onAction: handleBackClick,
       }}
       primaryAction={
-        bundle.bundleType === 'full_page' && bundle.shopifyPageHandle
+        bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed
           ? {
               content: "View on Storefront",
               icon: ExternalIcon,
@@ -3356,23 +3356,23 @@ export default function ConfigureBundleFlow() {
                 </Banner>
               ) : (
                 <Banner
-                  tone={bundle.shopifyPageHandle ? "success" : "warning"}
+                  tone={(bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed) ? "success" : "warning"}
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
                   <InlineStack gap="400" align="space-between" blockAlign="center">
                     <BlockStack gap="100">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        {bundle.shopifyPageHandle
+                        {(bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed)
                           ? "✅ Bundle Successfully Added to Storefront!"
                           : "Ready to add your bundle to the storefront!"}
                       </Text>
                       <Text as="span" variant="bodySm" tone="subdued">
-                        {bundle.shopifyPageHandle
-                          ? "Your bundle page has been created and is live. Use the \"View on Storefront\" button to see it."
+                        {(bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed)
+                          ? "Your bundle is live and visible to customers. Any changes you save will automatically update on the storefront."
                           : "Click \"Add to Storefront\" to create your page and complete the one-time widget setup"}
                       </Text>
                     </BlockStack>
-                    {!bundle.shopifyPageHandle && (
+                    {!(bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed) && (
                       <Button
                         onClick={handlePlaceWidgetNow}
                         loading={fetcher.state === 'submitting'}
