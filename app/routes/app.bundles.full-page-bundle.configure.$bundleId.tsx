@@ -3227,28 +3227,20 @@ export default function ConfigureBundleFlow() {
         content: "Cart Transform Bundles",
         onAction: handleBackClick,
       }}
-      primaryAction={{
-        content: "Preview Bundle",
-        onAction: handlePreviewBundle,
-        icon: ViewIcon,
-        disabled: !bundleProduct || stepsState.steps.length === 0,
-      }}
-      secondaryActions={
+      primaryAction={
         bundle.bundleType === 'full_page' && bundle.shopifyPageHandle
-          ? [
-              {
-                content: "View on Storefront",
-                icon: ExternalIcon,
-                onAction: () => {
-                  const shopDomain = shop.includes('.myshopify.com')
-                    ? shop.replace('.myshopify.com', '')
-                    : shop;
-                  const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
-                  window.open(storefrontUrl, '_blank');
-                  shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
-                },
+          ? {
+              content: "View on Storefront",
+              icon: ExternalIcon,
+              onAction: () => {
+                const shopDomain = shop.includes('.myshopify.com')
+                  ? shop.replace('.myshopify.com', '')
+                  : shop;
+                const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+                window.open(storefrontUrl, '_blank');
+                shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
               },
-            ]
+            }
           : undefined
       }
     >
@@ -3364,25 +3356,31 @@ export default function ConfigureBundleFlow() {
                 </Banner>
               ) : (
                 <Banner
-                  tone="warning"
+                  tone={widgetInstallation?.recommendedAction === 'configured' ? "success" : "warning"}
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
                   <InlineStack gap="400" align="space-between" blockAlign="center">
                     <BlockStack gap="100">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        Ready to add your bundle to the storefront!
+                        {widgetInstallation?.recommendedAction === 'configured'
+                          ? "✅ Bundle Successfully Added to Storefront!"
+                          : "Ready to add your bundle to the storefront!"}
                       </Text>
                       <Text as="span" variant="bodySm" tone="subdued">
-                        Click "Add to Storefront" to create your page and complete the one-time widget setup
+                        {widgetInstallation?.recommendedAction === 'configured'
+                          ? "Your bundle is live and visible to customers. Any changes you save will automatically update on the storefront."
+                          : "Click \"Add to Storefront\" to create your page and complete the one-time widget setup"}
                       </Text>
                     </BlockStack>
-                    <Button
-                      onClick={handlePlaceWidgetNow}
-                      loading={fetcher.state === 'submitting'}
-                      variant="primary"
-                    >
-                      Add to Storefront
-                    </Button>
+                    {widgetInstallation?.recommendedAction !== 'configured' && (
+                      <Button
+                        onClick={handlePlaceWidgetNow}
+                        loading={fetcher.state === 'submitting'}
+                        variant="primary"
+                      >
+                        Add to Storefront
+                      </Button>
+                    )}
                   </InlineStack>
                 </Banner>
               )}
@@ -3566,179 +3564,6 @@ export default function ConfigureBundleFlow() {
                 </Card>
               )}
 
-              {/* Take your bundle live Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">
-                    Take your bundle live
-                  </Text>
-
-                  {/* Template Selection - Only for product-page bundles */}
-                  {bundle.bundleType !== 'full_page' && (
-                    <BlockStack gap="200">
-                      <Text variant="headingSm" as="h4">
-                        Bundle Container Template
-                      </Text>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Select which product template will display this bundle widget
-                      </Text>
-                      <TextField
-                        label="Template Name"
-                        value={formState.templateName}
-                        onChange={formState.setTemplateName}
-                        placeholder="e.g., cart-transform, product, bundle-special"
-                        helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
-                        labelHidden
-                        autoComplete="off"
-                      />
-                    </BlockStack>
-                  )}
-
-                  {/* Setup Instructions */}
-                  <BlockStack gap="300">
-                    <Divider />
-
-                    <BlockStack gap="300">
-                      <Text variant="headingSm" as="h4">
-                        How to Complete Setup
-                      </Text>
-
-                      {/* Video Placeholder */}
-                      <div style={{
-                        width: '100%',
-                        height: '200px',
-                        backgroundColor: '#f6f6f7',
-                        borderRadius: '8px',
-                        border: '1px dashed #c4cdd5',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative'
-                      }}>
-                        <BlockStack gap="200" inlineAlign="center">
-                          <Icon source={ViewIcon} />
-                          <Text as="p" variant="bodySm" tone="subdued" alignment="center">
-                            Setup Video Tutorial
-                          </Text>
-                          <Text as="p" variant="bodyXs" tone="subdued" alignment="center">
-                            (Coming Soon)
-                          </Text>
-                        </BlockStack>
-                      </div>
-
-                      {/* Step-by-step Instructions - UPDATED FOR SINGLE-CLICK FLOW */}
-                      <Card background="bg-surface-secondary">
-                        <BlockStack gap="300">
-                          <Text variant="bodyMd" as="p" fontWeight="semibold">
-                            Setup Checklist
-                          </Text>
-                          <List type="number">
-                            <List.Item>
-                              Create bundle steps and add products
-                            </List.Item>
-                            <List.Item>
-                              Set bundle status to "Active"
-                            </List.Item>
-                            <List.Item>
-                              Click "Save" to save your configuration
-                            </List.Item>
-                            <List.Item>
-                              Click "Add to Storefront" - your page will be created automatically!
-                            </List.Item>
-                            <List.Item>
-                              Complete the simple widget setup in theme editor (opens automatically)
-                            </List.Item>
-                            <List.Item>
-                              Your bundle is now live on the storefront!
-                            </List.Item>
-                            <List.Item>
-                              Use the "View on Storefront" button to see your live bundle
-                            </List.Item>
-                          </List>
-                          <Banner tone="success">
-                            <Text as="p" variant="bodyXs">
-                              ✨ One-click setup! The "Add to Storefront" button creates your page and guides you to add the widget - simple and fast!
-                            </Text>
-                          </Banner>
-                        </BlockStack>
-                      </Card>
-                    </BlockStack>
-                  </BlockStack>
-
-                  {/* Pro Tip - Only for product-page bundles */}
-                  {bundle.bundleType !== 'full_page' && (
-                    <Card background="bg-surface-info">
-                      <BlockStack gap="300">
-                        <InlineStack gap="200" blockAlign="center">
-                          <div style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--p-color-bg-fill-info)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <Icon source={ViewIcon} tone="info" />
-                          </div>
-                          <Text as="h3" variant="headingSm" fontWeight="semibold">
-                            Pro Tip: Custom Templates
-                          </Text>
-                        </InlineStack>
-                        <Text as="p" variant="bodySm" tone="subdued">
-                          Create a custom product template, eg. "bundle-product". This gives you better control and keeps bundle products separate from regular products.
-                        </Text>
-                      </BlockStack>
-                    </Card>
-                  )}
-
-                  {/* Quick Setup Guide - Only for full-page bundles */}
-                  {bundle.bundleType === 'full_page' && (
-                    <Card background="bg-surface-success">
-                      <BlockStack gap="300">
-                        <InlineStack gap="200" blockAlign="center">
-                          <div style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--p-color-bg-fill-success)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <Icon source={ViewIcon} tone="success" />
-                          </div>
-                          <Text as="h3" variant="headingSm" fontWeight="semibold">
-                            Automated Setup
-                          </Text>
-                        </InlineStack>
-
-                        <BlockStack gap="200">
-                          <Text as="p" variant="bodySm" tone="subdued">
-                            Clicking "Place Widget" will automatically:
-                          </Text>
-
-                          <ul style={{
-                            marginLeft: '20px',
-                            fontSize: '13px',
-                            lineHeight: '1.6',
-                            color: 'var(--p-color-text-subdued)'
-                          }}>
-                            <li>Create a new page for this bundle</li>
-                            <li>Automatically add the bundle widget app block to the page</li>
-                            <li>Configure the Bundle ID (no manual entry needed)</li>
-                            <li>Make your bundle live on the storefront immediately</li>
-                          </ul>
-
-                          <Text as="p" variant="bodySm" tone="success" fontWeight="medium" style={{ fontStyle: 'italic', marginTop: '8px' }}>
-                            ✨ Everything is automated - your bundle goes live with just one click!
-                          </Text>
-                        </BlockStack>
-                      </BlockStack>
-                    </Card>
-                  )}
-                </BlockStack>
-              </Card>
             </BlockStack>
           </Layout.Section>
 
