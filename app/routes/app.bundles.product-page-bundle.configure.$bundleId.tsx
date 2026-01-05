@@ -1841,6 +1841,16 @@ export default function ConfigureBundleFlow() {
     return false;
   });
 
+  // Clear widget installation flag if widget is detected as configured
+  useEffect(() => {
+    if (widgetInstallation?.recommendedAction === 'configured' && widgetInstallationInitiated) {
+      setWidgetInstallationInitiated(false);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`widget_installation_${bundle.id}`);
+      }
+    }
+  }, [widgetInstallation?.recommendedAction, widgetInstallationInitiated, bundle.id]);
+
   // ===== DIRTY FLAG SYSTEM =====
   // Simple dirty flag that gets set on ANY state change
   const [isDirty, setIsDirty] = useState(false);
@@ -3039,30 +3049,16 @@ export default function ConfigureBundleFlow() {
                   tone="success"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
-                  <InlineStack gap="400" align="space-between" blockAlign="center">
-                    <BlockStack gap="100">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Text as="span" variant="bodyMd" fontWeight="semibold">
-                          ✅ Widget installation in progress
-                        </Text>
-                      </InlineStack>
-                      <Text as="span" variant="bodySm" tone="subdued">
-                        Complete the installation in the theme editor, then return here. The page will auto-refresh to confirm installation.
+                  <BlockStack gap="100">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">
+                        ✅ Widget installation in progress
                       </Text>
-                    </BlockStack>
-                    <Button
-                      onClick={() => {
-                        setWidgetInstallationInitiated(false);
-                        if (typeof window !== 'undefined') {
-                          localStorage.removeItem(`widget_installation_${bundle.id}`);
-                        }
-                        window.location.reload();
-                      }}
-                      variant="plain"
-                    >
-                      Refresh Status
-                    </Button>
-                  </InlineStack>
+                    </InlineStack>
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      Complete the installation in the theme editor, then return here. The page will auto-refresh to confirm installation.
+                    </Text>
+                  </BlockStack>
                 </Banner>
               ) : (
                 <Banner

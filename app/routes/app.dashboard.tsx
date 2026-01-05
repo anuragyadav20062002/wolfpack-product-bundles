@@ -797,24 +797,134 @@ export default function Dashboard() {
 
               {/* Bundle Type Selection */}
               <BlockStack gap="200">
+                <style>{`
+                  .bundle-type-card {
+                    border-radius: 8px;
+                    padding: 12px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                  }
+                  .bundle-type-card:hover {
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                  }
+                  .bundle-thumbnail-link {
+                    display: block;
+                    position: relative;
+                    border-radius: 6px;
+                    overflow: hidden;
+                    cursor: pointer;
+                  }
+                  .bundle-thumbnail-img {
+                    width: 100%;
+                    height: auto;
+                    display: block;
+                    transition: transform 0.2s ease;
+                  }
+                  .bundle-thumbnail-link:hover .bundle-thumbnail-img {
+                    transform: scale(1.02);
+                  }
+                  .bundle-play-button {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: rgba(0, 0, 0, 0.7);
+                    border-radius: 50%;
+                    width: 48px;
+                    height: 48px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    transition: opacity 0.2s ease;
+                  }
+                  .bundle-thumbnail-link:hover .bundle-play-button {
+                    opacity: 1;
+                  }
+                `}</style>
                 <Text variant="headingSm" as="h4">Bundle Type</Text>
-                <ChoiceList
-                  title=""
-                  choices={[
-                    {
-                      label: 'Product Page Bundle',
-                      value: 'product_page',
-                      helpText: 'Display bundle builder on existing product pages (recommended for most stores)'
-                    },
-                    {
-                      label: 'Full Page Bundle',
-                      value: 'full_page',
-                      helpText: 'Create a dedicated landing page for your bundle with tabs and full customization'
-                    }
-                  ]}
-                  selected={bundleType}
-                  onChange={setBundleType}
-                />
+                <Text variant="bodySm" as="p" tone="subdued">
+                  Click on the thumbnails to watch demo videos
+                </Text>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  {/* Product Page Bundle */}
+                  <div
+                    className="bundle-type-card"
+                    onClick={() => setBundleType(['product_page'])}
+                    style={{
+                      border: bundleType[0] === 'product_page' ? '2px solid #005BD3' : '1px solid #c9cccf',
+                      backgroundColor: bundleType[0] === 'product_page' ? '#f6f6f7' : 'white'
+                    }}
+                  >
+                    <BlockStack gap="200">
+                      <a
+                        href="https://www.loom.com/share/6eda102958f3453f9379ac4c70fcda29"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="bundle-thumbnail-link"
+                      >
+                        <img
+                          src="/pdp.jpeg"
+                          alt="Product Page Bundle Demo"
+                          className="bundle-thumbnail-img"
+                        />
+                        <div className="bundle-play-button">
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+                            <path d="M5 3l12 7-12 7V3z" />
+                          </svg>
+                        </div>
+                      </a>
+                      <BlockStack gap="100">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          Product Page Bundle
+                        </Text>
+                        <Text variant="bodySm" as="p" tone="subdued">
+                          Display bundle builder on existing product pages (recommended for most stores)
+                        </Text>
+                      </BlockStack>
+                    </BlockStack>
+                  </div>
+
+                  {/* Full Page Bundle */}
+                  <div
+                    className="bundle-type-card"
+                    onClick={() => setBundleType(['full_page'])}
+                    style={{
+                      border: bundleType[0] === 'full_page' ? '2px solid #005BD3' : '1px solid #c9cccf',
+                      backgroundColor: bundleType[0] === 'full_page' ? '#f6f6f7' : 'white'
+                    }}
+                  >
+                    <BlockStack gap="200">
+                      <a
+                        href="https://www.loom.com/share/dc6b075589df45eead93edaa7acfb08c"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="bundle-thumbnail-link"
+                      >
+                        <img
+                          src="/full.jpeg"
+                          alt="Full Page Bundle Demo"
+                          className="bundle-thumbnail-img"
+                        />
+                        <div className="bundle-play-button">
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+                            <path d="M5 3l12 7-12 7V3z" />
+                          </svg>
+                        </div>
+                      </a>
+                      <BlockStack gap="100">
+                        <Text variant="bodyMd" as="p" fontWeight="semibold">
+                          Full Page Bundle
+                        </Text>
+                        <Text variant="bodySm" as="p" tone="subdued">
+                          Create a dedicated landing page for your bundle with tabs and full customization
+                        </Text>
+                      </BlockStack>
+                    </BlockStack>
+                  </div>
+                </div>
               </BlockStack>
 
               {/* Hidden input to pass bundleType to form */}

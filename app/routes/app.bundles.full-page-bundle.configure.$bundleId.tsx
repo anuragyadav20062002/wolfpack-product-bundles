@@ -1947,6 +1947,16 @@ export default function ConfigureBundleFlow() {
     return false;
   });
 
+  // Clear widget installation flag if widget is detected as configured
+  useEffect(() => {
+    if (widgetInstallation?.recommendedAction === 'configured' && widgetInstallationInitiated) {
+      setWidgetInstallationInitiated(false);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`widget_installation_${bundle.id}`);
+      }
+    }
+  }, [widgetInstallation?.recommendedAction, widgetInstallationInitiated, bundle.id]);
+
   // ===== DIRTY FLAG SYSTEM =====
   // Simple dirty flag that gets set on ANY state change
   const [isDirty, setIsDirty] = useState(false);
@@ -2926,19 +2936,29 @@ export default function ConfigureBundleFlow() {
 
       // Check if this is a widget placement validation response
       if (data.installationLink) {
-        // Success - open the validated link
-        window.open(data.installationLink, '_blank');
+        // Success - bundle page created and app block automatically added!
+        // installationLink now points to the live storefront page instead of theme editor
 
-        // Mark widget installation as initiated
+        // Mark widget installation as complete
         setWidgetInstallationInitiated(true);
         if (typeof window !== 'undefined') {
           localStorage.setItem(`widget_installation_${bundle.id}`, 'true');
         }
 
-        // Show success message
-        shopify.toast.show('Theme editor opened! Add the widget block and save to complete installation.', {
-          duration: 5000
+        // Show success message with storefront link
+        shopify.toast.show('Bundle page created successfully! The bundle is now live on your storefront.', {
+          duration: 8000
         });
+
+        // Optionally open the storefront page to show the merchant
+        if (confirm('Bundle page created successfully! Would you like to view it on your storefront?')) {
+          window.open(data.installationLink, '_blank');
+        }
+
+        // Trigger a revalidation to refresh the page state
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } else if (data.error && data.errorType) {
         // Validation failed - show appropriate error message
         let errorMessage = data.error;
@@ -3098,6 +3118,24 @@ export default function ConfigureBundleFlow() {
         icon: ViewIcon,
         disabled: !bundleProduct || stepsState.steps.length === 0,
       }}
+      secondaryActions={
+        bundle.bundleType === 'full_page' && bundle.shopifyPageHandle
+          ? [
+              {
+                content: "View on Storefront",
+                icon: ExternalIcon,
+                onAction: () => {
+                  const shopDomain = shop.includes('.myshopify.com')
+                    ? shop.replace('.myshopify.com', '')
+                    : shop;
+                  const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+                  window.open(storefrontUrl, '_blank');
+                  shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
+                },
+              },
+            ]
+          : undefined
+      }
     >
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
@@ -3198,30 +3236,16 @@ export default function ConfigureBundleFlow() {
                   tone="success"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
-                  <InlineStack gap="400" align="space-between" blockAlign="center">
-                    <BlockStack gap="100">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Text as="span" variant="bodyMd" fontWeight="semibold">
-                          ✅ Widget installation in progress
-                        </Text>
-                      </InlineStack>
-                      <Text as="span" variant="bodySm" tone="subdued">
-                        Complete the installation in the theme editor, then return here. The page will auto-refresh to confirm installation.
+                  <BlockStack gap="100">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Text as="span" variant="bodyMd" fontWeight="semibold">
+                        ✅ Widget installation in progress
                       </Text>
-                    </BlockStack>
-                    <Button
-                      onClick={() => {
-                        setWidgetInstallationInitiated(false);
-                        if (typeof window !== 'undefined') {
-                          localStorage.removeItem(`widget_installation_${bundle.id}`);
-                        }
-                        window.location.reload();
-                      }}
-                      variant="plain"
-                    >
-                      Refresh Status
-                    </Button>
-                  </InlineStack>
+                    </InlineStack>
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      Your bundle page is being created and configured automatically. This page will refresh shortly.
+                    </Text>
+                  </BlockStack>
                 </Banner>
               ) : (
                 <Banner
@@ -3507,18 +3531,18 @@ export default function ConfigureBundleFlow() {
                               Click "Add to Storefront" button when it appears
                             </List.Item>
                             <List.Item>
-                              A new page will be created automatically with the bundle
+                              The system will automatically create a page and add the bundle widget - no manual steps required!
                             </List.Item>
                             <List.Item>
-                              Theme editor will open - add the "Bundle - Full Page" block
+                              Your bundle will be live on the storefront immediately
                             </List.Item>
                             <List.Item>
-                              Adjust position and save in theme editor
+                              Use the "View on Storefront" button to see your live bundle
                             </List.Item>
                           </List>
-                          <Banner tone="info">
+                          <Banner tone="success">
                             <Text as="p" variant="bodyXs">
-                              💡 The "Add to Storefront" button will appear after you save. It automatically creates a page and opens the theme editor for you - no manual configuration needed!
+                              ✨ The "Add to Storefront" button appears after saving. It creates a page, adds the bundle widget, and makes your bundle live - all automatically! No theme editor needed!
                             </Text>
                           </Banner>
                         </BlockStack>
@@ -3586,12 +3610,13 @@ export default function ConfigureBundleFlow() {
                             color: 'var(--p-color-text-subdued)'
                           }}>
                             <li>Create a new page for this bundle</li>
-                            <li>Configure the Bundle ID automatically (no manual entry needed)</li>
-                            <li>Open the page in theme editor for you to add the "Bundle - Full Page" block</li>
+                            <li>Automatically add the bundle widget app block to the page</li>
+                            <li>Configure the Bundle ID (no manual entry needed)</li>
+                            <li>Make your bundle live on the storefront immediately</li>
                           </ul>
 
-                          <Text as="p" variant="bodySm" tone="subdued" fontWeight="medium" style={{ fontStyle: 'italic', marginTop: '8px' }}>
-                            The Bundle ID is stored in the page, so you never have to enter it manually!
+                          <Text as="p" variant="bodySm" tone="success" fontWeight="medium" style={{ fontStyle: 'italic', marginTop: '8px' }}>
+                            ✨ Everything is automated - your bundle goes live with just one click!
                           </Text>
                         </BlockStack>
                       </BlockStack>
