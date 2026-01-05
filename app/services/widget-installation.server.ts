@@ -1,11 +1,17 @@
 /**
- * Widget Installation Detection Service
+ * Widget Installation Service - Production Ready
  *
- * Detects whether the Bundle Widget has been installed in the merchant's theme
- * and provides deep linking functionality for easy installation.
+ * Provides widget installation detection and deep linking for Theme App Extensions.
+ * Compliant with Shopify App Store policies - NO programmatic theme modifications.
+ *
+ * @see https://shopify.dev/docs/apps/build/online-store/theme-app-extensions
  */
 
 import { AppLogger } from "../lib/logger";
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
 
 export interface WidgetInstallationStatus {
   installed: boolean;
@@ -20,15 +26,53 @@ export interface ThemeEditorDeepLink {
   bundleId?: string;
 }
 
+export interface FullPageBundleResult {
+  success: boolean;
+  pageId?: string;
+  pageHandle?: string;
+  pageUrl?: string;
+  widgetInstallationRequired?: boolean;
+  widgetInstallationLink?: string;
+  error?: string;
+  errorType?: 'page_creation_failed' | 'metafield_failed' | 'widget_not_installed' | 'unknown';
+}
+
+export interface ProductBundleWidgetStatus {
+  widgetInstalled: boolean;
+  installationLink?: string;
+  productUrl?: string;
+  configurationLink?: string;
+  message: string;
+  requiresOneTimeSetup: boolean;
+}
+
+export interface BundleInstallationContext {
+  widgetInstalled: boolean;
+  bundleConfigured: boolean;
+  recommendedAction: 'install_widget' | 'add_bundle' | 'configured' | 'update_bundle';
+  themeName?: string;
+}
+
+// ============================================================================
+// Widget Installation Service
+// ============================================================================
+
 export class WidgetInstallationService {
+
+  // ==========================================================================
+  // Widget Detection Methods (Read-Only)
+  // ==========================================================================
+
   /**
-   * Check if the Bundle Widget block exists in the current theme
+   * Check if the Bundle Widget block exists in product templates
    *
-   * Uses Shopify Admin GraphQL API to check for:
-   * 1. Theme template files that contain the bundle widget block
-   * 2. JSON template files with app block references
+   * Uses Shopify Admin GraphQL API to check for app block references.
+   * This is a READ-ONLY operation - no theme modifications.
    *
+   * @param admin - Shopify admin API client
+   * @param shop - Shop domain
    * @param apiKey - App API key to check for specific app block references
+   * @returns Installation status
    */
   static async checkWidgetInstallation(
     admin: any,
@@ -41,7 +85,7 @@ export class WidgetInstallationService {
         shop
       });
 
-      // 1. Get Current Published Theme
+      // Get current published theme
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
           themes(first: 1, roles: [MAIN]) {
@@ -68,10 +112,7 @@ export class WidgetInstallationService {
       const themeId = theme.id;
       const themeName = theme.name;
 
-      // 2. Fetch Template Files
-      // FIX: Updated structure to use edges -> node and correct fragment placement
-      // Note: 'query' parameter is not supported on files field in API 2025-10+
-      // We fetch all files and filter client-side instead
+      // Fetch template files
       const TEMPLATE_FILES_QUERY = `
         query GetTemplateFiles($themeId: ID!) {
           theme(id: $themeId) {
@@ -92,13 +133,10 @@ export class WidgetInstallationService {
       `;
 
       const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
-        variables: {
-          themeId
-        }
+        variables: { themeId }
       });
       const filesData = await filesResponse.json();
 
-      // FIX: Check for 'edges' instead of 'nodes'
       if (!filesData?.data?.theme?.files?.edges) {
         AppLogger.warn('Could not fetch theme files', {
           component: 'WidgetInstallationService',
@@ -108,10 +146,7 @@ export class WidgetInstallationService {
         return { installed: false, themeId, themeName, lastChecked: new Date() };
       }
 
-      // FIX: Map edges to nodes
       const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
-      
-      // Filter is now largely redundant due to the query param, but good for safety
       const productTemplateFiles = files.filter((file: any) =>
         file.filename.includes('templates/product') &&
         file.filename.endsWith('.json')
@@ -127,26 +162,10 @@ export class WidgetInstallationService {
       });
 
       for (const file of productTemplateFiles) {
-        // FIX: Access content via the nested body object
         const content = file.body?.content || '';
 
-        AppLogger.debug('Scanning template file', {
-          component: 'WidgetInstallationService',
-          shop,
-          file: file.filename,
-          contentLength: content.length,
-          hasBundleType: content.includes('"type": "Bundle"'),
-          hasWolfpackText: content.includes('Wolfpack: Product Bundles'),
-          hasAppBlock: content.includes('"type": "app"'),
-          hasExtension: content.includes('shopify://apps/')
-        });
-
-        // Check for specific bundle widget block patterns
-        // If apiKey is provided, check for our specific app block reference
-        // Otherwise fall back to generic patterns (less reliable)
         const hasOurAppBlock = apiKey && (
-          content.includes(`shopify://apps/${apiKey}/blocks/bundle`) ||
-          content.includes(`shopify://apps/${apiKey}/blocks/bundle-full-page`)
+          content.includes(`shopify://apps/${apiKey}/blocks/bundle`)
         );
 
         const hasGenericBundlePattern = !apiKey && (
@@ -185,257 +204,18 @@ export class WidgetInstallationService {
   }
 
   /**
-   * Generate enhanced theme editor deep link with bundle ID pre-population
-   *
-   * Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
-   *
-   * @param shop - Shop domain (with or without .myshopify.com)
-   * @param apiKey - App API key (client_id from shopify.app.toml)
-   * @param blockHandle - Block handle (filename without .liquid)
-   * @param bundleId - Optional bundle ID to pre-populate
-   * @param template - Template to open (default: product)
-   * @param target - Where to add the block (default: newAppsSection)
-   */
-  static generateThemeEditorDeepLink(
-    shop: string,
-    apiKey: string,
-    blockHandle: string = 'bundle',
-    bundleId?: string,
-    template: string = 'product',
-    target: string = 'newAppsSection'
-  ): ThemeEditorDeepLink {
-    // Clean shop domain (remove .myshopify.com if present)
-    const shopDomain = shop.replace('.myshopify.com', '');
-
-    // CRITICAL: Use app's API key (client_id), not extension UUID
-    const appBlockId = `${apiKey}/${blockHandle}`;
-
-    // Build URL parameters
-    const params = new URLSearchParams({
-      template: template,
-      addAppBlockId: appBlockId,
-      target: target
-    });
-
-    // Add bundle ID if provided (enables auto-configuration in theme editor)
-    if (bundleId) {
-      params.append('bundleId', bundleId);
-    }
-
-    const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
-
-    AppLogger.debug('Generated theme editor deep link', {
-      component: 'WidgetInstallationService',
-      shop,
-      template,
-      bundleId,
-      appBlockId,
-      url
-    });
-
-    return {
-      url,
-      template,
-      bundleId
-    };
-  }
-
-  /**
-   * Generate installation link for a specific bundle
-   * Opens theme editor with bundle pre-selected
-   */
-  static generateBundleInstallationLink(
-    shop: string,
-    apiKey: string,
-    bundleId: string,
-    productHandle?: string
-  ): string {
-    const shopDomain = shop.replace('.myshopify.com', '');
-    const appBlockId = `${apiKey}/bundle`;
-
-    const params = new URLSearchParams({
-      template: 'product',
-      addAppBlockId: appBlockId,
-      target: 'newAppsSection',
-      bundleId: bundleId
-    });
-
-    // Add product handle if provided
-    if (productHandle) {
-      params.append('productHandle', productHandle);
-    }
-
-    const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
-
-    return url;
-  }
-
-  /**
-   * Check if widget needs installation prompt
-   * Returns true if widget is not installed or check is stale
-   */
-  static shouldShowInstallationPrompt(
-    status: WidgetInstallationStatus | null,
-    maxAgeMinutes: number = 60
-  ): boolean {
-    if (!status) return true;
-    if (!status.installed) return true;
-
-    // Check if status is stale (older than maxAgeMinutes)
-    const now = new Date();
-    const checkAge = now.getTime() - status.lastChecked.getTime();
-    const maxAgeMs = maxAgeMinutes * 60 * 1000;
-
-    return checkAge > maxAgeMs;
-  }
-
-  /**
-   * Check if a specific bundle is configured in the installed widget
-   *
-   * Looks for bundle ID references in:
-   * 1. Theme template JSON (block settings)
-   * 2. Widget block configuration
-   *
-   * This helps determine if we need to "add bundle to widget" vs "install widget"
-   */
-  static async checkBundleInWidget(
-    admin: any,
-    shop: string,
-    bundleId: string
-  ): Promise<boolean> {
-    try {
-      AppLogger.debug('Checking if bundle is configured in widget', {
-        component: 'WidgetInstallationService',
-        shop,
-        bundleId
-      });
-
-      // First get the current published theme
-      const CURRENT_THEME_QUERY = `
-        query GetCurrentTheme {
-          themes(first: 1, roles: [MAIN]) {
-            edges {
-              node {
-                id
-                name
-                role
-              }
-            }
-          }
-        }
-      `;
-
-      const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
-      const themeData = await themeResponse.json();
-
-      if (!themeData?.data?.themes?.edges?.length) {
-        return false;
-      }
-
-      const theme = themeData.data.themes.edges[0].node;
-      const themeId = theme.id;
-
-      // Get product template files
-      // Note: 'query' parameter is not supported on files field in API 2025-10+
-      // We fetch all files and filter client-side instead
-      const TEMPLATE_FILES_QUERY = `
-      query GetTemplateFiles($themeId: ID!) {
-        theme(id: $themeId) {
-          files(first: 100) {
-            edges {
-              node {
-                filename
-                body {
-                  ... on OnlineStoreThemeFileBodyText {
-                    content
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
-      const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
-        variables: {
-          themeId
-        }
-      });
-      const filesData = await filesResponse.json();
-
-      if (!filesData?.data?.theme?.files?.edges) {
-        return false;
-      }
-
-      // Map edges to nodes
-      const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
-      const productTemplateFiles = files.filter((file: any) =>
-        file.filename.includes('templates/product') &&
-        file.filename.endsWith('.json')
-      );
-
-      AppLogger.debug('Checking templates for bundle ID', {
-        component: 'WidgetInstallationService',
-        shop,
-        bundleId,
-        templateCount: productTemplateFiles.length
-      });
-
-      for (const file of productTemplateFiles) {
-        const content = file.body?.content || '';
-
-        AppLogger.debug('Checking template for bundle ID', {
-          component: 'WidgetInstallationService',
-          shop,
-          bundleId,
-          file: file.filename,
-          hasBundleIdKey: content.includes(`"bundle_id"`),
-          hasBundleIdValue: content.includes(`"${bundleId}"`),
-          hasAnyBundleId: content.includes('bundle_id')
-        });
-
-        // Check if this template contains our bundle ID in settings
-        // Look for "bundle_id": "bundleId" pattern
-        if (content.includes(`"bundle_id"`) && content.includes(`"${bundleId}"`)) {
-          AppLogger.info('Bundle found in widget configuration', {
-            component: 'WidgetInstallationService',
-            shop,
-            bundleId,
-            file: file.filename
-          });
-          return true;
-        }
-      }
-
-      AppLogger.debug('Bundle not found in widget configuration', {
-        component: 'WidgetInstallationService',
-        shop,
-        bundleId,
-        checkedFiles: productTemplateFiles.map((f: any) => f.filename)
-      });
-
-      return false;
-
-    } catch (error) {
-      AppLogger.error('Failed to check if bundle is in widget', {
-        component: 'WidgetInstallationService',
-        shop,
-        bundleId
-      }, error);
-
-      // Return false on error (conservative approach)
-      return false;
-    }
-  }
-
-  /**
    * Check if full-page bundle widget exists in page templates
-   * Full-page bundles are placed on 'page' templates, not 'product' templates
    *
+   * Full-page bundles are placed on 'page' templates, not 'product' templates.
+   * This is a READ-ONLY operation.
+   *
+   * @param admin - Shopify admin API client
+   * @param shop - Shop domain
+   * @param bundleId - Bundle ID to check for
    * @param apiKey - App API key for specific app block detection
+   * @returns Installation status with bundle configuration flag
    */
-  static async checkFullPageBundleInstallation(
+  static async checkFullPageWidgetInstallation(
     admin: any,
     shop: string,
     bundleId: string,
@@ -447,7 +227,7 @@ export class WidgetInstallationService {
     themeName?: string;
   }> {
     try {
-      AppLogger.debug('Checking full-page bundle installation', {
+      AppLogger.debug('Checking full-page bundle widget installation', {
         component: 'WidgetInstallationService',
         shop,
         bundleId
@@ -479,7 +259,7 @@ export class WidgetInstallationService {
       const themeId = theme.id;
       const themeName = theme.name;
 
-      // Fetch page template files (not product templates!)
+      // Fetch page template files
       const TEMPLATE_FILES_QUERY = `
         query GetTemplateFiles($themeId: ID!) {
           theme(id: $themeId) {
@@ -509,8 +289,6 @@ export class WidgetInstallationService {
       }
 
       const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
-
-      // Filter for PAGE templates (not product templates)
       const pageTemplateFiles = files.filter((file: any) =>
         file.filename.includes('templates/page') &&
         file.filename.endsWith('.json')
@@ -530,20 +308,6 @@ export class WidgetInstallationService {
       for (const file of pageTemplateFiles) {
         const content = file.body?.content || '';
 
-        AppLogger.debug('Scanning page template file', {
-          component: 'WidgetInstallationService',
-          shop,
-          file: file.filename,
-          contentLength: content.length,
-          hasFullPageHandle: content.includes('bundle-full-page'),
-          hasFullPageName: content.includes('Bundle - Full Page'),
-          hasBundleId: content.includes(`"${bundleId}"`),
-          hasAppBlock: content.includes('"type": "app"')
-        });
-
-        // Check for specific full-page bundle widget block patterns
-        // If apiKey is provided, check for our specific app block reference
-        // Otherwise fall back to generic patterns (less reliable)
         const hasOurFullPageBlock = apiKey &&
           content.includes(`shopify://apps/${apiKey}/blocks/bundle-full-page`);
 
@@ -562,7 +326,6 @@ export class WidgetInstallationService {
             detectionMethod: hasOurFullPageBlock ? 'specific-app-block' : 'generic-pattern'
           });
 
-          // Check if THIS specific bundle is configured
           if (content.includes(`"${bundleId}"`)) {
             bundleConfigured = true;
             AppLogger.info('Bundle configured in full-page widget', {
@@ -584,7 +347,7 @@ export class WidgetInstallationService {
       };
 
     } catch (error) {
-      AppLogger.error('Failed to check full-page bundle installation', {
+      AppLogger.error('Failed to check full-page bundle widget installation', {
         component: 'WidgetInstallationService',
         shop,
         bundleId
@@ -595,13 +358,19 @@ export class WidgetInstallationService {
   }
 
   /**
-   * Get smart installation status for a specific bundle
-   * Returns contextual information about what action the merchant should take
+   * Get smart installation context for a specific bundle
    *
+   * Returns contextual information about what action the merchant should take.
    * For FULL-PAGE bundles: checks page templates
    * For PRODUCT-PAGE bundles: checks product templates
    *
+   * @param admin - Shopify admin API client
+   * @param shop - Shop domain
+   * @param bundleId - Bundle ID
+   * @param bundleType - Bundle type (full_page or product_page)
    * @param apiKey - App API key for specific app block detection
+   * @param bundlePageHandle - Page handle to check if bundle is placed
+   * @returns Installation context with recommended action
    */
   static async getBundleInstallationContext(
     admin: any,
@@ -609,17 +378,12 @@ export class WidgetInstallationService {
     bundleId: string,
     bundleType?: 'full_page' | 'product_page',
     apiKey?: string,
-    bundlePageHandle?: string | null  // Added parameter to check if bundle is placed
-  ): Promise<{
-    widgetInstalled: boolean;
-    bundleConfigured: boolean;
-    recommendedAction: 'install_widget' | 'add_bundle' | 'configured' | 'update_bundle';
-    themeName?: string;
-  }> {
+    bundlePageHandle?: string | null
+  ): Promise<BundleInstallationContext> {
     try {
       // For full-page bundles, check page templates
       if (bundleType === 'full_page') {
-        const fullPageStatus = await this.checkFullPageBundleInstallation(admin, shop, bundleId, apiKey);
+        const fullPageStatus = await this.checkFullPageWidgetInstallation(admin, shop, bundleId, apiKey);
 
         if (!fullPageStatus.installed) {
           return {
@@ -631,7 +395,6 @@ export class WidgetInstallationService {
         }
 
         // For full-page bundles, check if shopifyPageHandle is set
-        // This is more reliable than checking template files since bundleId is stored in page metafields
         const bundleConfigured = !!(bundlePageHandle && bundlePageHandle.trim() !== '');
 
         if (bundleConfigured) {
@@ -651,7 +414,7 @@ export class WidgetInstallationService {
         }
       }
 
-      // For product-page bundles, check product templates (existing logic)
+      // For product-page bundles, check product templates
       const widgetStatus = await this.checkWidgetInstallation(admin, shop, apiKey);
 
       if (!widgetStatus.installed) {
@@ -663,16 +426,8 @@ export class WidgetInstallationService {
         };
       }
 
-      // Widget is installed - now check if THIS specific bundle is configured in the widget
-      // For PDP bundles, we consider it configured if:
-      // 1. The widget is installed in product templates (already checked above)
-      // 2. The bundle has a Shopify product ID (means it's been created and can be used)
-      // Note: We can't reliably check if a specific bundle ID is in the widget settings
-      // because product-page bundles can be dynamically selected per product in the theme editor
-      const bundleConfigured = !!(bundlePageHandle && bundlePageHandle.trim() !== '');
-
-      // Always return 'configured' if widget is installed for PDP bundles
-      // The widget installation is the key requirement - bundle selection happens in theme editor
+      // Widget is installed - always return 'configured' for PDP bundles
+      // The widget installation is the key requirement
       return {
         widgetInstalled: true,
         bundleConfigured: true,
@@ -695,305 +450,200 @@ export class WidgetInstallationService {
     }
   }
 
+  // ==========================================================================
+  // Deep Link Generation (Theme Editor Navigation)
+  // ==========================================================================
+
   /**
-   * Automatically place widget in theme on product template
-   * Uses Shopify Admin GraphQL API to programmatically add app block
+   * Generate theme editor deep link with bundle ID pre-population
    *
-   * @param admin - Shopify admin API client
-   * @param shop - Shop domain
-   * @param apiKey - App API key (client_id)
-   * @param bundleId - Bundle ID to configure in the widget
-   * @param templateName - Template to add widget to (default: 'product')
-   * @returns Success status and details
+   * Opens theme editor with the specified app block pre-selected.
+   * Supports bundle ID parameter for auto-configuration.
+   *
+   * @param shop - Shop domain (with or without .myshopify.com)
+   * @param apiKey - App API key (client_id from shopify.app.toml)
+   * @param blockHandle - Block handle (filename without .liquid)
+   * @param bundleId - Optional bundle ID to pre-populate
+   * @param template - Template to open (default: product)
+   * @param target - Where to add the block (default: newAppsSection)
+   * @returns Deep link object with URL
    */
-  static async autoPlaceWidget(
-    admin: any,
+  static generateThemeEditorDeepLink(
     shop: string,
     apiKey: string,
+    blockHandle: string = 'bundle',
     bundleId?: string,
-    templateName: string = 'product'
-  ): Promise<{
-    success: boolean;
-    message: string;
-    themeId?: string;
-    themeName?: string;
-    templatePath?: string;
-    error?: string;
-  }> {
-    try {
-      AppLogger.info('Auto-placing widget in theme', {
-        component: 'WidgetInstallationService',
-        shop,
-        templateName,
-        bundleId
-      });
+    template: string = 'product',
+    target: string = 'newAppsSection'
+  ): ThemeEditorDeepLink {
+    const shopDomain = shop.replace('.myshopify.com', '');
+    const appBlockId = `${apiKey}/${blockHandle}`;
 
-      // 1. Get current published theme
-      const CURRENT_THEME_QUERY = `
-        query GetCurrentTheme {
-          themes(first: 1, roles: [MAIN]) {
-            edges {
-              node {
-                id
-                name
-                role
-              }
-            }
-          }
-        }
-      `;
+    const params = new URLSearchParams({
+      template: template,
+      addAppBlockId: appBlockId,
+      target: target
+    });
 
-      const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
-      const themeData = await themeResponse.json();
-
-      if (!themeData?.data?.themes?.edges?.length) {
-        return {
-          success: false,
-          message: 'No published theme found',
-          error: 'No published theme found'
-        };
-      }
-
-      const theme = themeData.data.themes.edges[0].node;
-      const themeId = theme.id;
-      const themeName = theme.name;
-
-      AppLogger.info('Found theme for auto-placement', {
-        component: 'WidgetInstallationService',
-        themeId,
-        themeName
-      });
-
-      // 2. Read current product template
-      const templateFilename = `templates/${templateName}.json`;
-      const READ_TEMPLATE_QUERY = `
-        query ReadTemplate($themeId: ID!, $filename: String!) {
-          theme(id: $themeId) {
-            files(filenames: [$filename], first: 1) {
-              nodes {
-                filename
-                body {
-                  ... on OnlineStoreThemeFileBodyText {
-                    content
-                  }
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const templateResponse = await admin.graphql(READ_TEMPLATE_QUERY, {
-        variables: {
-          themeId,
-          filename: templateFilename
-        }
-      });
-      const templateData = await templateResponse.json();
-
-      if (!templateData?.data?.theme?.files?.nodes?.length) {
-        return {
-          success: false,
-          message: `Template ${templateFilename} not found in theme`,
-          themeId,
-          themeName,
-          error: `Template ${templateFilename} not found`
-        };
-      }
-
-      const templateFile = templateData.data.theme.files.nodes[0];
-      const templateContent = templateFile.body?.content;
-
-      if (!templateContent) {
-        return {
-          success: false,
-          message: 'Template content is empty',
-          themeId,
-          themeName,
-          error: 'Template content is empty'
-        };
-      }
-
-      // 3. Parse and modify template JSON
-      let templateJson;
-      try {
-        templateJson = JSON.parse(templateContent);
-      } catch (parseError) {
-        AppLogger.error('Failed to parse template JSON', {
-          component: 'WidgetInstallationService',
-          templateFilename
-        }, parseError);
-        return {
-          success: false,
-          message: 'Failed to parse template JSON',
-          themeId,
-          themeName,
-          error: 'Invalid template JSON'
-        };
-      }
-
-      // Check if sections exist
-      if (!templateJson.sections) {
-        templateJson.sections = {};
-      }
-
-      // Generate unique section ID for app block
-      const sectionId = `app_bundle_${Date.now()}`;
-
-      // Add bundle app block to sections
-      // Format: shopify://apps/{apiKey}/blocks/{blockHandle}/{extensionUuid}
-      // For simplicity, we'll use the pattern: apps/{apiKey}/blocks/bundle
-      const appBlockType = `shopify://apps/${apiKey}/blocks/bundle`;
-
-      templateJson.sections[sectionId] = {
-        type: appBlockType,
-        settings: {
-          enabled: true,
-          ...(bundleId && { bundle_id: bundleId })
-        }
-      };
-
-      // Add section to order (after main product section if it exists)
-      if (!templateJson.order) {
-        templateJson.order = [];
-      }
-
-      // Try to place after 'main' section, or at the beginning
-      const mainIndex = templateJson.order.indexOf('main');
-      if (mainIndex !== -1) {
-        templateJson.order.splice(mainIndex + 1, 0, sectionId);
-      } else {
-        templateJson.order.unshift(sectionId);
-      }
-
-      AppLogger.info('Modified template JSON with bundle block', {
-        component: 'WidgetInstallationService',
-        sectionId,
-        appBlockType
-      });
-
-      // 4. Write updated template back to theme
-      const UPSERT_TEMPLATE_MUTATION = `
-        mutation UpsertTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
-          themeFilesUpsert(themeId: $themeId, files: $files) {
-            upsertedThemeFiles {
-              filename
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
-      const upsertResponse = await admin.graphql(UPSERT_TEMPLATE_MUTATION, {
-        variables: {
-          themeId,
-          files: [{
-            filename: templateFilename,
-            body: {
-              type: 'TEXT',
-              value: JSON.stringify(templateJson, null, 2)
-            }
-          }]
-        }
-      });
-      const upsertData = await upsertResponse.json();
-
-      // Check for errors
-      if (upsertData?.data?.themeFilesUpsert?.userErrors?.length > 0) {
-        const errors = upsertData.data.themeFilesUpsert.userErrors;
-        AppLogger.error('Theme file upsert failed', {
-          component: 'WidgetInstallationService',
-          errors
-        });
-        return {
-          success: false,
-          message: `Failed to update template: ${errors.map((e: any) => e.message).join(', ')}`,
-          themeId,
-          themeName,
-          error: errors[0].message
-        };
-      }
-
-      AppLogger.info('Successfully auto-placed widget', {
-        component: 'WidgetInstallationService',
-        shop,
-        themeId,
-        themeName,
-        templatePath: templateFilename
-      });
-
-      return {
-        success: true,
-        message: `Widget automatically placed on ${templateName} template`,
-        themeId,
-        themeName,
-        templatePath: templateFilename
-      };
-
-    } catch (error) {
-      AppLogger.error('Failed to auto-place widget', {
-        component: 'WidgetInstallationService',
-        shop,
-        templateName
-      }, error);
-
-      return {
-        success: false,
-        message: 'Failed to automatically place widget',
-        error: (error as Error).message
-      };
+    if (bundleId) {
+      params.append('bundleId', bundleId);
     }
+
+    const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+
+    AppLogger.debug('Generated theme editor deep link', {
+      component: 'WidgetInstallationService',
+      shop,
+      template,
+      bundleId,
+      appBlockId,
+      url
+    });
+
+    return {
+      url,
+      template,
+      bundleId
+    };
   }
 
   /**
-   * Validate and prepare widget placement for FULL-PAGE bundles (on pages, not products)
+   * Generate installation link for a specific bundle on product pages
    *
-   * For full-page bundles:
-   * - No product template needed
-   * - No container product required
-   * - Opens page editor instead of product editor
+   * Opens theme editor with bundle pre-selected for easy placement.
+   * Merchant can then configure position and styling.
+   *
+   * @param shop - Shop domain
+   * @param apiKey - App API key
+   * @param bundleId - Bundle ID
+   * @param productHandle - Optional product handle to navigate to
+   * @returns Installation URL
+   */
+  static generateProductBundleInstallationLink(
+    shop: string,
+    apiKey: string,
+    bundleId: string,
+    productHandle?: string
+  ): string {
+    const shopDomain = shop.replace('.myshopify.com', '');
+    const appBlockId = `${apiKey}/bundle`;
+
+    const params = new URLSearchParams({
+      template: 'product',
+      addAppBlockId: appBlockId,
+      target: 'newAppsSection',
+      bundleId: bundleId
+    });
+
+    if (productHandle) {
+      params.append('productHandle', productHandle);
+    }
+
+    return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+  }
+
+  /**
+   * Generate configuration link for bundle on a specific product
+   *
+   * Opens theme editor on the product page where merchant can
+   * configure the bundle widget settings.
+   *
+   * @param shop - Shop domain
+   * @param apiKey - App API key
+   * @param bundleId - Bundle ID
+   * @param productHandle - Product handle to navigate to
+   * @returns Configuration URL
+   */
+  static generateProductBundleConfigurationLink(
+    shop: string,
+    apiKey: string,
+    bundleId: string,
+    productHandle: string
+  ): string {
+    const shopDomain = shop.replace('.myshopify.com', '');
+    const appBlockId = `${apiKey}/bundle`;
+
+    const params = new URLSearchParams({
+      context: 'apps',
+      template: 'product',
+      addAppBlockId: appBlockId,
+      target: 'mainSection',
+      bundleId: bundleId,
+      productHandle: productHandle
+    });
+
+    return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+  }
+
+  // ==========================================================================
+  // Full-Page Bundle Operations (Production-Ready)
+  // ==========================================================================
+
+  /**
+   * Create a full-page bundle with production-ready, App Store compliant flow
+   *
+   * This method:
+   * 1. Checks if the full-page widget is installed in the theme
+   * 2. If NOT installed: Returns installation link for one-time setup
+   * 3. If installed: Creates page with bundle_id metafield
+   * 4. Returns storefront URL where bundle is live
+   *
+   * NO THEME MODIFICATIONS - Fully compliant with Shopify App Store policies.
    *
    * @param admin - Shopify admin API client
    * @param shop - Shop domain
    * @param apiKey - App API key
-   * @param bundleId - Bundle ID to configure
-   * @param pageHandle - Optional page handle to navigate to
-   * @returns Validation result with installation link
+   * @param bundleId - Bundle ID to associate with page
+   * @param bundleName - Bundle name for page title
+   * @returns Result with page URL or installation link
    */
-  /**
-   * Create a Shopify page automatically for full-page bundle with FULL AUTOMATION
-   * - Creates page with bundle ID metafield (stores bundle_id in page.metafields.app_bundle.bundle_id)
-   * - Adds app block to default page template (templates/page.json) - only once, shared by all pages
-   * - Block automatically reads bundle_id from page metafield and renders accordingly
-   * - Works like PDP: modifies existing template (no new files = no special permissions needed!)
-   * - Merchant sees the bundle immediately on the storefront - zero manual steps!
-   */
-  static async createFullPageBundlePageAutomated(
+  static async createFullPageBundle(
     admin: any,
     shop: string,
     apiKey: string,
     bundleId: string,
     bundleName: string
-  ): Promise<{
-    success: boolean;
-    installationLink?: string;
-    pageId?: string;
-    pageHandle?: string;
-    error?: string;
-    errorType?: 'page_creation_failed' | 'metafield_failed' | 'theme_update_failed' | 'unknown';
-  }> {
+  ): Promise<FullPageBundleResult> {
     try {
-      AppLogger.info('Creating FULLY AUTOMATED full-page bundle page', {
+      AppLogger.info('Creating full-page bundle (production mode)', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
         bundleName
       });
 
-      // Step 1: Create the page
+      // Step 1: Check if widget is already installed
+      const widgetStatus = await this.checkFullPageWidgetInstallation(
+        admin,
+        shop,
+        bundleId,
+        apiKey
+      );
+
+      // If widget NOT installed, return installation link
+      if (!widgetStatus.installed) {
+        const shopDomain = shop.replace('.myshopify.com', '');
+        const appBlockId = `${apiKey}/bundle-full-page`;
+
+        const installLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?` +
+          `template=page&addAppBlockId=${appBlockId}&target=mainSection`;
+
+        AppLogger.info('Full-page widget not installed, returning setup link', {
+          component: 'WidgetInstallationService',
+          shop,
+          bundleId
+        });
+
+        return {
+          success: false,
+          widgetInstallationRequired: true,
+          widgetInstallationLink: installLink,
+          error: 'Please install the Bundle Widget in your theme first (one-time setup)',
+          errorType: 'widget_not_installed'
+        };
+      }
+
+      // Step 2: Widget is installed - create page with metafield
       const pageHandle = `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       const pageTitle = bundleName || `Bundle ${bundleId}`;
 
@@ -1018,7 +668,7 @@ export class WidgetInstallationService {
           page: {
             title: pageTitle,
             handle: pageHandle,
-            body: '',  // No hardcoded content - the bundle widget block will handle all display
+            body: '',
             isPublished: true
           }
         }
@@ -1055,7 +705,7 @@ export class WidgetInstallationService {
         pageHandle: createdPage.handle
       });
 
-      // Step 2: Add bundle ID as page metafield (for widget to read)
+      // Step 3: Add bundle ID as page metafield (for widget to read)
       const SET_METAFIELD = `
         mutation setPageMetafield($metafields: [MetafieldsSetInput!]!) {
           metafieldsSet(metafields: $metafields) {
@@ -1099,261 +749,28 @@ export class WidgetInstallationService {
         });
       }
 
-      // Step 3: AUTOMATIC APP BLOCK INSTALLATION - Add app block to page template
-      try {
-        // Get current published theme
-        const CURRENT_THEME_QUERY = `
-          query GetCurrentTheme {
-            themes(first: 1, roles: [MAIN]) {
-              edges {
-                node {
-                  id
-                  name
-                }
-              }
-            }
-          }
-        `;
-
-        const themeResponse = await admin.graphql(CURRENT_THEME_QUERY);
-        const themeData = await themeResponse.json();
-
-        if (!themeData?.data?.themes?.edges?.length) {
-          throw new Error('No published theme found');
-        }
-
-        const theme = themeData.data.themes.edges[0].node;
-        const themeId = theme.id;
-
-        AppLogger.info('Found theme for app block installation', {
-          component: 'WidgetInstallationService',
-          themeId,
-          themeName: theme.name
-        });
-
-        // Use the default page template (like PDP uses default product template)
-        // Creating new page-specific templates requires special Shopify exemption
-        const pageTemplateFilename = `templates/page.json`;
-
-        const READ_TEMPLATE_QUERY = `
-          query ReadTemplate($themeId: ID!, $filename: String!) {
-            theme(id: $themeId) {
-              files(filenames: [$filename], first: 1) {
-                nodes {
-                  filename
-                  body {
-                    ... on OnlineStoreThemeFileBodyText {
-                      content
-                    }
-                  }
-                }
-              }
-            }
-          }
-        `;
-
-        // Read the default page template (must exist, like product template for PDP)
-        const templateResponse = await admin.graphql(READ_TEMPLATE_QUERY, {
-          variables: {
-            themeId,
-            filename: pageTemplateFilename
-          }
-        });
-        const templateData = await templateResponse.json();
-
-        AppLogger.debug('Page template query response', {
-          component: 'WidgetInstallationService',
-          hasData: !!templateData?.data,
-          hasTheme: !!templateData?.data?.theme,
-          hasFiles: !!templateData?.data?.theme?.files,
-          nodeCount: templateData?.data?.theme?.files?.nodes?.length || 0,
-          errors: templateData?.errors
-        });
-
-        // Check if page template exists
-        if (!templateData?.data?.theme?.files?.nodes?.length) {
-          AppLogger.warn('Page template not found - theme may be using legacy Liquid templates', {
-            component: 'WidgetInstallationService',
-            templateFilename: pageTemplateFilename
-          });
-          throw new Error(`Theme does not have ${pageTemplateFilename}. This theme may be using legacy Liquid templates. Please add the bundle widget manually via the theme editor.`);
-        }
-
-        const templateContent = templateData.data.theme.files.nodes[0].body?.content;
-
-        AppLogger.debug('Page template content retrieved', {
-          component: 'WidgetInstallationService',
-          hasContent: !!templateContent,
-          contentLength: templateContent?.length || 0,
-          contentPreview: templateContent?.substring(0, 100)
-        });
-
-        // Validate template content exists
-        if (!templateContent || templateContent.trim() === '') {
-          AppLogger.error('Page template is empty', {
-            component: 'WidgetInstallationService',
-            templateFilename: pageTemplateFilename
-          });
-          throw new Error(`Theme's ${pageTemplateFilename} is empty. Please add the bundle widget manually via the theme editor.`);
-        }
-
-        // Parse template JSON
-        let templateJson;
-        try {
-          templateJson = JSON.parse(templateContent);
-        } catch (parseError) {
-          AppLogger.error('Failed to parse page template JSON - theme may have corrupted template file', {
-            component: 'WidgetInstallationService',
-            templateFilename: pageTemplateFilename,
-            contentPreview: templateContent.substring(0, 200)
-          }, parseError);
-          throw new Error(`Theme's ${pageTemplateFilename} has invalid JSON format. Please add the bundle widget manually via the theme editor.`);
-        }
-
-        // Ensure sections and order exist
-        if (!templateJson.sections) {
-          templateJson.sections = {};
-        }
-        if (!templateJson.order) {
-          templateJson.order = [];
-        }
-
-        // Check if bundle-full-page block already exists in template
-        const appBlockType = `shopify://apps/${apiKey}/blocks/bundle-full-page`;
-        const existingBundleSection = Object.keys(templateJson.sections || {}).find(
-          key => templateJson.sections[key]?.type === appBlockType
-        );
-
-        let templateModified = false;
-
-        // Only add the block if it doesn't already exist
-        // Note: We don't set bundle_id here - it will be read from page metafield automatically
-        if (!existingBundleSection) {
-          const sectionId = `app_bundle_widget`;
-
-          templateJson.sections[sectionId] = {
-            type: appBlockType,
-            settings: {}  // No bundle_id - block will read from page metafield
-          };
-
-          // Add section to order (after main section if it exists)
-          const mainIndex = templateJson.order.indexOf('main');
-          if (mainIndex !== -1) {
-            templateJson.order.splice(mainIndex + 1, 0, sectionId);
-          } else {
-            templateJson.order.unshift(sectionId);
-          }
-
-          templateModified = true;
-
-          AppLogger.info('Adding bundle-full-page block to default page template', {
-            component: 'WidgetInstallationService',
-            sectionId,
-            appBlockType
-          });
-        } else {
-          AppLogger.info('Bundle-full-page block already exists in template, skipping template update', {
-            component: 'WidgetInstallationService',
-            existingSection: existingBundleSection
-          });
-        }
-
-        // Write the updated default page template only if we made changes
-        if (templateModified) {
-        const UPSERT_TEMPLATE_MUTATION = `
-          mutation UpsertTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
-            themeFilesUpsert(themeId: $themeId, files: $files) {
-              upsertedThemeFiles {
-                filename
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
-
-        const upsertResponse = await admin.graphql(UPSERT_TEMPLATE_MUTATION, {
-          variables: {
-            themeId,
-            files: [{
-              filename: pageTemplateFilename,
-              body: {
-                type: 'TEXT',
-                value: JSON.stringify(templateJson, null, 2)
-              }
-            }]
-          }
-        });
-        const upsertData = await upsertResponse.json();
-
-        // Check for errors
-        if (upsertData?.data?.themeFilesUpsert?.userErrors?.length > 0) {
-          const errors = upsertData.data.themeFilesUpsert.userErrors;
-          AppLogger.error('Theme file upsert failed', {
-            component: 'WidgetInstallationService',
-            errors
-          });
-          throw new Error(`Failed to update template: ${errors.map((e: any) => e.message).join(', ')}`);
-        }
-
-          AppLogger.info('Successfully added app block to default page template!', {
-            component: 'WidgetInstallationService',
-            shop,
-            themeId,
-            themeName: theme.name,
-            templatePath: pageTemplateFilename
-          });
-        } else {
-          AppLogger.info('Skipped template update - bundle block already exists', {
-            component: 'WidgetInstallationService',
-            shop,
-            themeId
-          });
-        }
-
-        // Page will automatically use the default page.json template (no need to assign template suffix)
-
-      } catch (themeError) {
-        AppLogger.error('Failed to automatically add app block to theme', {
-          component: 'WidgetInstallationService',
-          shop,
-          bundleId
-        }, themeError);
-
-        // Return partial success - page created but app block not added
-        return {
-          success: false,
-          error: `Page created but failed to add app block automatically: ${(themeError as Error).message}. Please add the bundle widget block manually in the theme editor.`,
-          errorType: 'theme_update_failed',
-          pageId: createdPage.id,
-          pageHandle: createdPage.handle
-        };
-      }
-
-      // Build storefront URL for the created page
+      // Step 4: Return success with storefront URL
       const shopDomain = shop.replace('.myshopify.com', '');
-      const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
+      const pageUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
 
-      AppLogger.info('FULL AUTOMATION completed successfully! Bundle is live on storefront!', {
+      AppLogger.info('Full-page bundle created successfully', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
-        storefrontUrl
+        pageUrl
       });
 
       return {
         success: true,
-        installationLink: storefrontUrl,  // Link to the live page instead of theme editor
         pageId: createdPage.id,
-        pageHandle: createdPage.handle
+        pageHandle: createdPage.handle,
+        pageUrl: pageUrl
       };
 
     } catch (error) {
-      AppLogger.error('Failed to create automated full-page bundle', {
+      AppLogger.error('Failed to create full-page bundle', {
         component: 'WidgetInstallationService',
         shop,
         bundleId
@@ -1367,115 +784,183 @@ export class WidgetInstallationService {
     }
   }
 
-  static async validateAndPrepareFullPageWidgetPlacement(
+  // ==========================================================================
+  // Product Bundle Operations (Production-Ready)
+  // ==========================================================================
+
+  /**
+   * Validate product bundle widget setup and provide guidance
+   *
+   * Checks if the bundle widget is installed in product templates.
+   * Returns appropriate links and guidance for merchant.
+   *
+   * NO THEME MODIFICATIONS - Read-only operation.
+   *
+   * @param admin - Shopify admin API client
+   * @param shop - Shop domain
+   * @param apiKey - App API key
+   * @param bundleId - Bundle ID
+   * @param shopifyProductId - Shopify product ID (optional)
+   * @returns Widget status with installation/configuration links
+   */
+  static async validateProductBundleWidgetSetup(
     admin: any,
     shop: string,
     apiKey: string,
     bundleId: string,
-    pageHandle?: string
-  ): Promise<{
-    success: boolean;
-    installationLink?: string;
-    error?: string;
-    message?: string;
-  }> {
+    shopifyProductId?: string
+  ): Promise<ProductBundleWidgetStatus> {
     try {
-      AppLogger.info('Preparing full-page bundle widget placement', {
+      AppLogger.info('Validating product bundle widget setup', {
         component: 'WidgetInstallationService',
         shop,
         bundleId,
-        pageHandle
+        shopifyProductId
       });
 
-      const shopDomain = shop.replace('.myshopify.com', '');
-      const appBlockId = `${apiKey}/bundle-full-page`;
+      // Check if widget is already installed
+      const widgetStatus = await this.checkWidgetInstallation(admin, shop, apiKey);
 
-      // Build theme editor URL for page template
-      const params = new URLSearchParams({
-        template: 'page',  // Page template, not product
-        addAppBlockId: appBlockId,
-        target: 'newAppsSection',
-        bundleId: bundleId
-      });
+      if (!widgetStatus.installed) {
+        // Widget not installed - provide one-time setup link
+        const installLink = this.generateProductBundleInstallationLink(
+          shop,
+          apiKey,
+          bundleId
+        );
 
-      // Add page handle if provided
-      if (pageHandle) {
-        params.append('pageHandle', pageHandle);
+        AppLogger.info('Product widget not installed, returning setup link', {
+          component: 'WidgetInstallationService',
+          shop,
+          bundleId
+        });
+
+        return {
+          widgetInstalled: false,
+          requiresOneTimeSetup: true,
+          installationLink: installLink,
+          message: 'One-time setup: Please add the Bundle Widget to your product template'
+        };
       }
 
-      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
+      // Widget is installed! Now provide links to the bundle product
+      if (shopifyProductId) {
+        // Get product handle
+        const GET_PRODUCT = `
+          query GetProduct($id: ID!) {
+            product(id: $id) {
+              id
+              handle
+            }
+          }
+        `;
 
-      AppLogger.info('Generated full-page widget placement link', {
-        component: 'WidgetInstallationService',
-        shop,
-        bundleId,
-        pageHandle,
-        url
-      });
+        const productResponse = await admin.graphql(GET_PRODUCT, {
+          variables: { id: shopifyProductId }
+        });
+        const productData = await productResponse.json();
+        const productHandle = productData?.data?.product?.handle;
 
+        if (productHandle) {
+          const shopDomain = shop.replace('.myshopify.com', '');
+          const productUrl = `https://${shopDomain}.myshopify.com/products/${productHandle}`;
+          const configLink = this.generateProductBundleConfigurationLink(
+            shop,
+            apiKey,
+            bundleId,
+            productHandle
+          );
+
+          AppLogger.info('Product bundle ready', {
+            component: 'WidgetInstallationService',
+            shop,
+            bundleId,
+            productHandle
+          });
+
+          return {
+            widgetInstalled: true,
+            requiresOneTimeSetup: false,
+            productUrl: productUrl,
+            configurationLink: configLink,
+            message: 'Bundle is ready! View it on your storefront or configure in theme editor'
+          };
+        }
+      }
+
+      // Widget installed, but no product yet
       return {
-        success: true,
-        installationLink: url,
-        message: 'Ready to place widget on page template'
+        widgetInstalled: true,
+        requiresOneTimeSetup: false,
+        message: 'Bundle widget is installed. Create a bundle product to see it on your storefront.'
       };
 
     } catch (error) {
-      AppLogger.error('Failed to prepare full-page widget placement', {
+      AppLogger.error('Failed to validate product bundle widget setup', {
         component: 'WidgetInstallationService',
         shop,
         bundleId
       }, error);
 
       return {
-        success: false,
-        error: 'Failed to prepare widget placement. Please try again.'
+        widgetInstalled: false,
+        requiresOneTimeSetup: true,
+        message: 'Failed to check widget installation status'
       };
     }
   }
 
+  // ==========================================================================
+  // Utility Methods
+  // ==========================================================================
+
   /**
-   * Validate and prepare widget placement for a bundle product
+   * Check if widget needs installation prompt
    *
-   * Checks:
-   * 1. Template name is provided
-   * 2. Template exists in theme
-   * 3. Product is published to Online Store
+   * Returns true if widget is not installed or check is stale.
    *
-   * @returns Validation result with installation link or error
+   * @param status - Widget installation status
+   * @param maxAgeMinutes - Maximum age in minutes before status is considered stale
+   * @returns Whether to show installation prompt
    */
-  static async validateAndPrepareWidgetPlacement(
+  static shouldShowInstallationPrompt(
+    status: WidgetInstallationStatus | null,
+    maxAgeMinutes: number = 60
+  ): boolean {
+    if (!status) return true;
+    if (!status.installed) return true;
+
+    // Check if status is stale
+    const now = new Date();
+    const checkAge = now.getTime() - status.lastChecked.getTime();
+    const maxAgeMs = maxAgeMinutes * 60 * 1000;
+
+    return checkAge > maxAgeMs;
+  }
+
+  /**
+   * Check if a specific bundle is configured in the installed widget
+   *
+   * Looks for bundle ID references in theme template JSON.
+   *
+   * @param admin - Shopify admin API client
+   * @param shop - Shop domain
+   * @param bundleId - Bundle ID to check for
+   * @returns Whether bundle is configured in widget
+   */
+  static async checkBundleInWidget(
     admin: any,
     shop: string,
-    apiKey: string,
-    bundleId: string,
-    templateName: string | null | undefined,
-    shopifyProductId: string | null | undefined
-  ): Promise<{
-    success: boolean;
-    installationLink?: string;
-    error?: string;
-    errorType?: 'missing_template' | 'template_not_found' | 'product_not_published' | 'missing_product_id' | 'unknown';
-  }> {
+    bundleId: string
+  ): Promise<boolean> {
     try {
-      // 1. Check if template name is provided
-      if (!templateName || templateName.trim() === '') {
-        return {
-          success: false,
-          error: 'Please specify a Bundle Container Template name before placing the widget',
-          errorType: 'missing_template'
-        };
-      }
+      AppLogger.debug('Checking if bundle is configured in widget', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId
+      });
 
-      // 2. Check if product ID exists
-      if (!shopifyProductId) {
-        return {
-          success: false,
-          error: 'Bundle product ID not found. Please save the bundle first.',
-          errorType: 'missing_product_id'
-        };
-      }
-
-      // 3. Get current theme
+      // Get current published theme
       const CURRENT_THEME_QUERY = `
         query GetCurrentTheme {
           themes(first: 1, roles: [MAIN]) {
@@ -1483,6 +968,7 @@ export class WidgetInstallationService {
               node {
                 id
                 name
+                role
               }
             }
           }
@@ -1493,222 +979,85 @@ export class WidgetInstallationService {
       const themeData = await themeResponse.json();
 
       if (!themeData?.data?.themes?.edges?.length) {
-        return {
-          success: false,
-          error: 'No published theme found',
-          errorType: 'unknown'
-        };
+        return false;
       }
 
       const theme = themeData.data.themes.edges[0].node;
       const themeId = theme.id;
 
-      // 4. Check if template exists in theme
-      const normalizedTemplateName = templateName.startsWith('product.') ? templateName : `product.${templateName}`;
-      const templateFilename = `templates/${normalizedTemplateName}.json`;
-
-      const CHECK_TEMPLATE_QUERY = `
-        query CheckTemplate($themeId: ID!, $filename: String!) {
+      // Get product template files
+      const TEMPLATE_FILES_QUERY = `
+        query GetTemplateFiles($themeId: ID!) {
           theme(id: $themeId) {
-            files(filenames: [$filename], first: 1) {
-              nodes {
-                filename
-              }
-            }
-          }
-        }
-      `;
-
-      const templateCheckResponse = await admin.graphql(CHECK_TEMPLATE_QUERY, {
-        variables: {
-          themeId,
-          filename: templateFilename
-        }
-      });
-      const templateCheckData = await templateCheckResponse.json();
-
-      const templateExists = templateCheckData?.data?.theme?.files?.nodes?.length > 0;
-
-      if (!templateExists) {
-        return {
-          success: false,
-          error: `Template "${normalizedTemplateName}" not found in your theme. Please create this template first or use an existing template name.`,
-          errorType: 'template_not_found'
-        };
-      }
-
-      // 5. Check if product is published to Online Store and auto-publish if needed
-      // First, get all available publications to find Online Store publication ID
-      const GET_PUBLICATIONS = `
-        query GetPublications {
-          publications(first: 10) {
-            edges {
-              node {
-                id
-                name
-              }
-            }
-          }
-        }
-      `;
-
-      const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
-      const publicationsData = await publicationsResponse.json();
-
-      const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
-        (edge: any) => edge.node.name === 'Online Store'
-      );
-
-      if (onlineStorePublication) {
-        // Check if product is published to this specific publication
-        const CHECK_PUBLICATION_QUERY = `
-          query CheckProductPublication($productId: ID!, $publicationId: ID!) {
-            product(id: $productId) {
-              id
-              publishedOnPublication(publicationId: $publicationId)
-            }
-          }
-        `;
-
-        const publicationResponse = await admin.graphql(CHECK_PUBLICATION_QUERY, {
-          variables: {
-            productId: shopifyProductId,
-            publicationId: onlineStorePublication.node.id
-          }
-        });
-        const publicationData = await publicationResponse.json();
-
-        const isPublishedToOnlineStore = publicationData?.data?.product?.publishedOnPublication === true;
-
-        if (!isPublishedToOnlineStore) {
-          // Try to publish it automatically
-          try {
-            const PUBLISH_PRODUCT = `
-              mutation publishToOnlineStore($id: ID!, $input: [PublicationInput!]!) {
-                publishablePublish(id: $id, input: $input) {
-                  publishable {
-                    availablePublicationsCount {
-                      count
+            files(first: 100) {
+              edges {
+                node {
+                  filename
+                  body {
+                    ... on OnlineStoreThemeFileBodyText {
+                      content
                     }
-                  }
-                  userErrors {
-                    field
-                    message
                   }
                 }
               }
-            `;
-
-            const publishResult = await admin.graphql(PUBLISH_PRODUCT, {
-              variables: {
-                id: shopifyProductId,
-                input: [
-                  {
-                    publicationId: onlineStorePublication.node.id
-                  }
-                ]
-              }
-            });
-
-            const publishData = await publishResult.json();
-
-            if (publishData?.data?.publishablePublish?.userErrors?.length > 0) {
-              AppLogger.error('Failed to auto-publish product', {
-                component: 'WidgetInstallationService',
-                errors: publishData.data.publishablePublish.userErrors
-              });
-
-              return {
-                success: false,
-                error: 'Product is not published to Online Store. Please publish the bundle product first.',
-                errorType: 'product_not_published'
-              };
             }
-
-            AppLogger.info('Auto-published product to Online Store for widget placement', {
-              component: 'WidgetInstallationService',
-              productId: shopifyProductId,
-              bundleId
-            });
-          } catch (publishError) {
-            AppLogger.error('Failed to auto-publish product', {
-              component: 'WidgetInstallationService'
-            }, publishError);
-
-            return {
-              success: false,
-              error: 'Product is not published to Online Store. Please publish the bundle product first.',
-              errorType: 'product_not_published'
-            };
-          }
-        }
-      }
-
-      // 6. Fetch the actual product handle (not just the ID)
-      const GET_PRODUCT_HANDLE = `
-        query GetProductHandle($id: ID!) {
-          product(id: $id) {
-            id
-            handle
           }
         }
       `;
 
-      const productHandleResponse = await admin.graphql(GET_PRODUCT_HANDLE, {
-        variables: {
-          id: shopifyProductId
-        }
+      const filesResponse = await admin.graphql(TEMPLATE_FILES_QUERY, {
+        variables: { themeId }
       });
-      const productHandleData = await productHandleResponse.json();
-      const productHandle = productHandleData?.data?.product?.handle;
+      const filesData = await filesResponse.json();
 
-      if (!productHandle) {
-        return {
-          success: false,
-          error: 'Could not fetch product handle. Please try again.',
-          errorType: 'unknown'
-        };
+      if (!filesData?.data?.theme?.files?.edges) {
+        return false;
       }
 
-      // 7. Generate installation link for the specific product with the specified template
-      const shopDomain = shop.replace('.myshopify.com', '');
-      const appBlockId = `${apiKey}/bundle`;
+      const files = filesData.data.theme.files.edges.map((edge: any) => edge.node);
+      const productTemplateFiles = files.filter((file: any) =>
+        file.filename.includes('templates/product') &&
+        file.filename.endsWith('.json')
+      );
 
-      const params = new URLSearchParams({
-        template: normalizedTemplateName,
-        addAppBlockId: appBlockId,
-        target: 'newAppsSection',
-        bundleId: bundleId,
-        productHandle: productHandle  // Include product handle in params
-      });
-
-      const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;
-
-      AppLogger.info('Generated validated widget placement link', {
+      AppLogger.debug('Checking templates for bundle ID', {
         component: 'WidgetInstallationService',
         shop,
-        templateName: normalizedTemplateName,
         bundleId,
-        productHandle
+        templateCount: productTemplateFiles.length
       });
 
-      return {
-        success: true,
-        installationLink: url
-      };
+      for (const file of productTemplateFiles) {
+        const content = file.body?.content || '';
+
+        if (content.includes(`"bundle_id"`) && content.includes(`"${bundleId}"`)) {
+          AppLogger.info('Bundle found in widget configuration', {
+            component: 'WidgetInstallationService',
+            shop,
+            bundleId,
+            file: file.filename
+          });
+          return true;
+        }
+      }
+
+      AppLogger.debug('Bundle not found in widget configuration', {
+        component: 'WidgetInstallationService',
+        shop,
+        bundleId,
+        checkedFiles: productTemplateFiles.map((f: any) => f.filename)
+      });
+
+      return false;
 
     } catch (error) {
-      AppLogger.error('Failed to validate widget placement', {
+      AppLogger.error('Failed to check if bundle is in widget', {
         component: 'WidgetInstallationService',
         shop,
         bundleId
       }, error);
 
-      return {
-        success: false,
-        error: 'Failed to validate widget placement. Please try again.',
-        errorType: 'unknown'
-      };
+      return false;
     }
   }
 }

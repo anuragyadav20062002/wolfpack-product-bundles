@@ -580,53 +580,52 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     });
 
-    // Auto-place widget if this is the first bundle
-    let autoPlacementResult = null;
+    // Check widget installation status for product bundles (production mode)
+    // NO auto-placement - just check and provide guidance
+    let widgetCheckResult = null;
     if (isFirstBundle) {
       const apiKey = process.env.SHOPIFY_API_KEY || '';
-      AppLogger.info('Auto-placing widget for first bundle', {
+      AppLogger.info('Checking widget installation for first bundle', {
         component: 'app.dashboard',
         operation: 'create-bundle',
         bundleId: newBundle.id
       });
 
-      autoPlacementResult = await WidgetInstallationService.autoPlaceWidget(
+      widgetCheckResult = await WidgetInstallationService.validateProductBundleWidgetSetup(
         admin,
         session.shop,
         apiKey,
         newBundle.id,
-        'product'
+        shopifyProductId
       );
 
-      AppLogger.info('Auto-placement result', {
+      AppLogger.info('Widget check result', {
         component: 'app.dashboard',
         operation: 'create-bundle',
-        success: autoPlacementResult.success,
-        message: autoPlacementResult.message
+        widgetInstalled: widgetCheckResult.widgetInstalled,
+        requiresOneTimeSetup: widgetCheckResult.requiresOneTimeSetup,
+        message: widgetCheckResult.message
       });
     }
 
-    // Build redirect URL based on bundle type with auto-placement params
+    // Build redirect URL based on bundle type
     const routeBase = bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
-    let redirectUrl = `/app/bundles/${routeBase}/configure/${newBundle.id}`;
-    if (autoPlacementResult?.success) {
-      redirectUrl += `?widgetAutoPlaced=true&themeName=${encodeURIComponent(autoPlacementResult.themeName || 'your theme')}`;
-    } else if (autoPlacementResult && !autoPlacementResult.success) {
-      redirectUrl += `?widgetAutoPlaced=false`;
-    }
+    const redirectUrl = `/app/bundles/${routeBase}/configure/${newBundle.id}`;
 
     return json({
       success: true,
       bundleId: newBundle.id,
       bundleProductId: shopifyProductId,
       redirectTo: redirectUrl,
-      autoPlacement: autoPlacementResult ? {
-        attempted: true,
-        success: autoPlacementResult.success,
-        message: autoPlacementResult.message,
-        themeName: autoPlacementResult.themeName
+      widgetStatus: widgetCheckResult ? {
+        checked: true,
+        widgetInstalled: widgetCheckResult.widgetInstalled,
+        requiresOneTimeSetup: widgetCheckResult.requiresOneTimeSetup,
+        message: widgetCheckResult.message,
+        installationLink: widgetCheckResult.installationLink,
+        productUrl: widgetCheckResult.productUrl
       } : {
-        attempted: false
+        checked: false
       }
     });
 

@@ -226,7 +226,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   );
 
   // Generate bundle-specific installation link (pre-populates bundle ID and product)
-  const bundleInstallLink = WidgetInstallationService.generateBundleInstallationLink(
+  const bundleInstallLink = WidgetInstallationService.generateProductBundleInstallationLink(
     session.shop,
     apiKey,
     bundleId,
@@ -1778,28 +1778,31 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 404 });
     }
 
-    // Validate and prepare widget placement
+    // Production-ready widget validation (no theme modifications)
     const apiKey = process.env.SHOPIFY_API_KEY || '';
-    const result = await WidgetInstallationService.validateAndPrepareWidgetPlacement(
+    const result = await WidgetInstallationService.validateProductBundleWidgetSetup(
       admin,
       session.shop,
       apiKey,
       bundleId,
-      bundle.templateName || 'product',  // Default to 'product' template if not specified
-      bundle.shopifyProductId
+      bundle.shopifyProductId || undefined
     );
 
-    if (!result.success) {
+    // Return appropriate response based on widget installation status
+    if (result.requiresOneTimeSetup) {
       return json({
         success: false,
-        error: result.error,
-        errorType: result.errorType
+        requiresOneTimeSetup: true,
+        installationLink: result.installationLink,
+        message: result.message
       }, { status: 400 });
     }
 
     return json({
       success: true,
-      installationLink: result.installationLink
+      productUrl: result.productUrl,
+      configurationLink: result.configurationLink,
+      message: result.message
     });
 
   } catch (error) {

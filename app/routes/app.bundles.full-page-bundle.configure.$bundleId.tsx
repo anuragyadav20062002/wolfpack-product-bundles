@@ -227,13 +227,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     bundle.shopifyPageHandle  // Pass page handle to check if bundle is placed
   );
 
-  // Generate bundle-specific installation link (pre-populates bundle ID and product)
-  const bundleInstallLink = WidgetInstallationService.generateBundleInstallationLink(
+  // Generate full-page bundle installation link
+  const bundleInstallLink = WidgetInstallationService.generateThemeEditorDeepLink(
     session.shop,
     apiKey,
+    'bundle-full-page',
     bundleId,
-    bundleProduct?.handle  // Pass product handle to open theme editor with correct product selected
-  );
+    'page',
+    'mainSection'
+  ).url;
 
   return json({
     bundle,
@@ -1861,15 +1863,15 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 404 });
     }
 
-    // Use automated page creation workflow for full-page bundles
+    // Production-ready page creation workflow for full-page bundles
     // This will:
-    // 1. Check if full-page-bundle template exists
-    // 2. Create a new Shopify page
-    // 3. Assign it to the template
-    // 4. Store bundle ID in page metafield (auto-configuration)
-    // 5. Open theme editor with the page
+    // 1. Check if widget is installed in theme
+    // 2. If NOT installed: Return installation link for one-time setup
+    // 3. If installed: Create page with bundle_id metafield
+    // 4. Return storefront URL where bundle is live
+    // NO THEME MODIFICATIONS - App Store compliant
     const apiKey = process.env.SHOPIFY_API_KEY || '';
-    const result = await WidgetInstallationService.createFullPageBundlePageAutomated(
+    const result = await WidgetInstallationService.createFullPageBundle(
       admin,
       session.shop,
       apiKey,
@@ -1881,7 +1883,9 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       return json({
         success: false,
         error: result.error,
-        errorType: result.errorType
+        errorType: result.errorType,
+        widgetInstallationRequired: result.widgetInstallationRequired,
+        widgetInstallationLink: result.widgetInstallationLink
       }, { status: 400 });
     }
 
@@ -1894,18 +1898,19 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }
     });
 
-    AppLogger.info("✅ [WIDGET_PLACEMENT] Automated page created successfully", {
+    AppLogger.info("✅ [WIDGET_PLACEMENT] Page created successfully (production mode)", {
       bundleId,
       pageId: result.pageId,
-      pageHandle: result.pageHandle
+      pageHandle: result.pageHandle,
+      pageUrl: result.pageUrl
     });
 
     return json({
       success: true,
-      installationLink: result.installationLink,
+      pageUrl: result.pageUrl,
       pageId: result.pageId,
       pageHandle: result.pageHandle,
-      message: `Page created: ${result.pageHandle}`
+      message: `Bundle page created successfully! View at: ${result.pageUrl}`
     });
 
   } catch (error) {
@@ -2035,6 +2040,10 @@ export default function ConfigureBundleFlow() {
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [isLoadingPages, setIsLoadingPages] = useState(false);
   const [selectedPage, setSelectedPage] = useState<any>(null);
+
+  // State for widget installation modal
+  const [isWidgetInstallModalOpen, setIsWidgetInstallModalOpen] = useState(false);
+  const [widgetInstallationLink, setWidgetInstallationLink] = useState<string>('');
 
   // State for products/collections view modals
   const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
@@ -2929,15 +2938,39 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher, shopify]);
 
-  // Handle validation response
+  // Handle validation response - UNIFIED FLOW with widget installation check
   useEffect(() => {
     if (fetcher.data && fetcher.state === 'idle') {
       const data = fetcher.data as any;
 
-      // Check if this is a widget placement validation response
-      if (data.installationLink) {
-        // Success - bundle page created and app block automatically added!
-        // installationLink now points to the live storefront page instead of theme editor
+      // UNIFIED FLOW: Check if widget installation is required (Scenario 1)
+      if (data.widgetInstallationRequired && data.widgetInstallationLink) {
+        AppLogger.info('Widget installation required - showing installation modal', {
+          bundleId: bundle.id,
+          link: data.widgetInstallationLink
+        });
+
+        // Store the installation link
+        setWidgetInstallationLink(data.widgetInstallationLink);
+
+        // Open the installation modal
+        setIsWidgetInstallModalOpen(true);
+
+        // Show informative toast
+        shopify.toast.show('One-time widget setup required before creating bundle pages', {
+          duration: 5000
+        });
+
+        return; // Exit early
+      }
+
+      // UNIFIED FLOW: Widget is installed, page created successfully (Scenario 2)
+      if (data.success && data.pageUrl) {
+        AppLogger.info('Bundle page created successfully', {
+          bundleId: bundle.id,
+          pageUrl: data.pageUrl,
+          pageHandle: data.pageHandle
+        });
 
         // Mark widget installation as complete
         setWidgetInstallationInitiated(true);
@@ -2952,23 +2985,33 @@ export default function ConfigureBundleFlow() {
 
         // Optionally open the storefront page to show the merchant
         if (confirm('Bundle page created successfully! Would you like to view it on your storefront?')) {
-          window.open(data.installationLink, '_blank');
+          window.open(data.pageUrl, '_blank');
         }
 
         // Trigger a revalidation to refresh the page state
         setTimeout(() => {
           window.location.reload();
         }, 2000);
-      } else if (data.error && data.errorType) {
-        // Validation failed - show appropriate error message
+
+        return; // Exit early
+      }
+
+      // Handle other error types
+      if (data.error && data.errorType) {
         let errorMessage = data.error;
 
         // Add helpful context based on error type
-        if (data.errorType === 'missing_template') {
-          errorMessage += '\n\nPlease scroll down to the "Bundle Container Template" field and specify a template name (e.g., "cart-transform" or "product").';
-        } else if (data.errorType === 'template_not_found') {
-          errorMessage += '\n\nYou can create this template in your Shopify theme editor, or use an existing template name.';
+        if (data.errorType === 'page_creation_failed') {
+          errorMessage += '\n\nPlease try again. If the issue persists, check your Shopify permissions.';
+        } else if (data.errorType === 'metafield_failed') {
+          errorMessage = 'Page created but failed to save bundle configuration. Please contact support.';
         }
+
+        AppLogger.error('Bundle page creation failed', {
+          bundleId: bundle.id,
+          errorType: data.errorType,
+          error: data.error
+        });
 
         shopify.toast.show(errorMessage, { isError: true, duration: 7000 });
       }
@@ -4255,6 +4298,153 @@ export default function ConfigureBundleFlow() {
                 </BlockStack>
               </Card>
             )}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Widget Installation Modal - UNIFIED FLOW */}
+      <Modal
+        open={isWidgetInstallModalOpen}
+        onClose={() => setIsWidgetInstallModalOpen(false)}
+        title="One-Time Widget Setup Required"
+        primaryAction={{
+          content: "Install Widget Now",
+          onAction: () => {
+            // Open installation link in new tab
+            window.open(widgetInstallationLink, '_blank');
+
+            // Show follow-up toast
+            shopify.toast.show('Theme editor opened! Add the widget and return here to continue.', {
+              duration: 8000
+            });
+
+            // Keep modal open so merchant can reference instructions
+          },
+        }}
+        secondaryActions={[
+          {
+            content: "I'll Do This Later",
+            onAction: () => setIsWidgetInstallModalOpen(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            {/* Header explanation */}
+            <Card>
+              <BlockStack gap="300">
+                <InlineStack gap="200" blockAlign="start">
+                  <div style={{ fontSize: '24px' }}>⚡</div>
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingMd" fontWeight="semibold">
+                      Quick Setup (Takes ~10 seconds)
+                    </Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      To display full-page bundles on your storefront, add the Bundle Widget to your theme once.
+                      After this one-time setup, all your bundles will work automatically!
+                    </Text>
+                  </BlockStack>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+
+            {/* Step-by-step instructions */}
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h4" variant="headingSm" fontWeight="semibold">
+                  Installation Steps:
+                </Text>
+
+                <BlockStack gap="300">
+                  <InlineStack gap="300" blockAlign="start">
+                    <Badge tone="info">Step 1</Badge>
+                    <Text as="p" variant="bodyMd">
+                      Click <strong>"Install Widget Now"</strong> below to open the theme editor
+                    </Text>
+                  </InlineStack>
+
+                  <InlineStack gap="300" blockAlign="start">
+                    <Badge tone="info">Step 2</Badge>
+                    <Text as="p" variant="bodyMd">
+                      The <strong>Bundle - Full Page</strong> widget will be pre-selected in the left panel
+                    </Text>
+                  </InlineStack>
+
+                  <InlineStack gap="300" blockAlign="start">
+                    <Badge tone="info">Step 3</Badge>
+                    <Text as="p" variant="bodyMd">
+                      Drag the widget to your desired position on the page template
+                    </Text>
+                  </InlineStack>
+
+                  <InlineStack gap="300" blockAlign="start">
+                    <Badge tone="info">Step 4</Badge>
+                    <Text as="p" variant="bodyMd">
+                      Click <strong>"Save"</strong> (top right corner of theme editor)
+                    </Text>
+                  </InlineStack>
+
+                  <InlineStack gap="300" blockAlign="start">
+                    <Badge tone="success">Step 5</Badge>
+                    <Text as="p" variant="bodyMd">
+                      Return here and click <strong>"Add to Storefront"</strong> again - your bundle page will be created instantly!
+                    </Text>
+                  </InlineStack>
+                </BlockStack>
+              </BlockStack>
+            </Card>
+
+            {/* Benefits callout */}
+            <Card background="bg-surface-success">
+              <BlockStack gap="200">
+                <InlineStack gap="200" blockAlign="center">
+                  <div style={{ fontSize: '20px' }}>✨</div>
+                  <Text as="h4" variant="headingSm" fontWeight="semibold">
+                    Why is this needed?
+                  </Text>
+                </InlineStack>
+                <List type="bullet">
+                  <List.Item>
+                    <Text as="span" variant="bodySm">
+                      <strong>One-time only:</strong> Install once, use for all bundles forever
+                    </Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text as="span" variant="bodySm">
+                      <strong>App Store compliant:</strong> Follows Shopify's best practices
+                    </Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text as="span" variant="bodySm">
+                      <strong>Full control:</strong> Position the widget exactly where you want it
+                    </Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text as="span" variant="bodySm">
+                      <strong>No coding required:</strong> Simple drag-and-drop in theme editor
+                    </Text>
+                  </List.Item>
+                </List>
+              </BlockStack>
+            </Card>
+
+            {/* Help section */}
+            <Card>
+              <BlockStack gap="200">
+                <Text as="p" variant="bodySm" tone="subdued">
+                  <strong>Need help?</strong> Watch our 30-second video guide or contact support if you get stuck.
+                </Text>
+                <InlineStack gap="200">
+                  <Button
+                    size="slim"
+                    onClick={() => window.open('https://help.shopify.com/manual/online-store/themes/theme-structure/extend/apps', '_blank')}
+                    icon={ExternalIcon}
+                  >
+                    Theme Editor Guide
+                  </Button>
+                </InlineStack>
+              </BlockStack>
+            </Card>
           </BlockStack>
         </Modal.Section>
       </Modal>
