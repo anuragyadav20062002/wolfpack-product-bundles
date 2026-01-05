@@ -1,6 +1,6 @@
 {% schema %}
 {
-  "name": "t:bundle_full_page.name",
+  "name": "Wolfpack - Full Page",
   "target": "section",
   "enabled_on": {
     "templates": ["page"]
@@ -9,70 +9,70 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "t:bundle_full_page.settings.paragraph_content"
+      "content": "This block is for full-page bundles on standalone pages. The Bundle ID is automatically configured when you use 'Place Widget Now' from the app admin."
     },
     {
       "type": "text",
       "id": "bundle_id",
-      "label": "t:bundle_full_page.settings.bundle_id_label",
-      "info": "t:bundle_full_page.settings.bundle_id_info"
+      "label": "Bundle ID (Auto-configured)",
+      "info": "This is automatically set when using 'Place Widget Now' from the app admin. Only enter manually if you're setting up a custom page."
     },
     {
       "type": "text",
       "id": "app_url",
-      "label": "t:bundle_full_page.settings.app_url_label",
-      "info": "t:bundle_full_page.settings.app_url_info"
+      "label": "App server URL (optional)",
+      "info": "Override the app server URL for development/testing. Leave blank to auto-detect."
     },
     {
       "type": "header",
-      "content": "t:bundle_full_page.settings.content_customization_header"
+      "content": "Content Customization"
     },
     {
       "type": "text",
       "id": "custom_title",
-      "label": "t:bundle_full_page.settings.custom_title_label",
-      "info": "t:bundle_full_page.settings.custom_title_info"
+      "label": "Custom title (optional)",
+      "info": "Override the bundle name with custom text. Leave empty to use bundle name from app."
     },
     {
       "type": "textarea",
       "id": "custom_description",
-      "label": "t:bundle_full_page.settings.custom_description_label",
-      "info": "t:bundle_full_page.settings.custom_description_info"
+      "label": "Custom description (optional)",
+      "info": "Add a custom description below the title. Leave empty to use bundle description from app."
     },
     {
       "type": "text",
       "id": "custom_instruction",
-      "label": "t:bundle_full_page.settings.custom_instruction_label",
-      "info": "t:bundle_full_page.settings.custom_instruction_info"
+      "label": "Custom instruction text (optional)",
+      "info": "Override the default instruction text. Leave empty to use auto-generated instructions."
     },
     {
       "type": "header",
-      "content": "t:bundle_full_page.settings.display_header"
+      "content": "Display Settings"
     },
     {
       "type": "checkbox",
       "id": "show_bundle_title",
-      "label": "t:bundle_full_page.settings.show_bundle_title_label",
+      "label": "Show bundle title",
       "default": true
     },
     {
       "type": "checkbox",
       "id": "show_bundle_description",
-      "label": "t:bundle_full_page.settings.show_bundle_description_label",
+      "label": "Show bundle description",
       "default": true
     },
     {
       "type": "checkbox",
       "id": "show_step_timeline",
-      "label": "t:bundle_full_page.settings.show_step_timeline_label",
-      "info": "t:bundle_full_page.settings.show_step_timeline_info",
+      "label": "Show step progress timeline",
+      "info": "Display the step progress indicator at the top",
       "default": true
     },
     {
       "type": "checkbox",
       "id": "show_category_tabs",
-      "label": "t:bundle_full_page.settings.show_category_tabs_label",
-      "info": "t:bundle_full_page.settings.show_category_tabs_info",
+      "label": "Show category tabs",
+      "info": "Display category/collection tabs for filtering products",
       "default": true
     }
   ]
