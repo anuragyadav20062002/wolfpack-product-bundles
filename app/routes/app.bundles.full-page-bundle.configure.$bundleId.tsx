@@ -1892,13 +1892,15 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 400 });
     }
 
-    // UPDATED: Save page handle and page ID to bundle record
+    // UPDATED: Save page handle, page ID, and activate bundle
     // This happens EVEN if widget installation is required
+    // Setting status to 'active' ensures the bundle is available via the API endpoint
     await db.bundle.update({
       where: { id: bundleId, shopId: session.shop },
       data: {
         shopifyPageHandle: result.pageHandle,
-        shopifyPageId: result.pageId
+        shopifyPageId: result.pageId,
+        status: 'active'  // CRITICAL: Activate bundle so widget can fetch it via API
       }
     });
 
