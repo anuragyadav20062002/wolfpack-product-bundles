@@ -2786,8 +2786,14 @@ export default function ConfigureBundleFlow() {
 
       // Check if this is a widget placement validation response
       if (data.installationLink) {
-        // Success - open the validated link
-        window.open(data.installationLink, '_blank');
+        // Success - open the validated link using robust method to prevent app redirect
+        const link = document.createElement('a');
+        link.href = data.installationLink;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
         // Mark widget installation as initiated
         setWidgetInstallationInitiated(true);
@@ -2912,8 +2918,14 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
       AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor in new window`);
 
-      // Open in new window so merchant can keep bundle configuration open
-      window.open(themeEditorUrl, '_blank');
+      // Open in new window using robust method to prevent app redirect
+      const link = document.createElement('a');
+      link.href = themeEditorUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3045,17 +3057,18 @@ export default function ConfigureBundleFlow() {
             </Banner>
           )}
 
-          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !dismissedBanners.has('install_widget') && (
+          {/* Only show banner when widget is NOT installed */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && (
             <div style={{ marginBottom: '1rem' }}>
               {widgetInstallationInitiated ? (
                 <Banner
-                  tone="success"
+                  tone="info"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
                   <BlockStack gap="100">
                     <InlineStack gap="200" blockAlign="center">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        ✅ Widget installation in progress
+                        ⏳ Widget installation in progress
                       </Text>
                     </InlineStack>
                     <Text as="span" variant="bodySm" tone="subdued">
@@ -3071,10 +3084,10 @@ export default function ConfigureBundleFlow() {
                   <InlineStack gap="400" align="space-between" blockAlign="center">
                     <BlockStack gap="100">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        Your bundle widget is not placed on storefront
+                        Ready to add your bundle to the storefront!
                       </Text>
                       <Text as="span" variant="bodySm" tone="subdued">
-                        Add the bundle widget to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> to make this bundle visible to customers
+                        Click "Add to Storefront" to complete the one-time widget setup in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span>
                       </Text>
                     </BlockStack>
                     <Button
@@ -3107,7 +3120,15 @@ export default function ConfigureBundleFlow() {
                     </Text>
                   </BlockStack>
                   <Button
-                    onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = widgetInstallation.installationLink;
+                      link.target = '_blank';
+                      link.rel = 'noopener noreferrer';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                   >
                     Configure Widget
                   </Button>

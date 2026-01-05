@@ -3031,8 +3031,15 @@ export default function ConfigureBundleFlow() {
 
           // Navigate directly to theme editor with the newly created page
           // User just needs to add the widget block and save
+          // Use a more robust method to prevent app redirect issues
           setTimeout(() => {
-            window.open(data.widgetInstallationLink, '_blank');
+            const link = document.createElement('a');
+            link.href = data.widgetInstallationLink;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
           }, 1000);
 
           return; // Exit early
@@ -3336,17 +3343,18 @@ export default function ConfigureBundleFlow() {
             </Banner>
           )}
 
-          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !dismissedBanners.has('install_widget') && (
+          {/* Only show banner when widget is NOT installed */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && (
             <div style={{ marginBottom: '1rem' }}>
               {widgetInstallationInitiated ? (
                 <Banner
-                  tone="success"
+                  tone="info"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
                   <BlockStack gap="100">
                     <InlineStack gap="200" blockAlign="center">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        ✅ Widget installation in progress
+                        ⏳ Widget installation in progress
                       </Text>
                     </InlineStack>
                     <Text as="span" variant="bodySm" tone="subdued">
@@ -3356,31 +3364,25 @@ export default function ConfigureBundleFlow() {
                 </Banner>
               ) : (
                 <Banner
-                  tone={(bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed) ? "success" : "warning"}
+                  tone="warning"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
                   <InlineStack gap="400" align="space-between" blockAlign="center">
                     <BlockStack gap="100">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        {(bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed)
-                          ? "✅ Bundle Successfully Added to Storefront!"
-                          : "Ready to add your bundle to the storefront!"}
+                        Ready to add your bundle to the storefront!
                       </Text>
                       <Text as="span" variant="bodySm" tone="subdued">
-                        {(bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed)
-                          ? "Your bundle is live and visible to customers. Any changes you save will automatically update on the storefront."
-                          : "Click \"Add to Storefront\" to create your page and complete the one-time widget setup"}
+                        Click "Add to Storefront" to create your page and complete the one-time widget setup
                       </Text>
                     </BlockStack>
-                    {!(bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed) && (
-                      <Button
-                        onClick={handlePlaceWidgetNow}
-                        loading={fetcher.state === 'submitting'}
-                        variant="primary"
-                      >
-                        Add to Storefront
-                      </Button>
-                    )}
+                    <Button
+                      onClick={handlePlaceWidgetNow}
+                      loading={fetcher.state === 'submitting'}
+                      variant="primary"
+                    >
+                      Add to Storefront
+                    </Button>
                   </InlineStack>
                 </Banner>
               )}
@@ -4207,8 +4209,14 @@ export default function ConfigureBundleFlow() {
         primaryAction={{
           content: "Install Widget Now",
           onAction: () => {
-            // Open installation link in new tab
-            window.open(widgetInstallationLink, '_blank');
+            // Open installation link in new tab using robust method to prevent app redirect
+            const link = document.createElement('a');
+            link.href = widgetInstallationLink;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
             // Show follow-up toast
             shopify.toast.show('Theme editor opened! Add the widget and return here to continue.', {
