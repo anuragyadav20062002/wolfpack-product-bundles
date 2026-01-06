@@ -2358,7 +2358,7 @@ export default function ConfigureBundleFlow() {
         productUrl += `${separator}view=${formState.templateName}`;
       }
 
-      window.open(productUrl, '_blank');
+      open(productUrl, '_blank');
 
       // Show appropriate success message based on the URL type used
       const isPreviewUrl = productUrl === bundleProduct.onlineStorePreviewUrl;
@@ -3047,7 +3047,7 @@ export default function ConfigureBundleFlow() {
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
-                    window.open(themeEditorUrl, '_blank');
+                    open(themeEditorUrl, '_blank');
                   }}
                   variant="plain"
                 >
@@ -3215,7 +3215,7 @@ export default function ConfigureBundleFlow() {
                             variant="plain"
                             onClick={() => {
                               const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                              window.open(productUrl, '_blank');
+                              open(productUrl, '_blank');
                             }}
                             icon={ExternalIcon}
                           >
@@ -4079,7 +4079,7 @@ export default function ConfigureBundleFlow() {
                                   {/* Make product title clickable to navigate to Shopify Admin product page */}
                                   <Button
                                     variant="plain"
-                                    onClick={() => productUrl && window.open(productUrl, '_blank')}
+                                    onClick={() => productUrl && open(productUrl, '_blank')}
                                     icon={ExternalIcon}
                                     disabled={!productUrl}
                                   >
