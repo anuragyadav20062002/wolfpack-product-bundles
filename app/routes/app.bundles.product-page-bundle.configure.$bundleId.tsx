@@ -212,8 +212,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
   const apiKey = process.env.SHOPIFY_API_KEY || '';
   // Block handle must match the liquid filename (without .liquid extension)
-  // File: extensions/bundle-builder/blocks/bundle.liquid
-  const blockHandle = 'bundle';
+  // File: extensions/bundle-builder/blocks/bundle-product-page.liquid
+  const blockHandle = 'bundle-product-page';
 
   // Get smart installation context for this specific bundle
   const installationContext = await WidgetInstallationService.getBundleInstallationContext(
@@ -226,7 +226,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   );
 
   // Generate bundle-specific installation link (pre-populates bundle ID and product)
-  const bundleInstallLink = WidgetInstallationService.generateBundleInstallationLink(
+  const bundleInstallLink = WidgetInstallationService.generateProductBundleInstallationLink(
     session.shop,
     apiKey,
     bundleId,
@@ -1778,28 +1778,31 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
       }, { status: 404 });
     }
 
-    // Validate and prepare widget placement
+    // Production-ready widget validation (no theme modifications)
     const apiKey = process.env.SHOPIFY_API_KEY || '';
-    const result = await WidgetInstallationService.validateAndPrepareWidgetPlacement(
+    const result = await WidgetInstallationService.validateProductBundleWidgetSetup(
       admin,
       session.shop,
       apiKey,
       bundleId,
-      bundle.templateName || 'product',  // Default to 'product' template if not specified
-      bundle.shopifyProductId
+      bundle.shopifyProductId || undefined
     );
 
-    if (!result.success) {
+    // Return appropriate response based on widget installation status
+    if (result.requiresOneTimeSetup) {
       return json({
         success: false,
-        error: result.error,
-        errorType: result.errorType
+        requiresOneTimeSetup: true,
+        installationLink: result.installationLink,
+        message: result.message
       }, { status: 400 });
     }
 
     return json({
       success: true,
-      installationLink: result.installationLink
+      productUrl: result.productUrl,
+      configurationLink: result.configurationLink,
+      message: result.message
     });
 
   } catch (error) {
@@ -2193,7 +2196,7 @@ export default function ConfigureBundleFlow() {
           // This is a widget placement response - reload to show updated banner
           shopify.toast.show("Widget placed successfully! Refreshing...", { isError: false });
           setTimeout(() => {
-            window.location.reload();
+            revalidator.revalidate();
           }, 1000);
         } else {
           // Generic success response
@@ -2355,7 +2358,7 @@ export default function ConfigureBundleFlow() {
         productUrl += `${separator}view=${formState.templateName}`;
       }
 
-      window.open(productUrl, '_blank');
+      open(productUrl, '_blank');
 
       // Show appropriate success message based on the URL type used
       const isPreviewUrl = productUrl === bundleProduct.onlineStorePreviewUrl;
@@ -2783,8 +2786,14 @@ export default function ConfigureBundleFlow() {
 
       // Check if this is a widget placement validation response
       if (data.installationLink) {
-        // Success - open the validated link
-        window.open(data.installationLink, '_blank');
+        // Success - open the validated link using robust method to prevent app redirect
+        const link = document.createElement('a');
+        link.href = data.installationLink;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
         // Mark widget installation as initiated
         setWidgetInstallationInitiated(true);
@@ -2909,8 +2918,14 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
       AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor in new window`);
 
-      // Open in new window so merchant can keep bundle configuration open
-      window.open(themeEditorUrl, '_blank');
+      // Open in new window using robust method to prevent app redirect
+      const link = document.createElement('a');
+      link.href = themeEditorUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3032,7 +3047,7 @@ export default function ConfigureBundleFlow() {
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
-                    window.open(themeEditorUrl, '_blank');
+                    window.open(themeEditorUrl, '_top');
                   }}
                   variant="plain"
                 >
@@ -3042,17 +3057,18 @@ export default function ConfigureBundleFlow() {
             </Banner>
           )}
 
-          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !dismissedBanners.has('install_widget') && (
+          {/* Only show banner when widget is NOT installed */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && (
             <div style={{ marginBottom: '1rem' }}>
               {widgetInstallationInitiated ? (
                 <Banner
-                  tone="success"
+                  tone="info"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
                   <BlockStack gap="100">
                     <InlineStack gap="200" blockAlign="center">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        ✅ Widget installation in progress
+                        ⏳ Widget installation in progress
                       </Text>
                     </InlineStack>
                     <Text as="span" variant="bodySm" tone="subdued">
@@ -3068,10 +3084,10 @@ export default function ConfigureBundleFlow() {
                   <InlineStack gap="400" align="space-between" blockAlign="center">
                     <BlockStack gap="100">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
-                        Your bundle widget is not placed on storefront
+                        Ready to add your bundle to the storefront!
                       </Text>
                       <Text as="span" variant="bodySm" tone="subdued">
-                        Add the bundle widget to <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> to make this bundle visible to customers
+                        Click "Add to Storefront" to complete the one-time widget setup in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span>
                       </Text>
                     </BlockStack>
                     <Button
@@ -3104,7 +3120,15 @@ export default function ConfigureBundleFlow() {
                     </Text>
                   </BlockStack>
                   <Button
-                    onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = widgetInstallation.installationLink;
+                      link.target = '_blank';
+                      link.rel = 'noopener noreferrer';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                   >
                     Configure Widget
                   </Button>
@@ -3191,7 +3215,7 @@ export default function ConfigureBundleFlow() {
                             variant="plain"
                             onClick={() => {
                               const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                              window.open(productUrl, '_blank');
+                              open(productUrl, '_blank');
                             }}
                             icon={ExternalIcon}
                           >
@@ -4055,7 +4079,7 @@ export default function ConfigureBundleFlow() {
                                   {/* Make product title clickable to navigate to Shopify Admin product page */}
                                   <Button
                                     variant="plain"
-                                    onClick={() => productUrl && window.open(productUrl, '_blank')}
+                                    onClick={() => productUrl && open(productUrl, '_blank')}
                                     icon={ExternalIcon}
                                     disabled={!productUrl}
                                   >

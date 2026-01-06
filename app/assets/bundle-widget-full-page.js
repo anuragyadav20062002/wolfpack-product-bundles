@@ -246,17 +246,46 @@ class BundleWidgetFullPage {
       try {
         // Use Shopify app proxy path - Shopify automatically adds signature and auth params
         // App proxy config: /apps/product-bundles -> https://wolfpack-product-bundle-app.onrender.com
-        const apiUrl = `/apps/product-bundles/api/bundle/${bundleId}.json`;
+        // CRITICAL: URL-encode bundle ID to handle special characters in cuid() format
+        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
 
-        console.log('[WIDGET_INIT] Fetching bundle from:', apiUrl);
+        console.log('[WIDGET_INIT] 📤 Fetching bundle from API:', {
+          bundleId,
+          apiUrl,
+          fullUrl: window.location.origin + apiUrl,
+          shopDomain: window.Shopify?.shop || 'unknown',
+          bundleType
+        });
 
         const response = await fetch(apiUrl);
+
+        console.log('[WIDGET_INIT] 📥 API response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          url: response.url
+        });
+
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
+          // Try to get error details from response body
+          let errorDetails = `${response.status} ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            console.error('[WIDGET_INIT] ❌ API error response body:', errorData);
+            errorDetails = JSON.stringify(errorData);
+          } catch (e) {
+            console.error('[WIDGET_INIT] ⚠️  Could not parse error response as JSON');
+          }
+          throw new Error(`API request failed: ${errorDetails}`);
         }
 
         const data = await response.json();
-        console.log('[WIDGET_INIT] API response:', data);
+        console.log('[WIDGET_INIT] ✅ API response data received:', {
+          success: data.success,
+          hasBundleData: !!data.bundle,
+          bundleId: data.bundle?.id,
+          bundleName: data.bundle?.name
+        });
 
         if (data.success && data.bundle) {
           bundleData = { [data.bundle.id]: data.bundle };

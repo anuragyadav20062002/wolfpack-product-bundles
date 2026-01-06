@@ -15,6 +15,7 @@ import {
   Select,
   Checkbox,
 } from "@shopify/polaris";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { useState } from "react";
 import { AppLogger } from "../lib/logger";
@@ -27,8 +28,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
   const apiKey = process.env.SHOPIFY_API_KEY;
   // Block handle must match the liquid filename (without .liquid extension)
-  // File: extensions/bundle-builder/blocks/bundle.liquid
-  const blockHandle = 'bundle';
+  // File: extensions/bundle-builder/blocks/bundle-product-page.liquid
+  const blockHandle = 'bundle-product-page';
 
   return {
     shop: session.shop,
@@ -40,6 +41,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Onboarding() {
   const { shop, apiKey, blockHandle } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
+  const app = useAppBridge();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState('product');
   const [selectedTarget, setSelectedTarget] = useState('newAppsSection');
@@ -89,8 +91,9 @@ export default function Onboarding() {
       target: selectedTarget
     });
 
-    // Use window.open with _top to navigate the entire app frame
-    // This avoids popup blockers and works within Shopify admin
+    // Use window.open with _top to navigate the entire admin to theme editor
+    // This preserves session by staying within Shopify admin context
+    // Note: _blank opens in new tab but breaks session for embedded apps
     window.open(themeEditorUrl, '_top');
   };
 

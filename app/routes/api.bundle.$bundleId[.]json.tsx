@@ -88,12 +88,15 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     });
 
     // Get the bundle from database
+    // Allow both 'draft' and 'active' bundles so merchants can test before publishing
     const bundle = await db.bundle.findFirst({
       where: {
         id: bundleId,
         shopId: session.shop,
         // Note: bundleType filter removed - not needed for single bundle lookup
-        status: 'active'
+        status: {
+          in: ['draft', 'active']
+        }
       },
       include: {
         steps: {
@@ -109,10 +112,44 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     });
 
     if (!bundle) {
+      // Enhanced logging to debug 404 issues
+      console.error('[API_ERROR] Bundle not found - Debug info:', {
+        requestedBundleId: bundleId,
+        shop: session.shop,
+        queryUsed: {
+          id: bundleId,
+          shopId: session.shop,
+          status: 'active'
+        }
+      });
+
+      // Check if bundle exists with different status
+      const bundleAnyStatus = await db.bundle.findFirst({
+        where: {
+          id: bundleId,
+          shopId: session.shop
+        },
+        select: {
+          id: true,
+          status: true,
+          shopId: true,
+          bundleType: true
+        }
+      });
+
+      if (bundleAnyStatus) {
+        console.error('[API_ERROR] Bundle exists but status is not active:', bundleAnyStatus);
+      } else {
+        console.error('[API_ERROR] Bundle does not exist for this shop');
+      }
+
       AppLogger.warn("Bundle not found", {
         component: "apps.product-bundles.api.bundle",
         operation: "loader",
-        bundleId
+        bundleId,
+        shop: session.shop,
+        bundleExistsWithDifferentStatus: !!bundleAnyStatus,
+        actualStatus: bundleAnyStatus?.status
       });
       return json({
         success: false,

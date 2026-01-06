@@ -13,16 +13,8 @@ handle = "bundle-builder"
 api_version = "2025-04" # Or the latest stable API version you intend to use.
 
 [[extensions.blocks]]
-target = "section-group:product-form"
-liquid_path = "blocks/bundle.liquid"
-
-[[extensions.blocks]]
-target = "section:main-product"
-liquid_path = "blocks/bundle.liquid"
-
-[[extensions.blocks]]
 target = "all"
-liquid_path = "blocks/bundle.liquid"
+liquid_path = "blocks/bundle-product-page.liquid"
 
 # Full-Page Bundle Block (for standalone pages)
 [[extensions.blocks]]
