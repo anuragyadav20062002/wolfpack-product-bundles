@@ -2833,10 +2833,11 @@ export default function ConfigureBundleFlow() {
 
   // Periodic polling when widget installation is pending
   useEffect(() => {
-    // Only poll if widget is NOT configured and we're waiting for installation
-    const shouldPoll = widgetInstallation?.recommendedAction === 'install_widget' ||
+    // Only poll if widget is NOT configured and we're waiting for installation AND page not yet created
+    const shouldPoll = (widgetInstallation?.recommendedAction === 'install_widget' ||
                        widgetInstallation?.recommendedAction === 'add_bundle' ||
-                       widgetInstallationInitiated;
+                       widgetInstallationInitiated) &&
+                       !bundle.shopifyPageHandle; // Stop polling once page is created
 
     if (!shouldPoll) {
       return;
@@ -3405,8 +3406,8 @@ export default function ConfigureBundleFlow() {
             </Banner>
           )}
 
-          {/* Only show banner when widget is NOT installed */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && (
+          {/* Only show banner when widget is NOT installed AND page is not yet created */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && !bundle.shopifyPageHandle && (
             <div style={{ marginBottom: '1rem' }}>
               {widgetInstallationInitiated ? (
                 <Banner
@@ -3469,7 +3470,7 @@ export default function ConfigureBundleFlow() {
           )}
 
           {/* Add Bundle to Existing Widget */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && !dismissedBanners.has('add_bundle') && (
+          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && !dismissedBanners.has('add_bundle') && !bundle.shopifyPageHandle && (
             <div style={{ marginBottom: '1rem' }}>
               <Banner
                 tone="warning"
@@ -3686,7 +3687,7 @@ export default function ConfigureBundleFlow() {
                       </BlockStack>
                       {/* Progress Indicator */}
                       <Badge tone="info">
-                        {stepsState.steps.filter(step => step.StepProduct && step.StepProduct.length > 0).length} / {stepsState.steps.length} Configured
+                        {`${stepsState.steps.filter(step => step.StepProduct && step.StepProduct.length > 0).length} / ${stepsState.steps.length} Configured`}
                       </Badge>
                     </InlineStack>
                   </BlockStack>
