@@ -3687,7 +3687,7 @@ export default function ConfigureBundleFlow() {
                       </BlockStack>
                       {/* Progress Indicator */}
                       <Badge tone="info">
-                        {stepsState.steps.filter(step => step.StepProduct && step.StepProduct.length > 0).length} / {stepsState.steps.length} Configured
+                        {`${stepsState.steps.filter(step => step.StepProduct && step.StepProduct.length > 0).length} / ${stepsState.steps.length} Configured`}
                       </Badge>
                     </InlineStack>
                   </BlockStack>
