@@ -2390,7 +2390,7 @@ export default function ConfigureBundleFlow() {
           // This is a widget placement response - reload to show updated banner
           shopify.toast.show("Widget placed successfully! Refreshing...", { isError: false });
           setTimeout(() => {
-            window.location.reload();
+            revalidator.revalidate();
           }, 1000);
         } else {
           // Generic success response
@@ -2789,15 +2789,81 @@ export default function ConfigureBundleFlow() {
     setDismissedBanners(prev => new Set([...prev, bannerId]));
   }, []);
 
+  // ===== ENHANCED REVALIDATION FOR WIDGET INSTALLATION =====
+  // Track if we're actively checking widget installation
+  const [isCheckingWidgetStatus, setIsCheckingWidgetStatus] = useState(false);
+  const revalidationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced revalidation to prevent excessive API calls
+  const debouncedRevalidate = useCallback(() => {
+    if (revalidationTimeoutRef.current) {
+      clearTimeout(revalidationTimeoutRef.current);
+    }
+
+    setIsCheckingWidgetStatus(true);
+    revalidationTimeoutRef.current = setTimeout(() => {
+      revalidator.revalidate();
+      setTimeout(() => setIsCheckingWidgetStatus(false), 500);
+    }, 300); // 300ms debounce
+  }, [revalidator]);
+
+  // Manual refresh function for widget installation status
+  const refreshWidgetStatus = useCallback(() => {
+    AppLogger.info('Manual widget status refresh triggered', { bundleId: bundle.id });
+    setIsCheckingWidgetStatus(true);
+    revalidator.revalidate();
+    setTimeout(() => setIsCheckingWidgetStatus(false), 1000);
+  }, [revalidator, bundle.id]);
+
   // Revalidate data when window regains focus (to check if widget was placed in theme editor)
   useEffect(() => {
     const handleFocus = () => {
-      revalidator.revalidate();
+      AppLogger.debug('Window focused - checking widget installation status', { bundleId: bundle.id });
+      debouncedRevalidate();
     };
 
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [revalidator]);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      if (revalidationTimeoutRef.current) {
+        clearTimeout(revalidationTimeoutRef.current);
+      }
+    };
+  }, [debouncedRevalidate, bundle.id]);
+
+  // Periodic polling when widget installation is pending
+  useEffect(() => {
+    // Only poll if widget is NOT configured and we're waiting for installation
+    const shouldPoll = widgetInstallation?.recommendedAction === 'install_widget' ||
+                       widgetInstallation?.recommendedAction === 'add_bundle' ||
+                       widgetInstallationInitiated;
+
+    if (!shouldPoll) {
+      return;
+    }
+
+    AppLogger.info('Starting periodic widget status polling', {
+      bundleId: bundle.id,
+      recommendedAction: widgetInstallation?.recommendedAction,
+      widgetInstallationInitiated
+    });
+
+    // Poll every 15 seconds when widget installation is pending
+    const pollInterval = setInterval(() => {
+      AppLogger.debug('Polling widget installation status', { bundleId: bundle.id });
+      revalidator.revalidate();
+    }, 15000); // 15 seconds
+
+    return () => {
+      AppLogger.info('Stopping widget status polling', { bundleId: bundle.id });
+      clearInterval(pollInterval);
+    };
+  }, [
+    widgetInstallation?.recommendedAction,
+    widgetInstallationInitiated,
+    revalidator,
+    bundle.id
+  ]);
 
   // Step management handlers
   const cloneStep = useCallback((stepId: string) => {
@@ -3031,15 +3097,9 @@ export default function ConfigureBundleFlow() {
 
           // Navigate directly to theme editor with the newly created page
           // User just needs to add the widget block and save
-          // Use a more robust method to prevent app redirect issues
+          // Use _top to maintain session in embedded app context
           setTimeout(() => {
-            const link = document.createElement('a');
-            link.href = data.widgetInstallationLink;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            window.open(data.widgetInstallationLink, '_top');
           }, 1000);
 
           return; // Exit early
@@ -3068,8 +3128,10 @@ export default function ConfigureBundleFlow() {
         }
 
         // Trigger a revalidation to refresh the page state
+        // Use Remix's revalidator instead of window.location.reload()
+        // to avoid breaking embedded app session
         setTimeout(() => {
-          window.location.reload();
+          revalidator.revalidate();
         }, 2000);
 
         return; // Exit early
@@ -3196,12 +3258,12 @@ export default function ConfigureBundleFlow() {
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
-      // Open theme editor in new window/tab for better workflow
+      // Open theme editor in the same admin window
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
-      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor in new window`);
+      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor`);
 
-      // Use App Bridge to open theme editor in new tab - preserves session
-      open(themeEditorUrl, '_blank');
+      // Use _top to navigate the entire admin - this preserves session for embedded apps
+      window.open(themeEditorUrl, '_top');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3235,7 +3297,7 @@ export default function ConfigureBundleFlow() {
         onAction: handleBackClick,
       }}
       primaryAction={
-        bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed
+        bundle.bundleType === 'full_page' && bundle.shopifyPageHandle
           ? {
               content: "View on Storefront",
               icon: ExternalIcon,
@@ -3244,7 +3306,7 @@ export default function ConfigureBundleFlow() {
                   ? shop.replace('.myshopify.com', '')
                   : shop;
                 const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
-                open(storefrontUrl, '_blank');
+                window.open(storefrontUrl, '_blank');
                 shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
               },
             }
@@ -3333,7 +3395,7 @@ export default function ConfigureBundleFlow() {
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
-                    open(themeEditorUrl, '_blank');
+                    window.open(themeEditorUrl, '_top');
                   }}
                   variant="plain"
                 >
@@ -3351,15 +3413,32 @@ export default function ConfigureBundleFlow() {
                   tone="info"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
-                  <BlockStack gap="100">
+                  <BlockStack gap="200">
                     <InlineStack gap="200" blockAlign="center">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
                         ⏳ Widget installation in progress
                       </Text>
+                      {isCheckingWidgetStatus && (
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          (checking status...)
+                        </Text>
+                      )}
                     </InlineStack>
                     <Text as="span" variant="bodySm" tone="subdued">
-                      Your bundle page is being created and configured automatically. This page will refresh shortly.
+                      Your bundle page is being created and configured automatically. We're automatically checking every 15 seconds.
                     </Text>
+                    <InlineStack gap="200">
+                      <Button
+                        size="slim"
+                        onClick={refreshWidgetStatus}
+                        loading={isCheckingWidgetStatus}
+                      >
+                        Check Now
+                      </Button>
+                      <Text as="span" variant="bodySm" tone="subdued">
+                        Or this page will auto-update when you return from the theme editor
+                      </Text>
+                    </InlineStack>
                   </BlockStack>
                 </Banner>
               ) : (
@@ -3396,21 +3475,42 @@ export default function ConfigureBundleFlow() {
                 tone="warning"
                 onDismiss={() => handleDismissBanner('add_bundle')}
               >
-                <InlineStack gap="400" align="space-between" blockAlign="center">
-                  <BlockStack gap="100">
-                    <Text as="span" variant="bodyMd" fontWeight="semibold">
-                      📝 Add This Bundle to Your Widget
-                    </Text>
+                <BlockStack gap="200">
+                  <InlineStack gap="400" align="space-between" blockAlign="center">
+                    <BlockStack gap="100">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">
+                          📝 Add This Bundle to Your Widget
+                        </Text>
+                        {isCheckingWidgetStatus && (
+                          <Text as="span" variant="bodySm" tone="subdued">
+                            (checking status...)
+                          </Text>
+                        )}
+                      </InlineStack>
+                      <Text as="span" variant="bodySm" tone="subdued">
+                        Update your widget in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> with this bundle ID
+                      </Text>
+                    </BlockStack>
+                    <Button
+                      onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                    >
+                      Configure Widget
+                    </Button>
+                  </InlineStack>
+                  <InlineStack gap="200">
+                    <Button
+                      size="slim"
+                      onClick={refreshWidgetStatus}
+                      loading={isCheckingWidgetStatus}
+                    >
+                      Check Status
+                    </Button>
                     <Text as="span" variant="bodySm" tone="subdued">
-                      Update your widget in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> with this bundle ID
+                      After adding the bundle, click here or return to this tab to refresh
                     </Text>
-                  </BlockStack>
-                  <Button
-                    onClick={() => open(widgetInstallation.installationLink, '_blank')}
-                  >
-                    Configure Widget
-                  </Button>
-                </InlineStack>
+                  </InlineStack>
+                </BlockStack>
               </Banner>
             </div>
           )}
