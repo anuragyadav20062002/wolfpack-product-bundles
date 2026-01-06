@@ -15,6 +15,7 @@ import {
   Select,
   Checkbox,
 } from "@shopify/polaris";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { useState } from "react";
 import { AppLogger } from "../lib/logger";
@@ -40,6 +41,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Onboarding() {
   const { shop, apiKey, blockHandle } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
+  const app = useAppBridge();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState('product');
   const [selectedTarget, setSelectedTarget] = useState('newAppsSection');
@@ -89,9 +91,9 @@ export default function Onboarding() {
       target: selectedTarget
     });
 
-    // Use window.open with _top to navigate the entire app frame
-    // This avoids popup blockers and works within Shopify admin
-    window.open(themeEditorUrl, '_top');
+    // Use App Bridge to open theme editor in new tab
+    // This preserves the app session and authentication context
+    open(themeEditorUrl, '_blank');
   };
 
   const steps = [

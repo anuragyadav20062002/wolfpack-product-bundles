@@ -12,6 +12,7 @@ import {
   Banner,
   Divider,
 } from "@shopify/polaris";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { BillingService } from "../services/billing.server";
 import { PLANS } from "../constants/plans";
@@ -166,10 +167,10 @@ export default function BillingPage() {
     setShowCancelConfirm(false);
   }, [fetcher]);
 
-  // Handle redirect to Shopify billing confirmation using window.open (App Bridge v4)
+  // Handle redirect to Shopify billing confirmation using App Bridge
   useEffect(() => {
     if (fetcher.data && "confirmationUrl" in fetcher.data && fetcher.data.confirmationUrl) {
-      window.open(fetcher.data.confirmationUrl, '_top');
+      open(fetcher.data.confirmationUrl, '_top');
     }
   }, [fetcher.data]);
 

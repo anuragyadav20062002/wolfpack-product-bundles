@@ -2512,7 +2512,7 @@ export default function ConfigureBundleFlow() {
         pageUrl
       });
 
-      window.open(pageUrl, '_blank');
+      open(pageUrl, '_blank');
       shopify.toast.show("Bundle page opened in new tab", { isError: false });
       return;
     }
@@ -2574,7 +2574,7 @@ export default function ConfigureBundleFlow() {
     }
 
     if (productUrl) {
-      window.open(productUrl, '_blank');
+      open(productUrl, '_blank');
 
       // Show appropriate success message based on the URL type used
       const isPreviewUrl = productUrl === bundleProduct.onlineStorePreviewUrl;
@@ -3064,7 +3064,7 @@ export default function ConfigureBundleFlow() {
 
         // Optionally open the storefront page to show the merchant
         if (confirm('Bundle page created successfully! Would you like to view it on your storefront?')) {
-          window.open(data.pageUrl, '_blank');
+          open(data.pageUrl, '_blank');
         }
 
         // Trigger a revalidation to refresh the page state
@@ -3200,8 +3200,8 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
       AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor in new window`);
 
-      // Open in new window so merchant can keep bundle configuration open
-      window.open(themeEditorUrl, '_blank');
+      // Use App Bridge to open theme editor in new tab - preserves session
+      open(themeEditorUrl, '_blank');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3244,7 +3244,7 @@ export default function ConfigureBundleFlow() {
                   ? shop.replace('.myshopify.com', '')
                   : shop;
                 const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
-                window.open(storefrontUrl, '_blank');
+                open(storefrontUrl, '_blank');
                 shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
               },
             }
@@ -3333,7 +3333,7 @@ export default function ConfigureBundleFlow() {
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
-                    window.open(themeEditorUrl, '_blank');
+                    open(themeEditorUrl, '_blank');
                   }}
                   variant="plain"
                 >
@@ -3406,7 +3406,7 @@ export default function ConfigureBundleFlow() {
                     </Text>
                   </BlockStack>
                   <Button
-                    onClick={() => window.open(widgetInstallation.installationLink, '_blank')}
+                    onClick={() => open(widgetInstallation.installationLink, '_blank')}
                   >
                     Configure Widget
                   </Button>
@@ -3494,7 +3494,7 @@ export default function ConfigureBundleFlow() {
                               variant="plain"
                               onClick={() => {
                                 const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                                window.open(productUrl, '_blank');
+                                open(productUrl, '_blank');
                               }}
                               icon={ExternalIcon}
                             >
@@ -4342,7 +4342,7 @@ export default function ConfigureBundleFlow() {
                 <InlineStack gap="200">
                   <Button
                     size="slim"
-                    onClick={() => window.open('https://help.shopify.com/manual/online-store/themes/theme-structure/extend/apps', '_blank')}
+                    onClick={() => open('https://help.shopify.com/manual/online-store/themes/theme-structure/extend/apps', '_blank')}
                     icon={ExternalIcon}
                   >
                     Theme Editor Guide
@@ -4397,7 +4397,7 @@ export default function ConfigureBundleFlow() {
                                   {/* Make product title clickable to navigate to Shopify Admin product page */}
                                   <Button
                                     variant="plain"
-                                    onClick={() => productUrl && window.open(productUrl, '_blank')}
+                                    onClick={() => productUrl && open(productUrl, '_blank')}
                                     icon={ExternalIcon}
                                     disabled={!productUrl}
                                   >
