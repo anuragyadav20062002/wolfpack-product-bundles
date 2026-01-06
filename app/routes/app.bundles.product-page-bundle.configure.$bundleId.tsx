@@ -2196,7 +2196,7 @@ export default function ConfigureBundleFlow() {
           // This is a widget placement response - reload to show updated banner
           shopify.toast.show("Widget placed successfully! Refreshing...", { isError: false });
           setTimeout(() => {
-            window.location.reload();
+            revalidator.revalidate();
           }, 1000);
         } else {
           // Generic success response
@@ -3047,7 +3047,7 @@ export default function ConfigureBundleFlow() {
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
-                    open(themeEditorUrl, '_blank');
+                    window.open(themeEditorUrl, '_top');
                   }}
                   variant="plain"
                 >

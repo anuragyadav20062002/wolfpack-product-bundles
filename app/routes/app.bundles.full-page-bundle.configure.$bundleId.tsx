@@ -2390,7 +2390,7 @@ export default function ConfigureBundleFlow() {
           // This is a widget placement response - reload to show updated banner
           shopify.toast.show("Widget placed successfully! Refreshing...", { isError: false });
           setTimeout(() => {
-            window.location.reload();
+            revalidator.revalidate();
           }, 1000);
         } else {
           // Generic success response
@@ -3031,15 +3031,9 @@ export default function ConfigureBundleFlow() {
 
           // Navigate directly to theme editor with the newly created page
           // User just needs to add the widget block and save
-          // Use a more robust method to prevent app redirect issues
+          // Use _top to maintain session in embedded app context
           setTimeout(() => {
-            const link = document.createElement('a');
-            link.href = data.widgetInstallationLink;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            window.open(data.widgetInstallationLink, '_top');
           }, 1000);
 
           return; // Exit early
@@ -3068,8 +3062,10 @@ export default function ConfigureBundleFlow() {
         }
 
         // Trigger a revalidation to refresh the page state
+        // Use Remix's revalidator instead of window.location.reload()
+        // to avoid breaking embedded app session
         setTimeout(() => {
-          window.location.reload();
+          revalidator.revalidate();
         }, 2000);
 
         return; // Exit early
@@ -3196,12 +3192,12 @@ export default function ConfigureBundleFlow() {
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
-      // Open theme editor in new window/tab for better workflow
+      // Open theme editor in the same admin window
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
-      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor in new window`);
+      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor`);
 
-      // Use App Bridge to open theme editor in new tab - preserves session
-      open(themeEditorUrl, '_blank');
+      // Use _top to navigate the entire admin - this preserves session for embedded apps
+      window.open(themeEditorUrl, '_top');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3333,7 +3329,7 @@ export default function ConfigureBundleFlow() {
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
-                    open(themeEditorUrl, '_blank');
+                    window.open(themeEditorUrl, '_top');
                   }}
                   variant="plain"
                 >
@@ -3406,7 +3402,7 @@ export default function ConfigureBundleFlow() {
                     </Text>
                   </BlockStack>
                   <Button
-                    onClick={() => open(widgetInstallation.installationLink, '_blank')}
+                    onClick={() => window.open(widgetInstallation.installationLink, '_top')}
                   >
                     Configure Widget
                   </Button>
