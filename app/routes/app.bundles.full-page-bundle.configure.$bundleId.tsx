@@ -3231,7 +3231,7 @@ export default function ConfigureBundleFlow() {
         onAction: handleBackClick,
       }}
       primaryAction={
-        bundle.bundleType === 'full_page' && bundle.shopifyPageHandle && widgetInstallation?.installed
+        bundle.bundleType === 'full_page' && bundle.shopifyPageHandle
           ? {
               content: "View on Storefront",
               icon: ExternalIcon,
@@ -3240,7 +3240,7 @@ export default function ConfigureBundleFlow() {
                   ? shop.replace('.myshopify.com', '')
                   : shop;
                 const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
-                open(storefrontUrl, '_blank');
+                window.open(storefrontUrl, '_blank');
                 shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
               },
             }
