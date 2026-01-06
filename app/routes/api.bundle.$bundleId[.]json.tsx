@@ -77,12 +77,15 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     });
 
     // Get the bundle from database
+    // Allow both 'draft' and 'active' bundles so merchants can test before publishing
     const bundle = await db.bundle.findFirst({
       where: {
         id: bundleId,
         shopId: session.shop,
         // Note: bundleType filter removed - not needed for single bundle lookup
-        status: 'active'
+        status: {
+          in: ['draft', 'active']
+        }
       },
       include: {
         steps: {
