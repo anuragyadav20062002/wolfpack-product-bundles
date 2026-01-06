@@ -27,19 +27,29 @@ export async function OPTIONS() {
 export const loader: LoaderFunction = async ({ request, params }) => {
   const url = new URL(request.url);
 
-  // Log all incoming requests for debugging
-  console.log('[APP_PROXY] Incoming request:', {
+  // ENHANCED LOGGING - Log all incoming requests for debugging
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('[APP_PROXY] 🔍 INCOMING REQUEST:', {
+    timestamp: new Date().toISOString(),
     url: url.href,
     pathname: url.pathname,
+    method: request.method,
     params,
-    searchParams: Object.fromEntries(url.searchParams.entries())
+    searchParams: Object.fromEntries(url.searchParams.entries()),
+    headers: {
+      'user-agent': request.headers.get('user-agent'),
+      'referer': request.headers.get('referer'),
+      'x-shopify-shop-domain': request.headers.get('x-shopify-shop-domain'),
+      'x-forwarded-for': request.headers.get('x-forwarded-for')
+    }
   });
+  console.log('═══════════════════════════════════════════════════════════');
 
   try {
     const { bundleId } = params;
 
     if (!bundleId) {
-      console.log('[APP_PROXY] No bundleId in params');
+      console.log('[APP_PROXY] ❌ No bundleId in params');
       return json({ error: "Bundle ID is required" }, {
         status: 400,
         headers: {
@@ -50,7 +60,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       });
     }
 
-    console.log('[APP_PROXY] Attempting authentication for bundleId:', bundleId);
+    console.log('[APP_PROXY] 📝 Bundle ID extracted:', bundleId);
+    console.log('[APP_PROXY] 🔐 Attempting authentication...');
 
     // Authenticate the request via app proxy
     const { session } = await authenticate.public.appProxy(request);
