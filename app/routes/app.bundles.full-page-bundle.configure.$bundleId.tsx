@@ -2789,15 +2789,81 @@ export default function ConfigureBundleFlow() {
     setDismissedBanners(prev => new Set([...prev, bannerId]));
   }, []);
 
+  // ===== ENHANCED REVALIDATION FOR WIDGET INSTALLATION =====
+  // Track if we're actively checking widget installation
+  const [isCheckingWidgetStatus, setIsCheckingWidgetStatus] = useState(false);
+  const revalidationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced revalidation to prevent excessive API calls
+  const debouncedRevalidate = useCallback(() => {
+    if (revalidationTimeoutRef.current) {
+      clearTimeout(revalidationTimeoutRef.current);
+    }
+
+    setIsCheckingWidgetStatus(true);
+    revalidationTimeoutRef.current = setTimeout(() => {
+      revalidator.revalidate();
+      setTimeout(() => setIsCheckingWidgetStatus(false), 500);
+    }, 300); // 300ms debounce
+  }, [revalidator]);
+
+  // Manual refresh function for widget installation status
+  const refreshWidgetStatus = useCallback(() => {
+    AppLogger.info('Manual widget status refresh triggered', { bundleId: bundle.id });
+    setIsCheckingWidgetStatus(true);
+    revalidator.revalidate();
+    setTimeout(() => setIsCheckingWidgetStatus(false), 1000);
+  }, [revalidator, bundle.id]);
+
   // Revalidate data when window regains focus (to check if widget was placed in theme editor)
   useEffect(() => {
     const handleFocus = () => {
-      revalidator.revalidate();
+      AppLogger.debug('Window focused - checking widget installation status', { bundleId: bundle.id });
+      debouncedRevalidate();
     };
 
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [revalidator]);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      if (revalidationTimeoutRef.current) {
+        clearTimeout(revalidationTimeoutRef.current);
+      }
+    };
+  }, [debouncedRevalidate, bundle.id]);
+
+  // Periodic polling when widget installation is pending
+  useEffect(() => {
+    // Only poll if widget is NOT configured and we're waiting for installation
+    const shouldPoll = widgetInstallation?.recommendedAction === 'install_widget' ||
+                       widgetInstallation?.recommendedAction === 'add_bundle' ||
+                       widgetInstallationInitiated;
+
+    if (!shouldPoll) {
+      return;
+    }
+
+    AppLogger.info('Starting periodic widget status polling', {
+      bundleId: bundle.id,
+      recommendedAction: widgetInstallation?.recommendedAction,
+      widgetInstallationInitiated
+    });
+
+    // Poll every 15 seconds when widget installation is pending
+    const pollInterval = setInterval(() => {
+      AppLogger.debug('Polling widget installation status', { bundleId: bundle.id });
+      revalidator.revalidate();
+    }, 15000); // 15 seconds
+
+    return () => {
+      AppLogger.info('Stopping widget status polling', { bundleId: bundle.id });
+      clearInterval(pollInterval);
+    };
+  }, [
+    widgetInstallation?.recommendedAction,
+    widgetInstallationInitiated,
+    revalidator,
+    bundle.id
+  ]);
 
   // Step management handlers
   const cloneStep = useCallback((stepId: string) => {
@@ -3347,15 +3413,32 @@ export default function ConfigureBundleFlow() {
                   tone="info"
                   onDismiss={() => handleDismissBanner('install_widget')}
                 >
-                  <BlockStack gap="100">
+                  <BlockStack gap="200">
                     <InlineStack gap="200" blockAlign="center">
                       <Text as="span" variant="bodyMd" fontWeight="semibold">
                         ⏳ Widget installation in progress
                       </Text>
+                      {isCheckingWidgetStatus && (
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          (checking status...)
+                        </Text>
+                      )}
                     </InlineStack>
                     <Text as="span" variant="bodySm" tone="subdued">
-                      Your bundle page is being created and configured automatically. This page will refresh shortly.
+                      Your bundle page is being created and configured automatically. We're automatically checking every 15 seconds.
                     </Text>
+                    <InlineStack gap="200">
+                      <Button
+                        size="slim"
+                        onClick={refreshWidgetStatus}
+                        loading={isCheckingWidgetStatus}
+                      >
+                        Check Now
+                      </Button>
+                      <Text as="span" variant="bodySm" tone="subdued">
+                        Or this page will auto-update when you return from the theme editor
+                      </Text>
+                    </InlineStack>
                   </BlockStack>
                 </Banner>
               ) : (
@@ -3392,21 +3475,42 @@ export default function ConfigureBundleFlow() {
                 tone="warning"
                 onDismiss={() => handleDismissBanner('add_bundle')}
               >
-                <InlineStack gap="400" align="space-between" blockAlign="center">
-                  <BlockStack gap="100">
-                    <Text as="span" variant="bodyMd" fontWeight="semibold">
-                      📝 Add This Bundle to Your Widget
-                    </Text>
+                <BlockStack gap="200">
+                  <InlineStack gap="400" align="space-between" blockAlign="center">
+                    <BlockStack gap="100">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text as="span" variant="bodyMd" fontWeight="semibold">
+                          📝 Add This Bundle to Your Widget
+                        </Text>
+                        {isCheckingWidgetStatus && (
+                          <Text as="span" variant="bodySm" tone="subdued">
+                            (checking status...)
+                          </Text>
+                        )}
+                      </InlineStack>
+                      <Text as="span" variant="bodySm" tone="subdued">
+                        Update your widget in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> with this bundle ID
+                      </Text>
+                    </BlockStack>
+                    <Button
+                      onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                    >
+                      Configure Widget
+                    </Button>
+                  </InlineStack>
+                  <InlineStack gap="200">
+                    <Button
+                      size="slim"
+                      onClick={refreshWidgetStatus}
+                      loading={isCheckingWidgetStatus}
+                    >
+                      Check Status
+                    </Button>
                     <Text as="span" variant="bodySm" tone="subdued">
-                      Update your widget in <span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'your theme'}</span> with this bundle ID
+                      After adding the bundle, click here or return to this tab to refresh
                     </Text>
-                  </BlockStack>
-                  <Button
-                    onClick={() => window.open(widgetInstallation.installationLink, '_top')}
-                  >
-                    Configure Widget
-                  </Button>
-                </InlineStack>
+                  </InlineStack>
+                </BlockStack>
               </Banner>
             </div>
           )}
