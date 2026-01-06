@@ -212,8 +212,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
   const apiKey = process.env.SHOPIFY_API_KEY || '';
   // Block handle must match the liquid filename (without .liquid extension)
-  // File: extensions/bundle-builder/blocks/bundle.liquid
-  const blockHandle = 'bundle';
+  // File: extensions/bundle-builder/blocks/bundle-product-page.liquid
+  const blockHandle = 'bundle-product-page';
 
   // Get smart installation context for this specific bundle
   const installationContext = await WidgetInstallationService.getBundleInstallationContext(
