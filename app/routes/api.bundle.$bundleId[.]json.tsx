@@ -373,8 +373,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           enrichedProducts: enrichedStepProducts.map(esp => ({
             title: esp.title,
             hasImageUrl: !!esp.imageUrl,
-            hasPrice: !!esp.price,
-            hasVariants: !!esp.variants && esp.variants.length > 0
+            hasPrice: !!(esp as any).price,
+            hasVariants: !!(esp as any).variants && Array.isArray((esp as any).variants) && (esp as any).variants.length > 0
           }))
         });
 
@@ -382,13 +382,13 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         const productsArray = enrichedStepProducts.map(esp => ({
           id: esp.productId,
           title: esp.title,
-          handle: esp.handle,
+          handle: (esp as any).handle || '',
           images: esp.imageUrl ? [{ url: esp.imageUrl }] : [],
           featuredImage: esp.imageUrl ? { url: esp.imageUrl } : null,
-          price: Math.round(parseFloat(esp.price || "0") * 100), // Convert to cents for loader
-          compareAtPrice: esp.compareAtPrice ? Math.round(parseFloat(esp.compareAtPrice) * 100) : null,
+          price: Math.round(parseFloat((esp as any).price || "0") * 100), // Convert to cents for loader
+          compareAtPrice: (esp as any).compareAtPrice ? Math.round(parseFloat((esp as any).compareAtPrice) * 100) : null,
           available: true,
-          variants: esp.variants?.map(v => ({
+          variants: ((esp as any).variants as any[])?.map((v: any) => ({
             id: v.id, // Already numeric
             title: v.title,
             price: Math.round(parseFloat(v.price || "0") * 100),
@@ -436,8 +436,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         stepProductSample: s.StepProduct[0] ? {
           title: s.StepProduct[0].title,
           hasImageUrl: !!s.StepProduct[0].imageUrl,
-          hasPrice: !!s.StepProduct[0].price,
-          hasVariants: !!s.StepProduct[0].variants
+          hasPrice: !!(s.StepProduct[0] as any).price,
+          hasVariants: !!(s.StepProduct[0] as any).variants
         } : null
       }))
     });
