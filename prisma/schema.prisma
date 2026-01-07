@@ -72,6 +72,8 @@ model Session {
   updatedAt              DateTime  @updatedAt
 
   @@index([shop])
+  @@index([shop, expires])
+  @@index([shop, storefrontAccessToken])
 }
 
 model Bundle {
@@ -95,6 +97,10 @@ model Bundle {
   @@index([status])
   @@index([bundleType])
   @@index([shopifyPageHandle])
+  @@index([shopifyProductId])
+  @@index([shopId, status])
+  @@index([shopId, bundleType, status])
+  @@index([shopId, updatedAt])
 }
 
 model BundleStep {
@@ -118,6 +124,8 @@ model BundleStep {
   updatedAt                   DateTime      @updatedAt
 
   @@index([bundleId])
+  @@index([bundleId, position])
+  @@index([bundleId, enabled])
 }
 
 model StepProduct {
@@ -136,6 +144,8 @@ model StepProduct {
 
   @@index([stepId])
   @@index([productId])
+  @@index([stepId, position])
+  @@index([productId, stepId])
 }
 
 model BundlePricing {
@@ -167,6 +177,8 @@ model BundleAnalytics {
   @@index([shopId])
   @@index([event])
   @@index([createdAt])
+  @@index([shopId, event, createdAt])
+  @@index([bundleId, event, createdAt])
 }
 
 // Design Control Panel Settings - Stores visual customization per bundle type
