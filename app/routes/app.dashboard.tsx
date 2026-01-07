@@ -278,22 +278,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             },
           });
 
-          // Clone step products if they exist
+          // Clone step products if they exist - use createMany for bulk insert
           if (step.StepProduct && step.StepProduct.length > 0) {
-            for (const stepProduct of step.StepProduct) {
-              await db.stepProduct.create({
-                data: {
-                  stepId: clonedStep.id,
-                  productId: stepProduct.productId,
-                  title: stepProduct.title,
-                  variants: stepProduct.variants || [],
-                  imageUrl: stepProduct.imageUrl,
-                  minQuantity: stepProduct.minQuantity,
-                  maxQuantity: stepProduct.maxQuantity,
-                  position: stepProduct.position,
-                },
-              });
-            }
+            await db.stepProduct.createMany({
+              data: step.StepProduct.map(stepProduct => ({
+                stepId: clonedStep.id,
+                productId: stepProduct.productId,
+                title: stepProduct.title,
+                variants: stepProduct.variants || [],
+                imageUrl: stepProduct.imageUrl,
+                minQuantity: stepProduct.minQuantity,
+                maxQuantity: stepProduct.maxQuantity,
+                position: stepProduct.position,
+              })),
+            });
           }
         }
       }
