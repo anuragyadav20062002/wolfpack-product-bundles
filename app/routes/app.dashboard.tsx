@@ -27,7 +27,7 @@ import { SubscriptionGuard } from "../services/subscription-guard.server";
 import { BillingService } from "../services/billing.server";
 import { WidgetInstallationService } from "../services/widget-installation.server";
 import { WidgetInstallationFlagsService } from "../services/widget-installation-flags.server";
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
 
@@ -633,6 +633,52 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
+// Reusable status badge instances to prevent recreation on every render
+const STATUS_BADGES = {
+  active: <Badge tone="success">active</Badge>,
+  draft: <Badge tone="info">draft</Badge>,
+  archived: <Badge tone="critical">archived</Badge>,
+} as const;
+
+// Memoized component for bundle action buttons
+interface BundleActionsButtonsProps {
+  bundleId: string;
+  bundleType: 'product_page' | 'full_page';
+  onEdit: (bundle: any) => void;
+  onClone: (bundleId: string) => void;
+  onDelete: (bundleId: string) => void;
+  bundle: any;
+}
+
+const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDelete, bundle }: BundleActionsButtonsProps) => (
+  <ButtonGroup>
+    <Button
+      size="micro"
+      icon={EditIcon}
+      onClick={() => onEdit(bundle)}
+    >
+      Edit
+    </Button>
+    <Button
+      size="micro"
+      icon={DuplicateIcon}
+      onClick={() => onClone(bundleId)}
+    >
+      Clone
+    </Button>
+    <Button
+      size="micro"
+      tone="critical"
+      icon={DeleteIcon}
+      onClick={() => onDelete(bundleId)}
+    >
+      Delete
+    </Button>
+  </ButtonGroup>
+));
+
+BundleActionsButtons.displayName = 'BundleActionsButtons';
+
 export default function Dashboard() {
   const { bundles, subscription, widgetInstallation, apiKey } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
@@ -706,17 +752,9 @@ export default function Dashboard() {
     }
   };
 
+  // Use reusable status badges to avoid recreation on every render
   const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge tone="success">active</Badge>;
-      case "draft":
-        return <Badge tone="info">draft</Badge>;
-      case "archived":
-        return <Badge tone="critical">archived</Badge>;
-      default:
-        return <Badge tone="info">{status}</Badge>;
-    }
+    return STATUS_BADGES[status as keyof typeof STATUS_BADGES] || <Badge tone="info">{status}</Badge>;
   };
 
   // Memoize bundleRows to prevent unnecessary re-renders
@@ -724,30 +762,15 @@ export default function Dashboard() {
     bundle.name,
     getStatusDisplay(bundle.status),
     bundle.pricing?.enabled ? "Enabled" : "Disabled",
-    <ButtonGroup key={bundle.id}>
-      <Button
-        size="micro"
-        icon={EditIcon}
-        onClick={() => handleEditBundle(bundle)}
-      >
-        Edit
-      </Button>
-      <Button
-        size="micro"
-        icon={DuplicateIcon}
-        onClick={() => handleCloneBundle(bundle.id)}
-      >
-        Clone
-      </Button>
-      <Button
-        size="micro"
-        tone="critical"
-        icon={DeleteIcon}
-        onClick={() => handleDeleteBundle(bundle.id)}
-      >
-        Delete
-      </Button>
-    </ButtonGroup>,
+    <BundleActionsButtons
+      key={bundle.id}
+      bundleId={bundle.id}
+      bundleType={bundle.bundleType}
+      bundle={bundle}
+      onEdit={handleEditBundle}
+      onClone={handleCloneBundle}
+      onDelete={handleDeleteBundle}
+    />,
   ]), [bundles, handleCloneBundle]);
 
   return (
