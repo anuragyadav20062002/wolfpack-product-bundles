@@ -170,7 +170,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }, {
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=60" // Cache for 1 minute
+        "Cache-Control": "public, max-age=300, s-maxage=600",
+        "Vary": "Accept-Encoding"
       }
     });
 
