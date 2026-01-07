@@ -1038,18 +1038,8 @@ class ComponentGenerator {
 }
 
 
-// ============================================================================
-// ATTACH COMPONENTS TO BUNDLE_WIDGET FOR GLOBAL ACCESS
-// ============================================================================
-BUNDLE_WIDGET.CurrencyManager = CurrencyManager;
-BUNDLE_WIDGET.BundleDataManager = BundleDataManager;
-BUNDLE_WIDGET.PricingCalculator = PricingCalculator;
-BUNDLE_WIDGET.ToastManager = ToastManager;
-BUNDLE_WIDGET.TemplateManager = TemplateManager;
-BUNDLE_WIDGET.ComponentGenerator = ComponentGenerator;
-
   // ============================================================================
-  // FULL-PAGE BUNDLE WIDGET
+  // FULL PAGE WIDGET
   // ============================================================================
 
 /**
@@ -1290,17 +1280,46 @@ class BundleWidgetFullPage {
       try {
         // Use Shopify app proxy path - Shopify automatically adds signature and auth params
         // App proxy config: /apps/product-bundles -> https://wolfpack-product-bundle-app.onrender.com
-        const apiUrl = `/apps/product-bundles/api/bundle/${bundleId}.json`;
+        // CRITICAL: URL-encode bundle ID to handle special characters in cuid() format
+        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
 
-        console.log('[WIDGET_INIT] Fetching bundle from:', apiUrl);
+        console.log('[WIDGET_INIT] 📤 Fetching bundle from API:', {
+          bundleId,
+          apiUrl,
+          fullUrl: window.location.origin + apiUrl,
+          shopDomain: window.Shopify?.shop || 'unknown',
+          bundleType
+        });
 
         const response = await fetch(apiUrl);
+
+        console.log('[WIDGET_INIT] 📥 API response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          url: response.url
+        });
+
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status}`);
+          // Try to get error details from response body
+          let errorDetails = `${response.status} ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            console.error('[WIDGET_INIT] ❌ API error response body:', errorData);
+            errorDetails = JSON.stringify(errorData);
+          } catch (e) {
+            console.error('[WIDGET_INIT] ⚠️  Could not parse error response as JSON');
+          }
+          throw new Error(`API request failed: ${errorDetails}`);
         }
 
         const data = await response.json();
-        console.log('[WIDGET_INIT] API response:', data);
+        console.log('[WIDGET_INIT] ✅ API response data received:', {
+          success: data.success,
+          hasBundleData: !!data.bundle,
+          bundleId: data.bundle?.id,
+          bundleName: data.bundle?.name
+        });
 
         if (data.success && data.bundle) {
           bundleData = { [data.bundle.id]: data.bundle };
@@ -1702,9 +1721,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
 
-    // Load products for current step (needed for price calculation)
-    await this.loadStepProducts(this.currentStepIndex);
-
+    // OPTIMISTIC RENDERING: Render non-product UI immediately
     // 1. Render step timeline at top
     const stepTimeline = this.createStepTimeline();
     this.elements.stepsContainer.appendChild(stepTimeline);
@@ -1719,12 +1736,33 @@ class BundleWidgetFullPage {
       this.elements.stepsContainer.appendChild(categoryTabs);
     }
 
-    // 4. Render product grid for current step
-    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
-    this.elements.stepsContainer.appendChild(productGrid);
+    // 4. Create product grid container with loading state
+    const productGridContainer = document.createElement('div');
+    productGridContainer.className = 'full-page-product-grid-container';
+    productGridContainer.innerHTML = this.createProductGridLoadingState();
+    this.elements.stepsContainer.appendChild(productGridContainer);
 
-    // 5. Render fixed footer with selected products
+    // 5. Render fixed footer (will be updated after products load)
     this.renderFullPageFooter();
+
+    // Load products asynchronously and update grid
+    try {
+      await this.loadStepProducts(this.currentStepIndex);
+
+      // Replace loading state with actual products
+      const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+      productGridContainer.innerHTML = '';
+      productGridContainer.appendChild(productGrid);
+
+      // Update footer with correct product data
+      this.renderFullPageFooter();
+
+      // PRELOAD NEXT STEP: Load next step's products in the background
+      this.preloadNextStep();
+    } catch (error) {
+      console.error('[FULL_PAGE_LAYOUT] Error loading products:', error);
+      productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+    }
   }
 
   // Create horizontal step timeline with state-based icons
@@ -1929,6 +1967,181 @@ class BundleWidgetFullPage {
     });
 
     return grid;
+  }
+
+  // Create loading skeleton for product grid that matches actual product card design EXACTLY
+  // Uses real CSS classes to ensure zero layout shift when products load
+  createProductGridLoadingState() {
+    return `
+      <div class="full-page-product-grid">
+        ${Array(6).fill(0).map(() => `
+          <div class="product-card skeleton-loading">
+            <div class="product-image">
+              <div class="skeleton-shimmer"></div>
+            </div>
+
+            <div class="product-content-wrapper">
+              <div class="product-title">
+                <div class="skeleton-shimmer skeleton-text"></div>
+              </div>
+
+              <div class="product-price-row">
+                <div class="skeleton-shimmer skeleton-price"></div>
+              </div>
+
+              <div class="product-spacer"></div>
+
+              <div class="product-quantity-wrapper">
+                <div class="product-quantity-selector skeleton-quantity">
+                  <div class="skeleton-shimmer"></div>
+                </div>
+              </div>
+
+              <button class="product-add-btn skeleton-button">
+                <div class="skeleton-shimmer"></div>
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <style>
+        /* Skeleton loading state - maintains exact dimensions of real cards */
+        .product-card.skeleton-loading {
+          pointer-events: none;
+          cursor: default;
+        }
+
+        .product-card.skeleton-loading:hover {
+          transform: none;
+          box-shadow: none;
+        }
+
+        /* Shimmer effect base */
+        .skeleton-shimmer {
+          background: linear-gradient(90deg,
+            rgba(0, 0, 0, 0.04) 0%,
+            rgba(0, 0, 0, 0.08) 20%,
+            rgba(0, 0, 0, 0.04) 40%,
+            rgba(0, 0, 0, 0.04) 100%
+          );
+          background-size: 200% 100%;
+          animation: shimmer 1.8s ease-in-out infinite;
+          border-radius: inherit;
+        }
+
+        /* Product image skeleton - uses same height as real .product-image */
+        .skeleton-loading .product-image {
+          position: relative;
+          background: transparent;
+        }
+
+        .skeleton-loading .product-image .skeleton-shimmer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        /* Product title skeleton - uses real .product-title dimensions */
+        .skeleton-loading .product-title {
+          position: relative;
+          color: transparent;
+        }
+
+        .skeleton-loading .product-title .skeleton-text {
+          height: 1.4em; /* Matches line-height */
+          width: 80%;
+          margin: 0 auto;
+        }
+
+        /* Price skeleton - uses real .product-price-row dimensions */
+        .skeleton-loading .product-price-row {
+          position: relative;
+        }
+
+        .skeleton-loading .product-price-row .skeleton-price {
+          height: 1.2em;
+          width: 60%;
+          margin: 0 auto;
+        }
+
+        /* Quantity selector skeleton - uses real .product-quantity-selector dimensions */
+        .skeleton-loading .product-quantity-selector {
+          position: relative;
+          background: transparent;
+          border-color: rgba(0, 0, 0, 0.04);
+        }
+
+        .skeleton-loading .product-quantity-selector .skeleton-shimmer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        /* Button skeleton - uses real .product-add-btn dimensions */
+        .skeleton-loading .product-add-btn {
+          position: relative;
+          background: transparent;
+          color: transparent;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          cursor: default;
+        }
+
+        .skeleton-loading .product-add-btn:hover {
+          transform: none;
+          box-shadow: none;
+        }
+
+        .skeleton-loading .product-add-btn .skeleton-shimmer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+      </style>
+    `;
+  }
+
+  // Preload next step's products in the background
+  preloadNextStep() {
+    const nextStepIndex = this.currentStepIndex + 1;
+
+    // Check if there is a next step
+    if (nextStepIndex >= this.selectedBundle.steps.length) {
+      console.log('[PRELOAD] No next step to preload');
+      return;
+    }
+
+    // Check if next step products are already loaded
+    if (this.stepProductData[nextStepIndex]?.length > 0) {
+      console.log('[PRELOAD] Next step products already cached');
+      return;
+    }
+
+    console.log(`[PRELOAD] Preloading products for step ${nextStepIndex + 1} in background`);
+
+    // Load in background (don't await)
+    this.loadStepProducts(nextStepIndex)
+      .then(() => {
+        console.log(`[PRELOAD] ✅ Successfully preloaded step ${nextStepIndex + 1}`);
+      })
+      .catch(error => {
+        console.warn(`[PRELOAD] Failed to preload step ${nextStepIndex + 1}:`, error);
+        // Don't show error to user - preloading is optimization only
+      });
   }
 
   // Create a product card DOM element for full-page layout
@@ -3096,7 +3309,7 @@ class BundleWidgetFullPage {
     if (productCard) {
       const quantityDisplay = productCard.querySelector('.qty-display');
       const addBtn = productCard.querySelector('.product-add-btn');
-      const selectedOverlay = productCard.querySelector('.selected-overlay');
+      let selectedOverlay = productCard.querySelector('.selected-overlay');
 
       if (quantityDisplay) {
         quantityDisplay.textContent = quantity;
@@ -3112,10 +3325,18 @@ class BundleWidgetFullPage {
         }
       }
 
-      if (selectedOverlay) {
-        if (quantity > 0) {
-          selectedOverlay.style.display = 'flex';
-        } else {
+      // Handle selected overlay (create if doesn't exist)
+      if (quantity > 0) {
+        if (!selectedOverlay) {
+          // Create the overlay if it doesn't exist
+          selectedOverlay = document.createElement('div');
+          selectedOverlay.className = 'selected-overlay';
+          selectedOverlay.textContent = '✓';
+          productCard.appendChild(selectedOverlay);
+        }
+        selectedOverlay.style.display = 'flex';
+      } else {
+        if (selectedOverlay) {
           selectedOverlay.style.display = 'none';
         }
       }
@@ -3694,8 +3915,5 @@ function initializeFullPageWidget() {
 
 console.log('[FULL_PAGE_WIDGET] Module loaded');
 
-
-// Expose BUNDLE_WIDGET to global scope
-window.BUNDLE_WIDGET = BUNDLE_WIDGET;
 
 })();
