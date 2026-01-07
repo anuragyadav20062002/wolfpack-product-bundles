@@ -746,35 +746,57 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         throw new Error("Please add products to at least one step before saving");
       }
 
+      // Ensure shopifyProductId exists for metafield updates
+      if (!updatedBundle.shopifyProductId) {
+        AppLogger.error("❌ [VALIDATION] Cannot update metafields: No Shopify product ID");
+        throw new Error("Bundle must have a Shopify product ID to update metafields");
+      }
+
+      // Extract shopifyProductId to a const for TypeScript type narrowing
+      const shopifyProductId = updatedBundle.shopifyProductId;
+
       try {
-        // STANDARD METAFIELDS: For Shopify cart transform compatibility
-        AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
-        try {
-          const { metafields: standardMetafields, errors: conversionErrors } = await convertBundleToStandardMetafields(admin, baseConfiguration);
-          if (conversionErrors.length > 0) {
-            AppLogger.warn("⚠️ [STANDARD_METAFIELD] Some products could not be processed:", conversionErrors);
-          }
-          if (Object.keys(standardMetafields).length > 0) {
-            await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
-            AppLogger.debug("✅ [STANDARD_METAFIELD] Standard metafields updated successfully");
-          } else {
-            AppLogger.debug("ℹ️ [STANDARD_METAFIELD] No standard metafields to update");
-          }
-        } catch (error) {
-          AppLogger.debug("⚠️ [STANDARD_METAFIELD] Skipping standard metafields (optional):", {}, (error as Error).message);
-        }
+        // Parallelize independent metafield updates for better performance
+        AppLogger.debug("🔧 [METAFIELDS] Updating all metafields in parallel");
 
-        // COMPONENT METAFIELDS: Update component products with component_parents metafield
-        // CRITICAL: This metafield is required for cart transform MERGE operation
-        AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
-        await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
-        AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
+        await Promise.all([
+          // STANDARD METAFIELDS: For Shopify cart transform compatibility
+          (async () => {
+            try {
+              AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
+              const { metafields: standardMetafields, errors: conversionErrors } = await convertBundleToStandardMetafields(admin, baseConfiguration);
+              if (conversionErrors.length > 0) {
+                AppLogger.warn("⚠️ [STANDARD_METAFIELD] Some products could not be processed:", conversionErrors);
+              }
+              if (Object.keys(standardMetafields).length > 0) {
+                await updateProductStandardMetafields(admin, shopifyProductId, standardMetafields);
+                AppLogger.debug("✅ [STANDARD_METAFIELD] Standard metafields updated successfully");
+              } else {
+                AppLogger.debug("ℹ️ [STANDARD_METAFIELD] No standard metafields to update");
+              }
+            } catch (error) {
+              AppLogger.debug("⚠️ [STANDARD_METAFIELD] Skipping standard metafields (optional):", {}, (error as Error).message);
+            }
+          })(),
 
-        // BUNDLE VARIANT METAFIELDS: Set bundle_ui_config and other variant-level metafields
-        // This is CRITICAL - without this, the widget cannot load on the storefront
-        AppLogger.debug("🔧 [BUNDLE_VARIANT_METAFIELD] Updating bundle variant metafields (bundle_ui_config, component_reference, etc.)");
-        await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
-        AppLogger.debug("✅ [BUNDLE_VARIANT_METAFIELD] Bundle variant metafields updated successfully");
+          // COMPONENT METAFIELDS: Update component products with component_parents metafield
+          // CRITICAL: This metafield is required for cart transform MERGE operation
+          (async () => {
+            AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
+            await updateComponentProductMetafields(admin, shopifyProductId, fullBundleConfig);
+            AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
+          })(),
+
+          // BUNDLE VARIANT METAFIELDS: Set bundle_ui_config and other variant-level metafields
+          // This is CRITICAL - without this, the widget cannot load on the storefront
+          (async () => {
+            AppLogger.debug("🔧 [BUNDLE_VARIANT_METAFIELD] Updating bundle variant metafields (bundle_ui_config, component_reference, etc.)");
+            await updateBundleProductMetafields(admin, shopifyProductId, fullBundleConfig);
+            AppLogger.debug("✅ [BUNDLE_VARIANT_METAFIELD] Bundle variant metafields updated successfully");
+          })()
+        ]);
+
+        AppLogger.debug("✅ [METAFIELDS] All metafields updated successfully");
 
       } catch (error) {
         AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
