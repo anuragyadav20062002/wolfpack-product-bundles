@@ -27,7 +27,7 @@ import { SubscriptionGuard } from "../services/subscription-guard.server";
 import { BillingService } from "../services/billing.server";
 import { WidgetInstallationService } from "../services/widget-installation.server";
 import { WidgetInstallationFlagsService } from "../services/widget-installation-flags.server";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
 
@@ -35,6 +35,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
 
   // Get active and draft bundles for the shop (exclude archived/deleted)
+  // Only select fields needed for dashboard display to avoid over-fetching
   const bundles = await db.bundle.findMany({
     where: {
       shopId: session.shop,
@@ -42,13 +43,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         in: ['active', 'draft']
       }
     },
-    include: {
-      steps: {
-        include: {
-          StepProduct: true
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      bundleType: true,
+      createdAt: true,
+      pricing: {
+        select: {
+          enabled: true
         }
       },
-      pricing: true,
+      _count: {
+        select: {
+          steps: true
+        }
+      }
     },
     orderBy: { createdAt: "desc" },
   });
@@ -706,7 +716,8 @@ export default function Dashboard() {
     }
   };
 
-  const bundleRows = bundles.map((bundle) => [
+  // Memoize bundleRows to prevent unnecessary re-renders
+  const bundleRows = useMemo(() => bundles.map((bundle) => [
     bundle.name,
     getStatusDisplay(bundle.status),
     bundle.pricing?.enabled ? "Enabled" : "Disabled",
@@ -734,7 +745,7 @@ export default function Dashboard() {
         Delete
       </Button>
     </ButtonGroup>,
-  ]);
+  ]), [bundles, handleCloneBundle]);
 
   return (
     <>
