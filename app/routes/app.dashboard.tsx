@@ -121,8 +121,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: 'Bundle not found' }, { status: 404 });
       }
 
-      // Create new bundle product in Shopify
-      const CREATE_BUNDLE_PRODUCT = `
+      let shopifyProductId = null;
+      const clonedBundleName = `${originalBundle.name} (Copy)`;
+
+      // Only create Shopify product for product_page bundles
+      if (originalBundle.bundleType === 'product_page') {
+        // Create new bundle product in Shopify
+        const CREATE_BUNDLE_PRODUCT = `
         mutation CreateBundleProduct($input: ProductInput!) {
           productCreate(input: $input) {
             product {
@@ -139,7 +144,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
       `;
 
-      const clonedBundleName = `${originalBundle.name} (Copy)`;
       const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
         variables: {
           input: {
@@ -171,7 +175,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: 'Failed to create bundle product in Shopify' }, { status: 500 });
       }
 
-      const shopifyProductId = productData.data?.productCreate?.product?.id;
+      shopifyProductId = productData.data?.productCreate?.product?.id;
 
       // Publish to Online Store sales channel
       try {
@@ -238,6 +242,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }, publishError);
         // Continue even if publishing fails
       }
+      } // End of product_page bundle product creation
 
       // Clone the bundle
       const clonedBundle = await db.bundle.create({
@@ -245,7 +250,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           name: clonedBundleName,
           description: originalBundle.description,
           shopId: session.shop,
-          bundleType: 'product_page',
+          bundleType: originalBundle.bundleType,
           status: 'draft',
           shopifyProductId: shopifyProductId,
           templateName: originalBundle.templateName,
