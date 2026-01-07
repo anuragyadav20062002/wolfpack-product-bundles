@@ -1836,6 +1836,22 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
   }
 }
 
+// Static navigation items - moved outside component to prevent recreation on every render
+const bundleSetupItems = [
+  { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
+  { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
+  // Bundle Upsell and Bundle Settings disabled for later release
+  // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
+  // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
+];
+
+// Static status options - moved outside component to prevent recreation on every render
+const statusOptions = [
+  { label: "Active", value: "active" },
+  { label: "Draft", value: "draft" },
+  { label: "Unlisted", value: "archived" },
+];
+
 export default function ConfigureBundleFlow() {
   const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle, widgetInstallation } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
@@ -1924,13 +1940,16 @@ export default function ConfigureBundleFlow() {
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
   // Transform StepProduct to use productId as id (not the database UUID)
-  const transformedSteps = (bundle.steps || []).map((step: any) => ({
-    ...step,
-    StepProduct: (step.StepProduct || []).map((sp: any) => ({
-      ...sp,
-      id: sp.productId,  // Use productId (Shopify GID) as id, not database UUID
+  // Memoized to prevent recalculation on every render
+  const transformedSteps = useMemo(() =>
+    (bundle.steps || []).map((step: any) => ({
+      ...step,
+      StepProduct: (step.StepProduct || []).map((sp: any) => ({
+        ...sp,
+        id: sp.productId,  // Use productId (Shopify GID) as id, not database UUID
+      }))
     }))
-  }));
+  , [bundle.steps]);
 
   // Steps management
   const stepsState = useBundleSteps({
@@ -2955,22 +2974,6 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
   }, [shop, shopify, bundle.id]);
-
-  // Bundle setup navigation items
-  const bundleSetupItems = [
-    { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
-    { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
-    // Bundle Upsell and Bundle Settings disabled for later release
-    // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
-    // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
-  ];
-
-  const statusOptions = [
-    { label: "Active", value: "active" },
-    { label: "Draft", value: "draft" },
-    { label: "Unlisted", value: "archived" },
-  ];
-
 
   return (
     <Page
