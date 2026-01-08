@@ -10,7 +10,8 @@
 
 import db from "../../db.server";
 import { isUUID, isValidShopifyProductId } from "../../utils/shopify-validators";
-import { getFirstVariantId, getBundleProductVariantId } from "../../utils/variant-lookup.server";
+import { getFirstVariantId, getBundleProductVariantId, batchGetFirstVariants } from "../../utils/variant-lookup.server";
+import { AppLogger } from "../../lib/logger";
 
 // Helper function to safely parse JSON
 export function safeJsonParse(json: any, defaultValue: any = []) {
@@ -206,6 +207,9 @@ export async function updateBundleProductMetafields(
   const componentReferences: string[] = [];
   const componentQuantities: number[] = [];
 
+  // PERFORMANCE OPTIMIZATION: Collect all product IDs first, then batch fetch variants
+  const productIdMap: Array<{ productId: string; stepMinQuantity: number; source: string }> = [];
+
   if (bundleConfiguration.steps && Array.isArray(bundleConfiguration.steps)) {
     for (const step of bundleConfiguration.steps) {
       // CRITICAL FIX: Process ONLY ONE source to prevent duplicates
@@ -214,42 +218,58 @@ export async function updateBundleProductMetafields(
       if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
         // Use StepProduct entries from database
         for (const stepProduct of step.StepProduct) {
-          if (stepProduct.productId) {
-            // Skip UUID products
-            if (isUUID(stepProduct.productId)) {
-              console.warn(`⚠️ [METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
-              continue;
-            }
-
-            // Get the actual first variant ID
-            const result = await getFirstVariantId(admin, stepProduct.productId);
-            if (result.success && result.variantId) {
-              componentReferences.push(result.variantId);
-              componentQuantities.push(step.minQuantity || 1);
-              console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${step.minQuantity || 1}`);
-            } else {
-              console.warn(`⚠️ [METAFIELD] Could not get variant: ${result.error}`);
-            }
+          if (stepProduct.productId && !isUUID(stepProduct.productId)) {
+            productIdMap.push({
+              productId: stepProduct.productId,
+              stepMinQuantity: step.minQuantity || 1,
+              source: 'StepProduct'
+            });
+          } else if (stepProduct.productId) {
+            console.warn(`⚠️ [METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
           }
         }
       } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
         // Fallback: Use products array from UI config (only if StepProduct is empty)
         for (const product of step.products) {
-          if (product.id) {
-            const result = await getFirstVariantId(admin, product.id);
-            if (result.success && result.variantId) {
-              componentReferences.push(result.variantId);
-              componentQuantities.push(step.minQuantity || 1);
-              console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${step.minQuantity || 1} (from products array)`);
-            } else {
-              console.warn(`⚠️ [METAFIELD] Could not get variant: ${result.error}`);
-            }
+          if (product.id && !isUUID(product.id)) {
+            productIdMap.push({
+              productId: product.id,
+              stepMinQuantity: step.minQuantity || 1,
+              source: 'products'
+            });
           }
         }
       } else {
         console.warn(`⚠️ [METAFIELD] Step "${step.name}" has no products defined`);
       }
     }
+  }
+
+  // Batch fetch all variants in a single query
+  if (productIdMap.length > 0) {
+    const productIds = productIdMap.map(item => item.productId);
+    console.log(`[METAFIELD] Batch fetching variants for ${productIds.length} products`);
+
+    const variantResults = await batchGetFirstVariants(admin, productIds);
+
+    // Process results in order
+    productIdMap.forEach(item => {
+      const cleanId = item.productId.replace('gid://shopify/Product/', '');
+      const result = variantResults.get(cleanId);
+
+      if (result?.success && result.variantId) {
+        componentReferences.push(result.variantId);
+        componentQuantities.push(item.stepMinQuantity);
+        console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${item.stepMinQuantity} (from ${item.source})`);
+      } else {
+        AppLogger.warn("Could not get variant for bundle product", {
+          component: "metafield-sync",
+          operation: "updateBundleProductMetafields",
+          productId: item.productId,
+          error: result?.error || 'unknown error'
+        });
+      }
+    });
   }
 
   console.log(`📊 [METAFIELD] Found ${componentReferences.length} component variants`);
@@ -649,6 +669,9 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
   const componentQuantities: number[] = [];
   const componentVariantIds = new Set<string>();
 
+  // PERFORMANCE OPTIMIZATION: Collect all product IDs first, then batch fetch variants
+  const productIdMap: Array<{ productId: string; stepMinQuantity: number; source: string }> = [];
+
   for (const step of bundleConfig.steps) {
     // CRITICAL FIX: Process ONLY ONE source to prevent duplicates
     // Priority: StepProduct (database relation) > products array (UI config)
@@ -656,39 +679,55 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
       // Use StepProduct entries from database
       for (const stepProduct of step.StepProduct) {
-        if (stepProduct.productId) {
-          // Skip UUID products
-          if (isUUID(stepProduct.productId)) {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
-            continue;
-          }
-
-          // Get the actual first variant ID
-          const result = await getFirstVariantId(admin, stepProduct.productId);
-          if (result.success && result.variantId) {
-            componentReferences.push(result.variantId);
-            componentQuantities.push(step.minQuantity || 1);
-            componentVariantIds.add(result.variantId);
-          } else {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Could not get variant: ${result.error}`);
-          }
+        if (stepProduct.productId && !isUUID(stepProduct.productId)) {
+          productIdMap.push({
+            productId: stepProduct.productId,
+            stepMinQuantity: step.minQuantity || 1,
+            source: 'StepProduct'
+          });
+        } else if (stepProduct.productId) {
+          console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
         }
       }
     } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
       // Fallback: Use products array from UI config (only if StepProduct is empty)
       for (const product of step.products) {
-        if (product.id) {
-          const result = await getFirstVariantId(admin, product.id);
-          if (result.success && result.variantId) {
-            componentReferences.push(result.variantId);
-            componentQuantities.push(step.minQuantity || 1);
-            componentVariantIds.add(result.variantId);
-          } else {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Could not get variant: ${result.error}`);
-          }
+        if (product.id && !isUUID(product.id)) {
+          productIdMap.push({
+            productId: product.id,
+            stepMinQuantity: step.minQuantity || 1,
+            source: 'products'
+          });
         }
       }
     }
+  }
+
+  // Batch fetch all variants in a single query
+  if (productIdMap.length > 0) {
+    const productIds = productIdMap.map(item => item.productId);
+    console.log(`[COMPONENT_METAFIELD] Batch fetching variants for ${productIds.length} products`);
+
+    const variantResults = await batchGetFirstVariants(admin, productIds);
+
+    // Process results in order
+    productIdMap.forEach(item => {
+      const cleanId = item.productId.replace('gid://shopify/Product/', '');
+      const result = variantResults.get(cleanId);
+
+      if (result?.success && result.variantId) {
+        componentReferences.push(result.variantId);
+        componentQuantities.push(item.stepMinQuantity);
+        componentVariantIds.add(result.variantId);
+      } else {
+        AppLogger.warn("Could not get variant for component product", {
+          component: "metafield-sync",
+          operation: "updateComponentProductMetafields",
+          productId: item.productId,
+          error: result?.error || 'unknown error'
+        });
+      }
+    });
   }
 
   console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentVariantIds.size} component variants to update`);
