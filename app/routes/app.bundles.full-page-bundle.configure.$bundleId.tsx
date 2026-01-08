@@ -3455,8 +3455,8 @@ export default function ConfigureBundleFlow() {
             </Banner>
           )}
 
-          {/* Only show banner when widget is NOT installed AND page is not yet created */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && !bundle.shopifyPageHandle && (
+          {/* Show banner whenever widget is NOT installed */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && (
             <div style={{ marginBottom: '1rem' }}>
               {widgetInstallationInitiated ? (
                 <Banner
@@ -3519,7 +3519,7 @@ export default function ConfigureBundleFlow() {
           )}
 
           {/* Add Bundle to Existing Widget */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && !dismissedBanners.has('add_bundle') && !bundle.shopifyPageHandle && (
+          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && !dismissedBanners.has('add_bundle') && (
             <div style={{ marginBottom: '1rem' }}>
               <Banner
                 tone="warning"
