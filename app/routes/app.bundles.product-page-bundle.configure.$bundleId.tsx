@@ -80,6 +80,8 @@ import { useBundlePricing } from "../hooks/useBundlePricing";
 
 // Removed - now using standardized PricingRule from app/types/pricing
 
+type BundleStatus = 'active' | 'draft' | 'archived';
+
 interface LoaderData {
   bundle: {
     id: string;
@@ -88,7 +90,7 @@ interface LoaderData {
     shopId: string;
     shopifyProductId?: string;
     bundleType: string;
-    status: string;
+    status: BundleStatus;
     templateName?: string;
     steps: Array<{
       id: string;
