@@ -13,6 +13,81 @@ import { isUUID, isValidShopifyProductId } from "../../utils/shopify-validators"
 import { getFirstVariantId, getBundleProductVariantId, batchGetFirstVariants } from "../../utils/variant-lookup.server";
 import { AppLogger } from "../../lib/logger";
 
+// Metafield size constants (Shopify limits)
+const METAFIELD_SIZE_WARNING = 50 * 1024; // 50KB - start warning at this size
+const METAFIELD_SIZE_CRITICAL = 60 * 1024; // 60KB - critical warning
+const METAFIELD_SIZE_LIMIT = 64 * 1024; // 64KB - Shopify's hard limit
+
+/**
+ * Check metafield size and log warnings/errors if approaching or exceeding limits
+ * Returns size information for monitoring
+ */
+function checkMetafieldSize(data: any, key: string, context: string): {
+  size: number;
+  withinLimit: boolean;
+  warningLevel: 'none' | 'warning' | 'critical' | 'exceeded';
+} {
+  const jsonString = JSON.stringify(data);
+  const sizeBytes = Buffer.byteLength(jsonString, 'utf-8');
+  const sizeKB = (sizeBytes / 1024).toFixed(2);
+
+  let warningLevel: 'none' | 'warning' | 'critical' | 'exceeded' = 'none';
+  let withinLimit = true;
+
+  if (sizeBytes >= METAFIELD_SIZE_LIMIT) {
+    warningLevel = 'exceeded';
+    withinLimit = false;
+    AppLogger.error(`Metafield exceeds Shopify size limit`, {
+      component: 'metafield-sync',
+      operation: context,
+      key,
+      sizeBytes,
+      sizeKB,
+      limit: METAFIELD_SIZE_LIMIT,
+      excessBytes: sizeBytes - METAFIELD_SIZE_LIMIT,
+      action: 'WILL_FAIL_TO_SAVE'
+    });
+  } else if (sizeBytes >= METAFIELD_SIZE_CRITICAL) {
+    warningLevel = 'critical';
+    AppLogger.warn(`Metafield approaching size limit (critical)`, {
+      component: 'metafield-sync',
+      operation: context,
+      key,
+      sizeBytes,
+      sizeKB,
+      limit: METAFIELD_SIZE_LIMIT,
+      remainingBytes: METAFIELD_SIZE_LIMIT - sizeBytes,
+      utilizationPercent: ((sizeBytes / METAFIELD_SIZE_LIMIT) * 100).toFixed(1)
+    });
+  } else if (sizeBytes >= METAFIELD_SIZE_WARNING) {
+    warningLevel = 'warning';
+    AppLogger.warn(`Metafield size warning`, {
+      component: 'metafield-sync',
+      operation: context,
+      key,
+      sizeBytes,
+      sizeKB,
+      utilizationPercent: ((sizeBytes / METAFIELD_SIZE_LIMIT) * 100).toFixed(1)
+    });
+  } else {
+    // Log info for all metafields for monitoring
+    AppLogger.info(`Metafield size check`, {
+      component: 'metafield-sync',
+      operation: context,
+      key,
+      sizeBytes,
+      sizeKB,
+      utilizationPercent: ((sizeBytes / METAFIELD_SIZE_LIMIT) * 100).toFixed(1)
+    });
+  }
+
+  return {
+    size: sizeBytes,
+    withinLimit,
+    warningLevel
+  };
+}
+
 // Helper function to safely parse JSON
 export function safeJsonParse(json: any, defaultValue: any = []) {
   if (typeof json === 'string') {
@@ -320,7 +395,7 @@ export async function updateBundleProductMetafields(
       position: step.position || 0,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
-      products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter(p => p.id),
+      products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter((p: { id: string }) => p.id),
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue
@@ -351,7 +426,20 @@ export async function updateBundleProductMetafields(
     }
   };
 
+  // Check metafield sizes and log warnings
+  const uiConfigSizeCheck = checkMetafieldSize(bundleUiConfig, 'bundle_ui_config', 'updateBundleProductMetafields');
+  const priceAdjustmentSizeCheck = checkMetafieldSize(priceAdjustment, 'price_adjustment', 'updateBundleProductMetafields');
+
   console.log("🎨 [METAFIELD] UI config size:", JSON.stringify(bundleUiConfig).length, "chars");
+
+  // Abort if any metafield exceeds size limit
+  if (!uiConfigSizeCheck.withinLimit) {
+    throw new Error(`bundle_ui_config metafield exceeds Shopify's 64KB limit (size: ${uiConfigSizeCheck.size} bytes). Bundle has too many products or complex configuration.`);
+  }
+
+  if (!priceAdjustmentSizeCheck.withinLimit) {
+    throw new Error(`price_adjustment metafield exceeds Shopify's 64KB limit (size: ${priceAdjustmentSizeCheck.size} bytes).`);
+  }
 
   // DEBUG: Log the stringified value we're about to send
   const stringifiedValue = JSON.stringify(bundleUiConfig);
@@ -781,6 +869,14 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
   console.log("   - Component quantities:", componentQuantities);
   console.log("   - Price adjustment:", JSON.stringify(priceAdjustment));
   console.log("🔧 [COMPONENT_METAFIELD] Full component_parents JSON:", JSON.stringify(componentParentsData, null, 2));
+
+  // Check metafield size before updating components
+  const componentParentsSizeCheck = checkMetafieldSize(componentParentsData, 'component_parents', 'updateComponentProductMetafields');
+
+  // Abort if metafield exceeds size limit
+  if (!componentParentsSizeCheck.withinLimit) {
+    throw new Error(`component_parents metafield exceeds Shopify's 64KB limit (size: ${componentParentsSizeCheck.size} bytes). Bundle has too many component products.`);
+  }
 
   // Update each component variant
   for (const variantId of componentVariantIds) {
