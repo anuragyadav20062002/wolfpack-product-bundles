@@ -9,7 +9,79 @@ import { AppLogger } from "../lib/logger";
  * Used by theme app extension when metafield data is not available
  *
  * GET /apps/product-bundles/api/bundle/:bundleId.json
+ *
+ * Supports sparse fieldsets for optimized responses:
+ * ?fields=id,name,steps.products.id,steps.products.title
+ *
+ * Examples:
+ * - Full response: /api/bundle/123.json
+ * - Minimal: /api/bundle/123.json?fields=id,name,status
+ * - Nested: /api/bundle/123.json?fields=id,name,steps.id,steps.name,steps.products.id
  */
+
+/**
+ * Filters an object to include only the specified fields
+ * Supports nested field notation (e.g., "steps.products.id")
+ */
+function filterFields(obj: any, requestedFields: string[]): any {
+  if (!requestedFields || requestedFields.length === 0) {
+    return obj;
+  }
+
+  // If obj is an array, apply filtering to each item
+  if (Array.isArray(obj)) {
+    return obj.map(item => filterFields(item, requestedFields));
+  }
+
+  const result: any = {};
+  const fieldsMap = new Map<string, string[]>();
+
+  // Group fields by their root property
+  requestedFields.forEach(field => {
+    const parts = field.split('.');
+    const root = parts[0];
+
+    if (!fieldsMap.has(root)) {
+      fieldsMap.set(root, []);
+    }
+
+    if (parts.length > 1) {
+      // Nested field (e.g., "steps.products.id" -> ["products.id"])
+      fieldsMap.get(root)!.push(parts.slice(1).join('.'));
+    } else {
+      // Top-level field (e.g., "id")
+      fieldsMap.get(root)!.push('*');
+    }
+  });
+
+  // Process each requested field
+  for (const [field, subFields] of fieldsMap.entries()) {
+    if (obj.hasOwnProperty(field)) {
+      if (subFields.includes('*')) {
+        // Include the entire field
+        result[field] = obj[field];
+      } else if (subFields.length > 0) {
+        // Recursively filter nested fields
+        result[field] = filterFields(obj[field], subFields);
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Parses the fields query parameter into an array
+ * Example: "id,name,steps.products.id" -> ["id", "name", "steps.products.id"]
+ */
+function parseFieldsParam(fieldsParam: string | null): string[] | null {
+  if (!fieldsParam) return null;
+
+  return fieldsParam
+    .split(',')
+    .map(f => f.trim())
+    .filter(f => f.length > 0);
+}
 
 // Handle OPTIONS preflight requests for CORS
 export async function OPTIONS() {
@@ -26,13 +98,17 @@ export async function OPTIONS() {
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const url = new URL(request.url);
+  const fieldsParam = url.searchParams.get('fields');
+  const requestedFields = parseFieldsParam(fieldsParam);
 
   // Log all incoming requests for debugging
   console.log('[APP_PROXY] Incoming request:', {
     url: url.href,
     pathname: url.pathname,
     params,
-    searchParams: Object.fromEntries(url.searchParams.entries())
+    searchParams: Object.fromEntries(url.searchParams.entries()),
+    sparseFieldsRequested: !!requestedFields,
+    requestedFields: requestedFields
   });
 
   try {
@@ -441,6 +517,41 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         } : null
       }))
     });
+
+    // Apply sparse fieldsets if requested
+    if (requestedFields) {
+      // Add 'bundle.' prefix to all fields for filtering the nested bundle object
+      const bundleFields = requestedFields.map(f => `bundle.${f}`);
+      const fullResponse = {
+        success: true,
+        bundle: formattedBundle,
+        timestamp: new Date().toISOString()
+      };
+      const filteredResponse = filterFields(fullResponse, ['success', 'timestamp', ...bundleFields]);
+
+      const fullSize = JSON.stringify(fullResponse).length;
+      const filteredSize = JSON.stringify(filteredResponse).length;
+      const reduction = ((1 - filteredSize / fullSize) * 100).toFixed(1);
+
+      console.log('[API_OPTIMIZATION] Sparse fieldsets applied:', {
+        requestedFields: requestedFields,
+        fullResponseSize: `${(fullSize / 1024).toFixed(2)} KB`,
+        filteredResponseSize: `${(filteredSize / 1024).toFixed(2)} KB`,
+        reduction: `${reduction}%`
+      });
+
+      return json(filteredResponse, {
+        headers: {
+          'Cache-Control': 'public, max-age=300, s-maxage=600',
+          'Vary': 'Accept-Encoding',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'X-Response-Size': filteredSize.toString(),
+          'X-Size-Reduction': `${reduction}%`
+        }
+      });
+    }
 
     return json({
       success: true,
