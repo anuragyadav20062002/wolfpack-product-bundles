@@ -5,20 +5,124 @@
  * - Bundle total price calculation
  * - Component product pricing
  * - Bundle product price updates
+ * - In-memory price caching with TTL
  */
+
+import { AppLogger } from "../../lib/logger";
 
 // Constants
 const MINIMUM_BUNDLE_PRICE = 0.01; // Shopify minimum price (1 cent)
 const DEFAULT_FALLBACK_PRICE = "10.00";
 const DEFAULT_BUNDLE_PRICE = "1.00";
+const PRICE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+// In-memory price cache
+interface CachedPrice {
+  price: string;
+  timestamp: number;
+}
+
+const priceCache = new Map<string, CachedPrice>();
+let cacheStats = {
+  hits: 0,
+  misses: 0,
+  size: 0
+};
 
 /**
- * Get product variant price from Shopify
+ * Clears expired entries from the price cache
+ */
+function cleanExpiredCache(): void {
+  const now = Date.now();
+  let removedCount = 0;
+
+  for (const [key, value] of priceCache.entries()) {
+    if (now - value.timestamp > PRICE_CACHE_TTL) {
+      priceCache.delete(key);
+      removedCount++;
+    }
+  }
+
+  if (removedCount > 0) {
+    cacheStats.size = priceCache.size;
+    console.log(`[PRICE_CACHE] Cleaned ${removedCount} expired entries. Current size: ${priceCache.size}`);
+  }
+}
+
+/**
+ * Gets cached price if available and not expired
+ */
+function getCachedPrice(productId: string): string | null {
+  const cached = priceCache.get(productId);
+  if (!cached) {
+    cacheStats.misses++;
+    return null;
+  }
+
+  const now = Date.now();
+  if (now - cached.timestamp > PRICE_CACHE_TTL) {
+    // Expired
+    priceCache.delete(productId);
+    cacheStats.size = priceCache.size;
+    cacheStats.misses++;
+    return null;
+  }
+
+  cacheStats.hits++;
+  return cached.price;
+}
+
+/**
+ * Stores price in cache with current timestamp
+ */
+function setCachedPrice(productId: string, price: string): void {
+  priceCache.set(productId, {
+    price,
+    timestamp: Date.now()
+  });
+  cacheStats.size = priceCache.size;
+}
+
+/**
+ * Gets cache statistics for monitoring
+ */
+export function getPriceCacheStats() {
+  const hitRate = cacheStats.hits + cacheStats.misses > 0
+    ? ((cacheStats.hits / (cacheStats.hits + cacheStats.misses)) * 100).toFixed(1)
+    : '0.0';
+
+  return {
+    ...cacheStats,
+    hitRate: `${hitRate}%`,
+    ttlMinutes: PRICE_CACHE_TTL / 60000
+  };
+}
+
+/**
+ * Clears the entire price cache (useful for testing or manual refresh)
+ */
+export function clearPriceCache(): void {
+  const previousSize = priceCache.size;
+  priceCache.clear();
+  cacheStats = { hits: 0, misses: 0, size: 0 };
+  console.log(`[PRICE_CACHE] Cleared cache. Removed ${previousSize} entries.`);
+}
+
+/**
+ * Get product variant price from Shopify (with caching)
  */
 export async function getProductPrice(admin: any, productId: string): Promise<string> {
   try {
     const cleanProductId = productId.replace('gid://shopify/Product/', '');
+    const cacheKey = cleanProductId;
 
+    // Check cache first
+    const cachedPrice = getCachedPrice(cacheKey);
+    if (cachedPrice !== null) {
+      return cachedPrice;
+    }
+
+    // Cache miss - fetch from Shopify
     const PRODUCT_PRICE_QUERY = `
       query getProductPrice($id: ID!) {
         product(id: $id) {
@@ -42,10 +146,14 @@ export async function getProductPrice(admin: any, productId: string): Promise<st
     const data = await response.json();
 
     if (data.data?.product?.variants?.edges?.[0]?.node?.price) {
-      return data.data.product.variants.edges[0].node.price;
+      const price = data.data.product.variants.edges[0].node.price;
+      // Store in cache
+      setCachedPrice(cacheKey, price);
+      return price;
     }
 
     // Fallback price
+    setCachedPrice(cacheKey, DEFAULT_FALLBACK_PRICE);
     return DEFAULT_FALLBACK_PRICE;
   } catch (error) {
     console.error('Error fetching product price:', error);
@@ -59,6 +167,9 @@ export async function getProductPrice(admin: any, productId: string): Promise<st
  */
 export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): Promise<number> {
   try {
+    // Clean expired cache entries periodically
+    cleanExpiredCache();
+
     if (!stepsData || stepsData.length === 0) {
       console.log("🔧 [BUNDLE_TOTAL_PRICE] No steps found, returning 0");
       return 0;
@@ -99,6 +210,19 @@ export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): P
     }
 
     console.log(`🔧 [BUNDLE_TOTAL_PRICE] Total bundle price (${stepCount} steps): ₹${totalPrice.toFixed(2)}`);
+
+    // Log cache stats for monitoring
+    const stats = getPriceCacheStats();
+    AppLogger.info("Price cache statistics", {
+      component: "pricing-calculation",
+      operation: "calculateBundleTotalPrice",
+      cacheHits: stats.hits,
+      cacheMisses: stats.misses,
+      hitRate: stats.hitRate,
+      cacheSize: stats.size,
+      ttlMinutes: stats.ttlMinutes
+    });
+
     return totalPrice;
   } catch (error) {
     console.error("🔧 [BUNDLE_TOTAL_PRICE] Error calculating total bundle price:", error);
@@ -112,6 +236,9 @@ export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): P
  */
 export async function calculateBundlePrice(admin: any, bundle: any): Promise<string> {
   try {
+    // Clean expired cache entries periodically
+    cleanExpiredCache();
+
     if (!bundle.steps || bundle.steps.length === 0) {
       console.log("🔧 [BUNDLE_PRICING] No steps found, using default price of 1.00");
       return DEFAULT_BUNDLE_PRICE;
@@ -166,6 +293,18 @@ export async function calculateBundlePrice(admin: any, bundle: any): Promise<str
 
     const finalPrice = Math.max(totalPrice, MINIMUM_BUNDLE_PRICE);
     console.log(`🔧 [BUNDLE_PRICING] Final bundle price: $${finalPrice.toFixed(2)}`);
+
+    // Log cache stats for monitoring
+    const stats = getPriceCacheStats();
+    AppLogger.info("Price cache statistics", {
+      component: "pricing-calculation",
+      operation: "calculateBundlePrice",
+      cacheHits: stats.hits,
+      cacheMisses: stats.misses,
+      hitRate: stats.hitRate,
+      cacheSize: stats.size,
+      ttlMinutes: stats.ttlMinutes
+    });
 
     return finalPrice.toFixed(2);
   } catch (error) {
