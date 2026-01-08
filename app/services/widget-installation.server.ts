@@ -633,69 +633,103 @@ export class WidgetInstallationService {
         bundleName
       });
 
-      // Step 1: Create page with metafield FIRST (regardless of widget status)
+      // Step 1: Check if page already exists (prevents duplicate creation if user quits theme editor)
       const pageHandle = `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       const pageTitle = bundleName || `Bundle ${bundleId}`;
 
-      const CREATE_PAGE = `
-        mutation createPage($page: PageCreateInput!) {
-          pageCreate(page: $page) {
-            page {
-              id
-              title
-              handle
-            }
-            userErrors {
-              field
-              message
-            }
+      // Query for existing page by handle
+      const CHECK_PAGE_QUERY = `
+        query getPageByHandle($handle: String!) {
+          pageByHandle(handle: $handle) {
+            id
+            title
+            handle
           }
         }
       `;
 
-      const pageResponse = await admin.graphql(CREATE_PAGE, {
-        variables: {
-          page: {
-            title: pageTitle,
-            handle: pageHandle,
-            body: '',
-            isPublished: true
-          }
-        }
+      const checkResponse = await admin.graphql(CHECK_PAGE_QUERY, {
+        variables: { handle: pageHandle }
       });
 
-      const pageData = await pageResponse.json();
+      const checkData = await checkResponse.json();
+      let createdPage = checkData.data?.pageByHandle;
 
-      if (pageData.data?.pageCreate?.userErrors?.length > 0) {
-        const errors = pageData.data.pageCreate.userErrors;
-        AppLogger.error('Page creation failed', {
-          component: 'WidgetInstallationService',
-          errors
-        });
-        return {
-          success: false,
-          error: `Failed to create page: ${errors[0].message}`,
-          errorType: 'page_creation_failed'
-        };
-      }
-
-      const createdPage = pageData.data?.pageCreate?.page;
-
+      // If page doesn't exist, create it
       if (!createdPage) {
-        return {
-          success: false,
-          error: 'Page creation failed - no page returned',
-          errorType: 'page_creation_failed'
-        };
+        AppLogger.info('Page does not exist, creating new page', {
+          component: 'WidgetInstallationService',
+          pageHandle,
+          bundleId
+        });
+
+        const CREATE_PAGE = `
+          mutation createPage($page: PageCreateInput!) {
+            pageCreate(page: $page) {
+              page {
+                id
+                title
+                handle
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const pageResponse = await admin.graphql(CREATE_PAGE, {
+          variables: {
+            page: {
+              title: pageTitle,
+              handle: pageHandle,
+              body: '',
+              isPublished: true
+            }
+          }
+        });
+
+        const pageData = await pageResponse.json();
+
+        if (pageData.data?.pageCreate?.userErrors?.length > 0) {
+          const errors = pageData.data.pageCreate.userErrors;
+          AppLogger.error('Page creation failed', {
+            component: 'WidgetInstallationService',
+            errors
+          });
+          return {
+            success: false,
+            error: `Failed to create page: ${errors[0].message}`,
+            errorType: 'page_creation_failed'
+          };
+        }
+
+        createdPage = pageData.data?.pageCreate?.page;
+
+        if (!createdPage) {
+          return {
+            success: false,
+            error: 'Page creation failed - no page returned',
+            errorType: 'page_creation_failed'
+          };
+        }
+
+        AppLogger.info('Page created successfully', {
+          component: 'WidgetInstallationService',
+          pageId: createdPage.id,
+          pageHandle: createdPage.handle
+        });
+      } else {
+        AppLogger.info('Page already exists, reusing existing page', {
+          component: 'WidgetInstallationService',
+          pageId: createdPage.id,
+          pageHandle: createdPage.handle,
+          bundleId
+        });
       }
 
-      AppLogger.info('Page created successfully', {
-        component: 'WidgetInstallationService',
-        pageId: createdPage.id,
-        pageHandle: createdPage.handle
-      });
-
-      // Step 2: Add bundle ID as page metafield (for widget to read)
+      // Step 2: Add/update bundle ID as page metafield (metafieldsSet is idempotent)
       const SET_METAFIELD = `
         mutation setPageMetafield($metafields: [MetafieldsSetInput!]!) {
           metafieldsSet(metafields: $metafields) {
@@ -727,15 +761,16 @@ export class WidgetInstallationService {
       const metafieldData = await metafieldResponse.json();
 
       if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
-        AppLogger.warn('Metafield creation failed (non-critical)', {
+        AppLogger.warn('Metafield update failed (non-critical)', {
           component: 'WidgetInstallationService',
           errors: metafieldData.data.metafieldsSet.userErrors
         });
       } else {
-        AppLogger.info('Bundle ID metafield added to page', {
+        AppLogger.info('Bundle ID metafield set on page', {
           component: 'WidgetInstallationService',
           pageId: createdPage.id,
-          bundleId
+          bundleId,
+          note: 'Metafield created or updated'
         });
       }
 
