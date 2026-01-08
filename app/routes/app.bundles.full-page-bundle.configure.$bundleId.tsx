@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
@@ -81,6 +81,8 @@ import { useBundlePricing } from "../hooks/useBundlePricing";
 
 // Removed - now using standardized PricingRule from app/types/pricing
 
+type BundleStatus = 'active' | 'draft' | 'archived';
+
 interface LoaderData {
   bundle: {
     id: string;
@@ -91,7 +93,7 @@ interface LoaderData {
     shopifyPageHandle?: string;  // For full-page bundles
     shopifyPageId?: string;      // For full-page bundles
     bundleType: string;
-    status: string;
+    status: BundleStatus;
     templateName?: string;
     steps: Array<{
       id: string;
@@ -2025,6 +2027,28 @@ const statusOptions = [
   { label: "Unlisted", value: "archived" },
 ];
 
+// Memoized BundleStatusSection component
+interface BundleStatusSectionProps {
+  status: BundleStatus;
+  onChange: (status: BundleStatus) => void;
+}
+
+const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => (
+  <BlockStack gap="200">
+    <Text variant="headingSm" as="h4">
+      Bundle Status
+    </Text>
+    <Select
+      label="Bundle Status"
+      options={statusOptions}
+      value={status}
+      onChange={(selected: string) => onChange(selected as BundleStatus)}
+      labelHidden
+    />
+  </BlockStack>
+));
+BundleStatusSection.displayName = 'BundleStatusSection';
+
 export default function ConfigureBundleFlow() {
   const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle, widgetInstallation } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
@@ -3677,18 +3701,10 @@ export default function ConfigureBundleFlow() {
               {/* Bundle Status Card - For full-page bundles */}
               {bundle.bundleType === 'full_page' && (
                 <Card>
-                  <BlockStack gap="300">
-                    <Text variant="headingSm" as="h3">
-                      Bundle Status
-                    </Text>
-                    <Select
-                      label="Bundle Status"
-                      options={statusOptions}
-                      value={formState.bundleStatus}
-                      onChange={(selected: string) => formState.setBundleStatus(selected as 'active' | 'draft' | 'archived')}
-                      labelHidden
-                    />
-                  </BlockStack>
+                  <BundleStatusSection
+                    status={formState.bundleStatus}
+                    onChange={formState.setBundleStatus}
+                  />
                 </Card>
               )}
 
