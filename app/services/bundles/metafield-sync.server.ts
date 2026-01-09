@@ -10,7 +10,83 @@
 
 import db from "../../db.server";
 import { isUUID, isValidShopifyProductId } from "../../utils/shopify-validators";
-import { getFirstVariantId, getBundleProductVariantId } from "../../utils/variant-lookup.server";
+import { getFirstVariantId, getBundleProductVariantId, batchGetFirstVariants } from "../../utils/variant-lookup.server";
+import { AppLogger } from "../../lib/logger";
+
+// Metafield size constants (Shopify limits)
+const METAFIELD_SIZE_WARNING = 50 * 1024; // 50KB - start warning at this size
+const METAFIELD_SIZE_CRITICAL = 60 * 1024; // 60KB - critical warning
+const METAFIELD_SIZE_LIMIT = 64 * 1024; // 64KB - Shopify's hard limit
+
+/**
+ * Check metafield size and log warnings/errors if approaching or exceeding limits
+ * Returns size information for monitoring
+ */
+function checkMetafieldSize(data: any, key: string, context: string): {
+  size: number;
+  withinLimit: boolean;
+  warningLevel: 'none' | 'warning' | 'critical' | 'exceeded';
+} {
+  const jsonString = JSON.stringify(data);
+  const sizeBytes = Buffer.byteLength(jsonString, 'utf-8');
+  const sizeKB = (sizeBytes / 1024).toFixed(2);
+
+  let warningLevel: 'none' | 'warning' | 'critical' | 'exceeded' = 'none';
+  let withinLimit = true;
+
+  if (sizeBytes >= METAFIELD_SIZE_LIMIT) {
+    warningLevel = 'exceeded';
+    withinLimit = false;
+    AppLogger.error(`Metafield exceeds Shopify size limit`, {
+      component: 'metafield-sync',
+      operation: context,
+      key,
+      sizeBytes,
+      sizeKB,
+      limit: METAFIELD_SIZE_LIMIT,
+      excessBytes: sizeBytes - METAFIELD_SIZE_LIMIT,
+      action: 'WILL_FAIL_TO_SAVE'
+    });
+  } else if (sizeBytes >= METAFIELD_SIZE_CRITICAL) {
+    warningLevel = 'critical';
+    AppLogger.warn(`Metafield approaching size limit (critical)`, {
+      component: 'metafield-sync',
+      operation: context,
+      key,
+      sizeBytes,
+      sizeKB,
+      limit: METAFIELD_SIZE_LIMIT,
+      remainingBytes: METAFIELD_SIZE_LIMIT - sizeBytes,
+      utilizationPercent: ((sizeBytes / METAFIELD_SIZE_LIMIT) * 100).toFixed(1)
+    });
+  } else if (sizeBytes >= METAFIELD_SIZE_WARNING) {
+    warningLevel = 'warning';
+    AppLogger.warn(`Metafield size warning`, {
+      component: 'metafield-sync',
+      operation: context,
+      key,
+      sizeBytes,
+      sizeKB,
+      utilizationPercent: ((sizeBytes / METAFIELD_SIZE_LIMIT) * 100).toFixed(1)
+    });
+  } else {
+    // Log info for all metafields for monitoring
+    AppLogger.info(`Metafield size check`, {
+      component: 'metafield-sync',
+      operation: context,
+      key,
+      sizeBytes,
+      sizeKB,
+      utilizationPercent: ((sizeBytes / METAFIELD_SIZE_LIMIT) * 100).toFixed(1)
+    });
+  }
+
+  return {
+    size: sizeBytes,
+    withinLimit,
+    warningLevel
+  };
+}
 
 // Helper function to safely parse JSON
 export function safeJsonParse(json: any, defaultValue: any = []) {
@@ -206,6 +282,9 @@ export async function updateBundleProductMetafields(
   const componentReferences: string[] = [];
   const componentQuantities: number[] = [];
 
+  // PERFORMANCE OPTIMIZATION: Collect all product IDs first, then batch fetch variants
+  const productIdMap: Array<{ productId: string; stepMinQuantity: number; source: string }> = [];
+
   if (bundleConfiguration.steps && Array.isArray(bundleConfiguration.steps)) {
     for (const step of bundleConfiguration.steps) {
       // CRITICAL FIX: Process ONLY ONE source to prevent duplicates
@@ -214,42 +293,58 @@ export async function updateBundleProductMetafields(
       if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
         // Use StepProduct entries from database
         for (const stepProduct of step.StepProduct) {
-          if (stepProduct.productId) {
-            // Skip UUID products
-            if (isUUID(stepProduct.productId)) {
-              console.warn(`⚠️ [METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
-              continue;
-            }
-
-            // Get the actual first variant ID
-            const result = await getFirstVariantId(admin, stepProduct.productId);
-            if (result.success && result.variantId) {
-              componentReferences.push(result.variantId);
-              componentQuantities.push(step.minQuantity || 1);
-              console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${step.minQuantity || 1}`);
-            } else {
-              console.warn(`⚠️ [METAFIELD] Could not get variant: ${result.error}`);
-            }
+          if (stepProduct.productId && !isUUID(stepProduct.productId)) {
+            productIdMap.push({
+              productId: stepProduct.productId,
+              stepMinQuantity: step.minQuantity || 1,
+              source: 'StepProduct'
+            });
+          } else if (stepProduct.productId) {
+            console.warn(`⚠️ [METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
           }
         }
       } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
         // Fallback: Use products array from UI config (only if StepProduct is empty)
         for (const product of step.products) {
-          if (product.id) {
-            const result = await getFirstVariantId(admin, product.id);
-            if (result.success && result.variantId) {
-              componentReferences.push(result.variantId);
-              componentQuantities.push(step.minQuantity || 1);
-              console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${step.minQuantity || 1} (from products array)`);
-            } else {
-              console.warn(`⚠️ [METAFIELD] Could not get variant: ${result.error}`);
-            }
+          if (product.id && !isUUID(product.id)) {
+            productIdMap.push({
+              productId: product.id,
+              stepMinQuantity: step.minQuantity || 1,
+              source: 'products'
+            });
           }
         }
       } else {
         console.warn(`⚠️ [METAFIELD] Step "${step.name}" has no products defined`);
       }
     }
+  }
+
+  // Batch fetch all variants in a single query
+  if (productIdMap.length > 0) {
+    const productIds = productIdMap.map(item => item.productId);
+    console.log(`[METAFIELD] Batch fetching variants for ${productIds.length} products`);
+
+    const variantResults = await batchGetFirstVariants(admin, productIds);
+
+    // Process results in order
+    productIdMap.forEach(item => {
+      const cleanId = item.productId.replace('gid://shopify/Product/', '');
+      const result = variantResults.get(cleanId);
+
+      if (result?.success && result.variantId) {
+        componentReferences.push(result.variantId);
+        componentQuantities.push(item.stepMinQuantity);
+        console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${item.stepMinQuantity} (from ${item.source})`);
+      } else {
+        AppLogger.warn("Could not get variant for bundle product", {
+          component: "metafield-sync",
+          operation: "updateBundleProductMetafields",
+          productId: item.productId,
+          error: result?.error || 'unknown error'
+        });
+      }
+    });
   }
 
   console.log(`📊 [METAFIELD] Found ${componentReferences.length} component variants`);
@@ -300,7 +395,7 @@ export async function updateBundleProductMetafields(
       position: step.position || 0,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
-      products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter(p => p.id),
+      products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter((p: { id: string }) => p.id),
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue
@@ -331,7 +426,20 @@ export async function updateBundleProductMetafields(
     }
   };
 
+  // Check metafield sizes and log warnings
+  const uiConfigSizeCheck = checkMetafieldSize(bundleUiConfig, 'bundle_ui_config', 'updateBundleProductMetafields');
+  const priceAdjustmentSizeCheck = checkMetafieldSize(priceAdjustment, 'price_adjustment', 'updateBundleProductMetafields');
+
   console.log("🎨 [METAFIELD] UI config size:", JSON.stringify(bundleUiConfig).length, "chars");
+
+  // Abort if any metafield exceeds size limit
+  if (!uiConfigSizeCheck.withinLimit) {
+    throw new Error(`bundle_ui_config metafield exceeds Shopify's 64KB limit (size: ${uiConfigSizeCheck.size} bytes). Bundle has too many products or complex configuration.`);
+  }
+
+  if (!priceAdjustmentSizeCheck.withinLimit) {
+    throw new Error(`price_adjustment metafield exceeds Shopify's 64KB limit (size: ${priceAdjustmentSizeCheck.size} bytes).`);
+  }
 
   // DEBUG: Log the stringified value we're about to send
   const stringifiedValue = JSON.stringify(bundleUiConfig);
@@ -649,6 +757,9 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
   const componentQuantities: number[] = [];
   const componentVariantIds = new Set<string>();
 
+  // PERFORMANCE OPTIMIZATION: Collect all product IDs first, then batch fetch variants
+  const productIdMap: Array<{ productId: string; stepMinQuantity: number; source: string }> = [];
+
   for (const step of bundleConfig.steps) {
     // CRITICAL FIX: Process ONLY ONE source to prevent duplicates
     // Priority: StepProduct (database relation) > products array (UI config)
@@ -656,39 +767,55 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
       // Use StepProduct entries from database
       for (const stepProduct of step.StepProduct) {
-        if (stepProduct.productId) {
-          // Skip UUID products
-          if (isUUID(stepProduct.productId)) {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
-            continue;
-          }
-
-          // Get the actual first variant ID
-          const result = await getFirstVariantId(admin, stepProduct.productId);
-          if (result.success && result.variantId) {
-            componentReferences.push(result.variantId);
-            componentQuantities.push(step.minQuantity || 1);
-            componentVariantIds.add(result.variantId);
-          } else {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Could not get variant: ${result.error}`);
-          }
+        if (stepProduct.productId && !isUUID(stepProduct.productId)) {
+          productIdMap.push({
+            productId: stepProduct.productId,
+            stepMinQuantity: step.minQuantity || 1,
+            source: 'StepProduct'
+          });
+        } else if (stepProduct.productId) {
+          console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
         }
       }
     } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
       // Fallback: Use products array from UI config (only if StepProduct is empty)
       for (const product of step.products) {
-        if (product.id) {
-          const result = await getFirstVariantId(admin, product.id);
-          if (result.success && result.variantId) {
-            componentReferences.push(result.variantId);
-            componentQuantities.push(step.minQuantity || 1);
-            componentVariantIds.add(result.variantId);
-          } else {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Could not get variant: ${result.error}`);
-          }
+        if (product.id && !isUUID(product.id)) {
+          productIdMap.push({
+            productId: product.id,
+            stepMinQuantity: step.minQuantity || 1,
+            source: 'products'
+          });
         }
       }
     }
+  }
+
+  // Batch fetch all variants in a single query
+  if (productIdMap.length > 0) {
+    const productIds = productIdMap.map(item => item.productId);
+    console.log(`[COMPONENT_METAFIELD] Batch fetching variants for ${productIds.length} products`);
+
+    const variantResults = await batchGetFirstVariants(admin, productIds);
+
+    // Process results in order
+    productIdMap.forEach(item => {
+      const cleanId = item.productId.replace('gid://shopify/Product/', '');
+      const result = variantResults.get(cleanId);
+
+      if (result?.success && result.variantId) {
+        componentReferences.push(result.variantId);
+        componentQuantities.push(item.stepMinQuantity);
+        componentVariantIds.add(result.variantId);
+      } else {
+        AppLogger.warn("Could not get variant for component product", {
+          component: "metafield-sync",
+          operation: "updateComponentProductMetafields",
+          productId: item.productId,
+          error: result?.error || 'unknown error'
+        });
+      }
+    });
   }
 
   console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentVariantIds.size} component variants to update`);
@@ -742,6 +869,14 @@ export async function updateComponentProductMetafields(admin: any, bundleProduct
   console.log("   - Component quantities:", componentQuantities);
   console.log("   - Price adjustment:", JSON.stringify(priceAdjustment));
   console.log("🔧 [COMPONENT_METAFIELD] Full component_parents JSON:", JSON.stringify(componentParentsData, null, 2));
+
+  // Check metafield size before updating components
+  const componentParentsSizeCheck = checkMetafieldSize(componentParentsData, 'component_parents', 'updateComponentProductMetafields');
+
+  // Abort if metafield exceeds size limit
+  if (!componentParentsSizeCheck.withinLimit) {
+    throw new Error(`component_parents metafield exceeds Shopify's 64KB limit (size: ${componentParentsSizeCheck.size} bytes). Bundle has too many component products.`);
+  }
 
   // Update each component variant
   for (const variantId of componentVariantIds) {

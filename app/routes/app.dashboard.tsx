@@ -27,7 +27,7 @@ import { SubscriptionGuard } from "../services/subscription-guard.server";
 import { BillingService } from "../services/billing.server";
 import { WidgetInstallationService } from "../services/widget-installation.server";
 import { WidgetInstallationFlagsService } from "../services/widget-installation-flags.server";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
 
@@ -35,6 +35,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
 
   // Get active and draft bundles for the shop (exclude archived/deleted)
+  // Only select fields needed for dashboard display to avoid over-fetching
   const bundles = await db.bundle.findMany({
     where: {
       shopId: session.shop,
@@ -42,13 +43,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         in: ['active', 'draft']
       }
     },
-    include: {
-      steps: {
-        include: {
-          StepProduct: true
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      bundleType: true,
+      createdAt: true,
+      pricing: {
+        select: {
+          enabled: true
         }
       },
-      pricing: true,
+      _count: {
+        select: {
+          steps: true
+        }
+      }
     },
     orderBy: { createdAt: "desc" },
   });
@@ -111,8 +121,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: 'Bundle not found' }, { status: 404 });
       }
 
-      // Create new bundle product in Shopify
-      const CREATE_BUNDLE_PRODUCT = `
+      let shopifyProductId = null;
+      const clonedBundleName = `${originalBundle.name} (Copy)`;
+
+      // Only create Shopify product for product_page bundles
+      if (originalBundle.bundleType === 'product_page') {
+        // Create new bundle product in Shopify
+        const CREATE_BUNDLE_PRODUCT = `
         mutation CreateBundleProduct($input: ProductInput!) {
           productCreate(input: $input) {
             product {
@@ -129,7 +144,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
       `;
 
-      const clonedBundleName = `${originalBundle.name} (Copy)`;
       const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
         variables: {
           input: {
@@ -161,7 +175,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: 'Failed to create bundle product in Shopify' }, { status: 500 });
       }
 
-      const shopifyProductId = productData.data?.productCreate?.product?.id;
+      shopifyProductId = productData.data?.productCreate?.product?.id;
 
       // Publish to Online Store sales channel
       try {
@@ -228,6 +242,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }, publishError);
         // Continue even if publishing fails
       }
+      } // End of product_page bundle product creation
 
       // Clone the bundle
       const clonedBundle = await db.bundle.create({
@@ -235,7 +250,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           name: clonedBundleName,
           description: originalBundle.description,
           shopId: session.shop,
-          bundleType: 'product_page',
+          bundleType: originalBundle.bundleType,
           status: 'draft',
           shopifyProductId: shopifyProductId,
           templateName: originalBundle.templateName,
@@ -263,22 +278,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             },
           });
 
-          // Clone step products if they exist
+          // Clone step products if they exist - use createMany for bulk insert
           if (step.StepProduct && step.StepProduct.length > 0) {
-            for (const stepProduct of step.StepProduct) {
-              await db.stepProduct.create({
-                data: {
-                  stepId: clonedStep.id,
-                  productId: stepProduct.productId,
-                  title: stepProduct.title,
-                  variants: stepProduct.variants || [],
-                  imageUrl: stepProduct.imageUrl,
-                  minQuantity: stepProduct.minQuantity,
-                  maxQuantity: stepProduct.maxQuantity,
-                  position: stepProduct.position,
-                },
-              });
-            }
+            await db.stepProduct.createMany({
+              data: step.StepProduct.map(stepProduct => ({
+                stepId: clonedStep.id,
+                productId: stepProduct.productId,
+                title: stepProduct.title,
+                variants: stepProduct.variants || [],
+                imageUrl: stepProduct.imageUrl,
+                minQuantity: stepProduct.minQuantity,
+                maxQuantity: stepProduct.maxQuantity,
+                position: stepProduct.position,
+              })),
+            });
           }
         }
       }
@@ -620,6 +633,52 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
+// Reusable status badge instances to prevent recreation on every render
+const STATUS_BADGES = {
+  active: <Badge tone="success">active</Badge>,
+  draft: <Badge tone="info">draft</Badge>,
+  archived: <Badge tone="critical">archived</Badge>,
+} as const;
+
+// Memoized component for bundle action buttons
+interface BundleActionsButtonsProps {
+  bundleId: string;
+  bundleType: 'product_page' | 'full_page';
+  onEdit: (bundle: any) => void;
+  onClone: (bundleId: string) => void;
+  onDelete: (bundleId: string) => void;
+  bundle: any;
+}
+
+const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDelete, bundle }: BundleActionsButtonsProps) => (
+  <ButtonGroup>
+    <Button
+      size="micro"
+      icon={EditIcon}
+      onClick={() => onEdit(bundle)}
+    >
+      Edit
+    </Button>
+    <Button
+      size="micro"
+      icon={DuplicateIcon}
+      onClick={() => onClone(bundleId)}
+    >
+      Clone
+    </Button>
+    <Button
+      size="micro"
+      tone="critical"
+      icon={DeleteIcon}
+      onClick={() => onDelete(bundleId)}
+    >
+      Delete
+    </Button>
+  </ButtonGroup>
+));
+
+BundleActionsButtons.displayName = 'BundleActionsButtons';
+
 export default function Dashboard() {
   const { bundles, subscription, widgetInstallation, apiKey } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
@@ -693,48 +752,26 @@ export default function Dashboard() {
     }
   };
 
+  // Use reusable status badges to avoid recreation on every render
   const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge tone="success">active</Badge>;
-      case "draft":
-        return <Badge tone="info">draft</Badge>;
-      case "archived":
-        return <Badge tone="critical">archived</Badge>;
-      default:
-        return <Badge tone="info">{status}</Badge>;
-    }
+    return STATUS_BADGES[status as keyof typeof STATUS_BADGES] || <Badge tone="info">{status}</Badge>;
   };
 
-  const bundleRows = bundles.map((bundle) => [
+  // Memoize bundleRows to prevent unnecessary re-renders
+  const bundleRows = useMemo(() => bundles.map((bundle) => [
     bundle.name,
     getStatusDisplay(bundle.status),
     bundle.pricing?.enabled ? "Enabled" : "Disabled",
-    <ButtonGroup key={bundle.id}>
-      <Button
-        size="micro"
-        icon={EditIcon}
-        onClick={() => handleEditBundle(bundle)}
-      >
-        Edit
-      </Button>
-      <Button
-        size="micro"
-        icon={DuplicateIcon}
-        onClick={() => handleCloneBundle(bundle.id)}
-      >
-        Clone
-      </Button>
-      <Button
-        size="micro"
-        tone="critical"
-        icon={DeleteIcon}
-        onClick={() => handleDeleteBundle(bundle.id)}
-      >
-        Delete
-      </Button>
-    </ButtonGroup>,
-  ]);
+    <BundleActionsButtons
+      key={bundle.id}
+      bundleId={bundle.id}
+      bundleType={bundle.bundleType}
+      bundle={bundle}
+      onEdit={handleEditBundle}
+      onClone={handleCloneBundle}
+      onDelete={handleDeleteBundle}
+    />,
+  ]), [bundles, handleCloneBundle]);
 
   return (
     <>

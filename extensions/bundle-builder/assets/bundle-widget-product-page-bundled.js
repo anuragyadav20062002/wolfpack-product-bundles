@@ -1,7 +1,10 @@
 (function() {
-  "use strict";
+  'use strict';
 
-  // ========== Shared Components ==========
+  // ============================================================================
+  // BUNDLE WIDGET COMPONENTS
+  // ============================================================================
+
 /**
  * Bundle Widget - Shared Components Library
  *
@@ -867,7 +870,7 @@ class ComponentGenerator {
         ` : ''}
 
         <div class="product-image">
-          <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+          <img src="${product.imageUrl || product.image?.src || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'}" alt="${product.title}" loading="lazy" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'">
         </div>
 
         <div class="product-content-wrapper">
@@ -1035,7 +1038,10 @@ class ComponentGenerator {
 }
 
 
-  // ========== Product Page Widget ==========
+  // ============================================================================
+  // PRODUCT PAGE WIDGET
+  // ============================================================================
+
 /**
  * Bundle Widget - Product Page Version
  *
@@ -1101,7 +1107,6 @@ class ComponentGenerator {
 'use strict';
 
 // Import shared components and utilities
-
 console.log('[PRODUCT_PAGE_WIDGET] Initializing...');
 
 class BundleWidgetProductPage {
@@ -1946,18 +1951,27 @@ class BundleWidgetProductPage {
 
     modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-    // Load and render products for this step
+    // OPTIMISTIC RENDERING: Show modal immediately with loading state
+    this.renderModalTabs();
+    this.renderModalProductsLoading(stepIndex);
+    this.updateModalNavigation();
+    this.updateModalFooterMessaging();
+
+    // Show modal immediately
+    modal.style.display = 'block';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Load products asynchronously and update
     this.loadStepProducts(stepIndex).then(() => {
-      this.renderModalTabs();
       this.renderModalProducts(stepIndex);
-      this.updateModalNavigation();
       this.updateModalFooterMessaging();
 
-      // Show modal
-      modal.style.display = 'block';
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
+      // PRELOAD NEXT STEP
+      this.preloadNextStep();
     }).catch(error => {
+      const productGrid = this.elements.modal.querySelector('.product-grid');
+      productGrid.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
       ToastManager.show('Failed to load products for this step');
     });
   }
@@ -2306,6 +2320,181 @@ class BundleWidgetProductPage {
         </select>
       </div>
     `;
+  }
+
+  // Render loading skeleton for modal product grid that matches EXACT dimensions
+  // Uses real CSS classes to ensure zero layout shift when products load
+  renderModalProductsLoading(stepIndex) {
+    const productGrid = this.elements.modal.querySelector('.product-grid');
+
+    productGrid.innerHTML = `
+      ${Array(6).fill(0).map(() => `
+        <div class="product-card skeleton-loading">
+          <div class="product-image">
+            <div class="skeleton-shimmer"></div>
+          </div>
+
+          <div class="product-content-wrapper">
+            <div class="product-title">
+              <div class="skeleton-shimmer skeleton-text"></div>
+            </div>
+
+            <div class="product-price-row">
+              <div class="skeleton-shimmer skeleton-price"></div>
+            </div>
+
+            <div class="product-spacer"></div>
+
+            <div class="product-quantity-wrapper">
+              <div class="product-quantity-selector skeleton-quantity">
+                <div class="skeleton-shimmer"></div>
+              </div>
+            </div>
+
+            <button class="product-add-btn skeleton-button">
+              <div class="skeleton-shimmer"></div>
+            </button>
+          </div>
+        </div>
+      `).join('')}
+      <style>
+        /* Skeleton loading state - maintains exact dimensions of real cards */
+        .product-card.skeleton-loading {
+          pointer-events: none;
+          cursor: default;
+        }
+
+        .product-card.skeleton-loading:hover {
+          transform: none;
+          box-shadow: none;
+        }
+
+        /* Shimmer effect base */
+        .skeleton-shimmer {
+          background: linear-gradient(90deg,
+            rgba(0, 0, 0, 0.04) 0%,
+            rgba(0, 0, 0, 0.08) 20%,
+            rgba(0, 0, 0, 0.04) 40%,
+            rgba(0, 0, 0, 0.04) 100%
+          );
+          background-size: 200% 100%;
+          animation: shimmer 1.8s ease-in-out infinite;
+          border-radius: inherit;
+        }
+
+        /* Product image skeleton - uses same height as real .product-image */
+        .skeleton-loading .product-image {
+          position: relative;
+          background: transparent;
+        }
+
+        .skeleton-loading .product-image .skeleton-shimmer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        /* Product title skeleton - uses real .product-title dimensions */
+        .skeleton-loading .product-title {
+          position: relative;
+          color: transparent;
+        }
+
+        .skeleton-loading .product-title .skeleton-text {
+          height: 1.4em; /* Matches line-height */
+          width: 80%;
+          margin: 0 auto;
+        }
+
+        /* Price skeleton - uses real .product-price-row dimensions */
+        .skeleton-loading .product-price-row {
+          position: relative;
+        }
+
+        .skeleton-loading .product-price-row .skeleton-price {
+          height: 1.2em;
+          width: 60%;
+          margin: 0 auto;
+        }
+
+        /* Quantity selector skeleton - uses real .product-quantity-selector dimensions */
+        .skeleton-loading .product-quantity-selector {
+          position: relative;
+          background: transparent;
+          border-color: rgba(0, 0, 0, 0.04);
+        }
+
+        .skeleton-loading .product-quantity-selector .skeleton-shimmer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        /* Button skeleton - uses real .product-add-btn dimensions */
+        .skeleton-loading .product-add-btn {
+          position: relative;
+          background: transparent;
+          color: transparent;
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          cursor: default;
+        }
+
+        .skeleton-loading .product-add-btn:hover {
+          transform: none;
+          box-shadow: none;
+        }
+
+        .skeleton-loading .product-add-btn .skeleton-shimmer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+      </style>
+    `;
+  }
+
+  // Preload next step's products in the background
+  preloadNextStep() {
+    const nextStepIndex = this.currentStepIndex + 1;
+
+    // Check if there is a next step
+    if (nextStepIndex >= this.selectedBundle.steps.length) {
+      console.log('[PRELOAD] No next step to preload');
+      return;
+    }
+
+    // Check if next step products are already loaded
+    if (this.stepProductData[nextStepIndex]?.length > 0) {
+      console.log('[PRELOAD] Next step products already cached');
+      return;
+    }
+
+    console.log(`[PRELOAD] Preloading products for step ${nextStepIndex + 1} in background`);
+
+    // Load in background (don't await)
+    this.loadStepProducts(nextStepIndex)
+      .then(() => {
+        console.log(`[PRELOAD] ✅ Successfully preloaded step ${nextStepIndex + 1}`);
+      })
+      .catch(error => {
+        console.warn(`[PRELOAD] Failed to preload step ${nextStepIndex + 1}:`, error);
+        // Don't show error to user - preloading is optimization only
+      });
   }
 
   attachProductEventHandlers(productGrid, stepIndex) {
@@ -2679,11 +2868,11 @@ class BundleWidgetProductPage {
 
     if (!strikePriceEl || !finalPriceEl) return;
 
-    if (discountInfo.qualifiesForDiscount && discountInfo.discountedPrice < totalPrice) {
+    if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
       // Show strike-through original price and discounted price
       strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
       strikePriceEl.style.display = 'inline';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.discountedPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
     } else {
       // Show only regular price
       strikePriceEl.style.display = 'none';
@@ -2899,12 +3088,15 @@ class BundleWidgetProductPage {
         const headerText = this.getFormattedHeaderText();
         this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-        // Load products for this step
-        await this.loadStepProducts(newStepIndex);
-
+        // OPTIMISTIC RENDERING: Update UI immediately with loading state
         this.renderModalTabs();
-        this.renderModalProducts(this.currentStepIndex);
+        this.renderModalProductsLoading(newStepIndex);
         this.updateModalNavigation();
+        this.updateModalFooterMessaging();
+
+        // Load products asynchronously
+        await this.loadStepProducts(newStepIndex);
+        this.renderModalProducts(this.currentStepIndex);
         this.updateModalFooterMessaging();
       } else {
         ToastManager.show('Please meet the quantity conditions for the current step before going back.');
@@ -2919,13 +3111,19 @@ class BundleWidgetProductPage {
           const headerText = this.getFormattedHeaderText();
           this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-          // Load products for this step
-          await this.loadStepProducts(newStepIndex);
-
+          // OPTIMISTIC RENDERING: Update UI immediately with loading state
           this.renderModalTabs();
-          this.renderModalProducts(this.currentStepIndex);
+          this.renderModalProductsLoading(newStepIndex);
           this.updateModalNavigation();
           this.updateModalFooterMessaging();
+
+          // Load products asynchronously
+          await this.loadStepProducts(newStepIndex);
+          this.renderModalProducts(this.currentStepIndex);
+          this.updateModalFooterMessaging();
+
+          // PRELOAD NEXT STEP
+          this.preloadNextStep();
         } else {
           ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
         }
@@ -2997,5 +3195,6 @@ function initializeProductPageWidget() {
 }
 
 console.log('[PRODUCT_PAGE_WIDGET] Module loaded');
+
 
 })();

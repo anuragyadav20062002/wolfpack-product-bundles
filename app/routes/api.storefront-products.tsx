@@ -9,6 +9,91 @@ import { authenticate } from "../shopify.server";
  * This endpoint can be called from the widget without authentication
  * Route: /api/storefront-products?ids=gid://shopify/Product/123,gid://shopify/Product/456
  */
+
+/**
+ * Fetches all variants for a product using cursor-based pagination
+ * Handles products with more than 100 variants
+ */
+async function fetchAllVariants(
+  storefrontUrl: string,
+  storefrontAccessToken: string,
+  productId: string,
+  cursor?: string
+): Promise<any[]> {
+  const VARIANT_QUERY = `
+    query getProductVariants($id: ID!, $cursor: String) {
+      product(id: $id) {
+        variants(first: 100, after: $cursor) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          edges {
+            node {
+              id
+              title
+              price {
+                amount
+                currencyCode
+              }
+              compareAtPrice {
+                amount
+                currencyCode
+              }
+              availableForSale
+              image {
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await fetch(storefrontUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': storefrontAccessToken
+    },
+    body: JSON.stringify({
+      query: VARIANT_QUERY,
+      variables: { id: productId, cursor }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch variants: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.errors) {
+    throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
+  }
+
+  const variantsData = data.data?.product?.variants;
+  if (!variantsData) {
+    return [];
+  }
+
+  const variants = variantsData.edges || [];
+  const { hasNextPage, endCursor } = variantsData.pageInfo;
+
+  // Recursively fetch next page if exists
+  if (hasNextPage && endCursor) {
+    const nextPageVariants = await fetchAllVariants(
+      storefrontUrl,
+      storefrontAccessToken,
+      productId,
+      endCursor
+    );
+    return [...variants, ...nextPageVariants];
+  }
+
+  return variants;
+}
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const productIds = url.searchParams.get("ids");
@@ -29,6 +114,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   try {
+    // First, fetch basic product info without variants to avoid over-fetching
     const STOREFRONT_QUERY = `
       query getProducts($ids: [ID!]!) {
         nodes(ids: $ids) {
@@ -38,26 +124,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
             handle
             featuredImage {
               url
-            }
-            variants(first: 100) {
-              edges {
-                node {
-                  id
-                  title
-                  price {
-                    amount
-                    currencyCode
-                  }
-                  compareAtPrice {
-                    amount
-                    currencyCode
-                  }
-                  availableForSale
-                  image {
-                    url
-                  }
-                }
-              }
             }
           }
         }
@@ -76,27 +142,29 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     // If no storefront token exists, try to create one on-demand (handles race condition)
-    if (!session.storefrontAccessToken) {
+    if (!session.storefrontAccessToken && session.accessToken) {
       console.log("[STOREFRONT_API] No storefront token found. Creating on-demand for shop:", shop);
 
       try {
-        // Get admin API to create token
-        const adminGraphql = async (query: string, options?: any) => {
-          const response = await fetch(`https://${shop}/admin/api/2025-01/graphql.json`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Shopify-Access-Token': session.accessToken
-            },
-            body: JSON.stringify({
-              query,
-              variables: options?.variables
-            })
-          });
-          return response;
-        };
+        // Create admin-like object that matches AdminApiContext type
+        const admin = {
+          graphql: async (query: string, options?: any) => {
+            const response = await fetch(`https://${shop}/admin/api/2025-01/graphql.json`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Shopify-Access-Token': session!.accessToken
+              },
+              body: JSON.stringify({
+                query,
+                variables: options?.variables
+              })
+            });
+            return response;
+          }
+        } as any; // Type assertion since we're creating a minimal admin context
 
-        const token = await createStorefrontAccessToken(adminGraphql, shop);
+        const token = await createStorefrontAccessToken(admin, shop);
         console.log("[STOREFRONT_API] ✅ Created storefront token on-demand");
 
         // Refresh session to get the new token
@@ -142,35 +210,63 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ error: "GraphQL errors", details: data.errors }, { status: 500 });
     }
 
-    // Transform to expected format
-    const products = (data.data?.nodes || []).map((product: any) => {
-      if (!product) return null;
+    const nodes = data.data?.nodes || [];
 
-      return {
-        id: product.id,
-        title: product.title,
-        handle: product.handle,
-        imageUrl: product.featuredImage?.url || '',
-        variants: (product.variants?.edges || []).map((edge: any) => ({
-          id: edge.node.id,
-          title: edge.node.title,
-          price: edge.node.price?.amount || '0',
-          compareAtPrice: edge.node.compareAtPrice?.amount || null,
-          available: edge.node.availableForSale,
-          image: edge.node.image ? { src: edge.node.image.url } : null
-        }))
-      };
-    }).filter(Boolean);
+    // Fetch variants for each product using cursor-based pagination
+    // This ensures we get ALL variants even for products with 100+ variants
+    const products = await Promise.all(
+      nodes.map(async (product: any) => {
+        if (!product) return null;
 
-    console.log(`[STOREFRONT_API] Successfully fetched ${products.length} products`);
+        try {
+          // Fetch all variants with pagination
+          const variantEdges = await fetchAllVariants(
+            storefrontUrl,
+            storefrontAccessToken,
+            product.id
+          );
+
+          return {
+            id: product.id,
+            title: product.title,
+            handle: product.handle,
+            imageUrl: product.featuredImage?.url || '',
+            variants: variantEdges.map((edge: any) => ({
+              id: edge.node.id,
+              title: edge.node.title,
+              price: edge.node.price?.amount || '0',
+              compareAtPrice: edge.node.compareAtPrice?.amount || null,
+              available: edge.node.availableForSale,
+              image: edge.node.image ? { src: edge.node.image.url } : null
+            }))
+          };
+        } catch (error: any) {
+          console.error(`[STOREFRONT_API] Failed to fetch variants for product ${product.id}:`, error.message);
+          // Return product with empty variants on error
+          return {
+            id: product.id,
+            title: product.title,
+            handle: product.handle,
+            imageUrl: product.featuredImage?.url || '',
+            variants: []
+          };
+        }
+      })
+    );
+
+    const validProducts = products.filter(Boolean);
+    const totalVariants = validProducts.reduce((sum, p) => sum + (p?.variants?.length || 0), 0);
+
+    console.log(`[STOREFRONT_API] Successfully fetched ${validProducts.length} products with ${totalVariants} total variants`);
 
     return json({
-      products,
-      count: products.length
+      products: validProducts,
+      count: validProducts.length
     }, {
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=60" // Cache for 1 minute
+        "Cache-Control": "public, max-age=300, s-maxage=600",
+        "Vary": "Accept-Encoding"
       }
     });
 

@@ -10,10 +10,12 @@
 
 import { useState, useCallback } from "react";
 
+type BundleStatus = 'active' | 'draft' | 'archived';
+
 interface BundleFormData {
   name: string;
   description: string;
-  status: string;
+  status: BundleStatus;
   templateName: string;
 }
 
@@ -26,7 +28,7 @@ export function useBundleForm({ initialData, onStateChange }: UseBundleFormProps
   // Basic form state
   const [bundleName, setBundleNameRaw] = useState(initialData.name);
   const [bundleDescription, setBundleDescriptionRaw] = useState(initialData.description);
-  const [bundleStatus, setBundleStatusRaw] = useState(initialData.status);
+  const [bundleStatus, setBundleStatusRaw] = useState<BundleStatus>(initialData.status);
   const [templateName, setTemplateNameRaw] = useState(initialData.templateName);
 
   // UI state (doesn't trigger dirty flag)
@@ -43,7 +45,7 @@ export function useBundleForm({ initialData, onStateChange }: UseBundleFormProps
     onStateChange?.();
   }, [onStateChange]);
 
-  const setBundleStatus = useCallback((value: string | ((prev: string) => string)) => {
+  const setBundleStatus = useCallback((value: BundleStatus | ((prev: BundleStatus) => BundleStatus)) => {
     setBundleStatusRaw(value);
     onStateChange?.();
   }, [onStateChange]);

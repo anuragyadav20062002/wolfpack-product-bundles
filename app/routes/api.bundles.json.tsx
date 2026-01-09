@@ -90,9 +90,8 @@ export const loader: LoaderFunction = async ({ request }) => {
       timestamp: new Date().toISOString()
     }, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+        'Cache-Control': 'public, max-age=300, s-maxage=600',
+        'Vary': 'Accept-Encoding'
       }
     });
 

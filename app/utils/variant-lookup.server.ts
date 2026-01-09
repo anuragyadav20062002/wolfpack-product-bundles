@@ -7,6 +7,123 @@
 import { isValidShopifyProductId } from "./shopify-validators";
 
 /**
+ * Batch fetch first variant IDs for multiple products
+ * Eliminates N+1 queries by fetching all variants in a single request
+ */
+export async function batchGetFirstVariants(
+  admin: any,
+  productIds: string[]
+): Promise<Map<string, { success: boolean; variantId?: string; error?: string }>> {
+  const results = new Map<string, { success: boolean; variantId?: string; error?: string }>();
+
+  if (productIds.length === 0) {
+    return results;
+  }
+
+  try {
+    // Clean and validate product IDs
+    const cleanProductIds = productIds
+      .map(id => id.replace('gid://shopify/Product/', ''))
+      .filter(id => isValidShopifyProductId(`gid://shopify/Product/${id}`));
+
+    if (cleanProductIds.length === 0) {
+      console.warn('[BATCH_VARIANT_LOOKUP] No valid product IDs to fetch');
+      productIds.forEach(id => {
+        results.set(id.replace('gid://shopify/Product/', ''), {
+          success: false,
+          error: 'Invalid product ID format'
+        });
+      });
+      return results;
+    }
+
+    // Construct GIDs
+    const productGids = cleanProductIds.map(id => `gid://shopify/Product/${id}`);
+
+    const BATCH_PRODUCTS_QUERY = `
+      query GetBatchProducts($ids: [ID!]!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    console.log(`[BATCH_VARIANT_LOOKUP] Fetching variants for ${productGids.length} products in single query`);
+
+    const response = await admin.graphql(BATCH_PRODUCTS_QUERY, {
+      variables: { ids: productGids }
+    });
+
+    const data = await response.json();
+
+    if (data.errors) {
+      console.error('[BATCH_VARIANT_LOOKUP] GraphQL errors:', data.errors);
+      cleanProductIds.forEach(id => {
+        results.set(id, {
+          success: false,
+          error: 'GraphQL query error'
+        });
+      });
+      return results;
+    }
+
+    // Process results
+    const nodes = data.data?.nodes || [];
+    nodes.forEach((product: any) => {
+      if (product && product.id) {
+        const productId = product.id.replace('gid://shopify/Product/', '');
+        const variantId = product.variants?.edges?.[0]?.node?.id;
+
+        if (variantId) {
+          results.set(productId, {
+            success: true,
+            variantId
+          });
+        } else {
+          results.set(productId, {
+            success: false,
+            error: 'No variants found'
+          });
+        }
+      }
+    });
+
+    // Mark missing products as not found
+    cleanProductIds.forEach(id => {
+      if (!results.has(id)) {
+        results.set(id, {
+          success: false,
+          error: 'Product not found (may have been deleted)'
+        });
+      }
+    });
+
+    console.log(`[BATCH_VARIANT_LOOKUP] Successfully fetched ${results.size} variant results`);
+
+    return results;
+  } catch (error) {
+    console.error('[BATCH_VARIANT_LOOKUP] Error:', error);
+    productIds.forEach(id => {
+      const cleanId = id.replace('gid://shopify/Product/', '');
+      results.set(cleanId, {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    });
+    return results;
+  }
+}
+
+/**
  * Get the first variant ID for a product
  */
 export async function getFirstVariantId(

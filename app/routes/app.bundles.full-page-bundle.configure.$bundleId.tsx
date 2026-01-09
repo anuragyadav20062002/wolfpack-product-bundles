@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
 import { AppLogger } from "../lib/logger";
@@ -81,6 +81,8 @@ import { useBundlePricing } from "../hooks/useBundlePricing";
 
 // Removed - now using standardized PricingRule from app/types/pricing
 
+type BundleStatus = 'active' | 'draft' | 'archived';
+
 interface LoaderData {
   bundle: {
     id: string;
@@ -91,7 +93,7 @@ interface LoaderData {
     shopifyPageHandle?: string;  // For full-page bundles
     shopifyPageId?: string;      // For full-page bundles
     bundleType: string;
-    status: string;
+    status: BundleStatus;
     templateName?: string;
     steps: Array<{
       id: string;
@@ -755,35 +757,57 @@ async function handleSaveBundle(admin: any, session: any, bundleId: string, form
         throw new Error("Please add products to at least one step before saving");
       }
 
+      // Ensure shopifyProductId exists for metafield updates
+      if (!updatedBundle.shopifyProductId) {
+        AppLogger.error("❌ [VALIDATION] Cannot update metafields: No Shopify product ID");
+        throw new Error("Bundle must have a Shopify product ID to update metafields");
+      }
+
+      // Extract shopifyProductId to a const for TypeScript type narrowing
+      const shopifyProductId = updatedBundle.shopifyProductId;
+
       try {
-        // STANDARD METAFIELDS: For Shopify cart transform compatibility
-        AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
-        try {
-          const { metafields: standardMetafields, errors: conversionErrors } = await convertBundleToStandardMetafields(admin, baseConfiguration);
-          if (conversionErrors.length > 0) {
-            AppLogger.warn("⚠️ [STANDARD_METAFIELD] Some products could not be processed:", conversionErrors);
-          }
-          if (Object.keys(standardMetafields).length > 0) {
-            await updateProductStandardMetafields(admin, updatedBundle.shopifyProductId, standardMetafields);
-            AppLogger.debug("✅ [STANDARD_METAFIELD] Standard metafields updated successfully");
-          } else {
-            AppLogger.debug("ℹ️ [STANDARD_METAFIELD] No standard metafields to update");
-          }
-        } catch (error) {
-          AppLogger.debug("⚠️ [STANDARD_METAFIELD] Skipping standard metafields (optional):", {}, (error as Error).message);
-        }
+        // Parallelize independent metafield updates for better performance
+        AppLogger.debug("🔧 [METAFIELDS] Updating all metafields in parallel");
 
-        // COMPONENT METAFIELDS: Update component products with component_parents metafield
-        // CRITICAL: This metafield is required for cart transform MERGE operation
-        AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
-        await updateComponentProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
-        AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
+        await Promise.all([
+          // STANDARD METAFIELDS: For Shopify cart transform compatibility
+          (async () => {
+            try {
+              AppLogger.debug("🔧 [STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
+              const { metafields: standardMetafields, errors: conversionErrors } = await convertBundleToStandardMetafields(admin, baseConfiguration);
+              if (conversionErrors.length > 0) {
+                AppLogger.warn("⚠️ [STANDARD_METAFIELD] Some products could not be processed:", conversionErrors);
+              }
+              if (Object.keys(standardMetafields).length > 0) {
+                await updateProductStandardMetafields(admin, shopifyProductId, standardMetafields);
+                AppLogger.debug("✅ [STANDARD_METAFIELD] Standard metafields updated successfully");
+              } else {
+                AppLogger.debug("ℹ️ [STANDARD_METAFIELD] No standard metafields to update");
+              }
+            } catch (error) {
+              AppLogger.debug("⚠️ [STANDARD_METAFIELD] Skipping standard metafields (optional):", {}, (error as Error).message);
+            }
+          })(),
 
-        // BUNDLE VARIANT METAFIELDS: Set bundle_ui_config and other variant-level metafields
-        // This is CRITICAL - without this, the widget cannot load on the storefront
-        AppLogger.debug("🔧 [BUNDLE_VARIANT_METAFIELD] Updating bundle variant metafields (bundle_ui_config, component_reference, etc.)");
-        await updateBundleProductMetafields(admin, updatedBundle.shopifyProductId, fullBundleConfig);
-        AppLogger.debug("✅ [BUNDLE_VARIANT_METAFIELD] Bundle variant metafields updated successfully");
+          // COMPONENT METAFIELDS: Update component products with component_parents metafield
+          // CRITICAL: This metafield is required for cart transform MERGE operation
+          (async () => {
+            AppLogger.debug("🔧 [COMPONENT_METAFIELD] Updating component products with component_parents metafield");
+            await updateComponentProductMetafields(admin, shopifyProductId, fullBundleConfig);
+            AppLogger.debug("✅ [COMPONENT_METAFIELD] Component product metafields updated successfully");
+          })(),
+
+          // BUNDLE VARIANT METAFIELDS: Set bundle_ui_config and other variant-level metafields
+          // This is CRITICAL - without this, the widget cannot load on the storefront
+          (async () => {
+            AppLogger.debug("🔧 [BUNDLE_VARIANT_METAFIELD] Updating bundle variant metafields (bundle_ui_config, component_reference, etc.)");
+            await updateBundleProductMetafields(admin, shopifyProductId, fullBundleConfig);
+            AppLogger.debug("✅ [BUNDLE_VARIANT_METAFIELD] Bundle variant metafields updated successfully");
+          })()
+        ]);
+
+        AppLogger.debug("✅ [METAFIELDS] All metafields updated successfully");
 
       } catch (error) {
         AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
@@ -1987,6 +2011,44 @@ async function handleMarkWidgetInstalled(admin: any, session: any, formData: For
   }
 }
 
+// Static navigation items - moved outside component to prevent recreation on every render
+const bundleSetupItems = [
+  { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
+  { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
+  // Bundle Upsell and Bundle Settings disabled for later release
+  // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
+  // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
+];
+
+// Static status options - moved outside component to prevent recreation on every render
+const statusOptions = [
+  { label: "Active", value: "active" },
+  { label: "Draft", value: "draft" },
+  { label: "Unlisted", value: "archived" },
+];
+
+// Memoized BundleStatusSection component
+interface BundleStatusSectionProps {
+  status: BundleStatus;
+  onChange: (status: BundleStatus) => void;
+}
+
+const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => (
+  <BlockStack gap="200">
+    <Text variant="headingSm" as="h4">
+      Bundle Status
+    </Text>
+    <Select
+      label="Bundle Status"
+      options={statusOptions}
+      value={status}
+      onChange={(selected: string) => onChange(selected as BundleStatus)}
+      labelHidden
+    />
+  </BlockStack>
+));
+BundleStatusSection.displayName = 'BundleStatusSection';
+
 export default function ConfigureBundleFlow() {
   const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle, widgetInstallation } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
@@ -2078,13 +2140,16 @@ export default function ConfigureBundleFlow() {
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
   // Transform StepProduct to use productId as id (not the database UUID)
-  const transformedSteps = (bundle.steps || []).map((step: any) => ({
-    ...step,
-    StepProduct: (step.StepProduct || []).map((sp: any) => ({
-      ...sp,
-      id: sp.productId,  // Use productId (Shopify GID) as id, not database UUID
+  // Memoized to prevent recalculation on every render
+  const transformedSteps = useMemo(() =>
+    (bundle.steps || []).map((step: any) => ({
+      ...step,
+      StepProduct: (step.StepProduct || []).map((sp: any) => ({
+        ...sp,
+        id: sp.productId,  // Use productId (Shopify GID) as id, not database UUID
+      }))
     }))
-  }));
+  , [bundle.steps]);
 
   // Steps management
   const stepsState = useBundleSteps({
@@ -3273,22 +3338,6 @@ export default function ConfigureBundleFlow() {
     }
   }, [shop, shopify, bundle.id]);
 
-  // Bundle setup navigation items
-  const bundleSetupItems = [
-    { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
-    { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
-    // Bundle Upsell and Bundle Settings disabled for later release
-    // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
-    // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
-  ];
-
-  const statusOptions = [
-    { label: "Active", value: "active" },
-    { label: "Draft", value: "draft" },
-    { label: "Unlisted", value: "archived" },
-  ];
-
-
   return (
     <Page
       title={`Configure: ${formState.bundleName}`}
@@ -3406,8 +3455,8 @@ export default function ConfigureBundleFlow() {
             </Banner>
           )}
 
-          {/* Only show banner when widget is NOT installed AND page is not yet created */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && !bundle.shopifyPageHandle && (
+          {/* Show banner whenever widget is NOT installed */}
+          {widgetInstallation && widgetInstallation.recommendedAction === 'install_widget' && !widgetInstallation?.installed && !dismissedBanners.has('install_widget') && (
             <div style={{ marginBottom: '1rem' }}>
               {widgetInstallationInitiated ? (
                 <Banner
@@ -3470,7 +3519,7 @@ export default function ConfigureBundleFlow() {
           )}
 
           {/* Add Bundle to Existing Widget */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && !dismissedBanners.has('add_bundle') && !bundle.shopifyPageHandle && (
+          {widgetInstallation && widgetInstallation.recommendedAction === 'add_bundle' && !dismissedBanners.has('add_bundle') && (
             <div style={{ marginBottom: '1rem' }}>
               <Banner
                 tone="warning"
@@ -3652,18 +3701,10 @@ export default function ConfigureBundleFlow() {
               {/* Bundle Status Card - For full-page bundles */}
               {bundle.bundleType === 'full_page' && (
                 <Card>
-                  <BlockStack gap="300">
-                    <Text variant="headingSm" as="h3">
-                      Bundle Status
-                    </Text>
-                    <Select
-                      label="Bundle Status"
-                      options={statusOptions}
-                      value={formState.bundleStatus}
-                      onChange={(selected: string) => formState.setBundleStatus(selected as 'active' | 'draft' | 'archived')}
-                      labelHidden
-                    />
-                  </BlockStack>
+                  <BundleStatusSection
+                    status={formState.bundleStatus}
+                    onChange={formState.setBundleStatus}
+                  />
                 </Card>
               )}
 

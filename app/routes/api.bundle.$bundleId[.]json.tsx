@@ -9,7 +9,79 @@ import { AppLogger } from "../lib/logger";
  * Used by theme app extension when metafield data is not available
  *
  * GET /apps/product-bundles/api/bundle/:bundleId.json
+ *
+ * Supports sparse fieldsets for optimized responses:
+ * ?fields=id,name,steps.products.id,steps.products.title
+ *
+ * Examples:
+ * - Full response: /api/bundle/123.json
+ * - Minimal: /api/bundle/123.json?fields=id,name,status
+ * - Nested: /api/bundle/123.json?fields=id,name,steps.id,steps.name,steps.products.id
  */
+
+/**
+ * Filters an object to include only the specified fields
+ * Supports nested field notation (e.g., "steps.products.id")
+ */
+function filterFields(obj: any, requestedFields: string[]): any {
+  if (!requestedFields || requestedFields.length === 0) {
+    return obj;
+  }
+
+  // If obj is an array, apply filtering to each item
+  if (Array.isArray(obj)) {
+    return obj.map(item => filterFields(item, requestedFields));
+  }
+
+  const result: any = {};
+  const fieldsMap = new Map<string, string[]>();
+
+  // Group fields by their root property
+  requestedFields.forEach(field => {
+    const parts = field.split('.');
+    const root = parts[0];
+
+    if (!fieldsMap.has(root)) {
+      fieldsMap.set(root, []);
+    }
+
+    if (parts.length > 1) {
+      // Nested field (e.g., "steps.products.id" -> ["products.id"])
+      fieldsMap.get(root)!.push(parts.slice(1).join('.'));
+    } else {
+      // Top-level field (e.g., "id")
+      fieldsMap.get(root)!.push('*');
+    }
+  });
+
+  // Process each requested field
+  for (const [field, subFields] of fieldsMap.entries()) {
+    if (obj.hasOwnProperty(field)) {
+      if (subFields.includes('*')) {
+        // Include the entire field
+        result[field] = obj[field];
+      } else if (subFields.length > 0) {
+        // Recursively filter nested fields
+        result[field] = filterFields(obj[field], subFields);
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Parses the fields query parameter into an array
+ * Example: "id,name,steps.products.id" -> ["id", "name", "steps.products.id"]
+ */
+function parseFieldsParam(fieldsParam: string | null): string[] | null {
+  if (!fieldsParam) return null;
+
+  return fieldsParam
+    .split(',')
+    .map(f => f.trim())
+    .filter(f => f.length > 0);
+}
 
 // Handle OPTIONS preflight requests for CORS
 export async function OPTIONS() {
@@ -26,6 +98,8 @@ export async function OPTIONS() {
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const url = new URL(request.url);
+  const fieldsParam = url.searchParams.get('fields');
+  const requestedFields = parseFieldsParam(fieldsParam);
 
   // ENHANCED LOGGING - Log all incoming requests for debugging
   console.log('═══════════════════════════════════════════════════════════');
@@ -36,12 +110,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     method: request.method,
     params,
     searchParams: Object.fromEntries(url.searchParams.entries()),
-    headers: {
-      'user-agent': request.headers.get('user-agent'),
-      'referer': request.headers.get('referer'),
-      'x-shopify-shop-domain': request.headers.get('x-shopify-shop-domain'),
-      'x-forwarded-for': request.headers.get('x-forwarded-for')
-    }
+    sparseFieldsRequested: !!requestedFields,
+    requestedFields: requestedFields
   });
   console.log('═══════════════════════════════════════════════════════════');
 
@@ -384,8 +454,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           enrichedProducts: enrichedStepProducts.map(esp => ({
             title: esp.title,
             hasImageUrl: !!esp.imageUrl,
-            hasPrice: !!esp.price,
-            hasVariants: !!esp.variants && esp.variants.length > 0
+            hasPrice: !!(esp as any).price,
+            hasVariants: !!(esp as any).variants && Array.isArray((esp as any).variants) && (esp as any).variants.length > 0
           }))
         });
 
@@ -393,13 +463,13 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         const productsArray = enrichedStepProducts.map(esp => ({
           id: esp.productId,
           title: esp.title,
-          handle: esp.handle,
+          handle: (esp as any).handle || '',
           images: esp.imageUrl ? [{ url: esp.imageUrl }] : [],
           featuredImage: esp.imageUrl ? { url: esp.imageUrl } : null,
-          price: Math.round(parseFloat(esp.price || "0") * 100), // Convert to cents for loader
-          compareAtPrice: esp.compareAtPrice ? Math.round(parseFloat(esp.compareAtPrice) * 100) : null,
+          price: Math.round(parseFloat((esp as any).price || "0") * 100), // Convert to cents for loader
+          compareAtPrice: (esp as any).compareAtPrice ? Math.round(parseFloat((esp as any).compareAtPrice) * 100) : null,
           available: true,
-          variants: esp.variants?.map(v => ({
+          variants: ((esp as any).variants as any[])?.map((v: any) => ({
             id: v.id, // Already numeric
             title: v.title,
             price: Math.round(parseFloat(v.price || "0") * 100),
@@ -447,11 +517,46 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         stepProductSample: s.StepProduct[0] ? {
           title: s.StepProduct[0].title,
           hasImageUrl: !!s.StepProduct[0].imageUrl,
-          hasPrice: !!s.StepProduct[0].price,
-          hasVariants: !!s.StepProduct[0].variants
+          hasPrice: !!(s.StepProduct[0] as any).price,
+          hasVariants: !!(s.StepProduct[0] as any).variants
         } : null
       }))
     });
+
+    // Apply sparse fieldsets if requested
+    if (requestedFields) {
+      // Add 'bundle.' prefix to all fields for filtering the nested bundle object
+      const bundleFields = requestedFields.map(f => `bundle.${f}`);
+      const fullResponse = {
+        success: true,
+        bundle: formattedBundle,
+        timestamp: new Date().toISOString()
+      };
+      const filteredResponse = filterFields(fullResponse, ['success', 'timestamp', ...bundleFields]);
+
+      const fullSize = JSON.stringify(fullResponse).length;
+      const filteredSize = JSON.stringify(filteredResponse).length;
+      const reduction = ((1 - filteredSize / fullSize) * 100).toFixed(1);
+
+      console.log('[API_OPTIMIZATION] Sparse fieldsets applied:', {
+        requestedFields: requestedFields,
+        fullResponseSize: `${(fullSize / 1024).toFixed(2)} KB`,
+        filteredResponseSize: `${(filteredSize / 1024).toFixed(2)} KB`,
+        reduction: `${reduction}%`
+      });
+
+      return json(filteredResponse, {
+        headers: {
+          'Cache-Control': 'public, max-age=300, s-maxage=600',
+          'Vary': 'Accept-Encoding',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'X-Response-Size': filteredSize.toString(),
+          'X-Size-Reduction': `${reduction}%`
+        }
+      });
+    }
 
     return json({
       success: true,
@@ -459,9 +564,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       timestamp: new Date().toISOString()
     }, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': 'public, max-age=300, s-maxage=600',
+        'Vary': 'Accept-Encoding',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type'
