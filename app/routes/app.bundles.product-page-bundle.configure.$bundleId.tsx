@@ -287,6 +287,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleEnsureBundleTemplates(admin, session);
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
+      case "markWidgetInstalled":
+        return await handleMarkWidgetInstalled(admin, session);
       default:
         return json({ success: false, error: "Unknown action" }, { status: 400 });
     }
@@ -1838,6 +1840,44 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
   }
 }
 
+async function handleMarkWidgetInstalled(admin: any, session: any) {
+  try {
+    AppLogger.info("✅ [WIDGET_INSTALLATION] Marking product page widget as installed", {
+      shop: session.shop
+    });
+
+    // Mark the widget as installed in shop metafields
+    const success = await WidgetInstallationFlagsService.markAsInstalled(
+      admin,
+      session.shop,
+      'product_page'
+    );
+
+    if (!success) {
+      return json({
+        success: false,
+        error: "Failed to mark widget as installed"
+      }, { status: 500 });
+    }
+
+    AppLogger.info("✅ [WIDGET_INSTALLATION] Product page widget marked as installed", {
+      shop: session.shop
+    });
+
+    return json({
+      success: true,
+      message: "Widget marked as installed successfully"
+    });
+
+  } catch (error) {
+    AppLogger.error("🔥 [WIDGET_INSTALLATION] Error marking widget as installed:", {}, error as any);
+    return json({
+      success: false,
+      error: (error as Error).message || "Failed to mark widget as installed"
+    }, { status: 500 });
+  }
+}
+
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
   { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
@@ -2722,13 +2762,33 @@ export default function ConfigureBundleFlow() {
 
   // Revalidate data when window regains focus (to check if widget was placed in theme editor)
   useEffect(() => {
-    const handleFocus = () => {
+    const handleFocus = async () => {
+      // If widget installation was initiated and widget is not yet detected as installed,
+      // automatically mark it as installed when user returns from theme editor
+      if (widgetInstallationInitiated && widgetInstallation?.recommendedAction === 'install_widget') {
+        try {
+          const formData = new FormData();
+          formData.append("intent", "markWidgetInstalled");
+          await fetch(window.location.pathname, {
+            method: "POST",
+            body: formData,
+            headers: {
+              'X-Shopify-Shop-Domain': window.shopify?.config?.shop || ''
+            }
+          });
+          AppLogger.info('Widget marked as installed after user returned from theme editor');
+        } catch (error) {
+          AppLogger.error('Failed to mark widget as installed:', {}, error as any);
+        }
+      }
+
+      // Always revalidate to get fresh data
       revalidator.revalidate();
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [revalidator]);
+  }, [revalidator, widgetInstallationInitiated, widgetInstallation?.recommendedAction]);
 
   // Step management handlers
   const cloneStep = useCallback((stepId: string) => {
@@ -3270,21 +3330,6 @@ export default function ConfigureBundleFlow() {
         </BlockStack>
 
         <Layout>
-
-          {/* Bundle Already Configured - Success */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'configured' && (
-            <Layout.Section>
-              <Banner
-                title="✅ This Bundle is Live"
-                tone="success"
-              >
-                <Text as="p" variant="bodyMd">
-                  This bundle is configured in your theme (<span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'theme'}</span>) and visible to customers.
-                  Any changes you save here will automatically update on your storefront.
-                </Text>
-              </Banner>
-            </Layout.Section>
-          )}
 
           {/* Left Sidebar */}
           <Layout.Section variant="oneThird">
