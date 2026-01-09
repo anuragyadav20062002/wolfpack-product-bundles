@@ -101,21 +101,25 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const fieldsParam = url.searchParams.get('fields');
   const requestedFields = parseFieldsParam(fieldsParam);
 
-  // Log all incoming requests for debugging
-  console.log('[APP_PROXY] Incoming request:', {
+  // ENHANCED LOGGING - Log all incoming requests for debugging
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('[APP_PROXY] 🔍 INCOMING REQUEST:', {
+    timestamp: new Date().toISOString(),
     url: url.href,
     pathname: url.pathname,
+    method: request.method,
     params,
     searchParams: Object.fromEntries(url.searchParams.entries()),
     sparseFieldsRequested: !!requestedFields,
     requestedFields: requestedFields
   });
+  console.log('═══════════════════════════════════════════════════════════');
 
   try {
     const { bundleId } = params;
 
     if (!bundleId) {
-      console.log('[APP_PROXY] No bundleId in params');
+      console.log('[APP_PROXY] ❌ No bundleId in params');
       return json({ error: "Bundle ID is required" }, {
         status: 400,
         headers: {
@@ -126,7 +130,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       });
     }
 
-    console.log('[APP_PROXY] Attempting authentication for bundleId:', bundleId);
+    console.log('[APP_PROXY] 📝 Bundle ID extracted:', bundleId);
+    console.log('[APP_PROXY] 🔐 Attempting authentication...');
 
     // Authenticate the request via app proxy
     const { session } = await authenticate.public.appProxy(request);
