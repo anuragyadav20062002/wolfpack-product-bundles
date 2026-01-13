@@ -162,7 +162,7 @@
 /* Step name label */
 .timeline-step-name {
   margin-top: 16px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-step-timeline-name-font-size, 19.788px);
   color: var(--bundle-step-timeline-name-color, #1E1E1E);
@@ -184,7 +184,7 @@
 }
 
 .bundle-title {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-full-page-title-font-size, 20px);
   color: var(--bundle-full-page-title-color, #1E1E1E);
@@ -192,7 +192,7 @@
 }
 
 .bundle-instruction {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: var(--bundle-full-page-instruction-font-size, 20px);
   color: var(--bundle-full-page-instruction-color, #1E1E1E);
   margin: 0;
@@ -242,7 +242,7 @@
 }
 
 .category-tab .tab-label {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-category-tab-label-font-size, 20px);
   color: var(--bundle-category-tab-label-color, #1E1E1E);
@@ -383,7 +383,7 @@
   position: relative;
   letter-spacing: 0.2px;
   line-height: 1.4;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 /* Price Row with Background from DCP */
@@ -407,7 +407,7 @@
   font-weight: var(--bundle-product-strike-price-font-weight, 500);
   text-decoration: line-through;
   margin-right: 8px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 .product-price {
@@ -416,7 +416,7 @@
   font-size: calc(var(--bundle-product-final-price-font-size, 20px) * 1);
   font-weight: var(--bundle-product-final-price-font-weight, 700);
   letter-spacing: 0.3px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 /* Spacer for Layout */
@@ -444,7 +444,7 @@
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   margin-bottom: 12px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 .variant-selector:hover {
@@ -495,7 +495,7 @@
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 44px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 .qty-btn:hover {
@@ -514,7 +514,7 @@
   padding: 0 16px;
   min-width: 40px;
   text-align: center;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 /* Add to Bundle Button - Enhanced Style */
@@ -537,7 +537,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 .product-add-btn:hover {
@@ -564,7 +564,7 @@
 }
 
 .footer-header h3 {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-full-page-footer-header-font-size, 20px);
   color: var(--bundle-full-page-footer-header-color, #1E1E1E);
@@ -637,7 +637,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: 12px;
   z-index: 2;
@@ -651,7 +651,7 @@
 }
 
 .footer-product-title {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--bundle-full-page-footer-product-title-color, #1E1E1E);
   line-height: 1.3;
@@ -659,7 +659,7 @@
 }
 
 .footer-product-price {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: 14px;
   color: var(--bundle-full-page-footer-product-price-color, #1E1E1E);
@@ -669,7 +669,7 @@
   background: transparent;
   border: none;
   color: var(--bundle-full-page-footer-remove-color, #BD0000);
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: 12px;
   cursor: pointer;
@@ -694,14 +694,14 @@
 }
 
 .total-label {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: var(--bundle-full-page-footer-total-label-font-size, 16px);
   color: var(--bundle-full-page-footer-total-label-color, #1E1E1E);
   font-weight: 600;
 }
 
 .total-price {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-full-page-footer-total-price-font-size, 24px);
   color: var(--bundle-full-page-footer-total-price-color, #1E1E1E);
@@ -719,7 +719,7 @@
   height: 48px;
   padding: 0 32px;
   border-radius: var(--bundle-full-page-footer-nav-btn-radius, 4px);
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-full-page-footer-nav-btn-font-size, 16px);
   border: none;
@@ -753,7 +753,7 @@
 
 /* No products selected state */
 .no-selections {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--bundle-full-page-footer-no-selections-color, #808080);
   font-style: italic;
@@ -775,7 +775,7 @@
 }
 
 .footer-promo-message p {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   color: var(--bundle-full-page-footer-product-title-color, #1E1E1E);
   margin: 0;
