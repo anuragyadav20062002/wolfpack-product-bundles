@@ -273,14 +273,28 @@
 
 .full-page-product-grid {
   display: grid;
-  grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), 1fr);
-  gap: 20px;
+  /* Fixed width approach - cards maintain size regardless of cards-per-row */
+  grid-template-columns: repeat(
+    var(--bundle-product-cards-per-row, 3),
+    var(--bundle-product-card-width, 280px)
+  );
+  gap: var(--bundle-product-card-spacing, 20px);
   margin: 20px 0;
   width: 100%;
+  justify-content: center; /* Center grid if cards don't fill width */
+  overflow-x: auto; /* Allow horizontal scroll if needed */
 }
 
 /* Product Card - Figma Professional Style */
 .product-card {
+  /* Fixed dimensions - maintain size regardless of grid layout */
+  width: var(--bundle-product-card-width, 280px);
+  height: var(--bundle-product-card-height, 420px);
+  min-width: var(--bundle-product-card-width, 280px);
+  max-width: var(--bundle-product-card-width, 280px);
+  min-height: var(--bundle-product-card-height, 420px);
+  max-height: var(--bundle-product-card-height, 420px);
+
   background: var(--bundle-product-card-bg, #ECF4EC);
   border-radius: 0;
   padding: 8px 9px;
@@ -291,8 +305,8 @@
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
-  min-height: 220px;
   position: relative;
+  overflow: hidden; /* Prevent content overflow */
 }
 
 .product-card:hover {
