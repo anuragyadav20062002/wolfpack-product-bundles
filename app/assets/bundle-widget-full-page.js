@@ -91,6 +91,14 @@ class BundleWidgetFullPage {
     this.config = {};
     this.elements = {};
 
+    // Initialize product modal (if BundleProductModal is available)
+    this.productModal = null;
+    if (window.BundleProductModal) {
+      this.productModal = new window.BundleProductModal(this);
+    } else {
+      console.warn('[WIDGET_INIT] ⚠️ BundleProductModal not loaded, modal functionality disabled');
+    }
+
     // Call async init but don't block constructor
     this.init().catch(error => {
       console.error('[WIDGET_INIT] ❌ Initialization failed:', error);
@@ -2166,8 +2174,11 @@ class BundleWidgetFullPage {
               </div>
             </div>
 
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
-              ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
+                    data-product-id="${selectionKey}"
+                    data-product-handle="${product.handle || ''}"
+                    data-step-id="${step.id}">
+              ${currentQuantity > 0 ? '✓ Added to Bundle' : 'Choose Options'}
             </button>
           </div>
         </div>
@@ -2211,13 +2222,38 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Add to Bundle button handler
+    // Choose Options / Add to Bundle button handler
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('product-add-btn')) {
         const productId = e.target.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-        // Toggle between 0 and 1
-        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+
+        // If product is already added, allow toggling it off
+        if (currentQuantity > 0) {
+          this.updateProductSelection(stepIndex, productId, 0);
+          return;
+        }
+
+        // If modal is available, open it for variant selection
+        if (this.productModal) {
+          const stepId = e.target.dataset.stepId;
+          const step = this.steps.find(s => s.id === stepId);
+          const product = this.stepProductData[stepIndex]?.find(p => {
+            const selectionKey = p.variantId || p.id;
+            return selectionKey === productId;
+          });
+
+          if (product && step) {
+            this.productModal.open(product, step);
+          } else {
+            console.warn('[WIDGET] Product or step not found for modal', { productId, stepId });
+            // Fallback: Add directly with quantity 1
+            this.updateProductSelection(stepIndex, productId, 1);
+          }
+        } else {
+          // Fallback: Modal not available, add directly
+          this.updateProductSelection(stepIndex, productId, 1);
+        }
       }
     });
 
@@ -2303,10 +2339,10 @@ class BundleWidgetFullPage {
 
       if (addBtn) {
         if (quantity > 0) {
-          addBtn.textContent = 'Added to Bundle';
+          addBtn.textContent = '✓ Added to Bundle';
           addBtn.classList.add('added');
         } else {
-          addBtn.textContent = 'Add to Bundle';
+          addBtn.textContent = 'Choose Options';
           addBtn.classList.remove('added');
         }
       }

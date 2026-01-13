@@ -220,13 +220,32 @@
   >
   {% # theme-check-enable RemoteAsset %}
 
-  <!-- Load widget JavaScript dynamically to bypass 10KB Shopify limit -->
+  <!-- Load modal component first, then widget JavaScript -->
+  <!-- Modal must load before widget to be available in widget constructor -->
   <script>
     (function() {
-      var script = document.createElement('script');
-      script.src = '{{ 'bundle-widget-full-page-bundled.js' | asset_url }}';
-      script.async = false;
-      document.head.appendChild(script);
+      // Load modal component
+      var modalScript = document.createElement('script');
+      modalScript.src = '{{ 'bundle-modal-component.js' | asset_url }}';
+      modalScript.async = false;
+      document.head.appendChild(modalScript);
+
+      // Load main widget after modal
+      modalScript.onload = function() {
+        var widgetScript = document.createElement('script');
+        widgetScript.src = '{{ 'bundle-widget-full-page-bundled.js' | asset_url }}';
+        widgetScript.async = false;
+        document.head.appendChild(widgetScript);
+      };
+
+      // Fallback: Load widget even if modal fails to load
+      modalScript.onerror = function() {
+        console.warn('[BUNDLE_WIDGET] Modal component failed to load, loading widget anyway');
+        var widgetScript = document.createElement('script');
+        widgetScript.src = '{{ 'bundle-widget-full-page-bundled.js' | asset_url }}';
+        widgetScript.async = false;
+        document.head.appendChild(widgetScript);
+      };
     })();
   </script>
 {% else %}
