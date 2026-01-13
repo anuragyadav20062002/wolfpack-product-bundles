@@ -295,23 +295,24 @@
   min-height: var(--bundle-product-card-height, 420px);
   max-height: var(--bundle-product-card-height, 420px);
 
-  background: var(--bundle-product-card-bg, #ECF4EC);
-  border-radius: 0;
-  padding: 8px 9px;
+  background: var(--bundle-product-card-bg, #FFFFFF); /* Changed to white for cleaner look */
+  border-radius: var(--bundle-product-card-border-radius, 8px); /* Added border radius */
+  padding: 12px; /* Increased padding for better spacing */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
+  border: 1px solid rgba(0, 0, 0, 0.08); /* Subtle border */
   position: relative;
   overflow: hidden; /* Prevent content overflow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Subtle base shadow */
 }
 
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); /* Enhanced shadow for better depth */
 }
 
 .product-card.selected {
@@ -342,7 +343,7 @@
 /* Product Image Container */
 .product-image {
   width: 100%;
-  height: var(--bundle-full-page-product-image-height, 200px);
+  height: var(--bundle-full-page-product-image-height, 280px); /* Increased from 200px */
   background-color: var(--bundle-full-page-product-image-bg, #FFFFFF);
   border-radius: var(--bundle-full-page-product-image-border-radius, 8px);
   margin-bottom: 12px;
@@ -425,8 +426,9 @@
   min-height: 8px;
 }
 
-/* Variant Selector */
+/* Variant Selector - HIDDEN (moved to modal) */
 .variant-selector {
+  display: none; /* Hidden: variant selection now happens in modal */
   width: 100%;
   padding: 14px 16px;
   border-radius: var(--bundle-variant-selector-border-radius, 10px);
@@ -460,12 +462,12 @@
   transform: translateY(-1px);
 }
 
-/* Quantity Selector Wrapper */
+/* Quantity Selector Wrapper - HIDDEN (moved to modal) */
 .product-quantity-wrapper {
+  display: none; /* Hidden: quantity selection now happens in modal */
   margin-bottom: 12px;
   flex-shrink: 0;
   position: relative;
-  display: flex;
   justify-content: center;
 }
 
