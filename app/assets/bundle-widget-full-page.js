@@ -224,6 +224,9 @@ class BundleWidgetFullPage {
       customTitle: dataset.customTitle || null,
       customDescription: dataset.customDescription || null,
       customInstruction: dataset.customInstruction || null,
+      // Card layout settings from theme editor
+      productCardSpacing: parseInt(dataset.productCardSpacing) || 20,
+      productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -231,6 +234,23 @@ class BundleWidgetFullPage {
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections
     };
+
+    // Apply card layout settings as CSS variables
+    this.applyCardLayoutSettings();
+  }
+
+  /**
+   * Apply card layout settings from Theme Editor as CSS variables
+   */
+  applyCardLayoutSettings() {
+    document.documentElement.style.setProperty(
+      '--bundle-product-card-spacing',
+      `${this.config.productCardSpacing}px`
+    );
+    document.documentElement.style.setProperty(
+      '--bundle-product-cards-per-row',
+      this.config.productCardsPerRow
+    );
   }
 
   async loadBundleData() {

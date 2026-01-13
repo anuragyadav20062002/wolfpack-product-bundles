@@ -74,6 +74,31 @@
       "label": "t:bundle_full_page.settings.show_category_tabs_label",
       "info": "t:bundle_full_page.settings.show_category_tabs_info",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Card Layout Settings"
+    },
+    {
+      "type": "range",
+      "id": "product_card_spacing",
+      "label": "Product card spacing",
+      "info": "Space between product cards (in pixels)",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "default": 20,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "product_cards_per_row",
+      "label": "Cards per row (desktop)",
+      "info": "Number of product cards to display in each row on desktop screens",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
     }
   ]
 }
@@ -135,6 +160,8 @@
     data-custom-title="{{ block.settings.custom_title | escape }}"
     data-custom-description="{{ block.settings.custom_description | escape }}"
     data-custom-instruction="{{ block.settings.custom_instruction | escape }}"
+    data-product-card-spacing="{{ block.settings.product_card_spacing }}"
+    data-product-cards-per-row="{{ block.settings.product_cards_per_row }}"
     class="bundle-widget-container bundle-widget-full-page"
   >
     <div class="bundle-loading">

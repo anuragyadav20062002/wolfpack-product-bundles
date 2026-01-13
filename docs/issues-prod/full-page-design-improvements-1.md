@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** January 13, 2026
-**Last Updated:** January 13, 2026 14:52
+**Last Updated:** January 13, 2026 14:54
 
 ## Overview
 Transform full-page bundle widget to match professional design from Dolphin & Dog reference screenshots.
@@ -53,6 +53,30 @@ Transform full-page bundle widget to match professional design from Dolphin & Do
 - Result: Product cards now maintain fixed dimensions regardless of cards-per-row setting
 - Next: Commit changes, then begin Phase 2 (Configurable Spacing)
 
+### January 13, 2026 14:54 - Phase 2: Configurable Spacing Started
+- ⏳ Adding Theme Editor settings for card spacing
+- Will modify:
+  - `extensions/bundle-builder/blocks/bundle-full-page.liquid` (add range slider to schema)
+  - `app/assets/bundle-widget-full-page.js` (read and apply spacing setting)
+- Goal: Allow merchants to control card spacing (10-60px) directly in Theme Editor
+- Target: Replace hardcoded 20px gap with user-configurable setting
+- Next: Update Liquid schema
+
+### January 13, 2026 15:05 - Phase 2: Configurable Spacing Completed
+- ✅ Added Theme Editor range sliders to Liquid schema:
+  - `product_card_spacing`: Range 10-60px, default 20px
+  - `product_cards_per_row`: Range 2-6, default 4
+- ✅ Added data attributes to widget container (lines 163-164)
+- ✅ Updated JavaScript to read and apply settings:
+  - Added to `parseConfiguration()` method (lines 229-230)
+  - Created `applyCardLayoutSettings()` method to set CSS variables
+  - CSS variables: `--bundle-product-card-spacing`, `--bundle-product-cards-per-row`
+- Files Modified:
+  - `extensions/bundle-builder/blocks/bundle-full-page.liquid` (lines 78-102, 163-164)
+  - `app/assets/bundle-widget-full-page.js` (lines 229-230, 238-250)
+- Result: Merchants can now control card spacing and cards-per-row directly in Theme Editor
+- Next: Commit changes, then begin Phase 3 (Font Inheritance)
+
 ## Related Documentation
 - `/Users/adityaawasthi/.claude/plans/graceful-marinating-wozniak.md` (Implementation Plan)
 - `docs/FULL_PAGE_DESIGN_GAP_ANALYSIS.md` (Gap Analysis)
@@ -63,7 +87,8 @@ Transform full-page bundle widget to match professional design from Dolphin & Do
 ## Phases Checklist
 
 - [x] Phase 0: Issue Tracking Setup ✅ Completed (Commit: 83ae752)
-- [ ] Phase 1: Fixed Card Dimensions (Current)
+- [x] Phase 1: Fixed Card Dimensions ✅ Completed (Commit: 42f8e7d)
+- [ ] Phase 2: Configurable Spacing (Current)
   - [ ] Update CSS grid to use fixed widths
   - [ ] Add database fields for card dimensions
   - [ ] Add DCP UI controls
