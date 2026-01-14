@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-01-14
-**Last Updated:** 2026-01-14 14:35
+**Last Updated:** 2026-01-14 14:40
 
 ## Overview
 
@@ -15,6 +15,14 @@ This issue addresses three enhancements to the product-page bundle widget and De
 3. **Add Phase 6 Preview Settings** - Display all 22 newly added Phase 6 settings in DCP preview (card dimensions, spacing, modal styling)
 
 ## Progress Log
+
+### 2026-01-14 14:40 - Phase 2: Remove Arrow Components Complete
+- ✅ Removed `ArrowLabel` import from `app.design-control-panel.tsx`
+- ✅ Removed `renderArrows()` function (108 lines removed)
+- ✅ Removed `{renderArrows()}` call from JSX
+- ✅ DCP preview now cleaner without arrow overlays
+- Files modified: `app/routes/app.design-control-panel.tsx`
+- Next: Phase 3 - Add Phase 6 preview settings
 
 ### 2026-01-14 14:35 - Phase 1: Drawer Background Customization Complete
 - ✅ Updated `bundle-widget.css` line 392
@@ -46,12 +54,12 @@ This issue addresses three enhancements to the product-page bundle widget and De
 - [x] Test with DCP drawer settings
 - [x] Commit changes
 
-### Phase 2: Remove Arrow Components (30 min)
-- [ ] Remove `ArrowLabel` import from `app.design-control-panel.tsx`
-- [ ] Remove `renderArrows()` function (~110 lines)
-- [ ] Remove `{renderArrows()}` JSX call
-- [ ] Test preview still works
-- [ ] Commit changes
+### Phase 2: Remove Arrow Components ✅
+- [x] Remove `ArrowLabel` import from `app.design-control-panel.tsx`
+- [x] Remove `renderArrows()` function (~110 lines)
+- [x] Remove `{renderArrows()}` JSX call
+- [x] Test preview still works
+- [x] Commit changes
 
 ### Phase 3: Add Phase 6 Preview Settings (1.5 hours)
 - [ ] Update `ProductCardPreview.tsx` interface (add 22 props)
