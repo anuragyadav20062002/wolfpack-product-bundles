@@ -27,6 +27,30 @@ interface ProductCardPreviewProps {
   buttonFontSize: number;
   buttonFontWeight: number;
   buttonAddToCartText: string;
+  // Phase 6 - Product Card Layout & Dimensions
+  productCardWidth: number;
+  productCardHeight: number;
+  productCardSpacing: number;
+  productCardBorderRadius: number;
+  productCardPadding: number;
+  productCardBorderWidth: number;
+  productCardBorderColor: string;
+  productCardShadow: string;
+  productCardHoverShadow: string;
+  // Phase 6 - Product Image
+  productImageHeight: number;
+  productImageBorderRadius: number;
+  productImageBgColor: string;
+  // Phase 6 - Product Modal Styling
+  modalBgColor: string;
+  modalBorderRadius: number;
+  modalTitleFontSize: number;
+  modalTitleFontWeight: number;
+  modalPriceFontSize: number;
+  modalVariantBorderRadius: number;
+  modalButtonBgColor: string;
+  modalButtonTextColor: string;
+  modalButtonBorderRadius: number;
 }
 
 export function ProductCardPreview(props: ProductCardPreviewProps) {
@@ -57,6 +81,28 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
     buttonFontSize,
     buttonFontWeight,
     buttonAddToCartText,
+    // Phase 6 props
+    productCardWidth,
+    productCardHeight,
+    productCardSpacing,
+    productCardBorderRadius,
+    productCardPadding,
+    productCardBorderWidth,
+    productCardBorderColor,
+    productCardShadow,
+    productCardHoverShadow,
+    productImageHeight,
+    productImageBorderRadius,
+    productImageBgColor,
+    modalBgColor,
+    modalBorderRadius,
+    modalTitleFontSize,
+    modalTitleFontWeight,
+    modalPriceFontSize,
+    modalVariantBorderRadius,
+    modalButtonBgColor,
+    modalButtonTextColor,
+    modalButtonBorderRadius,
   } = props;
 
   return (
@@ -65,11 +111,12 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
       <div
         style={{
           backgroundColor: productCardBgColor,
-          borderRadius: "12px",
-          padding: "16px",
-          width: "280px",
-          minHeight: "420px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          borderRadius: `${productCardBorderRadius}px`,
+          padding: `${productCardPadding}px`,
+          width: `${productCardWidth}px`,
+          minHeight: `${productCardHeight}px`,
+          boxShadow: productCardShadow,
+          border: `${productCardBorderWidth}px solid ${productCardBorderColor}`,
           position: "relative",
           display: "flex",
           flexDirection: "column",
@@ -101,9 +148,9 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
         <div
           style={{
             width: "100%",
-            height: "200px",
-            backgroundColor: "#FFFFFF",
-            borderRadius: "8px",
+            height: `${productImageHeight}px`,
+            backgroundColor: productImageBgColor,
+            borderRadius: `${productImageBorderRadius}px`,
             marginBottom: "12px",
             display: "flex",
             alignItems: "center",
@@ -292,6 +339,82 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
             }}
           >
             {buttonAddToCartText}
+          </button>
+        </div>
+      </div>
+
+      {/* Modal Preview Section (Phase 6) */}
+      <div style={{ marginTop: "32px", textAlign: "center" }}>
+        <Text as="p" variant="headingSm" tone="subdued" fontWeight="semibold">
+          Product Modal Preview
+        </Text>
+        <div
+          style={{
+            marginTop: "16px",
+            backgroundColor: modalBgColor,
+            borderRadius: `${modalBorderRadius}px`,
+            padding: "24px",
+            width: "320px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+            textAlign: "left",
+          }}
+        >
+          {/* Modal Title */}
+          <div
+            style={{
+              fontSize: `${modalTitleFontSize}px`,
+              fontWeight: modalTitleFontWeight,
+              color: productCardFontColor,
+              marginBottom: "12px",
+            }}
+          >
+            Product Modal
+          </div>
+
+          {/* Modal Price */}
+          <div
+            style={{
+              fontSize: `${modalPriceFontSize}px`,
+              fontWeight: 600,
+              color: productFinalPriceColor,
+              marginBottom: "16px",
+            }}
+          >
+            $14.99
+          </div>
+
+          {/* Modal Variant Selector */}
+          <select
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              borderRadius: `${modalVariantBorderRadius}px`,
+              border: "1px solid #D1D1D1",
+              backgroundColor: variantSelectorBgColor,
+              color: variantSelectorTextColor,
+              fontSize: "14px",
+              marginBottom: "16px",
+              cursor: "pointer",
+            }}
+          >
+            <option>Select Size</option>
+          </select>
+
+          {/* Add To Box Button */}
+          <button
+            style={{
+              width: "100%",
+              backgroundColor: modalButtonBgColor,
+              color: modalButtonTextColor,
+              border: "none",
+              borderRadius: `${modalButtonBorderRadius}px`,
+              padding: "12px 24px",
+              fontSize: "15px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Add To Box
           </button>
         </div>
       </div>

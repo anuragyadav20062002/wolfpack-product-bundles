@@ -2076,6 +2076,27 @@ export default function DesignControlPanel() {
         buttonFontSize={buttonFontSize}
         buttonFontWeight={buttonFontWeight}
         buttonAddToCartText={buttonAddToCartText}
+        productCardWidth={productCardWidth}
+        productCardHeight={productCardHeight}
+        productCardSpacing={productCardSpacing}
+        productCardBorderRadius={productCardBorderRadius}
+        productCardPadding={productCardPadding}
+        productCardBorderWidth={productCardBorderWidth}
+        productCardBorderColor={productCardBorderColor}
+        productCardShadow={productCardShadow}
+        productCardHoverShadow={productCardHoverShadow}
+        productImageHeight={productImageHeight}
+        productImageBorderRadius={productImageBorderRadius}
+        productImageBgColor={productImageBgColor}
+        modalBgColor={modalBgColor}
+        modalBorderRadius={modalBorderRadius}
+        modalTitleFontSize={modalTitleFontSize}
+        modalTitleFontWeight={modalTitleFontWeight}
+        modalPriceFontSize={modalPriceFontSize}
+        modalVariantBorderRadius={modalVariantBorderRadius}
+        modalButtonBgColor={modalButtonBgColor}
+        modalButtonTextColor={modalButtonTextColor}
+        modalButtonBorderRadius={modalButtonBorderRadius}
       />
     );
   };
