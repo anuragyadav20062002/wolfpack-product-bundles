@@ -29,8 +29,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     // GraphQL query to fetch products from multiple collections
     const STOREFRONT_QUERY = `
-      query getCollectionProducts($handles: [String!]!) {
-        collections(first: 10, query: $handles) {
+      query getCollectionProducts($query: String!) {
+        collections(first: 10, query: $query) {
           edges {
             node {
               id
@@ -94,7 +94,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       },
       body: JSON.stringify({
         query: STOREFRONT_QUERY,
-        variables: { handles: [queryFilter] }
+        variables: { query: queryFilter }
       })
     });
 
