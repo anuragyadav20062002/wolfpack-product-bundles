@@ -70,7 +70,6 @@
  * @author Wolfpack Team
  */
 
-'use strict';
 
 // ============================================================================
 // GLOBAL CONSTANTS AND CONFIGURATION
@@ -1039,7 +1038,7 @@ class ComponentGenerator {
 
 
   // ============================================================================
-  // PRODUCT PAGE WIDGET
+  // BUNDLE WIDGET PRODUCT PAGE
   // ============================================================================
 
 /**
@@ -1104,9 +1103,9 @@ class ComponentGenerator {
  * @author Wolfpack Team
  */
 
-'use strict';
 
 // Import shared components and utilities
+
 console.log('[PRODUCT_PAGE_WIDGET] Initializing...');
 
 class BundleWidgetProductPage {

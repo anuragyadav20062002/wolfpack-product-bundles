@@ -131,6 +131,57 @@ git push origin STAGING
 4. **Update issue file BEFORE and AFTER each commit** ✅
 5. **Every commit must reference the issue ID** ✅
 
+## 🔧 Widget Bundle Build Process
+
+### MANDATORY: Build After Widget Changes
+
+**ALWAYS run the build script after modifying ANY of these source files:**
+
+- `app/assets/bundle-widget-components.js` - Shared components
+- `app/assets/bundle-modal-component.js` - Modal component (full-page only)
+- `app/assets/bundle-widget-full-page.js` - Full-page widget
+- `app/assets/bundle-widget-product-page.js` - Product-page widget
+
+### Build Commands
+
+```bash
+# Build all widget bundles (recommended)
+npm run build:widgets
+
+# Build only full-page widget bundle
+npm run build:widgets:full-page
+
+# Build only product-page widget bundle
+npm run build:widgets:product-page
+```
+
+### Output Files
+
+The build script generates bundled files in the extension assets folder:
+
+```
+extensions/bundle-builder/assets/
+├── bundle-widget-full-page-bundled.js    # Full-page widget bundle
+└── bundle-widget-product-page-bundled.js # Product-page widget bundle
+```
+
+### Why This Matters
+
+- Source files use ES modules (`import`/`export`) for development
+- Shopify theme extensions require bundled, standalone JS files
+- The build script combines components + widget code into single IIFEs
+- **Forgetting to build = changes won't appear in the storefront!**
+
+### Workflow Integration
+
+```bash
+# After making widget JS changes:
+1. Edit source files in app/assets/
+2. Run: npm run build:widgets
+3. Test changes in storefront
+4. Commit BOTH source files AND bundled files
+```
+
 ## 📁 File Structure
 
 ```

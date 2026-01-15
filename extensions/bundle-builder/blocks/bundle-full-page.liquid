@@ -220,34 +220,8 @@
   >
   {% # theme-check-enable RemoteAsset %}
 
-  <!-- Load modal component first, then widget JavaScript -->
-  <!-- Modal must load before widget to be available in widget constructor -->
-  <script>
-    (function() {
-      // Load modal component
-      var modalScript = document.createElement('script');
-      modalScript.src = '{{ 'bundle-modal-component.js' | asset_url }}';
-      modalScript.async = false;
-      document.head.appendChild(modalScript);
-
-      // Load main widget after modal
-      modalScript.onload = function() {
-        var widgetScript = document.createElement('script');
-        widgetScript.src = '{{ 'bundle-widget-full-page-bundled.js' | asset_url }}';
-        widgetScript.async = false;
-        document.head.appendChild(widgetScript);
-      };
-
-      // Fallback: Load widget even if modal fails to load
-      modalScript.onerror = function() {
-        console.warn('[BUNDLE_WIDGET] Modal component failed to load, loading widget anyway');
-        var widgetScript = document.createElement('script');
-        widgetScript.src = '{{ 'bundle-widget-full-page-bundled.js' | asset_url }}';
-        widgetScript.async = false;
-        document.head.appendChild(widgetScript);
-      };
-    })();
-  </script>
+  <!-- Load widget JavaScript (modal component is bundled inside) -->
+  <script src="{{ 'bundle-widget-full-page-bundled.js' | asset_url }}" defer></script>
 {% else %}
   <div class="bundle-widget-placeholder" style="padding: 40px; text-align: center; background: #f0f3eb; border-radius: 8px;">
     <h3 style="margin: 0 0 10px;">Full-Page Bundle Widget</h3>

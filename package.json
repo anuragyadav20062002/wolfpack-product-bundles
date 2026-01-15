@@ -3,6 +3,9 @@
   "private": true,
   "scripts": {
     "build": "remix vite:build",
+    "build:widgets": "node scripts/build-widget-bundles.js all",
+    "build:widgets:full-page": "node scripts/build-widget-bundles.js full-page",
+    "build:widgets:product-page": "node scripts/build-widget-bundles.js product-page",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",

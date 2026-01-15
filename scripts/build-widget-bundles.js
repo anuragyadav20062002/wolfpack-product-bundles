@@ -1,0 +1,204 @@
+#!/usr/bin/env node
+
+/**
+ * Build script for bundling widget JavaScript files
+ *
+ * This script combines the shared components with widget-specific code
+ * into single bundled files for the Shopify theme extension.
+ *
+ * Usage: node scripts/build-widget-bundles.js [full-page|product-page|all]
+ *
+ * Output:
+ * - extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js
+ * - extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js
+ */
+
+import { readFileSync, writeFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const ROOT_DIR = join(__dirname, '..');
+
+// Source files
+const SOURCES = {
+  components: join(ROOT_DIR, 'app/assets/bundle-widget-components.js'),
+  modal: join(ROOT_DIR, 'app/assets/bundle-modal-component.js'),
+  fullPage: join(ROOT_DIR, 'app/assets/bundle-widget-full-page.js'),
+  productPage: join(ROOT_DIR, 'app/assets/bundle-widget-product-page.js'),
+};
+
+// Output files
+const OUTPUTS = {
+  fullPage: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js'),
+  productPage: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js'),
+};
+
+/**
+ * Read a file and return its contents
+ */
+function readFile(path) {
+  try {
+    return readFileSync(path, 'utf-8');
+  } catch (error) {
+    console.error(`Error reading file: ${path}`);
+    console.error(error.message);
+    process.exit(1);
+  }
+}
+
+/**
+ * Remove ES module import/export statements from code
+ */
+function removeModuleStatements(code) {
+  // Remove import statements
+  code = code.replace(/^import\s+\{[\s\S]*?\}\s+from\s+['"][^'"]+['"];?\s*$/gm, '');
+  code = code.replace(/^import\s+.*\s+from\s+['"][^'"]+['"];?\s*$/gm, '');
+
+  // Remove export statements
+  code = code.replace(/^export\s+\{[\s\S]*?\};?\s*$/gm, '');
+  code = code.replace(/^export\s+(default\s+)?/gm, '');
+
+  // Remove window exports (we'll handle these differently in the bundle)
+  code = code.replace(/^window\.\w+\s*=\s*\w+;?\s*$/gm, '');
+
+  return code;
+}
+
+/**
+ * Remove 'use strict' statements (will be added once at the top of bundle)
+ */
+function removeUseStrict(code) {
+  return code.replace(/^['"]use strict['"];?\s*$/gm, '');
+}
+
+/**
+ * Build the full-page widget bundle
+ */
+function buildFullPageBundle() {
+  console.log('Building full-page widget bundle...');
+
+  // Read source files
+  const componentsCode = readFile(SOURCES.components);
+  const modalCode = readFile(SOURCES.modal);
+  const widgetCode = readFile(SOURCES.fullPage);
+
+  // Process the code
+  const processedComponents = removeUseStrict(removeModuleStatements(componentsCode));
+  const processedModal = removeUseStrict(removeModuleStatements(modalCode));
+  const processedWidget = removeUseStrict(removeModuleStatements(widgetCode));
+
+  // Combine into a single IIFE
+  const bundledCode = `(function() {
+  'use strict';
+
+  // ============================================================================
+  // BUNDLE WIDGET COMPONENTS
+  // ============================================================================
+
+${processedComponents}
+
+  // ============================================================================
+  // BUNDLE PRODUCT MODAL COMPONENT
+  // ============================================================================
+
+${processedModal}
+
+  // ============================================================================
+  // BUNDLE WIDGET FULL PAGE
+  // ============================================================================
+
+${processedWidget}
+
+})();
+`;
+
+  // Write output
+  writeFileSync(OUTPUTS.fullPage, bundledCode);
+  console.log(`  -> ${OUTPUTS.fullPage}`);
+  console.log(`  -> ${(bundledCode.length / 1024).toFixed(1)} KB`);
+}
+
+/**
+ * Build the product-page widget bundle
+ */
+function buildProductPageBundle() {
+  console.log('Building product-page widget bundle...');
+
+  // Read source files
+  const componentsCode = readFile(SOURCES.components);
+  const widgetCode = readFile(SOURCES.productPage);
+
+  // Process the code
+  const processedComponents = removeUseStrict(removeModuleStatements(componentsCode));
+  const processedWidget = removeUseStrict(removeModuleStatements(widgetCode));
+
+  // Combine into a single IIFE
+  const bundledCode = `(function() {
+  'use strict';
+
+  // ============================================================================
+  // BUNDLE WIDGET COMPONENTS
+  // ============================================================================
+
+${processedComponents}
+
+  // ============================================================================
+  // BUNDLE WIDGET PRODUCT PAGE
+  // ============================================================================
+
+${processedWidget}
+
+})();
+`;
+
+  // Write output
+  writeFileSync(OUTPUTS.productPage, bundledCode);
+  console.log(`  -> ${OUTPUTS.productPage}`);
+  console.log(`  -> ${(bundledCode.length / 1024).toFixed(1)} KB`);
+}
+
+/**
+ * Main entry point
+ */
+function main() {
+  const args = process.argv.slice(2);
+  const target = args[0] || 'all';
+
+  console.log('');
+  console.log('='.repeat(60));
+  console.log('  Bundle Widget Build Script');
+  console.log('='.repeat(60));
+  console.log('');
+
+  const startTime = Date.now();
+
+  switch (target) {
+    case 'full-page':
+      buildFullPageBundle();
+      break;
+    case 'product-page':
+      buildProductPageBundle();
+      break;
+    case 'all':
+      buildFullPageBundle();
+      console.log('');
+      buildProductPageBundle();
+      break;
+    default:
+      console.error(`Unknown target: ${target}`);
+      console.error('Usage: node scripts/build-widget-bundles.js [full-page|product-page|all]');
+      process.exit(1);
+  }
+
+  const elapsed = Date.now() - startTime;
+
+  console.log('');
+  console.log('-'.repeat(60));
+  console.log(`  Build completed in ${elapsed}ms`);
+  console.log('='.repeat(60));
+  console.log('');
+}
+
+main();
