@@ -1493,6 +1493,9 @@ class BundleProductModal {
 // Export for use in main widget
 
 
+  // Export modal to window for widget access
+  window.BundleProductModal = BundleProductModal;
+
   // ============================================================================
   // BUNDLE WIDGET FULL PAGE
   // ============================================================================
