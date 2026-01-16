@@ -235,6 +235,9 @@ class BundleWidgetFullPage {
       // Card layout settings from theme editor
       productCardSpacing: parseInt(dataset.productCardSpacing) || 20,
       productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
+      // Quantity selector visibility settings (default: show on both)
+      showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
+      showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -1008,46 +1011,27 @@ class BundleWidgetFullPage {
     return grid;
   }
 
-  // Create loading skeleton for product grid that matches actual product card design EXACTLY
-  // Uses real CSS classes to ensure zero layout shift when products load
+  // Create loading skeleton for product grid - solid pulsating cards
+  // No internal button/quantity skeletons - just clean solid cards
   createProductGridLoadingState() {
     return `
       <div class="full-page-product-grid">
         ${Array(6).fill(0).map(() => `
           <div class="product-card skeleton-loading">
-            <div class="product-image">
-              <div class="skeleton-shimmer"></div>
-            </div>
-
-            <div class="product-content-wrapper">
-              <div class="product-title">
-                <div class="skeleton-shimmer skeleton-text"></div>
-              </div>
-
-              <div class="product-price-row">
-                <div class="skeleton-shimmer skeleton-price"></div>
-              </div>
-
-              <div class="product-spacer"></div>
-
-              <div class="product-quantity-wrapper">
-                <div class="product-quantity-selector skeleton-quantity">
-                  <div class="skeleton-shimmer"></div>
-                </div>
-              </div>
-
-              <button class="product-add-btn skeleton-button">
-                <div class="skeleton-shimmer"></div>
-              </button>
-            </div>
+            <div class="skeleton-card-content"></div>
           </div>
         `).join('')}
       </div>
       <style>
-        /* Skeleton loading state - maintains exact dimensions of real cards */
+        /* Skeleton loading state - solid pulsating cards */
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
+          position: relative;
+          overflow: hidden;
+          min-height: 320px;
+          background: #f5f5f5;
+          border-radius: 12px;
         }
 
         .product-card.skeleton-loading:hover {
@@ -1055,99 +1039,31 @@ class BundleWidgetFullPage {
           box-shadow: none;
         }
 
-        /* Shimmer effect base */
-        .skeleton-shimmer {
-          background: linear-gradient(90deg,
-            rgba(0, 0, 0, 0.04) 0%,
-            rgba(0, 0, 0, 0.08) 20%,
-            rgba(0, 0, 0, 0.04) 40%,
-            rgba(0, 0, 0, 0.04) 100%
+        /* Full card pulsating effect */
+        .skeleton-card-content {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            110deg,
+            #f0f0f0 0%,
+            #f0f0f0 40%,
+            #e0e0e0 50%,
+            #f0f0f0 60%,
+            #f0f0f0 100%
           );
           background-size: 200% 100%;
-          animation: shimmer 1.8s ease-in-out infinite;
-          border-radius: inherit;
+          animation: skeleton-pulse 1.5s ease-in-out infinite;
         }
 
-        /* Product image skeleton - uses same height as real .product-image */
-        .skeleton-loading .product-image {
-          position: relative;
-          background: transparent;
-        }
-
-        .skeleton-loading .product-image .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Product title skeleton - uses real .product-title dimensions */
-        .skeleton-loading .product-title {
-          position: relative;
-          color: transparent;
-        }
-
-        .skeleton-loading .product-title .skeleton-text {
-          height: 1.4em; /* Matches line-height */
-          width: 80%;
-          margin: 0 auto;
-        }
-
-        /* Price skeleton - uses real .product-price-row dimensions */
-        .skeleton-loading .product-price-row {
-          position: relative;
-        }
-
-        .skeleton-loading .product-price-row .skeleton-price {
-          height: 1.2em;
-          width: 60%;
-          margin: 0 auto;
-        }
-
-        /* Quantity selector skeleton - uses real .product-quantity-selector dimensions */
-        .skeleton-loading .product-quantity-selector {
-          position: relative;
-          background: transparent;
-          border-color: rgba(0, 0, 0, 0.04);
-        }
-
-        .skeleton-loading .product-quantity-selector .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Button skeleton - uses real .product-add-btn dimensions */
-        .skeleton-loading .product-add-btn {
-          position: relative;
-          background: transparent;
-          color: transparent;
-          border: 1px solid rgba(0, 0, 0, 0.04);
-          cursor: default;
-        }
-
-        .skeleton-loading .product-add-btn:hover {
-          transform: none;
-          box-shadow: none;
-        }
-
-        .skeleton-loading .product-add-btn .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        @keyframes shimmer {
+        @keyframes skeleton-pulse {
           0% {
-            background-position: -200% 0;
+            background-position: 200% 0;
           }
           100% {
-            background-position: 200% 0;
+            background-position: -200% 0;
           }
         }
       </style>
@@ -1218,7 +1134,8 @@ class BundleWidgetFullPage {
     const htmlString = ComponentGenerator.renderProductCard(
       product,
       currentQuantity,
-      currencyInfo
+      currencyInfo,
+      { showQuantitySelector: this.config.showQuantitySelectorOnCard }
     );
 
     // Convert HTML string to DOM element
@@ -1242,14 +1159,16 @@ class BundleWidgetFullPage {
     const addBtn = cardElement.querySelector('.product-add-btn');
 
     if (increaseBtn) {
-      increaseBtn.addEventListener('click', () => {
+      increaseBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         this.updateProductSelection(stepIndex, productId, currentQty + 1);
       });
     }
 
     if (decreaseBtn) {
-      decreaseBtn.addEventListener('click', () => {
+      decreaseBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         if (currentQty > 0) {
           this.updateProductSelection(stepIndex, productId, currentQty - 1);
@@ -1258,10 +1177,20 @@ class BundleWidgetFullPage {
     }
 
     if (addBtn) {
-      addBtn.addEventListener('click', () => {
+      addBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         if (currentQty === 0) {
-          this.updateProductSelection(stepIndex, productId, 1);
+          // Open modal for product selection if available
+          if (this.productModal) {
+            const step = this.steps[stepIndex];
+            this.productModal.open(product, step);
+          } else {
+            this.updateProductSelection(stepIndex, productId, 1);
+          }
+        } else {
+          // Toggle off if already added
+          this.updateProductSelection(stepIndex, productId, 0);
         }
       });
     }
@@ -1270,6 +1199,7 @@ class BundleWidgetFullPage {
     const variantSelector = cardElement.querySelector('.variant-selector');
     if (variantSelector) {
       variantSelector.addEventListener('change', (e) => {
+        e.stopPropagation(); // Prevent card click from triggering
         const newVariantId = e.target.value;
         // Update product object with new variant
         product.variantId = newVariantId;
@@ -1277,6 +1207,28 @@ class BundleWidgetFullPage {
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         this.updateProductSelection(stepIndex, newVariantId, currentQty);
       });
+    }
+
+    // Product card click - open modal (clicking on image or title area)
+    const productImage = cardElement.querySelector('.product-image');
+    const productTitle = cardElement.querySelector('.product-title');
+
+    const openModalHandler = (e) => {
+      e.stopPropagation();
+      if (this.productModal) {
+        const step = this.steps[stepIndex];
+        this.productModal.open(product, step);
+      }
+    };
+
+    if (productImage) {
+      productImage.style.cursor = 'pointer';
+      productImage.addEventListener('click', openModalHandler);
+    }
+
+    if (productTitle) {
+      productTitle.style.cursor = 'pointer';
+      productTitle.addEventListener('click', openModalHandler);
     }
   }
 
@@ -2255,9 +2207,21 @@ class BundleWidgetFullPage {
     const newProductGrid = productGrid.cloneNode(true);
     productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
+    // Get step data for modal
+    const step = this.steps[stepIndex];
+
+    // Helper to find product by ID
+    const findProduct = (productId) => {
+      return this.stepProductData[stepIndex]?.find(p => {
+        const selectionKey = p.variantId || p.id;
+        return selectionKey === productId;
+      });
+    };
+
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('qty-btn')) {
+        e.stopPropagation();
         const productId = e.target.dataset.productId;
         const isIncrease = e.target.classList.contains('qty-increase');
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
@@ -2270,6 +2234,7 @@ class BundleWidgetFullPage {
     // Choose Options / Add to Bundle button handler
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('product-add-btn')) {
+        e.stopPropagation();
         const productId = e.target.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
 
@@ -2281,17 +2246,12 @@ class BundleWidgetFullPage {
 
         // If modal is available, open it for variant selection
         if (this.productModal) {
-          const stepId = e.target.dataset.stepId;
-          const step = this.steps.find(s => s.id === stepId);
-          const product = this.stepProductData[stepIndex]?.find(p => {
-            const selectionKey = p.variantId || p.id;
-            return selectionKey === productId;
-          });
+          const product = findProduct(productId);
 
           if (product && step) {
             this.productModal.open(product, step);
           } else {
-            console.warn('[WIDGET] Product or step not found for modal', { productId, stepId });
+            console.warn('[WIDGET] Product or step not found for modal', { productId, stepIndex });
             // Fallback: Add directly with quantity 1
             this.updateProductSelection(stepIndex, productId, 1);
           }
@@ -2302,9 +2262,28 @@ class BundleWidgetFullPage {
       }
     });
 
+    // Product image/title click - open modal
+    newProductGrid.addEventListener('click', (e) => {
+      const productImage = e.target.closest('.product-image');
+      const productTitle = e.target.closest('.product-title');
+
+      if (productImage || productTitle) {
+        const productCard = e.target.closest('.product-card');
+        if (productCard && this.productModal) {
+          const productId = productCard.dataset.productId;
+          const product = findProduct(productId);
+
+          if (product && step) {
+            this.productModal.open(product, step);
+          }
+        }
+      }
+    });
+
     // Variant selector handler
     newProductGrid.addEventListener('change', (e) => {
       if (e.target.classList.contains('variant-selector')) {
+        e.stopPropagation();
         const newVariantId = e.target.value;
         const baseProductId = e.target.dataset.baseProductId;
 
@@ -2330,6 +2309,11 @@ class BundleWidgetFullPage {
           }
         }
       }
+    });
+
+    // Add cursor pointer styles to product images and titles
+    newProductGrid.querySelectorAll('.product-image, .product-title').forEach(el => {
+      el.style.cursor = 'pointer';
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {

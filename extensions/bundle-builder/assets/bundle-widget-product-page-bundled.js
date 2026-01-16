@@ -858,9 +858,15 @@ class TemplateManager {
 class ComponentGenerator {
   /**
    * Generates HTML for a product card with variant selector and quantity controls
+   * @param {Object} product - Product data
+   * @param {number} currentQuantity - Current selected quantity
+   * @param {Object} currencyInfo - Currency formatting info
+   * @param {Object} options - Optional settings
+   * @param {boolean} options.showQuantitySelector - Whether to show quantity selector (default: true)
    */
-  static renderProductCard(product, currentQuantity, currencyInfo) {
+  static renderProductCard(product, currentQuantity, currencyInfo, options = {}) {
     const selectionKey = product.variantId || product.id;
+    const showQuantitySelector = options.showQuantitySelector !== false;
 
     return `
       <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
@@ -886,13 +892,15 @@ class ComponentGenerator {
 
           ${this.renderVariantSelector(product)}
 
-          <div class="product-quantity-wrapper">
-            <div class="product-quantity-selector">
-              <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-              <span class="qty-display">${currentQuantity}</span>
-              <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+          ${showQuantitySelector ? `
+            <div class="product-quantity-wrapper">
+              <div class="product-quantity-selector">
+                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                <span class="qty-display">${currentQuantity}</span>
+                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+              </div>
             </div>
-          </div>
+          ` : ''}
 
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
             ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
@@ -1216,6 +1224,8 @@ class BundleWidgetProductPage {
       showTitle: dataset.showTitle !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       showFooterMessaging: dataset.showFooterMessaging !== 'false',
+      // Quantity selector visibility settings (default: show on card)
+      showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -2256,6 +2266,8 @@ class BundleWidgetProductPage {
       return;
     }
 
+    const showQuantitySelector = this.config.showQuantitySelectorOnCard;
+
     productGrid.innerHTML = products.map(product => {
       const selectionKey = product.variantId || product.id;
       const currentQuantity = selectedProducts[selectionKey] || 0;
@@ -2285,13 +2297,15 @@ class BundleWidgetProductPage {
 
             ${this.renderVariantSelector(product)}
 
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector">
-                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-                <span class="qty-display">${currentQuantity}</span>
-                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+            ${showQuantitySelector ? `
+              <div class="product-quantity-wrapper">
+                <div class="product-quantity-selector">
+                  <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                  <span class="qty-display">${currentQuantity}</span>
+                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+                </div>
               </div>
-            </div>
+            ` : ''}
 
             <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
               ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
@@ -2321,46 +2335,27 @@ class BundleWidgetProductPage {
     `;
   }
 
-  // Render loading skeleton for modal product grid that matches EXACT dimensions
-  // Uses real CSS classes to ensure zero layout shift when products load
+  // Render loading skeleton for modal product grid - solid pulsating cards
+  // No internal button/quantity skeletons - just clean solid cards
   renderModalProductsLoading(stepIndex) {
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
     productGrid.innerHTML = `
       ${Array(6).fill(0).map(() => `
         <div class="product-card skeleton-loading">
-          <div class="product-image">
-            <div class="skeleton-shimmer"></div>
-          </div>
-
-          <div class="product-content-wrapper">
-            <div class="product-title">
-              <div class="skeleton-shimmer skeleton-text"></div>
-            </div>
-
-            <div class="product-price-row">
-              <div class="skeleton-shimmer skeleton-price"></div>
-            </div>
-
-            <div class="product-spacer"></div>
-
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector skeleton-quantity">
-                <div class="skeleton-shimmer"></div>
-              </div>
-            </div>
-
-            <button class="product-add-btn skeleton-button">
-              <div class="skeleton-shimmer"></div>
-            </button>
-          </div>
+          <div class="skeleton-card-content"></div>
         </div>
       `).join('')}
       <style>
-        /* Skeleton loading state - maintains exact dimensions of real cards */
+        /* Skeleton loading state - solid pulsating cards */
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
+          position: relative;
+          overflow: hidden;
+          min-height: 320px;
+          background: #f5f5f5;
+          border-radius: 12px;
         }
 
         .product-card.skeleton-loading:hover {
@@ -2368,99 +2363,31 @@ class BundleWidgetProductPage {
           box-shadow: none;
         }
 
-        /* Shimmer effect base */
-        .skeleton-shimmer {
-          background: linear-gradient(90deg,
-            rgba(0, 0, 0, 0.04) 0%,
-            rgba(0, 0, 0, 0.08) 20%,
-            rgba(0, 0, 0, 0.04) 40%,
-            rgba(0, 0, 0, 0.04) 100%
+        /* Full card pulsating effect */
+        .skeleton-card-content {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            110deg,
+            #f0f0f0 0%,
+            #f0f0f0 40%,
+            #e0e0e0 50%,
+            #f0f0f0 60%,
+            #f0f0f0 100%
           );
           background-size: 200% 100%;
-          animation: shimmer 1.8s ease-in-out infinite;
-          border-radius: inherit;
+          animation: skeleton-pulse 1.5s ease-in-out infinite;
         }
 
-        /* Product image skeleton - uses same height as real .product-image */
-        .skeleton-loading .product-image {
-          position: relative;
-          background: transparent;
-        }
-
-        .skeleton-loading .product-image .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Product title skeleton - uses real .product-title dimensions */
-        .skeleton-loading .product-title {
-          position: relative;
-          color: transparent;
-        }
-
-        .skeleton-loading .product-title .skeleton-text {
-          height: 1.4em; /* Matches line-height */
-          width: 80%;
-          margin: 0 auto;
-        }
-
-        /* Price skeleton - uses real .product-price-row dimensions */
-        .skeleton-loading .product-price-row {
-          position: relative;
-        }
-
-        .skeleton-loading .product-price-row .skeleton-price {
-          height: 1.2em;
-          width: 60%;
-          margin: 0 auto;
-        }
-
-        /* Quantity selector skeleton - uses real .product-quantity-selector dimensions */
-        .skeleton-loading .product-quantity-selector {
-          position: relative;
-          background: transparent;
-          border-color: rgba(0, 0, 0, 0.04);
-        }
-
-        .skeleton-loading .product-quantity-selector .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Button skeleton - uses real .product-add-btn dimensions */
-        .skeleton-loading .product-add-btn {
-          position: relative;
-          background: transparent;
-          color: transparent;
-          border: 1px solid rgba(0, 0, 0, 0.04);
-          cursor: default;
-        }
-
-        .skeleton-loading .product-add-btn:hover {
-          transform: none;
-          box-shadow: none;
-        }
-
-        .skeleton-loading .product-add-btn .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        @keyframes shimmer {
+        @keyframes skeleton-pulse {
           0% {
-            background-position: -200% 0;
+            background-position: 200% 0;
           }
           100% {
-            background-position: 200% 0;
+            background-position: -200% 0;
           }
         }
       </style>

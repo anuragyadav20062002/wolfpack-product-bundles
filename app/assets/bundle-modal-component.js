@@ -192,6 +192,13 @@ class BundleProductModal {
     // Set initial price
     this.updatePrice();
 
+    // Show/hide quantity selector based on config
+    const quantitySection = this.modalElement.querySelector('.bundle-modal-quantity');
+    if (quantitySection) {
+      const showQuantitySelector = this.widget?.config?.showQuantitySelectorInModal !== false;
+      quantitySection.style.display = showQuantitySelector ? 'flex' : 'none';
+    }
+
     // Reset quantity display
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
   }
