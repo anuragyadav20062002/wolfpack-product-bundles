@@ -28,7 +28,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   });
 
   try {
-    // Step 0: Cancel active subscription if exists
+    // Step 0: Cancel active subscription in Shopify if exists
     if (admin) {
       try {
         const cancelResult = await BillingService.cancelSubscription(admin, shop);
@@ -44,23 +44,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           component: "webhooks.app.uninstalled",
           operation: "cancel-subscription"
         }, subscriptionError);
-      }
-
-      // Mark shop as uninstalled
-      try {
-        await db.shop.updateMany({
-          where: { shopDomain: shop },
-          data: { uninstalledAt: new Date() }
-        });
-        AppLogger.info("Shop marked as uninstalled", {
-          component: "webhooks.app.uninstalled",
-          operation: "mark-uninstalled"
-        }, { shop });
-      } catch (shopUpdateError) {
-        AppLogger.error("Failed to mark shop as uninstalled", {
-          component: "webhooks.app.uninstalled",
-          operation: "mark-uninstalled"
-        }, shopUpdateError);
       }
     }
 
@@ -154,7 +137,88 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
     }
 
-    AppLogger.info("App uninstall completed successfully", {
+    // Step 6: Delete all remaining shop data
+    // Delete DesignSettings for this shop
+    try {
+      const deletedDesignSettings = await db.designSettings.deleteMany({
+        where: { shopId: shop }
+      });
+      AppLogger.info("Deleted design settings", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-design-settings"
+      }, { count: deletedDesignSettings.count });
+    } catch (designSettingsError) {
+      AppLogger.error("Failed to delete design settings", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-design-settings"
+      }, designSettingsError);
+    }
+
+    // Delete QueuedJobs for this shop
+    try {
+      const deletedJobs = await db.queuedJob.deleteMany({
+        where: { shopId: shop }
+      });
+      AppLogger.info("Deleted queued jobs", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-queued-jobs"
+      }, { count: deletedJobs.count });
+    } catch (jobsError) {
+      AppLogger.error("Failed to delete queued jobs", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-queued-jobs"
+      }, jobsError);
+    }
+
+    // Delete ComplianceRecords for this shop
+    try {
+      const deletedCompliance = await db.complianceRecord.deleteMany({
+        where: { shop: shop }
+      });
+      AppLogger.info("Deleted compliance records", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-compliance-records"
+      }, { count: deletedCompliance.count });
+    } catch (complianceError) {
+      AppLogger.error("Failed to delete compliance records", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-compliance-records"
+      }, complianceError);
+    }
+
+    // Delete WebhookEvents for this shop
+    try {
+      const deletedWebhookEvents = await db.webhookEvent.deleteMany({
+        where: { shopDomain: shop }
+      });
+      AppLogger.info("Deleted webhook events", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-webhook-events"
+      }, { count: deletedWebhookEvents.count });
+    } catch (webhookEventsError) {
+      AppLogger.error("Failed to delete webhook events", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-webhook-events"
+      }, webhookEventsError);
+    }
+
+    // Step 7: Delete Shop record (this will cascade delete Subscriptions)
+    try {
+      const deletedShop = await db.shop.deleteMany({
+        where: { shopDomain: shop }
+      });
+      AppLogger.info("Deleted shop record", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-shop"
+      }, { count: deletedShop.count });
+    } catch (shopDeleteError) {
+      AppLogger.error("Failed to delete shop record", {
+        component: "webhooks.app.uninstalled",
+        operation: "delete-shop"
+      }, shopDeleteError);
+    }
+
+    AppLogger.info("App uninstall completed successfully - all data removed", {
       component: "webhooks.app.uninstalled",
       operation: "uninstall-complete",
       shop

@@ -1433,6 +1433,13 @@ class BundleWidgetFullPage {
     const stepSelections = this.selectedProducts[stepIndex] || {};
     const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
     const step = this.selectedBundle.steps[stepIndex];
+
+    // If no conditions are set, any selection is valid (just need at least 1 product)
+    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
+      return totalQuantity > 0;
+    }
+
+    // Otherwise use minQuantity for step completion
     return totalQuantity >= (step.minQuantity || 1);
   }
 

@@ -1152,8 +1152,8 @@ export default function Dashboard() {
                         <div style={{ position: 'relative', minWidth: '120px' }}>
                           <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
                             <img
-                              src="/shrey_pfp.jpg"
-                              alt="Shrey (Founder)"
+                              src="/Parth.jpeg"
+                              alt="Parth (Founder)"
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                           </div>
@@ -1174,7 +1174,7 @@ export default function Dashboard() {
                         <BlockStack gap="200" align="start">
                           <BlockStack gap="100">
                             <Text as="h4" variant="bodyLg" fontWeight="semibold">
-                              Shrey
+                              Parth
                             </Text>
                             <Text as="span" variant="bodySm" tone="subdued">
                               Founder
@@ -1217,7 +1217,7 @@ export default function Dashboard() {
                       </InlineStack>
                       <div style={{ marginTop: '12px' }}>
                         <Button variant="primary" fullWidth onClick={handleDirectChat}>
-                          Chat Directly with Shrey
+                          Chat Directly with Parth
                         </Button>
                       </div>
                     </div>
