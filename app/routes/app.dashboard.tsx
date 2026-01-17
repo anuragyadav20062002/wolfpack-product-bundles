@@ -17,8 +17,9 @@ import {
   Banner,
   Icon,
   ChoiceList,
+  Tooltip,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, CheckCircleIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
@@ -49,6 +50,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       status: true,
       bundleType: true,
       createdAt: true,
+      shopifyProductId: true, // For product page preview URL
+      shopifyPageHandle: true, // For full page preview URL
       pricing: {
         select: {
           enabled: true
@@ -63,6 +66,54 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     orderBy: { createdAt: "desc" },
   });
 
+  // Fetch product handles for product_page bundles that have shopifyProductId
+  const productPageBundles = bundles.filter(b => b.bundleType === 'product_page' && b.shopifyProductId);
+  const productHandles: Record<string, string> = {};
+
+  if (productPageBundles.length > 0) {
+    try {
+      // Batch fetch product handles using GraphQL
+      const productIds = productPageBundles.map(b => b.shopifyProductId).filter(Boolean);
+      const GET_PRODUCTS = `
+        query GetProductHandles($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Product {
+              id
+              handle
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(GET_PRODUCTS, {
+        variables: { ids: productIds }
+      });
+      const data = await response.json();
+
+      if (data.data?.nodes) {
+        for (const node of data.data.nodes) {
+          if (node?.id && node?.handle) {
+            productHandles[node.id] = node.handle;
+          }
+        }
+      }
+    } catch (error) {
+      // Log error but continue - preview will just not work for these bundles
+      AppLogger.error("Failed to fetch product handles", {
+        component: "app.dashboard",
+        operation: "fetch-product-handles"
+      }, error);
+    }
+  }
+
+  // Enhance bundles with preview URLs
+  const bundlesWithPreview = bundles.map(bundle => ({
+    ...bundle,
+    previewHandle: bundle.bundleType === 'product_page'
+      ? (bundle.shopifyProductId ? productHandles[bundle.shopifyProductId] : null)
+      : bundle.shopifyPageHandle
+  }));
+
   // Get subscription info for upgrade prompt
   const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
 
@@ -73,7 +124,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const apiKey = process.env.SHOPIFY_API_KEY || '';
 
   return json({
-    bundles,
+    bundles: bundlesWithPreview,
     shop: session.shop,
     subscription: subscriptionInfo ? {
       plan: subscriptionInfo.plan,
@@ -640,47 +691,73 @@ const STATUS_BADGES = {
   archived: <Badge tone="critical">archived</Badge>,
 } as const;
 
-// Memoized component for bundle action buttons
+// Bundle type badge component
+const BUNDLE_TYPE_BADGES = {
+  product_page: <Badge tone="info">Product Page</Badge>,
+  full_page: <Badge tone="attention">Full Page</Badge>,
+} as const;
+
+// Memoized component for bundle action buttons - Professional icon groups with tooltips
 interface BundleActionsButtonsProps {
   bundleId: string;
   bundleType: 'product_page' | 'full_page';
   onEdit: (bundle: any) => void;
   onClone: (bundleId: string) => void;
   onDelete: (bundleId: string) => void;
+  onPreview: (bundle: any) => void;
   bundle: any;
 }
 
-const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDelete, bundle }: BundleActionsButtonsProps) => (
-  <ButtonGroup>
-    <Button
-      size="micro"
-      icon={EditIcon}
-      onClick={() => onEdit(bundle)}
-    >
-      Edit
-    </Button>
-    <Button
-      size="micro"
-      icon={DuplicateIcon}
-      onClick={() => onClone(bundleId)}
-    >
-      Clone
-    </Button>
-    <Button
-      size="micro"
-      tone="critical"
-      icon={DeleteIcon}
-      onClick={() => onDelete(bundleId)}
-    >
-      Delete
-    </Button>
-  </ButtonGroup>
+const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDelete, onPreview, bundle }: BundleActionsButtonsProps) => (
+  <InlineStack gap="200" blockAlign="center">
+    {/* Group 1: Edit & Clone (neutral actions) */}
+    <ButtonGroup variant="segmented">
+      <Tooltip content="Edit bundle">
+        <Button
+          size="micro"
+          icon={EditIcon}
+          onClick={() => onEdit(bundle)}
+          accessibilityLabel="Edit bundle"
+        />
+      </Tooltip>
+      <Tooltip content="Clone bundle">
+        <Button
+          size="micro"
+          icon={DuplicateIcon}
+          onClick={() => onClone(bundleId)}
+          accessibilityLabel="Clone bundle"
+        />
+      </Tooltip>
+    </ButtonGroup>
+
+    {/* Group 2: Preview & Delete (view/destructive actions) */}
+    <ButtonGroup variant="segmented">
+      <Tooltip content={bundle.previewHandle ? "Preview in store" : "Save bundle to preview"}>
+        <Button
+          size="micro"
+          icon={ExternalIcon}
+          onClick={() => onPreview(bundle)}
+          accessibilityLabel="Preview bundle"
+          disabled={!bundle.previewHandle}
+        />
+      </Tooltip>
+      <Tooltip content="Delete bundle">
+        <Button
+          size="micro"
+          icon={DeleteIcon}
+          onClick={() => onDelete(bundleId)}
+          accessibilityLabel="Delete bundle"
+          tone="critical"
+        />
+      </Tooltip>
+    </ButtonGroup>
+  </InlineStack>
 ));
 
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, widgetInstallation, apiKey } = useLoaderData<typeof loader>();
+  const { bundles, subscription, widgetInstallation, apiKey, shop } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -752,16 +829,38 @@ export default function Dashboard() {
     }
   };
 
+  const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
+    if (!bundle.previewHandle) {
+      return;
+    }
+
+    // Build preview URL based on bundle type using shop domain
+    const previewBase = `https://${shop}`;
+
+    if (bundle.bundleType === 'product_page') {
+      // Product page bundles use /products/{handle}
+      window.open(`${previewBase}/products/${bundle.previewHandle}`, '_blank');
+    } else {
+      // Full page bundles use /pages/{handle}
+      window.open(`${previewBase}/pages/${bundle.previewHandle}`, '_blank');
+    }
+  }, [shop]);
+
   // Use reusable status badges to avoid recreation on every render
   const getStatusDisplay = (status: string) => {
     return STATUS_BADGES[status as keyof typeof STATUS_BADGES] || <Badge tone="info">{status}</Badge>;
+  };
+
+  // Get bundle type badge display
+  const getBundleTypeDisplay = (bundleType: string) => {
+    return BUNDLE_TYPE_BADGES[bundleType as keyof typeof BUNDLE_TYPE_BADGES] || <Badge>{bundleType}</Badge>;
   };
 
   // Memoize bundleRows to prevent unnecessary re-renders
   const bundleRows = useMemo(() => bundles.map((bundle) => [
     bundle.name,
     getStatusDisplay(bundle.status),
-    bundle.pricing?.enabled ? "Enabled" : "Disabled",
+    getBundleTypeDisplay(bundle.bundleType),
     <BundleActionsButtons
       key={bundle.id}
       bundleId={bundle.id}
@@ -770,8 +869,9 @@ export default function Dashboard() {
       onEdit={handleEditBundle}
       onClone={handleCloneBundle}
       onDelete={handleDeleteBundle}
+      onPreview={handlePreviewBundle}
     />,
-  ]), [bundles, handleCloneBundle]);
+  ]), [bundles, handleCloneBundle, handlePreviewBundle]);
 
   return (
     <>
@@ -1052,7 +1152,7 @@ export default function Dashboard() {
                     `}</style>
                     <DataTable
                       columnContentTypes={["text", "text", "text", "text"]}
-                      headings={["Bundle Name", "Status", "Discount", "Actions"]}
+                      headings={["Bundle Name", "Status", "Type", "Actions"]}
                       rows={bundleRows}
                     />
                   </div>
