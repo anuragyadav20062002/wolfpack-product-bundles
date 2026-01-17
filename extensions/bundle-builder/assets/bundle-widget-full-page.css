@@ -162,7 +162,7 @@
 /* Step name label */
 .timeline-step-name {
   margin-top: 16px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-step-timeline-name-font-size, 19.788px);
   color: var(--bundle-step-timeline-name-color, #1E1E1E);
@@ -171,6 +171,177 @@
 
 .timeline-step.locked .timeline-step-name {
   color: var(--bundle-step-timeline-locked-text, #808080);
+}
+
+/* ============================================================================
+   STEP TABS (Clickable step navigation tabs)
+   Uses same DCP variables as modal tabs for consistency
+   ============================================================================ */
+
+.step-tabs-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 0 auto 24px;
+  padding: 0 16px;
+  max-width: 100%;
+}
+
+.step-tab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--bundle-tabs-inactive-bg-color, #FFFFFF);
+  border: 2px solid var(--bundle-tabs-border-color, #1E1E1E);
+  border-radius: var(--bundle-tabs-border-radius, 8px);
+  color: var(--bundle-tabs-inactive-text-color, #1E1E1E);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  position: relative;
+}
+
+.step-tab:hover:not(.locked) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Active/Current step tab */
+.step-tab.active {
+  background: var(--bundle-tabs-active-bg-color, #1E1E1E);
+  color: var(--bundle-tabs-active-text-color, #FFFFFF);
+  border-color: var(--bundle-tabs-active-bg-color, #1E1E1E);
+}
+
+/* Completed step tab */
+.step-tab.completed {
+  background: var(--bundle-tabs-inactive-bg-color, #FFFFFF);
+  border-color: var(--bundle-tabs-border-color, #1E1E1E);
+}
+
+.step-tab.completed .tab-check {
+  color: var(--bundle-tabs-border-color, #1E1E1E);
+}
+
+.step-tab.active.completed {
+  background: var(--bundle-tabs-active-bg-color, #1E1E1E);
+  color: var(--bundle-tabs-active-text-color, #FFFFFF);
+}
+
+.step-tab.active.completed .tab-check {
+  color: var(--bundle-tabs-active-text-color, #FFFFFF);
+}
+
+/* Locked step tab */
+.step-tab.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+  border-color: #ccc;
+  color: #999;
+}
+
+/* Tab number circle */
+.tab-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bundle-tabs-border-color, #1E1E1E);
+  color: var(--bundle-tabs-active-text-color, #FFFFFF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.step-tab.active .tab-number {
+  background: var(--bundle-tabs-active-text-color, #FFFFFF);
+  color: var(--bundle-tabs-active-bg-color, #1E1E1E);
+}
+
+/* Tab info section */
+.tab-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-name {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-hint {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.tab-count {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Tab product images */
+.tab-images {
+  display: flex;
+  gap: -8px;
+  flex-shrink: 0;
+}
+
+.tab-product-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--bundle-tabs-inactive-bg-color, #FFFFFF);
+  margin-left: -8px;
+}
+
+.tab-product-image:first-child {
+  margin-left: 0;
+}
+
+/* Tab icons */
+.tab-check,
+.tab-lock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tab-check svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tab-lock svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .step-tabs-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .step-tab {
+    width: 100%;
+    min-width: unset;
+  }
 }
 
 /* ============================================================================
@@ -184,7 +355,7 @@
 }
 
 .bundle-title {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-full-page-title-font-size, 20px);
   color: var(--bundle-full-page-title-color, #1E1E1E);
@@ -192,7 +363,7 @@
 }
 
 .bundle-instruction {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: var(--bundle-full-page-instruction-font-size, 20px);
   color: var(--bundle-full-page-instruction-color, #1E1E1E);
   margin: 0;
@@ -242,7 +413,7 @@
 }
 
 .category-tab .tab-label {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-category-tab-label-font-size, 20px);
   color: var(--bundle-category-tab-label-color, #1E1E1E);
@@ -273,31 +444,46 @@
 
 .full-page-product-grid {
   display: grid;
-  grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), 1fr);
-  gap: 20px;
+  /* Fixed width approach - cards maintain size regardless of cards-per-row */
+  grid-template-columns: repeat(
+    var(--bundle-product-cards-per-row, 3),
+    var(--bundle-product-card-width, 280px)
+  );
+  gap: var(--bundle-product-card-spacing, 20px);
   margin: 20px 0;
   width: 100%;
+  justify-content: center; /* Center grid if cards don't fill width */
+  overflow-x: auto; /* Allow horizontal scroll if needed */
 }
 
 /* Product Card - Figma Professional Style */
 .product-card {
-  background: var(--bundle-product-card-bg, #ECF4EC);
-  border-radius: 0;
-  padding: 8px 9px;
+  /* Fixed dimensions - maintain size regardless of grid layout */
+  width: var(--bundle-product-card-width, 280px);
+  height: var(--bundle-product-card-height, 420px);
+  min-width: var(--bundle-product-card-width, 280px);
+  max-width: var(--bundle-product-card-width, 280px);
+  min-height: var(--bundle-product-card-height, 420px);
+  max-height: var(--bundle-product-card-height, 420px);
+
+  background: var(--bundle-product-card-bg, #FFFFFF); /* Changed to white for cleaner look */
+  border-radius: var(--bundle-product-card-border-radius, 8px); /* Added border radius */
+  padding: 12px; /* Increased padding for better spacing */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  min-height: 220px;
+  border: 1px solid rgba(0, 0, 0, 0.08); /* Subtle border */
   position: relative;
+  overflow: hidden; /* Prevent content overflow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Subtle base shadow */
 }
 
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); /* Enhanced shadow for better depth */
 }
 
 .product-card.selected {
@@ -328,7 +514,7 @@
 /* Product Image Container */
 .product-image {
   width: 100%;
-  height: var(--bundle-full-page-product-image-height, 200px);
+  height: var(--bundle-full-page-product-image-height, 280px); /* Increased from 200px */
   background-color: var(--bundle-full-page-product-image-bg, #FFFFFF);
   border-radius: var(--bundle-full-page-product-image-border-radius, 8px);
   margin-bottom: 12px;
@@ -369,7 +555,7 @@
   position: relative;
   letter-spacing: 0.2px;
   line-height: 1.4;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 /* Price Row with Background from DCP */
@@ -393,7 +579,7 @@
   font-weight: var(--bundle-product-strike-price-font-weight, 500);
   text-decoration: line-through;
   margin-right: 8px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 .product-price {
@@ -402,7 +588,7 @@
   font-size: calc(var(--bundle-product-final-price-font-size, 20px) * 1);
   font-weight: var(--bundle-product-final-price-font-weight, 700);
   letter-spacing: 0.3px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 /* Spacer for Layout */
@@ -411,8 +597,9 @@
   min-height: 8px;
 }
 
-/* Variant Selector */
+/* Variant Selector - HIDDEN (moved to modal) */
 .variant-selector {
+  display: none; /* Hidden: variant selection now happens in modal */
   width: 100%;
   padding: 14px 16px;
   border-radius: var(--bundle-variant-selector-border-radius, 10px);
@@ -430,7 +617,7 @@
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   margin-bottom: 12px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 .variant-selector:hover {
@@ -446,12 +633,12 @@
   transform: translateY(-1px);
 }
 
-/* Quantity Selector Wrapper */
+/* Quantity Selector Wrapper - HIDDEN (moved to modal) */
 .product-quantity-wrapper {
+  display: none; /* Hidden: quantity selection now happens in modal */
   margin-bottom: 12px;
   flex-shrink: 0;
   position: relative;
-  display: flex;
   justify-content: center;
 }
 
@@ -481,7 +668,7 @@
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 44px;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 .qty-btn:hover {
@@ -500,7 +687,7 @@
   padding: 0 16px;
   min-width: 40px;
   text-align: center;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 /* Add to Bundle Button - Enhanced Style */
@@ -523,7 +710,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
 }
 
 .product-add-btn:hover {
@@ -550,7 +737,7 @@
 }
 
 .footer-header h3 {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-full-page-footer-header-font-size, 20px);
   color: var(--bundle-full-page-footer-header-color, #1E1E1E);
@@ -623,7 +810,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: 12px;
   z-index: 2;
@@ -637,7 +824,7 @@
 }
 
 .footer-product-title {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--bundle-full-page-footer-product-title-color, #1E1E1E);
   line-height: 1.3;
@@ -645,7 +832,7 @@
 }
 
 .footer-product-price {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: 14px;
   color: var(--bundle-full-page-footer-product-price-color, #1E1E1E);
@@ -655,7 +842,7 @@
   background: transparent;
   border: none;
   color: var(--bundle-full-page-footer-remove-color, #BD0000);
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: 12px;
   cursor: pointer;
@@ -680,14 +867,14 @@
 }
 
 .total-label {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: var(--bundle-full-page-footer-total-label-font-size, 16px);
   color: var(--bundle-full-page-footer-total-label-color, #1E1E1E);
   font-weight: 600;
 }
 
 .total-price {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-full-page-footer-total-price-font-size, 24px);
   color: var(--bundle-full-page-footer-total-price-color, #1E1E1E);
@@ -705,7 +892,7 @@
   height: 48px;
   padding: 0 32px;
   border-radius: var(--bundle-full-page-footer-nav-btn-radius, 4px);
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-weight: bold;
   font-size: var(--bundle-full-page-footer-nav-btn-font-size, 16px);
   border: none;
@@ -739,7 +926,7 @@
 
 /* No products selected state */
 .no-selections {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: 14px;
   color: var(--bundle-full-page-footer-no-selections-color, #808080);
   font-style: italic;
@@ -761,7 +948,7 @@
 }
 
 .footer-promo-message p {
-  font-family: 'Quattrocento Sans', sans-serif;
+  font-family: inherit;
   font-size: 18px;
   color: var(--bundle-full-page-footer-product-title-color, #1E1E1E);
   margin: 0;
@@ -846,7 +1033,7 @@
    ============================================================================ */
 
 .bundle-loading {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   min-height: 200px;
@@ -972,4 +1159,365 @@ body:has(.bundle-widget-full-page) #MainContent {
    ============================================================================ */
 .bundle-widget-full-page .add-bundle-to-cart {
   display: none !important;
+}
+
+/* ============================================================================
+   PRODUCT VARIANT MODAL
+   ============================================================================ */
+
+/* Modal Overlay */
+.bundle-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.bundle-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Modal Container */
+.bundle-modal-container {
+  background: #FFFFFF;
+  border-radius: 12px;
+  max-width: 1000px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.bundle-modal-overlay.active .bundle-modal-container {
+  transform: scale(1);
+}
+
+/* Close Button */
+.bundle-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.bundle-modal-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: rotate(90deg);
+}
+
+/* Modal Content - 2 Column Layout (60/40 split) */
+.bundle-modal-content {
+  display: grid;
+  grid-template-columns: 60% 40%;
+  gap: 40px;
+  padding: 40px;
+}
+
+/* Left Column - Image Gallery */
+.bundle-modal-images {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bundle-modal-main-image {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #F8F8F8;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bundle-modal-main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bundle-modal-thumbnails {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+
+.bundle-modal-thumbnail {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  background: #F8F8F8;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.bundle-modal-thumbnail:hover {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.bundle-modal-thumbnail.active {
+  border-color: var(--bundle-primary-color, #000);
+}
+
+.bundle-modal-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Right Column - Product Details */
+.bundle-modal-details {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.bundle-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.bundle-modal-title {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+  font-family: inherit;
+  flex: 1;
+}
+
+.bundle-modal-price {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--bundle-primary-color, #000);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.bundle-modal-price-strike {
+  font-size: 18px;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 8px;
+}
+
+/* Variant Selectors */
+.bundle-modal-variants {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bundle-modal-variant-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bundle-modal-variant-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bundle-modal-variant-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bundle-modal-variant-select:hover {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.bundle-modal-variant-select:focus {
+  outline: none;
+  border-color: var(--bundle-primary-color, #000);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Quantity Selector */
+.bundle-modal-quantity {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bundle-modal-quantity-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bundle-modal-quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  background: #FFFFFF;
+  width: fit-content;
+}
+
+.bundle-modal-qty-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.bundle-modal-qty-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.bundle-modal-qty-btn:active {
+  transform: scale(0.95);
+}
+
+.bundle-modal-qty-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.bundle-modal-qty-display {
+  font-size: 16px;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: center;
+  font-family: inherit;
+}
+
+/* Add To Box Button */
+.bundle-modal-add-btn {
+  width: 100%;
+  padding: 16px 24px;
+  background: var(--bundle-primary-color, #000);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bundle-modal-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.bundle-modal-add-btn:active {
+  transform: translateY(0);
+}
+
+.bundle-modal-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Product Description (Optional) */
+.bundle-modal-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #666;
+  font-family: inherit;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* Responsive - Mobile */
+@media (max-width: 768px) {
+  .bundle-modal-content {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .bundle-modal-close {
+    top: 12px;
+    right: 12px;
+  }
+
+  .bundle-modal-title {
+    font-size: 22px;
+  }
+
+  .bundle-modal-price {
+    font-size: 18px;
+  }
+
+  .bundle-modal-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .bundle-modal-thumbnails {
+    gap: 8px;
+  }
+
+  .bundle-modal-thumbnail {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
 }

@@ -27,7 +27,6 @@ import { prisma } from "../db.server";
 
 // Import extracted components
 import { ColorPicker } from "../components/design-control-panel/common/ColorPicker";
-import { ArrowLabel } from "../components/design-control-panel/common/ArrowLabel";
 import { NavigationItem } from "../components/design-control-panel/NavigationItem";
 import { ProductCardPreview } from "../components/design-control-panel/preview/ProductCardPreview";
 import { BundleFooterPreview } from "../components/design-control-panel/preview/BundleFooterPreview";
@@ -186,6 +185,30 @@ export async function loader({ request }: LoaderFunctionArgs) {
       filterIconColor: "#000000",
       filterBgColor: "#FFFFFF",
       filterTextColor: "#000000",
+      // Product Card Layout & Dimensions (Phase 6)
+      productCardWidth: 280,
+      productCardHeight: 420,
+      productCardSpacing: 20,
+      productCardBorderRadius: 8,
+      productCardPadding: 12,
+      productCardBorderWidth: 1,
+      productCardBorderColor: "rgba(0,0,0,0.08)",
+      productCardShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      productCardHoverShadow: "0 8px 24px rgba(0,0,0,0.12)",
+      // Product Image (Phase 6)
+      productImageHeight: 280,
+      productImageBorderRadius: 6,
+      productImageBgColor: "#F8F8F8",
+      // Product Modal Styling (Phase 6)
+      modalBgColor: "#FFFFFF",
+      modalBorderRadius: 12,
+      modalTitleFontSize: 28,
+      modalTitleFontWeight: 700,
+      modalPriceFontSize: 22,
+      modalVariantBorderRadius: 8,
+      modalButtonBgColor: "#000000",
+      modalButtonTextColor: "#FFFFFF",
+      modalButtonBorderRadius: 8,
     },
     full_page: {
       // Global Colors
@@ -319,6 +342,30 @@ export async function loader({ request }: LoaderFunctionArgs) {
       filterIconColor: "#111827",
       filterBgColor: "#F9FAFB",
       filterTextColor: "#111827",
+      // Product Card Layout & Dimensions (Phase 6)
+      productCardWidth: 280,
+      productCardHeight: 420,
+      productCardSpacing: 20,
+      productCardBorderRadius: 8,
+      productCardPadding: 12,
+      productCardBorderWidth: 1,
+      productCardBorderColor: "rgba(0,0,0,0.08)",
+      productCardShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      productCardHoverShadow: "0 8px 24px rgba(0,0,0,0.12)",
+      // Product Image (Phase 6)
+      productImageHeight: 280,
+      productImageBorderRadius: 6,
+      productImageBgColor: "#F8F8F8",
+      // Product Modal Styling (Phase 6)
+      modalBgColor: "#FFFFFF",
+      modalBorderRadius: 12,
+      modalTitleFontSize: 28,
+      modalTitleFontWeight: 700,
+      modalPriceFontSize: 22,
+      modalVariantBorderRadius: 8,
+      modalButtonBgColor: "#000000",
+      modalButtonTextColor: "#FFFFFF",
+      modalButtonBorderRadius: 8,
     },
   };
 
@@ -357,6 +404,30 @@ export async function loader({ request }: LoaderFunctionArgs) {
       quantitySelectorTextColor: dbSettings.quantitySelectorTextColor || defaults.quantitySelectorTextColor,
       quantitySelectorFontSize: dbSettings.quantitySelectorFontSize || defaults.quantitySelectorFontSize,
       quantitySelectorBorderRadius: dbSettings.quantitySelectorBorderRadius || defaults.quantitySelectorBorderRadius,
+      // Product Card Layout & Dimensions (Phase 6)
+      productCardWidth: dbSettings.productCardWidth || defaults.productCardWidth,
+      productCardHeight: dbSettings.productCardHeight || defaults.productCardHeight,
+      productCardSpacing: dbSettings.productCardSpacing || defaults.productCardSpacing,
+      productCardBorderRadius: dbSettings.productCardBorderRadius || defaults.productCardBorderRadius,
+      productCardPadding: dbSettings.productCardPadding || defaults.productCardPadding,
+      productCardBorderWidth: dbSettings.productCardBorderWidth || defaults.productCardBorderWidth,
+      productCardBorderColor: dbSettings.productCardBorderColor || defaults.productCardBorderColor,
+      productCardShadow: dbSettings.productCardShadow || defaults.productCardShadow,
+      productCardHoverShadow: dbSettings.productCardHoverShadow || defaults.productCardHoverShadow,
+      // Product Image (Phase 6)
+      productImageHeight: dbSettings.productImageHeight || defaults.productImageHeight,
+      productImageBorderRadius: dbSettings.productImageBorderRadius || defaults.productImageBorderRadius,
+      productImageBgColor: dbSettings.productImageBgColor || defaults.productImageBgColor,
+      // Product Modal Styling (Phase 6)
+      modalBgColor: dbSettings.modalBgColor || defaults.modalBgColor,
+      modalBorderRadius: dbSettings.modalBorderRadius || defaults.modalBorderRadius,
+      modalTitleFontSize: dbSettings.modalTitleFontSize || defaults.modalTitleFontSize,
+      modalTitleFontWeight: dbSettings.modalTitleFontWeight || defaults.modalTitleFontWeight,
+      modalPriceFontSize: dbSettings.modalPriceFontSize || defaults.modalPriceFontSize,
+      modalVariantBorderRadius: dbSettings.modalVariantBorderRadius || defaults.modalVariantBorderRadius,
+      modalButtonBgColor: dbSettings.modalButtonBgColor || defaults.modalButtonBgColor,
+      modalButtonTextColor: dbSettings.modalButtonTextColor || defaults.modalButtonTextColor,
+      modalButtonBorderRadius: dbSettings.modalButtonBorderRadius || defaults.modalButtonBorderRadius,
       ...globalColorsSettings,
       ...footerSettings,
       ...stepBarSettings,
@@ -509,6 +580,30 @@ export async function action({ request }: ActionFunctionArgs) {
         quantitySelectorTextColor: settings.quantitySelectorTextColor,
         quantitySelectorFontSize: settings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
+        // Product Card Layout & Dimensions (Phase 6)
+        productCardWidth: settings.productCardWidth,
+        productCardHeight: settings.productCardHeight,
+        productCardSpacing: settings.productCardSpacing,
+        productCardBorderRadius: settings.productCardBorderRadius,
+        productCardPadding: settings.productCardPadding,
+        productCardBorderWidth: settings.productCardBorderWidth,
+        productCardBorderColor: settings.productCardBorderColor,
+        productCardShadow: settings.productCardShadow,
+        productCardHoverShadow: settings.productCardHoverShadow,
+        // Product Image (Phase 6)
+        productImageHeight: settings.productImageHeight,
+        productImageBorderRadius: settings.productImageBorderRadius,
+        productImageBgColor: settings.productImageBgColor,
+        // Product Modal Styling (Phase 6)
+        modalBgColor: settings.modalBgColor,
+        modalBorderRadius: settings.modalBorderRadius,
+        modalTitleFontSize: settings.modalTitleFontSize,
+        modalTitleFontWeight: settings.modalTitleFontWeight,
+        modalPriceFontSize: settings.modalPriceFontSize,
+        modalVariantBorderRadius: settings.modalVariantBorderRadius,
+        modalButtonBgColor: settings.modalButtonBgColor,
+        modalButtonTextColor: settings.modalButtonTextColor,
+        modalButtonBorderRadius: settings.modalButtonBorderRadius,
         globalColorsSettings: globalColorsSettings,
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
@@ -540,6 +635,30 @@ export async function action({ request }: ActionFunctionArgs) {
         quantitySelectorTextColor: settings.quantitySelectorTextColor,
         quantitySelectorFontSize: settings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
+        // Product Card Layout & Dimensions (Phase 6)
+        productCardWidth: settings.productCardWidth,
+        productCardHeight: settings.productCardHeight,
+        productCardSpacing: settings.productCardSpacing,
+        productCardBorderRadius: settings.productCardBorderRadius,
+        productCardPadding: settings.productCardPadding,
+        productCardBorderWidth: settings.productCardBorderWidth,
+        productCardBorderColor: settings.productCardBorderColor,
+        productCardShadow: settings.productCardShadow,
+        productCardHoverShadow: settings.productCardHoverShadow,
+        // Product Image (Phase 6)
+        productImageHeight: settings.productImageHeight,
+        productImageBorderRadius: settings.productImageBorderRadius,
+        productImageBgColor: settings.productImageBgColor,
+        // Product Modal Styling (Phase 6)
+        modalBgColor: settings.modalBgColor,
+        modalBorderRadius: settings.modalBorderRadius,
+        modalTitleFontSize: settings.modalTitleFontSize,
+        modalTitleFontWeight: settings.modalTitleFontWeight,
+        modalPriceFontSize: settings.modalPriceFontSize,
+        modalVariantBorderRadius: settings.modalVariantBorderRadius,
+        modalButtonBgColor: settings.modalButtonBgColor,
+        modalButtonTextColor: settings.modalButtonTextColor,
+        modalButtonBorderRadius: settings.modalButtonBorderRadius,
         globalColorsSettings: globalColorsSettings,
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
@@ -614,6 +733,33 @@ export default function DesignControlPanel() {
   const [variantSelectorBgColor, setVariantSelectorBgColor] = useState(currentSettings.variantSelectorBgColor);
   const [variantSelectorTextColor, setVariantSelectorTextColor] = useState(currentSettings.variantSelectorTextColor);
   const [variantSelectorBorderRadius, setVariantSelectorBorderRadius] = useState(currentSettings.variantSelectorBorderRadius);
+
+  // Product Card Layout & Dimensions (Full Page - Phase 6)
+  const [productCardWidth, setProductCardWidth] = useState(currentSettings.productCardWidth || 280);
+  const [productCardHeight, setProductCardHeight] = useState(currentSettings.productCardHeight || 420);
+  const [productCardSpacing, setProductCardSpacing] = useState(currentSettings.productCardSpacing || 20);
+  const [productCardBorderRadius, setProductCardBorderRadius] = useState(currentSettings.productCardBorderRadius || 8);
+  const [productCardPadding, setProductCardPadding] = useState(currentSettings.productCardPadding || 12);
+  const [productCardBorderWidth, setProductCardBorderWidth] = useState(currentSettings.productCardBorderWidth || 1);
+  const [productCardBorderColor, setProductCardBorderColor] = useState(currentSettings.productCardBorderColor || "rgba(0,0,0,0.08)");
+  const [productCardShadow, setProductCardShadow] = useState(currentSettings.productCardShadow || "0 2px 8px rgba(0,0,0,0.04)");
+  const [productCardHoverShadow, setProductCardHoverShadow] = useState(currentSettings.productCardHoverShadow || "0 8px 24px rgba(0,0,0,0.12)");
+
+  // Product Image (Full Page - Phase 6)
+  const [productImageHeight, setProductImageHeight] = useState(currentSettings.productImageHeight || 280);
+  const [productImageBorderRadius, setProductImageBorderRadius] = useState(currentSettings.productImageBorderRadius || 6);
+  const [productImageBgColor, setProductImageBgColor] = useState(currentSettings.productImageBgColor || "#F8F8F8");
+
+  // Product Modal Styling (Full Page - Phase 6)
+  const [modalBgColor, setModalBgColor] = useState(currentSettings.modalBgColor || "#FFFFFF");
+  const [modalBorderRadius, setModalBorderRadius] = useState(currentSettings.modalBorderRadius || 12);
+  const [modalTitleFontSize, setModalTitleFontSize] = useState(currentSettings.modalTitleFontSize || 28);
+  const [modalTitleFontWeight, setModalTitleFontWeight] = useState(currentSettings.modalTitleFontWeight || 700);
+  const [modalPriceFontSize, setModalPriceFontSize] = useState(currentSettings.modalPriceFontSize || 22);
+  const [modalVariantBorderRadius, setModalVariantBorderRadius] = useState(currentSettings.modalVariantBorderRadius || 8);
+  const [modalButtonBgColor, setModalButtonBgColor] = useState(currentSettings.modalButtonBgColor || "#000000");
+  const [modalButtonTextColor, setModalButtonTextColor] = useState(currentSettings.modalButtonTextColor || "#FFFFFF");
+  const [modalButtonBorderRadius, setModalButtonBorderRadius] = useState(currentSettings.modalButtonBorderRadius || 8);
 
   // Bundle Footer Section
   const [footerBgColor, setFooterBgColor] = useState(currentSettings.footerBgColor);
@@ -1930,117 +2076,29 @@ export default function DesignControlPanel() {
         buttonFontSize={buttonFontSize}
         buttonFontWeight={buttonFontWeight}
         buttonAddToCartText={buttonAddToCartText}
+        productCardWidth={productCardWidth}
+        productCardHeight={productCardHeight}
+        productCardSpacing={productCardSpacing}
+        productCardBorderRadius={productCardBorderRadius}
+        productCardPadding={productCardPadding}
+        productCardBorderWidth={productCardBorderWidth}
+        productCardBorderColor={productCardBorderColor}
+        productCardShadow={productCardShadow}
+        productCardHoverShadow={productCardHoverShadow}
+        productImageHeight={productImageHeight}
+        productImageBorderRadius={productImageBorderRadius}
+        productImageBgColor={productImageBgColor}
+        modalBgColor={modalBgColor}
+        modalBorderRadius={modalBorderRadius}
+        modalTitleFontSize={modalTitleFontSize}
+        modalTitleFontWeight={modalTitleFontWeight}
+        modalPriceFontSize={modalPriceFontSize}
+        modalVariantBorderRadius={modalVariantBorderRadius}
+        modalButtonBgColor={modalButtonBgColor}
+        modalButtonTextColor={modalButtonTextColor}
+        modalButtonBorderRadius={modalButtonBorderRadius}
       />
     );
-  };
-
-  // Render arrow overlays based on active subsection
-  const renderArrows = () => {
-    // Product Card arrows (default when no specific subsection is selected)
-    if (!activeSubSection || activeSubSection === "") {
-      return (
-        <>
-          <ArrowLabel label="Product Card" position="left" horizontalDistance={160} />
-          <ArrowLabel label="Product Image" position="top" verticalDistance={150} />
-          <ArrowLabel label="Product Title" position="right" horizontalDistance={140} />
-          <ArrowLabel label="Product Prices" position="left" horizontalDistance={160} />
-          <ArrowLabel label="Variant Selector" position="right" horizontalDistance={160} />
-          <ArrowLabel label="Button" position="bottom" verticalDistance={150} />
-        </>
-      );
-    }
-
-    // Quantity & Variant Selector arrows
-    if (activeSubSection === "quantityVariantSelector") {
-      return (
-        <>
-          <ArrowLabel label="Variant Selector" position="left" horizontalDistance={160} verticalOffset={-40} />
-          <ArrowLabel label="Quantity Selector" position="right" horizontalDistance={160} verticalOffset={10} />
-        </>
-      );
-    }
-
-    // Product Card subsection arrows
-    if (activeSubSection === "productCard") {
-      return (
-        <>
-          <ArrowLabel label="Product Card" position="left" horizontalDistance={160} verticalOffset={-80} />
-          <ArrowLabel label="Product Image" position="top" verticalDistance={150} />
-        </>
-      );
-    }
-
-    // Product Card Typography subsection arrows
-    if (activeSubSection === "productCardTypography") {
-      return (
-        <>
-          <ArrowLabel label="Product Title" position="top" verticalDistance={140} />
-          <ArrowLabel label="Product Prices" position="bottom" verticalDistance={140} />
-        </>
-      );
-    }
-
-    // Button subsection arrows
-    if (activeSubSection === "button") {
-      return <ArrowLabel label="Add to Bundle Button" position="bottom" verticalDistance={130} />;
-    }
-
-    // Bundle Footer arrows
-    if (activeSubSection === "footer") {
-      return (
-        <>
-          <ArrowLabel label="Total Pill" position="top" verticalDistance={150} />
-          <ArrowLabel label="Footer" position="top" verticalDistance={150} horizontalOffset={20} />
-        </>
-      );
-    }
-
-    if (activeSubSection === "footerPrice") {
-      return <ArrowLabel label="Price" position="right" horizontalDistance={140} />;
-    }
-
-    if (activeSubSection === "footerButton") {
-      return (
-        <>
-          <ArrowLabel label="Back Button" position="left" horizontalDistance={140} />
-          <ArrowLabel label="Next Button" position="right" horizontalDistance={140} />
-        </>
-      );
-    }
-
-    if (activeSubSection === "footerDiscountProgress") {
-      return (
-        <>
-          <ArrowLabel label="Discount Text" position="top" verticalDistance={120} />
-          <ArrowLabel label="Progress Bar" position="bottom" verticalDistance={120} />
-        </>
-      );
-    }
-
-    // Bundle Header arrows
-    if (activeSubSection === "headerText") {
-      return (
-        <>
-          <ArrowLabel label="Conditions Text" position="top" verticalDistance={150} />
-          <ArrowLabel label="Discount Text" position="bottom" verticalDistance={150} />
-        </>
-      );
-    }
-
-    // General section arrows
-    if (activeSubSection === "emptyState") {
-      return <ArrowLabel label="Empty State Card" position="top" verticalDistance={150} />;
-    }
-
-    if (activeSubSection === "addToCartButton") {
-      return <ArrowLabel label="Add to Cart Button" position="top" verticalDistance={150} />;
-    }
-
-    if (activeSubSection === "toasts") {
-      return <ArrowLabel label="Toast Notification" position="top" verticalDistance={150} />;
-    }
-
-    return null;
   };
 
   // Render settings panel based on active subsection
@@ -3992,7 +4050,6 @@ export default function DesignControlPanel() {
                 {/* Preview with Arrow Overlay */}
                 <div style={{ position: "relative", display: "inline-block" }}>
                   {renderPreviewContent()}
-                  {renderArrows()}
                 </div>
               </div>
 

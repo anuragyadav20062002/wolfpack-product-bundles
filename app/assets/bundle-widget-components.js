@@ -852,9 +852,15 @@ export class TemplateManager {
 export class ComponentGenerator {
   /**
    * Generates HTML for a product card with variant selector and quantity controls
+   * @param {Object} product - Product data
+   * @param {number} currentQuantity - Current selected quantity
+   * @param {Object} currencyInfo - Currency formatting info
+   * @param {Object} options - Optional settings
+   * @param {boolean} options.showQuantitySelector - Whether to show quantity selector (default: true)
    */
-  static renderProductCard(product, currentQuantity, currencyInfo) {
+  static renderProductCard(product, currentQuantity, currencyInfo, options = {}) {
     const selectionKey = product.variantId || product.id;
+    const showQuantitySelector = options.showQuantitySelector !== false;
 
     return `
       <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
@@ -880,13 +886,15 @@ export class ComponentGenerator {
 
           ${this.renderVariantSelector(product)}
 
-          <div class="product-quantity-wrapper">
-            <div class="product-quantity-selector">
-              <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-              <span class="qty-display">${currentQuantity}</span>
-              <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+          ${showQuantitySelector ? `
+            <div class="product-quantity-wrapper">
+              <div class="product-quantity-selector">
+                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                <span class="qty-display">${currentQuantity}</span>
+                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+              </div>
             </div>
-          </div>
+          ` : ''}
 
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
             ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}

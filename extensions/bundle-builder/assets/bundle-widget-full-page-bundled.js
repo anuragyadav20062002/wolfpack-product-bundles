@@ -70,7 +70,6 @@
  * @author Wolfpack Team
  */
 
-'use strict';
 
 // ============================================================================
 // GLOBAL CONSTANTS AND CONFIGURATION
@@ -859,9 +858,15 @@ class TemplateManager {
 class ComponentGenerator {
   /**
    * Generates HTML for a product card with variant selector and quantity controls
+   * @param {Object} product - Product data
+   * @param {number} currentQuantity - Current selected quantity
+   * @param {Object} currencyInfo - Currency formatting info
+   * @param {Object} options - Optional settings
+   * @param {boolean} options.showQuantitySelector - Whether to show quantity selector (default: true)
    */
-  static renderProductCard(product, currentQuantity, currencyInfo) {
+  static renderProductCard(product, currentQuantity, currencyInfo, options = {}) {
     const selectionKey = product.variantId || product.id;
+    const showQuantitySelector = options.showQuantitySelector !== false;
 
     return `
       <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
@@ -887,13 +892,15 @@ class ComponentGenerator {
 
           ${this.renderVariantSelector(product)}
 
-          <div class="product-quantity-wrapper">
-            <div class="product-quantity-selector">
-              <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-              <span class="qty-display">${currentQuantity}</span>
-              <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+          ${showQuantitySelector ? `
+            <div class="product-quantity-wrapper">
+              <div class="product-quantity-selector">
+                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                <span class="qty-display">${currentQuantity}</span>
+                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+              </div>
             </div>
-          </div>
+          ` : ''}
 
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
             ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
@@ -1039,7 +1046,473 @@ class ComponentGenerator {
 
 
   // ============================================================================
-  // FULL PAGE WIDGET
+  // BUNDLE PRODUCT MODAL COMPONENT
+  // ============================================================================
+
+/**
+ * Bundle Product Modal Component
+ *
+ * Handles the product variant selection modal for full-page bundles.
+ * Opens when user clicks "Choose Options" on a product card.
+ *
+ * Features:
+ * - Image gallery with thumbnails
+ * - Variant selection dropdowns
+ * - Quantity controls
+ * - Add To Box functionality
+ * - Responsive mobile layout
+ *
+ * @version 1.0.0
+ */
+
+
+class BundleProductModal {
+  constructor(widget) {
+    this.widget = widget;
+    this.modalElement = null;
+    this.currentProduct = null;
+    this.currentStep = null;
+    this.selectedVariant = null;
+    this.selectedQuantity = 1;
+    this.selectedImageIndex = 0;
+
+    this.init();
+  }
+
+  /**
+   * Initialize modal
+   */
+  init() {
+    this.createModalHTML();
+    this.attachEventListeners();
+    console.log('[MODAL] ✅ Product modal initialized');
+  }
+
+  /**
+   * Create modal DOM structure
+   */
+  createModalHTML() {
+    const modalHTML = `
+      <div class="bundle-modal-overlay" id="bundle-product-modal">
+        <div class="bundle-modal-container">
+          <button class="bundle-modal-close" aria-label="Close modal">&times;</button>
+
+          <div class="bundle-modal-content">
+            <!-- Left Column: Image Gallery -->
+            <div class="bundle-modal-images">
+              <div class="bundle-modal-main-image">
+                <img src="" alt="Product image" id="modal-main-image">
+              </div>
+              <div class="bundle-modal-thumbnails" id="modal-thumbnails">
+                <!-- Thumbnails will be inserted here -->
+              </div>
+            </div>
+
+            <!-- Right Column: Product Details -->
+            <div class="bundle-modal-details">
+              <div class="bundle-modal-header">
+                <h2 class="bundle-modal-title" id="modal-product-title"></h2>
+                <div class="bundle-modal-price" id="modal-product-price"></div>
+              </div>
+
+              <div class="bundle-modal-description" id="modal-product-description"></div>
+
+              <div class="bundle-modal-variants" id="modal-variants-container">
+                <!-- Variant selectors will be inserted here -->
+              </div>
+
+              <div class="bundle-modal-quantity">
+                <label class="bundle-modal-quantity-label">Quantity</label>
+                <div class="bundle-modal-quantity-controls">
+                  <button class="bundle-modal-qty-btn" id="modal-qty-decrease">−</button>
+                  <span class="bundle-modal-qty-display" id="modal-qty-display">1</span>
+                  <button class="bundle-modal-qty-btn" id="modal-qty-increase">+</button>
+                </div>
+              </div>
+
+              <button class="bundle-modal-add-btn" id="modal-add-to-box">
+                Add To Box
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Insert modal into document body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    this.modalElement = document.getElementById('bundle-product-modal');
+  }
+
+  /**
+   * Attach event listeners
+   */
+  attachEventListeners() {
+    // Close button
+    const closeBtn = this.modalElement.querySelector('.bundle-modal-close');
+    closeBtn.addEventListener('click', () => this.close());
+
+    // Close on overlay click
+    this.modalElement.addEventListener('click', (e) => {
+      if (e.target === this.modalElement) {
+        this.close();
+      }
+    });
+
+    // Close on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.modalElement.classList.contains('active')) {
+        this.close();
+      }
+    });
+
+    // Quantity controls
+    document.getElementById('modal-qty-decrease').addEventListener('click', () => {
+      this.updateQuantity(Math.max(1, this.selectedQuantity - 1));
+    });
+
+    document.getElementById('modal-qty-increase').addEventListener('click', () => {
+      this.updateQuantity(this.selectedQuantity + 1);
+    });
+
+    // Add To Box button
+    document.getElementById('modal-add-to-box').addEventListener('click', () => {
+      this.addToBundle();
+    });
+  }
+
+  /**
+   * Open modal with product data
+   * @param {Object} product - Product data
+   * @param {Object} step - Step data
+   */
+  open(product, step) {
+    console.log('[MODAL] Opening modal for product:', product);
+
+    this.currentProduct = product;
+    this.currentStep = step;
+    this.selectedQuantity = 1;
+    this.selectedImageIndex = 0;
+
+    // Populate modal content
+    this.populateModal();
+
+    // Show modal
+    this.modalElement.classList.add('active');
+    document.body.classList.add('modal-open');
+  }
+
+  /**
+   * Close modal
+   */
+  close() {
+    this.modalElement.classList.remove('active');
+    document.body.classList.remove('modal-open');
+
+    // Reset state
+    this.currentProduct = null;
+    this.currentStep = null;
+    this.selectedVariant = null;
+    this.selectedQuantity = 1;
+    this.selectedImageIndex = 0;
+  }
+
+  /**
+   * Populate modal with product data
+   */
+  populateModal() {
+    // Set title
+    document.getElementById('modal-product-title').textContent = this.currentProduct.title;
+
+    // Set description (if available)
+    const descriptionEl = document.getElementById('modal-product-description');
+    if (this.currentProduct.description) {
+      descriptionEl.textContent = this.currentProduct.description;
+      descriptionEl.style.display = 'block';
+    } else {
+      descriptionEl.style.display = 'none';
+    }
+
+    // Load images
+    this.loadImages();
+
+    // Create variant selectors
+    this.createVariantSelectors();
+
+    // Set initial price
+    this.updatePrice();
+
+    // Show/hide quantity selector based on config
+    const quantitySection = this.modalElement.querySelector('.bundle-modal-quantity');
+    if (quantitySection) {
+      const showQuantitySelector = this.widget?.config?.showQuantitySelectorInModal !== false;
+      quantitySection.style.display = showQuantitySelector ? 'flex' : 'none';
+    }
+
+    // Reset quantity display
+    document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
+  }
+
+  /**
+   * Load product images
+   */
+  loadImages() {
+    const images = this.currentProduct.images || [];
+    const mainImageEl = document.getElementById('modal-main-image');
+    const thumbnailsContainer = document.getElementById('modal-thumbnails');
+
+    if (images.length === 0) {
+      // Use fallback placeholder
+      mainImageEl.src = 'https://via.placeholder.com/600x600?text=No+Image';
+      mainImageEl.alt = this.currentProduct.title;
+      thumbnailsContainer.innerHTML = '';
+      return;
+    }
+
+    // Set main image
+    mainImageEl.src = images[0];
+    mainImageEl.alt = this.currentProduct.title;
+
+    // Create thumbnails
+    thumbnailsContainer.innerHTML = images.map((image, index) => `
+      <div class="bundle-modal-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">
+        <img src="${image}" alt="${this.currentProduct.title} - Image ${index + 1}">
+      </div>
+    `).join('');
+
+    // Add thumbnail click handlers
+    thumbnailsContainer.querySelectorAll('.bundle-modal-thumbnail').forEach((thumbnail) => {
+      thumbnail.addEventListener('click', () => {
+        const index = parseInt(thumbnail.dataset.index);
+        this.selectImage(index);
+      });
+    });
+  }
+
+  /**
+   * Select image by index
+   * @param {number} index - Image index
+   */
+  selectImage(index) {
+    const images = this.currentProduct.images || [];
+    if (index < 0 || index >= images.length) return;
+
+    this.selectedImageIndex = index;
+
+    // Update main image
+    const mainImageEl = document.getElementById('modal-main-image');
+    mainImageEl.src = images[index];
+
+    // Update active thumbnail
+    document.querySelectorAll('.bundle-modal-thumbnail').forEach((thumb, i) => {
+      thumb.classList.toggle('active', i === index);
+    });
+  }
+
+  /**
+   * Create variant selector dropdowns
+   */
+  createVariantSelectors() {
+    const variantsContainer = document.getElementById('modal-variants-container');
+    const variants = this.currentProduct.variants || [];
+
+    // If only one variant (no options), hide variant selectors
+    if (variants.length <= 1) {
+      variantsContainer.innerHTML = '';
+      this.selectedVariant = variants[0] || this.currentProduct;
+      return;
+    }
+
+    // Extract option names (e.g., Size, Color)
+    const optionNames = this.currentProduct.options || [];
+
+    if (optionNames.length === 0) {
+      // No variant options, use first variant
+      this.selectedVariant = variants[0];
+      variantsContainer.innerHTML = '';
+      return;
+    }
+
+    // Create dropdown for each option
+    variantsContainer.innerHTML = optionNames.map((optionName, optionIndex) => {
+      // Get unique values for this option
+      const optionValues = [...new Set(variants.map(v => v[`option${optionIndex + 1}`]))];
+
+      return `
+        <div class="bundle-modal-variant-group">
+          <label class="bundle-modal-variant-label">${optionName}</label>
+          <select class="bundle-modal-variant-select" data-option-index="${optionIndex}">
+            ${optionValues.map(value => `
+              <option value="${value}">${value}</option>
+            `).join('')}
+          </select>
+        </div>
+      `;
+    }).join('');
+
+    // Add change handlers to variant selectors
+    variantsContainer.querySelectorAll('.bundle-modal-variant-select').forEach((select) => {
+      select.addEventListener('change', () => {
+        this.updateSelectedVariant();
+      });
+    });
+
+    // Set initial variant
+    this.updateSelectedVariant();
+  }
+
+  /**
+   * Update selected variant based on dropdown selections
+   */
+  updateSelectedVariant() {
+    const variants = this.currentProduct.variants || [];
+    const selectors = document.querySelectorAll('.bundle-modal-variant-select');
+
+    // Get selected option values
+    const selectedOptions = Array.from(selectors).map(select => select.value);
+
+    // Find matching variant
+    this.selectedVariant = variants.find(variant => {
+      return selectedOptions.every((value, index) => {
+        return variant[`option${index + 1}`] === value;
+      });
+    });
+
+    // If no match found, use first variant
+    if (!this.selectedVariant && variants.length > 0) {
+      this.selectedVariant = variants[0];
+    }
+
+    // Update price
+    this.updatePrice();
+
+    // Check availability
+    this.updateAvailability();
+  }
+
+  /**
+   * Update price display
+   */
+  updatePrice() {
+    const priceEl = document.getElementById('modal-product-price');
+    const variant = this.selectedVariant || this.currentProduct;
+
+    // Format price using widget's currency manager
+    const price = variant.price || this.currentProduct.price || 0;
+    const compareAtPrice = variant.compareAtPrice || this.currentProduct.compareAtPrice;
+
+    let priceHTML = '';
+
+    if (compareAtPrice && compareAtPrice > price) {
+      priceHTML = `
+        <span class="bundle-modal-price-strike">${this.formatPrice(compareAtPrice)}</span>
+        ${this.formatPrice(price)}
+      `;
+    } else {
+      priceHTML = this.formatPrice(price);
+    }
+
+    priceEl.innerHTML = priceHTML;
+  }
+
+  /**
+   * Format price with currency
+   * @param {number} price - Price in cents
+   * @returns {string} Formatted price
+   */
+  formatPrice(price) {
+    // Use widget's currency formatting if available
+    if (this.widget && this.widget.formatPrice) {
+      return this.widget.formatPrice(price);
+    }
+
+    // Fallback formatting
+    const dollars = (price / 100).toFixed(2);
+    return `$${dollars}`;
+  }
+
+  /**
+   * Update availability status
+   */
+  updateAvailability() {
+    const addBtn = document.getElementById('modal-add-to-box');
+    const variant = this.selectedVariant || this.currentProduct;
+
+    // Check if variant is available
+    const isAvailable = variant.available !== false;
+
+    if (!isAvailable) {
+      addBtn.disabled = true;
+      addBtn.textContent = 'Out of Stock';
+    } else {
+      addBtn.disabled = false;
+      addBtn.textContent = 'Add To Box';
+    }
+  }
+
+  /**
+   * Update quantity
+   * @param {number} quantity - New quantity
+   */
+  updateQuantity(quantity) {
+    this.selectedQuantity = Math.max(1, quantity);
+    document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
+  }
+
+  /**
+   * Add product to bundle
+   */
+  addToBundle() {
+    if (!this.currentProduct || !this.currentStep) {
+      console.error('[MODAL] Missing product or step data');
+      return;
+    }
+
+    const variant = this.selectedVariant || this.currentProduct;
+    const stepIndex = this.widget.steps.findIndex(s => s.id === this.currentStep.id);
+
+    console.log('[MODAL] Adding to bundle:', {
+      stepIndex,
+      productId: variant.id,
+      quantity: this.selectedQuantity,
+      variant: variant
+    });
+
+    // Call widget's method to add product
+    this.widget.updateProductSelection(
+      stepIndex,
+      variant.id,
+      this.selectedQuantity
+    );
+
+    // Close modal
+    this.close();
+
+    // Show success feedback
+    this.showSuccessFeedback();
+  }
+
+  /**
+   * Show success feedback after adding product
+   */
+  showSuccessFeedback() {
+    // Use widget's toast manager if available
+    if (this.widget && this.widget.showToast) {
+      this.widget.showToast('Product added to bundle!', 'success');
+    } else {
+      console.log('[MODAL] ✅ Product added to bundle');
+    }
+  }
+}
+
+// Export for use in main widget
+
+
+  // Export modal to window for widget access
+  window.BundleProductModal = BundleProductModal;
+
+  // ============================================================================
+  // BUNDLE WIDGET FULL PAGE
   // ============================================================================
 
 /**
@@ -1108,9 +1581,9 @@ class ComponentGenerator {
  * @author Wolfpack Team
  */
 
-'use strict';
 
 // Import shared components and utilities
+
 console.log('[FULL_PAGE_WIDGET] Initializing...');
 
 class BundleWidgetFullPage {
@@ -1124,6 +1597,14 @@ class BundleWidgetFullPage {
     this.isInitialized = false;
     this.config = {};
     this.elements = {};
+
+    // Initialize product modal (if BundleProductModal is available)
+    this.productModal = null;
+    if (window.BundleProductModal) {
+      this.productModal = new window.BundleProductModal(this);
+    } else {
+      console.warn('[WIDGET_INIT] ⚠️ BundleProductModal not loaded, modal functionality disabled');
+    }
 
     // Call async init but don't block constructor
     this.init().catch(error => {
@@ -1258,6 +1739,12 @@ class BundleWidgetFullPage {
       customTitle: dataset.customTitle || null,
       customDescription: dataset.customDescription || null,
       customInstruction: dataset.customInstruction || null,
+      // Card layout settings from theme editor
+      productCardSpacing: parseInt(dataset.productCardSpacing) || 20,
+      productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
+      // Quantity selector visibility settings (default: show on both)
+      showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
+      showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -1265,6 +1752,23 @@ class BundleWidgetFullPage {
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections
     };
+
+    // Apply card layout settings as CSS variables
+    this.applyCardLayoutSettings();
+  }
+
+  /**
+   * Apply card layout settings from Theme Editor as CSS variables
+   */
+  applyCardLayoutSettings() {
+    document.documentElement.style.setProperty(
+      '--bundle-product-card-spacing',
+      `${this.config.productCardSpacing}px`
+    );
+    document.documentElement.style.setProperty(
+      '--bundle-product-cards-per-row',
+      this.config.productCardsPerRow
+    );
   }
 
   async loadBundleData() {
@@ -1765,79 +2269,124 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Create horizontal step timeline with state-based icons
+  // Create horizontal step tabs - clickable tabs showing step names
   createStepTimeline() {
-    const timeline = document.createElement('div');
-    timeline.className = 'step-timeline';
+    const tabsContainer = document.createElement('div');
+    tabsContainer.className = 'step-tabs-container';
 
     if (!this.selectedBundle || !this.selectedBundle.steps) {
-      console.error('[WIDGET_RENDER] Cannot create timeline: selectedBundle or steps is undefined');
-      return timeline;
+      console.error('[WIDGET_RENDER] Cannot create tabs: selectedBundle or steps is undefined');
+      return tabsContainer;
     }
 
     this.selectedBundle.steps.forEach((step, index) => {
-      const stepItem = document.createElement('div');
-      stepItem.className = 'timeline-step';
+      const tab = document.createElement('div');
+      tab.className = 'step-tab';
+      tab.dataset.stepIndex = index;
 
       // Determine step state
       const isCompleted = this.isStepCompleted(index);
       const isCurrent = index === this.currentStepIndex;
       const isAccessible = this.isStepAccessible(index);
 
-      if (isCompleted) stepItem.classList.add('completed');
-      if (isCurrent) stepItem.classList.add('current');
-      if (!isAccessible) stepItem.classList.add('locked');
+      if (isCompleted) tab.classList.add('completed');
+      if (isCurrent) tab.classList.add('active');
+      if (!isAccessible) tab.classList.add('locked');
 
-      // Create step circle with icon
-      const circle = document.createElement('div');
-      circle.className = 'timeline-circle';
+      // Get selection info for this step
+      const selectedProducts = this.selectedProducts[index] || {};
+      const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
+      const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
 
-      if (isCompleted) {
-        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M13 4L6 11L3 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>`;
-      } else if (isCurrent) {
-        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="3" y="3" width="10" height="10" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <rect x="5" y="5" width="6" height="6" stroke="currentColor" stroke-width="1.5" fill="none"/>
-        </svg>`;
-      } else if (!isAccessible) {
-        circle.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
-        </svg>`;
+      // Tab content structure
+      let tabContent = '';
+
+      if (hasSelections) {
+        // Show product images if available
+        const productImages = this.getStepProductImages(index);
+        if (productImages.length > 0) {
+          const imagesHtml = productImages.slice(0, 3).map(img =>
+            `<img src="${img.url}" alt="${img.alt}" class="tab-product-image">`
+          ).join('');
+          tabContent = `
+            <div class="tab-images">${imagesHtml}</div>
+            <div class="tab-info">
+              <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
+              <span class="tab-count">${totalQuantity} selected</span>
+            </div>
+            <div class="tab-check">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          `;
+        } else {
+          // No images, just show checkmark
+          tabContent = `
+            <div class="tab-info">
+              <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
+              <span class="tab-count">${totalQuantity} selected</span>
+            </div>
+            <div class="tab-check">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          `;
+        }
       } else {
-        circle.textContent = (index + 1).toString();
+        // Empty step - show step number and name
+        tabContent = `
+          <div class="tab-number">${index + 1}</div>
+          <div class="tab-info">
+            <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
+            <span class="tab-hint">${step.minQuantity ? `Select ${step.minQuantity}+` : 'Choose items'}</span>
+          </div>
+          ${!isAccessible ? `
+            <div class="tab-lock">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
+              </svg>
+            </div>
+          ` : ''}
+        `;
       }
 
-      stepItem.appendChild(circle);
-
-      // Add connecting line (except for last step)
-      if (index < this.selectedBundle.steps.length - 1) {
-        const line = document.createElement('div');
-        line.className = 'timeline-line';
-        if (isCompleted) line.classList.add('completed');
-        stepItem.appendChild(line);
-      }
-
-      // Add step label (use clean "Step 1" instead of full name to avoid wrapping)
-      const stepName = document.createElement('div');
-      stepName.className = 'timeline-step-name';
-      stepName.textContent = `Step ${index + 1}`;
-      stepItem.appendChild(stepName);
+      tab.innerHTML = tabContent;
 
       // Make clickable if accessible
       if (isAccessible) {
-        stepItem.style.cursor = 'pointer';
-        stepItem.addEventListener('click', () => {
+        tab.style.cursor = 'pointer';
+        tab.addEventListener('click', () => {
           this.currentStepIndex = index;
           this.renderFullPageLayout();
         });
       }
 
-      timeline.appendChild(stepItem);
+      tabsContainer.appendChild(tab);
     });
 
-    return timeline;
+    return tabsContainer;
+  }
+
+  // Get product images for a step (helper for tabs)
+  getStepProductImages(stepIndex) {
+    const selectedProducts = this.selectedProducts[stepIndex] || {};
+    const productImages = [];
+
+    Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
+      if (quantity > 0) {
+        const product = this.stepProductData[stepIndex]?.find(p => (p.variantId || p.id) === variantId);
+        if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
+          productImages.push({
+            url: product.imageUrl,
+            alt: product.title || 'Product'
+          });
+        }
+      }
+    });
+
+    return productImages;
   }
 
   // Create bundle instructions header
@@ -1969,46 +2518,27 @@ class BundleWidgetFullPage {
     return grid;
   }
 
-  // Create loading skeleton for product grid that matches actual product card design EXACTLY
-  // Uses real CSS classes to ensure zero layout shift when products load
+  // Create loading skeleton for product grid - solid pulsating cards
+  // No internal button/quantity skeletons - just clean solid cards
   createProductGridLoadingState() {
     return `
       <div class="full-page-product-grid">
         ${Array(6).fill(0).map(() => `
           <div class="product-card skeleton-loading">
-            <div class="product-image">
-              <div class="skeleton-shimmer"></div>
-            </div>
-
-            <div class="product-content-wrapper">
-              <div class="product-title">
-                <div class="skeleton-shimmer skeleton-text"></div>
-              </div>
-
-              <div class="product-price-row">
-                <div class="skeleton-shimmer skeleton-price"></div>
-              </div>
-
-              <div class="product-spacer"></div>
-
-              <div class="product-quantity-wrapper">
-                <div class="product-quantity-selector skeleton-quantity">
-                  <div class="skeleton-shimmer"></div>
-                </div>
-              </div>
-
-              <button class="product-add-btn skeleton-button">
-                <div class="skeleton-shimmer"></div>
-              </button>
-            </div>
+            <div class="skeleton-card-content"></div>
           </div>
         `).join('')}
       </div>
       <style>
-        /* Skeleton loading state - maintains exact dimensions of real cards */
+        /* Skeleton loading state - solid pulsating cards */
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
+          position: relative;
+          overflow: hidden;
+          min-height: 320px;
+          background: #f5f5f5;
+          border-radius: 12px;
         }
 
         .product-card.skeleton-loading:hover {
@@ -2016,99 +2546,31 @@ class BundleWidgetFullPage {
           box-shadow: none;
         }
 
-        /* Shimmer effect base */
-        .skeleton-shimmer {
-          background: linear-gradient(90deg,
-            rgba(0, 0, 0, 0.04) 0%,
-            rgba(0, 0, 0, 0.08) 20%,
-            rgba(0, 0, 0, 0.04) 40%,
-            rgba(0, 0, 0, 0.04) 100%
+        /* Full card pulsating effect */
+        .skeleton-card-content {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            110deg,
+            #f0f0f0 0%,
+            #f0f0f0 40%,
+            #e0e0e0 50%,
+            #f0f0f0 60%,
+            #f0f0f0 100%
           );
           background-size: 200% 100%;
-          animation: shimmer 1.8s ease-in-out infinite;
-          border-radius: inherit;
+          animation: skeleton-pulse 1.5s ease-in-out infinite;
         }
 
-        /* Product image skeleton - uses same height as real .product-image */
-        .skeleton-loading .product-image {
-          position: relative;
-          background: transparent;
-        }
-
-        .skeleton-loading .product-image .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Product title skeleton - uses real .product-title dimensions */
-        .skeleton-loading .product-title {
-          position: relative;
-          color: transparent;
-        }
-
-        .skeleton-loading .product-title .skeleton-text {
-          height: 1.4em; /* Matches line-height */
-          width: 80%;
-          margin: 0 auto;
-        }
-
-        /* Price skeleton - uses real .product-price-row dimensions */
-        .skeleton-loading .product-price-row {
-          position: relative;
-        }
-
-        .skeleton-loading .product-price-row .skeleton-price {
-          height: 1.2em;
-          width: 60%;
-          margin: 0 auto;
-        }
-
-        /* Quantity selector skeleton - uses real .product-quantity-selector dimensions */
-        .skeleton-loading .product-quantity-selector {
-          position: relative;
-          background: transparent;
-          border-color: rgba(0, 0, 0, 0.04);
-        }
-
-        .skeleton-loading .product-quantity-selector .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Button skeleton - uses real .product-add-btn dimensions */
-        .skeleton-loading .product-add-btn {
-          position: relative;
-          background: transparent;
-          color: transparent;
-          border: 1px solid rgba(0, 0, 0, 0.04);
-          cursor: default;
-        }
-
-        .skeleton-loading .product-add-btn:hover {
-          transform: none;
-          box-shadow: none;
-        }
-
-        .skeleton-loading .product-add-btn .skeleton-shimmer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        @keyframes shimmer {
+        @keyframes skeleton-pulse {
           0% {
-            background-position: -200% 0;
+            background-position: 200% 0;
           }
           100% {
-            background-position: 200% 0;
+            background-position: -200% 0;
           }
         }
       </style>
@@ -2175,11 +2637,12 @@ class BundleWidgetFullPage {
       }
     };
 
-    // Use ComponentGenerator to render HTML
-    const htmlString = window.BUNDLE_WIDGET.ComponentGenerator.renderProductCard(
+    // Use ComponentGenerator to render HTML (available in same scope after bundling)
+    const htmlString = ComponentGenerator.renderProductCard(
       product,
       currentQuantity,
-      currencyInfo
+      currencyInfo,
+      { showQuantitySelector: this.config.showQuantitySelectorOnCard }
     );
 
     // Convert HTML string to DOM element
@@ -2203,14 +2666,16 @@ class BundleWidgetFullPage {
     const addBtn = cardElement.querySelector('.product-add-btn');
 
     if (increaseBtn) {
-      increaseBtn.addEventListener('click', () => {
+      increaseBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         this.updateProductSelection(stepIndex, productId, currentQty + 1);
       });
     }
 
     if (decreaseBtn) {
-      decreaseBtn.addEventListener('click', () => {
+      decreaseBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         if (currentQty > 0) {
           this.updateProductSelection(stepIndex, productId, currentQty - 1);
@@ -2219,10 +2684,20 @@ class BundleWidgetFullPage {
     }
 
     if (addBtn) {
-      addBtn.addEventListener('click', () => {
+      addBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         if (currentQty === 0) {
-          this.updateProductSelection(stepIndex, productId, 1);
+          // Open modal for product selection if available
+          if (this.productModal) {
+            const step = this.steps[stepIndex];
+            this.productModal.open(product, step);
+          } else {
+            this.updateProductSelection(stepIndex, productId, 1);
+          }
+        } else {
+          // Toggle off if already added
+          this.updateProductSelection(stepIndex, productId, 0);
         }
       });
     }
@@ -2231,6 +2706,7 @@ class BundleWidgetFullPage {
     const variantSelector = cardElement.querySelector('.variant-selector');
     if (variantSelector) {
       variantSelector.addEventListener('change', (e) => {
+        e.stopPropagation(); // Prevent card click from triggering
         const newVariantId = e.target.value;
         // Update product object with new variant
         product.variantId = newVariantId;
@@ -2238,6 +2714,28 @@ class BundleWidgetFullPage {
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         this.updateProductSelection(stepIndex, newVariantId, currentQty);
       });
+    }
+
+    // Product card click - open modal (clicking on image or title area)
+    const productImage = cardElement.querySelector('.product-image');
+    const productTitle = cardElement.querySelector('.product-title');
+
+    const openModalHandler = (e) => {
+      e.stopPropagation();
+      if (this.productModal) {
+        const step = this.steps[stepIndex];
+        this.productModal.open(product, step);
+      }
+    };
+
+    if (productImage) {
+      productImage.style.cursor = 'pointer';
+      productImage.addEventListener('click', openModalHandler);
+    }
+
+    if (productTitle) {
+      productTitle.style.cursor = 'pointer';
+      productTitle.addEventListener('click', openModalHandler);
     }
   }
 
@@ -2442,6 +2940,13 @@ class BundleWidgetFullPage {
     const stepSelections = this.selectedProducts[stepIndex] || {};
     const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
     const step = this.selectedBundle.steps[stepIndex];
+
+    // If no conditions are set, any selection is valid (just need at least 1 product)
+    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
+      return totalQuantity > 0;
+    }
+
+    // Otherwise use minQuantity for step completion
     return totalQuantity >= (step.minQuantity || 1);
   }
 
@@ -3180,8 +3685,11 @@ class BundleWidgetFullPage {
               </div>
             </div>
 
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
-              ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
+                    data-product-id="${selectionKey}"
+                    data-product-handle="${product.handle || ''}"
+                    data-step-id="${step.id}">
+              ${currentQuantity > 0 ? '✓ Added to Bundle' : 'Choose Options'}
             </button>
           </div>
         </div>
@@ -3213,9 +3721,21 @@ class BundleWidgetFullPage {
     const newProductGrid = productGrid.cloneNode(true);
     productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
+    // Get step data for modal
+    const step = this.steps[stepIndex];
+
+    // Helper to find product by ID
+    const findProduct = (productId) => {
+      return this.stepProductData[stepIndex]?.find(p => {
+        const selectionKey = p.variantId || p.id;
+        return selectionKey === productId;
+      });
+    };
+
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('qty-btn')) {
+        e.stopPropagation();
         const productId = e.target.dataset.productId;
         const isIncrease = e.target.classList.contains('qty-increase');
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
@@ -3225,19 +3745,59 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Add to Bundle button handler
+    // Choose Options / Add to Bundle button handler
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('product-add-btn')) {
+        e.stopPropagation();
         const productId = e.target.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-        // Toggle between 0 and 1
-        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+
+        // If product is already added, allow toggling it off
+        if (currentQuantity > 0) {
+          this.updateProductSelection(stepIndex, productId, 0);
+          return;
+        }
+
+        // If modal is available, open it for variant selection
+        if (this.productModal) {
+          const product = findProduct(productId);
+
+          if (product && step) {
+            this.productModal.open(product, step);
+          } else {
+            console.warn('[WIDGET] Product or step not found for modal', { productId, stepIndex });
+            // Fallback: Add directly with quantity 1
+            this.updateProductSelection(stepIndex, productId, 1);
+          }
+        } else {
+          // Fallback: Modal not available, add directly
+          this.updateProductSelection(stepIndex, productId, 1);
+        }
+      }
+    });
+
+    // Product image/title click - open modal
+    newProductGrid.addEventListener('click', (e) => {
+      const productImage = e.target.closest('.product-image');
+      const productTitle = e.target.closest('.product-title');
+
+      if (productImage || productTitle) {
+        const productCard = e.target.closest('.product-card');
+        if (productCard && this.productModal) {
+          const productId = productCard.dataset.productId;
+          const product = findProduct(productId);
+
+          if (product && step) {
+            this.productModal.open(product, step);
+          }
+        }
       }
     });
 
     // Variant selector handler
     newProductGrid.addEventListener('change', (e) => {
       if (e.target.classList.contains('variant-selector')) {
+        e.stopPropagation();
         const newVariantId = e.target.value;
         const baseProductId = e.target.dataset.baseProductId;
 
@@ -3263,6 +3823,11 @@ class BundleWidgetFullPage {
           }
         }
       }
+    });
+
+    // Add cursor pointer styles to product images and titles
+    newProductGrid.querySelectorAll('.product-image, .product-title').forEach(el => {
+      el.style.cursor = 'pointer';
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
@@ -3317,10 +3882,10 @@ class BundleWidgetFullPage {
 
       if (addBtn) {
         if (quantity > 0) {
-          addBtn.textContent = 'Added to Bundle';
+          addBtn.textContent = '✓ Added to Bundle';
           addBtn.classList.add('added');
         } else {
-          addBtn.textContent = 'Add to Bundle';
+          addBtn.textContent = 'Choose Options';
           addBtn.classList.remove('added');
         }
       }

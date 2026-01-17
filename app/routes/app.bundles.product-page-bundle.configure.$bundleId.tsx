@@ -287,6 +287,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleEnsureBundleTemplates(admin, session);
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
+      case "markWidgetInstalled":
+        return await handleMarkWidgetInstalled(admin, session);
       default:
         return json({ success: false, error: "Unknown action" }, { status: 400 });
     }
@@ -1838,6 +1840,44 @@ async function handleValidateWidgetPlacement(admin: any, session: any, bundleId:
   }
 }
 
+async function handleMarkWidgetInstalled(admin: any, session: any) {
+  try {
+    AppLogger.info("✅ [WIDGET_INSTALLATION] Marking product page widget as installed", {
+      shop: session.shop
+    });
+
+    // Mark the widget as installed in shop metafields
+    const success = await WidgetInstallationFlagsService.markAsInstalled(
+      admin,
+      session.shop,
+      'product_page'
+    );
+
+    if (!success) {
+      return json({
+        success: false,
+        error: "Failed to mark widget as installed"
+      }, { status: 500 });
+    }
+
+    AppLogger.info("✅ [WIDGET_INSTALLATION] Product page widget marked as installed", {
+      shop: session.shop
+    });
+
+    return json({
+      success: true,
+      message: "Widget marked as installed successfully"
+    });
+
+  } catch (error) {
+    AppLogger.error("🔥 [WIDGET_INSTALLATION] Error marking widget as installed:", {}, error as any);
+    return json({
+      success: false,
+      error: (error as Error).message || "Failed to mark widget as installed"
+    }, { status: 500 });
+  }
+}
+
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
   { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
@@ -2722,13 +2762,33 @@ export default function ConfigureBundleFlow() {
 
   // Revalidate data when window regains focus (to check if widget was placed in theme editor)
   useEffect(() => {
-    const handleFocus = () => {
+    const handleFocus = async () => {
+      // If widget installation was initiated and widget is not yet detected as installed,
+      // automatically mark it as installed when user returns from theme editor
+      if (widgetInstallationInitiated && widgetInstallation?.recommendedAction === 'install_widget') {
+        try {
+          const formData = new FormData();
+          formData.append("intent", "markWidgetInstalled");
+          await fetch(window.location.pathname, {
+            method: "POST",
+            body: formData,
+            headers: {
+              'X-Shopify-Shop-Domain': window.shopify?.config?.shop || ''
+            }
+          });
+          AppLogger.info('Widget marked as installed after user returned from theme editor');
+        } catch (error) {
+          AppLogger.error('Failed to mark widget as installed:', {}, error as any);
+        }
+      }
+
+      // Always revalidate to get fresh data
       revalidator.revalidate();
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [revalidator]);
+  }, [revalidator, widgetInstallationInitiated, widgetInstallation?.recommendedAction]);
 
   // Step management handlers
   const cloneStep = useCallback((stepId: string) => {
@@ -3271,21 +3331,6 @@ export default function ConfigureBundleFlow() {
 
         <Layout>
 
-          {/* Bundle Already Configured - Success */}
-          {widgetInstallation && widgetInstallation.recommendedAction === 'configured' && (
-            <Layout.Section>
-              <Banner
-                title="✅ This Bundle is Live"
-                tone="success"
-              >
-                <Text as="p" variant="bodyMd">
-                  This bundle is configured in your theme (<span style={{ display: 'inline-block', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', verticalAlign: 'bottom' }}>{widgetInstallation.themeName || 'theme'}</span>) and visible to customers.
-                  Any changes you save here will automatically update on your storefront.
-                </Text>
-              </Banner>
-            </Layout.Section>
-          )}
-
           {/* Left Sidebar */}
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
@@ -3334,130 +3379,6 @@ export default function ConfigureBundleFlow() {
                     status={formState.bundleStatus}
                     onChange={formState.setBundleStatus}
                   />
-                </BlockStack>
-              </Card>
-
-              {/* Take your bundle live Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">
-                    Take your bundle live
-                  </Text>
-
-                  {/* Template Selection */}
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h4">
-                      Bundle Container Template
-                    </Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Select which product template will display this bundle widget
-                    </Text>
-                    <TextField
-                      label="Template Name"
-                      value={formState.templateName}
-                      onChange={formState.setTemplateName}
-                      placeholder="e.g., cart-transform, product, bundle-special"
-                      helpText="Enter the template name for bundle container products. Leave empty to use the default product template."
-                      labelHidden
-                      autoComplete="off"
-                    />
-                  </BlockStack>
-
-                  {/* Setup Instructions */}
-                  <BlockStack gap="300">
-                    <Divider />
-
-                    <BlockStack gap="300">
-                      <Text variant="headingSm" as="h4">
-                        How to Complete Setup
-                      </Text>
-
-                      {/* Video Placeholder */}
-                      <div style={{
-                        width: '100%',
-                        height: '200px',
-                        backgroundColor: '#f6f6f7',
-                        borderRadius: '8px',
-                        border: '1px dashed #c4cdd5',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative'
-                      }}>
-                        <BlockStack gap="200" inlineAlign="center">
-                          <Icon source={ViewIcon} />
-                          <Text as="p" variant="bodySm" tone="subdued" alignment="center">
-                            Setup Video Tutorial
-                          </Text>
-                          <Text as="p" variant="bodyXs" tone="subdued" alignment="center">
-                            (Coming Soon)
-                          </Text>
-                        </BlockStack>
-                      </div>
-
-                      {/* Step-by-step Instructions */}
-                      <Card background="bg-surface-secondary">
-                        <BlockStack gap="300">
-                          <Text variant="bodyMd" as="p" fontWeight="semibold">
-                            Setup Checklist
-                          </Text>
-                          <List type="number">
-                            <List.Item>
-                              Create bundle steps and add products
-                            </List.Item>
-                            <List.Item>
-                              Set bundle status to "Active"
-                            </List.Item>
-                            <List.Item>
-                              Create a cart-transform template in your theme (first-time only)
-                            </List.Item>
-                            <List.Item>
-                              Enter the template name in "Bundle Container Template" field above
-                            </List.Item>
-                            <List.Item>
-                              Click "Save" to save your configuration
-                            </List.Item>
-                            <List.Item>
-                              Click "Add to Storefront" button when it appears to open theme editor
-                            </List.Item>
-                            <List.Item>
-                              In theme editor, adjust the widget position and save
-                            </List.Item>
-                          </List>
-                          <Banner tone="info">
-                            <Text as="p" variant="bodyXs">
-                              💡 The "Add to Storefront" button will appear after you save your bundle configuration. It opens the theme editor with the widget pre-selected for easy placement.
-                            </Text>
-                          </Banner>
-                        </BlockStack>
-                      </Card>
-                    </BlockStack>
-                  </BlockStack>
-
-                  {/* Pro Tip */}
-                  <Card background="bg-surface-info">
-                    <BlockStack gap="300">
-                      <InlineStack gap="200" blockAlign="center">
-                        <div style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          backgroundColor: 'var(--p-color-bg-fill-info)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <Icon source={ViewIcon} tone="info" />
-                        </div>
-                        <Text as="h3" variant="headingSm" fontWeight="semibold">
-                          Pro Tip: Custom Templates
-                        </Text>
-                      </InlineStack>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        Create a custom product template, eg. "bundle-product". This gives you better control and keeps bundle products separate from regular products.
-                      </Text>
-                    </BlockStack>
-                  </Card>
                 </BlockStack>
               </Card>
             </BlockStack>

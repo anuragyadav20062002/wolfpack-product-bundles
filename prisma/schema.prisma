@@ -203,6 +203,33 @@ model DesignSettings {
   productFinalPriceFontSize   Int?    @default(18)
   productFinalPriceFontWeight Int?    @default(700)
 
+  // Product Card Layout (Phase 1 & 2 - Full Page)
+  productCardWidth            Int?    @default(280) // Fixed card width in pixels
+  productCardHeight           Int?    @default(420) // Fixed card height in pixels
+  productCardSpacing          Int?    @default(20)  // Gap between cards in pixels
+  productCardBorderRadius     Int?    @default(8)   // Card border radius
+  productCardPadding          Int?    @default(12)  // Internal card padding
+  productCardBorderWidth      Int?    @default(1)   // Card border width
+  productCardBorderColor      String? @default("rgba(0,0,0,0.08)") // Card border color
+  productCardShadow           String? @default("0 2px 8px rgba(0,0,0,0.04)") // Base shadow
+  productCardHoverShadow      String? @default("0 8px 24px rgba(0,0,0,0.12)") // Hover shadow
+
+  // Product Image (Phase 5 - Full Page)
+  productImageHeight          Int?    @default(280) // Product image height
+  productImageBorderRadius    Int?    @default(6)   // Image border radius
+  productImageBgColor         String? @default("#F8F8F8") // Image background
+
+  // Product Modal (Phase 4 - Full Page)
+  modalBgColor                String? @default("#FFFFFF") // Modal background
+  modalBorderRadius           Int?    @default(12)  // Modal border radius
+  modalTitleFontSize          Int?    @default(28)  // Modal title size
+  modalTitleFontWeight        Int?    @default(700) // Modal title weight
+  modalPriceFontSize          Int?    @default(22)  // Modal price size
+  modalVariantBorderRadius    Int?    @default(8)   // Variant selector radius
+  modalButtonBgColor          String? @default("#000000") // Add To Box button
+  modalButtonTextColor        String? @default("#FFFFFF") // Button text color
+  modalButtonBorderRadius     Int?    @default(8)   // Button border radius
+
   // Button Section
   buttonBgColor               String? @default("#000000")
   buttonTextColor             String? @default("#FFFFFF")

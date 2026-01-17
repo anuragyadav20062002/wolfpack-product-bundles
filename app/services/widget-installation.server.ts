@@ -637,23 +637,27 @@ export class WidgetInstallationService {
       const pageHandle = `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
       const pageTitle = bundleName || `Bundle ${bundleId}`;
 
-      // Query for existing page by handle
+      // Query for existing page by handle using pages query with filter
       const CHECK_PAGE_QUERY = `
-        query getPageByHandle($handle: String!) {
-          pageByHandle(handle: $handle) {
-            id
-            title
-            handle
+        query getPageByHandle($query: String!) {
+          pages(first: 1, query: $query) {
+            edges {
+              node {
+                id
+                title
+                handle
+              }
+            }
           }
         }
       `;
 
       const checkResponse = await admin.graphql(CHECK_PAGE_QUERY, {
-        variables: { handle: pageHandle }
+        variables: { query: `handle:${pageHandle}` }
       });
 
       const checkData = await checkResponse.json();
-      let createdPage = checkData.data?.pageByHandle;
+      let createdPage = checkData.data?.pages?.edges?.[0]?.node || null;
 
       // If page doesn't exist, create it
       if (!createdPage) {

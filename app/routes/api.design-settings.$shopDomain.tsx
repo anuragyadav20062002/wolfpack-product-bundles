@@ -90,6 +90,30 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       quantitySelectorTextColor: "#FFFFFF",
       quantitySelectorFontSize: 16,
       quantitySelectorBorderRadius: 8,
+      // Product Card Layout & Dimensions (Phase 6)
+      productCardWidth: 280,
+      productCardHeight: 420,
+      productCardSpacing: 20,
+      productCardBorderRadius: 8,
+      productCardPadding: 12,
+      productCardBorderWidth: 1,
+      productCardBorderColor: "rgba(0,0,0,0.08)",
+      productCardShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      productCardHoverShadow: "0 8px 24px rgba(0,0,0,0.12)",
+      // Product Image (Phase 6)
+      productImageHeight: 280,
+      productImageBorderRadius: 6,
+      productImageBgColor: "#F8F8F8",
+      // Product Modal Styling (Phase 6)
+      modalBgColor: "#FFFFFF",
+      modalBorderRadius: 12,
+      modalTitleFontSize: 28,
+      modalTitleFontWeight: 700,
+      modalPriceFontSize: 22,
+      modalVariantBorderRadius: 8,
+      modalButtonBgColor: "#000000",
+      modalButtonTextColor: "#FFFFFF",
+      modalButtonBorderRadius: 8,
       // Global Colors
       globalPrimaryButtonColor: "#000000",
       globalButtonTextColor: "#FFFFFF",
@@ -134,6 +158,30 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         quantitySelectorTextColor: designSettings.quantitySelectorTextColor || defaultSettings.quantitySelectorTextColor,
         quantitySelectorFontSize: designSettings.quantitySelectorFontSize || defaultSettings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: designSettings.quantitySelectorBorderRadius || defaultSettings.quantitySelectorBorderRadius,
+        // Product Card Layout & Dimensions (Phase 6)
+        productCardWidth: designSettings.productCardWidth || defaultSettings.productCardWidth,
+        productCardHeight: designSettings.productCardHeight || defaultSettings.productCardHeight,
+        productCardSpacing: designSettings.productCardSpacing || defaultSettings.productCardSpacing,
+        productCardBorderRadius: designSettings.productCardBorderRadius || defaultSettings.productCardBorderRadius,
+        productCardPadding: designSettings.productCardPadding || defaultSettings.productCardPadding,
+        productCardBorderWidth: designSettings.productCardBorderWidth || defaultSettings.productCardBorderWidth,
+        productCardBorderColor: designSettings.productCardBorderColor || defaultSettings.productCardBorderColor,
+        productCardShadow: designSettings.productCardShadow || defaultSettings.productCardShadow,
+        productCardHoverShadow: designSettings.productCardHoverShadow || defaultSettings.productCardHoverShadow,
+        // Product Image (Phase 6)
+        productImageHeight: designSettings.productImageHeight || defaultSettings.productImageHeight,
+        productImageBorderRadius: designSettings.productImageBorderRadius || defaultSettings.productImageBorderRadius,
+        productImageBgColor: designSettings.productImageBgColor || defaultSettings.productImageBgColor,
+        // Product Modal Styling (Phase 6)
+        modalBgColor: designSettings.modalBgColor || defaultSettings.modalBgColor,
+        modalBorderRadius: designSettings.modalBorderRadius || defaultSettings.modalBorderRadius,
+        modalTitleFontSize: designSettings.modalTitleFontSize || defaultSettings.modalTitleFontSize,
+        modalTitleFontWeight: designSettings.modalTitleFontWeight || defaultSettings.modalTitleFontWeight,
+        modalPriceFontSize: designSettings.modalPriceFontSize || defaultSettings.modalPriceFontSize,
+        modalVariantBorderRadius: designSettings.modalVariantBorderRadius || defaultSettings.modalVariantBorderRadius,
+        modalButtonBgColor: designSettings.modalButtonBgColor || defaultSettings.modalButtonBgColor,
+        modalButtonTextColor: designSettings.modalButtonTextColor || defaultSettings.modalButtonTextColor,
+        modalButtonBorderRadius: designSettings.modalButtonBorderRadius || defaultSettings.modalButtonBorderRadius,
         ...globalColorsSettings,
         ...footerSettings,
         ...stepBarSettings,
@@ -237,6 +285,33 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
   --bundle-quantity-selector-text-color: ${s.quantitySelectorTextColor || globalButtonText};
   --bundle-quantity-selector-font-size: ${s.quantitySelectorFontSize || 16}px;
   --bundle-quantity-selector-border-radius: ${s.quantitySelectorBorderRadius || 8}px;
+
+  /* PRODUCT CARD LAYOUT & DIMENSIONS (Phase 6) */
+  --bundle-product-card-width: ${s.productCardWidth || 280}px;
+  --bundle-product-card-height: ${s.productCardHeight || 420}px;
+  --bundle-product-card-spacing: ${s.productCardSpacing || 20}px;
+  --bundle-product-card-border-radius: ${s.productCardBorderRadius || 8}px;
+  --bundle-product-card-padding: ${s.productCardPadding || 12}px;
+  --bundle-product-card-border-width: ${s.productCardBorderWidth || 1}px;
+  --bundle-product-card-border-color: ${s.productCardBorderColor || 'rgba(0,0,0,0.08)'};
+  --bundle-product-card-shadow: ${s.productCardShadow || '0 2px 8px rgba(0,0,0,0.04)'};
+  --bundle-product-card-hover-shadow: ${s.productCardHoverShadow || '0 8px 24px rgba(0,0,0,0.12)'};
+
+  /* PRODUCT IMAGE (Phase 6) */
+  --bundle-product-image-height: ${s.productImageHeight || 280}px;
+  --bundle-product-image-border-radius: ${s.productImageBorderRadius || 6}px;
+  --bundle-product-image-bg-color: ${s.productImageBgColor || '#F8F8F8'};
+
+  /* PRODUCT MODAL STYLING (Phase 6) */
+  --bundle-modal-bg-color: ${s.modalBgColor || '#FFFFFF'};
+  --bundle-modal-border-radius: ${s.modalBorderRadius || 12}px;
+  --bundle-modal-title-font-size: ${s.modalTitleFontSize || 28}px;
+  --bundle-modal-title-font-weight: ${s.modalTitleFontWeight || 700};
+  --bundle-modal-price-font-size: ${s.modalPriceFontSize || 22}px;
+  --bundle-modal-variant-border-radius: ${s.modalVariantBorderRadius || 8}px;
+  --bundle-modal-button-bg-color: ${s.modalButtonBgColor || '#000000'};
+  --bundle-modal-button-text-color: ${s.modalButtonTextColor || '#FFFFFF'};
+  --bundle-modal-button-border-radius: ${s.modalButtonBorderRadius || 8}px;
 
   /* FOOTER */
   --bundle-footer-bg: ${s.footerBgColor || globalFooterBg};
