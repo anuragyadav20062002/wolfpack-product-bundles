@@ -103,3 +103,26 @@ Changed all 3 occurrences of `this.steps[stepIndex]` to `this.selectedBundle.ste
 |------|--------|
 | app/assets/bundle-widget-full-page.js | `this.steps` -> `this.selectedBundle.steps` (3 locations) |
 | extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js | Rebuilt bundle |
+
+---
+
+## Dashboard UX Improvements
+
+### Issue 1: Delete Button Too Close to Preview
+**Problem:** Delete button was grouped with Preview button in a segmented button group, making accidental clicks likely.
+
+**Fix:** Separated the delete button from the preview button by removing it from the ButtonGroup and adding extra gap spacing.
+
+### Issue 2: Browser Confirm Dialog for Delete
+**Problem:** The app was using browser's native `confirm()` dialog which looks unprofessional and inconsistent.
+
+**Fix:** Created a custom Polaris Modal with:
+- Warning icon (AlertTriangleIcon) with red background
+- Clear, concise 3-line message
+- Cancel (secondary) and Delete Bundle (primary critical) buttons
+- Proper loading state during deletion
+
+### Files Modified
+| File | Change |
+|------|--------|
+| app/routes/app.dashboard.tsx | Separated delete button, added custom delete confirmation modal |
