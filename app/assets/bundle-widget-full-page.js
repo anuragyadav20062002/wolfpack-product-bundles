@@ -1183,7 +1183,7 @@ class BundleWidgetFullPage {
         if (currentQty === 0) {
           // Open modal for product selection if available
           if (this.productModal) {
-            const step = this.steps[stepIndex];
+            const step = this.selectedBundle.steps[stepIndex];
             this.productModal.open(product, step);
           } else {
             this.updateProductSelection(stepIndex, productId, 1);
@@ -1216,7 +1216,7 @@ class BundleWidgetFullPage {
     const openModalHandler = (e) => {
       e.stopPropagation();
       if (this.productModal) {
-        const step = this.steps[stepIndex];
+        const step = this.selectedBundle.steps[stepIndex];
         this.productModal.open(product, step);
       }
     };
@@ -2215,7 +2215,7 @@ class BundleWidgetFullPage {
     productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
     // Get step data for modal
-    const step = this.steps[stepIndex];
+    const step = this.selectedBundle.steps[stepIndex];
 
     // Helper to find product by ID
     const findProduct = (productId) => {

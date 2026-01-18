@@ -77,3 +77,52 @@ Replace `window.open(url, '_top')` with `window.open(url, '_blank')` for externa
 | app.bundles.full-page-bundle.configure.$bundleId.tsx | line 3448 | `_top` -> `_blank` |
 | app.bundles.full-page-bundle.configure.$bundleId.tsx | line 3546 | `_top` -> `_blank` |
 | app.bundles.product-page-bundle.configure.$bundleId.tsx | line 3241 | `_top` -> `_blank` |
+
+---
+
+## Bonus Fix: Widget Modal Error
+
+### Issue
+When clicking product cards in the full-page bundle widget, an error occurred:
+```
+bundle-widget-full-page-bundled.js:2726 Uncaught TypeError: Cannot read properties of undefined (reading '0')
+openModalHandler @ bundle-widget-full-page-bundled.js:2726
+```
+
+### Root Cause
+The code was referencing `this.steps[stepIndex]` but `this.steps` was never defined on the widget class. The steps data is stored on `this.selectedBundle.steps`.
+
+### Fix
+Changed all 3 occurrences of `this.steps[stepIndex]` to `this.selectedBundle.steps[stepIndex]` in `app/assets/bundle-widget-full-page.js`:
+- Line 1186: In add button click handler
+- Line 1219: In openModalHandler
+- Line 2218: In attachProductEventHandlers
+
+### Files Modified
+| File | Change |
+|------|--------|
+| app/assets/bundle-widget-full-page.js | `this.steps` -> `this.selectedBundle.steps` (3 locations) |
+| extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js | Rebuilt bundle |
+
+---
+
+## Dashboard UX Improvements
+
+### Issue 1: Delete Button Too Close to Preview
+**Problem:** Delete button was grouped with Preview button in a segmented button group, making accidental clicks likely.
+
+**Fix:** Separated the delete button from the preview button by removing it from the ButtonGroup and adding extra gap spacing.
+
+### Issue 2: Browser Confirm Dialog for Delete
+**Problem:** The app was using browser's native `confirm()` dialog which looks unprofessional and inconsistent.
+
+**Fix:** Created a custom Polaris Modal with:
+- Warning icon (AlertTriangleIcon) with red background
+- Clear, concise 3-line message
+- Cancel (secondary) and Delete Bundle (primary critical) buttons
+- Proper loading state during deletion
+
+### Files Modified
+| File | Change |
+|------|--------|
+| app/routes/app.dashboard.tsx | Separated delete button, added custom delete confirmation modal |

@@ -19,7 +19,7 @@ import {
   ChoiceList,
   Tooltip,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, AlertTriangleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
@@ -709,7 +709,7 @@ interface BundleActionsButtonsProps {
 }
 
 const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDelete, onPreview, bundle }: BundleActionsButtonsProps) => (
-  <InlineStack gap="200" blockAlign="center">
+  <InlineStack gap="300" blockAlign="center">
     {/* Group 1: Edit & Clone (neutral actions) */}
     <ButtonGroup variant="segmented">
       <Tooltip content="Edit bundle">
@@ -730,27 +730,27 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
       </Tooltip>
     </ButtonGroup>
 
-    {/* Group 2: Preview & Delete (view/destructive actions) */}
-    <ButtonGroup variant="segmented">
-      <Tooltip content={bundle.previewHandle ? "Preview in store" : "Save bundle to preview"}>
-        <Button
-          size="micro"
-          icon={ExternalIcon}
-          onClick={() => onPreview(bundle)}
-          accessibilityLabel="Preview bundle"
-          disabled={!bundle.previewHandle}
-        />
-      </Tooltip>
-      <Tooltip content="Delete bundle">
-        <Button
-          size="micro"
-          icon={DeleteIcon}
-          onClick={() => onDelete(bundleId)}
-          accessibilityLabel="Delete bundle"
-          tone="critical"
-        />
-      </Tooltip>
-    </ButtonGroup>
+    {/* Group 2: Preview (view action) */}
+    <Tooltip content={bundle.previewHandle ? "Preview in store" : "Save bundle to preview"}>
+      <Button
+        size="micro"
+        icon={ExternalIcon}
+        onClick={() => onPreview(bundle)}
+        accessibilityLabel="Preview bundle"
+        disabled={!bundle.previewHandle}
+      />
+    </Tooltip>
+
+    {/* Group 3: Delete (destructive action - separate to prevent accidents) */}
+    <Tooltip content="Delete bundle">
+      <Button
+        size="micro"
+        icon={DeleteIcon}
+        onClick={() => onDelete(bundleId)}
+        accessibilityLabel="Delete bundle"
+        tone="critical"
+      />
+    </Tooltip>
   </InlineStack>
 ));
 
@@ -769,6 +769,10 @@ export default function Dashboard() {
   const [description, setDescription] = useState("");
   const [bundleType, setBundleType] = useState<string[]>(["product_page"]);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Delete confirmation modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [bundleToDelete, setBundleToDelete] = useState<string | null>(null);
 
   const isSubmitting = navigation.state === "submitting";
 
@@ -821,13 +825,25 @@ export default function Dashboard() {
   }, [fetcher]);
 
   const handleDeleteBundle = (bundleId: string) => {
-    if (confirm("⚠️ PERMANENTLY DELETE this bundle?\n\nThis action CANNOT be undone!\n\nThis will delete:\n• Bundle configuration & all steps\n• All discount rules\n• Component associations\n\nThis will NOT delete:\n• The Shopify product (delete manually if needed)\n• Analytics data")) {
+    setBundleToDelete(bundleId);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = useCallback(() => {
+    if (bundleToDelete) {
       const formData = new FormData();
       formData.append("intent", "deleteBundle");
-      formData.append("bundleId", bundleId);
+      formData.append("bundleId", bundleToDelete);
       fetcher.submit(formData, { method: "post" });
+      setDeleteModalOpen(false);
+      setBundleToDelete(null);
     }
-  };
+  }, [bundleToDelete, fetcher]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteModalOpen(false);
+    setBundleToDelete(null);
+  }, []);
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
     if (!bundle.previewHandle) {
@@ -1058,6 +1074,50 @@ export default function Dashboard() {
               />
             </FormLayout>
           </Form>
+        </Modal.Section>
+      </Modal>
+
+      {/* Delete Confirmation Modal - Compact centered dialog */}
+      <Modal
+        open={deleteModalOpen}
+        onClose={handleCancelDelete}
+        title=""
+        titleHidden
+        size="small"
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <InlineStack gap="200" blockAlign="center">
+              <div style={{
+                backgroundColor: '#FEF3F2',
+                borderRadius: '50%',
+                padding: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Icon source={AlertTriangleIcon} tone="critical" />
+              </div>
+              <Text variant="headingMd" as="h2">Delete Bundle?</Text>
+            </InlineStack>
+
+            <Text variant="bodyMd" as="p" tone="subdued">
+              This action cannot be undone. All bundle configuration, steps, and discount rules will be permanently deleted.
+            </Text>
+
+            <InlineStack gap="200" align="end">
+              <Button onClick={handleCancelDelete}>
+                Cancel
+              </Button>
+              <Button
+                tone="critical"
+                onClick={handleConfirmDelete}
+                loading={fetcher.state === 'submitting'}
+              >
+                Delete
+              </Button>
+            </InlineStack>
+          </BlockStack>
         </Modal.Section>
       </Modal>
 
