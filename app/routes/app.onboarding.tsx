@@ -91,10 +91,10 @@ export default function Onboarding() {
       target: selectedTarget
     });
 
-    // Use window.open with _top to navigate the entire admin to theme editor
-    // This preserves session by staying within Shopify admin context
-    // Note: _blank opens in new tab but breaks session for embedded apps
-    window.open(themeEditorUrl, '_top');
+    // Open theme editor in a new tab to preserve embedded app session
+    // Using _top would navigate the entire admin frame, destroying the app's
+    // iframe and session context, causing users to need to re-authenticate
+    window.open(themeEditorUrl, '_blank');
   };
 
   const steps = [

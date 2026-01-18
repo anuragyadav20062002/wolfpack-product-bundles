@@ -3163,9 +3163,9 @@ export default function ConfigureBundleFlow() {
 
           // Navigate directly to theme editor with the newly created page
           // User just needs to add the widget block and save
-          // Use _top to maintain session in embedded app context
+          // Open in new tab to preserve embedded app session (using _top would destroy iframe)
           setTimeout(() => {
-            window.open(data.widgetInstallationLink, '_top');
+            window.open(data.widgetInstallationLink, '_blank');
           }, 1000);
 
           return; // Exit early
@@ -3324,12 +3324,12 @@ export default function ConfigureBundleFlow() {
       setSelectedPage(template);
       setIsPageSelectionModalOpen(false);
 
-      // Open theme editor in the same admin window
+      // Open theme editor in a new tab to preserve embedded app session
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
       AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor`);
 
-      // Use _top to navigate the entire admin - this preserves session for embedded apps
-      window.open(themeEditorUrl, '_top');
+      // Open in new tab to preserve embedded app session (using _top would destroy iframe)
+      window.open(themeEditorUrl, '_blank');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -3445,7 +3445,7 @@ export default function ConfigureBundleFlow() {
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
-                    window.open(themeEditorUrl, '_top');
+                    window.open(themeEditorUrl, '_blank');
                   }}
                   variant="plain"
                 >
@@ -3543,7 +3543,7 @@ export default function ConfigureBundleFlow() {
                       </Text>
                     </BlockStack>
                     <Button
-                      onClick={() => window.open(widgetInstallation.installationLink, '_top')}
+                      onClick={() => window.open(widgetInstallation.installationLink, '_blank')}
                     >
                       Configure Widget
                     </Button>
