@@ -3238,7 +3238,7 @@ export default function ConfigureBundleFlow() {
                 <Button
                   onClick={() => {
                     const themeEditorUrl = `https://${shop.replace('.myshopify.com', '')}.myshopify.com/admin/themes/current/editor?template=product`;
-                    window.open(themeEditorUrl, '_top');
+                    window.open(themeEditorUrl, '_blank');
                   }}
                   variant="plain"
                 >
