@@ -77,3 +77,29 @@ Replace `window.open(url, '_top')` with `window.open(url, '_blank')` for externa
 | app.bundles.full-page-bundle.configure.$bundleId.tsx | line 3448 | `_top` -> `_blank` |
 | app.bundles.full-page-bundle.configure.$bundleId.tsx | line 3546 | `_top` -> `_blank` |
 | app.bundles.product-page-bundle.configure.$bundleId.tsx | line 3241 | `_top` -> `_blank` |
+
+---
+
+## Bonus Fix: Widget Modal Error
+
+### Issue
+When clicking product cards in the full-page bundle widget, an error occurred:
+```
+bundle-widget-full-page-bundled.js:2726 Uncaught TypeError: Cannot read properties of undefined (reading '0')
+openModalHandler @ bundle-widget-full-page-bundled.js:2726
+```
+
+### Root Cause
+The code was referencing `this.steps[stepIndex]` but `this.steps` was never defined on the widget class. The steps data is stored on `this.selectedBundle.steps`.
+
+### Fix
+Changed all 3 occurrences of `this.steps[stepIndex]` to `this.selectedBundle.steps[stepIndex]` in `app/assets/bundle-widget-full-page.js`:
+- Line 1186: In add button click handler
+- Line 1219: In openModalHandler
+- Line 2218: In attachProductEventHandlers
+
+### Files Modified
+| File | Change |
+|------|--------|
+| app/assets/bundle-widget-full-page.js | `this.steps` -> `this.selectedBundle.steps` (3 locations) |
+| extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js | Rebuilt bundle |
