@@ -37,7 +37,7 @@ export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
   },
   grow: {
     id: "grow",
-    name: "Grow Plan (Coming Soon)",
+    name: "Grow Plan",
     price: 9.99,
     currencyCode: "USD",
     interval: "EVERY_30_DAYS",
