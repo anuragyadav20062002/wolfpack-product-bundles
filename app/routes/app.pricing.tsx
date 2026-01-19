@@ -13,6 +13,7 @@ import {
   Box,
   Divider,
   ProgressBar,
+  useBreakpoints,
 } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -114,6 +115,7 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function PricingPage() {
   const data = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
+  const { mdDown } = useBreakpoints();
 
   const handleSelectPlan = useCallback((planId: string) => {
     if (planId === "grow") {
@@ -183,10 +185,10 @@ export default function PricingPage() {
               </BlockStack>
             </Card>
 
-            {/* Plan Comparison */}
-            <InlineStack gap="400" align="center">
-              {/* Free Plan Card */}
-              <Box width="50%">
+            {/* Plan Comparison - Responsive: horizontal on desktop, vertical on mobile */}
+            {mdDown ? (
+              <BlockStack gap="400">
+                {/* Free Plan Card */}
                 <Card>
                   <BlockStack gap="500">
                     <BlockStack gap="200">
@@ -233,10 +235,8 @@ export default function PricingPage() {
                     </Button>
                   </BlockStack>
                 </Card>
-              </Box>
 
-              {/* Grow Plan Card */}
-              <Box width="50%">
+                {/* Grow Plan Card */}
                 <Card>
                   <BlockStack gap="500">
                     <BlockStack gap="200">
@@ -279,8 +279,7 @@ export default function PricingPage() {
                     <Button
                       fullWidth
                       variant="primary"
-                      //disabled={isGrowPlan}
-                      disabled={true}
+                      disabled={isGrowPlan}
                       loading={isUpgrading}
                       onClick={() => handleSelectPlan("grow")}
                     >
@@ -288,8 +287,114 @@ export default function PricingPage() {
                     </Button>
                   </BlockStack>
                 </Card>
-              </Box>
-            </InlineStack>
+              </BlockStack>
+            ) : (
+              <InlineStack gap="400" align="center">
+                {/* Free Plan Card */}
+                <Box width="50%">
+                  <Card>
+                    <BlockStack gap="500">
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between" blockAlign="center">
+                          <Text as="h3" variant="headingLg">
+                            {PLANS.free.name}
+                          </Text>
+                          {isFreePlan && <Badge tone="success">Current Plan</Badge>}
+                        </InlineStack>
+                        <InlineStack gap="100" blockAlign="baseline">
+                          <Text as="p" variant="heading2xl" fontWeight="bold">
+                            Free
+                          </Text>
+                        </InlineStack>
+                        <Text as="p" variant="bodyMd" tone="subdued">
+                          Perfect for getting started
+                        </Text>
+                      </BlockStack>
+
+                      <Divider />
+
+                      <BlockStack gap="300">
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          Features:
+                        </Text>
+                        <List type="bullet">
+                          {PLANS.free.features.map((feature, index) => (
+                            <List.Item key={index}>
+                              <Text as="span" variant="bodyMd">
+                                {feature}
+                              </Text>
+                            </List.Item>
+                          ))}
+                        </List>
+                      </BlockStack>
+
+                      <Button
+                        fullWidth
+                        variant={isFreePlan ? "secondary" : "primary"}
+                        disabled={isGrowPlan}
+                        onClick={() => handleSelectPlan("free")}
+                      >
+                        {isFreePlan ? "Current Plan" : "Select Plan"}
+                      </Button>
+                    </BlockStack>
+                  </Card>
+                </Box>
+
+                {/* Grow Plan Card */}
+                <Box width="50%">
+                  <Card>
+                    <BlockStack gap="500">
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between" blockAlign="center">
+                          <Text as="h3" variant="headingLg">
+                            {PLANS.grow.name}
+                          </Text>
+                          {isGrowPlan && <Badge tone="success">Current Plan</Badge>}
+                        </InlineStack>
+                        <InlineStack gap="100" blockAlign="baseline">
+                          <Text as="p" variant="heading2xl" fontWeight="bold">
+                            ${PLANS.grow.price}
+                          </Text>
+                          <Text as="span" variant="bodyLg" tone="subdued">
+                            / month
+                          </Text>
+                        </InlineStack>
+                        <Text as="p" variant="bodyMd" tone="subdued">
+                          For growing businesses
+                        </Text>
+                      </BlockStack>
+
+                      <Divider />
+
+                      <BlockStack gap="300">
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          Features:
+                        </Text>
+                        <List type="bullet">
+                          {PLANS.grow.features.map((feature, index) => (
+                            <List.Item key={index}>
+                              <Text as="span" variant="bodyMd">
+                                {feature}
+                              </Text>
+                            </List.Item>
+                          ))}
+                        </List>
+                      </BlockStack>
+
+                      <Button
+                        fullWidth
+                        variant="primary"
+                        disabled={isGrowPlan}
+                        loading={isUpgrading}
+                        onClick={() => handleSelectPlan("grow")}
+                      >
+                        {isGrowPlan ? "Current Plan" : "Upgrade to Grow"}
+                      </Button>
+                    </BlockStack>
+                  </Card>
+                </Box>
+              </InlineStack>
+            )}
 
             {/* FAQ or Additional Info */}
             <Card>
