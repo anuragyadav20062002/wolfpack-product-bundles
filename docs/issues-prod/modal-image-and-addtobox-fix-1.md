@@ -95,6 +95,17 @@ if (this.productModal) {
   - Added `word-wrap: break-word` for long words
   - Added `min-height` for consistent card heights
 
+### 2026-01-20 15:25 - Mobile Responsive Fix
+- Product cards were cut off on mobile screens (fixed 280px width didn't fit)
+- Added comprehensive mobile styles for 768px and 400px breakpoints
+- Fixed in `extensions/bundle-builder/assets/bundle-widget-full-page.css`:
+  - Removed fixed card widths on mobile (`width: 100%`, `min-width: unset`)
+  - Made cards flexible height (`height: auto`, `min-height: 320px`)
+  - Adjusted image container sizes for mobile
+  - Reduced font sizes for better fit
+  - Added proper grid padding to prevent edge clipping
+  - Added extra small breakpoint (400px) for very small phones
+
 ## Files Changed
 
 | File | Change |
