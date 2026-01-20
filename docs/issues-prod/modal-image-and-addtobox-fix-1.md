@@ -4,14 +4,15 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-01-20
-**Last Updated:** 2026-01-20 14:15
+**Last Updated:** 2026-01-20 14:30
 
 ## Overview
 
-Two bugs were found in the full-page bundle widget's product modal:
+Three issues were found in the full-page bundle widget's product modal:
 
 1. **Image not displaying**: Product image was blank when opening the modal
-2. **Add To Box not working**: Clicking "Add To Box" did not add products to the progress box
+2. **Add To Box not working**: Clicking "Add To Box" inside modal did not add products to the progress box
+3. **Wrong button behavior**: "Add to Bundle" button on product card was opening modal instead of directly adding product
 
 ## Root Cause Analysis
 
@@ -41,6 +42,19 @@ But the widget doesn't have a `this.steps` property - it uses `this.selectedBund
 
 Additionally, it was using `variant.id` instead of `variant.variantId || variant.id`, which didn't match the selection key format used by the widget.
 
+### Issue 3: Wrong Button Behavior
+
+The "Add to Bundle" button on product cards was opening the modal instead of directly adding the product. Per CEO requirements:
+- **"Add to Bundle" button**: Should directly add product to box (NO modal)
+- **Click on product card (image/title)**: Should open modal for detailed view
+
+The code in `bundle-widget-full-page.js` was checking for modal and opening it when button was clicked:
+```javascript
+if (this.productModal) {
+  this.productModal.open(product, step);
+}
+```
+
 ## Progress Log
 
 ### 2026-01-20 14:00 - Starting Investigation
@@ -55,18 +69,27 @@ Additionally, it was using `variant.id` instead of `variant.variantId || variant
 - Fixed `addToBundle()` to use `this.widget.selectedBundle.steps`
 - Fixed product ID to use `variant.variantId || variant.id`
 
-### 2026-01-20 14:15 - Completed
+### 2026-01-20 14:15 - Initial Fixes Completed
 - Built widget bundles with `npm run build:widgets`
 - ✅ Files modified:
   - `app/assets/bundle-modal-component.js`
   - `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` (auto-generated)
   - `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` (auto-generated)
 
+### 2026-01-20 14:25 - Button Behavior Fix (CEO Request)
+- Changed "Add to Bundle" button to directly add product instead of opening modal
+- Fixed in two locations in `bundle-widget-full-page.js`:
+  - `attachProductCardListeners()` method (line ~1179)
+  - Event delegation handler on `newProductGrid` (line ~2236)
+- Modal now only opens when clicking on product image or title
+- Rebuilt widget bundles
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
 | `app/assets/bundle-modal-component.js` | Added `getProductImages()` helper, fixed image loading, fixed `addToBundle()` |
+| `app/assets/bundle-widget-full-page.js` | Changed "Add to Bundle" button to add directly without opening modal |
 | `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` | Auto-generated bundle with fixes |
 | `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` | Auto-generated bundle |
 

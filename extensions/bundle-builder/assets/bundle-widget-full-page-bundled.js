@@ -2743,13 +2743,8 @@ class BundleWidgetFullPage {
         e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         if (currentQty === 0) {
-          // Open modal for product selection if available
-          if (this.productModal) {
-            const step = this.selectedBundle.steps[stepIndex];
-            this.productModal.open(product, step);
-          } else {
-            this.updateProductSelection(stepIndex, productId, 1);
-          }
+          // Add product directly to bundle (modal opens only on card image/title click)
+          this.updateProductSelection(stepIndex, productId, 1);
         } else {
           // Toggle off if already added
           this.updateProductSelection(stepIndex, productId, 0);
@@ -3800,32 +3795,18 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Choose Options / Add to Bundle button handler
+    // Add to Bundle button handler - adds directly without opening modal
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('product-add-btn')) {
         e.stopPropagation();
         const productId = e.target.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
 
-        // If product is already added, allow toggling it off
+        // Toggle: If already added, remove; otherwise add with quantity 1
         if (currentQuantity > 0) {
           this.updateProductSelection(stepIndex, productId, 0);
-          return;
-        }
-
-        // If modal is available, open it for variant selection
-        if (this.productModal) {
-          const product = findProduct(productId);
-
-          if (product && step) {
-            this.productModal.open(product, step);
-          } else {
-            console.warn('[WIDGET] Product or step not found for modal', { productId, stepIndex });
-            // Fallback: Add directly with quantity 1
-            this.updateProductSelection(stepIndex, productId, 1);
-          }
         } else {
-          // Fallback: Modal not available, add directly
+          // Add product directly to bundle (modal opens only on card image/title click)
           this.updateProductSelection(stepIndex, productId, 1);
         }
       }
