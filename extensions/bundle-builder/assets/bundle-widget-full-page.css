@@ -549,13 +549,18 @@
   text-align: center;
   margin-bottom: 10px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   flex-shrink: 0;
   position: relative;
   letter-spacing: 0.2px;
   line-height: 1.4;
   font-family: inherit;
+  min-height: calc(1.4em * 2);
 }
 
 /* Price Row with Background from DCP */

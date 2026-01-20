@@ -84,12 +84,25 @@ if (this.productModal) {
 - Modal now only opens when clicking on product image or title
 - Rebuilt widget bundles
 
+### 2026-01-20 14:50 - Product Title Text Wrapping Fix
+- Product titles were overflowing/cut off instead of wrapping to next line
+- Fixed CSS in two files:
+  - `extensions/bundle-builder/assets/bundle-widget-full-page.css` (line ~545)
+  - `extensions/bundle-builder/assets/bundle-widget.css` (line ~850)
+- Changes made:
+  - Replaced `white-space: nowrap` with `white-space: normal`
+  - Added `-webkit-line-clamp: 2` to limit to 2 lines with ellipsis
+  - Added `word-wrap: break-word` for long words
+  - Added `min-height` for consistent card heights
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
 | `app/assets/bundle-modal-component.js` | Added `getProductImages()` helper, fixed image loading, fixed `addToBundle()` |
 | `app/assets/bundle-widget-full-page.js` | Changed "Add to Bundle" button to add directly without opening modal |
+| `extensions/bundle-builder/assets/bundle-widget-full-page.css` | Fixed product title text wrapping |
+| `extensions/bundle-builder/assets/bundle-widget.css` | Fixed product title text wrapping in modal |
 | `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` | Auto-generated bundle with fixes |
 | `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` | Auto-generated bundle |
 
