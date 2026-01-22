@@ -70,6 +70,7 @@ export interface ButtonSettings {
   buttonFontSize: number;
   buttonFontWeight: number;
   buttonBorderRadius: number;
+  buttonHoverBgColor: string;
   buttonAddToCartText: string;
 }
 
