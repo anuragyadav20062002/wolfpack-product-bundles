@@ -17,7 +17,8 @@ import { authenticate } from "../shopify.server";
 import { BillingService } from "../services/billing.server";
 import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { useBillingState } from "../hooks/useBillingState";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -148,9 +149,21 @@ export default function BillingPage() {
   const data = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const navigate = useNavigate();
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showSuccessBanner, setShowSuccessBanner] = useState(data.upgraded);
-  const [showErrorBanner, setShowErrorBanner] = useState(!!data.callbackError);
+
+  // Use centralized billing state hook
+  const billingState = useBillingState({
+    upgraded: data.upgraded,
+    callbackError: data.callbackError,
+  });
+  const {
+    showCancelConfirm,
+    openCancelConfirm,
+    closeCancelConfirm,
+    showSuccessBanner,
+    dismissSuccessBanner,
+    showErrorBanner,
+    dismissErrorBanner,
+  } = billingState;
 
   const isUpgrading = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "upgrade";
   const isCancelling = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "cancel";
@@ -164,8 +177,8 @@ export default function BillingPage() {
       { intent: "cancel" },
       { method: "post" }
     );
-    setShowCancelConfirm(false);
-  }, [fetcher]);
+    closeCancelConfirm();
+  }, [fetcher, closeCancelConfirm]);
 
   // Handle redirect to Shopify billing confirmation using App Bridge
   useEffect(() => {
@@ -189,7 +202,7 @@ export default function BillingPage() {
           <Layout.Section>
             <Banner
               tone="success"
-              onDismiss={() => setShowSuccessBanner(false)}
+              onDismiss={dismissSuccessBanner}
             >
               <Text as="p" variant="bodyMd">
                 Subscription upgraded successfully! Welcome to the Grow plan.
@@ -202,7 +215,7 @@ export default function BillingPage() {
           <Layout.Section>
             <Banner
               tone="critical"
-              onDismiss={() => setShowErrorBanner(false)}
+              onDismiss={dismissErrorBanner}
             >
               <Text as="p" variant="bodyMd">
                 {data.callbackError === "missing_charge_id"
@@ -263,7 +276,7 @@ export default function BillingPage() {
                   <Button
                     variant="plain"
                     tone="critical"
-                    onClick={() => setShowCancelConfirm(true)}
+                    onClick={openCancelConfirm}
                     loading={isCancelling}
                   >
                     Cancel Subscription
@@ -294,7 +307,7 @@ export default function BillingPage() {
                     >
                       Confirm Cancellation
                     </Button>
-                    <Button onClick={() => setShowCancelConfirm(false)}>
+                    <Button onClick={closeCancelConfirm}>
                       Keep Subscription
                     </Button>
                   </InlineStack>

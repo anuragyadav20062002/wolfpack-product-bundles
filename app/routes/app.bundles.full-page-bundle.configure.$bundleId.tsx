@@ -74,10 +74,7 @@ import {
 } from "../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../utils/variant-lookup.server";
 import { mapDiscountMethod } from "../utils/discount-mappers";
-import { useBundleForm } from "../hooks/useBundleForm";
-import { useBundleSteps } from "../hooks/useBundleSteps";
-import { useBundleConditions } from "../hooks/useBundleConditions";
-import { useBundlePricing } from "../hooks/useBundlePricing";
+import { useBundleConfigurationState } from "../hooks/useBundleConfigurationState";
 
 // Removed - now using standardized PricingRule from app/types/pricing
 
@@ -2065,19 +2062,114 @@ export default function ConfigureBundleFlow() {
   });
   const widgetAutoPlaced = searchParams.get('widgetAutoPlaced') === 'true';
   const autoPlacedThemeName = searchParams.get('themeName') || 'your theme';
-  const [showAutoPlacementBanner, setShowAutoPlacementBanner] = useState(widgetAutoPlaced);
 
-  // Banner dismissal state
-  const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
-
-  // Widget installation tracking state
-  const [widgetInstallationInitiated, setWidgetInstallationInitiated] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(`widget_installation_${bundle.id}`);
-      return stored === 'true';
-    }
-    return false;
+  // ===== CENTRALIZED STATE MANAGEMENT =====
+  // Use the unified bundle configuration state hook
+  const configState = useBundleConfigurationState({
+    bundle,
+    bundleProduct: loadedBundleProduct,
+    shopify,
   });
+
+  // Destructure all state from the hook
+  const {
+    // Dirty state
+    isDirty,
+    setIsDirty,
+    markAsDirty,
+    markAsSaved,
+    handleDiscard: hookHandleDiscard,
+    isResettingRef,
+    lastProcessedFetcherDataRef,
+
+    // Form state
+    formState,
+
+    // Steps state
+    stepsState,
+
+    // Conditions state
+    conditionsState,
+
+    // Pricing state
+    pricingState,
+
+    // Modal states
+    isPageSelectionModalOpen,
+    openPageSelectionModal,
+    closePageSelectionModal,
+    isWidgetInstallModalOpen,
+    openWidgetInstallModal,
+    closeWidgetInstallModal,
+    isProductsModalOpen,
+    openProductsModal,
+    closeProductsModal,
+    isCollectionsModalOpen,
+    openCollectionsModal,
+    closeCollectionsModal,
+    currentModalStepId,
+    setCurrentModalStepId,
+
+    // Loading states
+    isLoadingPages,
+    setIsLoadingPages,
+    isCheckingWidgetStatus,
+    setIsCheckingWidgetStatus,
+
+    // Page selection data
+    availablePages,
+    setAvailablePages,
+    selectedPage,
+    setSelectedPage,
+
+    // Widget installation
+    widgetInstallationLink,
+    setWidgetInstallationLink,
+    widgetInstallationInitiated,
+    setWidgetInstallationInitiated,
+
+    // Bundle product data
+    bundleProduct,
+    setBundleProduct,
+    productStatus,
+    setProductStatus,
+    productTitle,
+    setProductTitle,
+    productImageUrl,
+    setProductImageUrl,
+
+    // Collections
+    selectedCollections,
+    setSelectedCollections,
+
+    // Rule messages
+    ruleMessages,
+    setRuleMessages,
+
+    // UI states
+    activeTabIndex,
+    setActiveTabIndex,
+    activeSection,
+    setActiveSection,
+    forceNavigation,
+    setForceNavigation,
+
+    // Banner states
+    showAutoPlacementBanner,
+    setShowAutoPlacementBanner,
+    dismissedBanners,
+    setDismissedBanners,
+
+    // Original values ref
+    originalValuesRef,
+  } = configState;
+
+  // Initialize auto-placement banner from URL
+  useEffect(() => {
+    if (widgetAutoPlaced) {
+      setShowAutoPlacementBanner(true);
+    }
+  }, [widgetAutoPlaced, setShowAutoPlacementBanner]);
 
   // Clear widget installation flag if widget is detected as configured
   useEffect(() => {
@@ -2087,176 +2179,9 @@ export default function ConfigureBundleFlow() {
         localStorage.removeItem(`widget_installation_${bundle.id}`);
       }
     }
-  }, [widgetInstallation?.recommendedAction, widgetInstallationInitiated, bundle.id]);
-
-  // ===== DIRTY FLAG SYSTEM =====
-  // Simple dirty flag that gets set on ANY state change
-  const [isDirty, setIsDirty] = useState(false);
-  const isResettingRef = useRef(false); // Flag to prevent dirty marking during reset/discard
-  const lastProcessedFetcherDataRef = useRef<any>(null); // Track last processed fetcher response to prevent duplicate processing
-  const markAsDirty = useCallback(() => {
-    if (!isResettingRef.current) {
-      setIsDirty(true);
-    }
-  }, []);
-
-  // Full-page bundle: Active tab state for tab navigation (instead of vertical steps)
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
-
-  // ===== CUSTOM HOOKS =====
-  // Form state management
-  const formState = useBundleForm({
-    initialData: {
-      name: bundle.name,
-      description: bundle.description || "",
-      status: bundle.status,
-      templateName: bundle.templateName || ""
-    },
-    onStateChange: markAsDirty
-  });
-
-  // Step conditions initialization
-  const initializeStepConditions = () => {
-    const initialConditions: Record<string, any[]> = {};
-    (bundle.steps || []).forEach((step: any) => {
-      if (step.conditionType && step.conditionOperator && step.conditionValue !== null) {
-        initialConditions[step.id] = [{
-          id: `condition_${step.id}_${Date.now()}`,
-          type: step.conditionType,
-          operator: step.conditionOperator,
-          value: step.conditionValue.toString()
-        }];
-      }
-    });
-    return initialConditions;
-  };
-
-  // Condition rules management
-  const conditionsState = useBundleConditions({
-    initialStepConditions: initializeStepConditions(),
-    onStateChange: markAsDirty
-  });
+  }, [widgetInstallation?.recommendedAction, widgetInstallationInitiated, bundle.id, setWidgetInstallationInitiated]);
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
-
-  // Transform StepProduct to use productId as id (not the database UUID)
-  // Memoized to prevent recalculation on every render
-  const transformedSteps = useMemo(() =>
-    (bundle.steps || []).map((step: any) => ({
-      ...step,
-      StepProduct: (step.StepProduct || []).map((sp: any) => ({
-        ...sp,
-        id: sp.productId,  // Use productId (Shopify GID) as id, not database UUID
-      }))
-    }))
-  , [bundle.steps]);
-
-  // Steps management
-  const stepsState = useBundleSteps({
-    initialSteps: transformedSteps,
-    shopify,
-    onStateChange: markAsDirty
-  });
-
-  // Pricing management
-  const pricingState = useBundlePricing({
-    initialPricing: bundle.pricing,
-    onStateChange: markAsDirty
-  });
-
-
-  // State for page selection modal
-  const [isPageSelectionModalOpen, setIsPageSelectionModalOpen] = useState(false);
-  const [availablePages, setAvailablePages] = useState<any[]>([]);
-  const [isLoadingPages, setIsLoadingPages] = useState(false);
-  const [selectedPage, setSelectedPage] = useState<any>(null);
-
-  // State for widget installation modal
-  const [isWidgetInstallModalOpen, setIsWidgetInstallModalOpen] = useState(false);
-  const [widgetInstallationLink, setWidgetInstallationLink] = useState<string>('');
-
-  // State for products/collections view modals
-  const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
-  const [isCollectionsModalOpen, setIsCollectionsModalOpen] = useState(false);
-  const [currentModalStepId, setCurrentModalStepId] = useState<string>('');
-
-  // State for bundle product - initialize with loaded data
-  const [bundleProduct, setBundleProductRaw] = useState<any>(loadedBundleProduct || null);
-  const [productStatus, setProductStatusRaw] = useState(loadedBundleProduct?.status || "ACTIVE");
-
-  // Wrapped setters that trigger dirty flag
-  const setBundleProduct = useCallback((value: any) => {
-    setBundleProductRaw(value);
-    markAsDirty();
-  }, [markAsDirty]);
-
-  const setProductStatus = useCallback((value: string) => {
-    setProductStatusRaw(value);
-    markAsDirty();
-  }, [markAsDirty]);
-
-  // State for bundle product UI (doesn't trigger dirty flag)
-  const [productTitle, setProductTitle] = useState(loadedBundleProduct?.title || "");
-  const [productImageUrl, setProductImageUrl] = useState(loadedBundleProduct?.featuredImage?.url || loadedBundleProduct?.images?.[0]?.originalSrc || "");
-
-  // State for collections - initialize with data from loaded bundle steps
-  const [selectedCollections, setSelectedCollectionsRaw] = useState<Record<string, any[]>>(() => {
-    const collections: Record<string, any[]> = {};
-    bundle.steps?.forEach(step => {
-      if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-        collections[step.id] = step.collections;
-      }
-    });
-    return collections;
-  });
-
-  // Wrapped setter that triggers dirty flag
-  const setSelectedCollections = useCallback((value: Record<string, any[]> | ((prev: Record<string, any[]>) => Record<string, any[]>)) => {
-    setSelectedCollectionsRaw(value);
-    markAsDirty();
-  }, [markAsDirty]);
-
-  // NOTE: Discount & pricing state now managed by pricingState hook above
-  // NOTE: Rule-specific messaging still uses local state (not extracted to hook yet)
-  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>({});
-
-  // Wrapped setter that triggers dirty flag
-  const setRuleMessages = useCallback((value: Record<string, { discountText: string; successMessage: string }> | ((prev: Record<string, { discountText: string; successMessage: string }>) => Record<string, { discountText: string; successMessage: string }>)) => {
-    setRuleMessagesRaw(value);
-    markAsDirty();
-  }, [markAsDirty]);
-
-  // UI state for section navigation (expandedSteps and selectedTab now from stepsState hook)
-  const [activeSection, setActiveSection] = useState('step_setup');
-
-  // Track original values for discard functionality only
-  // This is used to restore state when user clicks "Discard"
-  const originalValuesRef = useRef({
-    status: formState.bundleStatus,
-    name: formState.bundleName,
-    description: formState.bundleDescription,
-    templateName: formState.templateName,
-    steps: JSON.stringify(
-      (bundle.steps || []).map((step: any) => ({
-        ...step,
-        StepProduct: (step.StepProduct || []).map((sp: any) => ({
-          ...sp,
-          id: sp.productId,  // Transform to use Shopify GID, not database UUID
-        }))
-      }))
-    ),
-    discountEnabled: pricingState.discountEnabled,
-    discountType: pricingState.discountType,
-    discountRules: JSON.stringify(pricingState.discountRules),
-    showProgressBar: pricingState.showProgressBar,
-    showFooter: pricingState.showFooter,
-    discountMessagingEnabled: pricingState.discountMessagingEnabled,
-    selectedCollections: JSON.stringify({}),
-    ruleMessages: JSON.stringify({}),
-    stepConditions: JSON.stringify(conditionsState.stepConditions),
-    bundleProduct: loadedBundleProduct || null,
-    productStatus: loadedBundleProduct?.status || "ACTIVE",
-  });
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
@@ -2474,50 +2399,8 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Discard handler
-  const handleDiscard = useCallback(() => {
-    try {
-      const originalValues = originalValuesRef.current;
-
-      // Set flag to prevent dirty marking during reset
-      isResettingRef.current = true;
-
-      // Reset to original values using hook setters
-      formState.setBundleStatus(originalValues.status);
-      formState.setBundleName(originalValues.name);
-      formState.setBundleDescription(originalValues.description);
-      formState.setTemplateName(originalValues.templateName);
-      stepsState.setSteps(JSON.parse(originalValues.steps));
-      pricingState.setDiscountEnabled(originalValues.discountEnabled);
-      pricingState.setDiscountType(originalValues.discountType as DiscountMethod);
-      pricingState.setDiscountRules(JSON.parse(originalValues.discountRules));
-      pricingState.setShowProgressBar(originalValues.showProgressBar);
-      pricingState.setShowFooter(originalValues.showFooter);
-      pricingState.setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
-      setSelectedCollections(JSON.parse(originalValues.selectedCollections));
-      setRuleMessages(JSON.parse(originalValues.ruleMessages));
-      conditionsState.setStepConditions(JSON.parse(originalValues.stepConditions));
-      // Keep the loaded bundle product instead of resetting to null
-      setBundleProduct(originalValues.bundleProduct || loadedBundleProduct || null);
-      setProductStatus(originalValues.productStatus);
-
-      // Clear the resetting flag
-      isResettingRef.current = false;
-
-      // Reset dirty flag
-      setIsDirty(false);
-
-      shopify.toast.show("Changes discarded", { isError: false });
-    } catch (error) {
-      AppLogger.error("Error discarding changes:", {}, error as any);
-      shopify.toast.show("Error discarding changes", { isError: true, duration: 5000 });
-      // Make sure to clear the flag even on error
-      isResettingRef.current = false;
-    }
-  }, [loadedBundleProduct, shopify, formState, stepsState, pricingState, conditionsState, setBundleProduct, setProductStatus, setSelectedCollections, setRuleMessages]);
-
-  // Emergency force navigation state for escape hatch
-  const [forceNavigation, setForceNavigation] = useState(false);
+  // Discard handler - uses the hook's implementation
+  const handleDiscard = hookHandleDiscard;
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
@@ -2674,12 +2557,12 @@ export default function ConfigureBundleFlow() {
   // handleShowProducts and handleShowCollections removed - modals managed inline
 
   const handleCloseProductsModal = useCallback(() => {
-    setIsProductsModalOpen(false);
+    closeProductsModal();
     setCurrentModalStepId('');
   }, []);
 
   const handleCloseCollectionsModal = useCallback(() => {
-    setIsCollectionsModalOpen(false);
+    closeCollectionsModal();
     setCurrentModalStepId('');
   }, []);
 
@@ -2855,8 +2738,7 @@ export default function ConfigureBundleFlow() {
   }, []);
 
   // ===== ENHANCED REVALIDATION FOR WIDGET INSTALLATION =====
-  // Track if we're actively checking widget installation
-  const [isCheckingWidgetStatus, setIsCheckingWidgetStatus] = useState(false);
+  // isCheckingWidgetStatus and setIsCheckingWidgetStatus are provided by useBundleConfigurationState hook
   const revalidationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounced revalidation to prevent excessive API calls
@@ -3228,7 +3110,7 @@ export default function ConfigureBundleFlow() {
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
     try {
-      setIsPageSelectionModalOpen(true);
+      openPageSelectionModal();
       loadAvailablePages();
     } catch (error) {
       AppLogger.error('Error opening page selection:', {}, error as any);
@@ -3322,7 +3204,7 @@ export default function ConfigureBundleFlow() {
       });
 
       setSelectedPage(template);
-      setIsPageSelectionModalOpen(false);
+      closePageSelectionModal();
 
       // Open theme editor in a new tab to preserve embedded app session
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
@@ -4270,11 +4152,11 @@ export default function ConfigureBundleFlow() {
       {/* Page Selection Modal */}
       <Modal
         open={isPageSelectionModalOpen}
-        onClose={() => setIsPageSelectionModalOpen(false)}
+        onClose={() => closePageSelectionModal()}
         title="Place Widget"
         primaryAction={{
           content: "Cancel",
-          onAction: () => setIsPageSelectionModalOpen(false),
+          onAction: () => closePageSelectionModal(),
         }}
       >
         <Modal.Section>
@@ -4346,7 +4228,7 @@ export default function ConfigureBundleFlow() {
       {/* Widget Installation Modal - UNIFIED FLOW */}
       <Modal
         open={isWidgetInstallModalOpen}
-        onClose={() => setIsWidgetInstallModalOpen(false)}
+        onClose={() => closeWidgetInstallModal()}
         title="One-Time Widget Setup Required"
         primaryAction={{
           content: "Install Widget Now",
@@ -4371,7 +4253,7 @@ export default function ConfigureBundleFlow() {
         secondaryActions={[
           {
             content: "I'll Do This Later",
-            onAction: () => setIsWidgetInstallModalOpen(false),
+            onAction: () => closeWidgetInstallModal(),
           },
         ]}
       >

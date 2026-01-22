@@ -18,12 +18,17 @@ import {
   ButtonGroup,
   Frame,
   Toast,
+  Card,
+  Layout,
 } from "@shopify/polaris";
 import { Modal, SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@shopify/polaris-icons";
 import { prisma } from "../db.server";
+
+// Import centralized state hook
+import { useDesignControlPanelState, createSettingSetters } from "../hooks/useDesignControlPanelState";
 
 // Import extracted components
 import { ColorPicker } from "../components/design-control-panel/common/ColorPicker";
@@ -370,7 +375,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   };
 
   const mergeSettings = (dbSettings: any, defaults: any) => {
-    if (!dbSettings) return defaults;
+    if (!dbSettings) return { ...defaults, customCss: "" };
 
     const globalColorsSettings = dbSettings.globalColorsSettings as any || {};
     const footerSettings = dbSettings.footerSettings as any || {};
@@ -379,6 +384,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     return {
       ...defaults,
+      customCss: dbSettings.customCss || "",
       productCardBgColor: dbSettings.productCardBgColor || defaults.productCardBgColor,
       productCardFontColor: dbSettings.productCardFontColor || defaults.productCardFontColor,
       productCardFontSize: dbSettings.productCardFontSize || defaults.productCardFontSize,
@@ -555,6 +561,7 @@ export async function action({ request }: ActionFunctionArgs) {
       create: {
         shopId,
         bundleType,
+        customCss: settings.customCss || null,
         productCardBgColor: settings.productCardBgColor,
         productCardFontColor: settings.productCardFontColor,
         productCardFontSize: settings.productCardFontSize,
@@ -580,7 +587,6 @@ export async function action({ request }: ActionFunctionArgs) {
         quantitySelectorTextColor: settings.quantitySelectorTextColor,
         quantitySelectorFontSize: settings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
-        // Product Card Layout & Dimensions (Phase 6)
         productCardWidth: settings.productCardWidth,
         productCardHeight: settings.productCardHeight,
         productCardSpacing: settings.productCardSpacing,
@@ -590,11 +596,9 @@ export async function action({ request }: ActionFunctionArgs) {
         productCardBorderColor: settings.productCardBorderColor,
         productCardShadow: settings.productCardShadow,
         productCardHoverShadow: settings.productCardHoverShadow,
-        // Product Image (Phase 6)
         productImageHeight: settings.productImageHeight,
         productImageBorderRadius: settings.productImageBorderRadius,
         productImageBgColor: settings.productImageBgColor,
-        // Product Modal Styling (Phase 6)
         modalBgColor: settings.modalBgColor,
         modalBorderRadius: settings.modalBorderRadius,
         modalTitleFontSize: settings.modalTitleFontSize,
@@ -610,6 +614,7 @@ export async function action({ request }: ActionFunctionArgs) {
         generalSettings: generalSettings,
       },
       update: {
+        customCss: settings.customCss || null,
         productCardBgColor: settings.productCardBgColor,
         productCardFontColor: settings.productCardFontColor,
         productCardFontSize: settings.productCardFontSize,
@@ -635,7 +640,6 @@ export async function action({ request }: ActionFunctionArgs) {
         quantitySelectorTextColor: settings.quantitySelectorTextColor,
         quantitySelectorFontSize: settings.quantitySelectorFontSize,
         quantitySelectorBorderRadius: settings.quantitySelectorBorderRadius,
-        // Product Card Layout & Dimensions (Phase 6)
         productCardWidth: settings.productCardWidth,
         productCardHeight: settings.productCardHeight,
         productCardSpacing: settings.productCardSpacing,
@@ -645,11 +649,9 @@ export async function action({ request }: ActionFunctionArgs) {
         productCardBorderColor: settings.productCardBorderColor,
         productCardShadow: settings.productCardShadow,
         productCardHoverShadow: settings.productCardHoverShadow,
-        // Product Image (Phase 6)
         productImageHeight: settings.productImageHeight,
         productImageBorderRadius: settings.productImageBorderRadius,
         productImageBgColor: settings.productImageBgColor,
-        // Product Modal Styling (Phase 6)
         modalBgColor: settings.modalBgColor,
         modalBorderRadius: settings.modalBorderRadius,
         modalTitleFontSize: settings.modalTitleFontSize,
@@ -678,379 +680,59 @@ export default function DesignControlPanel() {
   const submit = useSubmit();
   const shopify = useAppBridge();
 
-  // Bundle type state
-  const [selectedBundleType, setSelectedBundleType] = useState<"product_page" | "full_page">("product_page");
+  // Use centralized state hook for all design settings
+  const dcpState = useDesignControlPanelState(settings);
 
-  // Current settings based on selected bundle type
-  const currentSettings = settings[selectedBundleType];
-
-  // Navigation state
-  const [expandedSection, setExpandedSection] = useState<string | null>("productCard");
-  const [activeSubSection, setActiveSubSection] = useState<string>("productCard");
-
-  // Global Colors Section
-  const [globalPrimaryButtonColor, setGlobalPrimaryButtonColor] = useState(currentSettings.globalPrimaryButtonColor || "#000000");
-  const [globalButtonTextColor, setGlobalButtonTextColor] = useState(currentSettings.globalButtonTextColor || "#FFFFFF");
-  const [globalPrimaryTextColor, setGlobalPrimaryTextColor] = useState(currentSettings.globalPrimaryTextColor || "#000000");
-  const [globalSecondaryTextColor, setGlobalSecondaryTextColor] = useState(currentSettings.globalSecondaryTextColor || "#6B7280");
-  const [globalFooterBgColor, setGlobalFooterBgColor] = useState(currentSettings.globalFooterBgColor || "#FFFFFF");
-  const [globalFooterTextColor, setGlobalFooterTextColor] = useState(currentSettings.globalFooterTextColor || "#000000");
-
-  // Form state - Product Card Section
-  const [productCardBgColor, setProductCardBgColor] = useState(currentSettings.productCardBgColor);
-  const [productCardFontColor, setProductCardFontColor] = useState(currentSettings.productCardFontColor);
-  const [productCardFontSize, setProductCardFontSize] = useState(currentSettings.productCardFontSize);
-  const [productCardFontWeight, setProductCardFontWeight] = useState(currentSettings.productCardFontWeight);
-  const [productCardImageFit, setProductCardImageFit] = useState(currentSettings.productCardImageFit);
-  const [productCardsPerRow, setProductCardsPerRow] = useState(String(currentSettings.productCardsPerRow));
-  const [productTitleVisibility, setProductTitleVisibility] = useState(currentSettings.productTitleVisibility);
-  const [productPriceVisibility, setProductPriceVisibility] = useState(currentSettings.productPriceVisibility);
-  const [productPriceBgColor, setProductPriceBgColor] = useState(currentSettings.productPriceBgColor);
-
-  // Product Card Typography
-  const [productStrikePriceColor, setProductStrikePriceColor] = useState(currentSettings.productStrikePriceColor);
-  const [productStrikeFontSize, setProductStrikeFontSize] = useState(currentSettings.productStrikeFontSize);
-  const [productStrikeFontWeight, setProductStrikeFontWeight] = useState(currentSettings.productStrikeFontWeight);
-  const [productFinalPriceColor, setProductFinalPriceColor] = useState(currentSettings.productFinalPriceColor);
-  const [productFinalPriceFontSize, setProductFinalPriceFontSize] = useState(currentSettings.productFinalPriceFontSize);
-  const [productFinalPriceFontWeight, setProductFinalPriceFontWeight] = useState(currentSettings.productFinalPriceFontWeight);
-
-  // Button Section
-  const [buttonBgColor, setButtonBgColor] = useState(currentSettings.buttonBgColor);
-  const [buttonTextColor, setButtonTextColor] = useState(currentSettings.buttonTextColor);
-  const [buttonFontSize, setButtonFontSize] = useState(currentSettings.buttonFontSize);
-  const [buttonFontWeight, setButtonFontWeight] = useState(currentSettings.buttonFontWeight);
-  const [buttonBorderRadius, setButtonBorderRadius] = useState(currentSettings.buttonBorderRadius);
-  const [buttonAddToCartText, setButtonAddToCartText] = useState(currentSettings.buttonAddToCartText);
-
-  // Quantity Selector Section
-  const [quantitySelectorBgColor, setQuantitySelectorBgColor] = useState(currentSettings.quantitySelectorBgColor);
-  const [quantitySelectorTextColor, setQuantitySelectorTextColor] = useState(currentSettings.quantitySelectorTextColor);
-  const [quantitySelectorFontSize, setQuantitySelectorFontSize] = useState(currentSettings.quantitySelectorFontSize);
-  const [quantitySelectorBorderRadius, setQuantitySelectorBorderRadius] = useState(currentSettings.quantitySelectorBorderRadius);
-
-  // Variant Selector Section
-  const [variantSelectorBgColor, setVariantSelectorBgColor] = useState(currentSettings.variantSelectorBgColor);
-  const [variantSelectorTextColor, setVariantSelectorTextColor] = useState(currentSettings.variantSelectorTextColor);
-  const [variantSelectorBorderRadius, setVariantSelectorBorderRadius] = useState(currentSettings.variantSelectorBorderRadius);
-
-  // Product Card Layout & Dimensions (Full Page - Phase 6)
-  const [productCardWidth, setProductCardWidth] = useState(currentSettings.productCardWidth || 280);
-  const [productCardHeight, setProductCardHeight] = useState(currentSettings.productCardHeight || 420);
-  const [productCardSpacing, setProductCardSpacing] = useState(currentSettings.productCardSpacing || 20);
-  const [productCardBorderRadius, setProductCardBorderRadius] = useState(currentSettings.productCardBorderRadius || 8);
-  const [productCardPadding, setProductCardPadding] = useState(currentSettings.productCardPadding || 12);
-  const [productCardBorderWidth, setProductCardBorderWidth] = useState(currentSettings.productCardBorderWidth || 1);
-  const [productCardBorderColor, setProductCardBorderColor] = useState(currentSettings.productCardBorderColor || "rgba(0,0,0,0.08)");
-  const [productCardShadow, setProductCardShadow] = useState(currentSettings.productCardShadow || "0 2px 8px rgba(0,0,0,0.04)");
-  const [productCardHoverShadow, setProductCardHoverShadow] = useState(currentSettings.productCardHoverShadow || "0 8px 24px rgba(0,0,0,0.12)");
-
-  // Product Image (Full Page - Phase 6)
-  const [productImageHeight, setProductImageHeight] = useState(currentSettings.productImageHeight || 280);
-  const [productImageBorderRadius, setProductImageBorderRadius] = useState(currentSettings.productImageBorderRadius || 6);
-  const [productImageBgColor, setProductImageBgColor] = useState(currentSettings.productImageBgColor || "#F8F8F8");
-
-  // Product Modal Styling (Full Page - Phase 6)
-  const [modalBgColor, setModalBgColor] = useState(currentSettings.modalBgColor || "#FFFFFF");
-  const [modalBorderRadius, setModalBorderRadius] = useState(currentSettings.modalBorderRadius || 12);
-  const [modalTitleFontSize, setModalTitleFontSize] = useState(currentSettings.modalTitleFontSize || 28);
-  const [modalTitleFontWeight, setModalTitleFontWeight] = useState(currentSettings.modalTitleFontWeight || 700);
-  const [modalPriceFontSize, setModalPriceFontSize] = useState(currentSettings.modalPriceFontSize || 22);
-  const [modalVariantBorderRadius, setModalVariantBorderRadius] = useState(currentSettings.modalVariantBorderRadius || 8);
-  const [modalButtonBgColor, setModalButtonBgColor] = useState(currentSettings.modalButtonBgColor || "#000000");
-  const [modalButtonTextColor, setModalButtonTextColor] = useState(currentSettings.modalButtonTextColor || "#FFFFFF");
-  const [modalButtonBorderRadius, setModalButtonBorderRadius] = useState(currentSettings.modalButtonBorderRadius || 8);
-
-  // Bundle Footer Section
-  const [footerBgColor, setFooterBgColor] = useState(currentSettings.footerBgColor);
-  const [footerTotalBgColor, setFooterTotalBgColor] = useState(currentSettings.footerTotalBgColor);
-  const [footerBorderRadius, setFooterBorderRadius] = useState(currentSettings.footerBorderRadius);
-  const [footerPadding, setFooterPadding] = useState(currentSettings.footerPadding);
-
-  // Footer Price
-  const [footerFinalPriceColor, setFooterFinalPriceColor] = useState(currentSettings.footerFinalPriceColor);
-  const [footerFinalPriceFontSize, setFooterFinalPriceFontSize] = useState(currentSettings.footerFinalPriceFontSize);
-  const [footerFinalPriceFontWeight, setFooterFinalPriceFontWeight] = useState(currentSettings.footerFinalPriceFontWeight);
-  const [footerStrikePriceColor, setFooterStrikePriceColor] = useState(currentSettings.footerStrikePriceColor);
-  const [footerStrikeFontSize, setFooterStrikeFontSize] = useState(currentSettings.footerStrikeFontSize);
-  const [footerStrikeFontWeight, setFooterStrikeFontWeight] = useState(currentSettings.footerStrikeFontWeight);
-  const [footerPriceVisibility, setFooterPriceVisibility] = useState(currentSettings.footerPriceVisibility);
-
-  // Footer Buttons
-  const [footerBackButtonBgColor, setFooterBackButtonBgColor] = useState(currentSettings.footerBackButtonBgColor);
-  const [footerBackButtonTextColor, setFooterBackButtonTextColor] = useState(currentSettings.footerBackButtonTextColor);
-  const [footerBackButtonBorderColor, setFooterBackButtonBorderColor] = useState(currentSettings.footerBackButtonBorderColor);
-  const [footerBackButtonBorderRadius, setFooterBackButtonBorderRadius] = useState(currentSettings.footerBackButtonBorderRadius);
-  const [footerNextButtonBgColor, setFooterNextButtonBgColor] = useState(currentSettings.footerNextButtonBgColor);
-  const [footerNextButtonTextColor, setFooterNextButtonTextColor] = useState(currentSettings.footerNextButtonTextColor);
-  const [footerNextButtonBorderColor, setFooterNextButtonBorderColor] = useState(currentSettings.footerNextButtonBorderColor);
-  const [footerNextButtonBorderRadius, setFooterNextButtonBorderRadius] = useState(currentSettings.footerNextButtonBorderRadius);
-
-  // Discount & Progress Bar
-  const [footerDiscountTextVisibility, setFooterDiscountTextVisibility] = useState(currentSettings.footerDiscountTextVisibility);
-  const [footerProgressBarFilledColor, setFooterProgressBarFilledColor] = useState(currentSettings.footerProgressBarFilledColor);
-  const [footerProgressBarEmptyColor, setFooterProgressBarEmptyColor] = useState(currentSettings.footerProgressBarEmptyColor);
-
-  // Success Message Styling
-  const [successMessageFontSize, setSuccessMessageFontSize] = useState(currentSettings.successMessageFontSize || 16);
-  const [successMessageFontWeight, setSuccessMessageFontWeight] = useState(currentSettings.successMessageFontWeight || 600);
-  const [successMessageTextColor, setSuccessMessageTextColor] = useState(currentSettings.successMessageTextColor || "#065F46");
-  const [successMessageBgColor, setSuccessMessageBgColor] = useState(currentSettings.successMessageBgColor || "#D1FAE5");
-
-  // Bundle Header Section
-  // Tabs
-  const [headerTabActiveBgColor, setHeaderTabActiveBgColor] = useState(currentSettings.headerTabActiveBgColor || "#000000");
-  const [headerTabActiveTextColor, setHeaderTabActiveTextColor] = useState(currentSettings.headerTabActiveTextColor || "#FFFFFF");
-  const [headerTabInactiveBgColor, setHeaderTabInactiveBgColor] = useState(currentSettings.headerTabInactiveBgColor || "#FFFFFF");
-  const [headerTabInactiveTextColor, setHeaderTabInactiveTextColor] = useState(currentSettings.headerTabInactiveTextColor || "#000000");
-  const [headerTabRadius, setHeaderTabRadius] = useState(currentSettings.headerTabRadius || 67);
-  // Header Text
-  const [conditionsTextColor, setConditionsTextColor] = useState(currentSettings.conditionsTextColor || "#FFFFFF");
-  const [conditionsTextFontSize, setConditionsTextFontSize] = useState(currentSettings.conditionsTextFontSize || 16);
-  const [discountTextColor, setDiscountTextColor] = useState(currentSettings.discountTextColor || "#000000");
-  const [discountTextFontSize, setDiscountTextFontSize] = useState(currentSettings.discountTextFontSize || 14);
-
-  // General Section
-  // Empty State
-  const [emptyStateCardBgColor, setEmptyStateCardBgColor] = useState(currentSettings.emptyStateCardBgColor || "#FFFFFF");
-  const [emptyStateCardBorderColor, setEmptyStateCardBorderColor] = useState(currentSettings.emptyStateCardBorderColor || "#F6F6F6");
-  const [emptyStateTextColor, setEmptyStateTextColor] = useState(currentSettings.emptyStateTextColor || "#9CA3AF");
-  const [emptyStateBorderStyle, setEmptyStateBorderStyle] = useState(currentSettings.emptyStateBorderStyle || "dashed");
-  // Drawer
-  const [drawerBgColor, setDrawerBgColor] = useState(currentSettings.drawerBgColor || "#FFFFFF");
-  // Add to Cart Button
-  const [addToCartButtonBgColor, setAddToCartButtonBgColor] = useState(currentSettings.addToCartButtonBgColor || "#000000");
-  const [addToCartButtonTextColor, setAddToCartButtonTextColor] = useState(currentSettings.addToCartButtonTextColor || "#FFFFFF");
-  const [addToCartButtonBorderRadius, setAddToCartButtonBorderRadius] = useState(currentSettings.addToCartButtonBorderRadius || 67);
-  // Toasts
-  const [toastBgColor, setToastBgColor] = useState(currentSettings.toastBgColor || "#000000");
-  const [toastTextColor, setToastTextColor] = useState(currentSettings.toastTextColor || "#FFFFFF");
-
-  // Bundle Step Bar Section
-  const [stepNameFontColor, setStepNameFontColor] = useState(currentSettings.stepNameFontColor || "#000000");
-  const [stepNameFontSize, setStepNameFontSize] = useState(currentSettings.stepNameFontSize || 16);
-  const [completedStepCheckMarkColor, setCompletedStepCheckMarkColor] = useState(currentSettings.completedStepCheckMarkColor || "#FFFFFF");
-  const [completedStepBgColor, setCompletedStepBgColor] = useState(currentSettings.completedStepBgColor || "#000000");
-  const [completedStepCircleBorderColor, setCompletedStepCircleBorderColor] = useState(currentSettings.completedStepCircleBorderColor || "#000000");
-  const [completedStepCircleBorderRadius, setCompletedStepCircleBorderRadius] = useState(currentSettings.completedStepCircleBorderRadius || 50);
-  const [incompleteStepBgColor, setIncompleteStepBgColor] = useState(currentSettings.incompleteStepBgColor || "#FFFFFF");
-  const [incompleteStepCircleStrokeColor, setIncompleteStepCircleStrokeColor] = useState(currentSettings.incompleteStepCircleStrokeColor || "#000000");
-  const [incompleteStepCircleStrokeRadius, setIncompleteStepCircleStrokeRadius] = useState(currentSettings.incompleteStepCircleStrokeRadius || 50);
-  const [stepBarProgressFilledColor, setStepBarProgressFilledColor] = useState(currentSettings.stepBarProgressFilledColor || "#000000");
-  const [stepBarProgressEmptyColor, setStepBarProgressEmptyColor] = useState(currentSettings.stepBarProgressEmptyColor || "#C6C6C6");
-
-  // Tabs Section
-  const [tabsActiveBgColor, setTabsActiveBgColor] = useState(currentSettings.tabsActiveBgColor || "#000000");
-  const [tabsActiveTextColor, setTabsActiveTextColor] = useState(currentSettings.tabsActiveTextColor || "#FFFFFF");
-  const [tabsInactiveBgColor, setTabsInactiveBgColor] = useState(currentSettings.tabsInactiveBgColor || "#FFFFFF");
-  const [tabsInactiveTextColor, setTabsInactiveTextColor] = useState(currentSettings.tabsInactiveTextColor || "#000000");
-  const [tabsBorderColor, setTabsBorderColor] = useState(currentSettings.tabsBorderColor || "#000000");
-  const [tabsBorderRadius, setTabsBorderRadius] = useState(currentSettings.tabsBorderRadius || 8);
-
-  // General Section - Additional Settings
-  const [bundleBgColor, setBundleBgColor] = useState(currentSettings.bundleBgColor || "#FFFFFF");
-  const [footerScrollBarColor, setFooterScrollBarColor] = useState(currentSettings.footerScrollBarColor || "#000000");
-  const [productPageTitleFontColor, setProductPageTitleFontColor] = useState(currentSettings.productPageTitleFontColor || "#000000");
-  const [productPageTitleFontSize, setProductPageTitleFontSize] = useState(currentSettings.productPageTitleFontSize || 24);
-  const [bundleUpsellButtonBgColor, setBundleUpsellButtonBgColor] = useState(currentSettings.bundleUpsellButtonBgColor || "#000000");
-  const [bundleUpsellBorderColor, setBundleUpsellBorderColor] = useState(currentSettings.bundleUpsellBorderColor || "#000000");
-  const [bundleUpsellTextColor, setBundleUpsellTextColor] = useState(currentSettings.bundleUpsellTextColor || "#FFFFFF");
-  const [filterIconColor, setFilterIconColor] = useState(currentSettings.filterIconColor || "#000000");
-  const [filterBgColor, setFilterBgColor] = useState(currentSettings.filterBgColor || "#FFFFFF");
-  const [filterTextColor, setFilterTextColor] = useState(currentSettings.filterTextColor || "#000000");
-
-  // Update form state when bundle type changes
-  useEffect(() => {
-    const newSettings = settings[selectedBundleType];
-    setProductCardBgColor(newSettings.productCardBgColor);
-    setProductCardFontColor(newSettings.productCardFontColor);
-    setProductCardFontSize(newSettings.productCardFontSize);
-    setProductCardFontWeight(newSettings.productCardFontWeight);
-    setProductCardImageFit(newSettings.productCardImageFit);
-    setProductCardsPerRow(String(newSettings.productCardsPerRow));
-    setProductPriceVisibility(newSettings.productPriceVisibility);
-    setProductPriceBgColor(newSettings.productPriceBgColor);
-    setProductStrikePriceColor(newSettings.productStrikePriceColor);
-    setProductStrikeFontSize(newSettings.productStrikeFontSize);
-    setProductStrikeFontWeight(newSettings.productStrikeFontWeight);
-    setProductFinalPriceColor(newSettings.productFinalPriceColor);
-    setProductFinalPriceFontSize(newSettings.productFinalPriceFontSize);
-    setProductFinalPriceFontWeight(newSettings.productFinalPriceFontWeight);
-    setButtonBgColor(newSettings.buttonBgColor);
-    setButtonTextColor(newSettings.buttonTextColor);
-    setButtonFontSize(newSettings.buttonFontSize);
-    setButtonFontWeight(newSettings.buttonFontWeight);
-    setButtonBorderRadius(newSettings.buttonBorderRadius);
-    setButtonAddToCartText(newSettings.buttonAddToCartText);
-    setQuantitySelectorBgColor(newSettings.quantitySelectorBgColor);
-    setQuantitySelectorTextColor(newSettings.quantitySelectorTextColor);
-    setQuantitySelectorFontSize(newSettings.quantitySelectorFontSize);
-    setQuantitySelectorBorderRadius(newSettings.quantitySelectorBorderRadius);
-    setFooterBgColor(newSettings.footerBgColor);
-    setFooterTotalBgColor(newSettings.footerTotalBgColor);
-    setFooterBorderRadius(newSettings.footerBorderRadius);
-    setFooterPadding(newSettings.footerPadding);
-    setFooterFinalPriceColor(newSettings.footerFinalPriceColor);
-    setFooterFinalPriceFontSize(newSettings.footerFinalPriceFontSize);
-    setFooterFinalPriceFontWeight(newSettings.footerFinalPriceFontWeight);
-    setFooterStrikePriceColor(newSettings.footerStrikePriceColor);
-    setFooterStrikeFontSize(newSettings.footerStrikeFontSize);
-    setFooterStrikeFontWeight(newSettings.footerStrikeFontWeight);
-    setFooterPriceVisibility(newSettings.footerPriceVisibility);
-    setFooterBackButtonBgColor(newSettings.footerBackButtonBgColor);
-    setFooterBackButtonTextColor(newSettings.footerBackButtonTextColor);
-    setFooterBackButtonBorderColor(newSettings.footerBackButtonBorderColor);
-    setFooterBackButtonBorderRadius(newSettings.footerBackButtonBorderRadius);
-    setFooterNextButtonBgColor(newSettings.footerNextButtonBgColor);
-    setFooterNextButtonTextColor(newSettings.footerNextButtonTextColor);
-    setFooterNextButtonBorderColor(newSettings.footerNextButtonBorderColor);
-    setFooterNextButtonBorderRadius(newSettings.footerNextButtonBorderRadius);
-    setFooterDiscountTextVisibility(newSettings.footerDiscountTextVisibility);
-    setFooterProgressBarFilledColor(newSettings.footerProgressBarFilledColor);
-    setFooterProgressBarEmptyColor(newSettings.footerProgressBarEmptyColor);
-    setSuccessMessageFontSize(newSettings.successMessageFontSize);
-    setSuccessMessageFontWeight(newSettings.successMessageFontWeight);
-    setSuccessMessageTextColor(newSettings.successMessageTextColor);
-    setSuccessMessageBgColor(newSettings.successMessageBgColor);
-    // Bundle Step Bar
-    setStepNameFontColor(newSettings.stepNameFontColor);
-    setStepNameFontSize(newSettings.stepNameFontSize);
-    setCompletedStepCheckMarkColor(newSettings.completedStepCheckMarkColor);
-    setCompletedStepBgColor(newSettings.completedStepBgColor);
-    setCompletedStepCircleBorderColor(newSettings.completedStepCircleBorderColor);
-    setCompletedStepCircleBorderRadius(newSettings.completedStepCircleBorderRadius);
-    setIncompleteStepBgColor(newSettings.incompleteStepBgColor);
-    setIncompleteStepCircleStrokeColor(newSettings.incompleteStepCircleStrokeColor);
-    setIncompleteStepCircleStrokeRadius(newSettings.incompleteStepCircleStrokeRadius);
-    setStepBarProgressFilledColor(newSettings.stepBarProgressFilledColor);
-    setStepBarProgressEmptyColor(newSettings.stepBarProgressEmptyColor);
-    setTabsActiveBgColor(newSettings.tabsActiveBgColor);
-    setTabsActiveTextColor(newSettings.tabsActiveTextColor);
-    setTabsInactiveBgColor(newSettings.tabsInactiveBgColor);
-    setTabsInactiveTextColor(newSettings.tabsInactiveTextColor);
-    setTabsBorderColor(newSettings.tabsBorderColor);
-    setTabsBorderRadius(newSettings.tabsBorderRadius);
-    // General Section
-    setBundleBgColor(newSettings.bundleBgColor);
-    setFooterScrollBarColor(newSettings.footerScrollBarColor);
-    setProductPageTitleFontColor(newSettings.productPageTitleFontColor);
-    setProductPageTitleFontSize(newSettings.productPageTitleFontSize);
-    setBundleUpsellButtonBgColor(newSettings.bundleUpsellButtonBgColor);
-    setBundleUpsellBorderColor(newSettings.bundleUpsellBorderColor);
-    setBundleUpsellTextColor(newSettings.bundleUpsellTextColor);
-    setToastBgColor(newSettings.toastBgColor);
-    setToastTextColor(newSettings.toastTextColor);
-    setFilterIconColor(newSettings.filterIconColor);
-    setFilterBgColor(newSettings.filterBgColor);
-    setFilterTextColor(newSettings.filterTextColor);
-  }, [selectedBundleType, settings]);
-
-  // Track if there are unsaved changes
-  const hasUnsavedChanges = useMemo(() => {
-    const current = settings[selectedBundleType];
-    return (
-      productCardBgColor !== current.productCardBgColor ||
-      productCardFontColor !== current.productCardFontColor ||
-      productCardFontSize !== current.productCardFontSize ||
-      productCardFontWeight !== current.productCardFontWeight ||
-      productCardImageFit !== current.productCardImageFit ||
-      String(productCardsPerRow) !== String(current.productCardsPerRow) ||
-      productTitleVisibility !== current.productTitleVisibility ||
-      productPriceVisibility !== current.productPriceVisibility ||
-      productPriceBgColor !== current.productPriceBgColor ||
-      productStrikePriceColor !== current.productStrikePriceColor ||
-      productStrikeFontSize !== current.productStrikeFontSize ||
-      productStrikeFontWeight !== current.productStrikeFontWeight ||
-      productFinalPriceColor !== current.productFinalPriceColor ||
-      productFinalPriceFontSize !== current.productFinalPriceFontSize ||
-      productFinalPriceFontWeight !== current.productFinalPriceFontWeight ||
-      buttonBgColor !== current.buttonBgColor ||
-      buttonTextColor !== current.buttonTextColor ||
-      buttonFontSize !== current.buttonFontSize ||
-      buttonFontWeight !== current.buttonFontWeight ||
-      buttonBorderRadius !== current.buttonBorderRadius ||
-      buttonAddToCartText !== current.buttonAddToCartText ||
-      quantitySelectorBgColor !== current.quantitySelectorBgColor ||
-      quantitySelectorTextColor !== current.quantitySelectorTextColor ||
-      quantitySelectorFontSize !== current.quantitySelectorFontSize ||
-      quantitySelectorBorderRadius !== current.quantitySelectorBorderRadius ||
-      variantSelectorBgColor !== current.variantSelectorBgColor ||
-      variantSelectorTextColor !== current.variantSelectorTextColor ||
-      variantSelectorBorderRadius !== current.variantSelectorBorderRadius ||
-      footerBgColor !== current.footerBgColor ||
-      footerTotalBgColor !== current.footerTotalBgColor ||
-      footerBorderRadius !== current.footerBorderRadius ||
-      footerPadding !== current.footerPadding ||
-      footerFinalPriceColor !== current.footerFinalPriceColor ||
-      footerFinalPriceFontSize !== current.footerFinalPriceFontSize ||
-      footerFinalPriceFontWeight !== current.footerFinalPriceFontWeight ||
-      footerStrikePriceColor !== current.footerStrikePriceColor ||
-      footerStrikeFontSize !== current.footerStrikeFontSize ||
-      footerStrikeFontWeight !== current.footerStrikeFontWeight ||
-      footerPriceVisibility !== current.footerPriceVisibility ||
-      footerBackButtonBgColor !== current.footerBackButtonBgColor ||
-      footerBackButtonTextColor !== current.footerBackButtonTextColor ||
-      footerBackButtonBorderColor !== current.footerBackButtonBorderColor ||
-      footerBackButtonBorderRadius !== current.footerBackButtonBorderRadius ||
-      footerNextButtonBgColor !== current.footerNextButtonBgColor ||
-      footerNextButtonTextColor !== current.footerNextButtonTextColor ||
-      footerNextButtonBorderColor !== current.footerNextButtonBorderColor ||
-      footerNextButtonBorderRadius !== current.footerNextButtonBorderRadius ||
-      footerDiscountTextVisibility !== current.footerDiscountTextVisibility ||
-      footerProgressBarFilledColor !== current.footerProgressBarFilledColor ||
-      footerProgressBarEmptyColor !== current.footerProgressBarEmptyColor ||
-      successMessageFontSize !== current.successMessageFontSize ||
-      successMessageFontWeight !== current.successMessageFontWeight ||
-      successMessageTextColor !== current.successMessageTextColor ||
-      successMessageBgColor !== current.successMessageBgColor ||
-      stepNameFontColor !== current.stepNameFontColor ||
-      stepNameFontSize !== current.stepNameFontSize ||
-      completedStepCheckMarkColor !== current.completedStepCheckMarkColor ||
-      completedStepBgColor !== current.completedStepBgColor ||
-      completedStepCircleBorderColor !== current.completedStepCircleBorderColor ||
-      completedStepCircleBorderRadius !== current.completedStepCircleBorderRadius ||
-      incompleteStepBgColor !== current.incompleteStepBgColor ||
-      incompleteStepCircleStrokeColor !== current.incompleteStepCircleStrokeColor ||
-      incompleteStepCircleStrokeRadius !== current.incompleteStepCircleStrokeRadius ||
-      stepBarProgressFilledColor !== current.stepBarProgressFilledColor ||
-      stepBarProgressEmptyColor !== current.stepBarProgressEmptyColor ||
-      tabsActiveBgColor !== current.tabsActiveBgColor ||
-      tabsActiveTextColor !== current.tabsActiveTextColor ||
-      tabsInactiveBgColor !== current.tabsInactiveBgColor ||
-      tabsInactiveTextColor !== current.tabsInactiveTextColor ||
-      tabsBorderColor !== current.tabsBorderColor ||
-      tabsBorderRadius !== current.tabsBorderRadius ||
-      bundleBgColor !== current.bundleBgColor ||
-      footerScrollBarColor !== current.footerScrollBarColor ||
-      productPageTitleFontColor !== current.productPageTitleFontColor ||
-      productPageTitleFontSize !== current.productPageTitleFontSize ||
-      bundleUpsellButtonBgColor !== current.bundleUpsellButtonBgColor ||
-      bundleUpsellBorderColor !== current.bundleUpsellBorderColor ||
-      bundleUpsellTextColor !== current.bundleUpsellTextColor ||
-      toastBgColor !== current.toastBgColor ||
-      toastTextColor !== current.toastTextColor ||
-      filterIconColor !== current.filterIconColor ||
-      filterBgColor !== current.filterBgColor ||
-      filterTextColor !== current.filterTextColor ||
-      globalPrimaryButtonColor !== current.globalPrimaryButtonColor ||
-      globalButtonTextColor !== current.globalButtonTextColor ||
-      globalPrimaryTextColor !== current.globalPrimaryTextColor ||
-      globalSecondaryTextColor !== current.globalSecondaryTextColor ||
-      globalFooterBgColor !== current.globalFooterBgColor ||
-      globalFooterTextColor !== current.globalFooterTextColor ||
-      conditionsTextColor !== current.conditionsTextColor ||
-      conditionsTextFontSize !== current.conditionsTextFontSize ||
-      discountTextColor !== current.discountTextColor ||
-      discountTextFontSize !== current.discountTextFontSize ||
-      headerTabActiveBgColor !== current.headerTabActiveBgColor ||
-      headerTabActiveTextColor !== current.headerTabActiveTextColor ||
-      headerTabInactiveBgColor !== current.headerTabInactiveBgColor ||
-      headerTabInactiveTextColor !== current.headerTabInactiveTextColor ||
-      headerTabRadius !== current.headerTabRadius
-    );
-  }, [
-    settings,
+  // Destructure all values and state management functions from the hook
+  const {
+    // Bundle type
     selectedBundleType,
+    setSelectedBundleType,
+
+    // All current settings values
+    settings: currentSettings,
+
+    // Navigation
+    expandedSection,
+    activeSubSection,
+    toggleSection,
+    handleSubSectionClick,
+
+    // State management
+    hasUnsavedChanges,
+    handleDiscard,
+    getSettingsForSave,
+    markAsSaved,
+
+    // Toast state
+    toastActive,
+    toastMessage,
+    toastError,
+    setToastActive,
+    setToastMessage,
+    setToastError,
+
+    // Custom CSS help
+    customCssHelpOpen,
+    setCustomCssHelpOpen,
+
+    // Update function
+    updateSetting,
+  } = dcpState;
+
+  // Create individual setters for backward compatibility with UI components
+  const setters = createSettingSetters(updateSetting);
+
+  // Destructure all setting values from currentSettings for use in JSX
+  const {
+    // Global Colors
+    globalPrimaryButtonColor,
+    globalButtonTextColor,
+    globalPrimaryTextColor,
+    globalSecondaryTextColor,
+    globalFooterBgColor,
+    globalFooterTextColor,
+    // Product Card
     productCardBgColor,
     productCardFontColor,
     productCardFontSize,
@@ -1060,29 +742,59 @@ export default function DesignControlPanel() {
     productTitleVisibility,
     productPriceVisibility,
     productPriceBgColor,
+    // Product Card Typography
     productStrikePriceColor,
     productStrikeFontSize,
     productStrikeFontWeight,
     productFinalPriceColor,
     productFinalPriceFontSize,
     productFinalPriceFontWeight,
+    // Product Card Dimensions
+    productCardWidth,
+    productCardHeight,
+    productCardSpacing,
+    productCardBorderRadius,
+    productCardPadding,
+    productCardBorderWidth,
+    productCardBorderColor,
+    productCardShadow,
+    productCardHoverShadow,
+    // Product Image
+    productImageHeight,
+    productImageBorderRadius,
+    productImageBgColor,
+    // Button
     buttonBgColor,
     buttonTextColor,
     buttonFontSize,
     buttonFontWeight,
     buttonBorderRadius,
     buttonAddToCartText,
+    // Quantity Selector
     quantitySelectorBgColor,
     quantitySelectorTextColor,
     quantitySelectorFontSize,
     quantitySelectorBorderRadius,
+    // Variant Selector
     variantSelectorBgColor,
     variantSelectorTextColor,
     variantSelectorBorderRadius,
+    // Product Modal
+    modalBgColor,
+    modalBorderRadius,
+    modalTitleFontSize,
+    modalTitleFontWeight,
+    modalPriceFontSize,
+    modalVariantBorderRadius,
+    modalButtonBgColor,
+    modalButtonTextColor,
+    modalButtonBorderRadius,
+    // Bundle Footer
     footerBgColor,
     footerTotalBgColor,
     footerBorderRadius,
     footerPadding,
+    // Footer Price
     footerFinalPriceColor,
     footerFinalPriceFontSize,
     footerFinalPriceFontWeight,
@@ -1090,6 +802,7 @@ export default function DesignControlPanel() {
     footerStrikeFontSize,
     footerStrikeFontWeight,
     footerPriceVisibility,
+    // Footer Buttons
     footerBackButtonBgColor,
     footerBackButtonTextColor,
     footerBackButtonBorderColor,
@@ -1098,18 +811,60 @@ export default function DesignControlPanel() {
     footerNextButtonTextColor,
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
+    // Discount & Progress
     footerDiscountTextVisibility,
     footerProgressBarFilledColor,
     footerProgressBarEmptyColor,
+    // Success Message
     successMessageFontSize,
     successMessageFontWeight,
     successMessageTextColor,
     successMessageBgColor,
+    // Bundle Header Tabs
     headerTabActiveBgColor,
     headerTabActiveTextColor,
     headerTabInactiveBgColor,
     headerTabInactiveTextColor,
     headerTabRadius,
+    // Header Text
+    conditionsTextColor,
+    conditionsTextFontSize,
+    discountTextColor,
+    discountTextFontSize,
+    // Empty State
+    emptyStateCardBgColor,
+    emptyStateCardBorderColor,
+    emptyStateTextColor,
+    emptyStateBorderStyle,
+    // Drawer
+    drawerBgColor,
+    // Add to Cart Button
+    addToCartButtonBgColor,
+    addToCartButtonTextColor,
+    addToCartButtonBorderRadius,
+    // Toasts
+    toastBgColor,
+    toastTextColor,
+    // Bundle Step Bar
+    stepNameFontColor,
+    stepNameFontSize,
+    completedStepCheckMarkColor,
+    completedStepBgColor,
+    completedStepCircleBorderColor,
+    completedStepCircleBorderRadius,
+    incompleteStepBgColor,
+    incompleteStepCircleStrokeColor,
+    incompleteStepCircleStrokeRadius,
+    stepBarProgressFilledColor,
+    stepBarProgressEmptyColor,
+    // Tabs
+    tabsActiveBgColor,
+    tabsActiveTextColor,
+    tabsInactiveBgColor,
+    tabsInactiveTextColor,
+    tabsBorderColor,
+    tabsBorderRadius,
+    // General
     bundleBgColor,
     footerScrollBarColor,
     productPageTitleFontColor,
@@ -1117,122 +872,146 @@ export default function DesignControlPanel() {
     bundleUpsellButtonBgColor,
     bundleUpsellBorderColor,
     bundleUpsellTextColor,
-    toastBgColor,
-    toastTextColor,
     filterIconColor,
     filterBgColor,
     filterTextColor,
-    globalPrimaryButtonColor,
-    globalButtonTextColor,
-    globalPrimaryTextColor,
-    globalSecondaryTextColor,
-    globalFooterBgColor,
-    globalFooterTextColor,
-    conditionsTextColor,
-    conditionsTextFontSize,
-    discountTextColor,
-    discountTextFontSize,
-  ]);
+    // Custom CSS
+    customCss,
+  } = currentSettings;
 
-  // Function to discard changes and revert to saved values
-  const handleDiscard = useCallback(() => {
-    const savedSettings = settings[selectedBundleType];
-    setProductCardBgColor(savedSettings.productCardBgColor);
-    setProductCardFontColor(savedSettings.productCardFontColor);
-    setProductCardFontSize(savedSettings.productCardFontSize);
-    setProductCardFontWeight(savedSettings.productCardFontWeight);
-    setProductCardImageFit(savedSettings.productCardImageFit);
-    setProductCardsPerRow(String(savedSettings.productCardsPerRow));
-    setProductTitleVisibility(savedSettings.productTitleVisibility);
-    setProductPriceVisibility(savedSettings.productPriceVisibility);
-    setProductPriceBgColor(savedSettings.productPriceBgColor);
-    setProductStrikePriceColor(savedSettings.productStrikePriceColor);
-    setProductStrikeFontSize(savedSettings.productStrikeFontSize);
-    setProductStrikeFontWeight(savedSettings.productStrikeFontWeight);
-    setProductFinalPriceColor(savedSettings.productFinalPriceColor);
-    setProductFinalPriceFontSize(savedSettings.productFinalPriceFontSize);
-    setProductFinalPriceFontWeight(savedSettings.productFinalPriceFontWeight);
-    setButtonBgColor(savedSettings.buttonBgColor);
-    setButtonTextColor(savedSettings.buttonTextColor);
-    setButtonFontSize(savedSettings.buttonFontSize);
-    setButtonFontWeight(savedSettings.buttonFontWeight);
-    setButtonBorderRadius(savedSettings.buttonBorderRadius);
-    setButtonAddToCartText(savedSettings.buttonAddToCartText);
-    setQuantitySelectorBgColor(savedSettings.quantitySelectorBgColor);
-    setQuantitySelectorTextColor(savedSettings.quantitySelectorTextColor);
-    setQuantitySelectorFontSize(savedSettings.quantitySelectorFontSize);
-    setQuantitySelectorBorderRadius(savedSettings.quantitySelectorBorderRadius);
-    setVariantSelectorBgColor(savedSettings.variantSelectorBgColor);
-    setVariantSelectorTextColor(savedSettings.variantSelectorTextColor);
-    setVariantSelectorBorderRadius(savedSettings.variantSelectorBorderRadius);
-    setFooterBgColor(savedSettings.footerBgColor);
-    setFooterTotalBgColor(savedSettings.footerTotalBgColor);
-    setFooterBorderRadius(savedSettings.footerBorderRadius);
-    setFooterPadding(savedSettings.footerPadding);
-    setFooterFinalPriceColor(savedSettings.footerFinalPriceColor);
-    setFooterFinalPriceFontSize(savedSettings.footerFinalPriceFontSize);
-    setFooterFinalPriceFontWeight(savedSettings.footerFinalPriceFontWeight);
-    setFooterStrikePriceColor(savedSettings.footerStrikePriceColor);
-    setFooterStrikeFontSize(savedSettings.footerStrikeFontSize);
-    setFooterStrikeFontWeight(savedSettings.footerStrikeFontWeight);
-    setFooterPriceVisibility(savedSettings.footerPriceVisibility);
-    setFooterBackButtonBgColor(savedSettings.footerBackButtonBgColor);
-    setFooterBackButtonTextColor(savedSettings.footerBackButtonTextColor);
-    setFooterBackButtonBorderColor(savedSettings.footerBackButtonBorderColor);
-    setFooterBackButtonBorderRadius(savedSettings.footerBackButtonBorderRadius);
-    setFooterNextButtonBgColor(savedSettings.footerNextButtonBgColor);
-    setFooterNextButtonTextColor(savedSettings.footerNextButtonTextColor);
-    setFooterNextButtonBorderColor(savedSettings.footerNextButtonBorderColor);
-    setFooterNextButtonBorderRadius(savedSettings.footerNextButtonBorderRadius);
-    setFooterDiscountTextVisibility(savedSettings.footerDiscountTextVisibility);
-    setFooterProgressBarFilledColor(savedSettings.footerProgressBarFilledColor);
-    setFooterProgressBarEmptyColor(savedSettings.footerProgressBarEmptyColor);
-    setSuccessMessageFontSize(savedSettings.successMessageFontSize || 16);
-    setSuccessMessageFontWeight(savedSettings.successMessageFontWeight || 600);
-    setSuccessMessageTextColor(savedSettings.successMessageTextColor || "#065F46");
-    setSuccessMessageBgColor(savedSettings.successMessageBgColor || "#D1FAE5");
-    setStepNameFontColor(savedSettings.stepNameFontColor);
-    setStepNameFontSize(savedSettings.stepNameFontSize);
-    setCompletedStepCheckMarkColor(savedSettings.completedStepCheckMarkColor);
-    setCompletedStepBgColor(savedSettings.completedStepBgColor);
-    setCompletedStepCircleBorderColor(savedSettings.completedStepCircleBorderColor);
-    setCompletedStepCircleBorderRadius(savedSettings.completedStepCircleBorderRadius);
-    setIncompleteStepBgColor(savedSettings.incompleteStepBgColor);
-    setIncompleteStepCircleStrokeColor(savedSettings.incompleteStepCircleStrokeColor);
-    setIncompleteStepCircleStrokeRadius(savedSettings.incompleteStepCircleStrokeRadius);
-    setStepBarProgressFilledColor(savedSettings.stepBarProgressFilledColor);
-    setStepBarProgressEmptyColor(savedSettings.stepBarProgressEmptyColor);
-    setTabsActiveBgColor(savedSettings.tabsActiveBgColor);
-    setTabsActiveTextColor(savedSettings.tabsActiveTextColor);
-    setTabsInactiveBgColor(savedSettings.tabsInactiveBgColor);
-    setTabsInactiveTextColor(savedSettings.tabsInactiveTextColor);
-    setTabsBorderColor(savedSettings.tabsBorderColor);
-    setTabsBorderRadius(savedSettings.tabsBorderRadius);
-    setBundleBgColor(savedSettings.bundleBgColor);
-    setFooterScrollBarColor(savedSettings.footerScrollBarColor);
-    setProductPageTitleFontColor(savedSettings.productPageTitleFontColor);
-    setProductPageTitleFontSize(savedSettings.productPageTitleFontSize);
-    setBundleUpsellButtonBgColor(savedSettings.bundleUpsellButtonBgColor);
-    setBundleUpsellBorderColor(savedSettings.bundleUpsellBorderColor);
-    setBundleUpsellTextColor(savedSettings.bundleUpsellTextColor);
-    setToastBgColor(savedSettings.toastBgColor);
-    setToastTextColor(savedSettings.toastTextColor);
-    setFilterIconColor(savedSettings.filterIconColor);
-    setFilterBgColor(savedSettings.filterBgColor);
-    setFilterTextColor(savedSettings.filterTextColor);
-    setGlobalPrimaryButtonColor(savedSettings.globalPrimaryButtonColor);
-    setGlobalButtonTextColor(savedSettings.globalButtonTextColor);
-    setGlobalPrimaryTextColor(savedSettings.globalPrimaryTextColor);
-    setGlobalSecondaryTextColor(savedSettings.globalSecondaryTextColor);
-    setGlobalFooterBgColor(savedSettings.globalFooterBgColor);
-    setGlobalFooterTextColor(savedSettings.globalFooterTextColor);
-    setConditionsTextColor(savedSettings.conditionsTextColor);
-    setConditionsTextFontSize(savedSettings.conditionsTextFontSize);
-    setDiscountTextColor(savedSettings.discountTextColor);
-    setDiscountTextFontSize(savedSettings.discountTextFontSize);
-  }, [settings, selectedBundleType]);
+  // Destructure setters for use in UI components
+  const {
+    setGlobalPrimaryButtonColor,
+    setGlobalButtonTextColor,
+    setGlobalPrimaryTextColor,
+    setGlobalSecondaryTextColor,
+    setGlobalFooterBgColor,
+    setGlobalFooterTextColor,
+    setProductCardBgColor,
+    setProductCardFontColor,
+    setProductCardFontSize,
+    setProductCardFontWeight,
+    setProductCardImageFit,
+    setProductCardsPerRow,
+    setProductTitleVisibility,
+    setProductPriceVisibility,
+    setProductPriceBgColor,
+    setProductStrikePriceColor,
+    setProductStrikeFontSize,
+    setProductStrikeFontWeight,
+    setProductFinalPriceColor,
+    setProductFinalPriceFontSize,
+    setProductFinalPriceFontWeight,
+    setProductCardWidth,
+    setProductCardHeight,
+    setProductCardSpacing,
+    setProductCardBorderRadius,
+    setProductCardPadding,
+    setProductCardBorderWidth,
+    setProductCardBorderColor,
+    setProductCardShadow,
+    setProductCardHoverShadow,
+    setProductImageHeight,
+    setProductImageBorderRadius,
+    setProductImageBgColor,
+    setButtonBgColor,
+    setButtonTextColor,
+    setButtonFontSize,
+    setButtonFontWeight,
+    setButtonBorderRadius,
+    setButtonAddToCartText,
+    setQuantitySelectorBgColor,
+    setQuantitySelectorTextColor,
+    setQuantitySelectorFontSize,
+    setQuantitySelectorBorderRadius,
+    setVariantSelectorBgColor,
+    setVariantSelectorTextColor,
+    setVariantSelectorBorderRadius,
+    setModalBgColor,
+    setModalBorderRadius,
+    setModalTitleFontSize,
+    setModalTitleFontWeight,
+    setModalPriceFontSize,
+    setModalVariantBorderRadius,
+    setModalButtonBgColor,
+    setModalButtonTextColor,
+    setModalButtonBorderRadius,
+    setFooterBgColor,
+    setFooterTotalBgColor,
+    setFooterBorderRadius,
+    setFooterPadding,
+    setFooterFinalPriceColor,
+    setFooterFinalPriceFontSize,
+    setFooterFinalPriceFontWeight,
+    setFooterStrikePriceColor,
+    setFooterStrikeFontSize,
+    setFooterStrikeFontWeight,
+    setFooterPriceVisibility,
+    setFooterBackButtonBgColor,
+    setFooterBackButtonTextColor,
+    setFooterBackButtonBorderColor,
+    setFooterBackButtonBorderRadius,
+    setFooterNextButtonBgColor,
+    setFooterNextButtonTextColor,
+    setFooterNextButtonBorderColor,
+    setFooterNextButtonBorderRadius,
+    setFooterDiscountTextVisibility,
+    setFooterProgressBarFilledColor,
+    setFooterProgressBarEmptyColor,
+    setSuccessMessageFontSize,
+    setSuccessMessageFontWeight,
+    setSuccessMessageTextColor,
+    setSuccessMessageBgColor,
+    setHeaderTabActiveBgColor,
+    setHeaderTabActiveTextColor,
+    setHeaderTabInactiveBgColor,
+    setHeaderTabInactiveTextColor,
+    setHeaderTabRadius,
+    setConditionsTextColor,
+    setConditionsTextFontSize,
+    setDiscountTextColor,
+    setDiscountTextFontSize,
+    setEmptyStateCardBgColor,
+    setEmptyStateCardBorderColor,
+    setEmptyStateTextColor,
+    setEmptyStateBorderStyle,
+    setDrawerBgColor,
+    setAddToCartButtonBgColor,
+    setAddToCartButtonTextColor,
+    setAddToCartButtonBorderRadius,
+    setToastBgColor,
+    setToastTextColor,
+    setStepNameFontColor,
+    setStepNameFontSize,
+    setCompletedStepCheckMarkColor,
+    setCompletedStepBgColor,
+    setCompletedStepCircleBorderColor,
+    setCompletedStepCircleBorderRadius,
+    setIncompleteStepBgColor,
+    setIncompleteStepCircleStrokeColor,
+    setIncompleteStepCircleStrokeRadius,
+    setStepBarProgressFilledColor,
+    setStepBarProgressEmptyColor,
+    setTabsActiveBgColor,
+    setTabsActiveTextColor,
+    setTabsInactiveBgColor,
+    setTabsInactiveTextColor,
+    setTabsBorderColor,
+    setTabsBorderRadius,
+    setBundleBgColor,
+    setFooterScrollBarColor,
+    setProductPageTitleFontColor,
+    setProductPageTitleFontSize,
+    setBundleUpsellButtonBgColor,
+    setBundleUpsellBorderColor,
+    setBundleUpsellTextColor,
+    setFilterIconColor,
+    setFilterBgColor,
+    setFilterTextColor,
+    setCustomCss,
+  } = setters;
 
-  // Show/hide save bar based on unsaved changes
+  // Show/hide save bar based on unsaved changes (from hook)
   useEffect(() => {
     if (hasUnsavedChanges) {
       shopify.saveBar.show('dcp-save-bar');
@@ -1241,6 +1020,7 @@ export default function DesignControlPanel() {
     }
   }, [hasUnsavedChanges, shopify]);
 
+  // Modal handlers
   const handleOpenModal = useCallback(() => {
     shopify.modal.show('dcp-customization-modal');
   }, [shopify]);
@@ -1253,20 +1033,9 @@ export default function DesignControlPanel() {
     shopify.modal.hide('dcp-customization-modal');
   }, [shopify, hasUnsavedChanges, handleDiscard]);
 
-  const toggleSection = useCallback((section: string) => {
-    setExpandedSection((prev) => (prev === section ? null : section));
-  }, []);
-
-  const handleSubSectionClick = useCallback((subSection: string) => {
-    setActiveSubSection(subSection);
-  }, []);
-
+  // Handle action data (form submission response)
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
-  const [toastActive, setToastActive] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastError, setToastError] = useState(false);
-
   const isLoading = navigation.state === "submitting";
 
   useEffect(() => {
@@ -1275,106 +1044,17 @@ export default function DesignControlPanel() {
       setToastMessage(actionData.message);
       setToastError(!actionData.success);
 
-      // Hide save bar after successful save
+      // Hide save bar and mark as saved after successful save
       if (actionData.success) {
         shopify.saveBar.hide('dcp-save-bar');
+        markAsSaved();
       }
     }
-  }, [actionData, shopify]);
+  }, [actionData, shopify, markAsSaved, setToastActive, setToastMessage, setToastError]);
 
+  // Save settings using hook's getSettingsForSave
   const handleSaveSettings = useCallback(() => {
-    const settingsToSave = {
-      globalPrimaryButtonColor,
-      globalButtonTextColor,
-      globalPrimaryTextColor,
-      globalSecondaryTextColor,
-      globalFooterBgColor,
-      globalFooterTextColor,
-      productCardBgColor,
-      productCardFontColor,
-      productCardFontSize,
-      productCardFontWeight,
-      productCardImageFit,
-      productCardsPerRow: parseInt(productCardsPerRow),
-      productPriceVisibility,
-      productTitleVisibility,
-      productPriceBgColor,
-      productStrikePriceColor,
-      productStrikeFontSize,
-      productStrikeFontWeight,
-      productFinalPriceColor,
-      productFinalPriceFontSize,
-      productFinalPriceFontWeight,
-      buttonBgColor,
-      buttonTextColor,
-      buttonFontSize,
-      buttonFontWeight,
-      buttonBorderRadius,
-      buttonHoverBgColor: buttonBgColor,
-      buttonAddToCartText,
-      quantitySelectorBgColor,
-      quantitySelectorTextColor,
-      quantitySelectorFontSize,
-      quantitySelectorBorderRadius,
-      variantSelectorBgColor,
-      variantSelectorTextColor,
-      variantSelectorBorderRadius,
-      footerBgColor,
-      footerTotalBgColor,
-      footerBorderRadius,
-      footerPadding,
-      footerFinalPriceColor,
-      footerFinalPriceFontSize,
-      footerFinalPriceFontWeight,
-      footerStrikePriceColor,
-      footerStrikeFontSize,
-      footerStrikeFontWeight,
-      footerPriceVisibility,
-      footerBackButtonBgColor,
-      footerBackButtonTextColor,
-      footerBackButtonBorderColor,
-      footerBackButtonBorderRadius,
-      footerNextButtonBgColor,
-      footerNextButtonTextColor,
-      footerNextButtonBorderColor,
-      footerNextButtonBorderRadius,
-      footerDiscountTextVisibility,
-      footerProgressBarFilledColor,
-      footerProgressBarEmptyColor,
-      successMessageFontSize,
-      successMessageFontWeight,
-      successMessageTextColor,
-      successMessageBgColor,
-      stepNameFontColor,
-      stepNameFontSize,
-      completedStepCheckMarkColor,
-      completedStepBgColor,
-      completedStepCircleBorderColor,
-      completedStepCircleBorderRadius,
-      incompleteStepBgColor,
-      incompleteStepCircleStrokeColor,
-      incompleteStepCircleStrokeRadius,
-      stepBarProgressFilledColor,
-      stepBarProgressEmptyColor,
-      tabsActiveBgColor,
-      tabsActiveTextColor,
-      tabsInactiveBgColor,
-      tabsInactiveTextColor,
-      tabsBorderColor,
-      tabsBorderRadius,
-      bundleBgColor,
-      footerScrollBarColor,
-      productPageTitleFontColor,
-      productPageTitleFontSize,
-      bundleUpsellButtonBgColor,
-      bundleUpsellBorderColor,
-      bundleUpsellTextColor,
-      toastBgColor,
-      toastTextColor,
-      filterIconColor,
-      filterBgColor,
-      filterTextColor,
-    };
+    const settingsToSave = getSettingsForSave();
 
     submit(
       {
@@ -1386,92 +1066,14 @@ export default function DesignControlPanel() {
         encType: "application/json",
       }
     );
-  }, [
-    selectedBundleType,
-    globalPrimaryButtonColor,
-    globalButtonTextColor,
-    globalPrimaryTextColor,
-    globalSecondaryTextColor,
-    globalFooterBgColor,
-    globalFooterTextColor,
-    productCardBgColor,
-    productCardFontColor,
-    productCardFontSize,
-    productCardFontWeight,
-    productCardImageFit,
-    productCardsPerRow,
-    productPriceVisibility,
-    productPriceBgColor,
-    productStrikePriceColor,
-    productStrikeFontSize,
-    productStrikeFontWeight,
-    productFinalPriceColor,
-    productFinalPriceFontSize,
-    productFinalPriceFontWeight,
-    buttonBgColor,
-    buttonTextColor,
-    buttonFontSize,
-    buttonFontWeight,
-    buttonBorderRadius,
-    buttonAddToCartText,
-    quantitySelectorBgColor,
-    quantitySelectorTextColor,
-    quantitySelectorFontSize,
-    quantitySelectorBorderRadius,
-    variantSelectorBgColor,
-    variantSelectorTextColor,
-    variantSelectorBorderRadius,
-    footerBgColor,
-    footerTotalBgColor,
-    footerBorderRadius,
-    footerPadding,
-    footerFinalPriceColor,
-    footerFinalPriceFontSize,
-    footerFinalPriceFontWeight,
-    footerStrikePriceColor,
-    footerStrikeFontSize,
-    footerStrikeFontWeight,
-    footerPriceVisibility,
-    footerBackButtonBgColor,
-    footerBackButtonTextColor,
-    footerBackButtonBorderColor,
-    footerBackButtonBorderRadius,
-    footerNextButtonBgColor,
-    footerNextButtonTextColor,
-    footerNextButtonBorderColor,
-    footerNextButtonBorderRadius,
-    footerDiscountTextVisibility,
-    footerProgressBarFilledColor,
-    footerProgressBarEmptyColor,
-    successMessageFontSize,
-    successMessageFontWeight,
-    successMessageTextColor,
-    successMessageBgColor,
-    headerTabActiveBgColor,
-    headerTabActiveTextColor,
-    headerTabInactiveBgColor,
-    headerTabInactiveTextColor,
-    headerTabRadius,
-    bundleBgColor,
-    footerScrollBarColor,
-    productPageTitleFontColor,
-    productPageTitleFontSize,
-    bundleUpsellButtonBgColor,
-    bundleUpsellBorderColor,
-    bundleUpsellTextColor,
-    toastBgColor,
-    toastTextColor,
-    filterIconColor,
-    filterBgColor,
-    filterTextColor,
-    submit,
-  ]);
+  }, [selectedBundleType, getSettingsForSave, submit]);
 
 
   // Render preview content based on active subsection
   const renderPreviewContent = () => {
     // Global Colors - No preview
-    if (activeSubSection === "globalColors") {
+    // Global Colors and Custom CSS - No preview needed
+    if (activeSubSection === "globalColors" || activeSubSection === "customCss") {
       return null;
     }
 
@@ -3835,6 +3437,99 @@ export default function DesignControlPanel() {
           </BlockStack>
         );
 
+      case "customCss":
+        return (
+          <BlockStack gap="400">
+            <InlineStack gap="200" align="start" blockAlign="center">
+              <Text as="h2" variant="headingMd">
+                Custom CSS
+              </Text>
+              <div style={{
+                width: "20px",
+                height: "20px",
+                borderRadius: "50%",
+                border: "1.5px solid #8A8A8A",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#4A4A4A",
+                cursor: "help"
+              }} title="Add custom CSS rules to further customize your bundle widget appearance">
+                i
+              </div>
+            </InlineStack>
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Add your own CSS rules to customize the bundle widget beyond the available settings.
+            </Text>
+            <Divider />
+
+            <BlockStack gap="300">
+              <TextField
+                label="Custom CSS Rules"
+                value={customCss}
+                onChange={setCustomCss}
+                multiline={8}
+                autoComplete="off"
+                placeholder={`.bundle-product-card {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.bundle-add-button:hover {
+  transform: scale(1.02);
+}`}
+                helpText={`${customCss.length.toLocaleString()} / 50,000 characters`}
+              />
+
+              <Button
+                onClick={() => setCustomCssHelpOpen(!customCssHelpOpen)}
+                variant="plain"
+                disclosure={customCssHelpOpen ? "up" : "down"}
+              >
+                View CSS Class Reference
+              </Button>
+
+              <Collapsible open={customCssHelpOpen} id="custom-css-help">
+                <Box padding="300" background="bg-surface-secondary" borderRadius="200">
+                  <BlockStack gap="300">
+                    <Text as="p" variant="headingSm">Available CSS Classes</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      <strong>Container:</strong><br />
+                      .bundle-widget-full-page, .bundle-step-container
+                    </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      <strong>Product Cards:</strong><br />
+                      .bundle-product-card, .bundle-product-image,<br />
+                      .bundle-product-title, .bundle-product-price
+                    </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      <strong>Buttons:</strong><br />
+                      .bundle-add-button, .bundle-remove-button,<br />
+                      .bundle-next-button, .bundle-back-button
+                    </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      <strong>Footer:</strong><br />
+                      .bundle-footer, .bundle-total-price,<br />
+                      .bundle-progress-bar
+                    </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      <strong>Modal:</strong><br />
+                      .bundle-modal, .bundle-modal-content,<br />
+                      .bundle-modal-close
+                    </Text>
+                    <Banner tone="warning">
+                      <Text as="p" variant="bodySm">
+                        For security, JavaScript URLs, @import rules, and other potentially harmful patterns are automatically removed.
+                      </Text>
+                    </Banner>
+                  </BlockStack>
+                </Box>
+              </Collapsible>
+            </BlockStack>
+          </BlockStack>
+        );
+
       default:
         return (
           <Banner tone="info">
@@ -4069,6 +3764,120 @@ export default function DesignControlPanel() {
             </div>
           </div>
         </Modal>
+
+        {/* Custom CSS Section - Outside Modal for Power Users */}
+        <Layout>
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <InlineStack align="space-between" blockAlign="center">
+                  <BlockStack gap="100">
+                    <Text as="h2" variant="headingMd">
+                      Custom CSS
+                    </Text>
+                    <Text as="p" variant="bodyMd" tone="subdued">
+                      Add your own CSS rules to customize the bundle widget beyond the visual editor settings.
+                    </Text>
+                  </BlockStack>
+                  <Button
+                    onClick={() => setCustomCssHelpOpen(!customCssHelpOpen)}
+                    variant="plain"
+                    disclosure={customCssHelpOpen ? "up" : "down"}
+                  >
+                    CSS Reference
+                  </Button>
+                </InlineStack>
+
+                <Collapsible open={customCssHelpOpen} id="custom-css-help-main">
+                  <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                    <BlockStack gap="300">
+                      <Text as="p" variant="headingSm">Available CSS Classes</Text>
+                      <InlineStack gap="600" wrap={true}>
+                        <BlockStack gap="200">
+                          <Text as="p" variant="bodySm" fontWeight="semibold">Container</Text>
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            .bundle-widget-full-page<br />
+                            .bundle-step-container<br />
+                            #bundle-builder-app
+                          </Text>
+                        </BlockStack>
+                        <BlockStack gap="200">
+                          <Text as="p" variant="bodySm" fontWeight="semibold">Product Cards</Text>
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            .bundle-product-card<br />
+                            .product-card<br />
+                            .product-image<br />
+                            .product-title<br />
+                            .product-price
+                          </Text>
+                        </BlockStack>
+                        <BlockStack gap="200">
+                          <Text as="p" variant="bodySm" fontWeight="semibold">Buttons</Text>
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            .bundle-add-button<br />
+                            .add-bundle-to-cart<br />
+                            .modal-nav-button<br />
+                            .next-button<br />
+                            .prev-button
+                          </Text>
+                        </BlockStack>
+                        <BlockStack gap="200">
+                          <Text as="p" variant="bodySm" fontWeight="semibold">Footer & Modal</Text>
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            .bundle-footer<br />
+                            .modal-footer<br />
+                            .bundle-builder-modal<br />
+                            .modal-content
+                          </Text>
+                        </BlockStack>
+                      </InlineStack>
+                      <Banner tone="warning">
+                        <Text as="p" variant="bodySm">
+                          For security, JavaScript URLs, @import rules, and potentially harmful patterns are automatically removed.
+                        </Text>
+                      </Banner>
+                    </BlockStack>
+                  </Box>
+                </Collapsible>
+
+                <TextField
+                  label="Custom CSS Rules"
+                  labelHidden
+                  value={customCss}
+                  onChange={setCustomCss}
+                  multiline={10}
+                  autoComplete="off"
+                  monospaced
+                  placeholder={`/* Example: Add shadow to product cards */
+.product-card {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Example: Custom button styling */
+.add-bundle-to-cart {
+  border-radius: 24px;
+}`}
+                  helpText={`${customCss.length.toLocaleString()} / 50,000 characters used`}
+                />
+
+                <InlineStack align="end">
+                  <Button
+                    variant="primary"
+                    onClick={handleSaveSettings}
+                    loading={isLoading}
+                  >
+                    Save Custom CSS
+                  </Button>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        </Layout>
 
         {/* App Bridge Save Bar */}
         <SaveBar id="dcp-save-bar">

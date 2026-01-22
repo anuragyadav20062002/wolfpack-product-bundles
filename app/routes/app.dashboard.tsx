@@ -28,9 +28,10 @@ import { SubscriptionGuard } from "../services/subscription-guard.server";
 import { BillingService } from "../services/billing.server";
 import { WidgetInstallationService } from "../services/widget-installation.server";
 import { WidgetInstallationFlagsService } from "../services/widget-installation-flags.server";
-import { useState, useCallback, useRef, useEffect, useMemo, memo } from "react";
+import { useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
+import { useDashboardState } from "../hooks/useDashboardState";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -763,40 +764,44 @@ export default function Dashboard() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
 
-  // Modal state for creating bundle
-  const [modalOpen, setModalOpen] = useState(false);
-  const [bundleName, setBundleName] = useState("");
-  const [description, setDescription] = useState("");
-  const [bundleType, setBundleType] = useState<string[]>(["product_page"]);
-  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  // Use centralized dashboard state hook
+  const dashboardState = useDashboardState();
+  const {
+    createModalOpen: modalOpen,
+    openCreateModal,
+    closeCreateModal,
+    bundleName,
+    setBundleName,
+    description,
+    setDescription,
+    bundleType,
+    setBundleType,
+    resetForm,
+    deleteModalOpen,
+    bundleToDelete,
+    openDeleteModal,
+    closeDeleteModal,
+  } = dashboardState;
 
-  // Delete confirmation modal state
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [bundleToDelete, setBundleToDelete] = useState<string | null>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const isSubmitting = navigation.state === "submitting";
 
   // Handle successful bundle creation
   useEffect(() => {
     if (actionData && 'success' in actionData && actionData.success && 'redirectTo' in actionData && actionData.redirectTo) {
-      setModalOpen(false);
-      setBundleName("");
-      setDescription("");
-      setBundleType(["product_page"]);
+      closeCreateModal();
       navigate(actionData.redirectTo);
     }
-  }, [actionData, navigate]);
+  }, [actionData, navigate, closeCreateModal]);
 
   const handleCreateBundle = useCallback(() => {
-    setModalOpen(true);
-  }, []);
+    openCreateModal();
+  }, [openCreateModal]);
 
   const handleCloseModal = useCallback(() => {
-    setModalOpen(false);
-    setBundleName("");
-    setDescription("");
-    setBundleType(["product_page"]); // Reset to default
-  }, []);
+    closeCreateModal();
+  }, [closeCreateModal]);
 
   const handleSubmit = useCallback(() => {
     if (submitButtonRef.current) {
@@ -824,10 +829,9 @@ export default function Dashboard() {
     }
   }, [fetcher]);
 
-  const handleDeleteBundle = (bundleId: string) => {
-    setBundleToDelete(bundleId);
-    setDeleteModalOpen(true);
-  };
+  const handleDeleteBundle = useCallback((bundleId: string) => {
+    openDeleteModal(bundleId);
+  }, [openDeleteModal]);
 
   const handleConfirmDelete = useCallback(() => {
     if (bundleToDelete) {
@@ -835,15 +839,13 @@ export default function Dashboard() {
       formData.append("intent", "deleteBundle");
       formData.append("bundleId", bundleToDelete);
       fetcher.submit(formData, { method: "post" });
-      setDeleteModalOpen(false);
-      setBundleToDelete(null);
+      closeDeleteModal();
     }
-  }, [bundleToDelete, fetcher]);
+  }, [bundleToDelete, fetcher, closeDeleteModal]);
 
   const handleCancelDelete = useCallback(() => {
-    setDeleteModalOpen(false);
-    setBundleToDelete(null);
-  }, []);
+    closeDeleteModal();
+  }, [closeDeleteModal]);
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
     if (!bundle.previewHandle) {

@@ -1,6 +1,7 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
 import { AppLogger } from "../lib/logger";
 import { prisma } from "../db.server";
+import { sanitizeCss } from "../lib/css-sanitizer";
 
 /**
  * API endpoint that returns design settings as CSS variables
@@ -191,7 +192,20 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
     // Use the bundle type that had settings, or default to product_page for CSS generation
     const bundleTypeForCSS = usedBundleType || requestedBundleType || "product_page";
-    const css = generateCSSFromSettings(finalSettings, bundleTypeForCSS);
+
+    // Get custom CSS from design settings and sanitize it to prevent XSS attacks
+    const rawCustomCss = designSettings?.customCss || "";
+    const { sanitizedCss: customCss, warnings: cssWarnings } = sanitizeCss(rawCustomCss);
+
+    if (cssWarnings.length > 0) {
+      AppLogger.warn("Custom CSS contained potentially dangerous patterns", {
+        component: "api.design-settings.css",
+        shopDomain,
+        warnings: cssWarnings,
+      });
+    }
+
+    const css = generateCSSFromSettings(finalSettings, bundleTypeForCSS, customCss);
 
     return new Response(css, {
       status: 200,
@@ -221,7 +235,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 }
 
-function generateCSSFromSettings(s: any, bundleType: string): string {
+function generateCSSFromSettings(s: any, bundleType: string, customCss: string = ""): string {
   // Extract global colors with defaults
   const globalPrimaryButton = s.globalPrimaryButtonColor || '#000000';
   const globalButtonText = s.globalButtonTextColor || '#FFFFFF';
@@ -736,5 +750,12 @@ function generateCSSFromSettings(s: any, bundleType: string): string {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   MERCHANT CUSTOM CSS
+   Add your own CSS rules below to further
+   customize the bundle widget appearance.
+   ============================================ */
+${customCss ? customCss : '/* No custom CSS defined */'}
 `.trim();
 }
