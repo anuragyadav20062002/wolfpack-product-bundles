@@ -1254,12 +1254,51 @@ class BundleProductModal {
   }
 
   /**
+   * Get normalized images array from product
+   * Handles various image data formats: imageUrl, image.src, images array, featuredImage.url
+   * @returns {string[]} Array of image URLs
+   */
+  getProductImages() {
+    const product = this.currentProduct;
+    const images = [];
+
+    // Try various image formats
+    if (product.images && Array.isArray(product.images)) {
+      // Handle images array (can be strings or objects with url/src)
+      product.images.forEach(img => {
+        if (typeof img === 'string') {
+          images.push(img);
+        } else if (img?.url) {
+          images.push(img.url);
+        } else if (img?.src) {
+          images.push(img.src);
+        }
+      });
+    }
+
+    // If no images from array, try single image properties
+    if (images.length === 0) {
+      if (product.imageUrl) {
+        images.push(product.imageUrl);
+      } else if (product.image?.src) {
+        images.push(product.image.src);
+      } else if (product.featuredImage?.url) {
+        images.push(product.featuredImage.url);
+      }
+    }
+
+    return images;
+  }
+
+  /**
    * Load product images
    */
   loadImages() {
-    const images = this.currentProduct.images || [];
+    const images = this.getProductImages();
     const mainImageEl = document.getElementById('modal-main-image');
     const thumbnailsContainer = document.getElementById('modal-thumbnails');
+
+    console.log('[MODAL] Loading images:', images);
 
     if (images.length === 0) {
       // Use fallback placeholder
@@ -1273,20 +1312,24 @@ class BundleProductModal {
     mainImageEl.src = images[0];
     mainImageEl.alt = this.currentProduct.title;
 
-    // Create thumbnails
-    thumbnailsContainer.innerHTML = images.map((image, index) => `
-      <div class="bundle-modal-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">
-        <img src="${image}" alt="${this.currentProduct.title} - Image ${index + 1}">
-      </div>
-    `).join('');
+    // Create thumbnails (only if multiple images)
+    if (images.length > 1) {
+      thumbnailsContainer.innerHTML = images.map((image, index) => `
+        <div class="bundle-modal-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">
+          <img src="${image}" alt="${this.currentProduct.title} - Image ${index + 1}">
+        </div>
+      `).join('');
 
-    // Add thumbnail click handlers
-    thumbnailsContainer.querySelectorAll('.bundle-modal-thumbnail').forEach((thumbnail) => {
-      thumbnail.addEventListener('click', () => {
-        const index = parseInt(thumbnail.dataset.index);
-        this.selectImage(index);
+      // Add thumbnail click handlers
+      thumbnailsContainer.querySelectorAll('.bundle-modal-thumbnail').forEach((thumbnail) => {
+        thumbnail.addEventListener('click', () => {
+          const index = parseInt(thumbnail.dataset.index);
+          this.selectImage(index);
+        });
       });
-    });
+    } else {
+      thumbnailsContainer.innerHTML = '';
+    }
   }
 
   /**
@@ -1294,7 +1337,7 @@ class BundleProductModal {
    * @param {number} index - Image index
    */
   selectImage(index) {
-    const images = this.currentProduct.images || [];
+    const images = this.getProductImages();
     if (index < 0 || index >= images.length) return;
 
     this.selectedImageIndex = index;
@@ -1469,11 +1512,23 @@ class BundleProductModal {
     }
 
     const variant = this.selectedVariant || this.currentProduct;
-    const stepIndex = this.widget.steps.findIndex(s => s.id === this.currentStep.id);
+
+    // Use selectedBundle.steps (not widget.steps which doesn't exist)
+    const steps = this.widget.selectedBundle?.steps || [];
+    const stepIndex = steps.findIndex(s => s.id === this.currentStep.id);
+
+    if (stepIndex === -1) {
+      console.error('[MODAL] Could not find step index for step:', this.currentStep.id);
+      return;
+    }
+
+    // Use variantId if available, otherwise fall back to id
+    // This matches how the widget stores product selections
+    const productId = variant.variantId || variant.id;
 
     console.log('[MODAL] Adding to bundle:', {
       stepIndex,
-      productId: variant.id,
+      productId,
       quantity: this.selectedQuantity,
       variant: variant
     });
@@ -1481,7 +1536,7 @@ class BundleProductModal {
     // Call widget's method to add product
     this.widget.updateProductSelection(
       stepIndex,
-      variant.id,
+      productId,
       this.selectedQuantity
     );
 
@@ -2688,13 +2743,8 @@ class BundleWidgetFullPage {
         e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         if (currentQty === 0) {
-          // Open modal for product selection if available
-          if (this.productModal) {
-            const step = this.selectedBundle.steps[stepIndex];
-            this.productModal.open(product, step);
-          } else {
-            this.updateProductSelection(stepIndex, productId, 1);
-          }
+          // Add product directly to bundle (modal opens only on card image/title click)
+          this.updateProductSelection(stepIndex, productId, 1);
         } else {
           // Toggle off if already added
           this.updateProductSelection(stepIndex, productId, 0);
@@ -3745,32 +3795,18 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Choose Options / Add to Bundle button handler
+    // Add to Bundle button handler - adds directly without opening modal
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('product-add-btn')) {
         e.stopPropagation();
         const productId = e.target.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
 
-        // If product is already added, allow toggling it off
+        // Toggle: If already added, remove; otherwise add with quantity 1
         if (currentQuantity > 0) {
           this.updateProductSelection(stepIndex, productId, 0);
-          return;
-        }
-
-        // If modal is available, open it for variant selection
-        if (this.productModal) {
-          const product = findProduct(productId);
-
-          if (product && step) {
-            this.productModal.open(product, step);
-          } else {
-            console.warn('[WIDGET] Product or step not found for modal', { productId, stepIndex });
-            // Fallback: Add directly with quantity 1
-            this.updateProductSelection(stepIndex, productId, 1);
-          }
         } else {
-          // Fallback: Modal not available, add directly
+          // Add product directly to bundle (modal opens only on card image/title click)
           this.updateProductSelection(stepIndex, productId, 1);
         }
       }
