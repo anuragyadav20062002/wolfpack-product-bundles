@@ -867,10 +867,40 @@ class ComponentGenerator {
   static renderProductCard(product, currentQuantity, currencyInfo, options = {}) {
     const selectionKey = product.variantId || product.id;
     const showQuantitySelector = options.showQuantitySelector !== false;
+    const isSelected = currentQuantity > 0;
+
+    // Render inline quantity controls when item is selected (competitor-inspired design)
+    const renderInlineQuantityControls = () => {
+      if (!isSelected) return '';
+      return `
+        <div class="inline-quantity-controls">
+          <button class="inline-qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+          <span class="inline-qty-display">${currentQuantity}</span>
+          <button class="inline-qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+        </div>
+      `;
+    };
+
+    // Render button or quantity controls based on selection state
+    const renderBottomAction = () => {
+      if (isSelected) {
+        // Show inline quantity controls when selected
+        return renderInlineQuantityControls();
+      } else {
+        // Show "Choose Size" or "Add to Bundle" button when not selected
+        const hasVariants = product.variants && product.variants.length > 1;
+        const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
+        return `
+          <button class="product-add-btn" data-product-id="${selectionKey}">
+            ${buttonText}
+          </button>
+        `;
+      }
+    };
 
     return `
-      <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? `
+      <div class="product-card ${isSelected ? 'selected' : ''}" data-product-id="${selectionKey}">
+        ${isSelected ? `
           <div class="selected-overlay">✓</div>
         ` : ''}
 
@@ -892,19 +922,7 @@ class ComponentGenerator {
 
           ${this.renderVariantSelector(product)}
 
-          ${showQuantitySelector ? `
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector">
-                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-                <span class="qty-display">${currentQuantity}</span>
-                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
-              </div>
-            </div>
-          ` : ''}
-
-          <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
-            ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
-          </button>
+          ${renderBottomAction()}
         </div>
       </div>
     `;

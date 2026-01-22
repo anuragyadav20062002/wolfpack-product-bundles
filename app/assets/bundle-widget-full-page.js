@@ -718,26 +718,38 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
 
+    // Wrap content in full-page-content-section for proper padding
+    const contentSection = document.createElement('div');
+    contentSection.className = 'full-page-content-section';
+
     // OPTIMISTIC RENDERING: Render non-product UI immediately
+    // 0. Render promotional banner if bundle has promotion text
+    const promoBanner = this.createPromoBanner();
+    if (promoBanner) {
+      contentSection.appendChild(promoBanner);
+    }
+
     // 1. Render step timeline at top
     const stepTimeline = this.createStepTimeline();
-    this.elements.stepsContainer.appendChild(stepTimeline);
+    contentSection.appendChild(stepTimeline);
 
     // 2. Render bundle header (instruction text)
     const bundleHeader = this.createBundleInstructions();
-    this.elements.stepsContainer.appendChild(bundleHeader);
+    contentSection.appendChild(bundleHeader);
 
     // 3. Render category/collection tabs if step has collections
     const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
     if (categoryTabs) {
-      this.elements.stepsContainer.appendChild(categoryTabs);
+      contentSection.appendChild(categoryTabs);
     }
 
     // 4. Create product grid container with loading state
     const productGridContainer = document.createElement('div');
     productGridContainer.className = 'full-page-product-grid-container';
     productGridContainer.innerHTML = this.createProductGridLoadingState();
-    this.elements.stepsContainer.appendChild(productGridContainer);
+    contentSection.appendChild(productGridContainer);
+
+    this.elements.stepsContainer.appendChild(contentSection);
 
     // 5. Render fixed footer (will be updated after products load)
     this.renderFullPageFooter();
@@ -914,7 +926,68 @@ class BundleWidgetFullPage {
     return header;
   }
 
-  // Create category/collection tabs
+  // Create promotional banner (Competitor-Inspired)
+  createPromoBanner() {
+    // Check if bundle has promotion/discount configuration
+    if (!this.selectedBundle?.pricing?.enabled) {
+      return null;
+    }
+
+    const pricing = this.selectedBundle.pricing;
+    const rules = pricing.rules || [];
+
+    // Get the best discount message
+    let promoTitle = '';
+    let promoSubtitle = 'Build Your Own Bundle';
+    let promoNote = '(Mix & Match)';
+
+    if (rules.length > 0) {
+      // Find the best discount to highlight
+      const bestRule = rules.reduce((best, rule) => {
+        const discountValue = rule.discountType === 'percentage'
+          ? rule.discountValue
+          : (rule.discountValue / 100); // Approximate comparison
+        const bestValue = best.discountType === 'percentage'
+          ? best.discountValue
+          : (best.discountValue / 100);
+        return discountValue > bestValue ? rule : best;
+      }, rules[0]);
+
+      // Build promo title based on best rule
+      if (bestRule.discountType === 'percentage') {
+        promoTitle = `Add ${bestRule.minQuantity} products to your basket, get ${bestRule.discountValue}% off!`;
+      } else if (bestRule.discountType === 'fixed_amount') {
+        const currencyInfo = CurrencyManager.getCurrencyInfo();
+        const formattedAmount = CurrencyManager.formatMoney(bestRule.discountValue * 100, currencyInfo.display.format);
+        promoTitle = `Add ${bestRule.minQuantity} products to your basket, save ${formattedAmount}!`;
+      } else if (bestRule.discountType === 'fixed_price') {
+        const currencyInfo = CurrencyManager.getCurrencyInfo();
+        const formattedPrice = CurrencyManager.formatMoney(bestRule.discountValue * 100, currencyInfo.display.format);
+        promoTitle = `Add ${bestRule.minQuantity} products for just ${formattedPrice}!`;
+      }
+    }
+
+    // Use custom messages if configured
+    if (pricing.messages?.banner) {
+      promoTitle = pricing.messages.banner;
+    }
+
+    if (!promoTitle) {
+      return null; // No promo to show
+    }
+
+    const banner = document.createElement('div');
+    banner.className = 'promo-banner';
+    banner.innerHTML = `
+      <div class="promo-banner-subtitle">${promoSubtitle}</div>
+      <h2 class="promo-banner-title">${promoTitle}</h2>
+      <div class="promo-banner-note">${promoNote}</div>
+    `;
+
+    return banner;
+  }
+
+  // Create category/collection tabs (Pill Button Style)
   createCategoryTabs(stepIndex) {
     if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
       console.error('[WIDGET_RENDER] Cannot create category tabs: step is undefined');
@@ -930,33 +1003,27 @@ class BundleWidgetFullPage {
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'category-tabs';
 
-    // Add "All" tab
-    const allTab = document.createElement('div');
+    // Add "All" tab - Pill button style
+    const allTab = document.createElement('button');
     allTab.className = 'category-tab';
     if (!this.activeCollectionId) {
       allTab.classList.add('active');
     }
-    allTab.innerHTML = `
-      <div class="tab-indicator"></div>
-      <span class="tab-label">All</span>
-    `;
+    allTab.innerHTML = `<span class="tab-label">All</span>`;
     allTab.addEventListener('click', () => {
       this.activeCollectionId = null;
       this.renderFullPageLayout();
     });
     tabsContainer.appendChild(allTab);
 
-    // Add collection tabs
+    // Add collection tabs - Pill button style
     step.collections.forEach(collection => {
-      const tab = document.createElement('div');
+      const tab = document.createElement('button');
       tab.className = 'category-tab';
       if (this.activeCollectionId === collection.id) {
         tab.classList.add('active');
       }
-      tab.innerHTML = `
-        <div class="tab-indicator"></div>
-        <span class="tab-label">${collection.title}</span>
-      `;
+      tab.innerHTML = `<span class="tab-label">${collection.title}</span>`;
       tab.addEventListener('click', () => {
         this.activeCollectionId = collection.id;
         this.renderFullPageLayout();
@@ -1153,28 +1220,28 @@ class BundleWidgetFullPage {
   attachProductCardListeners(cardElement, product, stepIndex) {
     const productId = product.variantId || product.id;
 
-    // Quantity controls
-    const increaseBtn = cardElement.querySelector('.qty-increase');
-    const decreaseBtn = cardElement.querySelector('.qty-decrease');
+    // Quantity controls (both old-style and inline-style buttons)
+    const increaseBtns = cardElement.querySelectorAll('.qty-increase');
+    const decreaseBtns = cardElement.querySelectorAll('.qty-decrease');
     const addBtn = cardElement.querySelector('.product-add-btn');
 
-    if (increaseBtn) {
-      increaseBtn.addEventListener('click', (e) => {
+    increaseBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         this.updateProductSelection(stepIndex, productId, currentQty + 1);
       });
-    }
+    });
 
-    if (decreaseBtn) {
-      decreaseBtn.addEventListener('click', (e) => {
+    decreaseBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         if (currentQty > 0) {
           this.updateProductSelection(stepIndex, productId, currentQty - 1);
         }
       });
-    }
+    });
 
     if (addBtn) {
       addBtn.addEventListener('click', (e) => {
@@ -1227,7 +1294,7 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Render fixed footer with selected products and navigation
+  // Render fixed footer with selected products and navigation (Competitor-Inspired Design)
   renderFullPageFooter() {
     if (!this.elements.footer) {
       console.error('[FOOTER] Footer element not found');
@@ -1235,60 +1302,14 @@ class BundleWidgetFullPage {
     }
 
     this.elements.footer.innerHTML = '';
-    this.elements.footer.className = 'full-page-footer';
-    this.elements.footer.style.display = 'flex';
+    this.elements.footer.className = 'full-page-footer redesigned';
+    this.elements.footer.style.display = 'block';
 
-    // Left section: Scrollable selected products
-    const leftSection = document.createElement('div');
-    leftSection.className = 'footer-left';
-
-    const selectedProductsContainer = document.createElement('div');
-    selectedProductsContainer.className = 'footer-selected-products';
-
-    const allSelectedProducts = this.getAllSelectedProductsData();
-
-    if (allSelectedProducts.length === 0) {
-      selectedProductsContainer.innerHTML = '<p class="no-selections">No products selected yet</p>';
-    } else {
-      allSelectedProducts.forEach(item => {
-        const productItem = document.createElement('div');
-        productItem.className = 'footer-product-item';
-        productItem.innerHTML = `
-          <img src="${item.image}" alt="${item.title}" class="footer-product-image">
-          <div class="footer-product-info">
-            <span class="footer-product-title">${item.title}</span>
-            <span class="footer-product-quantity">Qty: ${item.quantity}</span>
-          </div>
-          <button class="footer-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">×</button>
-        `;
-
-        const removeBtn = productItem.querySelector('.footer-product-remove');
-        removeBtn.addEventListener('click', () => {
-          this.updateProductSelection(item.stepIndex, item.variantId, 0);
-          this.renderFullPageLayout();
-        });
-
-        selectedProductsContainer.appendChild(productItem);
-      });
-    }
-
-    leftSection.appendChild(selectedProductsContainer);
-
-    // Right section: Total and navigation
-    const rightSection = document.createElement('div');
-    rightSection.className = 'footer-right';
-
+    // Calculate pricing data
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
     );
-
-    console.log('[FOOTER_DEBUG] Price calculation:', {
-      selectedProducts: this.selectedProducts,
-      stepProductData: this.stepProductData,
-      totalPrice,
-      totalQuantity
-    });
 
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -1298,53 +1319,108 @@ class BundleWidgetFullPage {
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const allSelectedProducts = this.getAllSelectedProductsData();
 
-    // Create discount messaging section if discount is enabled
-    let discountMessageHTML = '';
-    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
-      const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle,
-        totalPrice,
-        totalQuantity,
-        discountInfo,
-        currencyInfo
-      );
+    // Calculate progress for discount (if applicable)
+    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+    const progressPercent = this.calculateDiscountProgress(totalQuantity);
 
-      const successMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || 'You saved {{discountAmount}}!',
-        variables
-      );
+    // === SECTION 1: Progress Bar with Discount Messaging ===
+    const progressSection = document.createElement('div');
+    progressSection.className = 'footer-progress-section';
 
-      discountMessageHTML = `
-        <div class="footer-discount-message" style="
-          color: var(--bundle-full-page-discount-text-color, #059669);
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 8px;
-          text-align: right;
-        ">
-          ${successMessage}
-        </div>
-      `;
+    // Build discount messaging
+    let discountMessage = '';
+    if (this.selectedBundle?.pricing?.enabled) {
+      if (discountInfo.hasDiscount) {
+        const variables = TemplateManager.createDiscountVariables(
+          this.selectedBundle,
+          totalPrice,
+          totalQuantity,
+          discountInfo,
+          currencyInfo
+        );
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || 'Congratulations! You got {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = `Add ${nextRule.remaining} more product(s) to get ${nextRule.discountText}!`;
+      }
     }
 
-    const totalDisplay = document.createElement('div');
-    totalDisplay.className = 'footer-total';
-    totalDisplay.innerHTML = `
-      ${discountMessageHTML}
-      ${discountInfo.hasDiscount ? `<span class="total-label-strike" style="text-decoration: line-through; color: #999; font-size: 14px; display: block;">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
-      <span class="total-label">Total:</span>
-      <span class="total-price">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+    progressSection.innerHTML = `
+      ${discountMessage ? `<div class="footer-discount-message">${discountMessage}</div>` : ''}
+      <div class="footer-progress-bar-container">
+        <div class="footer-progress-bar-bg"></div>
+        <div class="footer-progress-bar-fill" style="width: ${progressPercent}%"></div>
+      </div>
     `;
 
-    const navButtons = document.createElement('div');
-    navButtons.className = 'footer-nav-buttons';
+    // === SECTION 2: Main Footer Content (Products + Total + Buttons) ===
+    const mainContent = document.createElement('div');
+    mainContent.className = 'footer-main-content';
 
-    // Back button
-    const backBtn = document.createElement('button');
-    backBtn.className = 'footer-nav-btn footer-back-btn';
-    backBtn.textContent = 'Back';
-    backBtn.disabled = this.currentStepIndex === 0;
+    // Left: Compact product thumbnails strip
+    const productsStrip = document.createElement('div');
+    productsStrip.className = 'footer-products-strip';
+
+    if (allSelectedProducts.length === 0) {
+      productsStrip.innerHTML = '';
+    } else {
+      allSelectedProducts.forEach(item => {
+        const productThumb = document.createElement('div');
+        productThumb.className = 'footer-product-thumb';
+        productThumb.innerHTML = `
+          <div class="thumb-image-wrapper">
+            <img src="${item.image}" alt="${item.title}" class="thumb-image">
+            <button class="thumb-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">×</button>
+          </div>
+          <div class="thumb-info">
+            <span class="thumb-title">${this.truncateTitle(item.title, 20)}</span>
+            <span class="thumb-price">${CurrencyManager.formatMoney(item.price, currencyInfo.display.format)} x${item.quantity}</span>
+          </div>
+        `;
+
+        const removeBtn = productThumb.querySelector('.thumb-remove');
+        removeBtn.addEventListener('click', () => {
+          this.updateProductSelection(item.stepIndex, item.variantId, 0);
+          this.renderFullPageLayout();
+        });
+
+        productsStrip.appendChild(productThumb);
+      });
+    }
+
+    // Center: Total display
+    const totalSection = document.createElement('div');
+    totalSection.className = 'footer-total-section';
+    totalSection.innerHTML = `
+      <span class="total-label">Total</span>
+      <div class="total-prices">
+        ${discountInfo.hasDiscount ? `<span class="total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
+        <span class="total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+      </div>
+    `;
+
+    // Right: Navigation buttons
+    const navSection = document.createElement('div');
+    navSection.className = 'footer-nav-section';
+
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+    const canProceed = this.canProceedToNextStep();
+
+    navSection.innerHTML = `
+      <button class="footer-btn footer-btn-back" ${this.currentStepIndex === 0 ? 'disabled' : ''}>Back</button>
+      <button class="footer-btn footer-btn-next" ${isLastStep ? (!this.areBundleConditionsMet() ? 'disabled' : '') : (!canProceed ? 'disabled' : '')}>
+        ${isLastStep ? 'Add to Cart' : 'Next'}
+      </button>
+    `;
+
+    // Attach button event listeners
+    const backBtn = navSection.querySelector('.footer-btn-back');
+    const nextBtn = navSection.querySelector('.footer-btn-next');
+
     backBtn.addEventListener('click', () => {
       if (this.currentStepIndex > 0) {
         this.currentStepIndex--;
@@ -1352,36 +1428,44 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Next/Add to Cart button
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'footer-nav-btn footer-next-btn';
+    nextBtn.addEventListener('click', () => {
+      if (isLastStep) {
+        this.addBundleToCart();
+      } else if (canProceed) {
+        this.currentStepIndex++;
+        this.renderFullPageLayout();
+      }
+    });
 
-    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-    const canProceed = this.canProceedToNextStep();
+    // Assemble main content
+    mainContent.appendChild(productsStrip);
+    mainContent.appendChild(totalSection);
+    mainContent.appendChild(navSection);
 
-    if (isLastStep) {
-      nextBtn.textContent = 'Add to Cart';
-      nextBtn.disabled = !this.areBundleConditionsMet();
-      nextBtn.addEventListener('click', () => this.addBundleToCart());
-    } else {
-      nextBtn.textContent = 'Next';
-      nextBtn.disabled = !canProceed;
-      nextBtn.addEventListener('click', () => {
-        if (canProceed) {
-          this.currentStepIndex++;
-          this.renderFullPageLayout();
-        }
-      });
-    }
+    // Assemble footer
+    this.elements.footer.appendChild(progressSection);
+    this.elements.footer.appendChild(mainContent);
+  }
 
-    navButtons.appendChild(backBtn);
-    navButtons.appendChild(nextBtn);
+  // Helper: Calculate discount progress percentage
+  calculateDiscountProgress(currentQuantity) {
+    if (!this.selectedBundle?.pricing?.enabled) return 0;
 
-    rightSection.appendChild(totalDisplay);
-    rightSection.appendChild(navButtons);
+    const rules = this.selectedBundle.pricing.rules || [];
+    if (rules.length === 0) return 0;
 
-    this.elements.footer.appendChild(leftSection);
-    this.elements.footer.appendChild(rightSection);
+    // Find the highest threshold
+    const maxThreshold = Math.max(...rules.map(r => r.minQuantity || 0));
+    if (maxThreshold === 0) return 0;
+
+    return Math.min(100, (currentQuantity / maxThreshold) * 100);
+  }
+
+  // Helper: Truncate title for compact display
+  truncateTitle(title, maxLength) {
+    if (!title) return '';
+    if (title.length <= maxLength) return title;
+    return title.substring(0, maxLength) + '...';
   }
 
   // Helper: Get all selected products data for footer display
