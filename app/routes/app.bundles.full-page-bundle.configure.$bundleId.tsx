@@ -75,52 +75,12 @@ import {
   handleMarkWidgetInstalled,
 } from "./app.bundles.full-page-bundle.configure.$bundleId/handlers";
 
-type BundleStatus = 'active' | 'draft' | 'archived';
-
-interface LoaderData {
-  bundle: {
-    id: string;
-    name: string;
-    description?: string;
-    shopId: string;
-    shopifyProductId?: string;
-    shopifyPageHandle?: string;  // For full-page bundles
-    shopifyPageId?: string;      // For full-page bundles
-    bundleType: string;
-    status: BundleStatus;
-    templateName?: string;
-    steps: Array<{
-      id: string;
-      name: string;
-      collections?: any;
-      StepProduct?: Array<{
-        id: string;
-        productId: string;
-        title: string;
-      }>;
-    }>;
-    pricing?: {
-      id: string;
-      enabled: boolean;
-      method: string;
-      rules: PricingRule[] | string;
-      showFooter: boolean;
-      showProgressBar: boolean;
-      messages: any;
-    };
-  };
-  bundleProduct?: any;
-  shop: string;
-  apiKey: string;
-  blockHandle: string;
-  widgetInstallation?: {
-    installed: boolean;
-    bundleConfigured: boolean;
-    recommendedAction: 'install_widget' | 'add_bundle' | 'configured' | 'update_bundle';
-    themeName?: string;
-    installationLink: string;
-  };
-}
+// Types - extracted to separate module for better organization
+import type {
+  BundleStatus,
+  LoaderData,
+  BundleStatusSectionProps,
+} from "./app.bundles.full-page-bundle.configure.$bundleId/types";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -319,12 +279,7 @@ const statusOptions = [
   { label: "Unlisted", value: "archived" },
 ];
 
-// Memoized BundleStatusSection component
-interface BundleStatusSectionProps {
-  status: BundleStatus;
-  onChange: (status: BundleStatus) => void;
-}
-
+// Memoized BundleStatusSection component (BundleStatusSectionProps imported from types)
 const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => (
   <BlockStack gap="200">
     <Text variant="headingSm" as="h4">
