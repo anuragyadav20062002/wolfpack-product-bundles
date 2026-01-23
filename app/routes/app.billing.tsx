@@ -11,13 +11,16 @@ import {
   Badge,
   Banner,
   Divider,
+  ProgressBar,
+  Icon,
 } from "@shopify/polaris";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { CheckCircleIcon, AlertTriangleIcon, StarFilledIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { BillingService } from "../services/billing.server";
+import { BundleAnalyticsService } from "../services/bundle-analytics.server";
 import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useBillingState } from "../hooks/useBillingState";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -36,6 +39,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       throw new Error("Could not retrieve subscription information");
     }
 
+    // Get quick stats for display
+    const quickStats = await BundleAnalyticsService.getQuickStats(shopDomain);
+
     return json({
       subscription: {
         plan: subscriptionInfo.plan,
@@ -45,6 +51,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         currentBundleCount: subscriptionInfo.currentBundleCount,
         canCreateBundle: subscriptionInfo.canCreateBundle,
       },
+      stats: quickStats,
       plans: PLANS,
       appUrl: process.env.SHOPIFY_APP_URL || "",
       // Pass callback status to UI
@@ -61,6 +68,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       {
         error: "Failed to load billing information",
         subscription: null,
+        stats: null,
         plans: PLANS,
         appUrl: process.env.SHOPIFY_APP_URL || "",
         upgraded: false,
@@ -87,7 +95,6 @@ export async function action({ request }: ActionFunctionArgs) {
         shopDomain,
         plan: "grow",
         returnUrl,
-        // test flag is now handled in BillingService based on SHOPIFY_TEST_CHARGES env var
       });
 
       if (!result.success) {
@@ -97,7 +104,6 @@ export async function action({ request }: ActionFunctionArgs) {
         );
       }
 
-      // Return confirmation URL for redirect
       return json({
         success: true,
         confirmationUrl: result.confirmationUrl,
@@ -150,6 +156,9 @@ export default function BillingPage() {
   const fetcher = useFetcher<typeof action>();
   const navigate = useNavigate();
 
+  // State for celebration animation
+  const [showCelebration, setShowCelebration] = useState(data.upgraded);
+
   // Use centralized billing state hook
   const billingState = useBillingState({
     upgraded: data.upgraded,
@@ -180,16 +189,31 @@ export default function BillingPage() {
     closeCancelConfirm();
   }, [fetcher, closeCancelConfirm]);
 
-  // Handle redirect to Shopify billing confirmation using App Bridge
+  // Handle redirect to Shopify billing confirmation
   useEffect(() => {
     if (fetcher.data && "confirmationUrl" in fetcher.data && fetcher.data.confirmationUrl) {
       open(fetcher.data.confirmationUrl, '_top');
     }
   }, [fetcher.data]);
 
+  // Auto-hide celebration after 5 seconds
+  useEffect(() => {
+    if (showCelebration) {
+      const timer = setTimeout(() => setShowCelebration(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showCelebration]);
+
   const currentPlan = data.subscription?.plan || "free";
   const isFreePlan = currentPlan === "free";
   const isGrowPlan = currentPlan === "grow";
+
+  // Calculate usage percentage
+  const usagePercentage = data.subscription
+    ? Math.round((data.subscription.currentBundleCount / data.subscription.bundleLimit) * 100)
+    : 0;
+
+  const progressBarTone = usagePercentage >= 90 ? "critical" : usagePercentage >= 70 ? "highlight" : "success";
 
   return (
     <Page
@@ -197,33 +221,131 @@ export default function BillingPage() {
       subtitle="Manage your subscription plan and billing settings"
     >
       <Layout>
-        {/* Success/Error Messages */}
+        {/* Success Celebration Banner */}
         {showSuccessBanner && (
           <Layout.Section>
-            <Banner
-              tone="success"
-              onDismiss={dismissSuccessBanner}
-            >
-              <Text as="p" variant="bodyMd">
-                Subscription upgraded successfully! Welcome to the Grow plan.
-              </Text>
-            </Banner>
+            <div style={{
+              background: 'linear-gradient(135deg, #008060 0%, #00a47c 100%)',
+              borderRadius: '12px',
+              padding: '24px',
+              color: 'white',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              {/* Confetti effect (CSS-based) */}
+              {showCelebration && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  pointerEvents: 'none',
+                  background: `
+                    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                    radial-gradient(circle at 40% 70%, rgba(255,255,255,0.15) 3px, transparent 3px),
+                    radial-gradient(circle at 60% 20%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                    radial-gradient(circle at 80% 50%, rgba(255,255,255,0.12) 2px, transparent 2px)
+                  `,
+                }} />
+              )}
+
+              <BlockStack gap="300">
+                <InlineStack gap="300" blockAlign="center">
+                  <div style={{
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    borderRadius: '50%',
+                    padding: '8px',
+                    display: 'flex',
+                  }}>
+                    <Icon source={CheckCircleIcon} tone="inherit" />
+                  </div>
+                  <BlockStack gap="100">
+                    <Text as="h2" variant="headingLg" fontWeight="bold">
+                      Welcome to the Grow Plan! 🎉
+                    </Text>
+                    <Text as="p" variant="bodyMd">
+                      Your subscription has been activated. You now have access to all premium features.
+                    </Text>
+                  </BlockStack>
+                </InlineStack>
+
+                <InlineStack gap="400" wrap={false}>
+                  <div style={{
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    flex: 1,
+                  }}>
+                    <BlockStack gap="100">
+                      <Text as="span" variant="bodySm">Bundle Limit</Text>
+                      <Text as="span" variant="headingMd" fontWeight="bold">20 bundles</Text>
+                    </BlockStack>
+                  </div>
+                  <div style={{
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    flex: 1,
+                  }}>
+                    <BlockStack gap="100">
+                      <Text as="span" variant="bodySm">Design Control</Text>
+                      <Text as="span" variant="headingMd" fontWeight="bold">Full Access</Text>
+                    </BlockStack>
+                  </div>
+                  <div style={{
+                    backgroundColor: 'rgba(255,255,255,0.15)',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    flex: 1,
+                  }}>
+                    <BlockStack gap="100">
+                      <Text as="span" variant="bodySm">Support</Text>
+                      <Text as="span" variant="headingMd" fontWeight="bold">Priority</Text>
+                    </BlockStack>
+                  </div>
+                </InlineStack>
+
+                <Button onClick={dismissSuccessBanner} variant="monochromePlain">
+                  Dismiss
+                </Button>
+              </BlockStack>
+            </div>
           </Layout.Section>
         )}
 
+        {/* Error Banner */}
         {showErrorBanner && data.callbackError && (
           <Layout.Section>
             <Banner
               tone="critical"
               onDismiss={dismissErrorBanner}
+              title="Subscription Issue"
             >
-              <Text as="p" variant="bodyMd">
-                {data.callbackError === "missing_charge_id"
-                  ? "Subscription confirmation failed: Missing charge ID. Please try again or contact support."
-                  : data.callbackError === "confirmation_failed"
-                  ? "Failed to confirm subscription. Please try again or contact support."
-                  : "An unexpected error occurred. Please try again or contact support."}
-              </Text>
+              <BlockStack gap="200">
+                <Text as="p" variant="bodyMd">
+                  {data.callbackError === "missing_charge_id"
+                    ? "Subscription confirmation failed: Missing charge ID."
+                    : data.callbackError === "confirmation_failed"
+                    ? "Failed to confirm subscription with Shopify."
+                    : "An unexpected error occurred during subscription setup."}
+                </Text>
+                <InlineStack gap="200">
+                  <Button onClick={handleViewPricing} variant="plain">
+                    Try Again
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (window.$crisp) {
+                        window.$crisp.push(["do", "chat:open"]);
+                      }
+                    }}
+                    variant="plain"
+                  >
+                    Contact Support
+                  </Button>
+                </InlineStack>
+              </BlockStack>
             </Banner>
           </Layout.Section>
         )}
@@ -232,44 +354,116 @@ export default function BillingPage() {
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
-              <InlineStack align="space-between" blockAlign="center">
+              <InlineStack align="space-between" blockAlign="start">
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Current Plan
-                  </Text>
                   <InlineStack gap="200" blockAlign="center">
-                    <Text as="p" variant="headingLg">
+                    <Text as="h2" variant="headingMd">
+                      Current Plan
+                    </Text>
+                    {isGrowPlan && (
+                      <div style={{ color: '#ffc453' }}>
+                        <Icon source={StarFilledIcon} />
+                      </div>
+                    )}
+                  </InlineStack>
+                  <InlineStack gap="300" blockAlign="center">
+                    <Text as="p" variant="headingLg" fontWeight="bold">
                       {PLANS[currentPlan].name}
                     </Text>
-                    <Badge tone={isFreePlan ? "info" : "success"}>
+                    <Badge tone={isGrowPlan ? "success" : "info"}>
                       {data.subscription?.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </InlineStack>
                 </BlockStack>
                 {isGrowPlan && (
-                  <Text as="p" variant="headingLg" tone="subdued">
-                    ${PLANS.grow.price}/month
-                  </Text>
+                  <BlockStack gap="100" align="end">
+                    <Text as="p" variant="heading2xl" fontWeight="bold">
+                      ${PLANS.grow.price}
+                    </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      per month
+                    </Text>
+                  </BlockStack>
                 )}
               </InlineStack>
 
               <Divider />
 
-              {/* Bundle Usage */}
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Bundle Usage
-                </Text>
-                <InlineStack gap="200" blockAlign="center">
-                  <Text as="p" variant="bodyLg">
-                    {data.subscription?.currentBundleCount || 0} / {data.subscription?.bundleLimit || 0} bundles
+              {/* Bundle Usage with Progress Bar */}
+              <BlockStack gap="300">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="p" variant="bodyMd" fontWeight="semibold">
+                    Bundle Usage
                   </Text>
-                  {!data.subscription?.canCreateBundle && (
-                    <Badge tone="warning">Limit Reached</Badge>
-                  )}
+                  <Badge tone={usagePercentage >= 90 ? "critical" : usagePercentage >= 70 ? "attention" : "success"}>
+                    {data.subscription?.currentBundleCount || 0} / {data.subscription?.bundleLimit || 0} bundles
+                  </Badge>
                 </InlineStack>
+                <ProgressBar
+                  progress={usagePercentage}
+                  tone={progressBarTone}
+                  size="small"
+                />
+                {!data.subscription?.canCreateBundle && (
+                  <Banner tone="warning">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Icon source={AlertTriangleIcon} tone="warning" />
+                      <Text as="span" variant="bodyMd">
+                        You've reached your bundle limit.
+                        {isFreePlan && " Upgrade to Grow for more bundles."}
+                      </Text>
+                    </InlineStack>
+                  </Banner>
+                )}
               </BlockStack>
 
+              {/* Quick Stats */}
+              {data.stats && (
+                <>
+                  <Divider />
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">
+                      Bundle Overview
+                    </Text>
+                    <InlineStack gap="400">
+                      <BlockStack gap="100">
+                        <Text as="span" variant="headingMd" fontWeight="bold">
+                          {data.stats.activeBundles}
+                        </Text>
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          Active Bundles
+                        </Text>
+                      </BlockStack>
+                      <BlockStack gap="100">
+                        <Text as="span" variant="headingMd" fontWeight="bold">
+                          {data.stats.totalSteps}
+                        </Text>
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          Total Steps
+                        </Text>
+                      </BlockStack>
+                      <BlockStack gap="100">
+                        <Text as="span" variant="headingMd" fontWeight="bold">
+                          {data.stats.bundleTypes.productPage}
+                        </Text>
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          Product Page
+                        </Text>
+                      </BlockStack>
+                      <BlockStack gap="100">
+                        <Text as="span" variant="headingMd" fontWeight="bold">
+                          {data.stats.bundleTypes.fullPage}
+                        </Text>
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          Full Page
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                  </BlockStack>
+                </>
+              )}
+
+              {/* Cancel Subscription */}
               {isGrowPlan && !showCancelConfirm && (
                 <>
                   <Divider />
@@ -286,58 +480,151 @@ export default function BillingPage() {
 
               {showCancelConfirm && (
                 <>
-                  <Banner tone="warning">
-                    <BlockStack gap="200">
+                  <Divider />
+                  <Banner tone="warning" title="Cancel Subscription?">
+                    <BlockStack gap="300">
                       <Text as="p" variant="bodyMd">
-                        Are you sure you want to cancel your subscription? You will be downgraded to the Free plan.
+                        You will be downgraded to the Free plan with a limit of {PLANS.free.bundleLimit} bundles.
                       </Text>
                       {data.subscription && data.subscription.currentBundleCount > PLANS.free.bundleLimit && (
-                        <Text as="p" variant="bodyMd" tone="critical">
-                          Warning: You have {data.subscription.currentBundleCount} bundles, but the Free plan only allows {PLANS.free.bundleLimit}. Excess bundles will be archived.
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          ⚠️ You have {data.subscription.currentBundleCount} bundles. The excess {data.subscription.currentBundleCount - PLANS.free.bundleLimit} bundles will be archived (not deleted).
                         </Text>
                       )}
+                      <InlineStack gap="200">
+                        <Button
+                          variant="primary"
+                          tone="critical"
+                          onClick={handleCancelSubscription}
+                          loading={isCancelling}
+                        >
+                          Confirm Cancellation
+                        </Button>
+                        <Button onClick={closeCancelConfirm}>
+                          Keep Subscription
+                        </Button>
+                      </InlineStack>
                     </BlockStack>
                   </Banner>
-                  <InlineStack gap="200">
-                    <Button
-                      variant="primary"
-                      tone="critical"
-                      onClick={handleCancelSubscription}
-                      loading={isCancelling}
-                    >
-                      Confirm Cancellation
-                    </Button>
-                    <Button onClick={closeCancelConfirm}>
-                      Keep Subscription
-                    </Button>
-                  </InlineStack>
                 </>
               )}
             </BlockStack>
           </Card>
         </Layout.Section>
 
-        {/* Quick Actions */}
+        {/* Upgrade CTA for Free Users */}
         {isFreePlan && (
           <Layout.Section>
             <Card>
-              <BlockStack gap="300">
-                <Text as="h3" variant="headingMd">
-                  Want to create more bundles?
-                </Text>
-                <Text as="p" variant="bodyMd" tone="subdued">
-                  Upgrade to the Grow plan for up to 20 bundles, advanced features, and priority support.
-                </Text>
-                <Button
-                  variant="primary"
-                  onClick={handleViewPricing}
-                >
-                  View Pricing Plans
-                </Button>
-              </BlockStack>
+              <div style={{
+                background: 'linear-gradient(135deg, #f6f6f7 0%, #ebeced 100%)',
+                borderRadius: '8px',
+                padding: '20px',
+                margin: '-16px',
+              }}>
+                <BlockStack gap="400">
+                  <InlineStack gap="200" blockAlign="center">
+                    <div style={{
+                      backgroundColor: '#ffc96b',
+                      borderRadius: '50%',
+                      padding: '8px',
+                      display: 'flex',
+                    }}>
+                      <Icon source={StarFilledIcon} />
+                    </div>
+                    <Text as="h3" variant="headingMd">
+                      Ready to grow your bundle business?
+                    </Text>
+                  </InlineStack>
+
+                  <Text as="p" variant="bodyMd">
+                    Upgrade to the Grow plan for double the bundles, full design customization, and priority support.
+                  </Text>
+
+                  <InlineStack gap="200">
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '6px',
+                      padding: '8px 12px',
+                    }}>
+                      <Text as="span" variant="bodySm" fontWeight="semibold">
+                        20 bundles
+                      </Text>
+                    </div>
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '6px',
+                      padding: '8px 12px',
+                    }}>
+                      <Text as="span" variant="bodySm" fontWeight="semibold">
+                        Design Control Panel
+                      </Text>
+                    </div>
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '6px',
+                      padding: '8px 12px',
+                    }}>
+                      <Text as="span" variant="bodySm" fontWeight="semibold">
+                        Priority Support
+                      </Text>
+                    </div>
+                  </InlineStack>
+
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Button
+                      variant="primary"
+                      onClick={handleViewPricing}
+                    >
+                      Upgrade to Grow - $9.99/month
+                    </Button>
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      Cancel anytime
+                    </Text>
+                  </InlineStack>
+                </BlockStack>
+              </div>
             </Card>
           </Layout.Section>
         )}
+
+        {/* Plan Features */}
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Your Plan Features
+              </Text>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+              }}>
+                {PLANS[currentPlan].features.map((feature, index) => (
+                  <InlineStack key={index} gap="200" blockAlign="center">
+                    <div style={{ color: '#008060' }}>
+                      <Icon source={CheckCircleIcon} tone="success" />
+                    </div>
+                    <Text as="span" variant="bodyMd">
+                      {feature}
+                    </Text>
+                  </InlineStack>
+                ))}
+              </div>
+              {isFreePlan && (
+                <>
+                  <Divider />
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Want more features?{" "}
+                    <Button variant="plain" onClick={handleViewPricing}>
+                      View all plans
+                    </Button>
+                  </Text>
+                </>
+              )}
+            </BlockStack>
+          </Card>
+        </Layout.Section>
 
         {/* Help Section */}
         <Layout.Section>
@@ -346,13 +633,29 @@ export default function BillingPage() {
               <Text as="h3" variant="headingMd">
                 Need Help?
               </Text>
-              <Text as="p" variant="bodyMd">
-                Have questions about billing or need to upgrade to a custom plan? Contact our support team for assistance.
+              <Text as="p" variant="bodyMd" tone="subdued">
+                Have questions about billing or need a custom plan? Our team is here to help.
               </Text>
+              <Button
+                onClick={() => {
+                  if (window.$crisp) {
+                    window.$crisp.push(["do", "chat:open"]);
+                  }
+                }}
+              >
+                Contact Support
+              </Button>
             </BlockStack>
           </Card>
         </Layout.Section>
       </Layout>
     </Page>
   );
+}
+
+// Type declaration for Crisp chat
+declare global {
+  interface Window {
+    $crisp?: any[];
+  }
 }
