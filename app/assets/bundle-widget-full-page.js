@@ -674,6 +674,13 @@ class BundleWidgetFullPage {
   }
 
   renderHeader() {
+    // For full-page bundles, always hide the main header (promo banner handles the display)
+    const bundleType = this.selectedBundle?.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
+    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      this.elements.header.style.display = 'none';
+      return;
+    }
+
     if (!this.config.showTitle) {
       this.elements.header.style.display = 'none';
       return;
@@ -894,10 +901,10 @@ class BundleWidgetFullPage {
     return productImages;
   }
 
-  // Create bundle instructions header
+  // Create bundle instructions header (only shows step instruction, not bundle title)
   createBundleInstructions() {
     const header = document.createElement('div');
-    header.className = 'bundle-header';
+    header.className = 'bundle-header bundle-step-instruction';
 
     if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[this.currentStepIndex]) {
       console.error('[WIDGET_RENDER] Cannot create instructions: selectedBundle or current step is undefined');
@@ -907,81 +914,74 @@ class BundleWidgetFullPage {
     const currentStep = this.selectedBundle.steps[this.currentStepIndex];
 
     // Use custom instruction if provided, otherwise use step instruction or auto-generated text
-    const defaultInstruction = currentStep.instruction || `Select ${currentStep.minQuantity} or more items from ${currentStep.name}`;
+    const defaultInstruction = currentStep.instruction || `Select ${currentStep.minQuantity || 1} or more items from ${currentStep.name}`;
     const instructionText = this.config.customInstruction || defaultInstruction;
 
-    // Use custom title if provided, otherwise use bundle name
-    const title = this.config.customTitle || this.selectedBundle.name;
-
-    // Only show bundle title if showTitle is enabled
-    const bundleTitleHTML = this.config.showTitle
-      ? `<h3 class="bundle-title">${title}</h3>`
-      : '';
-
+    // Only show instruction text (title is shown in promo banner)
     header.innerHTML = `
-      ${bundleTitleHTML}
       <p class="bundle-instruction">${instructionText}</p>
     `;
 
     return header;
   }
 
-  // Create promotional banner (Competitor-Inspired)
+  // Create promotional banner (Competitor-Inspired with gradient hero style)
   createPromoBanner() {
-    // Check if bundle has promotion/discount configuration
-    if (!this.selectedBundle?.pricing?.enabled) {
-      return null;
-    }
-
-    const pricing = this.selectedBundle.pricing;
-    const rules = pricing.rules || [];
+    const pricing = this.selectedBundle?.pricing;
+    const rules = pricing?.rules || [];
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     // Get the best discount message
     let promoTitle = '';
     let promoSubtitle = 'Build Your Own Bundle';
     let promoNote = '(Mix & Match)';
 
-    if (rules.length > 0) {
-      // Find the best discount to highlight
+    if (pricing?.enabled && rules.length > 0) {
+      // Find the best discount to highlight (use nested structure)
       const bestRule = rules.reduce((best, rule) => {
-        const discountValue = rule.discountType === 'percentage'
-          ? rule.discountValue
-          : (rule.discountValue / 100); // Approximate comparison
-        const bestValue = best.discountType === 'percentage'
-          ? best.discountValue
-          : (best.discountValue / 100);
+        const discountValue = rule.discount?.method === 'percentage'
+          ? rule.discount?.value || 0
+          : ((rule.discount?.value || 0) / 100);
+        const bestValue = best.discount?.method === 'percentage'
+          ? best.discount?.value || 0
+          : ((best.discount?.value || 0) / 100);
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
-      // Build promo title based on best rule
-      if (bestRule.discountType === 'percentage') {
-        promoTitle = `Add ${bestRule.minQuantity} products to your basket, get ${bestRule.discountValue}% off!`;
-      } else if (bestRule.discountType === 'fixed_amount') {
-        const currencyInfo = CurrencyManager.getCurrencyInfo();
-        const formattedAmount = CurrencyManager.formatMoney(bestRule.discountValue * 100, currencyInfo.display.format);
-        promoTitle = `Add ${bestRule.minQuantity} products to your basket, save ${formattedAmount}!`;
-      } else if (bestRule.discountType === 'fixed_price') {
-        const currencyInfo = CurrencyManager.getCurrencyInfo();
-        const formattedPrice = CurrencyManager.formatMoney(bestRule.discountValue * 100, currencyInfo.display.format);
-        promoTitle = `Add ${bestRule.minQuantity} products for just ${formattedPrice}!`;
+      // Build promo title based on best rule (using nested structure)
+      const targetQty = bestRule.condition?.value || bestRule.minQuantity || 0;
+      const discountMethod = bestRule.discount?.method || bestRule.discountType;
+      const discountValue = bestRule.discount?.value || bestRule.discountValue || 0;
+
+      if (discountMethod === 'percentage') {
+        promoTitle = `Add any ${targetQty} products to your basket, get ${discountValue}% off!`;
+      } else if (discountMethod === 'fixed_amount') {
+        const formattedAmount = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+        promoTitle = `Add any ${targetQty} products to your basket, save ${formattedAmount}!`;
+      } else if (discountMethod === 'fixed_price') {
+        const formattedPrice = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+        promoTitle = `Add any ${targetQty} products for just ${formattedPrice}!`;
       }
     }
 
     // Use custom messages if configured
-    if (pricing.messages?.banner) {
+    if (pricing?.messages?.banner) {
       promoTitle = pricing.messages.banner;
     }
 
+    // If no discount promo, show bundle name as hero banner
     if (!promoTitle) {
-      return null; // No promo to show
+      promoTitle = this.selectedBundle?.name || 'Build Your Bundle';
+      promoSubtitle = '';
+      promoNote = '';
     }
 
     const banner = document.createElement('div');
     banner.className = 'promo-banner';
     banner.innerHTML = `
-      <div class="promo-banner-subtitle">${promoSubtitle}</div>
+      ${promoSubtitle ? `<div class="promo-banner-subtitle">${promoSubtitle}</div>` : ''}
       <h2 class="promo-banner-title">${promoTitle}</h2>
-      <div class="promo-banner-note">${promoNote}</div>
+      ${promoNote ? `<div class="promo-banner-note">${promoNote}</div>` : ''}
     `;
 
     return banner;
@@ -1345,7 +1345,26 @@ class BundleWidgetFullPage {
           variables
         );
       } else if (nextRule) {
-        discountMessage = `Add ${nextRule.remaining} more product(s) to get ${nextRule.discountText}!`;
+        // Calculate remaining items needed from nested rule structure
+        const targetQuantity = nextRule.condition?.value || 0;
+        const remaining = Math.max(0, targetQuantity - totalQuantity);
+
+        // Build discount text from nested discount structure
+        let discountText = '';
+        const discountMethod = nextRule.discount?.method;
+        const discountValue = nextRule.discount?.value || 0;
+
+        if (discountMethod === 'percentage') {
+          discountText = `${discountValue}% off`;
+        } else if (discountMethod === 'fixed_amount') {
+          discountText = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format) + ' off';
+        } else if (discountMethod === 'fixed_price') {
+          discountText = 'a special price of ' + CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+        } else {
+          discountText = 'a discount';
+        }
+
+        discountMessage = `Add ${remaining} more product(s) to get ${discountText}!`;
       }
     }
 
