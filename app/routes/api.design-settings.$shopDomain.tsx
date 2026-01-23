@@ -211,10 +211,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       status: 200,
       headers: {
         "Content-Type": "text/css; charset=utf-8",
-        // Cache for 1 hour (3600 seconds) - balances performance with design updates
-        // Shopify's CDN/edge network will cache this when using app proxy
-        // Reduces load on your app server during traffic spikes (sales, promotions)
-        "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+        // Cache for 5 minutes (300 seconds) - allows design changes to propagate quickly
+        // Combined with timestamp cache-busting in Liquid templates for immediate updates
+        // stale-while-revalidate allows serving stale content while fetching fresh
+        "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
         "Access-Control-Allow-Origin": "*",
         // Help CDNs cache efficiently
         "Vary": "Origin",

@@ -21,6 +21,7 @@ import { authenticate } from "../shopify.server";
 import { useCallback, useEffect } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@shopify/polaris-icons";
 import { prisma } from "../db.server";
+import { processCss } from "../lib/css-sanitizer";
 
 // Import centralized state hook
 import { useDesignControlPanelState } from "../hooks/useDesignControlPanelState";
@@ -68,6 +69,18 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const bundleType = formData.bundleType as "product_page" | "full_page";
     const settings = formData.settings;
+
+    // Validate custom CSS at save time
+    const cssWarnings: string[] = [];
+    if (settings.customCss) {
+      const cssResult = processCss(settings.customCss);
+      if (cssResult.warnings.length > 0) {
+        cssWarnings.push(...cssResult.warnings);
+      }
+      if (cssResult.syntaxErrors.length > 0) {
+        cssWarnings.push(...cssResult.syntaxErrors.map(e => `Syntax: ${e}`));
+      }
+    }
 
     const footerSettings = {
       footerBgColor: settings.footerBgColor,
@@ -276,7 +289,17 @@ export async function action({ request }: ActionFunctionArgs) {
       },
     });
 
-    return json({ success: true, message: "Design settings saved successfully!" });
+    // Build response message with any CSS warnings
+    let message = "Design settings saved successfully!";
+    if (cssWarnings.length > 0) {
+      message = `Settings saved with CSS warnings: ${cssWarnings.join("; ")}`;
+    }
+
+    return json({
+      success: true,
+      message,
+      cssWarnings: cssWarnings.length > 0 ? cssWarnings : undefined
+    });
   } catch (error) {
     console.error("Error saving design settings:", error);
     return json({ success: false, message: "Failed to save design settings" }, { status: 500 });
