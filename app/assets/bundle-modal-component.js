@@ -309,27 +309,54 @@ class BundleProductModal {
     const variantsContainer = document.getElementById('modal-variants-container');
     const variants = this.currentProduct.variants || [];
 
-    // If only one variant (no options), hide variant selectors
+    console.log('[MODAL] Creating variant selectors. Variants:', variants.length, 'Product:', this.currentProduct);
+
+    // If only one variant (no options) or no variants, hide variant selectors
     if (variants.length <= 1) {
       variantsContainer.innerHTML = '';
       this.selectedVariant = variants[0] || this.currentProduct;
+      console.log('[MODAL] Single/no variant, using:', this.selectedVariant);
       return;
     }
 
     // Extract option names (e.g., Size, Color)
-    const optionNames = this.currentProduct.options || [];
+    // Handle different data structures: options can be array of strings or array of objects
+    let optionNames = this.currentProduct.options || [];
+
+    // If options is array of objects with name property, extract names
+    if (optionNames.length > 0 && typeof optionNames[0] === 'object' && optionNames[0].name) {
+      optionNames = optionNames.map(opt => opt.name);
+    }
+
+    // If still no option names, try to infer from first variant
+    if (optionNames.length === 0 && variants.length > 0) {
+      const firstVariant = variants[0];
+      // Check for option1, option2, option3 properties
+      if (firstVariant.option1) optionNames.push('Option 1');
+      if (firstVariant.option2) optionNames.push('Option 2');
+      if (firstVariant.option3) optionNames.push('Option 3');
+    }
 
     if (optionNames.length === 0) {
       // No variant options, use first variant
       this.selectedVariant = variants[0];
       variantsContainer.innerHTML = '';
+      console.log('[MODAL] No option names found, using first variant');
       return;
     }
 
+    console.log('[MODAL] Option names:', optionNames);
+
     // Create dropdown for each option
     variantsContainer.innerHTML = optionNames.map((optionName, optionIndex) => {
-      // Get unique values for this option
-      const optionValues = [...new Set(variants.map(v => v[`option${optionIndex + 1}`]))];
+      // Get unique values for this option, filtering out undefined/null
+      const optionValues = [...new Set(
+        variants
+          .map(v => v[`option${optionIndex + 1}`])
+          .filter(val => val !== undefined && val !== null && val !== '')
+      )];
+
+      if (optionValues.length === 0) return '';
 
       return `
         <div class="bundle-modal-variant-group">
@@ -341,7 +368,7 @@ class BundleProductModal {
           </select>
         </div>
       `;
-    }).join('');
+    }).filter(html => html !== '').join('');
 
     // Add change handlers to variant selectors
     variantsContainer.querySelectorAll('.bundle-modal-variant-select').forEach((select) => {
@@ -364,23 +391,56 @@ class BundleProductModal {
     // Get selected option values
     const selectedOptions = Array.from(selectors).map(select => select.value);
 
+    console.log('[MODAL] Looking for variant with options:', selectedOptions);
+
     // Find matching variant
     this.selectedVariant = variants.find(variant => {
       return selectedOptions.every((value, index) => {
-        return variant[`option${index + 1}`] === value;
+        const variantValue = variant[`option${index + 1}`];
+        return variantValue === value;
       });
     });
 
     // If no match found, use first variant
     if (!this.selectedVariant && variants.length > 0) {
       this.selectedVariant = variants[0];
+      console.log('[MODAL] No exact match, using first variant');
     }
+
+    console.log('[MODAL] Selected variant:', this.selectedVariant);
 
     // Update price
     this.updatePrice();
 
     // Check availability
     this.updateAvailability();
+
+    // Update variant image if available
+    this.updateVariantImage();
+  }
+
+  /**
+   * Update main image when variant changes (if variant has specific image)
+   */
+  updateVariantImage() {
+    if (!this.selectedVariant) return;
+
+    // Check if variant has a specific image
+    const variantImage = this.selectedVariant.image ||
+                         this.selectedVariant.featured_image ||
+                         this.selectedVariant.featuredImage;
+
+    if (variantImage) {
+      const imageUrl = typeof variantImage === 'string' ? variantImage :
+                       variantImage.src || variantImage.url;
+
+      if (imageUrl) {
+        const mainImageEl = document.getElementById('modal-main-image');
+        if (mainImageEl) {
+          mainImageEl.src = imageUrl;
+        }
+      }
+    }
   }
 
   /**
@@ -392,14 +452,15 @@ class BundleProductModal {
 
     // Format price using widget's currency manager
     const price = variant.price || this.currentProduct.price || 0;
-    const compareAtPrice = variant.compareAtPrice || this.currentProduct.compareAtPrice;
+    const compareAtPrice = variant.compareAtPrice || variant.compare_at_price ||
+                           this.currentProduct.compareAtPrice || this.currentProduct.compare_at_price;
 
     let priceHTML = '';
 
-    if (compareAtPrice && compareAtPrice > price) {
+    if (compareAtPrice && parseFloat(compareAtPrice) > parseFloat(price)) {
       priceHTML = `
         <span class="bundle-modal-price-strike">${this.formatPrice(compareAtPrice)}</span>
-        ${this.formatPrice(price)}
+        <span class="bundle-modal-price-sale">${this.formatPrice(price)}</span>
       `;
     } else {
       priceHTML = this.formatPrice(price);
@@ -431,15 +492,19 @@ class BundleProductModal {
     const addBtn = document.getElementById('modal-add-to-box');
     const variant = this.selectedVariant || this.currentProduct;
 
-    // Check if variant is available
-    const isAvailable = variant.available !== false;
+    // Check if variant is available (handle different property names)
+    const isAvailable = variant.available !== false &&
+                        variant.availableForSale !== false &&
+                        variant.inventory_quantity !== 0;
 
     if (!isAvailable) {
       addBtn.disabled = true;
       addBtn.textContent = 'Out of Stock';
+      addBtn.classList.add('out-of-stock');
     } else {
       addBtn.disabled = false;
       addBtn.textContent = 'Add To Box';
+      addBtn.classList.remove('out-of-stock');
     }
   }
 
@@ -463,6 +528,15 @@ class BundleProductModal {
 
     const variant = this.selectedVariant || this.currentProduct;
 
+    // Check availability before adding
+    const isAvailable = variant.available !== false &&
+                        variant.availableForSale !== false;
+
+    if (!isAvailable) {
+      console.warn('[MODAL] Cannot add out of stock variant');
+      return;
+    }
+
     // Use selectedBundle.steps (not widget.steps which doesn't exist)
     const steps = this.widget.selectedBundle?.steps || [];
     const stepIndex = steps.findIndex(s => s.id === this.currentStep.id);
@@ -474,21 +548,27 @@ class BundleProductModal {
 
     // Use variantId if available, otherwise fall back to id
     // This matches how the widget stores product selections
-    const productId = variant.variantId || variant.id;
+    const productId = variant.variantId || variant.id || this.currentProduct.id;
 
     console.log('[MODAL] Adding to bundle:', {
       stepIndex,
       productId,
       quantity: this.selectedQuantity,
-      variant: variant
+      variant: variant,
+      variantTitle: variant.title
     });
 
     // Call widget's method to add product
-    this.widget.updateProductSelection(
-      stepIndex,
-      productId,
-      this.selectedQuantity
-    );
+    if (this.widget.updateProductSelection) {
+      this.widget.updateProductSelection(
+        stepIndex,
+        productId,
+        this.selectedQuantity
+      );
+    } else {
+      console.error('[MODAL] Widget does not have updateProductSelection method');
+      return;
+    }
 
     // Close modal
     this.close();

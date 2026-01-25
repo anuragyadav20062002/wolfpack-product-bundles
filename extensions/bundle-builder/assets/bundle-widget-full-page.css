@@ -1735,12 +1735,13 @@ body:has(.bundle-widget-full-page) #MainContent {
   transform: rotate(90deg);
 }
 
-/* Modal Content - 2 Column Layout (60/40 split) */
+/* Modal Content - 2 Column Layout (50/50 split for better balance) */
 .bundle-modal-content {
   display: grid;
-  grid-template-columns: 60% 40%;
-  gap: 40px;
-  padding: 40px;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  padding: 32px;
+  align-items: start;
 }
 
 /* Left Column - Image Gallery */
@@ -1762,7 +1763,8 @@ body:has(.bundle-widget-full-page) #MainContent {
 .bundle-modal-main-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 16px;
 }
 
 .bundle-modal-thumbnails {
@@ -1802,38 +1804,47 @@ body:has(.bundle-widget-full-page) #MainContent {
 .bundle-modal-details {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  padding-top: 8px;
 }
 
 .bundle-modal-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
 }
 
 .bundle-modal-title {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
   line-height: 1.3;
   margin: 0;
   font-family: inherit;
-  flex: 1;
+  color: #1a1a1a;
 }
 
 .bundle-modal-price {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
-  color: var(--bundle-primary-color, #000);
+  color: #1a1a1a;
   font-family: inherit;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .bundle-modal-price-strike {
-  font-size: 18px;
-  color: #999;
+  font-size: 16px;
+  color: #888;
   text-decoration: line-through;
-  margin-right: 8px;
+  font-weight: 400;
+}
+
+.bundle-modal-price-sale {
+  color: #c41e3a;
+  font-weight: 600;
 }
 
 /* Variant Selectors */
@@ -1850,7 +1861,7 @@ body:has(.bundle-widget-full-page) #MainContent {
 }
 
 .bundle-modal-variant-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #333;
   font-family: inherit;
@@ -1860,24 +1871,29 @@ body:has(.bundle-widget-full-page) #MainContent {
 
 .bundle-modal-variant-select {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  font-size: 15px;
+  padding: 12px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
   font-family: inherit;
-  background: #FFFFFF;
+  background: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
 }
 
 .bundle-modal-variant-select:hover {
-  border-color: rgba(0, 0, 0, 0.3);
+  border-color: #999;
 }
 
 .bundle-modal-variant-select:focus {
   outline: none;
   border-color: var(--bundle-primary-color, #000);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
 }
 
 /* Quantity Selector */
@@ -1888,7 +1904,7 @@ body:has(.bundle-widget-full-page) #MainContent {
 }
 
 .bundle-modal-quantity-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #333;
   font-family: inherit;
@@ -1897,80 +1913,84 @@ body:has(.bundle-widget-full-page) #MainContent {
 }
 
 .bundle-modal-quantity-controls {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  background: #FFFFFF;
-  width: fit-content;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
 }
 
 .bundle-modal-qty-btn {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: none;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 6px;
+  background: #f5f5f5;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500;
+  color: #333;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   font-family: inherit;
 }
 
 .bundle-modal-qty-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: #e8e8e8;
 }
 
 .bundle-modal-qty-btn:active {
-  transform: scale(0.95);
+  background: #ddd;
 }
 
 .bundle-modal-qty-btn:disabled {
-  opacity: 0.3;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .bundle-modal-qty-display {
   font-size: 16px;
   font-weight: 600;
-  min-width: 32px;
+  min-width: 48px;
   text-align: center;
   font-family: inherit;
+  padding: 0 8px;
+  background: #fff;
 }
 
 /* Add To Box Button */
 .bundle-modal-add-btn {
   width: 100%;
-  padding: 16px 24px;
+  padding: 14px 24px;
   background: var(--bundle-primary-color, #000);
   color: #FFFFFF;
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: 6px;
+  font-size: 15px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
 }
 
 .bundle-modal-add-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .bundle-modal-add-btn:active {
   transform: translateY(0);
+  opacity: 1;
 }
 
 .bundle-modal-add-btn:disabled {
-  opacity: 0.5;
+  background: #ccc;
+  color: #666;
   cursor: not-allowed;
   transform: none !important;
 }
@@ -1987,28 +2007,39 @@ body:has(.bundle-widget-full-page) #MainContent {
 
 /* Responsive - Mobile */
 @media (max-width: 768px) {
+  .bundle-modal-overlay {
+    padding: 16px;
+  }
+
+  .bundle-modal-container {
+    max-height: 95vh;
+  }
+
   .bundle-modal-content {
     grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 24px;
+    gap: 20px;
+    padding: 20px;
   }
 
   .bundle-modal-close {
     top: 12px;
     right: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  .bundle-modal-main-image {
+    aspect-ratio: 1;
+    max-height: 300px;
   }
 
   .bundle-modal-title {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .bundle-modal-price {
     font-size: 18px;
-  }
-
-  .bundle-modal-header {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .bundle-modal-thumbnails {
@@ -2016,9 +2047,30 @@ body:has(.bundle-widget-full-page) #MainContent {
   }
 
   .bundle-modal-thumbnail {
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
   }
+
+  .bundle-modal-details {
+    gap: 16px;
+  }
+
+  .bundle-modal-variant-select,
+  .bundle-modal-qty-btn {
+    height: 44px;
+  }
+
+  .bundle-modal-add-btn {
+    padding: 14px 20px;
+    font-size: 14px;
+  }
+}
+
+/* Out of Stock state */
+.bundle-modal-add-btn.out-of-stock {
+  background: #e0e0e0;
+  color: #888;
+  cursor: not-allowed;
 }
 
 /* Prevent body scroll when modal is open */
