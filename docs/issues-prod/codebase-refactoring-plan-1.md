@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-01-23
-**Last Updated:** 2026-01-23 08:30
+**Last Updated:** 2026-01-26 08:00
 
 ---
 
@@ -73,6 +73,45 @@
 - UI component extraction (~2,400 lines of JSX remaining)
 - Consider splitting main component into smaller sub-components
 - This would require deeper refactoring and more testing
+
+### 2026-01-26 08:00 - Phase 2: Product Page Bundle Configure Route
+
+**Files Created:**
+- `app/routes/app.bundles.product-page-bundle.configure.$bundleId/types.ts` - TypeScript interfaces (119 lines)
+- `app/routes/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts` - All 10 action handlers (1,588 lines)
+- `app/routes/app.bundles.product-page-bundle.configure.$bundleId/handlers/index.ts` - Re-export barrel file
+
+**Action Handlers Extracted:**
+1. `handleSaveBundle` - Main bundle save logic
+2. `handleUpdateBundleStatus` - Status updates
+3. `handleSyncProduct` - Shopify product sync
+4. `handleUpdateBundleProduct` - Product details update
+5. `handleGetPages` - Fetch available pages
+6. `handleGetThemeTemplates` - Theme template management
+7. `handleGetCurrentTheme` - Current theme info
+8. `handleEnsureBundleTemplates` - Template creation
+9. `handleValidateWidgetPlacement` - Widget placement validation (uses product-page specific validation)
+10. `handleMarkWidgetInstalled` - Widget installation flag (uses 'product_page' type)
+
+**Key Differences from Full-Page Bundle:**
+- `handleValidateWidgetPlacement` uses `WidgetInstallationService.validateProductBundleWidgetSetup`
+- `handleMarkWidgetInstalled` uses `WidgetInstallationFlagsService.markAsInstalled` with 'product_page'
+- No `handleCheckFullPageTemplate` (product page bundles don't use full-page templates)
+- No `shopifyPageHandle` or `shopifyPageId` fields
+
+**Changes Made to Main Route File:**
+- Updated imports to use extracted handlers from `./handlers/` module
+- Updated imports to use extracted types from `./types.ts`
+- Removed duplicate interface definitions (BundleProductCardProps, BundleStatusSectionProps)
+
+**File Size Reduction Summary:**
+- Original: 4,028 lines
+- After refactoring: 2,399 lines
+- Total reduction: 1,629 lines (40%)
+
+**TypeScript Verification:** Passed (no errors in refactored files)
+
+**Phase 2 Status:** Complete
 
 ## Overview
 
@@ -330,7 +369,7 @@ app/components/billing/
 ## Phases Checklist
 
 - [x] Phase 1: Full Page Bundle Configure Route ✅ Completed (4,469 → 2,762 lines, 38% reduction)
-- [ ] Phase 2: Product Page Bundle Configure Route
+- [x] Phase 2: Product Page Bundle Configure Route ✅ Completed (4,028 → 2,399 lines, 40% reduction)
 - [ ] Phase 3: Widget JavaScript Files
 - [ ] Phase 4: Dashboard Route
 - [ ] Phase 5: Webhook Processor Service
