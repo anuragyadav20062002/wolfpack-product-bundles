@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-01-23
-**Last Updated:** 2026-01-26 08:00
+**Last Updated:** 2026-01-26 09:30
 
 ---
 
@@ -112,6 +112,39 @@
 **TypeScript Verification:** Passed (no errors in refactored files)
 
 **Phase 2 Status:** Complete
+
+### 2026-01-26 09:30 - Phase 4: Dashboard Route
+
+**Files Created:**
+- `app/routes/app.dashboard/types.ts` - TypeScript interfaces (73 lines)
+- `app/routes/app.dashboard/handlers/handlers.server.ts` - 3 action handlers (499 lines)
+- `app/routes/app.dashboard/handlers/index.ts` - Re-export barrel file
+
+**Action Handlers Extracted:**
+1. `handleCloneBundle` - Clone bundle with all steps, products, pricing; creates Shopify product
+2. `handleDeleteBundle` - Delete bundle, clean metafields, set Shopify product to draft
+3. `handleCreateBundle` - Create new bundle with Shopify product, widget validation
+
+**Utility Functions Extracted:**
+- `publishToOnlineStore` - Publish product to Online Store sales channel
+- GraphQL mutations moved to handlers file
+
+**Changes Made to Main Route File:**
+- Updated imports to use extracted handlers from `./handlers/` module
+- Updated imports to use extracted types from `./types.ts`
+- Removed duplicate interface definition (BundleActionsButtonsProps)
+- Simplified action function to route to appropriate handlers
+
+**File Size Reduction Summary:**
+- Original: 1,429 lines
+- After refactoring: 903 lines
+- Total reduction: 526 lines (37%)
+
+**TypeScript Verification:** Passed (no errors in refactored files)
+
+**Phase 4 Status:** Complete
+
+**Note:** Phase 3 (Widget JavaScript Files) skipped temporarily - requires build system changes that could introduce breaking changes. Will revisit in a future session.
 
 ## Overview
 
@@ -370,8 +403,8 @@ app/components/billing/
 
 - [x] Phase 1: Full Page Bundle Configure Route ✅ Completed (4,469 → 2,762 lines, 38% reduction)
 - [x] Phase 2: Product Page Bundle Configure Route ✅ Completed (4,028 → 2,399 lines, 40% reduction)
-- [ ] Phase 3: Widget JavaScript Files
-- [ ] Phase 4: Dashboard Route
+- [ ] Phase 3: Widget JavaScript Files (deferred - requires build system changes)
+- [x] Phase 4: Dashboard Route ✅ Completed (1,429 → 903 lines, 37% reduction)
 - [ ] Phase 5: Webhook Processor Service
 - [ ] Phase 6: Widget Installation Service
 - [ ] Phase 7: Design Control Panel Route
