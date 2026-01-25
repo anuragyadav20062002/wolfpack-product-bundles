@@ -347,8 +347,9 @@ export default function DesignControlPanel() {
     customCssHelpOpen,
     setCustomCssHelpOpen,
 
-    // Update function
+    // Update functions
     updateSetting,
+    updateSettings,
   } = dcpState;
 
   // Extract only the values needed in this component (the rest are passed via currentSettings)
@@ -637,6 +638,7 @@ export default function DesignControlPanel() {
                   activeSubSection={activeSubSection}
                   settings={currentSettings}
                   onUpdate={updateSetting}
+                  onBatchUpdate={updateSettings}
                   customCssHelpOpen={customCssHelpOpen}
                   setCustomCssHelpOpen={setCustomCssHelpOpen}
                 />

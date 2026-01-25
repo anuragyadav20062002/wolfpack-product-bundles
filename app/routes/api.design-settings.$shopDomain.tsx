@@ -494,14 +494,15 @@ function generateCSSFromSettings(s: any, bundleType: string, customCss: string =
   --bundle-full-page-footer-total-label-font-size: ${s.fullPageFooterTotalLabelFontSize || 16}px;
   --bundle-full-page-footer-total-price-color: ${s.fullPageFooterTotalPriceColor || globalPrimaryText};
   --bundle-full-page-footer-total-price-font-size: ${s.fullPageFooterTotalPriceFontSize || 24}px;
-  --bundle-full-page-footer-back-btn-bg: ${s.fullPageFooterBackBtnBg || '#808080'};
-  --bundle-full-page-footer-back-btn-color: ${s.fullPageFooterBackBtnColor || '#FFFFFF'};
-  --bundle-full-page-footer-back-btn-hover: ${s.fullPageFooterBackBtnHover || '#666666'};
-  --bundle-full-page-footer-next-btn-bg: ${s.fullPageFooterNextBtnBg || globalPrimaryButton};
-  --bundle-full-page-footer-next-btn-color: ${s.fullPageFooterNextBtnColor || globalButtonText};
-  --bundle-full-page-footer-next-btn-hover: ${s.fullPageFooterNextBtnHover || '#000000'};
-  --bundle-full-page-footer-nav-btn-font-size: ${s.fullPageFooterNavBtnFontSize || 16}px;
-  --bundle-full-page-footer-nav-btn-radius: ${s.fullPageFooterNavBtnRadius || 4}px;
+  --bundle-full-page-footer-back-btn-bg: ${s.footerBackButtonBgColor || s.fullPageFooterBackBtnBg || '#FFFFFF'};
+  --bundle-full-page-footer-back-btn-color: ${s.footerBackButtonTextColor || s.fullPageFooterBackBtnColor || globalPrimaryText};
+  --bundle-full-page-footer-back-btn-border: ${s.footerBackButtonBorderColor || '#E5E7EB'};
+  --bundle-full-page-footer-back-btn-hover: ${s.fullPageFooterBackBtnHover || '#F3F4F6'};
+  --bundle-full-page-footer-next-btn-bg: ${s.footerNextButtonBgColor || s.fullPageFooterNextBtnBg || globalPrimaryButton};
+  --bundle-full-page-footer-next-btn-color: ${s.footerNextButtonTextColor || s.fullPageFooterNextBtnColor || globalButtonText};
+  --bundle-full-page-footer-next-btn-hover: ${s.fullPageFooterNextBtnHover || '#5F2DD8'};
+  --bundle-full-page-footer-nav-btn-font-size: ${s.fullPageFooterNavBtnFontSize || 14}px;
+  --bundle-full-page-footer-nav-btn-radius: ${s.footerBackButtonBorderRadius || s.footerNextButtonBorderRadius || s.fullPageFooterNavBtnRadius || 8}px;
   --bundle-full-page-footer-no-selections-color: ${s.fullPageFooterNoSelectionsColor || '#808080'};
 
   /* Loading State */

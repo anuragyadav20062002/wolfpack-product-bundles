@@ -7,6 +7,7 @@ import type { DesignSettings } from "../../../types/state.types";
 export interface SettingsComponentProps {
   settings: DesignSettings;
   onUpdate: <K extends keyof DesignSettings>(key: K, value: DesignSettings[K]) => void;
+  onBatchUpdate?: (updates: Partial<DesignSettings>) => void;
 }
 
 /**
@@ -16,4 +17,5 @@ export interface SettingsPanelProps extends SettingsComponentProps {
   activeSubSection: string;
   customCssHelpOpen: boolean;
   setCustomCssHelpOpen: (open: boolean) => void;
+  onBatchUpdate: (updates: Partial<DesignSettings>) => void;
 }

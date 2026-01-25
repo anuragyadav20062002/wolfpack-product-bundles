@@ -272,12 +272,17 @@ export function useDesignControlPanelState(loaderSettings: LoaderSettings) {
     appStateService.updateDesignSetting(key, value);
   }, []);
 
-  // Bulk update settings
+  // Bulk update settings (used for batch updates to prevent flicker)
   const updateSettings = useCallback((updates: Partial<DesignSettings>) => {
     setCurrentSettings(prev => ({
       ...prev,
       ...updates,
     }));
+
+    // Also update state service for each setting
+    Object.entries(updates).forEach(([key, value]) => {
+      appStateService.updateDesignSetting(key as keyof DesignSettings, value);
+    });
   }, []);
 
   // Check if there are unsaved changes

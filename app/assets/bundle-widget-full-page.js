@@ -1376,17 +1376,11 @@ class BundleWidgetFullPage {
       </div>
     `;
 
-    // === SECTION 2: Main Footer Content (Products + Total + Buttons) ===
-    const mainContent = document.createElement('div');
-    mainContent.className = 'footer-main-content';
-
-    // Left: Compact product thumbnails strip
+    // === SECTION 2: Selected Products Strip (below discount message) ===
     const productsStrip = document.createElement('div');
     productsStrip.className = 'footer-products-strip';
 
-    if (allSelectedProducts.length === 0) {
-      productsStrip.innerHTML = '';
-    } else {
+    if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         const productThumb = document.createElement('div');
         productThumb.className = 'footer-product-thumb';
@@ -1411,7 +1405,29 @@ class BundleWidgetFullPage {
       });
     }
 
-    // Center: Total display
+    // === SECTION 3: Navigation with Total between buttons ===
+    const navSection = document.createElement('div');
+    navSection.className = 'footer-nav-section';
+
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+    const canProceed = this.canProceedToNextStep();
+
+    // Create Back button
+    const backBtn = document.createElement('button');
+    backBtn.className = 'footer-btn footer-btn-back';
+    backBtn.textContent = 'Back';
+    if (this.currentStepIndex === 0) {
+      backBtn.disabled = true;
+    }
+
+    backBtn.addEventListener('click', () => {
+      if (this.currentStepIndex > 0) {
+        this.currentStepIndex--;
+        this.renderFullPageLayout();
+      }
+    });
+
+    // Create Total section (between buttons)
     const totalSection = document.createElement('div');
     totalSection.className = 'footer-total-section';
     totalSection.innerHTML = `
@@ -1422,30 +1438,13 @@ class BundleWidgetFullPage {
       </div>
     `;
 
-    // Right: Navigation buttons
-    const navSection = document.createElement('div');
-    navSection.className = 'footer-nav-section';
-
-    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-    const canProceed = this.canProceedToNextStep();
-
-    navSection.innerHTML = `
-      <button class="footer-btn footer-btn-back" ${this.currentStepIndex === 0 ? 'disabled' : ''}>Back</button>
-      <button class="footer-btn footer-btn-next" ${isLastStep ? (!this.areBundleConditionsMet() ? 'disabled' : '') : (!canProceed ? 'disabled' : '')}>
-        ${isLastStep ? 'Add to Cart' : 'Next'}
-      </button>
-    `;
-
-    // Attach button event listeners
-    const backBtn = navSection.querySelector('.footer-btn-back');
-    const nextBtn = navSection.querySelector('.footer-btn-next');
-
-    backBtn.addEventListener('click', () => {
-      if (this.currentStepIndex > 0) {
-        this.currentStepIndex--;
-        this.renderFullPageLayout();
-      }
-    });
+    // Create Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'footer-btn footer-btn-next';
+    nextBtn.textContent = isLastStep ? 'Add to Cart' : 'Next';
+    if (isLastStep ? !this.areBundleConditionsMet() : !canProceed) {
+      nextBtn.disabled = true;
+    }
 
     nextBtn.addEventListener('click', () => {
       if (isLastStep) {
@@ -1456,14 +1455,15 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Assemble main content
-    mainContent.appendChild(productsStrip);
-    mainContent.appendChild(totalSection);
-    mainContent.appendChild(navSection);
+    // Assemble nav section: Back | Total | Next
+    navSection.appendChild(backBtn);
+    navSection.appendChild(totalSection);
+    navSection.appendChild(nextBtn);
 
-    // Assemble footer
+    // Assemble footer: Progress -> Products -> Navigation
     this.elements.footer.appendChild(progressSection);
-    this.elements.footer.appendChild(mainContent);
+    this.elements.footer.appendChild(productsStrip);
+    this.elements.footer.appendChild(navSection);
   }
 
   // Helper: Calculate discount progress percentage
