@@ -30,6 +30,7 @@ export function SettingsPanel({
   activeSubSection,
   settings,
   onUpdate,
+  onBatchUpdate,
   customCssHelpOpen,
   setCustomCssHelpOpen,
 }: SettingsPanelProps) {
@@ -56,7 +57,7 @@ export function SettingsPanel({
       return <FooterPriceSettings settings={settings} onUpdate={onUpdate} />;
 
     case "footerButton":
-      return <FooterButtonSettings settings={settings} onUpdate={onUpdate} />;
+      return <FooterButtonSettings settings={settings} onUpdate={onUpdate} onBatchUpdate={onBatchUpdate} />;
 
     case "footerDiscountProgress":
       return <FooterDiscountProgressSettings settings={settings} onUpdate={onUpdate} />;

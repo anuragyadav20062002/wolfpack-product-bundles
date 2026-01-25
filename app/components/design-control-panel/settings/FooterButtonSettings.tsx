@@ -6,7 +6,7 @@ import type { SettingsComponentProps } from "./types";
  * Footer Button Settings Panel
  * Controls the appearance of Back and Next buttons in the footer
  */
-export function FooterButtonSettings({ settings, onUpdate }: SettingsComponentProps) {
+export function FooterButtonSettings({ settings, onUpdate, onBatchUpdate }: SettingsComponentProps) {
   return (
     <BlockStack gap="400">
       <Text as="h2" variant="headingMd">
@@ -58,8 +58,16 @@ export function FooterButtonSettings({ settings, onUpdate }: SettingsComponentPr
         label="Button Border Radius"
         value={settings.footerBackButtonBorderRadius}
         onChange={(value) => {
-          onUpdate("footerBackButtonBorderRadius", value as number);
-          onUpdate("footerNextButtonBorderRadius", value as number);
+          // Use batch update to prevent save bar flicker
+          if (onBatchUpdate) {
+            onBatchUpdate({
+              footerBackButtonBorderRadius: value as number,
+              footerNextButtonBorderRadius: value as number,
+            });
+          } else {
+            onUpdate("footerBackButtonBorderRadius", value as number);
+            onUpdate("footerNextButtonBorderRadius", value as number);
+          }
         }}
         min={0}
         max={67}
