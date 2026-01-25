@@ -1364,10 +1364,6 @@ class BundleWidgetFullPage {
 
     progressSection.innerHTML = `
       ${discountMessage ? `<div class="footer-discount-message">${discountMessage}</div>` : ''}
-      <div class="footer-progress-bar-container">
-        <div class="footer-progress-bar-bg"></div>
-        <div class="footer-progress-bar-fill" style="width: ${progressPercent}%"></div>
-      </div>
     `;
 
     // === SECTION 2: Selected Products Strip (below discount message) ===
