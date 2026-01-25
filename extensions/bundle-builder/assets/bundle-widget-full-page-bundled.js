@@ -2310,12 +2310,6 @@ class BundleWidgetFullPage {
     contentSection.className = 'full-page-content-section';
 
     // OPTIMISTIC RENDERING: Render non-product UI immediately
-    // 0. Render promotional banner if bundle has promotion text
-    const promoBanner = this.createPromoBanner();
-    if (promoBanner) {
-      contentSection.appendChild(promoBanner);
-    }
-
     // 1. Render step timeline at top
     const stepTimeline = this.createStepTimeline();
     contentSection.appendChild(stepTimeline);
