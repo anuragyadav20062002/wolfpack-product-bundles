@@ -231,6 +231,23 @@ export interface GeneralSettings {
 }
 
 /**
+ * Promo banner settings (full-page bundles)
+ */
+export interface PromoBannerSettings {
+  promoBannerEnabled: boolean;
+  promoBannerBgColor: string;
+  promoBannerTitleColor: string;
+  promoBannerTitleFontSize: number;
+  promoBannerTitleFontWeight: number;
+  promoBannerSubtitleColor: string;
+  promoBannerSubtitleFontSize: number;
+  promoBannerNoteColor: string;
+  promoBannerNoteFontSize: number;
+  promoBannerBorderRadius: number;
+  promoBannerPadding: number;
+}
+
+/**
  * Complete design settings for a bundle type
  */
 export interface DesignSettings extends
@@ -246,7 +263,8 @@ export interface DesignSettings extends
   StepBarSettings,
   TabSettings,
   EmptyStateSettings,
-  GeneralSettings {
+  GeneralSettings,
+  PromoBannerSettings {
   customCss: string;
 }
 

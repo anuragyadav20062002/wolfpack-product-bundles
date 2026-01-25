@@ -327,6 +327,19 @@ function generateCSSFromSettings(s: any, bundleType: string, customCss: string =
   --bundle-modal-button-text-color: ${s.modalButtonTextColor || '#FFFFFF'};
   --bundle-modal-button-border-radius: ${s.modalButtonBorderRadius || 8}px;
 
+  /* PROMO BANNER (Full-Page Bundles) */
+  --bundle-promo-banner-enabled: ${s.promoBannerEnabled !== false ? '1' : '0'};
+  --bundle-promo-banner-bg: ${s.promoBannerBgColor || '#F3F4F6'};
+  --bundle-promo-banner-title-color: ${s.promoBannerTitleColor || '#111827'};
+  --bundle-promo-banner-title-font-size: ${s.promoBannerTitleFontSize || 28}px;
+  --bundle-promo-banner-title-font-weight: ${s.promoBannerTitleFontWeight || 700};
+  --bundle-promo-banner-subtitle-color: ${s.promoBannerSubtitleColor || '#6B7280'};
+  --bundle-promo-banner-subtitle-font-size: ${s.promoBannerSubtitleFontSize || 16}px;
+  --bundle-promo-banner-note-color: ${s.promoBannerNoteColor || '#9CA3AF'};
+  --bundle-promo-banner-note-font-size: ${s.promoBannerNoteFontSize || 14}px;
+  --bundle-promo-banner-radius: ${s.promoBannerBorderRadius || 16}px;
+  --bundle-promo-banner-padding: ${s.promoBannerPadding || 32}px;
+
   /* FOOTER */
   --bundle-footer-bg: ${s.footerBgColor || globalFooterBg};
   --bundle-footer-total-bg: ${s.footerTotalBgColor || '#F6F6F6'};

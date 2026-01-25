@@ -2381,6 +2381,9 @@ class BundleWidgetFullPage {
   async renderFullPageLayout() {
     console.log('[FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
 
+    // Hide the page-title element from the theme (shows page name like "StrangeObjectsinmirror")
+    this.hidePageTitle();
+
     // Clear existing content
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
@@ -2390,6 +2393,12 @@ class BundleWidgetFullPage {
     contentSection.className = 'full-page-content-section';
 
     // OPTIMISTIC RENDERING: Render non-product UI immediately
+    // 0. Render promo banner at the very top (before step timeline)
+    const promoBanner = this.createPromoBanner();
+    if (promoBanner) {
+      contentSection.appendChild(promoBanner);
+    }
+
     // 1. Render step timeline at top
     const stepTimeline = this.createStepTimeline();
     contentSection.appendChild(stepTimeline);
@@ -2577,6 +2586,49 @@ class BundleWidgetFullPage {
     `;
 
     return header;
+  }
+
+  // Hide the page title element from the theme template
+  // This prevents showing the page name (e.g., "StrangeObjectsinmirror") above the bundle
+  hidePageTitle() {
+    // Try multiple selectors to find the page title element
+    const selectors = [
+      '.main-page-title',
+      '.page-title',
+      'h1.page-title',
+      '.page-width h1',
+      '.section-template--*__main-padding h1',
+      '[class*="main-padding"] h1.h0'
+    ];
+
+    for (const selector of selectors) {
+      try {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          // Check if this is a page title element (not our promo banner)
+          if (el.closest('.promo-banner')) return;
+
+          // Hide the element
+          el.style.display = 'none';
+          console.log(`[FULL_PAGE_LAYOUT] Hidden page title element: ${selector}`);
+        });
+      } catch (e) {
+        // Selector might be invalid, continue to next
+      }
+    }
+
+    // Also hide any parent containers that only contain the title
+    const pageTitleContainers = document.querySelectorAll('.page-width--narrow');
+    pageTitleContainers.forEach(container => {
+      // Only hide if the container has a page title and not much else
+      const hasPageTitle = container.querySelector('.main-page-title, .page-title, h1.h0');
+      const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
+
+      if (hasPageTitle && !hasOtherContent) {
+        container.style.display = 'none';
+        console.log('[FULL_PAGE_LAYOUT] Hidden page title container');
+      }
+    });
   }
 
   // Create promotional banner (Competitor-Inspired with gradient hero style)

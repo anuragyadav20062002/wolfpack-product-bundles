@@ -199,6 +199,19 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   modalButtonTextColor: "#FFFFFF",
   modalButtonBorderRadius: 8,
 
+  // Promo Banner (disabled for product page by default)
+  promoBannerEnabled: false,
+  promoBannerBgColor: "#F3F4F6",
+  promoBannerTitleColor: "#111827",
+  promoBannerTitleFontSize: 24,
+  promoBannerTitleFontWeight: 700,
+  promoBannerSubtitleColor: "#6B7280",
+  promoBannerSubtitleFontSize: 14,
+  promoBannerNoteColor: "#9CA3AF",
+  promoBannerNoteFontSize: 12,
+  promoBannerBorderRadius: 12,
+  promoBannerPadding: 24,
+
   // Custom CSS (empty by default)
   customCss: "",
 };
@@ -394,6 +407,19 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   modalButtonBgColor: "#000000",
   modalButtonTextColor: "#FFFFFF",
   modalButtonBorderRadius: 8,
+
+  // Promo Banner (enabled for full-page bundles with light-gray background)
+  promoBannerEnabled: true,
+  promoBannerBgColor: "#F3F4F6",
+  promoBannerTitleColor: "#111827",
+  promoBannerTitleFontSize: 28,
+  promoBannerTitleFontWeight: 700,
+  promoBannerSubtitleColor: "#6B7280",
+  promoBannerSubtitleFontSize: 16,
+  promoBannerNoteColor: "#9CA3AF",
+  promoBannerNoteFontSize: 14,
+  promoBannerBorderRadius: 16,
+  promoBannerPadding: 32,
 
   // Custom CSS (empty by default)
   customCss: "",
