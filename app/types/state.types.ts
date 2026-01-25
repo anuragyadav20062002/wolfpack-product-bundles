@@ -50,6 +50,7 @@ export interface ProductCardSettings {
   productCardSpacing: number;
   productCardBorderRadius: number;
   productCardPadding: number;
+  productCardMargin: number;
   productCardBorderWidth: number;
   productCardBorderColor: string;
   productCardShadow: string;
