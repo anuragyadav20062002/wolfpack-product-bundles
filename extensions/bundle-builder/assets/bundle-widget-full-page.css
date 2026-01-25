@@ -514,6 +514,7 @@
   );
   gap: var(--bundle-product-card-spacing, 20px);
   margin: 20px 0;
+  padding-top: 20px;
   width: 100%;
   justify-content: center; /* Center grid if cards don't fill width */
   overflow-x: auto; /* Allow horizontal scroll if needed */
