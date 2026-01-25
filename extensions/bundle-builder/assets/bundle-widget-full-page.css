@@ -521,16 +521,15 @@
 
 /* Product Card - Figma Professional Style */
 .product-card {
-  /* Fixed dimensions - maintain size regardless of grid layout */
+  /* Flexible dimensions - allow card to grow with content */
   width: var(--bundle-product-card-width, 280px);
-  height: var(--bundle-product-card-height, 420px);
   min-width: var(--bundle-product-card-width, 280px);
   max-width: var(--bundle-product-card-width, 280px);
   min-height: var(--bundle-product-card-height, 420px);
-  max-height: var(--bundle-product-card-height, 420px);
+  height: auto; /* Allow flexible height to prevent content cutoff */
 
   background: var(--bundle-product-card-bg, #FFFFFF);
-  border-radius: var(--bundle-product-card-border-radius, 8px);
+  border-radius: var(--bundle-product-card-border-radius, 16px);
   padding: var(--bundle-product-card-padding, 0); /* Default padding is 0 */
   display: flex;
   flex-direction: column;
@@ -538,15 +537,16 @@
   justify-content: space-between;
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 2px solid var(--bundle-product-card-border-color, #E5E7EB);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .product-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); /* Enhanced shadow for better depth */
+  border-color: var(--bundle-product-card-hover-border-color, #9CA3AF);
 }
 
 .product-card.selected {
@@ -603,7 +603,7 @@
   flex-direction: column;
   min-height: 0;
   width: 100%;
-  padding: 8px 12px 12px;
+  padding: 12px 16px 16px;
   box-sizing: border-box;
 }
 
@@ -665,29 +665,29 @@
 /* Spacer for Layout */
 .product-spacer {
   flex: 1;
-  min-height: 8px;
+  min-height: 4px;
 }
 
-/* Variant Selector - HIDDEN (moved to modal) */
+/* Variant Selector - Shown for products with variants */
 .variant-selector {
-  display: none; /* Hidden: variant selection now happens in modal */
+  display: block; /* Visible: show variant selector on product cards */
   width: 100%;
-  padding: 14px 16px;
-  border-radius: var(--bundle-variant-selector-border-radius, 10px);
-  border: 2px solid var(--bundle-full-page-variant-border, #E5E7EB);
+  padding: 10px 14px;
+  border-radius: var(--bundle-variant-selector-border-radius, 8px);
+  border: 1px solid var(--bundle-full-page-variant-border, #E5E7EB);
   background-color: var(--bundle-variant-selector-bg, #FFFFFF);
-  background-image: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
   color: var(--bundle-variant-selector-text-color, #000000);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   appearance: none;
-  background-image: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%), url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23303030' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat, no-repeat;
-  background-position: center, right 16px center;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  margin-bottom: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23303030' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
   font-family: inherit;
 }
 
@@ -768,12 +768,12 @@
   color: var(--bundle-button-text-color, #FFFFFF);
   border: none;
   border-radius: var(--bundle-button-border-radius, 10px);
-  padding: 16px 24px;
-  font-size: var(--bundle-button-font-size, 16px);
+  padding: 14px 20px;
+  font-size: var(--bundle-button-font-size, 14px);
   font-weight: var(--bundle-button-font-weight, 700);
   cursor: pointer;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
@@ -782,6 +782,7 @@
   letter-spacing: 0.5px;
   text-transform: uppercase;
   font-family: inherit;
+  margin-top: auto; /* Push button to bottom of card */
 }
 
 .product-add-btn:hover {
@@ -1177,7 +1178,7 @@
   font-size: 15px;
   font-weight: 600;
   color: var(--bundle-full-page-discount-text-color, #E65100);
-  margin-bottom: 12px;
+  margin-bottom: 0;
   font-family: inherit;
 }
 
