@@ -18,7 +18,7 @@ import {
 } from "@shopify/polaris";
 import { Modal, SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@shopify/polaris-icons";
 import { prisma } from "../db.server";
 import { processCss } from "../lib/css-sanitizer";
@@ -358,13 +358,41 @@ export default function DesignControlPanel() {
   // Create setter for customCss (the only one used directly in this component)
   const setCustomCss = (value: string) => updateSetting("customCss", value);
 
-  // Show/hide save bar based on unsaved changes (from hook)
+  // Ref for debouncing save bar visibility
+  const saveBarTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track whether save bar is currently shown
+  const saveBarVisibleRef = useRef(false);
+
+  // Show/hide save bar based on unsaved changes with debouncing to prevent flickering
   useEffect(() => {
-    if (hasUnsavedChanges) {
-      shopify.saveBar.show('dcp-save-bar');
-    } else {
-      shopify.saveBar.hide('dcp-save-bar');
+    // Clear any pending timeout
+    if (saveBarTimeoutRef.current) {
+      clearTimeout(saveBarTimeoutRef.current);
+      saveBarTimeoutRef.current = null;
     }
+
+    if (hasUnsavedChanges) {
+      // Show immediately when there are unsaved changes
+      if (!saveBarVisibleRef.current) {
+        shopify.saveBar.show('dcp-save-bar');
+        saveBarVisibleRef.current = true;
+      }
+    } else {
+      // Debounce hiding to prevent flickering during rapid state changes
+      saveBarTimeoutRef.current = setTimeout(() => {
+        if (!hasUnsavedChanges && saveBarVisibleRef.current) {
+          shopify.saveBar.hide('dcp-save-bar');
+          saveBarVisibleRef.current = false;
+        }
+      }, 100); // Small delay to prevent flickering
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (saveBarTimeoutRef.current) {
+        clearTimeout(saveBarTimeoutRef.current);
+      }
+    };
   }, [hasUnsavedChanges, shopify]);
 
   // Modal handlers
@@ -394,6 +422,7 @@ export default function DesignControlPanel() {
       // Hide save bar and mark as saved after successful save
       if (actionData.success) {
         shopify.saveBar.hide('dcp-save-bar');
+        saveBarVisibleRef.current = false;
         markAsSaved();
       }
     }
