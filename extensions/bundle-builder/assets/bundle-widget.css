@@ -2063,7 +2063,6 @@
   padding: 20px 16px;
   text-align: center;
   background: var(--bundle-background-color, #ffffff);
-  border-bottom: 1px solid var(--bundle-border-color, #e5e7eb);
 }
 
 .bundle-title {
