@@ -149,6 +149,13 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   addToCartButtonTextColor: "#FFFFFF",
   addToCartButtonBorderRadius: 67,
 
+  // Discount Pill (on Add to Cart button)
+  discountPillBgColor: "#22C55E",
+  discountPillTextColor: "#FFFFFF",
+  discountPillFontSize: 12,
+  discountPillFontWeight: 600,
+  discountPillBorderRadius: 20,
+
   // Toasts
   toastBgColor: "#000000",
   toastTextColor: "#FFFFFF",
@@ -357,6 +364,13 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   addToCartButtonBgColor: "#7132FF",
   addToCartButtonTextColor: "#FFFFFF",
   addToCartButtonBorderRadius: 67,
+
+  // Discount Pill (on Add to Cart button)
+  discountPillBgColor: "#22C55E",
+  discountPillTextColor: "#FFFFFF",
+  discountPillFontSize: 12,
+  discountPillFontWeight: 600,
+  discountPillBorderRadius: 20,
 
   // Toasts
   toastBgColor: "#7132FF",

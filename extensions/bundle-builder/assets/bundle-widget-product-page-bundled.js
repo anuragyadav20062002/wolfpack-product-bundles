@@ -1686,6 +1686,18 @@ class BundleWidgetProductPage {
         const imagesContainer = document.createElement('div');
         imagesContainer.className = 'step-images';
 
+        // Add image count class for CSS styling
+        const imageCount = productImages.length;
+        if (imageCount === 1) {
+          imagesContainer.classList.add('single-image');
+        } else if (imageCount === 2) {
+          imagesContainer.classList.add('two-images');
+        } else if (imageCount === 3) {
+          imagesContainer.classList.add('three-images');
+        } else {
+          imagesContainer.classList.add('four-plus-images');
+        }
+
         productImages.slice(0, 4).forEach(imageData => {
           const img = document.createElement('img');
           img.src = imageData.url;
@@ -1711,6 +1723,12 @@ class BundleWidgetProductPage {
         checkIcon.textContent = '✓';
         stepBox.appendChild(checkIcon);
       }
+
+      // Add step name at bottom for completed steps
+      const stepNameCompleted = document.createElement('p');
+      stepNameCompleted.className = 'step-name step-name-completed';
+      stepNameCompleted.textContent = step.name || `Step ${index + 1}`;
+      stepBox.appendChild(stepNameCompleted);
     } else {
       // Plus icon for empty steps
       const plusIcon = document.createElement('span');
@@ -1918,10 +1936,16 @@ class BundleWidgetProductPage {
       if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
         const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
         console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
+
+        // Calculate discount percentage for the pill
+        const discountPercentage = Math.round(((totalPrice - discountInfo.finalPrice) / totalPrice) * 100);
+        const showDiscountPill = discountPercentage > 0;
+
         button.innerHTML = `
           <span class="button-price-wrapper">
             <span class="button-price-strike">${originalPrice}</span>
             <span class="button-price-final">Add Bundle to Cart • ${formattedPrice}</span>
+            ${showDiscountPill ? `<span class="discount-pill">${discountPercentage}% off</span>` : ''}
           </span>
         `;
       } else {

@@ -409,6 +409,12 @@ function generateCSSFromSettings(s: any, bundleType: string, customCss: string =
   --bundle-add-to-cart-button-bg: ${s.addToCartButtonBgColor || globalPrimaryButton};
   --bundle-add-to-cart-button-text: ${s.addToCartButtonTextColor || globalButtonText};
   --bundle-add-to-cart-button-radius: ${s.addToCartButtonBorderRadius || 8}px;
+  /* Discount Pill (on Add to Cart button) */
+  --bundle-discount-pill-bg: ${s.discountPillBgColor || '#22C55E'};
+  --bundle-discount-pill-text: ${s.discountPillTextColor || '#FFFFFF'};
+  --bundle-discount-pill-font-size: ${s.discountPillFontSize || 12}px;
+  --bundle-discount-pill-font-weight: ${s.discountPillFontWeight || 600};
+  --bundle-discount-pill-border-radius: ${s.discountPillBorderRadius || 20}px;
   /* Toasts */
   --bundle-toast-bg: ${s.toastBgColor || globalPrimaryButton};
   --bundle-toast-text: ${s.toastTextColor || globalButtonText};

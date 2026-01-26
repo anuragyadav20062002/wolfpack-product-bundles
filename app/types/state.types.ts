@@ -216,6 +216,12 @@ export interface GeneralSettings {
   addToCartButtonBgColor: string;
   addToCartButtonTextColor: string;
   addToCartButtonBorderRadius: number;
+  // Discount Pill (on Add to Cart button)
+  discountPillBgColor: string;
+  discountPillTextColor: string;
+  discountPillFontSize: number;
+  discountPillFontWeight: number;
+  discountPillBorderRadius: number;
   toastBgColor: string;
   toastTextColor: string;
   bundleBgColor: string;
