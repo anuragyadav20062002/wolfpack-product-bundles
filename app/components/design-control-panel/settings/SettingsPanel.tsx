@@ -21,6 +21,7 @@ import { EmptyStateSettings } from "./EmptyStateSettings";
 import { AddToCartButtonSettings } from "./AddToCartButtonSettings";
 import { ToastsSettings } from "./ToastsSettings";
 import { CustomCssSettings } from "./CustomCssSettings";
+import { PromoBannerSettings } from "./PromoBannerSettings";
 
 /**
  * SettingsPanel - Orchestrator component that renders the appropriate
@@ -88,6 +89,9 @@ export function SettingsPanel({
 
     case "toasts":
       return <ToastsSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "promoBanner":
+      return <PromoBannerSettings settings={settings} onUpdate={onUpdate} />;
 
     case "customCss":
       return (

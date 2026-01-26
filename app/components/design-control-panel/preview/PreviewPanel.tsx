@@ -4,6 +4,7 @@ import { BundleFooterPreview } from "./BundleFooterPreview";
 import { BundleHeaderPreview } from "./BundleHeaderPreview";
 import { GeneralPreview } from "./GeneralPreview";
 import { StepBarPreview } from "./StepBarPreview";
+import { PromoBannerPreview } from "./PromoBannerPreview";
 
 interface PreviewPanelProps {
   activeSubSection: string;
@@ -18,6 +19,25 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
   // Global Colors and Custom CSS - No preview needed
   if (activeSubSection === "globalColors" || activeSubSection === "customCss") {
     return null;
+  }
+
+  // Promo Banner subsection (Full-page bundles only)
+  if (activeSubSection === "promoBanner") {
+    return (
+      <PromoBannerPreview
+        promoBannerEnabled={settings.promoBannerEnabled}
+        promoBannerBgColor={settings.promoBannerBgColor}
+        promoBannerTitleColor={settings.promoBannerTitleColor}
+        promoBannerTitleFontSize={settings.promoBannerTitleFontSize}
+        promoBannerTitleFontWeight={settings.promoBannerTitleFontWeight}
+        promoBannerSubtitleColor={settings.promoBannerSubtitleColor}
+        promoBannerSubtitleFontSize={settings.promoBannerSubtitleFontSize}
+        promoBannerNoteColor={settings.promoBannerNoteColor}
+        promoBannerNoteFontSize={settings.promoBannerNoteFontSize}
+        promoBannerBorderRadius={settings.promoBannerBorderRadius}
+        promoBannerPadding={settings.promoBannerPadding}
+      />
+    );
   }
 
   // Bundle Footer subsections

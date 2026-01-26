@@ -1755,6 +1755,12 @@ body:has(.bundle-widget-full-page) #MainContent {
   gap: 16px;
 }
 
+/* Main Image Container with Carousel Controls */
+.bundle-modal-main-image-container {
+  position: relative;
+  width: 100%;
+}
+
 .bundle-modal-main-image {
   width: 100%;
   aspect-ratio: 1;
@@ -1769,6 +1775,60 @@ body:has(.bundle-widget-full-page) #MainContent {
   height: 100%;
   object-fit: contain;
   padding: 16px;
+  transition: opacity 0.2s ease;
+}
+
+/* Carousel Navigation Buttons */
+.bundle-modal-carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #333;
+}
+
+.bundle-modal-carousel-btn:hover {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.bundle-modal-carousel-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.bundle-modal-carousel-prev {
+  left: 8px;
+}
+
+.bundle-modal-carousel-next {
+  right: 8px;
+}
+
+/* Image Counter */
+.bundle-modal-image-counter {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
 }
 
 .bundle-modal-thumbnails {
@@ -1873,6 +1933,81 @@ body:has(.bundle-widget-full-page) #MainContent {
   letter-spacing: 0.5px;
 }
 
+.bundle-modal-variant-selected-value {
+  font-weight: 400;
+  text-transform: none;
+  color: #666;
+}
+
+/* Variant Options Container - Button Style */
+.bundle-modal-variant-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Variant Button - Text/Size Style */
+.bundle-modal-variant-btn {
+  padding: 10px 16px;
+  min-width: 44px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.bundle-modal-variant-btn:hover:not(.unavailable) {
+  border-color: #999;
+  background: #f9f9f9;
+}
+
+.bundle-modal-variant-btn.selected {
+  border-color: var(--bundle-primary-color, #000);
+  background: var(--bundle-primary-color, #000);
+  color: #fff;
+}
+
+.bundle-modal-variant-btn.unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* Color Swatch Style */
+.bundle-modal-variant-options.color-options {
+  gap: 10px;
+}
+
+.bundle-modal-variant-btn.color-swatch {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.bundle-modal-variant-btn.color-swatch:hover:not(.unavailable) {
+  transform: scale(1.1);
+}
+
+.bundle-modal-variant-btn.color-swatch.selected {
+  border-color: var(--bundle-primary-color, #000);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--bundle-primary-color, #000);
+}
+
+.bundle-modal-variant-btn.color-swatch.unavailable {
+  opacity: 0.3;
+}
+
+/* Legacy Select Style (fallback) */
 .bundle-modal-variant-select {
   width: 100%;
   padding: 12px 14px;

@@ -1116,10 +1116,25 @@ class BundleProductModal {
           <button class="bundle-modal-close" aria-label="Close modal">&times;</button>
 
           <div class="bundle-modal-content">
-            <!-- Left Column: Image Gallery -->
+            <!-- Left Column: Image Gallery with Carousel -->
             <div class="bundle-modal-images">
-              <div class="bundle-modal-main-image">
-                <img src="" alt="Product image" id="modal-main-image">
+              <div class="bundle-modal-main-image-container">
+                <button class="bundle-modal-carousel-btn bundle-modal-carousel-prev" id="modal-carousel-prev" aria-label="Previous image">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <div class="bundle-modal-main-image">
+                  <img src="" alt="Product image" id="modal-main-image">
+                </div>
+                <button class="bundle-modal-carousel-btn bundle-modal-carousel-next" id="modal-carousel-next" aria-label="Next image">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+                <div class="bundle-modal-image-counter" id="modal-image-counter">
+                  <!-- Image counter will be inserted here (e.g., "1 / 5") -->
+                </div>
               </div>
               <div class="bundle-modal-thumbnails" id="modal-thumbnails">
                 <!-- Thumbnails will be inserted here -->
@@ -1135,10 +1150,12 @@ class BundleProductModal {
 
               <div class="bundle-modal-description" id="modal-product-description"></div>
 
+              <!-- Variant Selectors (above quantity) -->
               <div class="bundle-modal-variants" id="modal-variants-container">
                 <!-- Variant selectors will be inserted here -->
               </div>
 
+              <!-- Quantity Selector (below variants) -->
               <div class="bundle-modal-quantity">
                 <label class="bundle-modal-quantity-label">Quantity</label>
                 <div class="bundle-modal-quantity-controls">
@@ -1184,6 +1201,15 @@ class BundleProductModal {
       }
     });
 
+    // Carousel navigation buttons
+    document.getElementById('modal-carousel-prev').addEventListener('click', () => {
+      this.navigateCarousel(-1);
+    });
+
+    document.getElementById('modal-carousel-next').addEventListener('click', () => {
+      this.navigateCarousel(1);
+    });
+
     // Quantity controls
     document.getElementById('modal-qty-decrease').addEventListener('click', () => {
       this.updateQuantity(Math.max(1, this.selectedQuantity - 1));
@@ -1197,6 +1223,26 @@ class BundleProductModal {
     document.getElementById('modal-add-to-box').addEventListener('click', () => {
       this.addToBundle();
     });
+  }
+
+  /**
+   * Navigate carousel by direction
+   * @param {number} direction - -1 for previous, 1 for next
+   */
+  navigateCarousel(direction) {
+    const images = this.getProductImages();
+    if (images.length <= 1) return;
+
+    let newIndex = this.selectedImageIndex + direction;
+
+    // Wrap around
+    if (newIndex < 0) {
+      newIndex = images.length - 1;
+    } else if (newIndex >= images.length) {
+      newIndex = 0;
+    }
+
+    this.selectImage(newIndex);
   }
 
   /**
@@ -1315,6 +1361,9 @@ class BundleProductModal {
     const images = this.getProductImages();
     const mainImageEl = document.getElementById('modal-main-image');
     const thumbnailsContainer = document.getElementById('modal-thumbnails');
+    const imageCounter = document.getElementById('modal-image-counter');
+    const prevBtn = document.getElementById('modal-carousel-prev');
+    const nextBtn = document.getElementById('modal-carousel-next');
 
     console.log('[MODAL] Loading images:', images);
 
@@ -1323,6 +1372,9 @@ class BundleProductModal {
       mainImageEl.src = 'https://via.placeholder.com/600x600?text=No+Image';
       mainImageEl.alt = this.currentProduct.title;
       thumbnailsContainer.innerHTML = '';
+      imageCounter.style.display = 'none';
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
       return;
     }
 
@@ -1330,8 +1382,14 @@ class BundleProductModal {
     mainImageEl.src = images[0];
     mainImageEl.alt = this.currentProduct.title;
 
-    // Create thumbnails (only if multiple images)
+    // Show/hide carousel controls based on number of images
     if (images.length > 1) {
+      prevBtn.style.display = 'flex';
+      nextBtn.style.display = 'flex';
+      imageCounter.style.display = 'block';
+      this.updateImageCounter();
+
+      // Create thumbnails
       thumbnailsContainer.innerHTML = images.map((image, index) => `
         <div class="bundle-modal-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">
           <img src="${image}" alt="${this.currentProduct.title} - Image ${index + 1}">
@@ -1346,7 +1404,21 @@ class BundleProductModal {
         });
       });
     } else {
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+      imageCounter.style.display = 'none';
       thumbnailsContainer.innerHTML = '';
+    }
+  }
+
+  /**
+   * Update image counter display
+   */
+  updateImageCounter() {
+    const images = this.getProductImages();
+    const imageCounter = document.getElementById('modal-image-counter');
+    if (imageCounter && images.length > 1) {
+      imageCounter.textContent = `${this.selectedImageIndex + 1} / ${images.length}`;
     }
   }
 
@@ -1360,7 +1432,7 @@ class BundleProductModal {
 
     this.selectedImageIndex = index;
 
-    // Update main image
+    // Update main image with smooth transition
     const mainImageEl = document.getElementById('modal-main-image');
     mainImageEl.src = images[index];
 
@@ -1368,10 +1440,19 @@ class BundleProductModal {
     document.querySelectorAll('.bundle-modal-thumbnail').forEach((thumb, i) => {
       thumb.classList.toggle('active', i === index);
     });
+
+    // Update image counter
+    this.updateImageCounter();
+
+    // Scroll active thumbnail into view
+    const activeThumbnail = document.querySelector('.bundle-modal-thumbnail.active');
+    if (activeThumbnail) {
+      activeThumbnail.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
   }
 
   /**
-   * Create variant selector dropdowns
+   * Create variant selector with button/swatch style options
    */
   createVariantSelectors() {
     const variantsContainer = document.getElementById('modal-variants-container');
@@ -1415,7 +1496,10 @@ class BundleProductModal {
 
     console.log('[MODAL] Option names:', optionNames);
 
-    // Create dropdown for each option
+    // Store selected options for tracking
+    this.selectedOptions = {};
+
+    // Create button-style selector for each option
     variantsContainer.innerHTML = optionNames.map((optionName, optionIndex) => {
       // Get unique values for this option, filtering out undefined/null
       const optionValues = [...new Set(
@@ -1426,22 +1510,42 @@ class BundleProductModal {
 
       if (optionValues.length === 0) return '';
 
+      // Set first value as default selected
+      this.selectedOptions[optionIndex] = optionValues[0];
+
+      // Detect if this is likely a color option
+      const isColorOption = this.isColorOption(optionName, optionValues);
+
       return `
         <div class="bundle-modal-variant-group">
-          <label class="bundle-modal-variant-label">${optionName}</label>
-          <select class="bundle-modal-variant-select" data-option-index="${optionIndex}">
-            ${optionValues.map(value => `
-              <option value="${value}">${value}</option>
-            `).join('')}
-          </select>
+          <label class="bundle-modal-variant-label">${optionName}: <span class="bundle-modal-variant-selected-value" data-option-index="${optionIndex}">${optionValues[0]}</span></label>
+          <div class="bundle-modal-variant-options ${isColorOption ? 'color-options' : ''}" data-option-index="${optionIndex}">
+            ${optionValues.map((value, valueIndex) => {
+              const isSelected = valueIndex === 0;
+              const colorStyle = isColorOption ? this.getColorStyle(value) : '';
+              return `
+                <button type="button"
+                  class="bundle-modal-variant-btn ${isSelected ? 'selected' : ''} ${isColorOption ? 'color-swatch' : ''}"
+                  data-option-index="${optionIndex}"
+                  data-value="${value}"
+                  ${isColorOption && colorStyle ? `style="${colorStyle}"` : ''}
+                  title="${value}">
+                  ${isColorOption ? '' : value}
+                </button>
+              `;
+            }).join('')}
+          </div>
         </div>
       `;
     }).filter(html => html !== '').join('');
 
-    // Add change handlers to variant selectors
-    variantsContainer.querySelectorAll('.bundle-modal-variant-select').forEach((select) => {
-      select.addEventListener('change', () => {
-        this.updateSelectedVariant();
+    // Add click handlers to variant buttons
+    variantsContainer.querySelectorAll('.bundle-modal-variant-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const optionIndex = parseInt(btn.dataset.optionIndex);
+        const value = btn.dataset.value;
+        this.selectVariantOption(optionIndex, value);
       });
     });
 
@@ -1450,20 +1554,96 @@ class BundleProductModal {
   }
 
   /**
-   * Update selected variant based on dropdown selections
+   * Check if option is likely a color option
+   * @param {string} optionName - Option name
+   * @param {string[]} values - Option values
+   * @returns {boolean}
+   */
+  isColorOption(optionName, values) {
+    const colorKeywords = ['color', 'colour', 'colors', 'colours'];
+    if (colorKeywords.some(keyword => optionName.toLowerCase().includes(keyword))) {
+      return true;
+    }
+    // Check if values look like color names
+    const commonColors = ['red', 'blue', 'green', 'black', 'white', 'yellow', 'pink', 'purple', 'orange', 'brown', 'grey', 'gray', 'navy', 'beige', 'cream'];
+    const colorMatches = values.filter(v => commonColors.some(c => v.toLowerCase().includes(c)));
+    return colorMatches.length > values.length / 2;
+  }
+
+  /**
+   * Get CSS style for color swatch
+   * @param {string} colorName - Color name
+   * @returns {string} CSS style string
+   */
+  getColorStyle(colorName) {
+    // Map common color names to CSS colors
+    const colorMap = {
+      'red': '#DC2626', 'blue': '#2563EB', 'green': '#16A34A', 'black': '#000000',
+      'white': '#FFFFFF', 'yellow': '#EAB308', 'pink': '#EC4899', 'purple': '#9333EA',
+      'orange': '#EA580C', 'brown': '#92400E', 'grey': '#6B7280', 'gray': '#6B7280',
+      'navy': '#1E3A8A', 'beige': '#D4C4A8', 'cream': '#FFFDD0', 'gold': '#D4AF37',
+      'silver': '#C0C0C0', 'teal': '#0D9488', 'coral': '#F87171', 'mint': '#A7F3D0'
+    };
+
+    const lowerName = colorName.toLowerCase();
+    for (const [key, value] of Object.entries(colorMap)) {
+      if (lowerName.includes(key)) {
+        return `background-color: ${value}`;
+      }
+    }
+
+    // If no match, try to use the value directly as a color
+    if (lowerName.startsWith('#') || lowerName.startsWith('rgb')) {
+      return `background-color: ${colorName}`;
+    }
+
+    // Default gradient for unknown colors
+    return 'background: linear-gradient(135deg, #f0f0f0, #e0e0e0)';
+  }
+
+  /**
+   * Select a variant option
+   * @param {number} optionIndex - Index of the option (0, 1, or 2)
+   * @param {string} value - Selected value
+   */
+  selectVariantOption(optionIndex, value) {
+    // Update selected options
+    this.selectedOptions[optionIndex] = value;
+
+    // Update button states
+    const optionsContainer = document.querySelector(`.bundle-modal-variant-options[data-option-index="${optionIndex}"]`);
+    if (optionsContainer) {
+      optionsContainer.querySelectorAll('.bundle-modal-variant-btn').forEach((btn) => {
+        btn.classList.toggle('selected', btn.dataset.value === value);
+      });
+    }
+
+    // Update selected value label
+    const valueLabel = document.querySelector(`.bundle-modal-variant-selected-value[data-option-index="${optionIndex}"]`);
+    if (valueLabel) {
+      valueLabel.textContent = value;
+    }
+
+    // Update selected variant
+    this.updateSelectedVariant();
+  }
+
+  /**
+   * Update selected variant based on button selections
    */
   updateSelectedVariant() {
     const variants = this.currentProduct.variants || [];
-    const selectors = document.querySelectorAll('.bundle-modal-variant-select');
 
-    // Get selected option values
-    const selectedOptions = Array.from(selectors).map(select => select.value);
+    // Get selected option values from our stored selections
+    const selectedOptionValues = Object.keys(this.selectedOptions || {})
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map(key => this.selectedOptions[key]);
 
-    console.log('[MODAL] Looking for variant with options:', selectedOptions);
+    console.log('[MODAL] Looking for variant with options:', selectedOptionValues);
 
     // Find matching variant
     this.selectedVariant = variants.find(variant => {
-      return selectedOptions.every((value, index) => {
+      return selectedOptionValues.every((value, index) => {
         const variantValue = variant[`option${index + 1}`];
         return variantValue === value;
       });
@@ -1485,6 +1665,47 @@ class BundleProductModal {
 
     // Update variant image if available
     this.updateVariantImage();
+
+    // Update unavailable option buttons
+    this.updateOptionAvailability();
+  }
+
+  /**
+   * Update availability state of variant option buttons
+   * Marks options as unavailable if no variant exists with that combination
+   */
+  updateOptionAvailability() {
+    const variants = this.currentProduct.variants || [];
+    if (!this.selectedOptions) return;
+
+    const optionIndices = Object.keys(this.selectedOptions).map(k => parseInt(k));
+
+    optionIndices.forEach(optionIndex => {
+      const optionsContainer = document.querySelector(`.bundle-modal-variant-options[data-option-index="${optionIndex}"]`);
+      if (!optionsContainer) return;
+
+      optionsContainer.querySelectorAll('.bundle-modal-variant-btn').forEach(btn => {
+        const testValue = btn.dataset.value;
+
+        // Check if any variant exists with this option value + current other selections
+        const hasAvailableVariant = variants.some(variant => {
+          // Check if variant has this option value
+          if (variant[`option${optionIndex + 1}`] !== testValue) return false;
+
+          // Check if variant matches other selected options
+          for (const [idx, value] of Object.entries(this.selectedOptions)) {
+            if (parseInt(idx) === optionIndex) continue;
+            if (variant[`option${parseInt(idx) + 1}`] !== value) return false;
+          }
+
+          // Check if variant is available
+          return variant.available !== false && variant.availableForSale !== false;
+        });
+
+        btn.classList.toggle('unavailable', !hasAvailableVariant);
+        btn.disabled = !hasAvailableVariant;
+      });
+    });
   }
 
   /**
