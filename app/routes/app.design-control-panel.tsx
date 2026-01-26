@@ -600,6 +600,17 @@ export default function DesignControlPanel() {
                   isActive={activeSubSection === "toasts"}
                 />
               </Collapsible>
+
+              <Divider />
+
+              {/* Promo Banner Section (Full-Page Bundles) */}
+              <NavigationItem
+                label="Promo Banner"
+                sectionKey="promoBanner"
+                onClick={() => handleSubSectionClick("promoBanner")}
+                isExpanded={expandedSection === "promoBanner"}
+                isActive={activeSubSection === "promoBanner"}
+              />
             </div>
 
             {/* Right Side - Visual Preview + Settings */}
