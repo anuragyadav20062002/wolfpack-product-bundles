@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { InlineStack, TextField } from "@shopify/polaris";
 
 interface ColorPickerProps {
@@ -10,6 +10,14 @@ interface ColorPickerProps {
 export function ColorPicker({ label, value, onChange }: ColorPickerProps) {
   const [localValue, setLocalValue] = useState(value);
   const colorInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync localValue with value prop when it changes from parent
+  // This prevents stale state when settings are updated externally
+  useEffect(() => {
+    if (value !== localValue && /^#[0-9A-F]{6}$/i.test(value)) {
+      setLocalValue(value);
+    }
+  }, [value]);
 
   const handleTextChange = (newValue: string) => {
     setLocalValue(newValue);
