@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-01-23
-**Last Updated:** 2026-01-26 09:30
+**Last Updated:** 2026-01-26 10:00
 
 ---
 
@@ -145,6 +145,44 @@
 **Phase 4 Status:** Complete
 
 **Note:** Phase 3 (Widget JavaScript Files) skipped temporarily - requires build system changes that could introduce breaking changes. Will revisit in a future session.
+
+### 2026-01-26 10:00 - Phase 5: Webhook Processor Service
+
+**Files Created:**
+- `app/services/webhooks/types.ts` - Webhook type definitions (100 lines)
+- `app/services/webhooks/handlers/subscription.server.ts` - Subscription and billing handlers (395 lines)
+- `app/services/webhooks/handlers/product.server.ts` - Product update/delete handlers (218 lines)
+- `app/services/webhooks/handlers/gdpr.server.ts` - GDPR compliance handlers (197 lines)
+- `app/services/webhooks/handlers/index.ts` - Re-export barrel file
+- `app/services/webhooks/processor.server.ts` - Main processor with routing logic (178 lines)
+- `app/services/webhooks/index.ts` - Module barrel file
+
+**Handlers Extracted:**
+1. `handleSubscriptionUpdate` - Subscription status updates and downgrades
+2. `handleSubscriptionCancelled` - Subscription cancellation handling
+3. `handleSubscriptionApproachingCap` - Usage-based billing cap warnings
+4. `handlePurchaseUpdate` - One-time purchase tracking
+5. `handleProductUpdate` - Product availability monitoring for bundles
+6. `handleProductDelete` - Product removal from bundle steps
+7. `handleCustomerDataRequest` - GDPR data request compliance
+8. `handleCustomerRedact` - GDPR customer data redaction
+9. `handleShopRedact` - GDPR shop data deletion
+
+**Utility Functions Extracted:**
+- `mapSubscriptionStatus` - Maps Shopify status to app schema
+
+**Changes Made to Original File:**
+- Updated to re-export from refactored module for backward compatibility
+- Original file reduced from 1,168 lines to 21 lines (re-export only)
+
+**File Size Reduction Summary:**
+- Original: 1,168 lines
+- After refactoring: Split into modular files
+- Main processor: 178 lines (85% reduction)
+
+**TypeScript Verification:** Passed (no errors in refactored files)
+
+**Phase 5 Status:** Complete
 
 ## Overview
 
@@ -405,7 +443,7 @@ app/components/billing/
 - [x] Phase 2: Product Page Bundle Configure Route ✅ Completed (4,028 → 2,399 lines, 40% reduction)
 - [ ] Phase 3: Widget JavaScript Files (deferred - requires build system changes)
 - [x] Phase 4: Dashboard Route ✅ Completed (1,429 → 903 lines, 37% reduction)
-- [ ] Phase 5: Webhook Processor Service
+- [x] Phase 5: Webhook Processor Service ✅ Completed (1,168 → 178 lines, 85% reduction)
 - [ ] Phase 6: Widget Installation Service
 - [ ] Phase 7: Design Control Panel Route
 - [ ] Phase 8: API Design Settings
