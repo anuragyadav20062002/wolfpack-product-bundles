@@ -1258,6 +1258,18 @@ class BundleProductModal {
     this.selectedQuantity = 1;
     this.selectedImageIndex = 0;
 
+    // Detect existing variants of this product
+    const stepIndex = this.widget.currentStepIndex;
+    const existingVariants = this.widget.selectedProducts?.[stepIndex] || {};
+    const productVariantIds = product.variants?.map(v => String(v.id)) || [];
+    const alreadySelectedVariants = productVariantIds.filter(id => existingVariants[id] > 0);
+
+    this.existingVariantCount = alreadySelectedVariants.length;
+    this.existingTotalQuantity = alreadySelectedVariants.reduce(
+      (sum, id) => sum + existingVariants[id],
+      0
+    );
+
     // Populate modal content
     this.populateModal();
 
@@ -1297,6 +1309,9 @@ class BundleProductModal {
       descriptionEl.style.display = 'none';
     }
 
+    // Show existing variants notice if applicable
+    this.showExistingVariantsNotice();
+
     // Load images
     this.loadImages();
 
@@ -1315,6 +1330,37 @@ class BundleProductModal {
 
     // Reset quantity display
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
+  }
+
+  /**
+   * Show notice about existing variants of this product
+   */
+  showExistingVariantsNotice() {
+    // Remove any existing notice first
+    const existingNotice = document.getElementById('existing-variants-notice');
+    if (existingNotice) {
+      existingNotice.remove();
+    }
+
+    // Only show notice if there are existing variants
+    if (this.existingVariantCount > 0) {
+      const notice = document.createElement('div');
+      notice.id = 'existing-variants-notice';
+      notice.className = 'existing-variants-notice';
+      notice.innerHTML = `
+        <div class="notice-icon">ℹ️</div>
+        <div class="notice-text">
+          <strong>You've already added this product</strong>
+          <span>${this.existingTotalQuantity} item(s) across ${this.existingVariantCount} variant(s)</span>
+        </div>
+      `;
+
+      // Insert after description and before variants
+      const variantsContainer = document.getElementById('modal-variants-container');
+      if (variantsContainer && variantsContainer.parentNode) {
+        variantsContainer.parentNode.insertBefore(notice, variantsContainer);
+      }
+    }
   }
 
   /**
@@ -3304,25 +3350,52 @@ class BundleWidgetFullPage {
     productsStrip.className = 'footer-products-strip';
 
     if (allSelectedProducts.length > 0) {
-      allSelectedProducts.forEach(item => {
+      // Group variants by product for multi-variant display
+      const groupedProducts = this.groupVariantsByProduct(allSelectedProducts);
+
+      groupedProducts.forEach(productGroup => {
         const productThumb = document.createElement('div');
         productThumb.className = 'footer-product-thumb';
+
+        const totalQuantity = productGroup.totalQuantity;
+        const variantCount = productGroup.variants.length;
+
+        // Determine quantity text based on number of variants
+        const quantityText = variantCount > 1
+          ? `${variantCount} variants (${totalQuantity} items)`
+          : `x${totalQuantity}`;
+
         productThumb.innerHTML = `
           <div class="thumb-image-wrapper">
-            <img src="${item.image}" alt="${item.title}" class="thumb-image">
-            <button class="thumb-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">×</button>
+            <img src="${productGroup.image}" alt="${productGroup.title}" class="thumb-image">
+            <button class="thumb-remove" data-step="${productGroup.stepIndex}" data-product-id="${productGroup.productId}">×</button>
           </div>
           <div class="thumb-info">
-            <span class="thumb-title">${this.truncateTitle(item.title, 20)}</span>
-            <span class="thumb-price">${CurrencyManager.formatMoney(item.price, currencyInfo.display.format)} x${item.quantity}</span>
+            <span class="thumb-title">${this.truncateTitle(productGroup.title, 20)}</span>
+            <span class="thumb-price">${CurrencyManager.formatMoney(productGroup.totalPrice, currencyInfo.display.format)} ${quantityText}</span>
+            ${variantCount > 1 ? '<span class="view-variants-link">View variants</span>' : ''}
           </div>
         `;
 
         const removeBtn = productThumb.querySelector('.thumb-remove');
         removeBtn.addEventListener('click', () => {
-          this.updateProductSelection(item.stepIndex, item.variantId, 0);
+          // Remove all variants of this product
+          productGroup.variants.forEach(variant => {
+            this.updateProductSelection(variant.stepIndex, variant.variantId, 0);
+          });
           this.renderFullPageLayout();
         });
+
+        // Add "View variants" click handler
+        if (variantCount > 1) {
+          const viewLink = productThumb.querySelector('.view-variants-link');
+          if (viewLink) {
+            viewLink.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.showVariantBreakdown(productGroup);
+            });
+          }
+        }
 
         productsStrip.appendChild(productThumb);
       });
@@ -3440,6 +3513,123 @@ class BundleWidgetFullPage {
     });
 
     return allProducts;
+  }
+
+  /**
+   * Group selected variants by product for multi-variant display
+   * @param {Array} selectedProducts - Array of selected product variants
+   * @returns {Array} Array of product groups with their variants
+   */
+  groupVariantsByProduct(selectedProducts) {
+    const productMap = new Map();
+
+    selectedProducts.forEach(item => {
+      // Find the full product data
+      const product = this.stepProductData[item.stepIndex]?.find(p => {
+        // Check if this product has this variant
+        return p.variants?.some(v => String(v.id) === String(item.variantId)) || String(p.id) === String(item.variantId);
+      });
+
+      if (!product) return;
+
+      const productId = product.id || product.productId;
+      const key = `${item.stepIndex}-${productId}`;
+
+      if (!productMap.has(key)) {
+        productMap.set(key, {
+          productId,
+          stepIndex: item.stepIndex,
+          title: product.title || item.title,
+          image: product.imageUrl || product.image?.src || item.image,
+          variants: [],
+          totalQuantity: 0,
+          totalPrice: 0
+        });
+      }
+
+      const group = productMap.get(key);
+      group.variants.push(item);
+      group.totalQuantity += item.quantity;
+      group.totalPrice += (item.price * item.quantity);
+    });
+
+    return Array.from(productMap.values());
+  }
+
+  /**
+   * Show variant breakdown popup for a product with multiple variants
+   * @param {Object} productGroup - Product group with multiple variants
+   */
+  showVariantBreakdown(productGroup) {
+    const overlay = document.createElement('div');
+    overlay.className = 'variant-breakdown-overlay';
+
+    const popup = document.createElement('div');
+    popup.className = 'variant-breakdown-popup';
+
+    // Get variant details
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variantsHtml = productGroup.variants.map(variant => {
+      const product = this.stepProductData[variant.stepIndex]?.find(p =>
+        p.variants?.some(v => String(v.id) === String(variant.variantId)) || String(p.id) === String(variant.variantId)
+      );
+      const variantObj = product?.variants?.find(v => String(v.id) === String(variant.variantId));
+      const variantTitle = variantObj?.title || variant.title || 'Variant';
+
+      return `
+        <div class="variant-breakdown-item">
+          <img src="${variant.image}" alt="${variantTitle}" />
+          <div class="variant-info">
+            <span class="variant-title">${variantTitle}</span>
+            <span class="variant-quantity">Qty: ${variant.quantity} × ${CurrencyManager.formatMoney(variant.price, currencyInfo.display.format)}</span>
+          </div>
+          <button class="remove-variant-btn" data-step="${variant.stepIndex}" data-variant-id="${variant.variantId}">Remove</button>
+        </div>
+      `;
+    }).join('');
+
+    popup.innerHTML = `
+      <div class="variant-breakdown-header">
+        <h3>${productGroup.title}</h3>
+        <button class="close-breakdown-btn">&times;</button>
+      </div>
+      <div class="variant-breakdown-list">
+        ${variantsHtml}
+      </div>
+      <button class="add-another-variant-btn">+ Add Another Variant</button>
+    `;
+
+    // Event handlers
+    popup.querySelector('.close-breakdown-btn').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+    });
+
+    popup.querySelectorAll('.remove-variant-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const stepIndex = parseInt(e.target.dataset.step);
+        const variantId = e.target.dataset.variantId;
+        this.updateProductSelection(stepIndex, variantId, 0);
+        document.body.removeChild(overlay);
+        this.renderFullPageLayout();
+      });
+    });
+
+    popup.querySelector('.add-another-variant-btn').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      // Find the product and open modal for it
+      const product = this.stepProductData[productGroup.stepIndex]?.find(p => String(p.id) === String(productGroup.productId));
+      const step = this.selectedBundle.steps[productGroup.stepIndex];
+      if (product && step && this.productModal) {
+        this.productModal.open(product, step);
+      }
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) document.body.removeChild(overlay);
+    });
   }
 
   // Helper: Find product by variant ID in a step

@@ -617,16 +617,13 @@
   min-height: calc(1.4em * 2);
 }
 
-/* Price Row with Background from DCP */
+/* Price Row - Integrated into Product Card */
 .product-price-row {
   margin: 12px 0;
   text-align: center;
   flex-shrink: 0;
   position: relative;
-  background: var(--bundle-product-price-bg-color, #F0F8F0);
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  z-index: 15; /* Above overlay's z-index: 10 */
   display: var(--bundle-product-price-display, block);
   white-space: nowrap;
 }
@@ -1189,14 +1186,35 @@
 
 /* Products Strip - Centered below discount message */
 .full-page-footer.redesigned > .footer-products-strip {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 8px 40px 16px;
   max-width: 100%;
-  justify-content: center;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0.1);
+}
+
+/* Webkit scrollbar styling for vertical scroll */
+.full-page-footer.redesigned > .footer-products-strip::-webkit-scrollbar {
+  width: 8px;
+}
+
+.full-page-footer.redesigned > .footer-products-strip::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.full-page-footer.redesigned > .footer-products-strip::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.full-page-footer.redesigned > .footer-products-strip::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .full-page-footer.redesigned > .footer-products-strip:empty {
@@ -1400,10 +1418,19 @@
 }
 
 /* Responsive Footer */
+/* Tablet: 3 columns */
+@media (max-width: 1024px) {
+  .full-page-footer.redesigned > .footer-products-strip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Mobile: 2 columns */
 @media (max-width: 768px) {
   .full-page-footer.redesigned > .footer-products-strip {
+    grid-template-columns: repeat(2, 1fr);
+    max-height: 400px;
     padding: 8px 16px 12px;
-    justify-content: flex-start;
   }
 
   .full-page-footer.redesigned > .footer-nav-section {
@@ -2215,4 +2242,237 @@ body:has(.bundle-widget-full-page) #MainContent {
 /* Prevent body scroll when modal is open */
 body.modal-open {
   overflow: hidden;
+}
+
+/* ============================================================================
+   MULTI-VARIANT SELECTION STYLES
+   ============================================================================ */
+
+/* Existing Variants Notice in Modal */
+.existing-variants-notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  background: #E8F4FD;
+  border: 1px solid #90CAF9;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.existing-variants-notice .notice-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.existing-variants-notice .notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.existing-variants-notice .notice-text strong {
+  font-size: 14px;
+  color: #1976D2;
+  font-weight: 600;
+}
+
+.existing-variants-notice .notice-text span {
+  font-size: 13px;
+  color: #1976D2;
+}
+
+/* View Variants Link in Footer */
+.view-variants-link {
+  font-size: 11px;
+  color: #1976D2;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.view-variants-link:hover {
+  color: #1565C0;
+}
+
+/* Variant Breakdown Popup Overlay */
+.variant-breakdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+}
+
+/* Variant Breakdown Popup */
+.variant-breakdown-popup {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Popup Header */
+.variant-breakdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.variant-breakdown-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-breakdown-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.close-breakdown-btn:hover {
+  background: #F5F5F5;
+}
+
+/* Variant List */
+.variant-breakdown-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Individual Variant Item */
+.variant-breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+.variant-breakdown-item:hover {
+  border-color: #BDBDBD;
+}
+
+.variant-breakdown-item img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.variant-breakdown-item .variant-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.variant-breakdown-item .variant-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.variant-breakdown-item .variant-quantity {
+  font-size: 13px;
+  color: #666;
+}
+
+.variant-breakdown-item .remove-variant-btn {
+  padding: 6px 12px;
+  background: #F44336;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.variant-breakdown-item .remove-variant-btn:hover {
+  background: #D32F2F;
+}
+
+/* Add Another Variant Button */
+.add-another-variant-btn {
+  width: 100%;
+  padding: 12px;
+  background: #1976D2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-another-variant-btn:hover {
+  background: #1565C0;
+}
+
+/* Responsive adjustments for variant breakdown */
+@media (max-width: 768px) {
+  .variant-breakdown-popup {
+    padding: 20px;
+    max-width: 95%;
+  }
+
+  .variant-breakdown-header h3 {
+    font-size: 16px;
+  }
+
+  .variant-breakdown-item img {
+    width: 50px;
+    height: 50px;
+  }
+
+  .variant-breakdown-item .variant-title {
+    font-size: 13px;
+  }
+
+  .variant-breakdown-item .variant-quantity {
+    font-size: 12px;
+  }
 }

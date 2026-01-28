@@ -172,6 +172,20 @@ export async function action({ request }: ActionFunctionArgs) {
       discountTextFontSize: settings.discountTextFontSize,
     };
 
+    const promoBannerSettings = {
+      promoBannerEnabled: settings.promoBannerEnabled,
+      promoBannerBgColor: settings.promoBannerBgColor,
+      promoBannerTitleColor: settings.promoBannerTitleColor,
+      promoBannerTitleFontSize: settings.promoBannerTitleFontSize,
+      promoBannerTitleFontWeight: settings.promoBannerTitleFontWeight,
+      promoBannerSubtitleColor: settings.promoBannerSubtitleColor,
+      promoBannerSubtitleFontSize: settings.promoBannerSubtitleFontSize,
+      promoBannerNoteColor: settings.promoBannerNoteColor,
+      promoBannerNoteFontSize: settings.promoBannerNoteFontSize,
+      promoBannerBorderRadius: settings.promoBannerBorderRadius,
+      promoBannerPadding: settings.promoBannerPadding,
+    };
+
     await prisma.designSettings.upsert({
       where: {
         shopId_bundleType: {
@@ -233,6 +247,7 @@ export async function action({ request }: ActionFunctionArgs) {
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
         generalSettings: generalSettings,
+        promoBannerSettings: promoBannerSettings,
       },
       update: {
         customCss: settings.customCss || null,
@@ -286,6 +301,7 @@ export async function action({ request }: ActionFunctionArgs) {
         footerSettings: footerSettings,
         stepBarSettings: stepBarSettings,
         generalSettings: generalSettings,
+        promoBannerSettings: promoBannerSettings,
       },
     });
 

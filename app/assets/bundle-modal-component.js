@@ -190,6 +190,18 @@ class BundleProductModal {
     this.selectedQuantity = 1;
     this.selectedImageIndex = 0;
 
+    // Detect existing variants of this product
+    const stepIndex = this.widget.currentStepIndex;
+    const existingVariants = this.widget.selectedProducts?.[stepIndex] || {};
+    const productVariantIds = product.variants?.map(v => String(v.id)) || [];
+    const alreadySelectedVariants = productVariantIds.filter(id => existingVariants[id] > 0);
+
+    this.existingVariantCount = alreadySelectedVariants.length;
+    this.existingTotalQuantity = alreadySelectedVariants.reduce(
+      (sum, id) => sum + existingVariants[id],
+      0
+    );
+
     // Populate modal content
     this.populateModal();
 
@@ -229,6 +241,9 @@ class BundleProductModal {
       descriptionEl.style.display = 'none';
     }
 
+    // Show existing variants notice if applicable
+    this.showExistingVariantsNotice();
+
     // Load images
     this.loadImages();
 
@@ -247,6 +262,37 @@ class BundleProductModal {
 
     // Reset quantity display
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
+  }
+
+  /**
+   * Show notice about existing variants of this product
+   */
+  showExistingVariantsNotice() {
+    // Remove any existing notice first
+    const existingNotice = document.getElementById('existing-variants-notice');
+    if (existingNotice) {
+      existingNotice.remove();
+    }
+
+    // Only show notice if there are existing variants
+    if (this.existingVariantCount > 0) {
+      const notice = document.createElement('div');
+      notice.id = 'existing-variants-notice';
+      notice.className = 'existing-variants-notice';
+      notice.innerHTML = `
+        <div class="notice-icon">ℹ️</div>
+        <div class="notice-text">
+          <strong>You've already added this product</strong>
+          <span>${this.existingTotalQuantity} item(s) across ${this.existingVariantCount} variant(s)</span>
+        </div>
+      `;
+
+      // Insert after description and before variants
+      const variantsContainer = document.getElementById('modal-variants-container');
+      if (variantsContainer && variantsContainer.parentNode) {
+        variantsContainer.parentNode.insertBefore(notice, variantsContainer);
+      }
+    }
   }
 
   /**

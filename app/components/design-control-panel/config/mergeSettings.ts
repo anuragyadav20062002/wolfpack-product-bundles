@@ -39,6 +39,7 @@ export function mergeSettings(
   const footerSettings = (dbSettings.footerSettings as Record<string, any>) || {};
   const stepBarSettings = (dbSettings.stepBarSettings as Record<string, any>) || {};
   const generalSettings = (dbSettings.generalSettings as Record<string, any>) || {};
+  const promoBannerSettings = (dbSettings.promoBannerSettings as Record<string, any>) || {};
 
   return {
     // Start with defaults
@@ -117,6 +118,7 @@ export function mergeSettings(
     ...footerSettings,
     ...stepBarSettings,
     ...generalSettings,
+    ...promoBannerSettings,
   };
 }
 
