@@ -2183,14 +2183,39 @@ class BundleWidgetFullPage {
         // Storefront API: prioritize variant image, fallback to product featured image
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
+        // Process variants array for variant selection in modal
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        // Process options array for variant selector labels
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return [{
-          id: this.extractId(defaultVariant?.id || product.id),
+          id: this.extractId(product.id),
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
-          available: defaultVariant?.available === true // Store availability (always boolean from API)
+          available: defaultVariant?.available === true,
+          // Preserve variants and options for variant selection in modal
+          variants: processedVariants,
+          options: processedOptions,
+          // Preserve images array for modal gallery
+          images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+          description: product.description || ''
         }];
       }
     });

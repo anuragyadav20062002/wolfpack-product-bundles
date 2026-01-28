@@ -87,6 +87,15 @@ class BundleWidgetProductPage {
     this.config = {};
     this.elements = {};
 
+    // Initialize product modal for variant selection (if BundleProductModal is available)
+    this.productModal = null;
+    if (window.BundleProductModal) {
+      this.productModal = new window.BundleProductModal(this);
+      console.log('[PDP_WIDGET] ✅ BundleProductModal initialized');
+    } else {
+      console.warn('[PDP_WIDGET] ⚠️ BundleProductModal not loaded, variant modal disabled');
+    }
+
     // Call async init but don't block constructor
     this.init().catch(error => {
       console.error('[WIDGET_INIT] ❌ Initialization failed:', error);
@@ -569,12 +578,217 @@ class BundleWidgetProductPage {
     }
   }
 
-  // Product-page bundle layout (original vertical step boxes)
+  // Product-page bundle layout (vertical step boxes)
+  // New approach: Show one card per selected product instead of grouping by step
   renderProductPageLayout() {
-    this.selectedBundle.steps.forEach((step, index) => {
-      const stepElement = this.createStepElement(step, index);
-      this.elements.stepsContainer.appendChild(stepElement);
+    // Check if there are any selected products across all steps
+    const hasAnySelections = this.selectedProducts.some(stepSelections =>
+      Object.values(stepSelections || {}).some(qty => qty > 0)
+    );
+
+    if (!hasAnySelections) {
+      // No selections yet - show empty state cards (one per step)
+      this.selectedBundle.steps.forEach((step, index) => {
+        const emptyCard = this.createEmptyStateCard(step, index);
+        this.elements.stepsContainer.appendChild(emptyCard);
+      });
+    } else {
+      // Has selections - show one card per selected product
+      this.renderSelectedProductCards();
+    }
+  }
+
+  // Create an empty state card for a step (shown when no products selected)
+  createEmptyStateCard(step, stepIndex) {
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box';
+    stepBox.dataset.stepIndex = stepIndex;
+
+    // Plus icon for empty steps
+    const plusIcon = document.createElement('span');
+    plusIcon.className = 'plus-icon';
+    plusIcon.textContent = '+';
+    stepBox.appendChild(plusIcon);
+
+    // Add step name
+    const stepName = document.createElement('p');
+    stepName.className = 'step-name';
+    stepName.textContent = step.name || `Step ${stepIndex + 1}`;
+    stepBox.appendChild(stepName);
+
+    // Add selection instruction
+    const selectionCount = document.createElement('div');
+    selectionCount.className = 'step-selection-count';
+    if (step.conditionValue) {
+      selectionCount.textContent = `Select ${step.conditionValue} product${step.conditionValue > 1 ? 's' : ''}`;
+    }
+    stepBox.appendChild(selectionCount);
+
+    // Add click handler to open modal
+    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+
+    return stepBox;
+  }
+
+  // Render individual cards for each selected product
+  renderSelectedProductCards() {
+    // Collect all selected products with their step info
+    const allSelectedProducts = [];
+    const incompleteSteps = [];
+
+    this.selectedProducts.forEach((stepSelections, stepIndex) => {
+      const step = this.selectedBundle.steps[stepIndex];
+      const products = this.stepProductData[stepIndex] || [];
+
+      // Count total selected in this step
+      let stepTotalQuantity = 0;
+
+      Object.entries(stepSelections || {}).forEach(([variantId, quantity]) => {
+        if (quantity > 0) {
+          stepTotalQuantity += quantity;
+          const product = products.find(p => (p.variantId || p.id) === variantId);
+          if (product) {
+            // Add one entry per quantity unit
+            for (let i = 0; i < quantity; i++) {
+              allSelectedProducts.push({
+                product,
+                stepIndex,
+                step,
+                variantId,
+                instanceIndex: i
+              });
+            }
+          }
+        }
+      });
+
+      // Check if step is incomplete (needs more selections)
+      if (!this.validateStep(stepIndex)) {
+        incompleteSteps.push({ stepIndex, step, currentCount: stepTotalQuantity });
+      }
     });
+
+    // Render a card for each selected product
+    allSelectedProducts.forEach((item, cardIndex) => {
+      const productCard = this.createSelectedProductCard(item, cardIndex);
+      this.elements.stepsContainer.appendChild(productCard);
+    });
+
+    // Render "add more" cards for incomplete steps
+    incompleteSteps.forEach(({ stepIndex, step, currentCount }) => {
+      const addMoreCard = this.createAddMoreCard(step, stepIndex, currentCount);
+      this.elements.stepsContainer.appendChild(addMoreCard);
+    });
+  }
+
+  // Create an "add more" card for incomplete steps
+  createAddMoreCard(step, stepIndex, currentCount) {
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box add-more-card';
+    stepBox.dataset.stepIndex = stepIndex;
+
+    // Plus icon
+    const plusIcon = document.createElement('span');
+    plusIcon.className = 'plus-icon';
+    plusIcon.textContent = '+';
+    stepBox.appendChild(plusIcon);
+
+    // Add step name
+    const stepName = document.createElement('p');
+    stepName.className = 'step-name';
+    stepName.textContent = step.name || `Step ${stepIndex + 1}`;
+    stepBox.appendChild(stepName);
+
+    // Add remaining count text
+    const selectionCount = document.createElement('div');
+    selectionCount.className = 'step-selection-count';
+    const requiredCount = step.conditionValue || 1;
+    const remaining = requiredCount - currentCount;
+    if (remaining > 0) {
+      selectionCount.textContent = `Add ${remaining} more`;
+    }
+    stepBox.appendChild(selectionCount);
+
+    // Add click handler to open modal
+    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+
+    return stepBox;
+  }
+
+  // Create a state card for a selected product
+  createSelectedProductCard(item, cardIndex) {
+    const { product, stepIndex, step, variantId, instanceIndex } = item;
+
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box step-completed product-card-state';
+    stepBox.dataset.stepIndex = stepIndex;
+    stepBox.dataset.variantId = variantId;
+    stepBox.dataset.cardIndex = cardIndex;
+
+    // Add close icon badge to remove this specific product
+    const clearBadge = document.createElement('div');
+    clearBadge.className = 'step-clear-badge';
+    clearBadge.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
+        <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    clearBadge.title = 'Remove this product';
+    clearBadge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.removeProductFromSelection(stepIndex, variantId);
+    });
+    stepBox.appendChild(clearBadge);
+
+    // Product image container
+    const imagesContainer = document.createElement('div');
+    imagesContainer.className = 'step-images single-image';
+
+    const img = document.createElement('img');
+    img.src = product.imageUrl || 'https://via.placeholder.com/150';
+    img.alt = product.title || '';
+    img.className = 'step-image';
+    imagesContainer.appendChild(img);
+
+    stepBox.appendChild(imagesContainer);
+
+    // Product title at bottom
+    const productTitle = document.createElement('p');
+    productTitle.className = 'step-name step-name-completed product-title-state';
+    // Truncate long titles
+    const displayTitle = product.title.length > 25
+      ? product.title.substring(0, 25) + '...'
+      : product.title;
+    productTitle.textContent = displayTitle;
+    productTitle.title = product.title; // Full title on hover
+    stepBox.appendChild(productTitle);
+
+    // Add click handler to open modal for editing
+    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+
+    return stepBox;
+  }
+
+  // Remove a specific product from selection (decrease quantity by 1)
+  removeProductFromSelection(stepIndex, variantId) {
+    const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
+
+    if (currentQuantity > 1) {
+      // Decrease quantity
+      this.selectedProducts[stepIndex][variantId] = currentQuantity - 1;
+    } else {
+      // Remove completely
+      delete this.selectedProducts[stepIndex][variantId];
+    }
+
+    // Update UI
+    this.renderSteps();
+    this.updateAddToCartButton();
+    this.updateFooterMessaging();
+
+    // Show toast notification
+    ToastManager.show('Product removed from bundle');
   }
 
   // Full-page bundle layout (horizontal tabs)
@@ -594,130 +808,8 @@ class BundleWidgetProductPage {
     this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }
 
-  createStepElement(step, index) {
-    const stepBox = document.createElement('div');
-    stepBox.className = 'step-box';
-    stepBox.dataset.stepIndex = index;
-
-    const selectedProducts = this.selectedProducts[index] || {};
-    const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
-
-    if (hasSelections) {
-      stepBox.classList.add('step-completed');
-
-      // Add close icon badge at top right to clear all selections
-      const clearBadge = document.createElement('div');
-      clearBadge.className = 'step-clear-badge';
-      clearBadge.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
-          <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      `;
-      clearBadge.title = 'Remove all products from this step';
-      clearBadge.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent opening modal
-        this.clearStepSelections(index);
-      });
-      stepBox.appendChild(clearBadge);
-
-      // Show product images if available
-      const productImages = this.getStepProductImages(index);
-      if (productImages.length > 0) {
-        const imagesContainer = document.createElement('div');
-        imagesContainer.className = 'step-images';
-
-        // Add image count class for CSS styling
-        const imageCount = productImages.length;
-        if (imageCount === 1) {
-          imagesContainer.classList.add('single-image');
-        } else if (imageCount === 2) {
-          imagesContainer.classList.add('two-images');
-        } else if (imageCount === 3) {
-          imagesContainer.classList.add('three-images');
-        } else {
-          imagesContainer.classList.add('four-plus-images');
-        }
-
-        productImages.slice(0, 4).forEach(imageData => {
-          const img = document.createElement('img');
-          img.src = imageData.url;
-          img.alt = imageData.alt;
-          img.className = 'step-image';
-          imagesContainer.appendChild(img);
-        });
-
-        stepBox.appendChild(imagesContainer);
-
-        // Add count badge if more than 4 products
-        const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
-        if (productImages.length > 4 || totalQuantity > 4) {
-          const countBadge = document.createElement('div');
-          countBadge.className = 'image-count-badge';
-          countBadge.textContent = totalQuantity.toString();
-          stepBox.appendChild(countBadge);
-        }
-      } else {
-        // Fallback checkmark icon
-        const checkIcon = document.createElement('span');
-        checkIcon.className = 'check-icon';
-        checkIcon.textContent = '✓';
-        stepBox.appendChild(checkIcon);
-      }
-
-      // Add step name at bottom for completed steps
-      const stepNameCompleted = document.createElement('p');
-      stepNameCompleted.className = 'step-name step-name-completed';
-      stepNameCompleted.textContent = step.name || `Step ${index + 1}`;
-      stepBox.appendChild(stepNameCompleted);
-    } else {
-      // Plus icon for empty steps
-      const plusIcon = document.createElement('span');
-      plusIcon.className = 'plus-icon';
-      plusIcon.textContent = '+';
-      stepBox.appendChild(plusIcon);
-    }
-
-    // Only show step name and selection count if no selections made
-    if (!hasSelections) {
-      // Add step name (without step number)
-      const stepName = document.createElement('p');
-      stepName.className = 'step-name';
-      stepName.textContent = step.name || `Step ${index + 1}`;
-      stepBox.appendChild(stepName);
-
-      // Add selection count
-      const selectionCount = document.createElement('div');
-      selectionCount.className = 'step-selection-count';
-      selectionCount.textContent = this.getStepSelectionText(selectedProducts);
-      stepBox.appendChild(selectionCount);
-    }
-
-    // Add click handler
-    stepBox.addEventListener('click', () => this.openModal(index));
-
-    return stepBox;
-  }
-
-  getStepProductImages(stepIndex) {
-    const selectedProducts = this.selectedProducts[stepIndex] || {};
-    const productImages = [];
-
-    Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
-      if (quantity > 0) {
-        const product = this.stepProductData[stepIndex].find(p => (p.variantId || p.id) === variantId);
-        if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
-          productImages.push({
-            url: product.imageUrl,
-            alt: product.title || ''
-          });
-        }
-      }
-    });
-
-    return productImages;
-  }
-
+  // Legacy method - kept for reference but no longer used
+  // New approach uses createEmptyStateCard, createSelectedProductCard, and createAddMoreCard
   getStepSelectionText(selectedProducts) {
     const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
     return totalSelected > 0 ? `${totalSelected} selected` : '';
@@ -1151,14 +1243,39 @@ class BundleWidgetProductPage {
         // Storefront API: prioritize variant image, fallback to product featured image
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
+        // Process variants array for variant selection in modal
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        // Process options array for variant selector labels
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return [{
-          id: this.extractId(defaultVariant?.id || product.id),
+          id: this.extractId(product.id),
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
-          available: defaultVariant?.available === true // Store availability (always boolean from API)
+          available: defaultVariant?.available === true,
+          // Preserve variants and options for variant selection in modal
+          variants: processedVariants,
+          options: processedOptions,
+          // Preserve images array for modal gallery
+          images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+          description: product.description || ''
         }];
       }
     });
@@ -1411,9 +1528,21 @@ class BundleWidgetProductPage {
     const newProductGrid = productGrid.cloneNode(true);
     productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
+    // Get step data for modal
+    const step = this.selectedBundle.steps[stepIndex];
+
+    // Helper to find product by ID
+    const findProduct = (productId) => {
+      return this.stepProductData[stepIndex]?.find(p => {
+        const selectionKey = p.variantId || p.id;
+        return selectionKey === productId;
+      });
+    };
+
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('qty-btn')) {
+        e.stopPropagation();
         const productId = e.target.dataset.productId;
         const isIncrease = e.target.classList.contains('qty-increase');
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
@@ -1426,22 +1555,50 @@ class BundleWidgetProductPage {
     // Add to Bundle button handler
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('product-add-btn')) {
+        e.stopPropagation();
         const productId = e.target.dataset.productId;
-        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-        // Toggle between 0 and 1
-        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+        const product = findProduct(productId);
+
+        // If product has variants and modal is available, open the modal
+        if (product && product.variants && product.variants.length > 1 && this.productModal) {
+          this.productModal.open(product, step);
+        } else {
+          // No variants or modal not available - toggle directly
+          const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+          this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+        }
       }
     });
 
-    // Variant selector handler
+    // Product image/title click - open variant modal if product has variants
+    newProductGrid.addEventListener('click', (e) => {
+      const productImage = e.target.closest('.product-image');
+      const productTitle = e.target.closest('.product-title');
+
+      if (productImage || productTitle) {
+        const productCard = e.target.closest('.product-card');
+        if (productCard && this.productModal) {
+          const productId = productCard.dataset.productId;
+          const product = findProduct(productId);
+
+          if (product && product.variants && product.variants.length > 1 && step) {
+            // Product has variants - open modal for selection
+            this.productModal.open(product, step);
+          }
+        }
+      }
+    });
+
+    // Variant selector handler (for inline dropdown if used)
     newProductGrid.addEventListener('change', (e) => {
       if (e.target.classList.contains('variant-selector')) {
+        e.stopPropagation();
         const newVariantId = e.target.value;
         const baseProductId = e.target.dataset.baseProductId;
 
         // Find the product and update its variant
         const product = this.stepProductData[stepIndex].find(p => p.id === baseProductId);
-        if (product) {
+        if (product && product.variants) {
           const variantData = product.variants.find(v => v.id === newVariantId);
           if (variantData) {
             // Move quantity from old variant to new variant
@@ -1460,6 +1617,18 @@ class BundleWidgetProductPage {
             this.updateModalFooterMessaging();
           }
         }
+      }
+    });
+
+    // Add cursor pointer styles to product images and titles for products with variants
+    newProductGrid.querySelectorAll('.product-card').forEach(card => {
+      const productId = card.dataset.productId;
+      const product = findProduct(productId);
+      if (product && product.variants && product.variants.length > 1 && this.productModal) {
+        const imageEl = card.querySelector('.product-image');
+        const titleEl = card.querySelector('.product-title');
+        if (imageEl) imageEl.style.cursor = 'pointer';
+        if (titleEl) titleEl.style.cursor = 'pointer';
       }
     });
   }
