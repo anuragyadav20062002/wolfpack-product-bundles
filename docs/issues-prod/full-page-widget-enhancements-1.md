@@ -4,7 +4,7 @@
 **Status:** Complete - Ready for Testing
 **Priority:** 🟡 Medium
 **Created:** 2026-01-28
-**Last Updated:** 2026-01-29 00:35
+**Last Updated:** 2026-01-29 01:15
 
 ## Overview
 
@@ -23,6 +23,22 @@ Six requirements to enhance the full-page bundle widget. Two features are alread
 6. 🎨 **Multi-variant selection** (Req 3) - Allow buying multiple variants of same product
 
 ## Progress Log
+
+### 2026-01-29 01:15 - Additional Bug Fixes
+- ✅ Fixed promo banner not syncing from DCP to storefront
+  - Added promoBannerSettings extraction in `api.design-settings.$shopDomain.tsx`
+- ✅ Fixed bundle title flash before banner loads
+  - Added early `hidePageTitle()` call in `init()` before async operations
+- ✅ Fixed variant selector not working when displayVariantsAsIndividual is enabled
+  - Updated `processProductsForStep()` to preserve parent product data (variants, options, parentProductId, parentTitle, images, description)
+  - Updated modal's `populateModal()` to use parentTitle if available
+  - Updated modal's `createVariantSelectors()` to pre-select current variant's options
+- ✅ Rebuilt widget bundles (185.8 KB full-page, 119.4 KB product-page)
+- Files modified: 4 files
+  - `/app/routes/api.design-settings.$shopDomain.tsx`
+  - `/app/assets/bundle-widget-full-page.js`
+  - `/app/assets/bundle-modal-component.js`
+  - `/extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`
 
 ### 2026-01-29 00:30 - All Phases Complete
 - ✅ Phase 1: Completed price z-index fix and promo banner persistence

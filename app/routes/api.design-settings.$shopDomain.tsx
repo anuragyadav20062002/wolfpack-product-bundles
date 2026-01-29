@@ -131,6 +131,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       const footerSettings = (designSettings as any).footerSettings || {};
       const stepBarSettings = (designSettings as any).stepBarSettings || {};
       const generalSettings = (designSettings as any).generalSettings || {};
+      const promoBannerSettings = (designSettings as any).promoBannerSettings || {};
 
       finalSettings = {
         ...defaultSettings,
@@ -187,6 +188,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         ...footerSettings,
         ...stepBarSettings,
         ...generalSettings,
+        ...promoBannerSettings,
       };
     }
 

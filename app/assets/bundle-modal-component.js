@@ -229,8 +229,9 @@ class BundleProductModal {
    * Populate modal with product data
    */
   populateModal() {
-    // Set title
-    document.getElementById('modal-product-title').textContent = this.currentProduct.title;
+    // Set title - use parent title if this is a flattened variant
+    const displayTitle = this.currentProduct.parentTitle || this.currentProduct.title;
+    document.getElementById('modal-product-title').textContent = displayTitle;
 
     // Set description (if available)
     const descriptionEl = document.getElementById('modal-product-description');
@@ -477,6 +478,10 @@ class BundleProductModal {
     // Store selected options for tracking
     this.selectedOptions = {};
 
+    // Find the current variant to pre-select its options
+    const currentVariantId = this.currentProduct.variantId;
+    const currentVariant = variants.find(v => String(v.id) === String(currentVariantId));
+
     // Create button-style selector for each option
     variantsContainer.innerHTML = optionNames.map((optionName, optionIndex) => {
       // Get unique values for this option, filtering out undefined/null
@@ -488,18 +493,19 @@ class BundleProductModal {
 
       if (optionValues.length === 0) return '';
 
-      // Set first value as default selected
-      this.selectedOptions[optionIndex] = optionValues[0];
+      // Pre-select current variant's option value, or fall back to first value
+      const preSelectedValue = currentVariant?.[`option${optionIndex + 1}`] || optionValues[0];
+      this.selectedOptions[optionIndex] = preSelectedValue;
 
       // Detect if this is likely a color option
       const isColorOption = this.isColorOption(optionName, optionValues);
 
       return `
         <div class="bundle-modal-variant-group">
-          <label class="bundle-modal-variant-label">${optionName}: <span class="bundle-modal-variant-selected-value" data-option-index="${optionIndex}">${optionValues[0]}</span></label>
+          <label class="bundle-modal-variant-label">${optionName}: <span class="bundle-modal-variant-selected-value" data-option-index="${optionIndex}">${preSelectedValue}</span></label>
           <div class="bundle-modal-variant-options ${isColorOption ? 'color-options' : ''}" data-option-index="${optionIndex}">
-            ${optionValues.map((value, valueIndex) => {
-              const isSelected = valueIndex === 0;
+            ${optionValues.map((value) => {
+              const isSelected = value === preSelectedValue;
               const colorStyle = isColorOption ? this.getColorStyle(value) : '';
               return `
                 <button type="button"

@@ -123,6 +123,13 @@ class BundleWidgetFullPage {
       // Parse configuration
       this.parseConfiguration();
 
+      // For full-page bundles, hide the page title immediately to prevent flash
+      // This runs before any async operations to ensure smooth UX
+      const bundleType = this.container.dataset.bundleType;
+      if (bundleType === 'full_page') {
+        this.hidePageTitle();
+      }
+
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
 
@@ -2299,6 +2306,24 @@ class BundleWidgetFullPage {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
+        // Preserve parent product reference for variant selection in modal
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return product.variants
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
@@ -2312,7 +2337,14 @@ class BundleWidgetFullPage {
               price: parseFloat(variant.price || '0') * 100,
               compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
-              available: variant.available === true // Store availability (always boolean)
+              available: variant.available === true,
+              // Preserve parent product data for variant selection in modal
+              parentProductId: this.extractId(product.id),
+              parentTitle: product.title,
+              variants: processedVariants,
+              options: processedOptions,
+              images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+              description: product.description || ''
             };
           });
       } else {

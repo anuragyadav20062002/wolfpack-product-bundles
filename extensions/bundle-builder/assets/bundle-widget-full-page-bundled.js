@@ -1297,8 +1297,9 @@ class BundleProductModal {
    * Populate modal with product data
    */
   populateModal() {
-    // Set title
-    document.getElementById('modal-product-title').textContent = this.currentProduct.title;
+    // Set title - use parent title if this is a flattened variant
+    const displayTitle = this.currentProduct.parentTitle || this.currentProduct.title;
+    document.getElementById('modal-product-title').textContent = displayTitle;
 
     // Set description (if available)
     const descriptionEl = document.getElementById('modal-product-description');
@@ -1545,6 +1546,10 @@ class BundleProductModal {
     // Store selected options for tracking
     this.selectedOptions = {};
 
+    // Find the current variant to pre-select its options
+    const currentVariantId = this.currentProduct.variantId;
+    const currentVariant = variants.find(v => String(v.id) === String(currentVariantId));
+
     // Create button-style selector for each option
     variantsContainer.innerHTML = optionNames.map((optionName, optionIndex) => {
       // Get unique values for this option, filtering out undefined/null
@@ -1556,18 +1561,19 @@ class BundleProductModal {
 
       if (optionValues.length === 0) return '';
 
-      // Set first value as default selected
-      this.selectedOptions[optionIndex] = optionValues[0];
+      // Pre-select current variant's option value, or fall back to first value
+      const preSelectedValue = currentVariant?.[`option${optionIndex + 1}`] || optionValues[0];
+      this.selectedOptions[optionIndex] = preSelectedValue;
 
       // Detect if this is likely a color option
       const isColorOption = this.isColorOption(optionName, optionValues);
 
       return `
         <div class="bundle-modal-variant-group">
-          <label class="bundle-modal-variant-label">${optionName}: <span class="bundle-modal-variant-selected-value" data-option-index="${optionIndex}">${optionValues[0]}</span></label>
+          <label class="bundle-modal-variant-label">${optionName}: <span class="bundle-modal-variant-selected-value" data-option-index="${optionIndex}">${preSelectedValue}</span></label>
           <div class="bundle-modal-variant-options ${isColorOption ? 'color-options' : ''}" data-option-index="${optionIndex}">
-            ${optionValues.map((value, valueIndex) => {
-              const isSelected = valueIndex === 0;
+            ${optionValues.map((value) => {
+              const isSelected = value === preSelectedValue;
               const colorStyle = isColorOption ? this.getColorStyle(value) : '';
               return `
                 <button type="button"
@@ -2049,6 +2055,13 @@ class BundleWidgetFullPage {
 
       // Parse configuration
       this.parseConfiguration();
+
+      // For full-page bundles, hide the page title immediately to prevent flash
+      // This runs before any async operations to ensure smooth UX
+      const bundleType = this.container.dataset.bundleType;
+      if (bundleType === 'full_page') {
+        this.hidePageTitle();
+      }
 
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
@@ -4226,6 +4239,24 @@ class BundleWidgetFullPage {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
+        // Preserve parent product reference for variant selection in modal
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return product.variants
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
@@ -4239,7 +4270,14 @@ class BundleWidgetFullPage {
               price: parseFloat(variant.price || '0') * 100,
               compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
-              available: variant.available === true // Store availability (always boolean)
+              available: variant.available === true,
+              // Preserve parent product data for variant selection in modal
+              parentProductId: this.extractId(product.id),
+              parentTitle: product.title,
+              variants: processedVariants,
+              options: processedOptions,
+              images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+              description: product.description || ''
             };
           });
       } else {
