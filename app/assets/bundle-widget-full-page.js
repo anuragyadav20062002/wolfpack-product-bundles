@@ -1133,13 +1133,61 @@ class BundleWidgetFullPage {
       return grid;
     }
 
+    // Expand products with variants into separate cards (one card per variant)
+    const expandedProducts = this.expandProductsByVariant(products);
+
+    console.log('[PRODUCT_GRID_DEBUG] Expanded products:', {
+      originalCount: products.length,
+      expandedCount: expandedProducts.length
+    });
+
     // Create product cards using ComponentGenerator
-    products.forEach(product => {
+    expandedProducts.forEach(product => {
       const productCard = this.createProductCard(product, stepIndex);
       grid.appendChild(productCard);
     });
 
     return grid;
+  }
+
+  // Expand products with multiple variants into separate product entries
+  // Each variant becomes its own card showing "Product Title - Variant Name"
+  expandProductsByVariant(products) {
+    return products.flatMap(product => {
+      // If product already has a variantId and parentProductId, it was already expanded
+      if (product.parentProductId && product.variantId) {
+        return [product];
+      }
+
+      // If product has multiple variants, expand into separate cards
+      if (product.variants && product.variants.length > 1) {
+        return product.variants
+          .filter(variant => variant.available !== false) // Only show available variants
+          .map(variant => {
+            // Use variant image if available, fallback to product image
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+
+            return {
+              ...product,
+              id: variant.id,
+              title: variant.title === 'Default Title' ? product.title : `${product.title} - ${variant.title}`,
+              variantTitle: variant.title === 'Default Title' ? '' : variant.title,
+              imageUrl,
+              price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
+              compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
+              variantId: variant.id,
+              available: variant.available !== false,
+              parentProductId: product.id,
+              parentTitle: product.title,
+              // Remove variants array from individual cards to prevent showing variant selector
+              variants: null
+            };
+          });
+      }
+
+      // Single variant or no variants - return as-is
+      return [product];
+    });
   }
 
   // Create loading skeleton for product grid - solid pulsating cards
@@ -1436,43 +1484,8 @@ class BundleWidgetFullPage {
       ${discountMessage ? `<div class="footer-discount-message">${discountMessage}</div>` : ''}
     `;
 
-    // === SECTION 2: Selected Products Strip (below discount message) ===
-    const productsStrip = document.createElement('div');
-    productsStrip.className = 'footer-products-strip';
-
-    if (allSelectedProducts.length > 0) {
-      // Group variants by product for multi-variant display
-      const groupedProducts = this.groupVariantsByProduct(allSelectedProducts);
-
-      groupedProducts.forEach(productGroup => {
-        const productThumb = document.createElement('div');
-        productThumb.className = 'footer-product-thumb';
-        productThumb.title = `${productGroup.title} - ${CurrencyManager.formatMoney(productGroup.totalPrice, currencyInfo.display.format)}`;
-
-        const totalQuantity = productGroup.totalQuantity;
-
-        // Compact carousel: just image with quantity badge overlay
-        productThumb.innerHTML = `
-          <div class="thumb-image-wrapper">
-            <img src="${productGroup.image}" alt="${productGroup.title}" class="thumb-image">
-            <span class="thumb-quantity-badge">${totalQuantity}</span>
-            <button class="thumb-remove" data-step="${productGroup.stepIndex}" data-product-id="${productGroup.productId}">×</button>
-          </div>
-        `;
-
-        const removeBtn = productThumb.querySelector('.thumb-remove');
-        removeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          // Remove all variants of this product
-          productGroup.variants.forEach(variant => {
-            this.updateProductSelection(variant.stepIndex, variant.variantId, 0);
-          });
-          this.renderFullPageLayout();
-        });
-
-        productsStrip.appendChild(productThumb);
-      });
-    }
+    // === SECTION 2: Scrollable Product Tiles (centered above navigation) ===
+    const productsSection = this.createFooterProductTiles(allSelectedProducts, currencyInfo);
 
     // === SECTION 3: Navigation with Total between buttons ===
     const navSection = document.createElement('div');
@@ -1529,10 +1542,63 @@ class BundleWidgetFullPage {
     navSection.appendChild(totalSection);
     navSection.appendChild(nextBtn);
 
-    // Assemble footer: Progress -> Products -> Navigation
+    // Assemble footer: Progress -> Products (centered) -> Navigation
     this.elements.footer.appendChild(progressSection);
-    this.elements.footer.appendChild(productsStrip);
+    this.elements.footer.appendChild(productsSection);
     this.elements.footer.appendChild(navSection);
+  }
+
+  // Create scrollable product tiles component for footer
+  // Shows product image, name, variant (if any), and remove button
+  createFooterProductTiles(allSelectedProducts, currencyInfo) {
+    const container = document.createElement('div');
+    container.className = 'footer-products-tiles-container';
+
+    if (allSelectedProducts.length === 0) {
+      return container;
+    }
+
+    // Create scrollable tiles wrapper
+    const tilesWrapper = document.createElement('div');
+    tilesWrapper.className = 'footer-products-tiles-wrapper';
+
+    // Show each selected item as its own tile (already expanded by variant)
+    allSelectedProducts.forEach(item => {
+      const tile = document.createElement('div');
+      tile.className = 'footer-product-tile';
+
+      // Determine if this is a variant
+      const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title'
+        ? item.variantTitle
+        : '';
+
+      // Truncate product name for compact display
+      const displayTitle = this.truncateTitle(item.parentTitle || item.title, 20);
+
+      tile.innerHTML = `
+        <div class="tile-image-wrapper">
+          <img src="${item.imageUrl || 'https://via.placeholder.com/50'}" alt="${item.title}" class="tile-image">
+          <span class="tile-quantity-badge">${item.quantity}</span>
+        </div>
+        <div class="tile-info">
+          <span class="tile-product-name">${displayTitle}</span>
+          ${variantInfo ? `<span class="tile-variant-name">${variantInfo}</span>` : ''}
+        </div>
+        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${item.title}">×</button>
+      `;
+
+      // Attach remove handler
+      const removeBtn = tile.querySelector('.tile-remove');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.updateProductSelection(item.stepIndex, item.variantId, 0);
+      });
+
+      tilesWrapper.appendChild(tile);
+    });
+
+    container.appendChild(tilesWrapper);
+    return container;
   }
 
   // Helper: Calculate discount progress percentage
@@ -1575,6 +1641,9 @@ class BundleWidgetFullPage {
               variantId,
               quantity,
               title: product.title || 'Untitled Product',
+              parentTitle: product.parentTitle || product.title || 'Untitled Product',
+              variantTitle: product.variantTitle || '',
+              imageUrl: product.imageUrl || product.image?.src || '',
               image: product.imageUrl || product.image?.src || '',
               price: product.price || 0
             });
@@ -2684,48 +2753,110 @@ class BundleWidgetFullPage {
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
     // Update quantity display without full re-render
     const productCard = document.querySelector(`[data-product-id="${productId}"]`);
-    if (productCard) {
-      const quantityDisplay = productCard.querySelector('.qty-display');
-      const addBtn = productCard.querySelector('.product-add-btn');
-      let selectedOverlay = productCard.querySelector('.selected-overlay');
+    if (!productCard) return;
 
-      if (quantityDisplay) {
-        quantityDisplay.textContent = quantity;
+    const contentWrapper = productCard.querySelector('.product-content-wrapper');
+    if (!contentWrapper) return;
+
+    // Find existing action elements
+    const existingAddBtn = productCard.querySelector('.product-add-btn');
+    const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
+    let selectedOverlay = productCard.querySelector('.selected-overlay');
+
+    // Toggle between "Add to Bundle" button and quantity controls
+    if (quantity > 0) {
+      // Show quantity controls, hide button
+      if (existingAddBtn) {
+        existingAddBtn.remove();
       }
 
-      if (addBtn) {
-        if (quantity > 0) {
-          addBtn.textContent = '✓ Added to Bundle';
-          addBtn.classList.add('added');
-        } else {
-          addBtn.textContent = 'Choose Options';
-          addBtn.classList.remove('added');
+      if (existingQuantityControls) {
+        // Just update the quantity display
+        const qtyDisplay = existingQuantityControls.querySelector('.inline-qty-display');
+        if (qtyDisplay) {
+          qtyDisplay.textContent = quantity;
         }
-      }
-
-      // Handle selected overlay (create if doesn't exist)
-      if (quantity > 0) {
-        if (!selectedOverlay) {
-          // Create the overlay if it doesn't exist
-          selectedOverlay = document.createElement('div');
-          selectedOverlay.className = 'selected-overlay';
-          selectedOverlay.textContent = '✓';
-          productCard.appendChild(selectedOverlay);
-        }
-        selectedOverlay.style.display = 'flex';
       } else {
-        if (selectedOverlay) {
-          selectedOverlay.style.display = 'none';
+        // Create quantity controls
+        const quantityControls = document.createElement('div');
+        quantityControls.className = 'inline-quantity-controls';
+        quantityControls.innerHTML = `
+          <button class="inline-qty-btn qty-decrease" data-product-id="${productId}">−</button>
+          <span class="inline-qty-display">${quantity}</span>
+          <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
+        `;
+        contentWrapper.appendChild(quantityControls);
+
+        // Attach event listeners to the new buttons
+        const increaseBtn = quantityControls.querySelector('.qty-increase');
+        const decreaseBtn = quantityControls.querySelector('.qty-decrease');
+
+        if (increaseBtn) {
+          increaseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+            this.updateProductSelection(stepIndex, productId, currentQty + 1);
+          });
+        }
+
+        if (decreaseBtn) {
+          decreaseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+            if (currentQty > 0) {
+              this.updateProductSelection(stepIndex, productId, currentQty - 1);
+            }
+          });
         }
       }
 
-      // Update card visual state
-      if (quantity > 0) {
-        productCard.classList.add('selected');
-      } else {
-        productCard.classList.remove('selected');
+      // Show selected overlay
+      if (!selectedOverlay) {
+        selectedOverlay = document.createElement('div');
+        selectedOverlay.className = 'selected-overlay';
+        selectedOverlay.textContent = '✓';
+        productCard.appendChild(selectedOverlay);
       }
+      selectedOverlay.style.display = 'flex';
+      productCard.classList.add('selected');
+
+    } else {
+      // Show "Add to Bundle" button, hide quantity controls
+      if (existingQuantityControls) {
+        existingQuantityControls.remove();
+      }
+
+      if (!existingAddBtn) {
+        // Find product info to determine button text
+        const product = this.findProductById(stepIndex, productId);
+        const hasVariants = product?.variants && product.variants.length > 1;
+        const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
+
+        const addButton = document.createElement('button');
+        addButton.className = 'product-add-btn';
+        addButton.dataset.productId = productId;
+        addButton.textContent = buttonText;
+        contentWrapper.appendChild(addButton);
+
+        // Attach event listener to the new button
+        addButton.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.updateProductSelection(stepIndex, productId, 1);
+        });
+      }
+
+      // Hide selected overlay
+      if (selectedOverlay) {
+        selectedOverlay.style.display = 'none';
+      }
+      productCard.classList.remove('selected');
     }
+  }
+
+  // Helper to find product by ID across all step data
+  findProductById(stepIndex, productId) {
+    const products = this.stepProductData[stepIndex] || [];
+    return products.find(p => (p.variantId || p.id) === productId);
   }
 
   validateStepCondition(stepIndex, productId, newQuantity) {

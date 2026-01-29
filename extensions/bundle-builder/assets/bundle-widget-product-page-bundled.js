@@ -869,6 +869,10 @@ class ComponentGenerator {
     const showQuantitySelector = options.showQuantitySelector !== false;
     const isSelected = currentQuantity > 0;
 
+    // Check if this is an expanded variant card (has parentProductId and no variants array)
+    // In this case, don't show variant selector - each card IS a variant
+    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0 || product.variants === null);
+
     // Render inline quantity controls when item is selected (competitor-inspired design)
     const renderInlineQuantityControls = () => {
       if (!isSelected) return '';
@@ -887,8 +891,9 @@ class ComponentGenerator {
         // Show inline quantity controls when selected
         return renderInlineQuantityControls();
       } else {
-        // Show "Choose Size" or "Add to Bundle" button when not selected
-        const hasVariants = product.variants && product.variants.length > 1;
+        // For expanded variant cards, always show "Add to Bundle"
+        // For regular products with variants, show "Choose Size"
+        const hasVariants = !isExpandedVariantCard && product.variants && product.variants.length > 1;
         const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
         return `
           <button class="product-add-btn" data-product-id="${selectionKey}">
@@ -896,6 +901,14 @@ class ComponentGenerator {
           </button>
         `;
       }
+    };
+
+    // Render variant badge if this is an expanded variant card
+    const renderVariantBadge = () => {
+      if (isExpandedVariantCard && product.variantTitle) {
+        return `<div class="product-variant-badge">${product.variantTitle}</div>`;
+      }
+      return '';
     };
 
     return `
@@ -909,7 +922,8 @@ class ComponentGenerator {
         </div>
 
         <div class="product-content-wrapper">
-          <div class="product-title">${product.title}</div>
+          <div class="product-title">${product.parentTitle || product.title}</div>
+          ${renderVariantBadge()}
 
           ${product.price ? `
             <div class="product-price-row">
@@ -920,7 +934,7 @@ class ComponentGenerator {
 
           <div class="product-spacer"></div>
 
-          ${this.renderVariantSelector(product)}
+          ${isExpandedVariantCard ? '' : this.renderVariantSelector(product)}
 
           ${renderBottomAction()}
         </div>

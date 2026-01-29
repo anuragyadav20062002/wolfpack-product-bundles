@@ -1490,6 +1490,232 @@
 }
 
 /* ============================================================================
+   SCROLLABLE FOOTER PRODUCT TILES
+   Displays selected products with name + variant in scrollable horizontal strip
+   ============================================================================ */
+
+.footer-products-tiles-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 12px 24px;
+}
+
+.footer-products-tiles-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 8px 0;
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  align-items: center;
+}
+
+/* Webkit scrollbar styling for horizontal scroll */
+.footer-products-tiles-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.footer-products-tiles-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.footer-products-tiles-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.footer-products-tiles-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Individual Product Tile */
+.footer-product-tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bundle-full-page-tile-bg, #f8f9fa);
+  border: 1px solid var(--bundle-full-page-tile-border, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.footer-product-tile:hover {
+  background: var(--bundle-full-page-tile-hover-bg, #f0f1f2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Tile Image Wrapper */
+.footer-product-tile .tile-image-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+}
+
+.footer-product-tile .tile-image {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.footer-product-tile .tile-quantity-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: var(--bundle-primary-color, #4CAF50);
+  color: var(--bundle-primary-text-color, #ffffff);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Tile Info Section */
+.footer-product-tile .tile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 80px;
+  max-width: 140px;
+}
+
+.footer-product-tile .tile-product-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bundle-full-page-tile-text, #333333);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer-product-tile .tile-variant-name {
+  font-size: 11px;
+  color: var(--bundle-full-page-tile-variant-text, #666666);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Remove Button */
+.footer-product-tile .tile-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  background: var(--bundle-tile-remove-bg, #ff4444);
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: scale(0.8);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.footer-product-tile:hover .tile-remove {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.footer-product-tile .tile-remove:hover {
+  background: var(--bundle-tile-remove-hover-bg, #cc0000);
+  transform: scale(1.1);
+}
+
+/* Product Variant Badge - for product cards */
+.product-variant-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background: var(--bundle-variant-badge-bg, rgba(0, 0, 0, 0.06));
+  color: var(--bundle-variant-badge-text, #666666);
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  margin-top: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Responsive adjustments for product tiles */
+@media (max-width: 768px) {
+  .footer-products-tiles-container {
+    padding: 8px 16px;
+  }
+
+  .footer-products-tiles-wrapper {
+    gap: 8px;
+  }
+
+  .footer-product-tile {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .footer-product-tile .tile-image-wrapper,
+  .footer-product-tile .tile-image {
+    width: 36px;
+    height: 36px;
+  }
+
+  .footer-product-tile .tile-info {
+    min-width: 60px;
+    max-width: 100px;
+  }
+
+  .footer-product-tile .tile-product-name {
+    font-size: 12px;
+  }
+
+  .footer-product-tile .tile-variant-name {
+    font-size: 10px;
+  }
+
+  .footer-product-tile .tile-quantity-badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+    top: -4px;
+    right: -4px;
+  }
+
+  .footer-product-tile .tile-remove {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    top: -6px;
+    right: -6px;
+  }
+}
+
+/* ============================================================================
    LOADING STATE
    ============================================================================ */
 
