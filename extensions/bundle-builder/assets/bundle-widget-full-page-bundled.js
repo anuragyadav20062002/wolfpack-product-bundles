@@ -3334,46 +3334,28 @@ class BundleWidgetFullPage {
       groupedProducts.forEach(productGroup => {
         const productThumb = document.createElement('div');
         productThumb.className = 'footer-product-thumb';
+        productThumb.title = `${productGroup.title} - ${CurrencyManager.formatMoney(productGroup.totalPrice, currencyInfo.display.format)}`;
 
         const totalQuantity = productGroup.totalQuantity;
-        const variantCount = productGroup.variants.length;
 
-        // Determine quantity text based on number of variants
-        const quantityText = variantCount > 1
-          ? `${variantCount} variants (${totalQuantity} items)`
-          : `x${totalQuantity}`;
-
+        // Compact carousel: just image with quantity badge overlay
         productThumb.innerHTML = `
           <div class="thumb-image-wrapper">
             <img src="${productGroup.image}" alt="${productGroup.title}" class="thumb-image">
+            <span class="thumb-quantity-badge">${totalQuantity}</span>
             <button class="thumb-remove" data-step="${productGroup.stepIndex}" data-product-id="${productGroup.productId}">×</button>
-          </div>
-          <div class="thumb-info">
-            <span class="thumb-title">${this.truncateTitle(productGroup.title, 20)}</span>
-            <span class="thumb-price">${CurrencyManager.formatMoney(productGroup.totalPrice, currencyInfo.display.format)} ${quantityText}</span>
-            ${variantCount > 1 ? '<span class="view-variants-link">View variants</span>' : ''}
           </div>
         `;
 
         const removeBtn = productThumb.querySelector('.thumb-remove');
-        removeBtn.addEventListener('click', () => {
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
           // Remove all variants of this product
           productGroup.variants.forEach(variant => {
             this.updateProductSelection(variant.stepIndex, variant.variantId, 0);
           });
           this.renderFullPageLayout();
         });
-
-        // Add "View variants" click handler
-        if (variantCount > 1) {
-          const viewLink = productThumb.querySelector('.view-variants-link');
-          if (viewLink) {
-            viewLink.addEventListener('click', (e) => {
-              e.stopPropagation();
-              this.showVariantBreakdown(productGroup);
-            });
-          }
-        }
 
         productsStrip.appendChild(productThumb);
       });

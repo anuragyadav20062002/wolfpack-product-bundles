@@ -462,11 +462,11 @@
   right: 0;
   z-index: 1000000;
 
-  /* Full width, 70% height drawer from bottom */
+  /* Full width, 80% height drawer from bottom */
   width: 100% !important;
   max-width: 100% !important;
-  height: 70vh !important;
-  max-height: 70vh !important;
+  height: 80vh !important;
+  max-height: 80vh !important;
 
   /* Layout */
   display: flex;

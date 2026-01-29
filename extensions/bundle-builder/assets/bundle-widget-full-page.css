@@ -1184,19 +1184,21 @@
   border-radius: 3px;
 }
 
-/* Products Strip - Horizontal scrollable carousel */
+/* Products Strip - Horizontal scrollable carousel (compact) */
 .full-page-footer.redesigned > .footer-products-strip {
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 16px;
   overflow-x: auto;
-  overflow-y: hidden;
-  padding: 8px 20px 12px;
+  overflow-y: visible;
+  padding: 10px 24px;
   max-width: 100%;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  align-items: center;
+  min-height: 70px;
 }
 
 /* Webkit scrollbar styling for horizontal scroll */
@@ -1244,21 +1246,16 @@
   border-radius: 2px;
 }
 
-/* Individual Product Thumbnail - Minimal carousel style */
+/* Individual Product Thumbnail - Compact carousel style (image-only with quantity badge) */
 .footer-product-thumb {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 6px;
-  background: var(--bundle-full-page-footer-thumb-bg, #FFFFFF);
-  border-radius: 8px;
-  min-width: 70px;
-  max-width: 80px;
+  position: relative;
   flex-shrink: 0;
-  border: 1px solid var(--bundle-full-page-footer-thumb-border, rgba(0, 0, 0, 0.08));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.footer-product-thumb:hover {
+  transform: scale(1.05);
 }
 
 .thumb-image-wrapper {
@@ -1267,23 +1264,46 @@
 }
 
 .thumb-image {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
   object-fit: cover;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 2px solid var(--bundle-full-page-footer-thumb-border, rgba(0, 0, 0, 0.1));
+  background: var(--bundle-full-page-footer-thumb-bg, #FFFFFF);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Quantity badge overlay on image */
+.thumb-quantity-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--bundle-global-primary-button, #7132FF);
+  color: var(--bundle-global-button-text, #FFFFFF);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
 }
 
 .thumb-remove {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 16px;
-  height: 16px;
+  bottom: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--bundle-full-page-footer-remove-bg, #FF5252);
   color: white;
-  border: none;
+  border: 2px solid white;
   font-size: 10px;
   font-weight: bold;
   cursor: pointer;
@@ -1293,6 +1313,8 @@
   transition: transform 0.2s, background 0.2s;
   padding: 0;
   line-height: 1;
+  z-index: 3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .thumb-remove:hover {
@@ -1300,29 +1322,14 @@
   background: var(--bundle-full-page-footer-remove-hover, #E53935);
 }
 
+/* Hide text info in compact carousel mode */
 .thumb-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  width: 100%;
+  display: none;
 }
 
-.thumb-title {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--bundle-full-page-footer-thumb-title, #333333);
-  font-family: inherit;
-  white-space: nowrap;
-  max-width: 65px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
+.thumb-title,
 .thumb-price {
-  font-size: 9px;
-  color: var(--bundle-full-page-footer-thumb-price, #666666);
-  font-family: inherit;
+  display: none;
 }
 
 /* Total Section - Between buttons in nav section */
