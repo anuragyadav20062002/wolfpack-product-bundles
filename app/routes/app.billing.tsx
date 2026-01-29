@@ -1,3 +1,10 @@
+/**
+ * Billing Page Route
+ *
+ * Manages subscription and billing settings.
+ * Uses shared billing components from app/components/billing.
+ */
+
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import {
@@ -22,6 +29,17 @@ import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
 import { useCallback, useEffect, useState } from "react";
 import { useBillingState } from "../hooks/useBillingState";
+import {
+  calculateUsagePercentage,
+  getProgressBarTone,
+} from "../utils/pricing";
+
+// Import shared billing components
+import {
+  UpgradeSuccessBanner,
+  SubscriptionErrorBanner,
+  UpgradeCTACard,
+} from "../components/billing";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -174,7 +192,6 @@ export default function BillingPage() {
     dismissErrorBanner,
   } = billingState;
 
-  const isUpgrading = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "upgrade";
   const isCancelling = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "cancel";
 
   const handleViewPricing = useCallback(() => {
@@ -208,12 +225,12 @@ export default function BillingPage() {
   const isFreePlan = currentPlan === "free";
   const isGrowPlan = currentPlan === "grow";
 
-  // Calculate usage percentage
+  // Calculate usage percentage using shared utility
   const usagePercentage = data.subscription
-    ? Math.round((data.subscription.currentBundleCount / data.subscription.bundleLimit) * 100)
+    ? calculateUsagePercentage(data.subscription.currentBundleCount, data.subscription.bundleLimit)
     : 0;
 
-  const progressBarTone = usagePercentage >= 90 ? "critical" : usagePercentage >= 70 ? "highlight" : "success";
+  const progressBarTone = getProgressBarTone(usagePercentage);
 
   return (
     <Page
@@ -224,129 +241,21 @@ export default function BillingPage() {
         {/* Success Celebration Banner */}
         {showSuccessBanner && (
           <Layout.Section>
-            <div style={{
-              background: 'linear-gradient(135deg, #008060 0%, #00a47c 100%)',
-              borderRadius: '12px',
-              padding: '24px',
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-            }}>
-              {/* Confetti effect (CSS-based) */}
-              {showCelebration && (
-                <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  pointerEvents: 'none',
-                  background: `
-                    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 2px, transparent 2px),
-                    radial-gradient(circle at 40% 70%, rgba(255,255,255,0.15) 3px, transparent 3px),
-                    radial-gradient(circle at 60% 20%, rgba(255,255,255,0.1) 2px, transparent 2px),
-                    radial-gradient(circle at 80% 50%, rgba(255,255,255,0.12) 2px, transparent 2px)
-                  `,
-                }} />
-              )}
-
-              <BlockStack gap="300">
-                <InlineStack gap="300" blockAlign="center">
-                  <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: '50%',
-                    padding: '8px',
-                    display: 'flex',
-                  }}>
-                    <Icon source={CheckCircleIcon} tone="inherit" />
-                  </div>
-                  <BlockStack gap="100">
-                    <Text as="h2" variant="headingLg" fontWeight="bold">
-                      Welcome to the Grow Plan! 🎉
-                    </Text>
-                    <Text as="p" variant="bodyMd">
-                      Your subscription has been activated. You now have access to all premium features.
-                    </Text>
-                  </BlockStack>
-                </InlineStack>
-
-                <InlineStack gap="400" wrap={false}>
-                  <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.15)',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    flex: 1,
-                  }}>
-                    <BlockStack gap="100">
-                      <Text as="span" variant="bodySm">Bundle Limit</Text>
-                      <Text as="span" variant="headingMd" fontWeight="bold">20 bundles</Text>
-                    </BlockStack>
-                  </div>
-                  <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.15)',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    flex: 1,
-                  }}>
-                    <BlockStack gap="100">
-                      <Text as="span" variant="bodySm">Design Control</Text>
-                      <Text as="span" variant="headingMd" fontWeight="bold">Full Access</Text>
-                    </BlockStack>
-                  </div>
-                  <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.15)',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    flex: 1,
-                  }}>
-                    <BlockStack gap="100">
-                      <Text as="span" variant="bodySm">Support</Text>
-                      <Text as="span" variant="headingMd" fontWeight="bold">Priority</Text>
-                    </BlockStack>
-                  </div>
-                </InlineStack>
-
-                <Button onClick={dismissSuccessBanner} variant="monochromePlain">
-                  Dismiss
-                </Button>
-              </BlockStack>
-            </div>
+            <UpgradeSuccessBanner
+              showCelebration={showCelebration}
+              onDismiss={dismissSuccessBanner}
+            />
           </Layout.Section>
         )}
 
         {/* Error Banner */}
         {showErrorBanner && data.callbackError && (
           <Layout.Section>
-            <Banner
-              tone="critical"
+            <SubscriptionErrorBanner
+              errorCode={data.callbackError}
+              onRetry={handleViewPricing}
               onDismiss={dismissErrorBanner}
-              title="Subscription Issue"
-            >
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd">
-                  {data.callbackError === "missing_charge_id"
-                    ? "Subscription confirmation failed: Missing charge ID."
-                    : data.callbackError === "confirmation_failed"
-                    ? "Failed to confirm subscription with Shopify."
-                    : "An unexpected error occurred during subscription setup."}
-                </Text>
-                <InlineStack gap="200">
-                  <Button onClick={handleViewPricing} variant="plain">
-                    Try Again
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      if (window.$crisp) {
-                        window.$crisp.push(["do", "chat:open"]);
-                      }
-                    }}
-                    variant="plain"
-                  >
-                    Contact Support
-                  </Button>
-                </InlineStack>
-              </BlockStack>
-            </Banner>
+            />
           </Layout.Section>
         )}
 
@@ -396,7 +305,7 @@ export default function BillingPage() {
                     Bundle Usage
                   </Text>
                   <Badge tone={usagePercentage >= 90 ? "critical" : usagePercentage >= 70 ? "attention" : "success"}>
-                    {data.subscription?.currentBundleCount || 0} / {data.subscription?.bundleLimit || 0} bundles
+                    {`${data.subscription?.currentBundleCount || 0} / ${data.subscription?.bundleLimit || 0} bundles`}
                   </Badge>
                 </InlineStack>
                 <ProgressBar
@@ -488,7 +397,7 @@ export default function BillingPage() {
                       </Text>
                       {data.subscription && data.subscription.currentBundleCount > PLANS.free.bundleLimit && (
                         <Text as="p" variant="bodyMd" fontWeight="semibold">
-                          ⚠️ You have {data.subscription.currentBundleCount} bundles. The excess {data.subscription.currentBundleCount - PLANS.free.bundleLimit} bundles will be archived (not deleted).
+                          Warning: You have {data.subscription.currentBundleCount} bundles. The excess {data.subscription.currentBundleCount - PLANS.free.bundleLimit} bundles will be archived (not deleted).
                         </Text>
                       )}
                       <InlineStack gap="200">
@@ -515,76 +424,7 @@ export default function BillingPage() {
         {/* Upgrade CTA for Free Users */}
         {isFreePlan && (
           <Layout.Section>
-            <Card>
-              <div style={{
-                background: 'linear-gradient(135deg, #f6f6f7 0%, #ebeced 100%)',
-                borderRadius: '8px',
-                padding: '20px',
-                margin: '-16px',
-              }}>
-                <BlockStack gap="400">
-                  <InlineStack gap="200" blockAlign="center">
-                    <div style={{
-                      backgroundColor: '#ffc96b',
-                      borderRadius: '50%',
-                      padding: '8px',
-                      display: 'flex',
-                    }}>
-                      <Icon source={StarFilledIcon} />
-                    </div>
-                    <Text as="h3" variant="headingMd">
-                      Ready to grow your bundle business?
-                    </Text>
-                  </InlineStack>
-
-                  <Text as="p" variant="bodyMd">
-                    Upgrade to the Grow plan for double the bundles, full design customization, and priority support.
-                  </Text>
-
-                  <InlineStack gap="200">
-                    <div style={{
-                      backgroundColor: 'white',
-                      borderRadius: '6px',
-                      padding: '8px 12px',
-                    }}>
-                      <Text as="span" variant="bodySm" fontWeight="semibold">
-                        20 bundles
-                      </Text>
-                    </div>
-                    <div style={{
-                      backgroundColor: 'white',
-                      borderRadius: '6px',
-                      padding: '8px 12px',
-                    }}>
-                      <Text as="span" variant="bodySm" fontWeight="semibold">
-                        Design Control Panel
-                      </Text>
-                    </div>
-                    <div style={{
-                      backgroundColor: 'white',
-                      borderRadius: '6px',
-                      padding: '8px 12px',
-                    }}>
-                      <Text as="span" variant="bodySm" fontWeight="semibold">
-                        Priority Support
-                      </Text>
-                    </div>
-                  </InlineStack>
-
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Button
-                      variant="primary"
-                      onClick={handleViewPricing}
-                    >
-                      Upgrade to Grow - $9.99/month
-                    </Button>
-                    <Text as="span" variant="bodySm" tone="subdued">
-                      Cancel anytime
-                    </Text>
-                  </InlineStack>
-                </BlockStack>
-              </div>
-            </Card>
+            <UpgradeCTACard onUpgrade={handleViewPricing} />
           </Layout.Section>
         )}
 

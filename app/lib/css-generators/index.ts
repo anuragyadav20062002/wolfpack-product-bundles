@@ -1,0 +1,100 @@
+/**
+ * CSS Generators Module
+ *
+ * Generates CSS from design settings for the bundle widget.
+ * Exports the main generateCSSFromSettings function used by the API endpoint.
+ */
+
+import type { CSSDesignSettings, CSSGenerationContext } from "./types";
+import { generateCSSVariables, generateFullPageVariables } from "./css-variables-generator";
+import { generateProductCardCSS } from "./product-card-generator";
+import { generateButtonCSS } from "./button-generator";
+import { generateFooterCSS } from "./footer-generator";
+import { generateModalCSS } from "./modal-generator";
+import { generateResponsiveCSS } from "./responsive-generator";
+
+// Re-export types
+export type { CSSDesignSettings, CSSGenerationContext } from "./types";
+
+// Re-export individual generators for testing/direct access
+export { generateCSSVariables, generateFullPageVariables } from "./css-variables-generator";
+export { generateProductCardCSS } from "./product-card-generator";
+export { generateButtonCSS } from "./button-generator";
+export { generateFooterCSS } from "./footer-generator";
+export { generateModalCSS } from "./modal-generator";
+export { generateResponsiveCSS } from "./responsive-generator";
+
+/**
+ * Generate complete CSS from design settings
+ *
+ * @param settings - Design settings object
+ * @param bundleType - Bundle type (product_page or full_page)
+ * @param customCss - Custom CSS to append
+ * @returns Complete CSS string
+ */
+export function generateCSSFromSettings(
+  settings: CSSDesignSettings,
+  bundleType: string,
+  customCss: string = ""
+): string {
+  // Extract global colors with defaults
+  const globalPrimaryButton = settings.globalPrimaryButtonColor || '#000000';
+  const globalButtonText = settings.globalButtonTextColor || '#FFFFFF';
+  const globalPrimaryText = settings.globalPrimaryTextColor || '#000000';
+  const globalSecondaryText = settings.globalSecondaryTextColor || '#6B7280';
+  const globalFooterBg = settings.globalFooterBgColor || '#FFFFFF';
+  const globalFooterText = settings.globalFooterTextColor || '#000000';
+
+  // Create generation context
+  const ctx: CSSGenerationContext = {
+    settings,
+    globalPrimaryButton,
+    globalButtonText,
+    globalPrimaryText,
+    globalSecondaryText,
+    globalFooterBg,
+    globalFooterText,
+    bundleType,
+    customCss
+  };
+
+  // Generate CSS sections
+  const cssVariables = generateCSSVariables(ctx);
+  const fullPageVariables = generateFullPageVariables(ctx);
+  const productCardCSS = generateProductCardCSS();
+  const buttonCSS = generateButtonCSS();
+  const footerCSS = generateFooterCSS();
+  const modalCSS = generateModalCSS();
+  const responsiveCSS = generateResponsiveCSS();
+
+  // Compose final CSS
+  return `
+/*
+ * Wolfpack Bundle Widget - Design Settings
+ * Bundle Type: ${bundleType}
+ * Auto-generated from Design Control Panel
+ *
+ * Global Colors System:
+ * - Global colors automatically cascade to all relevant components
+ * - Component-specific colors override global colors when set
+ * - This ensures brand consistency while allowing fine-grained control
+ */
+
+:root {
+${cssVariables}
+${fullPageVariables}
+}
+${productCardCSS}
+${buttonCSS}
+${footerCSS}
+${modalCSS}
+${responsiveCSS}
+
+/* ============================================
+   MERCHANT CUSTOM CSS
+   Add your own CSS rules below to further
+   customize the bundle widget appearance.
+   ============================================ */
+${customCss ? customCss : '/* No custom CSS defined */'}
+`.trim();
+}

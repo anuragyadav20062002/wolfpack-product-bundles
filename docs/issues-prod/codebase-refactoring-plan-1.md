@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-01-23
-**Last Updated:** 2026-01-26 10:00
+**Last Updated:** 2026-01-29 14:30
 
 ---
 
@@ -183,6 +183,96 @@
 **TypeScript Verification:** Passed (no errors in refactored files)
 
 **Phase 5 Status:** Complete
+
+### 2026-01-29 12:00 - Phase 6: Widget Installation Service
+
+**Files Created:**
+- `app/services/widget-installation/types.ts` - Type definitions (55 lines)
+- `app/services/widget-installation/widget-theme-editor-links.server.ts` - Deep link generation (100 lines)
+- `app/services/widget-installation/widget-full-page-bundle.server.ts` - Full-page operations (250 lines)
+- `app/services/widget-installation/widget-product-bundle.server.ts` - Product bundle validation (130 lines)
+- `app/services/widget-installation/widget-installation-legacy.server.ts` - Deprecated methods (400 lines)
+- `app/services/widget-installation/widget-installation-core.server.ts` - Main service class (200 lines)
+- `app/services/widget-installation/index.ts` - Re-export barrel file
+
+**Types Extracted:**
+- `WidgetInstallationStatus` - Installation status interface
+- `ThemeEditorDeepLink` - Deep link interface
+- `FullPageBundleResult` - Full-page bundle result interface
+- `ProductBundleWidgetStatus` - Product bundle widget status interface
+- `BundleInstallationContext` - Installation context interface
+
+**Changes Made to Original File:**
+- Updated to re-export from refactored module for backward compatibility
+- Original file reduced from 1,139 lines to ~40 lines (re-export only)
+
+**TypeScript Verification:** Passed (no errors in refactored files)
+
+**Phase 6 Status:** Complete
+
+### 2026-01-29 13:00 - Phase 8: API Design Settings (CSS Generators)
+
+**Files Created:**
+- `app/lib/css-generators/types.ts` - CSS settings types (50 lines)
+- `app/lib/css-generators/css-variables-generator.ts` - :root CSS variables (280 lines)
+- `app/lib/css-generators/product-card-generator.ts` - Product card rules (100 lines)
+- `app/lib/css-generators/button-generator.ts` - Button rules (40 lines)
+- `app/lib/css-generators/footer-generator.ts` - Footer rules (100 lines)
+- `app/lib/css-generators/modal-generator.ts` - Modal rules (50 lines)
+- `app/lib/css-generators/responsive-generator.ts` - Media queries (20 lines)
+- `app/lib/css-generators/index.ts` - Main orchestrator (50 lines)
+
+**Main Function Extracted:**
+- `generateCSSFromSettings()` - Main CSS generation function
+
+**Changes Made to Route File:**
+- Updated to import `generateCSSFromSettings` from `../lib/css-generators`
+- Removed ~543 lines of inline CSS generation function
+- Route file reduced from 783 lines to ~250 lines
+
+**TypeScript Verification:** Passed (no errors in refactored files)
+
+**Phase 8 Status:** Complete
+
+### 2026-01-29 14:00 - Phase 9: Billing & Pricing Routes
+
+**Files Created:**
+- `app/constants/pricing-data.ts` - Pricing constants and types (100 lines)
+- `app/utils/pricing.ts` - Pricing utilities (100 lines)
+- `app/components/billing/SubscriptionQuotaCard.tsx` - Quota display (80 lines)
+- `app/components/billing/FreePlanCard.tsx` - Free plan card (100 lines)
+- `app/components/billing/GrowPlanCard.tsx` - Grow plan card (120 lines)
+- `app/components/billing/FeatureComparisonTable.tsx` - Feature table (120 lines)
+- `app/components/billing/UpgradeSuccessBanner.tsx` - Success banner (100 lines)
+- `app/components/billing/SubscriptionErrorBanner.tsx` - Error banner (50 lines)
+- `app/components/billing/UpgradeConfirmationModal.tsx` - Upgrade modal (100 lines)
+- `app/components/billing/ValuePropsSection.tsx` - Value props section (60 lines)
+- `app/components/billing/FAQSection.tsx` - FAQ section (40 lines)
+- `app/components/billing/UpgradeCTACard.tsx` - Upgrade CTA card (100 lines)
+- `app/components/billing/index.ts` - Re-export barrel file (20 lines)
+
+**Constants Extracted:**
+- `FEATURE_COMPARISON` - Feature comparison data
+- `VALUE_PROPS` - Value proposition items
+- `GROW_PLAN_BENEFITS` - Grow plan benefits
+- `PRICING_FAQ` - FAQ items
+
+**Utility Functions Extracted:**
+- `calculateUsagePercentage()` - Calculate usage percentage
+- `getProgressBarTone()` - Get progress bar tone
+- `getBadgeTone()` - Get badge tone
+- `getRemainingBundlesMessage()` - Get remaining bundles message
+- `shouldShowUpgradePrompt()` - Check if upgrade prompt should show
+- `getUpgradePromptMessage()` - Get upgrade prompt message
+- `getUpgradePromptTone()` - Get upgrade prompt tone
+
+**File Size Reduction Summary:**
+- app.pricing.tsx: 660 lines → 218 lines (67% reduction)
+- app.billing.tsx: 662 lines → 502 lines (24% reduction)
+
+**TypeScript Verification:** Passed (no errors in refactored files)
+
+**Phase 9 Status:** Complete
 
 ## Overview
 
@@ -444,10 +534,10 @@ app/components/billing/
 - [ ] Phase 3: Widget JavaScript Files (deferred - requires build system changes)
 - [x] Phase 4: Dashboard Route ✅ Completed (1,429 → 903 lines, 37% reduction)
 - [x] Phase 5: Webhook Processor Service ✅ Completed (1,168 → 178 lines, 85% reduction)
-- [ ] Phase 6: Widget Installation Service
+- [x] Phase 6: Widget Installation Service ✅ Completed (1,139 → ~40 lines, 96% reduction)
 - [ ] Phase 7: Design Control Panel Route
-- [ ] Phase 8: API Design Settings
-- [ ] Phase 9: Billing & Pricing Routes
+- [x] Phase 8: API Design Settings ✅ Completed (783 → ~250 lines, 68% reduction)
+- [x] Phase 9: Billing & Pricing Routes ✅ Completed (combined 1,322 → 720 lines, 45% reduction)
 - [ ] Phase 10: Services Cleanup
 
 ---
