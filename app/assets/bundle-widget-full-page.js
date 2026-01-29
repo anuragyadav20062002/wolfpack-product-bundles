@@ -1033,11 +1033,11 @@ class BundleWidgetFullPage {
       promoTitle = pricing.messages.banner;
     }
 
-    // If no discount promo, show bundle name as hero banner
+    // If no discount promo was built (no discount enabled or no rules),
+    // don't show the promo banner - there's nothing to promote
     if (!promoTitle) {
-      promoTitle = this.selectedBundle?.name || 'Build Your Bundle';
-      promoSubtitle = '';
-      promoNote = '';
+      console.log('[PROMO_BANNER] No discount configured, hiding promo banner');
+      return null;
     }
 
     const banner = document.createElement('div');
