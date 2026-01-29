@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { InlineStack, TextField } from "@shopify/polaris";
 
 interface ColorPickerProps {
@@ -10,6 +10,26 @@ interface ColorPickerProps {
 export function ColorPicker({ label, value, onChange }: ColorPickerProps) {
   const [localValue, setLocalValue] = useState(value);
   const colorInputRef = useRef<HTMLInputElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced onChange to prevent save bar flicker during rapid color changes
+  const debouncedOnChange = useCallback((newValue: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      onChange(newValue);
+    }, 150); // 150ms debounce for smoother save bar behavior
+  }, [onChange]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Sync localValue with value prop when it changes from parent
   // This prevents stale state when settings are updated externally
@@ -23,14 +43,14 @@ export function ColorPicker({ label, value, onChange }: ColorPickerProps) {
     setLocalValue(newValue);
     // Validate hex color format
     if (/^#[0-9A-F]{6}$/i.test(newValue)) {
-      onChange(newValue);
+      onChange(newValue); // Text input changes are immediate
     }
   };
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    onChange(newValue);
+    debouncedOnChange(newValue); // Debounce color picker changes
   };
 
   const handleBlur = () => {

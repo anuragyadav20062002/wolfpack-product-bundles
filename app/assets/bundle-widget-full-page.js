@@ -980,6 +980,17 @@ class BundleWidgetFullPage {
 
   // Create promotional banner (Competitor-Inspired with gradient hero style)
   createPromoBanner() {
+    // Check if promo banner is enabled via DCP CSS variable
+    const promoBannerEnabled = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bundle-promo-banner-enabled')
+      .trim();
+
+    // If explicitly disabled (value is '0'), don't create the banner
+    if (promoBannerEnabled === '0') {
+      console.log('[PROMO_BANNER] Promo banner disabled via DCP settings');
+      return null;
+    }
+
     const pricing = this.selectedBundle?.pricing;
     const rules = pricing?.rules || [];
     const currencyInfo = CurrencyManager.getCurrencyInfo();
@@ -1725,9 +1736,9 @@ class BundleWidgetFullPage {
     const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
     const step = this.selectedBundle.steps[stepIndex];
 
-    // If no conditions are set, any selection is valid (just need at least 1 product)
+    // If no conditions are set, step is optional - user can skip without selecting products
     if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return totalQuantity > 0;
+      return true; // Optional step - always valid, can proceed with 0 products
     }
 
     // Otherwise use minQuantity for step completion
@@ -2799,8 +2810,9 @@ class BundleWidgetFullPage {
       totalQuantitySelected += quantity;
     }
 
+    // If no conditions are set, step is optional - always valid
     if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return totalQuantitySelected > 0; // Any selection is valid
+      return true; // Optional step - can proceed with 0 products
     }
 
     const requiredQuantity = step.conditionValue;
@@ -2817,7 +2829,7 @@ class BundleWidgetFullPage {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
         return totalQuantitySelected <= requiredQuantity;
       default:
-        return totalQuantitySelected > 0;
+        return true; // No recognized condition - step is optional
     }
   }
 

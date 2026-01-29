@@ -462,11 +462,11 @@
   right: 0;
   z-index: 1000000;
 
-  /* Full width, max height drawer */
+  /* Full width, 70% height drawer from bottom */
   width: 100% !important;
   max-width: 100% !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
+  height: 70vh !important;
+  max-height: 70vh !important;
 
   /* Layout */
   display: flex;
@@ -601,6 +601,7 @@
 .modal-tabs {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex: 1;
   gap: 20px;
   padding: 0 20px;
@@ -1262,9 +1263,9 @@
   margin-top: 0;
   background-color: var(--bundle-footer-bg, #FFFFFF);
   border-radius: var(--bundle-footer-border-radius, 0px);
-  min-width: 600px;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
   z-index: 10;
+  width: 100%;
 }
 
 /* Centered Grouped Content Container */
@@ -1387,6 +1388,35 @@
 .modal-footer-progress-details .target-quantity {
   color: #374151;
   font-weight: 600;
+}
+
+/* Tablet responsive adjustments for modal footer */
+@media (max-width: 768px) {
+  .modal-footer {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .modal-footer-grouped-content {
+    width: 100%;
+  }
+
+  .modal-footer-total-pill {
+    padding: 10px 16px;
+    justify-content: center;
+  }
+
+  .modal-footer-buttons-row {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .modal-nav-button {
+    min-width: 100px;
+    padding: 12px 20px;
+    font-size: 13px;
+  }
 }
 
 /* Navigation Buttons - New Centered Layout Design */
@@ -1909,12 +1939,41 @@
     width: 14px;
     height: 14px;
   }
-}
-  
-  .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+
+  /* Ensure 1 column grid on mobile */
+  .bundle-builder-modal .modal-body .product-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
+
+  /* Scale down footer elements */
+  .modal-footer-total-pill {
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+
+  .modal-footer-buttons-row {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .modal-footer-buttons-row .modal-nav-button {
+    width: 100%;
+  }
+
+  .modal-footer-grouped-content {
+    width: 100%;
+  }
+
+  .modal-footer-discount-messaging {
+    margin: 8px 0;
+  }
+
+  .modal-footer-progress-section {
+    margin: 8px 0;
+  }
+}
 
 /* Enhanced visual feedback for different discount states */
 .bundle-footer-messaging.nearly-qualified {

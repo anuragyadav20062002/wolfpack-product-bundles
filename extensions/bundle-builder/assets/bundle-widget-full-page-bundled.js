@@ -1258,18 +1258,6 @@ class BundleProductModal {
     this.selectedQuantity = 1;
     this.selectedImageIndex = 0;
 
-    // Detect existing variants of this product
-    const stepIndex = this.widget.currentStepIndex;
-    const existingVariants = this.widget.selectedProducts?.[stepIndex] || {};
-    const productVariantIds = product.variants?.map(v => String(v.id)) || [];
-    const alreadySelectedVariants = productVariantIds.filter(id => existingVariants[id] > 0);
-
-    this.existingVariantCount = alreadySelectedVariants.length;
-    this.existingTotalQuantity = alreadySelectedVariants.reduce(
-      (sum, id) => sum + existingVariants[id],
-      0
-    );
-
     // Populate modal content
     this.populateModal();
 
@@ -1310,9 +1298,6 @@ class BundleProductModal {
       descriptionEl.style.display = 'none';
     }
 
-    // Show existing variants notice if applicable
-    this.showExistingVariantsNotice();
-
     // Load images
     this.loadImages();
 
@@ -1331,37 +1316,6 @@ class BundleProductModal {
 
     // Reset quantity display
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
-  }
-
-  /**
-   * Show notice about existing variants of this product
-   */
-  showExistingVariantsNotice() {
-    // Remove any existing notice first
-    const existingNotice = document.getElementById('existing-variants-notice');
-    if (existingNotice) {
-      existingNotice.remove();
-    }
-
-    // Only show notice if there are existing variants
-    if (this.existingVariantCount > 0) {
-      const notice = document.createElement('div');
-      notice.id = 'existing-variants-notice';
-      notice.className = 'existing-variants-notice';
-      notice.innerHTML = `
-        <div class="notice-icon">ℹ️</div>
-        <div class="notice-text">
-          <strong>You've already added this product</strong>
-          <span>${this.existingTotalQuantity} item(s) across ${this.existingVariantCount} variant(s)</span>
-        </div>
-      `;
-
-      // Insert after description and before variants
-      const variantsContainer = document.getElementById('modal-variants-container');
-      if (variantsContainer && variantsContainer.parentNode) {
-        variantsContainer.parentNode.insertBefore(notice, variantsContainer);
-      }
-    }
   }
 
   /**
@@ -2913,6 +2867,17 @@ class BundleWidgetFullPage {
 
   // Create promotional banner (Competitor-Inspired with gradient hero style)
   createPromoBanner() {
+    // Check if promo banner is enabled via DCP CSS variable
+    const promoBannerEnabled = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bundle-promo-banner-enabled')
+      .trim();
+
+    // If explicitly disabled (value is '0'), don't create the banner
+    if (promoBannerEnabled === '0') {
+      console.log('[PROMO_BANNER] Promo banner disabled via DCP settings');
+      return null;
+    }
+
     const pricing = this.selectedBundle?.pricing;
     const rules = pricing?.rules || [];
     const currencyInfo = CurrencyManager.getCurrencyInfo();
@@ -3658,9 +3623,9 @@ class BundleWidgetFullPage {
     const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
     const step = this.selectedBundle.steps[stepIndex];
 
-    // If no conditions are set, any selection is valid (just need at least 1 product)
+    // If no conditions are set, step is optional - user can skip without selecting products
     if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return totalQuantity > 0;
+      return true; // Optional step - always valid, can proceed with 0 products
     }
 
     // Otherwise use minQuantity for step completion
@@ -4732,8 +4697,9 @@ class BundleWidgetFullPage {
       totalQuantitySelected += quantity;
     }
 
+    // If no conditions are set, step is optional - always valid
     if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return totalQuantitySelected > 0; // Any selection is valid
+      return true; // Optional step - can proceed with 0 products
     }
 
     const requiredQuantity = step.conditionValue;
@@ -4750,7 +4716,7 @@ class BundleWidgetFullPage {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
         return totalQuantitySelected <= requiredQuantity;
       default:
-        return totalQuantitySelected > 0;
+        return true; // No recognized condition - step is optional
     }
   }
 

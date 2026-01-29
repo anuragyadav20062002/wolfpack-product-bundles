@@ -2660,16 +2660,28 @@ class BundleWidgetProductPage {
         if (product && product.variants) {
           const variantData = product.variants.find(v => v.id === newVariantId);
           if (variantData) {
+            const oldVariantId = product.variantId;
+
             // Move quantity from old variant to new variant
-            const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
+            const oldQuantity = this.selectedProducts[stepIndex][oldVariantId] || 0;
             if (oldQuantity > 0) {
-              delete this.selectedProducts[stepIndex][product.variantId];
+              delete this.selectedProducts[stepIndex][oldVariantId];
               this.selectedProducts[stepIndex][newVariantId] = oldQuantity;
             }
 
             // Update product properties
             product.variantId = newVariantId;
             product.price = variantData.price;
+
+            // CRITICAL: Update all data-product-id attributes in the card to use the new variant ID
+            // This fixes the bug where quantity controls would use the old variant ID
+            const productCard = e.target.closest('.product-card');
+            if (productCard) {
+              productCard.dataset.productId = newVariantId;
+              productCard.querySelectorAll('[data-product-id]').forEach(el => {
+                el.dataset.productId = newVariantId;
+              });
+            }
 
             // Update UI without full re-render
             this.updateModalNavigation();
@@ -2818,8 +2830,9 @@ class BundleWidgetProductPage {
       totalQuantitySelected += quantity;
     }
 
+    // If no conditions are set, step is optional - always valid
     if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return totalQuantitySelected > 0; // Any selection is valid
+      return true; // Optional step - can proceed with 0 products
     }
 
     const requiredQuantity = step.conditionValue;
@@ -2836,7 +2849,7 @@ class BundleWidgetProductPage {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
         return totalQuantitySelected <= requiredQuantity;
       default:
-        return totalQuantitySelected > 0;
+        return true; // No recognized condition - step is optional
     }
   }
 
