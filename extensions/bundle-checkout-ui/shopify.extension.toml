@@ -8,7 +8,7 @@ api_version = "2025-10"
 [[extensions]]
 name = "bundle-checkout-ui"
 handle = "bundle-checkout-ui"
-type = "ui_extension"
+type = "checkout_ui_extension"
 uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
 
 # Controls where in Shopify your extension will be injected,
