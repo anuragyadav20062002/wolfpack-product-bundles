@@ -16,7 +16,7 @@
  * Issue: expanded-bundle-checkout-1
  */
 
-import "@shopify/ui-extensions/preact";
+import { useCartLineTarget, useTotalAmount } from "@shopify/ui-extensions/checkout/preact";
 import { render } from "preact";
 
 export default function () {
@@ -24,9 +24,9 @@ export default function () {
 }
 
 function BundlePricingExtension() {
-  // Get the cart line item target directly
-  const target = shopify.target;
-  const lineItem = target?.current;
+  // Get the cart line item using the Preact hook
+  const lineItem = useCartLineTarget();
+  const totalAmount = useTotalAmount();
 
   if (!lineItem) {
     return null;
@@ -64,7 +64,7 @@ function BundlePricingExtension() {
   }
 
   // Get currency from checkout cost
-  const currency = shopify.cost?.totalAmount?.current?.currencyCode || "USD";
+  const currency = totalAmount?.currencyCode || "USD";
 
   // Format prices using the shop's currency
   const formatMoney = (cents) => {
