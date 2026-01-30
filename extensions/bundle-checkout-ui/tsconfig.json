@@ -8,5 +8,6 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
   },
-  "include": ["./src", "./shopify.d.ts"]
+  "include": ["./src", "./shopify.d.ts"],
+  "types": ["@shopify/ui-extensions/checkout"]
 }
