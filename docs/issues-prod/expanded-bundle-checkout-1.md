@@ -259,7 +259,7 @@ const bundleTotals = {
   - `extensions/bundle-cart-transform-ts/src/cart-transform-input.graphql`
   - `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts`
 
-### 2026-01-30 15:00 - Phase 4 Complete (Skipped Phase 3)
+### 2026-01-30 15:00 - Phase 4 Complete
 - Created `bundle-cart-item.liquid` snippet for per-item pricing display
 - Created `bundle-cart-summary.liquid` snippet for cart-level savings summary
 - Snippets read line item properties and display:
@@ -270,7 +270,17 @@ const bundleTotals = {
 - Files created:
   - `extensions/bundle-builder/snippets/bundle-cart-item.liquid`
   - `extensions/bundle-builder/snippets/bundle-cart-summary.liquid`
-- Note: Phase 3 (Checkout UI Extension) skipped for now - can be added later for checkout display
+
+### 2026-01-30 17:30 - Phase 3 Complete
+- Scaffolded checkout UI extension using Shopify CLI
+- Created `bundle-checkout-ui` extension targeting `purchase.checkout.cart-line-item.render-after`
+- Extension reads line item attributes and displays bundle pricing breakdown
+- Uses Polaris web components (s-stack, s-text, s-badge)
+- Also targets `purchase.thank-you.cart-line-item.render-after` for thank you page
+- Files created:
+  - `extensions/bundle-checkout-ui/` (full extension)
+  - `extensions/bundle-checkout-ui/src/Checkout.jsx`
+  - `extensions/bundle-checkout-ui/shopify.extension.toml`
 
 ---
 
@@ -278,7 +288,7 @@ const bundleTotals = {
 
 - [x] Phase 1: Update Metafield Sync Service
 - [x] Phase 2: Enhance Cart Transform Function
-- [ ] Phase 3: Create Checkout UI Extension (deferred)
+- [x] Phase 3: Create Checkout UI Extension
 - [x] Phase 4: Update Theme Cart (Liquid)
 - [ ] Testing & QA
 - [ ] Commit changes

@@ -1,0 +1,4 @@
+{
+  "bundleSavings": "Save {{amount}}",
+  "bundleDiscount": "-{{percent}}%"
+}
