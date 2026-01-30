@@ -1,0 +1,143 @@
+{% comment %}
+  Bundle Cart Summary Snippet
+
+  Calculates and displays total bundle savings in the cart.
+  Include this snippet once in the cart drawer/page footer.
+
+  Usage:
+    {% render 'bundle-cart-summary', cart: cart %}
+
+  This snippet scans all cart items for bundle components and calculates:
+  - Total retail value of all bundle components
+  - Total bundle price (discounted)
+  - Total savings from bundles
+
+  Issue: expanded-bundle-checkout-1
+{% endcomment %}
+
+{% liquid
+  assign total_retail_cents = 0
+  assign total_bundle_cents = 0
+  assign total_savings_cents = 0
+  assign has_bundle_items = false
+
+  for item in cart.items
+    for property in item.properties
+      if property.first == '_is_bundle_component' and property.last == 'true'
+        assign has_bundle_items = true
+
+        for prop in item.properties
+          case prop.first
+            when '_retail_price_cents'
+              assign item_retail = prop.last | plus: 0
+              assign total_retail_cents = total_retail_cents | plus: item_retail | times: item.quantity
+            when '_bundle_price_cents'
+              assign item_bundle = prop.last | plus: 0
+              assign total_bundle_cents = total_bundle_cents | plus: item_bundle | times: item.quantity
+            when '_savings_cents'
+              assign item_savings = prop.last | plus: 0
+              assign total_savings_cents = total_savings_cents | plus: item_savings | times: item.quantity
+          endcase
+        endfor
+
+        break
+      endif
+    endfor
+  endfor
+%}
+
+{% if has_bundle_items and total_savings_cents > 0 %}
+  {% assign total_retail = total_retail_cents | divided_by: 100.0 %}
+  {% assign total_bundle = total_bundle_cents | divided_by: 100.0 %}
+  {% assign total_savings = total_savings_cents | divided_by: 100.0 %}
+  {% assign overall_discount_percent = total_savings_cents | times: 100.0 | divided_by: total_retail_cents %}
+
+  <div class="bundle-cart-summary">
+    <div class="bundle-summary-header">
+      <svg class="bundle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+      </svg>
+      <span>Bundle Savings</span>
+    </div>
+
+    <div class="bundle-summary-details">
+      <div class="bundle-summary-row">
+        <span>Retail Value:</span>
+        <span class="bundle-summary-retail">{{ total_retail | times: 100 | money }}</span>
+      </div>
+      <div class="bundle-summary-row">
+        <span>Your Price:</span>
+        <span class="bundle-summary-price">{{ total_bundle | times: 100 | money }}</span>
+      </div>
+      <div class="bundle-summary-row bundle-summary-savings">
+        <span>You Save:</span>
+        <span class="bundle-summary-savings-amount">
+          {{ total_savings | times: 100 | money }}
+          <span class="bundle-summary-percent">({{ overall_discount_percent | round: 0 }}% off)</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .bundle-cart-summary {
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .bundle-summary-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 1.1em;
+      color: #1b5e20;
+      margin-bottom: 12px;
+    }
+
+    .bundle-icon {
+      color: #2e7d32;
+    }
+
+    .bundle-summary-details {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bundle-summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.95em;
+    }
+
+    .bundle-summary-retail {
+      color: #666;
+      text-decoration: line-through;
+    }
+
+    .bundle-summary-price {
+      font-weight: 600;
+    }
+
+    .bundle-summary-savings {
+      padding-top: 8px;
+      border-top: 1px dashed #81c784;
+      margin-top: 4px;
+    }
+
+    .bundle-summary-savings-amount {
+      color: #2e7d32;
+      font-weight: 700;
+    }
+
+    .bundle-summary-percent {
+      font-weight: 500;
+      font-size: 0.9em;
+    }
+  </style>
+{% endif %}

@@ -124,6 +124,131 @@ export async function batchGetFirstVariants(
 }
 
 /**
+ * Batch fetch first variant IDs and prices for multiple products
+ * Used for component pricing calculation in expanded bundle checkout
+ */
+export async function batchGetFirstVariantsWithPrices(
+  admin: any,
+  productIds: string[]
+): Promise<Map<string, { success: boolean; variantId?: string; priceCents?: number; error?: string }>> {
+  const results = new Map<string, { success: boolean; variantId?: string; priceCents?: number; error?: string }>();
+
+  if (productIds.length === 0) {
+    return results;
+  }
+
+  try {
+    // Clean and validate product IDs
+    const cleanProductIds = productIds
+      .map(id => id.replace('gid://shopify/Product/', ''))
+      .filter(id => isValidShopifyProductId(`gid://shopify/Product/${id}`));
+
+    if (cleanProductIds.length === 0) {
+      console.warn('[BATCH_VARIANT_LOOKUP_PRICES] No valid product IDs to fetch');
+      productIds.forEach(id => {
+        results.set(id.replace('gid://shopify/Product/', ''), {
+          success: false,
+          error: 'Invalid product ID format'
+        });
+      });
+      return results;
+    }
+
+    // Construct GIDs
+    const productGids = cleanProductIds.map(id => `gid://shopify/Product/${id}`);
+
+    const BATCH_PRODUCTS_WITH_PRICES_QUERY = `
+      query GetBatchProductsWithPrices($ids: [ID!]!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                  price
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    console.log(`[BATCH_VARIANT_LOOKUP_PRICES] Fetching variants with prices for ${productGids.length} products`);
+
+    const response = await admin.graphql(BATCH_PRODUCTS_WITH_PRICES_QUERY, {
+      variables: { ids: productGids }
+    });
+
+    const data = await response.json();
+
+    if (data.errors) {
+      console.error('[BATCH_VARIANT_LOOKUP_PRICES] GraphQL errors:', data.errors);
+      cleanProductIds.forEach(id => {
+        results.set(id, {
+          success: false,
+          error: 'GraphQL query error'
+        });
+      });
+      return results;
+    }
+
+    // Process results
+    const nodes = data.data?.nodes || [];
+    nodes.forEach((product: any) => {
+      if (product && product.id) {
+        const productId = product.id.replace('gid://shopify/Product/', '');
+        const variantNode = product.variants?.edges?.[0]?.node;
+        const variantId = variantNode?.id;
+        const priceString = variantNode?.price;
+
+        if (variantId) {
+          // Convert price string (e.g., "98.00") to cents (9800)
+          const priceCents = priceString ? Math.round(parseFloat(priceString) * 100) : 0;
+
+          results.set(productId, {
+            success: true,
+            variantId,
+            priceCents
+          });
+          console.log(`[BATCH_VARIANT_LOOKUP_PRICES] Product ${productId}: variant=${variantId}, price=${priceString} → ${priceCents} cents`);
+        } else {
+          results.set(productId, {
+            success: false,
+            error: 'No variants found'
+          });
+        }
+      }
+    });
+
+    // Mark missing products as not found
+    cleanProductIds.forEach(id => {
+      if (!results.has(id)) {
+        results.set(id, {
+          success: false,
+          error: 'Product not found (may have been deleted)'
+        });
+      }
+    });
+
+    console.log(`[BATCH_VARIANT_LOOKUP_PRICES] Successfully fetched ${results.size} variant results with prices`);
+
+    return results;
+  } catch (error) {
+    console.error('[BATCH_VARIANT_LOOKUP_PRICES] Error:', error);
+    productIds.forEach(id => {
+      const cleanId = id.replace('gid://shopify/Product/', '');
+      results.set(cleanId, {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    });
+    return results;
+  }
+}
+
+/**
  * Get the first variant ID for a product
  */
 export async function getFirstVariantId(

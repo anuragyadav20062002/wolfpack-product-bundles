@@ -35,6 +35,9 @@ export interface CartTransformInput {
         price_adjustment?: {
           value: string; // JSON pricing config
         };
+        component_pricing?: {
+          value: string; // JSON array of ComponentPricingItem
+        };
         product?: {
           id: string;
           title: string;
@@ -71,6 +74,19 @@ export interface CartTransformOperation {
     expandedCartItems: Array<{
       merchandiseId: string;
       quantity: number;
+      // Price per unit for this component (decimal string, e.g., "88.20")
+      price?: {
+        adjustment: {
+          fixedPricePerUnit: {
+            amount: string;
+          };
+        };
+      };
+      // Attributes to add to the expanded item for checkout display
+      attributes?: Array<{
+        key: string;
+        value: string;
+      }>;
     }>;
     price?: {
       percentageDecrease: {
@@ -103,6 +119,18 @@ interface ComponentParent {
     value: number[];
   };
   price_adjustment?: PriceAdjustmentConfig; // Pricing info for discount calculation
+}
+
+/**
+ * Component pricing item from metafield (cents-based)
+ * Used for expanded bundle checkout display
+ */
+interface ComponentPricingItem {
+  variantId: string;        // "gid://shopify/ProductVariant/123"
+  retailPrice: number;      // Price in cents (e.g., 9800 = $98.00)
+  bundlePrice: number;      // Discounted price in cents
+  discountPercent: number;  // Discount percentage (e.g., 10.00)
+  savingsAmount: number;    // Savings in cents
 }
 
 // ============================================================================
@@ -480,6 +508,26 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         componentCount: componentReferences.length
       });
 
+      // Parse component pricing metafield for expanded checkout display
+      const componentPricingValue = line.merchandise.component_pricing?.value;
+      const componentPricing = parseJSON<ComponentPricingItem[]>(
+        componentPricingValue,
+        [],
+        'component_pricing'
+      );
+
+      // Create a map of variant ID to pricing for quick lookup
+      const pricingMap = new Map<string, ComponentPricingItem>();
+      componentPricing.forEach(item => {
+        pricingMap.set(item.variantId, item);
+      });
+
+      Logger.debug('Component pricing loaded', { phase: 'expand' }, {
+        hasPricing: componentPricing.length > 0,
+        pricingCount: componentPricing.length,
+        componentCount: componentReferences.length
+      });
+
       // Calculate bundle totals for discount calculation
       const totalQuantity = componentQuantities.reduce((sum, qty) => sum + qty, 0) * line.quantity;
       const originalTotal = parseFloat(line.cost.totalAmount.amount);
@@ -514,18 +562,65 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         bundleVariantId: line.merchandise.id,
         componentCount: componentReferences.length,
         bundleQuantity: line.quantity,
-        discount: discountPercentage
+        discount: discountPercentage,
+        hasComponentPricing: componentPricing.length > 0
       });
 
-      // Create expand operation
+      // Create expand operation with component pricing attributes
       const expandOp: CartTransformOperation = {
         expand: {
           cartLineId: line.id,
-          expandedCartItems: componentReferences.map((variantId, index) => ({
-            merchandiseId: variantId,
-            quantity: componentQuantities[index] * line.quantity
-          })),
-          ...(discountPercentage > 0 && {
+          expandedCartItems: componentReferences.map((variantId, index) => {
+            const pricing = pricingMap.get(variantId);
+            const quantity = componentQuantities[index] * line.quantity;
+
+            // Build expanded item with optional pricing
+            const expandedItem: {
+              merchandiseId: string;
+              quantity: number;
+              price?: { adjustment: { fixedPricePerUnit: { amount: string } } };
+              attributes?: Array<{ key: string; value: string }>;
+            } = {
+              merchandiseId: variantId,
+              quantity
+            };
+
+            // Add component pricing if available
+            if (pricing) {
+              // Convert cents to decimal string for fixedPricePerUnit (e.g., 8820 → "88.20")
+              const bundlePriceDecimal = (pricing.bundlePrice / 100).toFixed(2);
+
+              expandedItem.price = {
+                adjustment: {
+                  fixedPricePerUnit: {
+                    amount: bundlePriceDecimal
+                  }
+                }
+              };
+
+              // Add pricing attributes for checkout display
+              expandedItem.attributes = [
+                { key: '_is_bundle_component', value: 'true' },
+                { key: '_retail_price_cents', value: String(pricing.retailPrice) },
+                { key: '_bundle_price_cents', value: String(pricing.bundlePrice) },
+                { key: '_discount_percent', value: String(pricing.discountPercent) },
+                { key: '_savings_cents', value: String(pricing.savingsAmount) }
+              ];
+
+              Logger.debug('Component pricing applied', { phase: 'expand' }, {
+                variantId,
+                retailPriceCents: pricing.retailPrice,
+                bundlePriceCents: pricing.bundlePrice,
+                bundlePriceDecimal,
+                discountPercent: pricing.discountPercent,
+                savingsCents: pricing.savingsAmount
+              });
+            }
+
+            return expandedItem;
+          }),
+          // Only use percentageDecrease as fallback if no component pricing available
+          ...(!componentPricing.length && discountPercentage > 0 && {
             price: {
               percentageDecrease: {
                 value: discountPercentage.toFixed(2)
@@ -540,7 +635,8 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       Logger.info('Expand operation created', { phase: 'expand' }, {
         bundleVariantId: line.merchandise.id,
-        componentsExpanded: componentReferences.length
+        componentsExpanded: componentReferences.length,
+        usedComponentPricing: componentPricing.length > 0
       });
     }
 

@@ -10,7 +10,7 @@
 
 import db from "../../db.server";
 import { isUUID, isValidShopifyProductId } from "../../utils/shopify-validators";
-import { getFirstVariantId, getBundleProductVariantId, batchGetFirstVariants } from "../../utils/variant-lookup.server";
+import { getFirstVariantId, getBundleProductVariantId, batchGetFirstVariants, batchGetFirstVariantsWithPrices } from "../../utils/variant-lookup.server";
 import { AppLogger } from "../../lib/logger";
 
 // Metafield size constants (Shopify limits)
@@ -98,6 +98,86 @@ export function safeJsonParse(json: any, defaultValue: any = []) {
     }
   }
   return json || defaultValue;
+}
+
+/**
+ * Component pricing interface for expanded bundle checkout display
+ * All prices stored in base currency cents (subunits) as integers
+ */
+export interface ComponentPricing {
+  variantId: string;        // "gid://shopify/ProductVariant/123"
+  retailPrice: number;      // 9800 (cents) = $98.00
+  bundlePrice: number;      // 8820 (cents) = $88.20
+  discountPercent: number;  // 10.00 (percentage)
+  savingsAmount: number;    // 980 (cents) = $9.80
+}
+
+/**
+ * Calculate per-component pricing for expanded bundle checkout display
+ *
+ * Uses proportional discount allocation where each component's discount
+ * is based on its share of the total retail price.
+ *
+ * @param components - Array of component variants with price and quantity
+ * @param discountMethod - The discount method ('percentage_off', 'fixed_amount', etc.)
+ * @param discountValue - The discount value (percentage or fixed amount in cents)
+ * @returns Array of ComponentPricing objects with all values in cents
+ */
+export function calculateComponentPricing(
+  components: Array<{ variantId: string; priceCents: number; quantity: number }>,
+  discountMethod: string,
+  discountValue: number
+): ComponentPricing[] {
+  console.log("💰 [COMPONENT_PRICING] Calculating component pricing");
+  console.log("   - Components:", components.length);
+  console.log("   - Discount method:", discountMethod);
+  console.log("   - Discount value:", discountValue);
+
+  // Calculate total retail price in cents (sum of all components)
+  const totalRetailCents = components.reduce(
+    (sum, c) => sum + (c.priceCents * c.quantity), 0
+  );
+
+  console.log("   - Total retail (cents):", totalRetailCents);
+
+  return components.map(component => {
+    const retailPriceCents = component.priceCents;
+    let bundlePriceCents: number;
+    let componentDiscountPercent: number;
+
+    if (discountMethod === 'percentage_off' || discountMethod === 'percentage') {
+      // Direct percentage discount - apply same percentage to each component
+      componentDiscountPercent = discountValue;
+      bundlePriceCents = Math.round(retailPriceCents * (1 - discountValue / 100));
+    } else if (discountMethod === 'fixed_amount' || discountMethod === 'fixed') {
+      // Fixed amount discount - distribute proportionally based on price weight
+      // Each component gets a discount proportional to its share of total retail
+      const priceWeight = retailPriceCents / totalRetailCents;
+      const componentDiscountCents = Math.round(discountValue * priceWeight);
+      bundlePriceCents = Math.max(0, retailPriceCents - componentDiscountCents);
+      componentDiscountPercent = retailPriceCents > 0
+        ? Math.round((componentDiscountCents / retailPriceCents) * 10000) / 100
+        : 0;
+    } else {
+      // No discount or unknown method
+      bundlePriceCents = retailPriceCents;
+      componentDiscountPercent = 0;
+    }
+
+    const savingsCents = retailPriceCents - bundlePriceCents;
+
+    const pricing: ComponentPricing = {
+      variantId: component.variantId,
+      retailPrice: retailPriceCents,
+      bundlePrice: bundlePriceCents,
+      discountPercent: Math.round(componentDiscountPercent * 100) / 100, // Round to 2 decimals
+      savingsAmount: savingsCents
+    };
+
+    console.log(`   - Component ${component.variantId}: retail=${retailPriceCents}, bundle=${bundlePriceCents}, savings=${savingsCents} (${componentDiscountPercent}%)`);
+
+    return pricing;
+  });
 }
 
 /**
@@ -211,6 +291,18 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any) {
         admin: "MERCHANT_READ_WRITE",
         storefront: "PUBLIC_READ"  // Required for cart transform MERGE operation
       }
+    },
+    {
+      name: "Component Pricing",
+      namespace: "$app",
+      key: "component_pricing",
+      description: "Per-component pricing breakdown for expanded bundle checkout display (cents)",
+      type: "json",
+      ownerType: "PRODUCTVARIANT",
+      access: {
+        admin: "MERCHANT_READ_WRITE",
+        storefront: "PUBLIC_READ"  // Required for cart transform to add pricing attributes
+      }
     }
   ];
 
@@ -254,11 +346,12 @@ export async function ensureBundleMetafieldDefinitions(admin: any) {
 /**
  * Updates bundle variant metafields with Shopify Standard structure (Approach 1: Hybrid)
  *
- * Creates 4 metafields on the bundle product's first variant:
+ * Creates 5 metafields on the bundle product's first variant:
  * - component_reference (list.variant_reference) - Shopify standard
  * - component_quantities (list.number_integer) - Shopify standard
  * - price_adjustment (json) - Shopify standard with our extension
  * - bundle_ui_config (json) - Custom for widget configuration
+ * - component_pricing (json) - Per-component pricing for expanded checkout display (cents)
  */
 export async function updateBundleProductMetafields(
   admin: any,
@@ -320,12 +413,15 @@ export async function updateBundleProductMetafields(
     }
   }
 
-  // Batch fetch all variants in a single query
+  // Batch fetch all variants WITH PRICES in a single query (for component pricing)
+  // Array to collect component data for pricing calculation
+  const componentPricingData: Array<{ variantId: string; priceCents: number; quantity: number }> = [];
+
   if (productIdMap.length > 0) {
     const productIds = productIdMap.map(item => item.productId);
-    console.log(`[METAFIELD] Batch fetching variants for ${productIds.length} products`);
+    console.log(`[METAFIELD] Batch fetching variants with prices for ${productIds.length} products`);
 
-    const variantResults = await batchGetFirstVariants(admin, productIds);
+    const variantResults = await batchGetFirstVariantsWithPrices(admin, productIds);
 
     // Process results in order
     productIdMap.forEach(item => {
@@ -335,7 +431,15 @@ export async function updateBundleProductMetafields(
       if (result?.success && result.variantId) {
         componentReferences.push(result.variantId);
         componentQuantities.push(item.stepMinQuantity);
-        console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${item.stepMinQuantity} (from ${item.source})`);
+
+        // Collect pricing data for component_pricing calculation
+        componentPricingData.push({
+          variantId: result.variantId,
+          priceCents: result.priceCents || 0,
+          quantity: item.stepMinQuantity
+        });
+
+        console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${item.stepMinQuantity}, price ${result.priceCents} cents (from ${item.source})`);
       } else {
         AppLogger.warn("Could not get variant for bundle product", {
           component: "metafield-sync",
@@ -347,7 +451,7 @@ export async function updateBundleProductMetafields(
     });
   }
 
-  console.log(`📊 [METAFIELD] Found ${componentReferences.length} component variants`);
+  console.log(`📊 [METAFIELD] Found ${componentReferences.length} component variants with pricing data`);
 
   // Build price_adjustment config (Shopify standard with extensions)
   const priceAdjustment: any = {
@@ -378,6 +482,15 @@ export async function updateBundleProductMetafields(
   }
 
   console.log("💰 [METAFIELD] Price adjustment:", JSON.stringify(priceAdjustment));
+
+  // Calculate per-component pricing for expanded bundle checkout display
+  const componentPricing = calculateComponentPricing(
+    componentPricingData,
+    priceAdjustment.method,
+    priceAdjustment.value
+  );
+
+  console.log("📊 [METAFIELD] Component pricing calculated:", componentPricing.length, "components");
 
   // Build bundle_ui_config for widget
   const bundleUiConfig = {
@@ -429,8 +542,10 @@ export async function updateBundleProductMetafields(
   // Check metafield sizes and log warnings
   const uiConfigSizeCheck = checkMetafieldSize(bundleUiConfig, 'bundle_ui_config', 'updateBundleProductMetafields');
   const priceAdjustmentSizeCheck = checkMetafieldSize(priceAdjustment, 'price_adjustment', 'updateBundleProductMetafields');
+  const componentPricingSizeCheck = checkMetafieldSize(componentPricing, 'component_pricing', 'updateBundleProductMetafields');
 
   console.log("🎨 [METAFIELD] UI config size:", JSON.stringify(bundleUiConfig).length, "chars");
+  console.log("💵 [METAFIELD] Component pricing size:", JSON.stringify(componentPricing).length, "chars");
 
   // Abort if any metafield exceeds size limit
   if (!uiConfigSizeCheck.withinLimit) {
@@ -439,6 +554,10 @@ export async function updateBundleProductMetafields(
 
   if (!priceAdjustmentSizeCheck.withinLimit) {
     throw new Error(`price_adjustment metafield exceeds Shopify's 64KB limit (size: ${priceAdjustmentSizeCheck.size} bytes).`);
+  }
+
+  if (!componentPricingSizeCheck.withinLimit) {
+    throw new Error(`component_pricing metafield exceeds Shopify's 64KB limit (size: ${componentPricingSizeCheck.size} bytes). Bundle has too many components.`);
   }
 
   // DEBUG: Log the stringified value we're about to send
@@ -454,7 +573,7 @@ export async function updateBundleProductMetafields(
     }
   })());
 
-  // Set all 4 metafields on the bundle variant
+  // Set all 5 metafields on the bundle variant
   const SET_METAFIELDS = `
     mutation SetBundleVariantMetafields($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
@@ -503,6 +622,13 @@ export async function updateBundleProductMetafields(
       key: 'bundle_ui_config',
       type: "json",
       value: JSON.stringify(bundleUiConfig)
+    },
+    {
+      ownerId: bundleVariantId,
+      namespace: "$app",
+      key: 'component_pricing',
+      type: "json",
+      value: JSON.stringify(componentPricing)
     }
   ];
 
@@ -542,6 +668,7 @@ export async function updateBundleProductMetafields(
   console.log("   - component_quantities:", componentQuantities.length, "values");
   console.log("   - price_adjustment: method =", priceAdjustment.method, ", value =", priceAdjustment.value);
   console.log("   - bundle_ui_config:", bundleUiConfig.steps.length, "steps");
+  console.log("   - component_pricing:", componentPricing.length, "components with pricing in cents");
 
   return data.data?.metafieldsSet?.metafields;
 }

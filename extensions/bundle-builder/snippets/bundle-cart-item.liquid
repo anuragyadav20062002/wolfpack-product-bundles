@@ -1,0 +1,125 @@
+{% comment %}
+  Bundle Cart Item Snippet
+
+  Displays bundle component pricing breakdown in cart drawer/page.
+  Include this snippet for each cart line item to show expanded bundle pricing.
+
+  Usage:
+    {% render 'bundle-cart-item', item: item %}
+
+  Required line item properties (set by Cart Transform):
+    - _is_bundle_component: "true"
+    - _retail_price_cents: Original price in cents (e.g., "9800")
+    - _bundle_price_cents: Discounted price in cents (e.g., "8820")
+    - _discount_percent: Discount percentage (e.g., "10.00")
+    - _savings_cents: Savings amount in cents (e.g., "980")
+
+  Issue: expanded-bundle-checkout-1
+{% endcomment %}
+
+{% liquid
+  assign is_bundle_component = false
+  assign retail_price_cents = 0
+  assign bundle_price_cents = 0
+  assign discount_percent = 0
+  assign savings_cents = 0
+
+  for property in item.properties
+    case property.first
+      when '_is_bundle_component'
+        if property.last == 'true'
+          assign is_bundle_component = true
+        endif
+      when '_retail_price_cents'
+        assign retail_price_cents = property.last | plus: 0
+      when '_bundle_price_cents'
+        assign bundle_price_cents = property.last | plus: 0
+      when '_discount_percent'
+        assign discount_percent = property.last | plus: 0.0
+      when '_savings_cents'
+        assign savings_cents = property.last | plus: 0
+    endcase
+  endfor
+%}
+
+{% if is_bundle_component and retail_price_cents > 0 %}
+  {% comment %}
+    Convert cents to currency amount
+    Shopify's money filter handles currency formatting
+  {% endcomment %}
+  {% assign retail_price = retail_price_cents | divided_by: 100.0 %}
+  {% assign bundle_price = bundle_price_cents | divided_by: 100.0 %}
+  {% assign savings_amount = savings_cents | divided_by: 100.0 %}
+
+  <div class="bundle-component-pricing" data-bundle-component="true">
+    {% if discount_percent > 0 %}
+      <div class="bundle-pricing-row">
+        <span class="bundle-retail-price">
+          <s>{{ retail_price | times: 100 | money }}</s>
+        </span>
+        <span class="bundle-bundle-price">
+          {{ bundle_price | times: 100 | money }}
+        </span>
+      </div>
+
+      <div class="bundle-savings-row">
+        <span class="bundle-discount-badge">
+          -{{ discount_percent | round: 0 }}%
+        </span>
+        <span class="bundle-savings-text">
+          Save {{ savings_amount | times: 100 | money }}
+        </span>
+      </div>
+    {% else %}
+      <div class="bundle-pricing-row">
+        <span class="bundle-bundle-price">
+          {{ bundle_price | times: 100 | money }}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+
+  <style>
+    .bundle-component-pricing {
+      margin-top: 4px;
+      font-size: 0.85em;
+    }
+
+    .bundle-pricing-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bundle-retail-price {
+      color: #888;
+      text-decoration: line-through;
+    }
+
+    .bundle-bundle-price {
+      font-weight: 600;
+      color: #2e7d32;
+    }
+
+    .bundle-savings-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .bundle-discount-badge {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .bundle-savings-text {
+      color: #2e7d32;
+      font-size: 0.9em;
+    }
+  </style>
+{% endif %}
