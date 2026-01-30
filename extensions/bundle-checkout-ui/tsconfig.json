@@ -6,8 +6,7 @@
     "checkJs": true,
     "allowJs": true,
     "moduleResolution": "node",
-    "esModuleInterop": true,
-    "types": ["@shopify/ui-extensions/checkout"]  
+    "esModuleInterop": true
   },
   "include": ["./src", "./shopify.d.ts"]
 }

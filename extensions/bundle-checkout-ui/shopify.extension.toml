@@ -5,7 +5,6 @@
 # https://shopify.dev/docs/api/usage/versioning
 api_version = "2025-10"
 
-[[extensions]]
 name = "bundle-checkout-ui"
 handle = "bundle-checkout-ui"
 type = "checkout_ui_extension"
@@ -15,16 +14,16 @@ uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
 # and the file that contains your extension’s source code. Learn more:
 # https://shopify.dev/docs/api/checkout-ui-extensions/latest/extension-targets-overview
 
-[[extensions.targeting]]
+[targeting]
 module = "./src/Checkout.jsx"
 target = "purchase.checkout.cart-line-item.render-after"
 
 # Also render on thank you page
-[[extensions.targeting]]
+[[targeting]]
 module = "./src/Checkout.jsx"
 target = "purchase.thank-you.cart-line-item.render-after"
 
-[extensions.capabilities]
+[capabilities]
 # Gives your extension access to directly query Shopify’s storefront API.
 # https://shopify.dev/docs/api/checkout-ui-extensions/latest/configuration#api-access
 api_access = true
