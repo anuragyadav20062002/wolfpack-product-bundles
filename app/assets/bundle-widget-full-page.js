@@ -91,6 +91,10 @@ class BundleWidgetFullPage {
     this.config = {};
     this.elements = {};
 
+    // Search state for filtering products within steps
+    this.searchQuery = '';
+    this.searchDebounceTimer = null;
+
     // Initialize product modal (if BundleProductModal is available)
     this.productModal = null;
     if (window.BundleProductModal) {
@@ -754,13 +758,17 @@ class BundleWidgetFullPage {
     const bundleHeader = this.createBundleInstructions();
     contentSection.appendChild(bundleHeader);
 
-    // 3. Render category/collection tabs if step has collections
+    // 3. Render search input for filtering products
+    const searchInput = this.createSearchInput();
+    contentSection.appendChild(searchInput);
+
+    // 4. Render category/collection tabs if step has collections
     const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
     if (categoryTabs) {
       contentSection.appendChild(categoryTabs);
     }
 
-    // 4. Create product grid container with loading state
+    // 5. Create product grid container with loading state
     const productGridContainer = document.createElement('div');
     productGridContainer.className = 'full-page-product-grid-container';
     productGridContainer.innerHTML = this.createProductGridLoadingState();
@@ -768,7 +776,7 @@ class BundleWidgetFullPage {
 
     this.elements.stepsContainer.appendChild(contentSection);
 
-    // 5. Render fixed footer (will be updated after products load)
+    // 6. Render fixed footer (will be updated after products load)
     this.renderFullPageFooter();
 
     // Load products asynchronously and update grid
@@ -885,6 +893,7 @@ class BundleWidgetFullPage {
         tab.style.cursor = 'pointer';
         tab.addEventListener('click', () => {
           this.currentStepIndex = index;
+          this.searchQuery = ''; // Clear search when changing steps
           this.renderFullPageLayout();
         });
       }
@@ -937,6 +946,85 @@ class BundleWidgetFullPage {
     `;
 
     return header;
+  }
+
+  // Create search input for filtering products within the current step
+  createSearchInput() {
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'step-search-container';
+
+    searchContainer.innerHTML = `
+      <div class="step-search-input-wrapper">
+        <svg class="step-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          class="step-search-input"
+          placeholder="Search products..."
+          value="${this.searchQuery}"
+          autocomplete="off"
+        />
+        <button class="step-search-clear" type="button" style="display: ${this.searchQuery ? 'flex' : 'none'}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    const input = searchContainer.querySelector('.step-search-input');
+    const clearBtn = searchContainer.querySelector('.step-search-clear');
+
+    // Handle input with debounce
+    input.addEventListener('input', (e) => {
+      const value = e.target.value;
+
+      // Show/hide clear button
+      clearBtn.style.display = value ? 'flex' : 'none';
+
+      // Debounce the search
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer);
+      }
+
+      this.searchDebounceTimer = setTimeout(() => {
+        this.searchQuery = value;
+        this.updateProductGridWithSearch();
+      }, 300);
+    });
+
+    // Handle clear button
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      clearBtn.style.display = 'none';
+      this.searchQuery = '';
+      this.updateProductGridWithSearch();
+      input.focus();
+    });
+
+    // Handle escape key to clear
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        input.value = '';
+        clearBtn.style.display = 'none';
+        this.searchQuery = '';
+        this.updateProductGridWithSearch();
+      }
+    });
+
+    return searchContainer;
+  }
+
+  // Update product grid when search query changes (without full re-render)
+  updateProductGridWithSearch() {
+    const gridContainer = this.container.querySelector('.full-page-product-grid-container');
+    if (!gridContainer) return;
+
+    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+    gridContainer.innerHTML = '';
+    gridContainer.appendChild(productGrid);
   }
 
   // Hide the page title element from the theme template
@@ -1132,13 +1220,28 @@ class BundleWidgetFullPage {
       }
     }
 
-    if (products.length === 0) {
-      grid.innerHTML = '<p class="no-products">No products available in this step.</p>';
-      return grid;
+    // Expand products with variants into separate cards (one card per variant)
+    let expandedProducts = this.expandProductsByVariant(products);
+
+    // Filter by search query if active
+    if (this.searchQuery && this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase().trim();
+      expandedProducts = expandedProducts.filter(product => {
+        const title = (product.title || '').toLowerCase();
+        const variantTitle = (product.variantTitle || '').toLowerCase();
+        const parentTitle = (product.parentTitle || '').toLowerCase();
+        return title.includes(query) || variantTitle.includes(query) || parentTitle.includes(query);
+      });
     }
 
-    // Expand products with variants into separate cards (one card per variant)
-    const expandedProducts = this.expandProductsByVariant(products);
+    if (expandedProducts.length === 0) {
+      // Show appropriate message based on whether there's a search query
+      const message = this.searchQuery
+        ? `No products match "${this.searchQuery}"`
+        : 'No products available in this step.';
+      grid.innerHTML = `<p class="no-products">${message}</p>`;
+      return grid;
+    }
 
     console.log('[PRODUCT_GRID_DEBUG] Expanded products:', {
       originalCount: products.length,

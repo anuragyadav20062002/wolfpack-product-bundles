@@ -45,6 +45,10 @@ class BundleProductModal {
     const modalHTML = `
       <div class="bundle-modal-overlay" id="bundle-product-modal">
         <div class="bundle-modal-container">
+          <!-- Mobile Drag Handle for Swipe-to-Dismiss -->
+          <div class="bundle-modal-drag-handle">
+            <div class="bundle-modal-drag-indicator"></div>
+          </div>
           <button class="bundle-modal-close" aria-label="Close modal">&times;</button>
 
           <div class="bundle-modal-content">
@@ -77,6 +81,12 @@ class BundleProductModal {
             <div class="bundle-modal-details">
               <div class="bundle-modal-header">
                 <h2 class="bundle-modal-title" id="modal-product-title"></h2>
+                <div class="bundle-modal-selection-summary" id="modal-selection-summary" style="display: none;">
+                  <svg class="selection-check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>Selected: <strong id="modal-selection-text"></strong></span>
+                </div>
                 <div class="bundle-modal-price" id="modal-product-price"></div>
               </div>
 
@@ -155,6 +165,97 @@ class BundleProductModal {
     document.getElementById('modal-add-to-box').addEventListener('click', () => {
       this.addToBundle();
     });
+
+    // Swipe gesture detection for mobile
+    this.setupSwipeGestures();
+  }
+
+  /**
+   * Setup swipe gestures for mobile
+   * - Swipe down on container to dismiss
+   * - Swipe left/right on image to navigate carousel
+   */
+  setupSwipeGestures() {
+    const modalContainer = this.modalElement.querySelector('.bundle-modal-container');
+    const imageContainer = this.modalElement.querySelector('.bundle-modal-main-image-container');
+
+    // Swipe state
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isSwiping = false;
+
+    // Swipe-to-dismiss on modal container (drag handle area)
+    const dragHandle = this.modalElement.querySelector('.bundle-modal-drag-handle');
+    if (dragHandle) {
+      dragHandle.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        isSwiping = true;
+        modalContainer.style.transition = 'none';
+      }, { passive: true });
+
+      dragHandle.addEventListener('touchmove', (e) => {
+        if (!isSwiping) return;
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - touchStartY;
+
+        // Only allow downward swipe
+        if (deltaY > 0) {
+          modalContainer.style.transform = `translateY(${deltaY}px)`;
+          modalContainer.style.opacity = Math.max(0.5, 1 - deltaY / 300);
+        }
+      }, { passive: true });
+
+      dragHandle.addEventListener('touchend', (e) => {
+        if (!isSwiping) return;
+        isSwiping = false;
+
+        const deltaY = e.changedTouches[0].clientY - touchStartY;
+        const deltaTime = Date.now() - touchStartTime;
+
+        modalContainer.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+
+        // Close if swiped down > 100px within 300ms (quick swipe) or > 150px (slow swipe)
+        if ((deltaY > 100 && deltaTime < 300) || deltaY > 150) {
+          modalContainer.style.transform = 'translateY(100%)';
+          modalContainer.style.opacity = '0';
+          setTimeout(() => {
+            this.close();
+            modalContainer.style.transform = '';
+            modalContainer.style.opacity = '';
+          }, 300);
+        } else {
+          // Reset position
+          modalContainer.style.transform = '';
+          modalContainer.style.opacity = '';
+        }
+      }, { passive: true });
+    }
+
+    // Swipe left/right on image for carousel navigation
+    if (imageContainer) {
+      imageContainer.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartTime = Date.now();
+      }, { passive: true });
+
+      imageContainer.addEventListener('touchend', (e) => {
+        const deltaX = e.changedTouches[0].clientX - touchStartX;
+        const deltaTime = Date.now() - touchStartTime;
+
+        // Minimum 50px swipe within 300ms
+        if (Math.abs(deltaX) > 50 && deltaTime < 300) {
+          if (deltaX > 0) {
+            // Swipe right = previous image
+            this.navigateCarousel(-1);
+          } else {
+            // Swipe left = next image
+            this.navigateCarousel(1);
+          }
+        }
+      }, { passive: true });
+    }
   }
 
   /**
@@ -595,6 +696,9 @@ class BundleProductModal {
 
     console.log('[MODAL] Selected variant:', this.selectedVariant);
 
+    // Update selection summary
+    this.updateSelectionSummary();
+
     // Update price
     this.updatePrice();
 
@@ -606,6 +710,32 @@ class BundleProductModal {
 
     // Update unavailable option buttons
     this.updateOptionAvailability();
+  }
+
+  /**
+   * Update selection summary display
+   * Shows current selection like "Blue / Medium"
+   */
+  updateSelectionSummary() {
+    const summaryContainer = document.getElementById('modal-selection-summary');
+    const summaryText = document.getElementById('modal-selection-text');
+
+    if (!summaryContainer || !summaryText) return;
+
+    // Get selected option values
+    const selectedValues = Object.keys(this.selectedOptions || {})
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map(key => this.selectedOptions[key])
+      .filter(value => value && value !== 'Default Title');
+
+    if (selectedValues.length === 0) {
+      summaryContainer.style.display = 'none';
+      return;
+    }
+
+    // Show the summary
+    summaryText.textContent = selectedValues.join(' / ');
+    summaryContainer.style.display = 'flex';
   }
 
   /**

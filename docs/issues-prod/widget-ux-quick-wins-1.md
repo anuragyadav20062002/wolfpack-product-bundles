@@ -104,4 +104,4 @@ All 5 quick wins implemented successfully:
 - [x] 4. Sticky Add to Bundle button on mobile
 - [x] 5. Selection count badge visibility
 - [x] Build and test
-- [ ] Commit changes
+- [x] Commit changes (74906ce)

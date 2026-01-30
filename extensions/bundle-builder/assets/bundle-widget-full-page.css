@@ -685,6 +685,100 @@
 }
 
 /* ============================================================================
+   STEP SEARCH INPUT - Product Search Within Steps
+   ============================================================================ */
+
+.step-search-container {
+  max-width: 500px;
+  margin: 0 auto 20px;
+  padding: 0 20px;
+}
+
+.step-search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bundle-search-bg, #f8f8f8);
+  border: 1px solid var(--bundle-search-border, #e0e0e0);
+  border-radius: var(--bundle-search-border-radius, 12px);
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.step-search-input-wrapper:focus-within {
+  border-color: var(--bundle-search-focus-border, #00BCD4);
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+  background: #fff;
+}
+
+.step-search-icon {
+  flex-shrink: 0;
+  color: var(--bundle-search-icon-color, #666);
+  opacity: 0.7;
+}
+
+.step-search-input-wrapper:focus-within .step-search-icon {
+  color: var(--bundle-search-focus-border, #00BCD4);
+  opacity: 1;
+}
+
+.step-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--bundle-search-text-color, #333);
+  outline: none;
+  min-width: 0;
+}
+
+.step-search-input::placeholder {
+  color: var(--bundle-search-placeholder-color, #999);
+}
+
+.step-search-clear {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: var(--bundle-search-clear-bg, rgba(0, 0, 0, 0.08));
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--bundle-search-clear-color, #666);
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.step-search-clear:hover {
+  background: var(--bundle-search-clear-hover-bg, rgba(0, 0, 0, 0.15));
+  color: var(--bundle-search-clear-hover-color, #333);
+}
+
+/* Mobile-first: Slightly larger touch targets */
+@media (max-width: 767px) {
+  .step-search-container {
+    padding: 0 16px;
+  }
+
+  .step-search-input-wrapper {
+    padding: 14px 16px;
+  }
+
+  .step-search-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .step-search-clear {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ============================================================================
    CATEGORY TABS - Pill Button Style (Competitor-Inspired)
    ============================================================================ */
 
@@ -2390,6 +2484,35 @@ body:has(.bundle-widget-full-page) #MainContent {
   }
 }
 
+/* Drag Handle - Mobile Swipe-to-Dismiss Indicator */
+.bundle-modal-drag-handle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0 8px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.bundle-modal-drag-indicator {
+  width: 40px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.bundle-modal-drag-handle:active .bundle-modal-drag-indicator {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Hide drag handle on tablet/desktop */
+@media (min-width: 640px) {
+  .bundle-modal-drag-handle {
+    display: none;
+  }
+}
+
 /* Close Button - Mobile-First with touch target compliance */
 .bundle-modal-close {
   position: absolute;
@@ -2663,6 +2786,29 @@ body:has(.bundle-widget-full-page) #MainContent {
   color: #1a1a1a;
 }
 
+/* Selection Summary - Shows current variant selection */
+.bundle-modal-selection-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bundle-selection-summary-bg, #f0fdf4);
+  border: 1px solid var(--bundle-selection-summary-border, #bbf7d0);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--bundle-selection-summary-text, #166534);
+  margin-top: 8px;
+}
+
+.bundle-modal-selection-summary .selection-check-icon {
+  flex-shrink: 0;
+  color: var(--bundle-selection-check-color, #16a34a);
+}
+
+.bundle-modal-selection-summary strong {
+  font-weight: 600;
+}
+
 .bundle-modal-price {
   font-size: 20px;
   font-weight: 600;
@@ -2746,12 +2892,33 @@ body:has(.bundle-widget-full-page) #MainContent {
   border-color: var(--bundle-primary-color, #000);
   background: var(--bundle-primary-color, #000);
   color: #fff;
+  position: relative;
+}
+
+/* Checkmark indicator for selected text buttons */
+.bundle-modal-variant-btn.selected:not(.color-swatch)::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background: var(--bundle-selection-check-bg, #16a34a);
+  border-radius: 50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M13 4L6 11L3 8' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 10px 10px;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .bundle-modal-variant-btn.unavailable {
   opacity: 0.4;
   cursor: not-allowed;
   text-decoration: line-through;
+  background: #f5f5f5;
+  color: #999;
+  border-color: #ddd;
 }
 
 /* Color Swatch Style */
@@ -2776,6 +2943,22 @@ body:has(.bundle-widget-full-page) #MainContent {
 .bundle-modal-variant-btn.color-swatch.selected {
   border-color: var(--bundle-primary-color, #000);
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--bundle-primary-color, #000);
+  position: relative;
+}
+
+/* Checkmark indicator for selected color swatches */
+.bundle-modal-variant-btn.color-swatch.selected::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M13 4L6 11L3 8' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
 .bundle-modal-variant-btn.color-swatch.unavailable {
