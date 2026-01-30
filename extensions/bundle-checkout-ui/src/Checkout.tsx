@@ -4,7 +4,9 @@
  * Displays bundle pricing breakdown on cart line items in checkout.
  * Shows retail price, discount percentage badge, and savings.
  *
- * Target: purchase.checkout.cart-line-item.render-after
+ * Targets:
+ * - purchase.checkout.cart-line-item.render-after
+ * - purchase.thank-you.cart-line-item.render-after
  *
  * Reads attributes set by Cart Transform:
  * - _is_bundle_component: "true"
@@ -12,20 +14,26 @@
  * - _bundle_price_cents: Discounted price in cents
  * - _discount_percent: Discount percentage
  * - _savings_cents: Savings amount in cents
- *
- * Issue: expanded-bundle-checkout-1
  */
 
-import { useCartLineTarget, useTotalAmount } from "@shopify/ui-extensions/checkout/preact";
-import { render } from "preact";
+import type {FunctionComponent} from 'preact';
+import {
+  useCartLineTarget,
+  useTotalAmount,
+} from '@shopify/ui-extensions/checkout/preact';
 
-export default function () {
-  render(<BundlePricingExtension />, document.body);
+interface LineItemAttribute {
+  key: string;
+  value: string;
 }
 
-function BundlePricingExtension() {
+interface LineItemWithAttributes {
+  attributes?: LineItemAttribute[];
+}
+
+export const BundlePricingExtension: FunctionComponent = () => {
   // Get the cart line item using the Preact hook
-  const lineItem = useCartLineTarget();
+  const lineItem = useCartLineTarget() as LineItemWithAttributes | null;
   const totalAmount = useTotalAmount();
 
   if (!lineItem) {
@@ -33,11 +41,11 @@ function BundlePricingExtension() {
   }
 
   // Get attributes from the cart line
-  const attributes = lineItem.attributes || [];
+  const attributes: LineItemAttribute[] = lineItem.attributes ?? [];
 
   // Check if this is a bundle component
   const isBundleComponent = attributes.find(
-    (attr) => attr.key === "_is_bundle_component" && attr.value === "true"
+    (attr) => attr.key === '_is_bundle_component' && attr.value === 'true',
   );
 
   if (!isBundleComponent) {
@@ -47,15 +55,15 @@ function BundlePricingExtension() {
 
   // Extract pricing attributes
   const retailPriceCents = parseInt(
-    attributes.find((attr) => attr.key === "_retail_price_cents")?.value || "0",
-    10
+    attributes.find((attr) => attr.key === '_retail_price_cents')?.value ?? '0',
+    10,
   );
   const discountPercent = parseFloat(
-    attributes.find((attr) => attr.key === "_discount_percent")?.value || "0"
+    attributes.find((attr) => attr.key === '_discount_percent')?.value ?? '0',
   );
   const savingsCents = parseInt(
-    attributes.find((attr) => attr.key === "_savings_cents")?.value || "0",
-    10
+    attributes.find((attr) => attr.key === '_savings_cents')?.value ?? '0',
+    10,
   );
 
   // If no discount, don't show the pricing breakdown
@@ -64,14 +72,14 @@ function BundlePricingExtension() {
   }
 
   // Get currency from checkout cost
-  const currency = totalAmount?.currencyCode || "USD";
+  const currency = totalAmount?.currencyCode ?? 'USD';
 
   // Format prices using the shop's currency
-  const formatMoney = (cents) => {
+  const formatMoney = (cents: number) => {
     const amount = cents / 100;
     return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency,
+      style: 'currency',
+      currency,
     }).format(amount);
   };
 
@@ -85,4 +93,4 @@ function BundlePricingExtension() {
       <s-text tone="success">Save {savings}</s-text>
     </s-stack>
   );
-}
+};

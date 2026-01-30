@@ -15,12 +15,12 @@ uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
 # https://shopify.dev/docs/api/checkout-ui-extensions/latest/extension-targets-overview
 
 [[targeting]]
-module = "./src/Checkout.jsx"
+module = "./src/index.tsx"
 target = "purchase.checkout.cart-line-item.render-after"
 
 # Also render on thank you page
 [[targeting]]
-module = "./src/Checkout.jsx"
+module = "./src/index.tsx"
 target = "purchase.thank-you.cart-line-item.render-after"
 
 [capabilities]
