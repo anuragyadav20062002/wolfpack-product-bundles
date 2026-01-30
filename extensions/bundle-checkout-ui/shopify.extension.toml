@@ -14,7 +14,7 @@ uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
 # and the file that contains your extension’s source code. Learn more:
 # https://shopify.dev/docs/api/checkout-ui-extensions/latest/extension-targets-overview
 
-[targeting]
+[[targeting]]
 module = "./src/Checkout.jsx"
 target = "purchase.checkout.cart-line-item.render-after"
 
