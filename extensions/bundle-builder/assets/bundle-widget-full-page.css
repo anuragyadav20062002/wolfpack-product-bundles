@@ -355,6 +355,53 @@
   background: #f5f5f5;
   border-color: #ccc;
   color: #999;
+  position: relative;
+}
+
+/* Locked step tooltip */
+.tab-locked-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Tooltip arrow */
+.tab-locked-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
+}
+
+/* Show tooltip on hover */
+.step-tab.locked:hover .tab-locked-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Mobile: Show tooltip on tap with slight delay */
+@media (hover: none) and (pointer: coarse) {
+  .step-tab.locked:active .tab-locked-tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
 }
 
 /* Tab number circle */
@@ -399,9 +446,18 @@
   opacity: 0.7;
 }
 
+/* Selection count - More prominent styling */
 .tab-count {
   font-size: 12px;
-  opacity: 0.8;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.08);
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.step-tab.active .tab-count {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Tab product images */
@@ -433,9 +489,23 @@
   flex-shrink: 0;
 }
 
+/* Checkmark - More visible with background */
+.tab-check {
+  width: 24px;
+  height: 24px;
+  background: #10B981;
+  border-radius: 50%;
+  color: #fff !important;
+}
+
+.step-tab.active .tab-check {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--bundle-tabs-active-bg-color, #1E1E1E) !important;
+}
+
 .tab-check svg {
-  width: 20px;
-  height: 20px;
+  width: 14px;
+  height: 14px;
 }
 
 .tab-lock svg {
@@ -2567,6 +2637,14 @@ body:has(.bundle-widget-full-page) #MainContent {
   flex-direction: column;
   gap: 20px;
   padding-top: 8px;
+  padding-bottom: 16px; /* Space for sticky button */
+}
+
+/* Mobile: Extra padding for sticky button */
+@media (max-width: 640px) {
+  .bundle-modal-details {
+    padding-bottom: 80px; /* Extra space for sticky button */
+  }
 }
 
 .bundle-modal-header {
@@ -2796,13 +2874,17 @@ body:has(.bundle-widget-full-page) #MainContent {
   background: #fff;
 }
 
-/* Add To Box Button */
+/* Add To Box Button - Mobile-first with sticky positioning */
 .bundle-modal-add-btn {
   width: 100%;
   padding: 14px 24px;
   background: var(--bundle-primary-color, #000);
   color: #FFFFFF;
   border: none;
+  /* Mobile: Sticky at bottom */
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   border-radius: 6px;
   font-size: 15px;
   font-weight: 600;

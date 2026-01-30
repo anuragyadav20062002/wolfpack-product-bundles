@@ -631,6 +631,58 @@ class ToastManager {
       }, duration);
     }
   }
+
+  // Show toast with undo action button
+  static showWithUndo(message, undoCallback, duration = 5000) {
+    // Remove any existing toast
+    const existingToast = document.getElementById('bundle-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    // Create toast element with undo button
+    const toast = document.createElement('div');
+    toast.id = 'bundle-toast';
+    toast.className = 'bundle-toast bundle-toast-with-undo';
+    toast.innerHTML = `
+      <span class="toast-message">${message}</span>
+      <button class="toast-undo-btn" type="button">Undo</button>
+      <svg class="toast-close" width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+
+    // Attach event listeners
+    const undoBtn = toast.querySelector('.toast-undo-btn');
+    const closeBtn = toast.querySelector('.toast-close');
+    let undoTriggered = false;
+
+    undoBtn.addEventListener('click', () => {
+      if (!undoTriggered && typeof undoCallback === 'function') {
+        undoTriggered = true;
+        undoCallback();
+        toast.remove();
+      }
+    });
+
+    closeBtn.addEventListener('click', () => {
+      toast.remove();
+    });
+
+    // Add to page
+    document.body.appendChild(toast);
+
+    // Auto-remove after duration
+    if (duration > 0) {
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+        }
+      }, duration);
+    }
+
+    return toast;
+  }
 }
 class TemplateManager {
   static replaceVariables(template, variables) {
@@ -2759,6 +2811,9 @@ class BundleWidgetFullPage {
         }
       } else {
         // Empty step - show step number and name
+        // Get previous step name for locked tooltip
+        const prevStepName = index > 0 ? (this.selectedBundle.steps[index - 1]?.name || `Step ${index}`) : '';
+
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
@@ -2771,6 +2826,7 @@ class BundleWidgetFullPage {
                 <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
               </svg>
             </div>
+            <div class="tab-locked-tooltip">Complete "${prevStepName}" first</div>
           ` : ''}
         `;
       }
@@ -3354,7 +3410,7 @@ class BundleWidgetFullPage {
           currencyInfo
         );
         discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || 'Congratulations! You got {{discountText}}!',
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
           variables
         );
       } else if (nextRule) {
@@ -3377,7 +3433,14 @@ class BundleWidgetFullPage {
           discountText = 'a discount';
         }
 
-        discountMessage = `Add ${remaining} more product(s) to get ${discountText}!`;
+        // Improved messaging with encouraging copy
+        if (remaining === 1) {
+          discountMessage = `Almost there! Add 1 more item to unlock ${discountText}`;
+        } else if (remaining <= 3) {
+          discountMessage = `Just ${remaining} more items to unlock ${discountText}!`;
+        } else {
+          discountMessage = `Add ${remaining} more items to get ${discountText}`;
+        }
       }
     }
 
@@ -3488,11 +3551,35 @@ class BundleWidgetFullPage {
         <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${item.title}">×</button>
       `;
 
-      // Attach remove handler
+      // Attach remove handler with undo support
       const removeBtn = tile.querySelector('.tile-remove');
       removeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+
+        // Store item data for undo
+        const removedItem = {
+          stepIndex: item.stepIndex,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          title: item.title
+        };
+
+        // Remove the product
         this.updateProductSelection(item.stepIndex, item.variantId, 0);
+
+        // Show undo toast
+        const truncatedTitle = removedItem.title.length > 25
+          ? removedItem.title.substring(0, 25) + '...'
+          : removedItem.title;
+
+        ToastManager.showWithUndo(
+          `Removed "${truncatedTitle}"`,
+          () => {
+            // Undo callback - restore the product
+            this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity);
+          },
+          5000
+        );
       });
 
       tilesWrapper.appendChild(tile);
