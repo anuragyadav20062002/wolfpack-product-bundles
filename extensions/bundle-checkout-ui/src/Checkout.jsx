@@ -2,7 +2,7 @@
  * Bundle Checkout UI Extension
  *
  * Displays bundle pricing breakdown on cart line items in checkout.
- * Shows retail price, bundle price, discount percentage, and savings.
+ * Shows retail price, discount percentage badge, and savings.
  *
  * Target: purchase.checkout.cart-line-item.render-after
  *
@@ -16,27 +16,28 @@
  * Issue: expanded-bundle-checkout-1
  */
 
-import '@shopify/ui-extensions/preact';
+import "@shopify/ui-extensions/preact";
 import { render } from "preact";
 
-export default async () => {
+export default function () {
   render(<BundlePricingExtension />, document.body);
-};
+}
 
 function BundlePricingExtension() {
-  // Get the current cart line target
-  const target = shopify.target?.current;
+  // Get the cart line item target directly
+  const target = shopify.target;
+  const lineItem = target?.current;
 
-  if (!target) {
+  if (!lineItem) {
     return null;
   }
 
   // Get attributes from the cart line
-  const attributes = target.attributes || [];
+  const attributes = lineItem.attributes || [];
 
   // Check if this is a bundle component
   const isBundleComponent = attributes.find(
-    attr => attr.key === '_is_bundle_component' && attr.value === 'true'
+    (attr) => attr.key === "_is_bundle_component" && attr.value === "true"
   );
 
   if (!isBundleComponent) {
@@ -46,18 +47,14 @@ function BundlePricingExtension() {
 
   // Extract pricing attributes
   const retailPriceCents = parseInt(
-    attributes.find(attr => attr.key === '_retail_price_cents')?.value || '0',
-    10
-  );
-  const bundlePriceCents = parseInt(
-    attributes.find(attr => attr.key === '_bundle_price_cents')?.value || '0',
+    attributes.find((attr) => attr.key === "_retail_price_cents")?.value || "0",
     10
   );
   const discountPercent = parseFloat(
-    attributes.find(attr => attr.key === '_discount_percent')?.value || '0'
+    attributes.find((attr) => attr.key === "_discount_percent")?.value || "0"
   );
   const savingsCents = parseInt(
-    attributes.find(attr => attr.key === '_savings_cents')?.value || '0',
+    attributes.find((attr) => attr.key === "_savings_cents")?.value || "0",
     10
   );
 
@@ -66,28 +63,26 @@ function BundlePricingExtension() {
     return null;
   }
 
+  // Get currency from checkout cost
+  const currency = shopify.cost?.totalAmount?.current?.currencyCode || "USD";
+
   // Format prices using the shop's currency
   const formatMoney = (cents) => {
-    // Get currency from checkout cost
-    const currency = shopify.cost?.totalAmount?.current?.currencyCode || 'USD';
     const amount = cents / 100;
-
     return new Intl.NumberFormat(undefined, {
-      style: 'currency',
+      style: "currency",
       currency: currency,
     }).format(amount);
   };
 
   const retailPrice = formatMoney(retailPriceCents);
-  const bundlePrice = formatMoney(bundlePriceCents);
   const savings = formatMoney(savingsCents);
 
   return (
-    <s-stack direction="inline" gap="base">
-      <s-text>{retailPrice}</s-text>
-      <s-text>{bundlePrice}</s-text>
-      <s-badge tone="neutral">-{Math.round(discountPercent)}%</s-badge>
-      <s-text>Save {savings}</s-text>
+    <s-stack direction="inline" gap="small">
+      <s-text tone="neutral">Was {retailPrice}</s-text>
+      <s-badge tone="critical">-{Math.round(discountPercent)}%</s-badge>
+      <s-text tone="success">Save {savings}</s-text>
     </s-stack>
   );
 }

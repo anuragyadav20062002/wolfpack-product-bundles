@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-01-30
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-01-30 18:00
 
 ## Overview
 
@@ -281,6 +281,20 @@ const bundleTotals = {
   - `extensions/bundle-checkout-ui/` (full extension)
   - `extensions/bundle-checkout-ui/src/Checkout.jsx`
   - `extensions/bundle-checkout-ui/shopify.extension.toml`
+
+### 2026-01-30 18:00 - Phase 3 Fixes (API Version & Validation)
+- Fixed API version error: changed from 2026-01 to 2025-01
+- Updated @shopify/ui-extensions dependency to 2025.1.x
+- Rewrote Checkout.jsx to use proper Preact patterns for checkout extensions
+- Validated all Polaris web components (s-stack, s-text, s-badge)
+- Fixed component properties:
+  - `s-stack`: uses `gap` not `spacing`, `direction="inline"`
+  - `s-text`: uses `tone` (neutral, success, critical)
+  - `s-badge`: uses `tone="critical"` for discount display
+- Files modified:
+  - `extensions/bundle-checkout-ui/shopify.extension.toml`
+  - `extensions/bundle-checkout-ui/package.json`
+  - `extensions/bundle-checkout-ui/src/Checkout.jsx`
 
 ---
 
