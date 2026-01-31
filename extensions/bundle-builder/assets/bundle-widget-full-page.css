@@ -684,6 +684,35 @@
   }
 }
 
+/* Promo banner with discount - highlight the discount */
+.promo-banner.has-discount .promo-banner-note {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--bundle-promo-banner-discount-color, #059669);
+  background: var(--bundle-promo-banner-discount-bg, rgba(5, 150, 105, 0.1));
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+@media (min-width: 640px) {
+  .promo-banner.has-discount .promo-banner-note {
+    padding: 10px 20px;
+    margin-top: 6px;
+  }
+}
+
+/* Promo banner without discount - elegant and simple */
+.promo-banner.no-discount {
+  background: var(--bundle-promo-banner-bg, linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%));
+}
+
+.promo-banner.no-discount .promo-banner-note {
+  font-style: normal;
+  color: var(--bundle-promo-banner-note-color, #64748b);
+}
+
 /* ============================================================================
    STEP SEARCH INPUT - Product Search Within Steps
    ============================================================================ */

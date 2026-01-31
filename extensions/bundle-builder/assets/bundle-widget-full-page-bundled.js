@@ -3154,6 +3154,7 @@ class BundleWidgetFullPage {
   }
 
   // Create promotional banner (Competitor-Inspired with gradient hero style)
+  // Shows bundle title with optional discount info from DCP
   createPromoBanner() {
     // Check if promo banner is enabled via DCP CSS variable
     const promoBannerEnabled = getComputedStyle(document.documentElement)
@@ -3166,15 +3167,18 @@ class BundleWidgetFullPage {
       return null;
     }
 
+    const bundleName = this.selectedBundle?.name || 'Build Your Bundle';
     const pricing = this.selectedBundle?.pricing;
     const rules = pricing?.rules || [];
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
-    // Get the best discount message
-    let promoTitle = '';
-    let promoSubtitle = 'Build Your Own Bundle';
-    let promoNote = '(Mix & Match)';
+    // Start with the bundle name as the main title
+    let promoTitle = bundleName;
+    let promoSubtitle = '';
+    let promoNote = '';
+    let discountMessage = '';
 
+    // Check for discount rules and build discount message
     if (pricing?.enabled && rules.length > 0) {
       // Find the best discount to highlight (use nested structure)
       const bestRule = rules.reduce((best, rule) => {
@@ -3187,41 +3191,48 @@ class BundleWidgetFullPage {
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
-      // Build promo title based on best rule (using nested structure)
+      // Build discount message based on best rule (using nested structure)
       const targetQty = bestRule.condition?.value || bestRule.minQuantity || 0;
       const discountMethod = bestRule.discount?.method || bestRule.discountType;
       const discountValue = bestRule.discount?.value || bestRule.discountValue || 0;
 
-      if (discountMethod === 'percentage') {
-        promoTitle = `Add any ${targetQty} products to your basket, get ${discountValue}% off!`;
-      } else if (discountMethod === 'fixed_amount') {
+      if (discountMethod === 'percentage' && discountValue > 0) {
+        discountMessage = `Add ${targetQty} items and get ${discountValue}% off!`;
+      } else if (discountMethod === 'fixed_amount' && discountValue > 0) {
         const formattedAmount = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
-        promoTitle = `Add any ${targetQty} products to your basket, save ${formattedAmount}!`;
-      } else if (discountMethod === 'fixed_price') {
+        discountMessage = `Add ${targetQty} items and save ${formattedAmount}!`;
+      } else if (discountMethod === 'fixed_price' && discountValue > 0) {
         const formattedPrice = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
-        promoTitle = `Add any ${targetQty} products for just ${formattedPrice}!`;
+        discountMessage = `Add ${targetQty} items for just ${formattedPrice}!`;
       }
     }
 
-    // Use custom messages if configured
+    // Use custom banner message if configured (overrides discount message)
     if (pricing?.messages?.banner) {
-      promoTitle = pricing.messages.banner;
+      discountMessage = pricing.messages.banner;
     }
 
-    // If no discount promo was built (no discount enabled or no rules),
-    // don't show the promo banner - there's nothing to promote
-    if (!promoTitle) {
-      console.log('[PROMO_BANNER] No discount configured, hiding promo banner');
-      return null;
+    // Determine layout based on whether we have a discount
+    if (discountMessage) {
+      // With discount: Bundle name as title, discount as subtitle
+      promoSubtitle = 'Mix & Match';
+      promoNote = discountMessage;
+    } else {
+      // No discount: Just show bundle name with elegant styling
+      promoSubtitle = 'Create Your Perfect Bundle';
+      promoNote = 'Mix & Match Your Favorites';
     }
 
     const banner = document.createElement('div');
     banner.className = 'promo-banner';
+    banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
     banner.innerHTML = `
       ${promoSubtitle ? `<div class="promo-banner-subtitle">${promoSubtitle}</div>` : ''}
       <h2 class="promo-banner-title">${promoTitle}</h2>
       ${promoNote ? `<div class="promo-banner-note">${promoNote}</div>` : ''}
     `;
+
+    console.log('[PROMO_BANNER] Created banner:', { bundleName, discountMessage, hasDiscount: !!discountMessage });
 
     return banner;
   }
@@ -3853,23 +3864,65 @@ class BundleWidgetFullPage {
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
-          // Find product in processed stepProductData using variantId or id
-          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+          // Find product in processed stepProductData
+          // Check multiple ways: direct variantId match, direct id match, or variant within variants array
+          let product = productsInStep.find(p =>
+            String(p.variantId) === String(variantId) || String(p.id) === String(variantId)
+          );
+
+          // If not found directly, search within variants array of each product
+          let matchedVariant = null;
+          if (!product) {
+            for (const p of productsInStep) {
+              if (p.variants && Array.isArray(p.variants)) {
+                const variant = p.variants.find(v => String(v.id) === String(variantId));
+                if (variant) {
+                  product = p;
+                  matchedVariant = variant;
+                  break;
+                }
+              }
+            }
+          }
 
           if (product) {
+            // Determine the correct data based on whether we found a variant within a product
+            const variantData = matchedVariant || product;
+            const isVariantMatch = !!matchedVariant;
+
+            // Build variant title
+            let variantTitle = '';
+            if (isVariantMatch && matchedVariant.title && matchedVariant.title !== 'Default Title') {
+              variantTitle = matchedVariant.title;
+            } else if (product.variantTitle && product.variantTitle !== 'Default Title') {
+              variantTitle = product.variantTitle;
+            }
+
+            // Get the appropriate image - prefer variant image, fallback to product image
+            const imageUrl = isVariantMatch
+              ? (matchedVariant.image?.src || matchedVariant.image || product.imageUrl || product.image?.src || '')
+              : (product.imageUrl || product.image?.src || '');
+
+            // Get the appropriate price - use variant price if available
+            const price = isVariantMatch
+              ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : (parseFloat(matchedVariant.price || '0') * 100))
+              : (product.price || 0);
+
             allProducts.push({
               stepIndex,
               variantId,
               quantity,
-              title: product.title || 'Untitled Product',
+              title: isVariantMatch
+                ? (variantTitle ? `${product.title} - ${variantTitle}` : product.title)
+                : (product.title || 'Untitled Product'),
               parentTitle: product.parentTitle || product.title || 'Untitled Product',
-              variantTitle: product.variantTitle || '',
-              imageUrl: product.imageUrl || product.image?.src || '',
-              image: product.imageUrl || product.image?.src || '',
-              price: product.price || 0
+              variantTitle: variantTitle,
+              imageUrl: imageUrl,
+              image: imageUrl,
+              price: price
             });
           } else {
-            console.warn('[FOOTER] Could not find product for variantId:', variantId);
+            console.warn('[FOOTER] Could not find product for variantId:', variantId, 'in step', stepIndex);
           }
         }
       });
