@@ -1,6 +1,6 @@
 // src/index.tsx
 
-import '@shopify/ui-extensions/preact';  // ✅ correct runtime import
+import '@shopify/ui-extensions/preact';  // Runtime import for Preact with Shopify web components
 import {render} from 'preact';
 import {BundlePricingExtension} from './Checkout';
 

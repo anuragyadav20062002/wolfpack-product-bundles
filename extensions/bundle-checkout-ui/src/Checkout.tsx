@@ -1,8 +1,8 @@
 /**
- * Bundle Checkout UI Extension
+ * Bundle Checkout UI Extension - Flex Bundles Style
  *
- * Displays bundle pricing breakdown on cart line items in checkout.
- * Shows retail price, discount percentage badge, and savings.
+ * Displays comprehensive bundle pricing breakdown on cart line items in checkout.
+ * Shows: Retail Price, Bundle Price, Percentage Savings, Exact Savings
  *
  * Targets:
  * - purchase.checkout.cart-line-item.render-after
@@ -10,6 +10,7 @@
  *
  * Reads attributes set by Cart Transform:
  * - _is_bundle_component: "true"
+ * - _bundle_name: Bundle name
  * - _retail_price_cents: Original price in cents
  * - _bundle_price_cents: Discounted price in cents
  * - _discount_percent: Discount percentage
@@ -29,6 +30,10 @@ interface LineItemAttribute {
 
 interface LineItemWithAttributes {
   attributes?: LineItemAttribute[];
+  quantity?: number;
+  merchandise?: {
+    title?: string;
+  };
 }
 
 export const BundlePricingExtension: FunctionComponent = () => {
@@ -43,10 +48,13 @@ export const BundlePricingExtension: FunctionComponent = () => {
   // Get attributes from the cart line
   const attributes: LineItemAttribute[] = lineItem.attributes ?? [];
 
+  // Helper to get attribute value
+  const getAttr = (key: string): string | undefined => {
+    return attributes.find((attr) => attr.key === key)?.value;
+  };
+
   // Check if this is a bundle component
-  const isBundleComponent = attributes.find(
-    (attr) => attr.key === '_is_bundle_component' && attr.value === 'true',
-  );
+  const isBundleComponent = getAttr('_is_bundle_component') === 'true';
 
   if (!isBundleComponent) {
     // Not a bundle component, don't render anything
@@ -54,17 +62,10 @@ export const BundlePricingExtension: FunctionComponent = () => {
   }
 
   // Extract pricing attributes
-  const retailPriceCents = parseInt(
-    attributes.find((attr) => attr.key === '_retail_price_cents')?.value ?? '0',
-    10,
-  );
-  const discountPercent = parseFloat(
-    attributes.find((attr) => attr.key === '_discount_percent')?.value ?? '0',
-  );
-  const savingsCents = parseInt(
-    attributes.find((attr) => attr.key === '_savings_cents')?.value ?? '0',
-    10,
-  );
+  const retailPriceCents = parseInt(getAttr('_retail_price_cents') ?? '0', 10);
+  const bundlePriceCents = parseInt(getAttr('_bundle_price_cents') ?? '0', 10);
+  const discountPercent = parseFloat(getAttr('_discount_percent') ?? '0');
+  const savingsCents = parseInt(getAttr('_savings_cents') ?? '0', 10);
 
   // If no discount, don't show the pricing breakdown
   if (discountPercent <= 0 || retailPriceCents <= 0) {
@@ -80,17 +81,51 @@ export const BundlePricingExtension: FunctionComponent = () => {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
   const retailPrice = formatMoney(retailPriceCents);
+  const bundlePrice = formatMoney(bundlePriceCents);
   const savings = formatMoney(savingsCents);
+  const discountDisplay = discountPercent.toFixed(discountPercent % 1 === 0 ? 0 : 2);
 
+  // Flex Bundles-style detailed breakdown using Shopify web components
   return (
-    <s-stack direction="inline" gap="small">
-      <s-text tone="neutral">Was {retailPrice}</s-text>
-      <s-badge tone="critical">-{Math.round(discountPercent)}%</s-badge>
-      <s-text tone="success">Save {savings}</s-text>
+    <s-stack direction="block" gap="extraTight">
+      <s-divider />
+      <s-stack direction="block" gap="none">
+        {/* Retail Price */}
+        <s-stack direction="inline" gap="tight" inline-alignment="space-between">
+          <s-text size="small" tone="subdued">Retail Price:</s-text>
+          <s-text size="small" tone="subdued" strikethrough>
+            {retailPrice}
+          </s-text>
+        </s-stack>
+
+        {/* Bundle Price */}
+        <s-stack direction="inline" gap="tight" inline-alignment="space-between">
+          <s-text size="small">Bundle Price:</s-text>
+          <s-text size="small" emphasis="bold">
+            {bundlePrice}
+          </s-text>
+        </s-stack>
+
+        {/* Percentage Savings */}
+        <s-stack direction="inline" gap="tight" inline-alignment="space-between">
+          <s-text size="small" tone="subdued">Percentage Savings:</s-text>
+          <s-badge tone="success">{discountDisplay}%</s-badge>
+        </s-stack>
+
+        {/* Exact Savings */}
+        <s-stack direction="inline" gap="tight" inline-alignment="space-between">
+          <s-text size="small" tone="subdued">Exact Savings:</s-text>
+          <s-text size="small" emphasis="bold" tone="success">
+            {savings}
+          </s-text>
+        </s-stack>
+      </s-stack>
     </s-stack>
   );
 };

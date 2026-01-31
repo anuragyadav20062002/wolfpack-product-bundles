@@ -599,8 +599,10 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
               };
 
               // Add pricing attributes for checkout display
+              const bundleName = getBundleName(line);
               expandedItem.attributes = [
                 { key: '_is_bundle_component', value: 'true' },
+                { key: '_bundle_name', value: bundleName },
                 { key: '_retail_price_cents', value: String(pricing.retailPrice) },
                 { key: '_bundle_price_cents', value: String(pricing.bundlePrice) },
                 { key: '_discount_percent', value: String(pricing.discountPercent) },

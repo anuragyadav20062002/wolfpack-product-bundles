@@ -12,19 +12,22 @@ handle = "bundle-checkout-ui"
 uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
 
   # Controls where in Shopify your extension will be injected,
-  # and the file that contains your extension’s source code. Learn more:
+  # and the file that contains your extension's source code. Learn more:
   # https://shopify.dev/docs/api/checkout-ui-extensions/latest/extension-targets-overview
+
+  # Checkout cart line item - shows pricing breakdown for bundle components
   [[extensions.targeting]]
   module = "./src/index.tsx"
   target = "purchase.checkout.cart-line-item.render-after"
 
-  # Also render on thank you page
+  # Thank you page cart line item - shows pricing breakdown after purchase
   [[extensions.targeting]]
   module = "./src/index.tsx"
   target = "purchase.thank-you.cart-line-item.render-after"
+  export = "thankYouExtension"
 
   [extensions.capabilities]
-  # Gives your extension access to directly query Shopify’s storefront API.
+  # Gives your extension access to directly query Shopify's storefront API.
   # https://shopify.dev/docs/api/checkout-ui-extensions/latest/configuration#api-access
   api_access = true
 
@@ -39,9 +42,6 @@ uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
   # [[extensions.metafields]]
   # namespace = "my_namespace"
   # key = "my_key"
-  # [[extensions.metafields]]
-  # namespace = "my_namespace"
-  # key = "my_other_key"
 
   # Defines settings that will be collected from merchants installing
   # your extension. Learn more:
