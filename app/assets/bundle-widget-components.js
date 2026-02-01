@@ -400,10 +400,31 @@ export class PricingCalculator {
       const productsInStep = stepProductData[stepIndex] || [];
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+        // First try direct match on variantId or id
+        let product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId));
+        let matchedVariant = null;
+
+        // If not found, search within nested variants array of each product
+        // This handles the case where displayVariantsAsIndividual is false
+        // and user selects a non-default variant from dropdown
+        if (!product) {
+          for (const p of productsInStep) {
+            if (p.variants && Array.isArray(p.variants)) {
+              const variant = p.variants.find(v => String(v.id) === String(variantId));
+              if (variant) {
+                product = p;
+                matchedVariant = variant;
+                break;
+              }
+            }
+          }
+        }
 
         if (product && quantity > 0) {
-          const price = product.price || 0; // Already in cents from processProductsForStep
+          // Use variant price if found within nested variants, otherwise use product price
+          const price = matchedVariant
+            ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : parseFloat(matchedVariant.price || '0') * 100)
+            : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
         }

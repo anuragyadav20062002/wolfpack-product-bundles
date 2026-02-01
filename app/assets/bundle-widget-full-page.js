@@ -249,6 +249,11 @@ class BundleWidgetFullPage {
       // Quantity selector visibility settings (default: show on both)
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
       showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
+      // Promo banner settings from theme editor
+      showPromoBanner: dataset.showPromoBanner !== 'false',
+      promoBannerSubtitle: dataset.promoBannerSubtitle || 'Mix & Match',
+      promoBannerTagline: dataset.promoBannerTagline || 'Create Your Perfect Bundle',
+      promoBannerNote: dataset.promoBannerNote || 'Mix & Match Your Favorites',
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -1073,6 +1078,12 @@ class BundleWidgetFullPage {
   // Create promotional banner (Competitor-Inspired with gradient hero style)
   // Shows bundle title with optional discount info from DCP
   createPromoBanner() {
+    // Check if promo banner is disabled via theme editor settings
+    if (this.config.showPromoBanner === false) {
+      console.log('[PROMO_BANNER] Promo banner disabled via theme editor settings');
+      return null;
+    }
+
     // Check if promo banner is enabled via DCP CSS variable
     const promoBannerEnabled = getComputedStyle(document.documentElement)
       .getPropertyValue('--bundle-promo-banner-enabled')
@@ -1130,14 +1141,15 @@ class BundleWidgetFullPage {
     }
 
     // Determine layout based on whether we have a discount
+    // Use theme editor settings for customizable text
     if (discountMessage) {
-      // With discount: Bundle name as title, discount as subtitle
-      promoSubtitle = 'Mix & Match';
+      // With discount: Use subtitle from theme settings, discount as note
+      promoSubtitle = this.config.promoBannerSubtitle || 'Mix & Match';
       promoNote = discountMessage;
     } else {
-      // No discount: Just show bundle name with elegant styling
-      promoSubtitle = 'Create Your Perfect Bundle';
-      promoNote = 'Mix & Match Your Favorites';
+      // No discount: Use tagline and note from theme settings
+      promoSubtitle = this.config.promoBannerTagline || 'Create Your Perfect Bundle';
+      promoNote = this.config.promoBannerNote || 'Mix & Match Your Favorites';
     }
 
     const banner = document.createElement('div');

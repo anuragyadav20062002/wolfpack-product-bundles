@@ -4,77 +4,51 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-02-01
-**Last Updated:** 2026-02-01 00:00
+**Last Updated:** 2026-02-02 01:00
 
 ## Overview
-Multiple issues with the full-page bundle widget:
-1. **Variant Selection Bug**: When selecting different variants in the footer, only one type appears. Selecting a second variant updates the first one instead of adding both separately.
-2. **Promo Banner Not Applied**: The promotional banner from DCP is not being displayed correctly.
-3. **DCP Integration**: Need to fully connect DCP to the Liquid file and remove the static loading banner.
-
-## Root Cause Analysis
-
-### Issue 1: Variant Selection Bug
-The `getAllSelectedProductsData()` function at line 1774 uses incorrect lookup logic:
-```javascript
-const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
-```
-
-When a product has multiple variants:
-- `stepProductData` stores products with `id: 'productId'` and `variants: [{id: 'variant1'}, {id: 'variant2'}]`
-- User selects variant1 → `selectedProducts[step]['variant1'] = 1`
-- User selects variant2 → `selectedProducts[step]['variant2'] = 1`
-- The find() fails because no product has `id === 'variant1'` directly
-
-The lookup should search within the variants array of each product.
-
-### Issue 2: Promo Banner
-The promo banner is controlled by `--bundle-promo-banner-enabled` CSS variable from DCP. The logic in `createPromoBanner()` correctly checks this, but the CSS variable may not be properly set or the banner creation may be returning null due to no discount being configured.
-
-### Issue 3: DCP Integration
-The current Liquid file has a loading spinner with no content. Need to ensure DCP banner is created dynamically via JS with proper fallbacks.
+Multiple issues with bundle widgets:
+1. **Footer Discount Not Updating for Variants**: When selecting different variants of the same product in full-page bundles, the footer discount message doesn't update correctly.
+2. **Product Page Bundle Variant Cards**: Need to implement different product cards for variant products treated as separate products in product page bundles.
+3. **Promo Banner Theme Editor Settings**: Add theme editor settings to customize the promo banner text in full-page bundles.
 
 ## Progress Log
 
-### 2026-02-01 00:00 - Starting Fix Implementation
-- Analyzing codebase structure
-- Identified root cause of variant selection bug
-- Planning implementation
+### 2026-02-01 00:00 - Initial Implementation (Phase 1)
+- Fixed `getAllSelectedProductsData()` function variant lookup
+- Fixed promo banner to display with DCP settings
+- Added CSS for banner variants
 
-### 2026-02-01 00:15 - Fixed Variant Selection Bug
-- Modified `getAllSelectedProductsData()` function (line ~1764)
-- Added proper variant lookup that searches within product's variants array
-- Now correctly finds variants by ID even when stored as nested array
-- Added logging for debugging variant lookups
+### 2026-02-02 01:00 - Additional Fixes (Phase 2)
+- **Fixed footer discount calculation**: Updated `PricingCalculator.calculateBundleTotal()` in `bundle-widget-components.js` to search within nested variants array when direct match fails. Now correctly handles non-default variant selection when `displayVariantsAsIndividual` is false.
+- **Fixed product-page variant expansion**: Updated `processProductsForStep()` in `bundle-widget-product-page.js` to preserve parent product data (`parentProductId`, `parentTitle`, `variants`, `options`, `images`, `description`) when expanding variants. This matches the full-page behavior.
+- **Added promo banner theme editor settings**:
+  - Added new settings in `bundle-full-page.liquid` schema:
+    - `show_promo_banner` (checkbox)
+    - `promo_banner_subtitle` (text)
+    - `promo_banner_tagline` (text)
+    - `promo_banner_note` (text)
+  - Added data attributes to container element
+  - Updated `createPromoBanner()` to use theme settings instead of hardcoded text
 
-### 2026-02-01 00:20 - Fixed Promo Banner
-- Modified `createPromoBanner()` function (line ~1073)
-- Banner now ALWAYS shows bundle name as title (not just when discount exists)
-- If no discount: Shows elegant banner with bundle name + "Create Your Perfect Bundle"
-- If discount: Shows bundle name + discount message highlighted below
-- Added `has-discount` and `no-discount` CSS classes for styling variants
+## Files Modified
 
-### 2026-02-01 00:25 - Added CSS for Banner Variants
-- Added `.promo-banner.has-discount .promo-banner-note` styling
-- Added `.promo-banner.no-discount` styling
-- Discount message now has highlighted pill-style background
-
-### 2026-02-01 00:30 - Build and Test
-- Ran `npm run build:widgets` successfully
-- Full-page bundle: 209.2 KB
-- Product-page bundle: 125.6 KB
-
-## Files to Modify
-- `app/assets/bundle-widget-full-page.js` - Fix variant lookup and promo banner
-- `extensions/bundle-builder/blocks/bundle-full-page.liquid` - Clean up loading state
-- `extensions/bundle-builder/assets/bundle-widget-full-page.css` - Ensure promo banner styles
+### 2026-02-02 01:00
+- `app/assets/bundle-widget-components.js` - Updated `calculateBundleTotal()` to handle nested variant lookup
+- `app/assets/bundle-widget-full-page.js` - Added promo banner config parsing and usage
+- `app/assets/bundle-widget-product-page.js` - Updated `processProductsForStep()` to preserve parent data
+- `extensions/bundle-builder/blocks/bundle-full-page.liquid` - Added promo banner theme editor settings
+- `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` - Rebuilt
+- `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` - Rebuilt
 
 ## Phases Checklist
-- [x] Phase 1: Fix variant selection in getAllSelectedProductsData
-- [x] Phase 2: Fix promo banner to display with DCP settings
-- [x] Phase 3: Liquid file already connected to DCP (no changes needed)
-- [x] Phase 4: Test and verify all changes
-- [x] Phase 5: Build widgets and commit
+- [x] Phase 1: Fix variant selection in getAllSelectedProductsData (2026-02-01)
+- [x] Phase 2: Fix promo banner to display with DCP settings (2026-02-01)
+- [x] Phase 3: Fix footer discount calculation for nested variants (2026-02-02)
+- [x] Phase 4: Fix product-page variant expansion to preserve parent data (2026-02-02)
+- [x] Phase 5: Add promo banner theme editor settings (2026-02-02)
+- [x] Phase 6: Build widgets and commit (2026-02-02)
 
 ## Related Documentation
 - CLAUDE.md - Build process for widgets
+- https://shopify.dev/docs/themes/architecture/settings

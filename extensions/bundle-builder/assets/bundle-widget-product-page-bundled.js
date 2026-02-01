@@ -406,10 +406,31 @@ class PricingCalculator {
       const productsInStep = stepProductData[stepIndex] || [];
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+        // First try direct match on variantId or id
+        let product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId));
+        let matchedVariant = null;
+
+        // If not found, search within nested variants array of each product
+        // This handles the case where displayVariantsAsIndividual is false
+        // and user selects a non-default variant from dropdown
+        if (!product) {
+          for (const p of productsInStep) {
+            if (p.variants && Array.isArray(p.variants)) {
+              const variant = p.variants.find(v => String(v.id) === String(variantId));
+              if (variant) {
+                product = p;
+                matchedVariant = variant;
+                break;
+              }
+            }
+          }
+        }
 
         if (product && quantity > 0) {
-          const price = product.price || 0; // Already in cents from processProductsForStep
+          // Use variant price if found within nested variants, otherwise use product price
+          const price = matchedVariant
+            ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : parseFloat(matchedVariant.price || '0') * 100)
+            : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
         }
@@ -2340,6 +2361,24 @@ class BundleWidgetProductPage {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
+        // Preserve parent product reference for variant selection and tracking
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return product.variants
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
@@ -2353,7 +2392,14 @@ class BundleWidgetProductPage {
               price: parseFloat(variant.price || '0') * 100,
               compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
-              available: variant.available === true // Store availability (always boolean)
+              available: variant.available === true,
+              // Preserve parent product data for variant selection in modal
+              parentProductId: this.extractId(product.id),
+              parentTitle: product.title,
+              variants: processedVariants,
+              options: processedOptions,
+              images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+              description: product.description || ''
             };
           });
       } else {
