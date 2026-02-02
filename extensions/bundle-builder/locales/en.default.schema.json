@@ -25,7 +25,7 @@
       "show_footer_messaging_label": "Display discount progress messaging",
       "show_footer_messaging_info": "Shows progress indicators and discount messages to encourage bundle completion",
       "progress_bar_styling_header": "Progress bar styling",
-      "success_color_label": "Success state color",
+      "success_color_label": "Savings badge color",
       "success_color_info": "Color shown when discount goal is achieved",
       "progress_bar_height_label": "Progress bar height",
       "progress_bar_height_info": "Height of the discount progress bar",

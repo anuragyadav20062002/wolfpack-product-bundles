@@ -2325,6 +2325,8 @@ class BundleWidgetFullPage {
       showDescription: dataset.showDescription !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       showFooterMessaging: dataset.showFooterMessaging !== 'false',
+      showStepTimeline: dataset.showStepTimeline !== 'false',
+      showCategoryTabs: dataset.showCategoryTabs !== 'false',
       // Custom content from theme editor
       customTitle: dataset.customTitle || null,
       customDescription: dataset.customDescription || null,
@@ -2841,9 +2843,11 @@ class BundleWidgetFullPage {
       contentSection.appendChild(promoBanner);
     }
 
-    // 1. Render step timeline at top
-    const stepTimeline = this.createStepTimeline();
-    contentSection.appendChild(stepTimeline);
+    // 1. Render step timeline at top (if enabled in theme settings)
+    if (this.config.showStepTimeline) {
+      const stepTimeline = this.createStepTimeline();
+      contentSection.appendChild(stepTimeline);
+    }
 
     // 2. Render bundle header (instruction text)
     const bundleHeader = this.createBundleInstructions();
@@ -2853,10 +2857,12 @@ class BundleWidgetFullPage {
     const searchInput = this.createSearchInput();
     contentSection.appendChild(searchInput);
 
-    // 4. Render category/collection tabs if step has collections
-    const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
-    if (categoryTabs) {
-      contentSection.appendChild(categoryTabs);
+    // 4. Render category/collection tabs if step has collections (and enabled in theme settings)
+    if (this.config.showCategoryTabs) {
+      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+      if (categoryTabs) {
+        contentSection.appendChild(categoryTabs);
+      }
     }
 
     // 5. Create product grid container with loading state

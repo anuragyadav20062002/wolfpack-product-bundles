@@ -2078,8 +2078,9 @@
   gap: 12px;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 8px 0;
-  max-width: 100%;
+  padding: 8px 12px;
+  /* Restrict to show ~3 products on desktop (each tile ~180px + 12px gap) */
+  max-width: 580px;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   scroll-behavior: smooth;
@@ -2116,6 +2117,9 @@
   border: 1px solid var(--bundle-full-page-tile-border, rgba(0, 0, 0, 0.08));
   border-radius: 8px;
   flex-shrink: 0;
+  /* Fixed width ensures exactly 3 tiles fit in 580px container */
+  min-width: 170px;
+  max-width: 180px;
   transition: all 0.2s ease;
   position: relative;
 }
@@ -2267,11 +2271,17 @@
 
   .footer-products-tiles-wrapper {
     gap: 8px;
+    /* On mobile, allow slightly more width to show 2-3 smaller tiles */
+    max-width: 100%;
+    padding: 8px 8px;
   }
 
   .footer-product-tile {
     padding: 6px 10px;
     gap: 8px;
+    /* Smaller tiles on mobile */
+    min-width: 130px;
+    max-width: 150px;
   }
 
   .footer-product-tile .tile-image-wrapper,
