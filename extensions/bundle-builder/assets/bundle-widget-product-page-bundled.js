@@ -2465,6 +2465,47 @@ class BundleWidgetProductPage {
     return idString.toString().split('/').pop();
   }
 
+  // Expand products with multiple variants into separate product entries
+  // Each variant becomes its own card showing "Product Title - Variant Name"
+  // This matches the full-page widget behavior for consistent UX
+  expandProductsByVariant(products) {
+    return products.flatMap(product => {
+      // If product already has a parentProductId, it was already expanded
+      if (product.parentProductId && product.variantId) {
+        return [product];
+      }
+
+      // If product has multiple variants, expand into separate cards
+      if (product.variants && product.variants.length > 1) {
+        return product.variants
+          .filter(variant => variant.available !== false) // Only show available variants
+          .map(variant => {
+            // Use variant image if available, fallback to product image
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+
+            return {
+              ...product,
+              id: variant.id,
+              title: variant.title === 'Default Title' ? product.title : `${product.title} - ${variant.title}`,
+              variantTitle: variant.title === 'Default Title' ? '' : variant.title,
+              imageUrl,
+              price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
+              compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
+              variantId: variant.id,
+              available: variant.available !== false,
+              parentProductId: product.id,
+              parentTitle: product.title,
+              // Remove variants array from individual cards to prevent showing variant selector
+              variants: null
+            };
+          });
+      }
+
+      // Single variant or no variants - return as-is
+      return [product];
+    });
+  }
+
   renderModalTabs() {
     const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
     tabsContainer.innerHTML = '';
@@ -2513,7 +2554,9 @@ class BundleWidgetProductPage {
 
   renderModalProducts(stepIndex, productsToRender = null) {
     // Use all products from step data
-    const products = productsToRender || this.stepProductData[stepIndex];
+    const rawProducts = productsToRender || this.stepProductData[stepIndex];
+    // Expand variants into separate cards like full-page widget
+    const products = this.expandProductsByVariant(rawProducts);
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
