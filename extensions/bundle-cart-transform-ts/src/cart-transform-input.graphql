@@ -42,6 +42,11 @@ query Input {
             value
           }
 
+          # Component pricing for expanded checkout display (cents-based)
+          component_pricing: metafield(namespace: "$app", key: "component_pricing") {
+            value
+          }
+
           product {
             id
             title

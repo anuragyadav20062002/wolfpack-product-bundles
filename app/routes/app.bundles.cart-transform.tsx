@@ -23,9 +23,10 @@ import { AppLogger } from "../lib/logger";
 import { MetafieldCleanupService } from "../services/metafield-cleanup.server";
 import { SubscriptionGuard } from "../services/subscription-guard.server";
 import { BillingService } from "../services/billing.server";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../components/UpgradePromptBanner";
+import { useCartTransformState } from "../hooks/useCartTransformState";
 
 /**
  * Add image to a product using productCreateMedia mutation
@@ -469,27 +470,33 @@ export default function CartTransformBundles() {
   const navigation = useNavigation();
   const location = useLocation();
   const fetcher = useFetcher();
-  
+
   // If we're on a nested route (like configure), render the outlet
   const isNestedRoute = location.pathname.includes('/configure/');
-  
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [bundleName, setBundleName] = useState("");
-  const [description, setDescription] = useState("");
+
+  // Use centralized cart transform state hook
+  const cartTransformState = useCartTransformState();
+  const {
+    modalOpen,
+    openModal,
+    closeModal,
+    bundleName,
+    setBundleName,
+    description,
+    setDescription,
+  } = cartTransformState;
+
   const submitButtonRef = useRef<HTMLButtonElement>(null);
-  
+
   const isSubmitting = navigation.state === "submitting";
 
   // Handle successful bundle creation
   useEffect(() => {
     if (actionData && 'success' in actionData && actionData.success && 'redirectTo' in actionData && actionData.redirectTo) {
-      setModalOpen(false);
-      setBundleName("");
-      setDescription("");
+      closeModal();
       navigate(actionData.redirectTo);
     }
-  }, [actionData, navigate]);
+  }, [actionData, navigate, closeModal]);
 
   // Handle other action responses
   useEffect(() => {
@@ -499,14 +506,12 @@ export default function CartTransformBundles() {
   }, [actionData]);
 
   const handleCreateBundle = useCallback(() => {
-    setModalOpen(true);
-  }, []);
+    openModal();
+  }, [openModal]);
 
   const handleCloseModal = useCallback(() => {
-    setModalOpen(false);
-    setBundleName("");
-    setDescription("");
-  }, []);
+    closeModal();
+  }, [closeModal]);
 
   const handleSubmit = useCallback(() => {
     // Trigger the hidden submit button

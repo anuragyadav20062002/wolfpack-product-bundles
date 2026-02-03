@@ -1,3 +1,10 @@
+/**
+ * Billing Page Route
+ *
+ * Manages subscription and billing settings.
+ * Uses shared billing components from app/components/billing.
+ */
+
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import {
@@ -11,13 +18,28 @@ import {
   Badge,
   Banner,
   Divider,
+  ProgressBar,
+  Icon,
 } from "@shopify/polaris";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { CheckCircleIcon, AlertTriangleIcon, StarFilledIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import { BillingService } from "../services/billing.server";
+import { BundleAnalyticsService } from "../services/bundle-analytics.server";
 import { PLANS } from "../constants/plans";
 import { AppLogger } from "../lib/logger";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useBillingState } from "../hooks/useBillingState";
+import {
+  calculateUsagePercentage,
+  getProgressBarTone,
+} from "../utils/pricing";
+
+// Import shared billing components
+import {
+  UpgradeSuccessBanner,
+  SubscriptionErrorBanner,
+  UpgradeCTACard,
+} from "../components/billing";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -35,6 +57,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       throw new Error("Could not retrieve subscription information");
     }
 
+    // Get quick stats for display
+    const quickStats = await BundleAnalyticsService.getQuickStats(shopDomain);
+
     return json({
       subscription: {
         plan: subscriptionInfo.plan,
@@ -44,6 +69,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         currentBundleCount: subscriptionInfo.currentBundleCount,
         canCreateBundle: subscriptionInfo.canCreateBundle,
       },
+      stats: quickStats,
       plans: PLANS,
       appUrl: process.env.SHOPIFY_APP_URL || "",
       // Pass callback status to UI
@@ -60,6 +86,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       {
         error: "Failed to load billing information",
         subscription: null,
+        stats: null,
         plans: PLANS,
         appUrl: process.env.SHOPIFY_APP_URL || "",
         upgraded: false,
@@ -86,7 +113,6 @@ export async function action({ request }: ActionFunctionArgs) {
         shopDomain,
         plan: "grow",
         returnUrl,
-        // test flag is now handled in BillingService based on SHOPIFY_TEST_CHARGES env var
       });
 
       if (!result.success) {
@@ -96,7 +122,6 @@ export async function action({ request }: ActionFunctionArgs) {
         );
       }
 
-      // Return confirmation URL for redirect
       return json({
         success: true,
         confirmationUrl: result.confirmationUrl,
@@ -148,11 +173,25 @@ export default function BillingPage() {
   const data = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const navigate = useNavigate();
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showSuccessBanner, setShowSuccessBanner] = useState(data.upgraded);
-  const [showErrorBanner, setShowErrorBanner] = useState(!!data.callbackError);
 
-  const isUpgrading = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "upgrade";
+  // State for celebration animation
+  const [showCelebration, setShowCelebration] = useState(data.upgraded);
+
+  // Use centralized billing state hook
+  const billingState = useBillingState({
+    upgraded: data.upgraded,
+    callbackError: data.callbackError,
+  });
+  const {
+    showCancelConfirm,
+    openCancelConfirm,
+    closeCancelConfirm,
+    showSuccessBanner,
+    dismissSuccessBanner,
+    showErrorBanner,
+    dismissErrorBanner,
+  } = billingState;
+
   const isCancelling = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "cancel";
 
   const handleViewPricing = useCallback(() => {
@@ -164,19 +203,34 @@ export default function BillingPage() {
       { intent: "cancel" },
       { method: "post" }
     );
-    setShowCancelConfirm(false);
-  }, [fetcher]);
+    closeCancelConfirm();
+  }, [fetcher, closeCancelConfirm]);
 
-  // Handle redirect to Shopify billing confirmation using App Bridge
+  // Handle redirect to Shopify billing confirmation
   useEffect(() => {
     if (fetcher.data && "confirmationUrl" in fetcher.data && fetcher.data.confirmationUrl) {
       open(fetcher.data.confirmationUrl, '_top');
     }
   }, [fetcher.data]);
 
+  // Auto-hide celebration after 5 seconds
+  useEffect(() => {
+    if (showCelebration) {
+      const timer = setTimeout(() => setShowCelebration(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showCelebration]);
+
   const currentPlan = data.subscription?.plan || "free";
   const isFreePlan = currentPlan === "free";
   const isGrowPlan = currentPlan === "grow";
+
+  // Calculate usage percentage using shared utility
+  const usagePercentage = data.subscription
+    ? calculateUsagePercentage(data.subscription.currentBundleCount, data.subscription.bundleLimit)
+    : 0;
+
+  const progressBarTone = getProgressBarTone(usagePercentage);
 
   return (
     <Page
@@ -184,34 +238,24 @@ export default function BillingPage() {
       subtitle="Manage your subscription plan and billing settings"
     >
       <Layout>
-        {/* Success/Error Messages */}
+        {/* Success Celebration Banner */}
         {showSuccessBanner && (
           <Layout.Section>
-            <Banner
-              tone="success"
-              onDismiss={() => setShowSuccessBanner(false)}
-            >
-              <Text as="p" variant="bodyMd">
-                Subscription upgraded successfully! Welcome to the Grow plan.
-              </Text>
-            </Banner>
+            <UpgradeSuccessBanner
+              showCelebration={showCelebration}
+              onDismiss={dismissSuccessBanner}
+            />
           </Layout.Section>
         )}
 
+        {/* Error Banner */}
         {showErrorBanner && data.callbackError && (
           <Layout.Section>
-            <Banner
-              tone="critical"
-              onDismiss={() => setShowErrorBanner(false)}
-            >
-              <Text as="p" variant="bodyMd">
-                {data.callbackError === "missing_charge_id"
-                  ? "Subscription confirmation failed: Missing charge ID. Please try again or contact support."
-                  : data.callbackError === "confirmation_failed"
-                  ? "Failed to confirm subscription. Please try again or contact support."
-                  : "An unexpected error occurred. Please try again or contact support."}
-              </Text>
-            </Banner>
+            <SubscriptionErrorBanner
+              errorCode={data.callbackError}
+              onRetry={handleViewPricing}
+              onDismiss={dismissErrorBanner}
+            />
           </Layout.Section>
         )}
 
@@ -219,51 +263,123 @@ export default function BillingPage() {
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
-              <InlineStack align="space-between" blockAlign="center">
+              <InlineStack align="space-between" blockAlign="start">
                 <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Current Plan
-                  </Text>
                   <InlineStack gap="200" blockAlign="center">
-                    <Text as="p" variant="headingLg">
+                    <Text as="h2" variant="headingMd">
+                      Current Plan
+                    </Text>
+                    {isGrowPlan && (
+                      <div style={{ color: '#ffc453' }}>
+                        <Icon source={StarFilledIcon} />
+                      </div>
+                    )}
+                  </InlineStack>
+                  <InlineStack gap="300" blockAlign="center">
+                    <Text as="p" variant="headingLg" fontWeight="bold">
                       {PLANS[currentPlan].name}
                     </Text>
-                    <Badge tone={isFreePlan ? "info" : "success"}>
+                    <Badge tone={isGrowPlan ? "success" : "info"}>
                       {data.subscription?.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </InlineStack>
                 </BlockStack>
                 {isGrowPlan && (
-                  <Text as="p" variant="headingLg" tone="subdued">
-                    ${PLANS.grow.price}/month
-                  </Text>
+                  <BlockStack gap="100" align="end">
+                    <Text as="p" variant="heading2xl" fontWeight="bold">
+                      ${PLANS.grow.price}
+                    </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      per month
+                    </Text>
+                  </BlockStack>
                 )}
               </InlineStack>
 
               <Divider />
 
-              {/* Bundle Usage */}
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd" fontWeight="semibold">
-                  Bundle Usage
-                </Text>
-                <InlineStack gap="200" blockAlign="center">
-                  <Text as="p" variant="bodyLg">
-                    {data.subscription?.currentBundleCount || 0} / {data.subscription?.bundleLimit || 0} bundles
+              {/* Bundle Usage with Progress Bar */}
+              <BlockStack gap="300">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="p" variant="bodyMd" fontWeight="semibold">
+                    Bundle Usage
                   </Text>
-                  {!data.subscription?.canCreateBundle && (
-                    <Badge tone="warning">Limit Reached</Badge>
-                  )}
+                  <Badge tone={usagePercentage >= 90 ? "critical" : usagePercentage >= 70 ? "attention" : "success"}>
+                    {`${data.subscription?.currentBundleCount || 0} / ${data.subscription?.bundleLimit || 0} bundles`}
+                  </Badge>
                 </InlineStack>
+                <ProgressBar
+                  progress={usagePercentage}
+                  tone={progressBarTone}
+                  size="small"
+                />
+                {!data.subscription?.canCreateBundle && (
+                  <Banner tone="warning">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Icon source={AlertTriangleIcon} tone="warning" />
+                      <Text as="span" variant="bodyMd">
+                        You've reached your bundle limit.
+                        {isFreePlan && " Upgrade to Grow for more bundles."}
+                      </Text>
+                    </InlineStack>
+                  </Banner>
+                )}
               </BlockStack>
 
+              {/* Quick Stats */}
+              {data.stats && (
+                <>
+                  <Divider />
+                  <BlockStack gap="200">
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">
+                      Bundle Overview
+                    </Text>
+                    <InlineStack gap="400">
+                      <BlockStack gap="100">
+                        <Text as="span" variant="headingMd" fontWeight="bold">
+                          {data.stats.activeBundles}
+                        </Text>
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          Active Bundles
+                        </Text>
+                      </BlockStack>
+                      <BlockStack gap="100">
+                        <Text as="span" variant="headingMd" fontWeight="bold">
+                          {data.stats.totalSteps}
+                        </Text>
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          Total Steps
+                        </Text>
+                      </BlockStack>
+                      <BlockStack gap="100">
+                        <Text as="span" variant="headingMd" fontWeight="bold">
+                          {data.stats.bundleTypes.productPage}
+                        </Text>
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          Product Page
+                        </Text>
+                      </BlockStack>
+                      <BlockStack gap="100">
+                        <Text as="span" variant="headingMd" fontWeight="bold">
+                          {data.stats.bundleTypes.fullPage}
+                        </Text>
+                        <Text as="span" variant="bodySm" tone="subdued">
+                          Full Page
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                  </BlockStack>
+                </>
+              )}
+
+              {/* Cancel Subscription */}
               {isGrowPlan && !showCancelConfirm && (
                 <>
                   <Divider />
                   <Button
                     variant="plain"
                     tone="critical"
-                    onClick={() => setShowCancelConfirm(true)}
+                    onClick={openCancelConfirm}
                     loading={isCancelling}
                   >
                     Cancel Subscription
@@ -273,58 +389,82 @@ export default function BillingPage() {
 
               {showCancelConfirm && (
                 <>
-                  <Banner tone="warning">
-                    <BlockStack gap="200">
+                  <Divider />
+                  <Banner tone="warning" title="Cancel Subscription?">
+                    <BlockStack gap="300">
                       <Text as="p" variant="bodyMd">
-                        Are you sure you want to cancel your subscription? You will be downgraded to the Free plan.
+                        You will be downgraded to the Free plan with a limit of {PLANS.free.bundleLimit} bundles.
                       </Text>
                       {data.subscription && data.subscription.currentBundleCount > PLANS.free.bundleLimit && (
-                        <Text as="p" variant="bodyMd" tone="critical">
-                          Warning: You have {data.subscription.currentBundleCount} bundles, but the Free plan only allows {PLANS.free.bundleLimit}. Excess bundles will be archived.
+                        <Text as="p" variant="bodyMd" fontWeight="semibold">
+                          Warning: You have {data.subscription.currentBundleCount} bundles. The excess {data.subscription.currentBundleCount - PLANS.free.bundleLimit} bundles will be archived (not deleted).
                         </Text>
                       )}
+                      <InlineStack gap="200">
+                        <Button
+                          variant="primary"
+                          tone="critical"
+                          onClick={handleCancelSubscription}
+                          loading={isCancelling}
+                        >
+                          Confirm Cancellation
+                        </Button>
+                        <Button onClick={closeCancelConfirm}>
+                          Keep Subscription
+                        </Button>
+                      </InlineStack>
                     </BlockStack>
                   </Banner>
-                  <InlineStack gap="200">
-                    <Button
-                      variant="primary"
-                      tone="critical"
-                      onClick={handleCancelSubscription}
-                      loading={isCancelling}
-                    >
-                      Confirm Cancellation
-                    </Button>
-                    <Button onClick={() => setShowCancelConfirm(false)}>
-                      Keep Subscription
-                    </Button>
-                  </InlineStack>
                 </>
               )}
             </BlockStack>
           </Card>
         </Layout.Section>
 
-        {/* Quick Actions */}
+        {/* Upgrade CTA for Free Users */}
         {isFreePlan && (
           <Layout.Section>
-            <Card>
-              <BlockStack gap="300">
-                <Text as="h3" variant="headingMd">
-                  Want to create more bundles?
-                </Text>
-                <Text as="p" variant="bodyMd" tone="subdued">
-                  Upgrade to the Grow plan for up to 20 bundles, advanced features, and priority support.
-                </Text>
-                <Button
-                  variant="primary"
-                  onClick={handleViewPricing}
-                >
-                  View Pricing Plans
-                </Button>
-              </BlockStack>
-            </Card>
+            <UpgradeCTACard onUpgrade={handleViewPricing} />
           </Layout.Section>
         )}
+
+        {/* Plan Features */}
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text as="h3" variant="headingMd">
+                Your Plan Features
+              </Text>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+              }}>
+                {PLANS[currentPlan].features.map((feature, index) => (
+                  <InlineStack key={index} gap="200" blockAlign="center">
+                    <div style={{ color: '#008060' }}>
+                      <Icon source={CheckCircleIcon} tone="success" />
+                    </div>
+                    <Text as="span" variant="bodyMd">
+                      {feature}
+                    </Text>
+                  </InlineStack>
+                ))}
+              </div>
+              {isFreePlan && (
+                <>
+                  <Divider />
+                  <Text as="p" variant="bodySm" tone="subdued">
+                    Want more features?{" "}
+                    <Button variant="plain" onClick={handleViewPricing}>
+                      View all plans
+                    </Button>
+                  </Text>
+                </>
+              )}
+            </BlockStack>
+          </Card>
+        </Layout.Section>
 
         {/* Help Section */}
         <Layout.Section>
@@ -333,13 +473,29 @@ export default function BillingPage() {
               <Text as="h3" variant="headingMd">
                 Need Help?
               </Text>
-              <Text as="p" variant="bodyMd">
-                Have questions about billing or need to upgrade to a custom plan? Contact our support team for assistance.
+              <Text as="p" variant="bodyMd" tone="subdued">
+                Have questions about billing or need a custom plan? Our team is here to help.
               </Text>
+              <Button
+                onClick={() => {
+                  if (window.$crisp) {
+                    window.$crisp.push(["do", "chat:open"]);
+                  }
+                }}
+              >
+                Contact Support
+              </Button>
             </BlockStack>
           </Card>
         </Layout.Section>
       </Layout>
     </Page>
   );
+}
+
+// Type declaration for Crisp chat
+declare global {
+  interface Window {
+    $crisp?: any[];
+  }
 }

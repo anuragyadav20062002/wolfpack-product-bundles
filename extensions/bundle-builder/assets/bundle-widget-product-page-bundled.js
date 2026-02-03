@@ -6,74 +6,13 @@
   // ============================================================================
 
 /**
- * Bundle Widget - Shared Components Library
+ * Bundle Widget - Global Constants and Configuration
  *
- * This library contains all reusable components and utilities used by both
- * product-page and full-page bundle widgets.
+ * Central configuration used across all bundle widget modules.
  *
- * ============================================================================
- * ARCHITECTURE ROLE
- * ============================================================================
- * This is the SECOND file loaded in the bundle widget system:
- * 1. bundle-widget.js (loader) - Detects bundle type
- * 2. THIS FILE (components) - Provides shared utilities
- * 3. bundle-widget-{type}.js - Widget-specific implementation
- *
- * ============================================================================
- * EXPORTED MODULES
- * ============================================================================
- *
- * CONSTANTS:
- * - BUNDLE_WIDGET: Global configuration and constants
- *
- * UTILITIES:
- * - CurrencyManager: Multi-currency handling and money formatting
- * - BundleDataManager: Fetching and managing bundle data from Shopify
- * - PricingCalculator: Bundle pricing, discounts, and totals
- * - ToastManager: User notifications and feedback
- * - TemplateManager: Dynamic message templating with variables
- *
- * UI COMPONENTS:
- * - ComponentGenerator: Generates HTML for all UI elements
- *   - Product cards (with variants, quantities, pricing)
- *   - Empty state cards (placeholder UI)
- *   - Modal structure (for full-page bundles)
- *   - Progress bars (discount progress tracking)
- *   - Tabs (step navigation)
- *   - Footer components (pricing summary, CTA buttons)
- *
- * ============================================================================
- * USAGE BY WIDGETS
- * ============================================================================
- * Both product-page and full-page widgets import from this library:
- *
- * import {
- *   BUNDLE_WIDGET,
- *   CurrencyManager,
- *   BundleDataManager,
- *   PricingCalculator,
- *   ToastManager,
- *   TemplateManager,
- *   ComponentGenerator
- * } from './bundle-widget-components.js';
- *
- * ============================================================================
- * BENEFITS OF THIS ARCHITECTURE
- * ============================================================================
- * 1. NO CODE DUPLICATION: Shared code written once, used everywhere
- * 2. CONSISTENCY: Same business logic across both bundle types
- * 3. MAINTAINABILITY: Fix bugs in one place, applies to all widgets
- * 4. SMALLER FILES: Widget files only contain layout-specific code
- * 5. TESTABILITY: Can test utilities independently of widgets
- *
- * @version 1.0.0
- * @author Wolfpack Team
+ * @version 4.0.0
  */
 
-
-// ============================================================================
-// GLOBAL CONSTANTS AND CONFIGURATION
-// ============================================================================
 
 const BUNDLE_WIDGET = {
   VERSION: '4.0.0',
@@ -117,9 +56,16 @@ const BUNDLE_WIDGET = {
   }
 };
 
-// ============================================================================
-// CURRENCY MANAGEMENT SYSTEM
-// ============================================================================
+
+/**
+ * Bundle Widget - Currency Management System
+ *
+ * Handles multi-currency detection, conversion, and formatting.
+ * Integrates with Shopify Markets for automatic currency handling.
+ *
+ * @version 4.0.0
+ */
+
 
 class CurrencyManager {
   static getShopBaseCurrency() {
@@ -206,9 +152,16 @@ class CurrencyManager {
   }
 }
 
-// ============================================================================
-// BUNDLE DATA MANAGER
-// ============================================================================
+
+/**
+ * Bundle Widget - Bundle Data Manager
+ *
+ * Handles validation, filtering, and selection of bundle data.
+ * Provides utilities for extracting step and product data.
+ *
+ * @version 4.0.0
+ */
+
 
 class BundleDataManager {
   static validateBundleData(bundles) {
@@ -384,11 +337,15 @@ class BundleDataManager {
   }
 }
 
-// Continue in next part...
 
-// ============================================================================
-// PRICING CALCULATOR
-// ============================================================================
+/**
+ * Bundle Widget - Pricing Calculator
+ *
+ * Handles bundle pricing calculations, discount rules, and condition checking.
+ *
+ * @version 4.0.0
+ */
+
 
 class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData) {
@@ -406,10 +363,31 @@ class PricingCalculator {
       const productsInStep = stepProductData[stepIndex] || [];
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+        // First try direct match on variantId or id
+        let product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId));
+        let matchedVariant = null;
+
+        // If not found, search within nested variants array of each product
+        // This handles the case where displayVariantsAsIndividual is false
+        // and user selects a non-default variant from dropdown
+        if (!product) {
+          for (const p of productsInStep) {
+            if (p.variants && Array.isArray(p.variants)) {
+              const variant = p.variants.find(v => String(v.id) === String(variantId));
+              if (variant) {
+                product = p;
+                matchedVariant = variant;
+                break;
+              }
+            }
+          }
+        }
 
         if (product && quantity > 0) {
-          const price = product.price || 0; // Already in cents from processProductsForStep
+          // Use variant price if found within nested variants, otherwise use product price
+          const price = matchedVariant
+            ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : parseFloat(matchedVariant.price || '0') * 100)
+            : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
         }
@@ -596,9 +574,16 @@ class PricingCalculator {
   }
 }
 
-// ============================================================================
-// TOAST NOTIFICATION SYSTEM
-// ============================================================================
+
+/**
+ * Bundle Widget - Toast Notification System
+ *
+ * Provides user notifications and feedback with support for
+ * simple messages and undo actions.
+ *
+ * @version 4.0.0
+ */
+
 
 class ToastManager {
   static show(message, duration = 4000) {
@@ -631,7 +616,71 @@ class ToastManager {
       }, duration);
     }
   }
+
+  // Show toast with undo action button
+  static showWithUndo(message, undoCallback, duration = 5000) {
+    // Remove any existing toast
+    const existingToast = document.getElementById('bundle-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    // Create toast element with undo button
+    const toast = document.createElement('div');
+    toast.id = 'bundle-toast';
+    toast.className = 'bundle-toast bundle-toast-with-undo';
+    toast.innerHTML = `
+      <span class="toast-message">${message}</span>
+      <button class="toast-undo-btn" type="button">Undo</button>
+      <svg class="toast-close" width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+
+    // Attach event listeners
+    const undoBtn = toast.querySelector('.toast-undo-btn');
+    const closeBtn = toast.querySelector('.toast-close');
+    let undoTriggered = false;
+
+    undoBtn.addEventListener('click', () => {
+      if (!undoTriggered && typeof undoCallback === 'function') {
+        undoTriggered = true;
+        undoCallback();
+        toast.remove();
+      }
+    });
+
+    closeBtn.addEventListener('click', () => {
+      toast.remove();
+    });
+
+    // Add to page
+    document.body.appendChild(toast);
+
+    // Auto-remove after duration
+    if (duration > 0) {
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+        }
+      }, duration);
+    }
+
+    return toast;
+  }
 }
+
+
+/**
+ * Bundle Widget - Template Manager
+ *
+ * Handles dynamic message templating with variable replacement.
+ * Used for discount messaging, progress text, and bundle information.
+ *
+ * @version 4.0.0
+ */
+
+
 class TemplateManager {
   static replaceVariables(template, variables) {
     if (!template) return '';
@@ -674,7 +723,7 @@ class TemplateManager {
     // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo);
 
-    // Calculate discount-specific values  
+    // Calculate discount-specific values
     const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
 
     // Calculate progress
@@ -849,11 +898,17 @@ class TemplateManager {
     };
   }
 }
-// ============================================================================
 
-// ============================================================================
-// COMPONENT GENERATORS
-// ============================================================================
+
+/**
+ * Bundle Widget - Component Generator
+ *
+ * Generates HTML for all UI elements including product cards,
+ * modal structure, tabs, progress bars, and footer components.
+ *
+ * @version 4.0.0
+ */
+
 
 class ComponentGenerator {
   /**
@@ -867,10 +922,53 @@ class ComponentGenerator {
   static renderProductCard(product, currentQuantity, currencyInfo, options = {}) {
     const selectionKey = product.variantId || product.id;
     const showQuantitySelector = options.showQuantitySelector !== false;
+    const isSelected = currentQuantity > 0;
+
+    // Check if this is an expanded variant card (has parentProductId and no variants array)
+    // In this case, don't show variant selector - each card IS a variant
+    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0 || product.variants === null);
+
+    // Render inline quantity controls when item is selected (competitor-inspired design)
+    const renderInlineQuantityControls = () => {
+      if (!isSelected) return '';
+      return `
+        <div class="inline-quantity-controls">
+          <button class="inline-qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+          <span class="inline-qty-display">${currentQuantity}</span>
+          <button class="inline-qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+        </div>
+      `;
+    };
+
+    // Render button or quantity controls based on selection state
+    const renderBottomAction = () => {
+      if (isSelected) {
+        // Show inline quantity controls when selected
+        return renderInlineQuantityControls();
+      } else {
+        // For expanded variant cards, always show "Add to Bundle"
+        // For regular products with variants, show "Choose Size"
+        const hasVariants = !isExpandedVariantCard && product.variants && product.variants.length > 1;
+        const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
+        return `
+          <button class="product-add-btn" data-product-id="${selectionKey}">
+            ${buttonText}
+          </button>
+        `;
+      }
+    };
+
+    // Render variant badge if this is an expanded variant card
+    const renderVariantBadge = () => {
+      if (isExpandedVariantCard && product.variantTitle) {
+        return `<div class="product-variant-badge">${product.variantTitle}</div>`;
+      }
+      return '';
+    };
 
     return `
-      <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
-        ${currentQuantity > 0 ? `
+      <div class="product-card ${isSelected ? 'selected' : ''}" data-product-id="${selectionKey}">
+        ${isSelected ? `
           <div class="selected-overlay">✓</div>
         ` : ''}
 
@@ -879,7 +977,8 @@ class ComponentGenerator {
         </div>
 
         <div class="product-content-wrapper">
-          <div class="product-title">${product.title}</div>
+          <div class="product-title">${product.parentTitle || product.title}</div>
+          ${renderVariantBadge()}
 
           ${product.price ? `
             <div class="product-price-row">
@@ -890,21 +989,9 @@ class ComponentGenerator {
 
           <div class="product-spacer"></div>
 
-          ${this.renderVariantSelector(product)}
+          ${isExpandedVariantCard ? '' : this.renderVariantSelector(product)}
 
-          ${showQuantitySelector ? `
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector">
-                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-                <span class="qty-display">${currentQuantity}</span>
-                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
-              </div>
-            </div>
-          ` : ''}
-
-          <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
-            ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
-          </button>
+          ${renderBottomAction()}
         </div>
       </div>
     `;
@@ -1127,6 +1214,15 @@ class BundleWidgetProductPage {
     this.isInitialized = false;
     this.config = {};
     this.elements = {};
+
+    // Initialize product modal for variant selection (if BundleProductModal is available)
+    this.productModal = null;
+    if (window.BundleProductModal) {
+      this.productModal = new window.BundleProductModal(this);
+      console.log('[PDP_WIDGET] ✅ BundleProductModal initialized');
+    } else {
+      console.warn('[PDP_WIDGET] ⚠️ BundleProductModal not loaded, variant modal disabled');
+    }
 
     // Call async init but don't block constructor
     this.init().catch(error => {
@@ -1610,12 +1706,217 @@ class BundleWidgetProductPage {
     }
   }
 
-  // Product-page bundle layout (original vertical step boxes)
+  // Product-page bundle layout (vertical step boxes)
+  // New approach: Show one card per selected product instead of grouping by step
   renderProductPageLayout() {
-    this.selectedBundle.steps.forEach((step, index) => {
-      const stepElement = this.createStepElement(step, index);
-      this.elements.stepsContainer.appendChild(stepElement);
+    // Check if there are any selected products across all steps
+    const hasAnySelections = this.selectedProducts.some(stepSelections =>
+      Object.values(stepSelections || {}).some(qty => qty > 0)
+    );
+
+    if (!hasAnySelections) {
+      // No selections yet - show empty state cards (one per step)
+      this.selectedBundle.steps.forEach((step, index) => {
+        const emptyCard = this.createEmptyStateCard(step, index);
+        this.elements.stepsContainer.appendChild(emptyCard);
+      });
+    } else {
+      // Has selections - show one card per selected product
+      this.renderSelectedProductCards();
+    }
+  }
+
+  // Create an empty state card for a step (shown when no products selected)
+  createEmptyStateCard(step, stepIndex) {
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box';
+    stepBox.dataset.stepIndex = stepIndex;
+
+    // Plus icon for empty steps
+    const plusIcon = document.createElement('span');
+    plusIcon.className = 'plus-icon';
+    plusIcon.textContent = '+';
+    stepBox.appendChild(plusIcon);
+
+    // Add step name
+    const stepName = document.createElement('p');
+    stepName.className = 'step-name';
+    stepName.textContent = step.name || `Step ${stepIndex + 1}`;
+    stepBox.appendChild(stepName);
+
+    // Add selection instruction
+    const selectionCount = document.createElement('div');
+    selectionCount.className = 'step-selection-count';
+    if (step.conditionValue) {
+      selectionCount.textContent = `Select ${step.conditionValue} product${step.conditionValue > 1 ? 's' : ''}`;
+    }
+    stepBox.appendChild(selectionCount);
+
+    // Add click handler to open modal
+    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+
+    return stepBox;
+  }
+
+  // Render individual cards for each selected product
+  renderSelectedProductCards() {
+    // Collect all selected products with their step info
+    const allSelectedProducts = [];
+    const incompleteSteps = [];
+
+    this.selectedProducts.forEach((stepSelections, stepIndex) => {
+      const step = this.selectedBundle.steps[stepIndex];
+      const products = this.stepProductData[stepIndex] || [];
+
+      // Count total selected in this step
+      let stepTotalQuantity = 0;
+
+      Object.entries(stepSelections || {}).forEach(([variantId, quantity]) => {
+        if (quantity > 0) {
+          stepTotalQuantity += quantity;
+          const product = products.find(p => (p.variantId || p.id) === variantId);
+          if (product) {
+            // Add one entry per quantity unit
+            for (let i = 0; i < quantity; i++) {
+              allSelectedProducts.push({
+                product,
+                stepIndex,
+                step,
+                variantId,
+                instanceIndex: i
+              });
+            }
+          }
+        }
+      });
+
+      // Check if step is incomplete (needs more selections)
+      if (!this.validateStep(stepIndex)) {
+        incompleteSteps.push({ stepIndex, step, currentCount: stepTotalQuantity });
+      }
     });
+
+    // Render a card for each selected product
+    allSelectedProducts.forEach((item, cardIndex) => {
+      const productCard = this.createSelectedProductCard(item, cardIndex);
+      this.elements.stepsContainer.appendChild(productCard);
+    });
+
+    // Render "add more" cards for incomplete steps
+    incompleteSteps.forEach(({ stepIndex, step, currentCount }) => {
+      const addMoreCard = this.createAddMoreCard(step, stepIndex, currentCount);
+      this.elements.stepsContainer.appendChild(addMoreCard);
+    });
+  }
+
+  // Create an "add more" card for incomplete steps
+  createAddMoreCard(step, stepIndex, currentCount) {
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box add-more-card';
+    stepBox.dataset.stepIndex = stepIndex;
+
+    // Plus icon
+    const plusIcon = document.createElement('span');
+    plusIcon.className = 'plus-icon';
+    plusIcon.textContent = '+';
+    stepBox.appendChild(plusIcon);
+
+    // Add step name
+    const stepName = document.createElement('p');
+    stepName.className = 'step-name';
+    stepName.textContent = step.name || `Step ${stepIndex + 1}`;
+    stepBox.appendChild(stepName);
+
+    // Add remaining count text
+    const selectionCount = document.createElement('div');
+    selectionCount.className = 'step-selection-count';
+    const requiredCount = step.conditionValue || 1;
+    const remaining = requiredCount - currentCount;
+    if (remaining > 0) {
+      selectionCount.textContent = `Add ${remaining} more`;
+    }
+    stepBox.appendChild(selectionCount);
+
+    // Add click handler to open modal
+    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+
+    return stepBox;
+  }
+
+  // Create a state card for a selected product
+  createSelectedProductCard(item, cardIndex) {
+    const { product, stepIndex, step, variantId, instanceIndex } = item;
+
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box step-completed product-card-state';
+    stepBox.dataset.stepIndex = stepIndex;
+    stepBox.dataset.variantId = variantId;
+    stepBox.dataset.cardIndex = cardIndex;
+
+    // Add close icon badge to remove this specific product
+    const clearBadge = document.createElement('div');
+    clearBadge.className = 'step-clear-badge';
+    clearBadge.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
+        <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    clearBadge.title = 'Remove this product';
+    clearBadge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.removeProductFromSelection(stepIndex, variantId);
+    });
+    stepBox.appendChild(clearBadge);
+
+    // Product image container
+    const imagesContainer = document.createElement('div');
+    imagesContainer.className = 'step-images single-image';
+
+    const img = document.createElement('img');
+    img.src = product.imageUrl || 'https://via.placeholder.com/150';
+    img.alt = product.title || '';
+    img.className = 'step-image';
+    imagesContainer.appendChild(img);
+
+    stepBox.appendChild(imagesContainer);
+
+    // Product title at bottom
+    const productTitle = document.createElement('p');
+    productTitle.className = 'step-name step-name-completed product-title-state';
+    // Truncate long titles
+    const displayTitle = product.title.length > 25
+      ? product.title.substring(0, 25) + '...'
+      : product.title;
+    productTitle.textContent = displayTitle;
+    productTitle.title = product.title; // Full title on hover
+    stepBox.appendChild(productTitle);
+
+    // Add click handler to open modal for editing
+    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+
+    return stepBox;
+  }
+
+  // Remove a specific product from selection (decrease quantity by 1)
+  removeProductFromSelection(stepIndex, variantId) {
+    const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
+
+    if (currentQuantity > 1) {
+      // Decrease quantity
+      this.selectedProducts[stepIndex][variantId] = currentQuantity - 1;
+    } else {
+      // Remove completely
+      delete this.selectedProducts[stepIndex][variantId];
+    }
+
+    // Update UI
+    this.renderSteps();
+    this.updateAddToCartButton();
+    this.updateFooterMessaging();
+
+    // Show toast notification
+    ToastManager.show('Product removed from bundle');
   }
 
   // Full-page bundle layout (horizontal tabs)
@@ -1635,112 +1936,8 @@ class BundleWidgetProductPage {
     this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }
 
-  createStepElement(step, index) {
-    const stepBox = document.createElement('div');
-    stepBox.className = 'step-box';
-    stepBox.dataset.stepIndex = index;
-
-    const selectedProducts = this.selectedProducts[index] || {};
-    const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
-
-    if (hasSelections) {
-      stepBox.classList.add('step-completed');
-
-      // Add close icon badge at top right to clear all selections
-      const clearBadge = document.createElement('div');
-      clearBadge.className = 'step-clear-badge';
-      clearBadge.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
-          <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      `;
-      clearBadge.title = 'Remove all products from this step';
-      clearBadge.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent opening modal
-        this.clearStepSelections(index);
-      });
-      stepBox.appendChild(clearBadge);
-
-      // Show product images if available
-      const productImages = this.getStepProductImages(index);
-      if (productImages.length > 0) {
-        const imagesContainer = document.createElement('div');
-        imagesContainer.className = 'step-images';
-
-        productImages.slice(0, 4).forEach(imageData => {
-          const img = document.createElement('img');
-          img.src = imageData.url;
-          img.alt = imageData.alt;
-          img.className = 'step-image';
-          imagesContainer.appendChild(img);
-        });
-
-        stepBox.appendChild(imagesContainer);
-
-        // Add count badge if more than 4 products
-        const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
-        if (productImages.length > 4 || totalQuantity > 4) {
-          const countBadge = document.createElement('div');
-          countBadge.className = 'image-count-badge';
-          countBadge.textContent = totalQuantity.toString();
-          stepBox.appendChild(countBadge);
-        }
-      } else {
-        // Fallback checkmark icon
-        const checkIcon = document.createElement('span');
-        checkIcon.className = 'check-icon';
-        checkIcon.textContent = '✓';
-        stepBox.appendChild(checkIcon);
-      }
-    } else {
-      // Plus icon for empty steps
-      const plusIcon = document.createElement('span');
-      plusIcon.className = 'plus-icon';
-      plusIcon.textContent = '+';
-      stepBox.appendChild(plusIcon);
-    }
-
-    // Only show step name and selection count if no selections made
-    if (!hasSelections) {
-      // Add step name (without step number)
-      const stepName = document.createElement('p');
-      stepName.className = 'step-name';
-      stepName.textContent = step.name || `Step ${index + 1}`;
-      stepBox.appendChild(stepName);
-
-      // Add selection count
-      const selectionCount = document.createElement('div');
-      selectionCount.className = 'step-selection-count';
-      selectionCount.textContent = this.getStepSelectionText(selectedProducts);
-      stepBox.appendChild(selectionCount);
-    }
-
-    // Add click handler
-    stepBox.addEventListener('click', () => this.openModal(index));
-
-    return stepBox;
-  }
-
-  getStepProductImages(stepIndex) {
-    const selectedProducts = this.selectedProducts[stepIndex] || {};
-    const productImages = [];
-
-    Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
-      if (quantity > 0) {
-        const product = this.stepProductData[stepIndex].find(p => (p.variantId || p.id) === variantId);
-        if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
-          productImages.push({
-            url: product.imageUrl,
-            alt: product.title || ''
-          });
-        }
-      }
-    });
-
-    return productImages;
-  }
-
+  // Legacy method - kept for reference but no longer used
+  // New approach uses createEmptyStateCard, createSelectedProductCard, and createAddMoreCard
   getStepSelectionText(selectedProducts) {
     const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
     return totalSelected > 0 ? `${totalSelected} selected` : '';
@@ -1900,10 +2097,16 @@ class BundleWidgetProductPage {
       if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
         const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
         console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
+
+        // Calculate discount percentage for the pill
+        const discountPercentage = Math.round(((totalPrice - discountInfo.finalPrice) / totalPrice) * 100);
+        const showDiscountPill = discountPercentage > 0;
+
         button.innerHTML = `
           <span class="button-price-wrapper">
             <span class="button-price-strike">${originalPrice}</span>
             <span class="button-price-final">Add Bundle to Cart • ${formattedPrice}</span>
+            ${showDiscountPill ? `<span class="discount-pill">${discountPercentage}% off</span>` : ''}
           </span>
         `;
       } else {
@@ -2140,6 +2343,24 @@ class BundleWidgetProductPage {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
+        // Preserve parent product reference for variant selection and tracking
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return product.variants
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
@@ -2153,7 +2374,14 @@ class BundleWidgetProductPage {
               price: parseFloat(variant.price || '0') * 100,
               compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
-              available: variant.available === true // Store availability (always boolean)
+              available: variant.available === true,
+              // Preserve parent product data for variant selection in modal
+              parentProductId: this.extractId(product.id),
+              parentTitle: product.title,
+              variants: processedVariants,
+              options: processedOptions,
+              images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+              description: product.description || ''
             };
           });
       } else {
@@ -2168,14 +2396,39 @@ class BundleWidgetProductPage {
         // Storefront API: prioritize variant image, fallback to product featured image
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
+        // Process variants array for variant selection in modal
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        // Process options array for variant selector labels
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return [{
-          id: this.extractId(defaultVariant?.id || product.id),
+          id: this.extractId(product.id),
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
-          available: defaultVariant?.available === true // Store availability (always boolean from API)
+          available: defaultVariant?.available === true,
+          // Preserve variants and options for variant selection in modal
+          variants: processedVariants,
+          options: processedOptions,
+          // Preserve images array for modal gallery
+          images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+          description: product.description || ''
         }];
       }
     });
@@ -2192,6 +2445,47 @@ class BundleWidgetProductPage {
 
     // Handle numeric string
     return idString.toString().split('/').pop();
+  }
+
+  // Expand products with multiple variants into separate product entries
+  // Each variant becomes its own card showing "Product Title - Variant Name"
+  // This matches the full-page widget behavior for consistent UX
+  expandProductsByVariant(products) {
+    return products.flatMap(product => {
+      // If product already has a parentProductId, it was already expanded
+      if (product.parentProductId && product.variantId) {
+        return [product];
+      }
+
+      // If product has multiple variants, expand into separate cards
+      if (product.variants && product.variants.length > 1) {
+        return product.variants
+          .filter(variant => variant.available !== false) // Only show available variants
+          .map(variant => {
+            // Use variant image if available, fallback to product image
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+
+            return {
+              ...product,
+              id: variant.id,
+              title: variant.title === 'Default Title' ? product.title : `${product.title} - ${variant.title}`,
+              variantTitle: variant.title === 'Default Title' ? '' : variant.title,
+              imageUrl,
+              price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
+              compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
+              variantId: variant.id,
+              available: variant.available !== false,
+              parentProductId: product.id,
+              parentTitle: product.title,
+              // Remove variants array from individual cards to prevent showing variant selector
+              variants: null
+            };
+          });
+      }
+
+      // Single variant or no variants - return as-is
+      return [product];
+    });
   }
 
   renderModalTabs() {
@@ -2242,7 +2536,9 @@ class BundleWidgetProductPage {
 
   renderModalProducts(stepIndex, productsToRender = null) {
     // Use all products from step data
-    const products = productsToRender || this.stepProductData[stepIndex];
+    const rawProducts = productsToRender || this.stepProductData[stepIndex];
+    // Expand variants into separate cards like full-page widget
+    const products = this.expandProductsByVariant(rawProducts);
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
@@ -2428,9 +2724,21 @@ class BundleWidgetProductPage {
     const newProductGrid = productGrid.cloneNode(true);
     productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
+    // Get step data for modal
+    const step = this.selectedBundle.steps[stepIndex];
+
+    // Helper to find product by ID
+    const findProduct = (productId) => {
+      return this.stepProductData[stepIndex]?.find(p => {
+        const selectionKey = p.variantId || p.id;
+        return selectionKey === productId;
+      });
+    };
+
     // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('qty-btn')) {
+        e.stopPropagation();
         const productId = e.target.dataset.productId;
         const isIncrease = e.target.classList.contains('qty-increase');
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
@@ -2443,28 +2751,58 @@ class BundleWidgetProductPage {
     // Add to Bundle button handler
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('product-add-btn')) {
+        e.stopPropagation();
         const productId = e.target.dataset.productId;
-        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-        // Toggle between 0 and 1
-        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+        const product = findProduct(productId);
+
+        // If product has variants and modal is available, open the modal
+        if (product && product.variants && product.variants.length > 1 && this.productModal) {
+          this.productModal.open(product, step);
+        } else {
+          // No variants or modal not available - toggle directly
+          const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+          this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+        }
       }
     });
 
-    // Variant selector handler
+    // Product image/title click - open variant modal if product has variants
+    newProductGrid.addEventListener('click', (e) => {
+      const productImage = e.target.closest('.product-image');
+      const productTitle = e.target.closest('.product-title');
+
+      if (productImage || productTitle) {
+        const productCard = e.target.closest('.product-card');
+        if (productCard && this.productModal) {
+          const productId = productCard.dataset.productId;
+          const product = findProduct(productId);
+
+          if (product && product.variants && product.variants.length > 1 && step) {
+            // Product has variants - open modal for selection
+            this.productModal.open(product, step);
+          }
+        }
+      }
+    });
+
+    // Variant selector handler (for inline dropdown if used)
     newProductGrid.addEventListener('change', (e) => {
       if (e.target.classList.contains('variant-selector')) {
+        e.stopPropagation();
         const newVariantId = e.target.value;
         const baseProductId = e.target.dataset.baseProductId;
 
         // Find the product and update its variant
         const product = this.stepProductData[stepIndex].find(p => p.id === baseProductId);
-        if (product) {
+        if (product && product.variants) {
           const variantData = product.variants.find(v => v.id === newVariantId);
           if (variantData) {
+            const oldVariantId = product.variantId;
+
             // Move quantity from old variant to new variant
-            const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
+            const oldQuantity = this.selectedProducts[stepIndex][oldVariantId] || 0;
             if (oldQuantity > 0) {
-              delete this.selectedProducts[stepIndex][product.variantId];
+              delete this.selectedProducts[stepIndex][oldVariantId];
               this.selectedProducts[stepIndex][newVariantId] = oldQuantity;
             }
 
@@ -2472,11 +2810,33 @@ class BundleWidgetProductPage {
             product.variantId = newVariantId;
             product.price = variantData.price;
 
+            // CRITICAL: Update all data-product-id attributes in the card to use the new variant ID
+            // This fixes the bug where quantity controls would use the old variant ID
+            const productCard = e.target.closest('.product-card');
+            if (productCard) {
+              productCard.dataset.productId = newVariantId;
+              productCard.querySelectorAll('[data-product-id]').forEach(el => {
+                el.dataset.productId = newVariantId;
+              });
+            }
+
             // Update UI without full re-render
             this.updateModalNavigation();
             this.updateModalFooterMessaging();
           }
         }
+      }
+    });
+
+    // Add cursor pointer styles to product images and titles for products with variants
+    newProductGrid.querySelectorAll('.product-card').forEach(card => {
+      const productId = card.dataset.productId;
+      const product = findProduct(productId);
+      if (product && product.variants && product.variants.length > 1 && this.productModal) {
+        const imageEl = card.querySelector('.product-image');
+        const titleEl = card.querySelector('.product-title');
+        if (imageEl) imageEl.style.cursor = 'pointer';
+        if (titleEl) titleEl.style.cursor = 'pointer';
       }
     });
   }
@@ -2607,8 +2967,9 @@ class BundleWidgetProductPage {
       totalQuantitySelected += quantity;
     }
 
+    // If no conditions are set, step is optional - always valid
     if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return totalQuantitySelected > 0; // Any selection is valid
+      return true; // Optional step - can proceed with 0 products
     }
 
     const requiredQuantity = step.conditionValue;
@@ -2625,7 +2986,7 @@ class BundleWidgetProductPage {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
         return totalQuantitySelected <= requiredQuantity;
       default:
-        return totalQuantitySelected > 0;
+        return true; // No recognized condition - step is optional
     }
   }
 

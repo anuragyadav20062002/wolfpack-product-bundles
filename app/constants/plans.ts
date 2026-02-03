@@ -28,11 +28,10 @@ export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
     features: [
       "Up to 10 bundles",
       "Product Page Bundles",
-      "Future: Full Page Bundles",
-      "Discount Support",
-      "All features available",
+      "Full Page Bundles",
+      "Basic discount rules",
       "Standard support",
-      "Community support"
+      "Community access"
     ]
   },
   grow: {
@@ -44,12 +43,25 @@ export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
     bundleLimit: 20,
     features: [
       "Up to 20 bundles",
-      "More Bundle Types",
-      "Discount Support",
+      "All bundle types included",
+      "Advanced discount rules",
       "Design Control Panel",
-      "Future: Bundle analytics",
+      "Bundle analytics (coming soon)",
       "Priority support",
-      "Community support"
+      "Early access to new features"
     ]
   }
 };
+
+// Features exclusive to Grow plan (for feature gating)
+// NOTE: Feature gating is currently DISABLED - all features available to all plans
+// To re-enable, uncomment the features below:
+export const GROW_ONLY_FEATURES = [
+  // "design_control_panel",
+  // "advanced_discounts",
+  // "priority_support",
+  // "bundle_analytics",
+  // "early_access"
+] as const;
+
+export type GrowOnlyFeature = typeof GROW_ONLY_FEATURES[number];

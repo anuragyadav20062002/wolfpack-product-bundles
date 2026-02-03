@@ -99,6 +99,37 @@
       "max": 6,
       "step": 1,
       "default": 4
+    },
+    {
+      "type": "header",
+      "content": "Promo Banner Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_promo_banner",
+      "label": "Show promo banner",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "promo_banner_subtitle",
+      "label": "Banner subtitle",
+      "info": "Text shown above bundle name (e.g., 'Mix & Match')",
+      "default": "Mix & Match"
+    },
+    {
+      "type": "text",
+      "id": "promo_banner_tagline",
+      "label": "Banner tagline (no discount)",
+      "info": "Tagline shown when no discount is configured",
+      "default": "Create Your Perfect Bundle"
+    },
+    {
+      "type": "text",
+      "id": "promo_banner_note",
+      "label": "Banner note (no discount)",
+      "info": "Note text shown when no discount is configured",
+      "default": "Mix & Match Your Favorites"
     }
   ]
 }
@@ -162,6 +193,10 @@
     data-custom-instruction="{{ block.settings.custom_instruction | escape }}"
     data-product-card-spacing="{{ block.settings.product_card_spacing }}"
     data-product-cards-per-row="{{ block.settings.product_cards_per_row }}"
+    data-show-promo-banner="{{ block.settings.show_promo_banner | default: true }}"
+    data-promo-banner-subtitle="{{ block.settings.promo_banner_subtitle | default: 'Mix & Match' | escape }}"
+    data-promo-banner-tagline="{{ block.settings.promo_banner_tagline | default: 'Create Your Perfect Bundle' | escape }}"
+    data-promo-banner-note="{{ block.settings.promo_banner_note | default: 'Mix & Match Your Favorites' | escape }}"
     class="bundle-widget-container bundle-widget-full-page"
   >
     <div class="bundle-loading">

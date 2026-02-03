@@ -160,7 +160,6 @@ export class BillingService {
           name: planConfig.name,
           price: planConfig.price,
           currencyCode: planConfig.currencyCode,
-          test,
           confirmationUrl,
           returnUrl
         }
@@ -474,6 +473,9 @@ export class BillingService {
         }
       });
 
+      // Handle downgrade protection - archive excess bundles
+      await this.handleDowngradeProtection(shopDomain);
+
       AppLogger.info("Subscription cancelled", {
         component: "billing.server",
         operation: "cancelSubscription"
@@ -550,5 +552,115 @@ export class BillingService {
       }, error);
       throw error;
     }
+  }
+
+  /**
+   * Handle downgrade protection when subscription is cancelled
+   * Archives excess bundles beyond the free plan limit
+   */
+  static async handleDowngradeProtection(shopDomain: string): Promise<{
+    archived: number;
+    archivedBundleIds: string[];
+  }> {
+    try {
+      const freeLimit = PLANS.free.bundleLimit;
+
+      // Get all active/draft bundles ordered by creation date (oldest first to keep)
+      const bundles = await db.bundle.findMany({
+        where: {
+          shopId: shopDomain,
+          status: { in: ["active", "draft"] }
+        },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, name: true, status: true }
+      });
+
+      if (bundles.length <= freeLimit) {
+        AppLogger.info("No excess bundles to archive on downgrade", {
+          component: "billing.server",
+          operation: "handleDowngradeProtection"
+        }, { shop: shopDomain, bundleCount: bundles.length, freeLimit });
+
+        return { archived: 0, archivedBundleIds: [] };
+      }
+
+      // Keep the oldest N bundles, archive the newest ones (most recent additions)
+      const bundlesToKeep = bundles.slice(0, freeLimit);
+      const bundlesToArchive = bundles.slice(freeLimit);
+      const archiveIds = bundlesToArchive.map(b => b.id);
+
+      AppLogger.info("Archiving excess bundles on downgrade", {
+        component: "billing.server",
+        operation: "handleDowngradeProtection"
+      }, {
+        shop: shopDomain,
+        totalBundles: bundles.length,
+        keeping: bundlesToKeep.length,
+        archiving: bundlesToArchive.length,
+        archivedNames: bundlesToArchive.map(b => b.name)
+      });
+
+      // Archive excess bundles
+      await db.bundle.updateMany({
+        where: {
+          id: { in: archiveIds }
+        },
+        data: {
+          status: "archived"
+        }
+      });
+
+      AppLogger.info("Excess bundles archived successfully", {
+        component: "billing.server",
+        operation: "handleDowngradeProtection"
+      }, {
+        shop: shopDomain,
+        archivedCount: archiveIds.length,
+        archivedIds: archiveIds
+      });
+
+      return {
+        archived: archiveIds.length,
+        archivedBundleIds: archiveIds
+      };
+
+    } catch (error) {
+      AppLogger.error("Error in downgrade protection", {
+        component: "billing.server",
+        operation: "handleDowngradeProtection"
+      }, error);
+
+      // Return empty result on error - don't fail the cancellation
+      return { archived: 0, archivedBundleIds: [] };
+    }
+  }
+
+  /**
+   * Check if a feature is available for the shop's current plan
+   */
+  static async isFeatureAvailable(
+    shopDomain: string,
+    feature: string
+  ): Promise<boolean> {
+    // NOTE: Feature gating is currently DISABLED - all features available to all plans
+    // To re-enable, uncomment the features below:
+    const GROW_ONLY_FEATURES: string[] = [
+      // "design_control_panel",
+      // "advanced_discounts",
+      // "priority_support",
+      // "bundle_analytics",
+      // "early_access"
+    ];
+
+    // If not a Grow-only feature, it's available to all
+    if (!GROW_ONLY_FEATURES.includes(feature)) {
+      return true;
+    }
+
+    // Check current plan
+    const info = await this.getSubscriptionInfo(shopDomain);
+    if (!info) return false;
+
+    return info.plan === "grow" && info.isActive;
   }
 }

@@ -13,7 +13,7 @@
  * - extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js
  */
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -21,9 +21,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
+// Shared component modules (in dependency order)
+const SHARED_MODULES = [
+  join(ROOT_DIR, 'app/assets/widgets/shared/constants.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/currency-manager.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/bundle-data-manager.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/pricing-calculator.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/toast-manager.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/template-manager.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/component-generator.js'),
+];
+
 // Source files
 const SOURCES = {
-  components: join(ROOT_DIR, 'app/assets/bundle-widget-components.js'),
   modal: join(ROOT_DIR, 'app/assets/bundle-modal-component.js'),
   fullPage: join(ROOT_DIR, 'app/assets/bundle-widget-full-page.js'),
   productPage: join(ROOT_DIR, 'app/assets/bundle-widget-product-page.js'),
@@ -52,7 +62,7 @@ function readFile(path) {
  * Remove ES module import/export statements from code
  */
 function removeModuleStatements(code) {
-  // Remove import statements
+  // Remove import statements (single line and multiline)
   code = code.replace(/^import\s+\{[\s\S]*?\}\s+from\s+['"][^'"]+['"];?\s*$/gm, '');
   code = code.replace(/^import\s+.*\s+from\s+['"][^'"]+['"];?\s*$/gm, '');
 
@@ -74,18 +84,37 @@ function removeUseStrict(code) {
 }
 
 /**
+ * Read and process all shared component modules
+ */
+function readSharedComponents() {
+  const moduleCodes = [];
+
+  for (const modulePath of SHARED_MODULES) {
+    if (!existsSync(modulePath)) {
+      console.error(`Missing module file: ${modulePath}`);
+      process.exit(1);
+    }
+
+    const code = readFile(modulePath);
+    const processed = removeUseStrict(removeModuleStatements(code));
+    moduleCodes.push(processed);
+  }
+
+  return moduleCodes.join('\n\n');
+}
+
+/**
  * Build the full-page widget bundle
  */
 function buildFullPageBundle() {
   console.log('Building full-page widget bundle...');
 
   // Read source files
-  const componentsCode = readFile(SOURCES.components);
+  const componentsCode = readSharedComponents();
   const modalCode = readFile(SOURCES.modal);
   const widgetCode = readFile(SOURCES.fullPage);
 
   // Process the code
-  const processedComponents = removeUseStrict(removeModuleStatements(componentsCode));
   const processedModal = removeUseStrict(removeModuleStatements(modalCode));
   const processedWidget = removeUseStrict(removeModuleStatements(widgetCode));
 
@@ -97,7 +126,7 @@ function buildFullPageBundle() {
   // BUNDLE WIDGET COMPONENTS
   // ============================================================================
 
-${processedComponents}
+${componentsCode}
 
   // ============================================================================
   // BUNDLE PRODUCT MODAL COMPONENT
@@ -130,11 +159,10 @@ function buildProductPageBundle() {
   console.log('Building product-page widget bundle...');
 
   // Read source files
-  const componentsCode = readFile(SOURCES.components);
+  const componentsCode = readSharedComponents();
   const widgetCode = readFile(SOURCES.productPage);
 
   // Process the code
-  const processedComponents = removeUseStrict(removeModuleStatements(componentsCode));
   const processedWidget = removeUseStrict(removeModuleStatements(widgetCode));
 
   // Combine into a single IIFE
@@ -145,7 +173,7 @@ function buildProductPageBundle() {
   // BUNDLE WIDGET COMPONENTS
   // ============================================================================
 
-${processedComponents}
+${componentsCode}
 
   // ============================================================================
   // BUNDLE WIDGET PRODUCT PAGE

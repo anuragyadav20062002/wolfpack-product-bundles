@@ -91,6 +91,10 @@ class BundleWidgetFullPage {
     this.config = {};
     this.elements = {};
 
+    // Search state for filtering products within steps
+    this.searchQuery = '';
+    this.searchDebounceTimer = null;
+
     // Initialize product modal (if BundleProductModal is available)
     this.productModal = null;
     if (window.BundleProductModal) {
@@ -122,6 +126,13 @@ class BundleWidgetFullPage {
 
       // Parse configuration
       this.parseConfiguration();
+
+      // For full-page bundles, hide the page title immediately to prevent flash
+      // This runs before any async operations to ensure smooth UX
+      const bundleType = this.container.dataset.bundleType;
+      if (bundleType === 'full_page') {
+        this.hidePageTitle();
+      }
 
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
@@ -228,6 +239,8 @@ class BundleWidgetFullPage {
       showDescription: dataset.showDescription !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       showFooterMessaging: dataset.showFooterMessaging !== 'false',
+      showStepTimeline: dataset.showStepTimeline !== 'false',
+      showCategoryTabs: dataset.showCategoryTabs !== 'false',
       // Custom content from theme editor
       customTitle: dataset.customTitle || null,
       customDescription: dataset.customDescription || null,
@@ -238,6 +251,11 @@ class BundleWidgetFullPage {
       // Quantity selector visibility settings (default: show on both)
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
       showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
+      // Promo banner settings from theme editor
+      showPromoBanner: dataset.showPromoBanner !== 'false',
+      promoBannerSubtitle: dataset.promoBannerSubtitle || 'Mix & Match',
+      promoBannerTagline: dataset.promoBannerTagline || 'Create Your Perfect Bundle',
+      promoBannerNote: dataset.promoBannerNote || 'Mix & Match Your Favorites',
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -674,6 +692,13 @@ class BundleWidgetFullPage {
   }
 
   renderHeader() {
+    // For full-page bundles, always hide the main header (promo banner handles the display)
+    const bundleType = this.selectedBundle?.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
+    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      this.elements.header.style.display = 'none';
+      return;
+    }
+
     if (!this.config.showTitle) {
       this.elements.header.style.display = 'none';
       return;
@@ -714,32 +739,55 @@ class BundleWidgetFullPage {
   async renderFullPageLayout() {
     console.log('[FULL_PAGE_LAYOUT] Rendering full-page bundle layout');
 
+    // Hide the page-title element from the theme (shows page name like "StrangeObjectsinmirror")
+    this.hidePageTitle();
+
     // Clear existing content
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
 
+    // Wrap content in full-page-content-section for proper padding
+    const contentSection = document.createElement('div');
+    contentSection.className = 'full-page-content-section';
+
     // OPTIMISTIC RENDERING: Render non-product UI immediately
-    // 1. Render step timeline at top
-    const stepTimeline = this.createStepTimeline();
-    this.elements.stepsContainer.appendChild(stepTimeline);
+    // 0. Render promo banner at the very top (before step timeline)
+    const promoBanner = this.createPromoBanner();
+    if (promoBanner) {
+      contentSection.appendChild(promoBanner);
+    }
+
+    // 1. Render step timeline at top (if enabled in theme settings)
+    if (this.config.showStepTimeline) {
+      const stepTimeline = this.createStepTimeline();
+      contentSection.appendChild(stepTimeline);
+    }
 
     // 2. Render bundle header (instruction text)
     const bundleHeader = this.createBundleInstructions();
-    this.elements.stepsContainer.appendChild(bundleHeader);
+    contentSection.appendChild(bundleHeader);
 
-    // 3. Render category/collection tabs if step has collections
-    const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
-    if (categoryTabs) {
-      this.elements.stepsContainer.appendChild(categoryTabs);
+    // 3. Render search input for filtering products
+    const searchInput = this.createSearchInput();
+    contentSection.appendChild(searchInput);
+
+    // 4. Render category/collection tabs if step has collections (and enabled in theme settings)
+    if (this.config.showCategoryTabs) {
+      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+      if (categoryTabs) {
+        contentSection.appendChild(categoryTabs);
+      }
     }
 
-    // 4. Create product grid container with loading state
+    // 5. Create product grid container with loading state
     const productGridContainer = document.createElement('div');
     productGridContainer.className = 'full-page-product-grid-container';
     productGridContainer.innerHTML = this.createProductGridLoadingState();
-    this.elements.stepsContainer.appendChild(productGridContainer);
+    contentSection.appendChild(productGridContainer);
 
-    // 5. Render fixed footer (will be updated after products load)
+    this.elements.stepsContainer.appendChild(contentSection);
+
+    // 6. Render fixed footer (will be updated after products load)
     this.renderFullPageFooter();
 
     // Load products asynchronously and update grid
@@ -829,6 +877,9 @@ class BundleWidgetFullPage {
         }
       } else {
         // Empty step - show step number and name
+        // Get previous step name for locked tooltip
+        const prevStepName = index > 0 ? (this.selectedBundle.steps[index - 1]?.name || `Step ${index}`) : '';
+
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
@@ -841,6 +892,7 @@ class BundleWidgetFullPage {
                 <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
               </svg>
             </div>
+            <div class="tab-locked-tooltip">Complete "${prevStepName}" first</div>
           ` : ''}
         `;
       }
@@ -852,6 +904,7 @@ class BundleWidgetFullPage {
         tab.style.cursor = 'pointer';
         tab.addEventListener('click', () => {
           this.currentStepIndex = index;
+          this.searchQuery = ''; // Clear search when changing steps
           this.renderFullPageLayout();
         });
       }
@@ -882,10 +935,10 @@ class BundleWidgetFullPage {
     return productImages;
   }
 
-  // Create bundle instructions header
+  // Create bundle instructions header (only shows step instruction, not bundle title)
   createBundleInstructions() {
     const header = document.createElement('div');
-    header.className = 'bundle-header';
+    header.className = 'bundle-header bundle-step-instruction';
 
     if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[this.currentStepIndex]) {
       console.error('[WIDGET_RENDER] Cannot create instructions: selectedBundle or current step is undefined');
@@ -895,26 +948,231 @@ class BundleWidgetFullPage {
     const currentStep = this.selectedBundle.steps[this.currentStepIndex];
 
     // Use custom instruction if provided, otherwise use step instruction or auto-generated text
-    const defaultInstruction = currentStep.instruction || `Select ${currentStep.minQuantity} or more items from ${currentStep.name}`;
+    const defaultInstruction = currentStep.instruction || `Select ${currentStep.minQuantity || 1} or more items from ${currentStep.name}`;
     const instructionText = this.config.customInstruction || defaultInstruction;
 
-    // Use custom title if provided, otherwise use bundle name
-    const title = this.config.customTitle || this.selectedBundle.name;
-
-    // Only show bundle title if showTitle is enabled
-    const bundleTitleHTML = this.config.showTitle
-      ? `<h3 class="bundle-title">${title}</h3>`
-      : '';
-
+    // Only show instruction text (title is shown in promo banner)
     header.innerHTML = `
-      ${bundleTitleHTML}
       <p class="bundle-instruction">${instructionText}</p>
     `;
 
     return header;
   }
 
-  // Create category/collection tabs
+  // Create search input for filtering products within the current step
+  createSearchInput() {
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'step-search-container';
+
+    searchContainer.innerHTML = `
+      <div class="step-search-input-wrapper">
+        <svg class="step-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          class="step-search-input"
+          placeholder="Search products..."
+          value="${this.searchQuery}"
+          autocomplete="off"
+        />
+        <button class="step-search-clear" type="button" style="display: ${this.searchQuery ? 'flex' : 'none'}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    const input = searchContainer.querySelector('.step-search-input');
+    const clearBtn = searchContainer.querySelector('.step-search-clear');
+
+    // Handle input with debounce
+    input.addEventListener('input', (e) => {
+      const value = e.target.value;
+
+      // Show/hide clear button
+      clearBtn.style.display = value ? 'flex' : 'none';
+
+      // Debounce the search
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer);
+      }
+
+      this.searchDebounceTimer = setTimeout(() => {
+        this.searchQuery = value;
+        this.updateProductGridWithSearch();
+      }, 300);
+    });
+
+    // Handle clear button
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      clearBtn.style.display = 'none';
+      this.searchQuery = '';
+      this.updateProductGridWithSearch();
+      input.focus();
+    });
+
+    // Handle escape key to clear
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        input.value = '';
+        clearBtn.style.display = 'none';
+        this.searchQuery = '';
+        this.updateProductGridWithSearch();
+      }
+    });
+
+    return searchContainer;
+  }
+
+  // Update product grid when search query changes (without full re-render)
+  updateProductGridWithSearch() {
+    const gridContainer = this.container.querySelector('.full-page-product-grid-container');
+    if (!gridContainer) return;
+
+    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+    gridContainer.innerHTML = '';
+    gridContainer.appendChild(productGrid);
+  }
+
+  // Hide the page title element from the theme template
+  // This prevents showing the page name (e.g., "StrangeObjectsinmirror") above the bundle
+  hidePageTitle() {
+    // Try multiple selectors to find the page title element
+    const selectors = [
+      '.main-page-title',
+      '.page-title',
+      'h1.page-title',
+      '.page-width h1',
+      '.section-template--*__main-padding h1',
+      '[class*="main-padding"] h1.h0'
+    ];
+
+    for (const selector of selectors) {
+      try {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          // Check if this is a page title element (not our promo banner)
+          if (el.closest('.promo-banner')) return;
+
+          // Hide the element
+          el.style.display = 'none';
+          console.log(`[FULL_PAGE_LAYOUT] Hidden page title element: ${selector}`);
+        });
+      } catch (e) {
+        // Selector might be invalid, continue to next
+      }
+    }
+
+    // Also hide any parent containers that only contain the title
+    const pageTitleContainers = document.querySelectorAll('.page-width--narrow');
+    pageTitleContainers.forEach(container => {
+      // Only hide if the container has a page title and not much else
+      const hasPageTitle = container.querySelector('.main-page-title, .page-title, h1.h0');
+      const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
+
+      if (hasPageTitle && !hasOtherContent) {
+        container.style.display = 'none';
+        console.log('[FULL_PAGE_LAYOUT] Hidden page title container');
+      }
+    });
+  }
+
+  // Create promotional banner (Competitor-Inspired with gradient hero style)
+  // Shows bundle title with optional discount info from DCP
+  createPromoBanner() {
+    // Check if promo banner is disabled via theme editor settings
+    if (this.config.showPromoBanner === false) {
+      console.log('[PROMO_BANNER] Promo banner disabled via theme editor settings');
+      return null;
+    }
+
+    // Check if promo banner is enabled via DCP CSS variable
+    const promoBannerEnabled = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bundle-promo-banner-enabled')
+      .trim();
+
+    // If explicitly disabled (value is '0'), don't create the banner
+    if (promoBannerEnabled === '0') {
+      console.log('[PROMO_BANNER] Promo banner disabled via DCP settings');
+      return null;
+    }
+
+    const bundleName = this.selectedBundle?.name || 'Build Your Bundle';
+    const pricing = this.selectedBundle?.pricing;
+    const rules = pricing?.rules || [];
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+    // Start with the bundle name as the main title
+    let promoTitle = bundleName;
+    let promoSubtitle = '';
+    let promoNote = '';
+    let discountMessage = '';
+
+    // Check for discount rules and build discount message
+    if (pricing?.enabled && rules.length > 0) {
+      // Find the best discount to highlight (use nested structure)
+      const bestRule = rules.reduce((best, rule) => {
+        const discountValue = rule.discount?.method === 'percentage'
+          ? rule.discount?.value || 0
+          : ((rule.discount?.value || 0) / 100);
+        const bestValue = best.discount?.method === 'percentage'
+          ? best.discount?.value || 0
+          : ((best.discount?.value || 0) / 100);
+        return discountValue > bestValue ? rule : best;
+      }, rules[0]);
+
+      // Build discount message based on best rule (using nested structure)
+      const targetQty = bestRule.condition?.value || bestRule.minQuantity || 0;
+      const discountMethod = bestRule.discount?.method || bestRule.discountType;
+      const discountValue = bestRule.discount?.value || bestRule.discountValue || 0;
+
+      if (discountMethod === 'percentage' && discountValue > 0) {
+        discountMessage = `Add ${targetQty} items and get ${discountValue}% off!`;
+      } else if (discountMethod === 'fixed_amount' && discountValue > 0) {
+        const formattedAmount = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+        discountMessage = `Add ${targetQty} items and save ${formattedAmount}!`;
+      } else if (discountMethod === 'fixed_price' && discountValue > 0) {
+        const formattedPrice = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+        discountMessage = `Add ${targetQty} items for just ${formattedPrice}!`;
+      }
+    }
+
+    // Use custom banner message if configured (overrides discount message)
+    if (pricing?.messages?.banner) {
+      discountMessage = pricing.messages.banner;
+    }
+
+    // Determine layout based on whether we have a discount
+    // Use theme editor settings for customizable text
+    if (discountMessage) {
+      // With discount: Use subtitle from theme settings, discount as note
+      promoSubtitle = this.config.promoBannerSubtitle || 'Mix & Match';
+      promoNote = discountMessage;
+    } else {
+      // No discount: Use tagline and note from theme settings
+      promoSubtitle = this.config.promoBannerTagline || 'Create Your Perfect Bundle';
+      promoNote = this.config.promoBannerNote || 'Mix & Match Your Favorites';
+    }
+
+    const banner = document.createElement('div');
+    banner.className = 'promo-banner';
+    banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
+    banner.innerHTML = `
+      ${promoSubtitle ? `<div class="promo-banner-subtitle">${promoSubtitle}</div>` : ''}
+      <h2 class="promo-banner-title">${promoTitle}</h2>
+      ${promoNote ? `<div class="promo-banner-note">${promoNote}</div>` : ''}
+    `;
+
+    console.log('[PROMO_BANNER] Created banner:', { bundleName, discountMessage, hasDiscount: !!discountMessage });
+
+    return banner;
+  }
+
+  // Create category/collection tabs (Pill Button Style)
   createCategoryTabs(stepIndex) {
     if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
       console.error('[WIDGET_RENDER] Cannot create category tabs: step is undefined');
@@ -930,33 +1188,27 @@ class BundleWidgetFullPage {
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'category-tabs';
 
-    // Add "All" tab
-    const allTab = document.createElement('div');
+    // Add "All" tab - Pill button style
+    const allTab = document.createElement('button');
     allTab.className = 'category-tab';
     if (!this.activeCollectionId) {
       allTab.classList.add('active');
     }
-    allTab.innerHTML = `
-      <div class="tab-indicator"></div>
-      <span class="tab-label">All</span>
-    `;
+    allTab.innerHTML = `<span class="tab-label">All</span>`;
     allTab.addEventListener('click', () => {
       this.activeCollectionId = null;
       this.renderFullPageLayout();
     });
     tabsContainer.appendChild(allTab);
 
-    // Add collection tabs
+    // Add collection tabs - Pill button style
     step.collections.forEach(collection => {
-      const tab = document.createElement('div');
+      const tab = document.createElement('button');
       tab.className = 'category-tab';
       if (this.activeCollectionId === collection.id) {
         tab.classList.add('active');
       }
-      tab.innerHTML = `
-        <div class="tab-indicator"></div>
-        <span class="tab-label">${collection.title}</span>
-      `;
+      tab.innerHTML = `<span class="tab-label">${collection.title}</span>`;
       tab.addEventListener('click', () => {
         this.activeCollectionId = collection.id;
         this.renderFullPageLayout();
@@ -997,18 +1249,81 @@ class BundleWidgetFullPage {
       }
     }
 
-    if (products.length === 0) {
-      grid.innerHTML = '<p class="no-products">No products available in this step.</p>';
+    // Expand products with variants into separate cards (one card per variant)
+    let expandedProducts = this.expandProductsByVariant(products);
+
+    // Filter by search query if active
+    if (this.searchQuery && this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase().trim();
+      expandedProducts = expandedProducts.filter(product => {
+        const title = (product.title || '').toLowerCase();
+        const variantTitle = (product.variantTitle || '').toLowerCase();
+        const parentTitle = (product.parentTitle || '').toLowerCase();
+        return title.includes(query) || variantTitle.includes(query) || parentTitle.includes(query);
+      });
+    }
+
+    if (expandedProducts.length === 0) {
+      // Show appropriate message based on whether there's a search query
+      const message = this.searchQuery
+        ? `No products match "${this.searchQuery}"`
+        : 'No products available in this step.';
+      grid.innerHTML = `<p class="no-products">${message}</p>`;
       return grid;
     }
 
+    console.log('[PRODUCT_GRID_DEBUG] Expanded products:', {
+      originalCount: products.length,
+      expandedCount: expandedProducts.length
+    });
+
     // Create product cards using ComponentGenerator
-    products.forEach(product => {
+    expandedProducts.forEach(product => {
       const productCard = this.createProductCard(product, stepIndex);
       grid.appendChild(productCard);
     });
 
     return grid;
+  }
+
+  // Expand products with multiple variants into separate product entries
+  // Each variant becomes its own card showing "Product Title - Variant Name"
+  expandProductsByVariant(products) {
+    return products.flatMap(product => {
+      // If product already has a variantId and parentProductId, it was already expanded
+      if (product.parentProductId && product.variantId) {
+        return [product];
+      }
+
+      // If product has multiple variants, expand into separate cards
+      if (product.variants && product.variants.length > 1) {
+        return product.variants
+          .filter(variant => variant.available !== false) // Only show available variants
+          .map(variant => {
+            // Use variant image if available, fallback to product image
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+
+            return {
+              ...product,
+              id: variant.id,
+              title: variant.title === 'Default Title' ? product.title : `${product.title} - ${variant.title}`,
+              variantTitle: variant.title === 'Default Title' ? '' : variant.title,
+              imageUrl,
+              price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
+              compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
+              variantId: variant.id,
+              available: variant.available !== false,
+              parentProductId: product.id,
+              parentTitle: product.title,
+              // Remove variants array from individual cards to prevent showing variant selector
+              variants: null
+            };
+          });
+      }
+
+      // Single variant or no variants - return as-is
+      return [product];
+    });
   }
 
   // Create loading skeleton for product grid - solid pulsating cards
@@ -1153,28 +1468,28 @@ class BundleWidgetFullPage {
   attachProductCardListeners(cardElement, product, stepIndex) {
     const productId = product.variantId || product.id;
 
-    // Quantity controls
-    const increaseBtn = cardElement.querySelector('.qty-increase');
-    const decreaseBtn = cardElement.querySelector('.qty-decrease');
+    // Quantity controls (both old-style and inline-style buttons)
+    const increaseBtns = cardElement.querySelectorAll('.qty-increase');
+    const decreaseBtns = cardElement.querySelectorAll('.qty-decrease');
     const addBtn = cardElement.querySelector('.product-add-btn');
 
-    if (increaseBtn) {
-      increaseBtn.addEventListener('click', (e) => {
+    increaseBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         this.updateProductSelection(stepIndex, productId, currentQty + 1);
       });
-    }
+    });
 
-    if (decreaseBtn) {
-      decreaseBtn.addEventListener('click', (e) => {
+    decreaseBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent card click from triggering
         const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
         if (currentQty > 0) {
           this.updateProductSelection(stepIndex, productId, currentQty - 1);
         }
       });
-    }
+    });
 
     if (addBtn) {
       addBtn.addEventListener('click', (e) => {
@@ -1227,7 +1542,7 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Render fixed footer with selected products and navigation
+  // Render fixed footer with selected products and navigation (Competitor-Inspired Design)
   renderFullPageFooter() {
     if (!this.elements.footer) {
       console.error('[FOOTER] Footer element not found');
@@ -1235,60 +1550,14 @@ class BundleWidgetFullPage {
     }
 
     this.elements.footer.innerHTML = '';
-    this.elements.footer.className = 'full-page-footer';
-    this.elements.footer.style.display = 'flex';
+    this.elements.footer.className = 'full-page-footer redesigned';
+    this.elements.footer.style.display = 'block';
 
-    // Left section: Scrollable selected products
-    const leftSection = document.createElement('div');
-    leftSection.className = 'footer-left';
-
-    const selectedProductsContainer = document.createElement('div');
-    selectedProductsContainer.className = 'footer-selected-products';
-
-    const allSelectedProducts = this.getAllSelectedProductsData();
-
-    if (allSelectedProducts.length === 0) {
-      selectedProductsContainer.innerHTML = '<p class="no-selections">No products selected yet</p>';
-    } else {
-      allSelectedProducts.forEach(item => {
-        const productItem = document.createElement('div');
-        productItem.className = 'footer-product-item';
-        productItem.innerHTML = `
-          <img src="${item.image}" alt="${item.title}" class="footer-product-image">
-          <div class="footer-product-info">
-            <span class="footer-product-title">${item.title}</span>
-            <span class="footer-product-quantity">Qty: ${item.quantity}</span>
-          </div>
-          <button class="footer-product-remove" data-step="${item.stepIndex}" data-variant="${item.variantId}">×</button>
-        `;
-
-        const removeBtn = productItem.querySelector('.footer-product-remove');
-        removeBtn.addEventListener('click', () => {
-          this.updateProductSelection(item.stepIndex, item.variantId, 0);
-          this.renderFullPageLayout();
-        });
-
-        selectedProductsContainer.appendChild(productItem);
-      });
-    }
-
-    leftSection.appendChild(selectedProductsContainer);
-
-    // Right section: Total and navigation
-    const rightSection = document.createElement('div');
-    rightSection.className = 'footer-right';
-
+    // Calculate pricing data
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
     );
-
-    console.log('[FOOTER_DEBUG] Price calculation:', {
-      selectedProducts: this.selectedProducts,
-      stepProductData: this.stepProductData,
-      totalPrice,
-      totalQuantity
-    });
 
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -1298,53 +1567,84 @@ class BundleWidgetFullPage {
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const allSelectedProducts = this.getAllSelectedProductsData();
 
-    // Create discount messaging section if discount is enabled
-    let discountMessageHTML = '';
-    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
-      const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle,
-        totalPrice,
-        totalQuantity,
-        discountInfo,
-        currencyInfo
-      );
+    // Calculate progress for discount (if applicable)
+    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+    const progressPercent = this.calculateDiscountProgress(totalQuantity);
 
-      const successMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || 'You saved {{discountAmount}}!',
-        variables
-      );
+    // === SECTION 1: Progress Bar with Discount Messaging ===
+    const progressSection = document.createElement('div');
+    progressSection.className = 'footer-progress-section';
 
-      discountMessageHTML = `
-        <div class="footer-discount-message" style="
-          color: var(--bundle-full-page-discount-text-color, #059669);
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 8px;
-          text-align: right;
-        ">
-          ${successMessage}
-        </div>
-      `;
+    // Build discount messaging
+    let discountMessage = '';
+    if (this.selectedBundle?.pricing?.enabled) {
+      if (discountInfo.hasDiscount) {
+        const variables = TemplateManager.createDiscountVariables(
+          this.selectedBundle,
+          totalPrice,
+          totalQuantity,
+          discountInfo,
+          currencyInfo
+        );
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        // Calculate remaining items needed from nested rule structure
+        const targetQuantity = nextRule.condition?.value || 0;
+        const remaining = Math.max(0, targetQuantity - totalQuantity);
+
+        // Build discount text from nested discount structure
+        let discountText = '';
+        const discountMethod = nextRule.discount?.method;
+        const discountValue = nextRule.discount?.value || 0;
+
+        if (discountMethod === 'percentage') {
+          discountText = `${discountValue}% off`;
+        } else if (discountMethod === 'fixed_amount') {
+          discountText = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format) + ' off';
+        } else if (discountMethod === 'fixed_price') {
+          discountText = 'a special price of ' + CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+        } else {
+          discountText = 'a discount';
+        }
+
+        // Improved messaging with encouraging copy
+        if (remaining === 1) {
+          discountMessage = `Almost there! Add 1 more item to unlock ${discountText}`;
+        } else if (remaining <= 3) {
+          discountMessage = `Just ${remaining} more items to unlock ${discountText}!`;
+        } else {
+          discountMessage = `Add ${remaining} more items to get ${discountText}`;
+        }
+      }
     }
 
-    const totalDisplay = document.createElement('div');
-    totalDisplay.className = 'footer-total';
-    totalDisplay.innerHTML = `
-      ${discountMessageHTML}
-      ${discountInfo.hasDiscount ? `<span class="total-label-strike" style="text-decoration: line-through; color: #999; font-size: 14px; display: block;">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
-      <span class="total-label">Total:</span>
-      <span class="total-price">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+    progressSection.innerHTML = `
+      ${discountMessage ? `<div class="footer-discount-message">${discountMessage}</div>` : ''}
     `;
 
-    const navButtons = document.createElement('div');
-    navButtons.className = 'footer-nav-buttons';
+    // === SECTION 2: Scrollable Product Tiles (centered above navigation) ===
+    const productsSection = this.createFooterProductTiles(allSelectedProducts, currencyInfo);
 
-    // Back button
+    // === SECTION 3: Navigation with Total between buttons ===
+    const navSection = document.createElement('div');
+    navSection.className = 'footer-nav-section';
+
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+    const canProceed = this.canProceedToNextStep();
+
+    // Create Back button
     const backBtn = document.createElement('button');
-    backBtn.className = 'footer-nav-btn footer-back-btn';
+    backBtn.className = 'footer-btn footer-btn-back';
     backBtn.textContent = 'Back';
-    backBtn.disabled = this.currentStepIndex === 0;
+    if (this.currentStepIndex === 0) {
+      backBtn.disabled = true;
+    }
+
     backBtn.addEventListener('click', () => {
       if (this.currentStepIndex > 0) {
         this.currentStepIndex--;
@@ -1352,36 +1652,141 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Next/Add to Cart button
+    // Create Total section (between buttons)
+    const totalSection = document.createElement('div');
+    totalSection.className = 'footer-total-section';
+    totalSection.innerHTML = `
+      <span class="total-label">Total</span>
+      <div class="total-prices">
+        ${discountInfo.hasDiscount ? `<span class="total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
+        <span class="total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+      </div>
+    `;
+
+    // Create Next button
     const nextBtn = document.createElement('button');
-    nextBtn.className = 'footer-nav-btn footer-next-btn';
-
-    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-    const canProceed = this.canProceedToNextStep();
-
-    if (isLastStep) {
-      nextBtn.textContent = 'Add to Cart';
-      nextBtn.disabled = !this.areBundleConditionsMet();
-      nextBtn.addEventListener('click', () => this.addBundleToCart());
-    } else {
-      nextBtn.textContent = 'Next';
-      nextBtn.disabled = !canProceed;
-      nextBtn.addEventListener('click', () => {
-        if (canProceed) {
-          this.currentStepIndex++;
-          this.renderFullPageLayout();
-        }
-      });
+    nextBtn.className = 'footer-btn footer-btn-next';
+    nextBtn.textContent = isLastStep ? 'Add to Cart' : 'Next';
+    if (isLastStep ? !this.areBundleConditionsMet() : !canProceed) {
+      nextBtn.disabled = true;
     }
 
-    navButtons.appendChild(backBtn);
-    navButtons.appendChild(nextBtn);
+    nextBtn.addEventListener('click', () => {
+      if (isLastStep) {
+        this.addBundleToCart();
+      } else if (canProceed) {
+        this.currentStepIndex++;
+        this.renderFullPageLayout();
+      }
+    });
 
-    rightSection.appendChild(totalDisplay);
-    rightSection.appendChild(navButtons);
+    // Assemble nav section: Back | Total | Next
+    navSection.appendChild(backBtn);
+    navSection.appendChild(totalSection);
+    navSection.appendChild(nextBtn);
 
-    this.elements.footer.appendChild(leftSection);
-    this.elements.footer.appendChild(rightSection);
+    // Assemble footer: Progress -> Products (centered) -> Navigation
+    this.elements.footer.appendChild(progressSection);
+    this.elements.footer.appendChild(productsSection);
+    this.elements.footer.appendChild(navSection);
+  }
+
+  // Create scrollable product tiles component for footer
+  // Shows product image, name, variant (if any), and remove button
+  createFooterProductTiles(allSelectedProducts, currencyInfo) {
+    const container = document.createElement('div');
+    container.className = 'footer-products-tiles-container';
+
+    if (allSelectedProducts.length === 0) {
+      return container;
+    }
+
+    // Create scrollable tiles wrapper
+    const tilesWrapper = document.createElement('div');
+    tilesWrapper.className = 'footer-products-tiles-wrapper';
+
+    // Show each selected item as its own tile (already expanded by variant)
+    allSelectedProducts.forEach(item => {
+      const tile = document.createElement('div');
+      tile.className = 'footer-product-tile';
+
+      // Determine if this is a variant
+      const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title'
+        ? item.variantTitle
+        : '';
+
+      // Truncate product name for compact display
+      const displayTitle = this.truncateTitle(item.parentTitle || item.title, 20);
+
+      tile.innerHTML = `
+        <div class="tile-image-wrapper">
+          <img src="${item.imageUrl || 'https://via.placeholder.com/50'}" alt="${item.title}" class="tile-image">
+          <span class="tile-quantity-badge">${item.quantity}</span>
+        </div>
+        <div class="tile-info">
+          <span class="tile-product-name">${displayTitle}</span>
+          ${variantInfo ? `<span class="tile-variant-name">${variantInfo}</span>` : ''}
+        </div>
+        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${item.title}">×</button>
+      `;
+
+      // Attach remove handler with undo support
+      const removeBtn = tile.querySelector('.tile-remove');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        // Store item data for undo
+        const removedItem = {
+          stepIndex: item.stepIndex,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          title: item.title
+        };
+
+        // Remove the product
+        this.updateProductSelection(item.stepIndex, item.variantId, 0);
+
+        // Show undo toast
+        const truncatedTitle = removedItem.title.length > 25
+          ? removedItem.title.substring(0, 25) + '...'
+          : removedItem.title;
+
+        ToastManager.showWithUndo(
+          `Removed "${truncatedTitle}"`,
+          () => {
+            // Undo callback - restore the product
+            this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity);
+          },
+          5000
+        );
+      });
+
+      tilesWrapper.appendChild(tile);
+    });
+
+    container.appendChild(tilesWrapper);
+    return container;
+  }
+
+  // Helper: Calculate discount progress percentage
+  calculateDiscountProgress(currentQuantity) {
+    if (!this.selectedBundle?.pricing?.enabled) return 0;
+
+    const rules = this.selectedBundle.pricing.rules || [];
+    if (rules.length === 0) return 0;
+
+    // Find the highest threshold
+    const maxThreshold = Math.max(...rules.map(r => r.minQuantity || 0));
+    if (maxThreshold === 0) return 0;
+
+    return Math.min(100, (currentQuantity / maxThreshold) * 100);
+  }
+
+  // Helper: Truncate title for compact display
+  truncateTitle(title, maxLength) {
+    if (!title) return '';
+    if (title.length <= maxLength) return title;
+    return title.substring(0, maxLength) + '...';
   }
 
   // Helper: Get all selected products data for footer display
@@ -1394,26 +1799,188 @@ class BundleWidgetFullPage {
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
-          // Find product in processed stepProductData using variantId or id
-          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+          // Find product in processed stepProductData
+          // Check multiple ways: direct variantId match, direct id match, or variant within variants array
+          let product = productsInStep.find(p =>
+            String(p.variantId) === String(variantId) || String(p.id) === String(variantId)
+          );
+
+          // If not found directly, search within variants array of each product
+          let matchedVariant = null;
+          if (!product) {
+            for (const p of productsInStep) {
+              if (p.variants && Array.isArray(p.variants)) {
+                const variant = p.variants.find(v => String(v.id) === String(variantId));
+                if (variant) {
+                  product = p;
+                  matchedVariant = variant;
+                  break;
+                }
+              }
+            }
+          }
 
           if (product) {
+            // Determine the correct data based on whether we found a variant within a product
+            const variantData = matchedVariant || product;
+            const isVariantMatch = !!matchedVariant;
+
+            // Build variant title
+            let variantTitle = '';
+            if (isVariantMatch && matchedVariant.title && matchedVariant.title !== 'Default Title') {
+              variantTitle = matchedVariant.title;
+            } else if (product.variantTitle && product.variantTitle !== 'Default Title') {
+              variantTitle = product.variantTitle;
+            }
+
+            // Get the appropriate image - prefer variant image, fallback to product image
+            const imageUrl = isVariantMatch
+              ? (matchedVariant.image?.src || matchedVariant.image || product.imageUrl || product.image?.src || '')
+              : (product.imageUrl || product.image?.src || '');
+
+            // Get the appropriate price - use variant price if available
+            const price = isVariantMatch
+              ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : (parseFloat(matchedVariant.price || '0') * 100))
+              : (product.price || 0);
+
             allProducts.push({
               stepIndex,
               variantId,
               quantity,
-              title: product.title || 'Untitled Product',
-              image: product.imageUrl || product.image?.src || '',
-              price: product.price || 0
+              title: isVariantMatch
+                ? (variantTitle ? `${product.title} - ${variantTitle}` : product.title)
+                : (product.title || 'Untitled Product'),
+              parentTitle: product.parentTitle || product.title || 'Untitled Product',
+              variantTitle: variantTitle,
+              imageUrl: imageUrl,
+              image: imageUrl,
+              price: price
             });
           } else {
-            console.warn('[FOOTER] Could not find product for variantId:', variantId);
+            console.warn('[FOOTER] Could not find product for variantId:', variantId, 'in step', stepIndex);
           }
         }
       });
     });
 
     return allProducts;
+  }
+
+  /**
+   * Group selected variants by product for multi-variant display
+   * @param {Array} selectedProducts - Array of selected product variants
+   * @returns {Array} Array of product groups with their variants
+   */
+  groupVariantsByProduct(selectedProducts) {
+    const productMap = new Map();
+
+    selectedProducts.forEach(item => {
+      // Find the full product data
+      const product = this.stepProductData[item.stepIndex]?.find(p => {
+        // Check if this product has this variant
+        return p.variants?.some(v => String(v.id) === String(item.variantId)) || String(p.id) === String(item.variantId);
+      });
+
+      if (!product) return;
+
+      const productId = product.id || product.productId;
+      const key = `${item.stepIndex}-${productId}`;
+
+      if (!productMap.has(key)) {
+        productMap.set(key, {
+          productId,
+          stepIndex: item.stepIndex,
+          title: product.title || item.title,
+          image: product.imageUrl || product.image?.src || item.image,
+          variants: [],
+          totalQuantity: 0,
+          totalPrice: 0
+        });
+      }
+
+      const group = productMap.get(key);
+      group.variants.push(item);
+      group.totalQuantity += item.quantity;
+      group.totalPrice += (item.price * item.quantity);
+    });
+
+    return Array.from(productMap.values());
+  }
+
+  /**
+   * Show variant breakdown popup for a product with multiple variants
+   * @param {Object} productGroup - Product group with multiple variants
+   */
+  showVariantBreakdown(productGroup) {
+    const overlay = document.createElement('div');
+    overlay.className = 'variant-breakdown-overlay';
+
+    const popup = document.createElement('div');
+    popup.className = 'variant-breakdown-popup';
+
+    // Get variant details
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variantsHtml = productGroup.variants.map(variant => {
+      const product = this.stepProductData[variant.stepIndex]?.find(p =>
+        p.variants?.some(v => String(v.id) === String(variant.variantId)) || String(p.id) === String(variant.variantId)
+      );
+      const variantObj = product?.variants?.find(v => String(v.id) === String(variant.variantId));
+      const variantTitle = variantObj?.title || variant.title || 'Variant';
+
+      return `
+        <div class="variant-breakdown-item">
+          <img src="${variant.image}" alt="${variantTitle}" />
+          <div class="variant-info">
+            <span class="variant-title">${variantTitle}</span>
+            <span class="variant-quantity">Qty: ${variant.quantity} × ${CurrencyManager.formatMoney(variant.price, currencyInfo.display.format)}</span>
+          </div>
+          <button class="remove-variant-btn" data-step="${variant.stepIndex}" data-variant-id="${variant.variantId}">Remove</button>
+        </div>
+      `;
+    }).join('');
+
+    popup.innerHTML = `
+      <div class="variant-breakdown-header">
+        <h3>${productGroup.title}</h3>
+        <button class="close-breakdown-btn">&times;</button>
+      </div>
+      <div class="variant-breakdown-list">
+        ${variantsHtml}
+      </div>
+      <button class="add-another-variant-btn">+ Add Another Variant</button>
+    `;
+
+    // Event handlers
+    popup.querySelector('.close-breakdown-btn').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+    });
+
+    popup.querySelectorAll('.remove-variant-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const stepIndex = parseInt(e.target.dataset.step);
+        const variantId = e.target.dataset.variantId;
+        this.updateProductSelection(stepIndex, variantId, 0);
+        document.body.removeChild(overlay);
+        this.renderFullPageLayout();
+      });
+    });
+
+    popup.querySelector('.add-another-variant-btn').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      // Find the product and open modal for it
+      const product = this.stepProductData[productGroup.stepIndex]?.find(p => String(p.id) === String(productGroup.productId));
+      const step = this.selectedBundle.steps[productGroup.stepIndex];
+      if (product && step && this.productModal) {
+        this.productModal.open(product, step);
+      }
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) document.body.removeChild(overlay);
+    });
   }
 
   // Helper: Find product by variant ID in a step
@@ -1429,9 +1996,9 @@ class BundleWidgetFullPage {
     const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
     const step = this.selectedBundle.steps[stepIndex];
 
-    // If no conditions are set, any selection is valid (just need at least 1 product)
+    // If no conditions are set, step is optional - user can skip without selecting products
     if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return totalQuantity > 0;
+      return true; // Optional step - always valid, can proceed with 0 products
     }
 
     // Otherwise use minQuantity for step completion
@@ -2010,6 +2577,24 @@ class BundleWidgetFullPage {
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
+        // Preserve parent product reference for variant selection in modal
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return product.variants
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
@@ -2023,7 +2608,14 @@ class BundleWidgetFullPage {
               price: parseFloat(variant.price || '0') * 100,
               compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
-              available: variant.available === true // Store availability (always boolean)
+              available: variant.available === true,
+              // Preserve parent product data for variant selection in modal
+              parentProductId: this.extractId(product.id),
+              parentTitle: product.title,
+              variants: processedVariants,
+              options: processedOptions,
+              images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+              description: product.description || ''
             };
           });
       } else {
@@ -2038,14 +2630,39 @@ class BundleWidgetFullPage {
         // Storefront API: prioritize variant image, fallback to product featured image
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
 
+        // Process variants array for variant selection in modal
+        const processedVariants = (product.variants || []).map(v => ({
+          id: this.extractId(v.id),
+          title: v.title,
+          price: parseFloat(v.price || '0') * 100,
+          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+          available: v.available === true,
+          option1: v.option1 || null,
+          option2: v.option2 || null,
+          option3: v.option3 || null,
+          image: v.image || null
+        }));
+
+        // Process options array for variant selector labels
+        const processedOptions = (product.options || []).map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.name || opt;
+        });
+
         return [{
-          id: this.extractId(defaultVariant?.id || product.id),
+          id: this.extractId(product.id),
           title: product.title,
           imageUrl,
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
-          available: defaultVariant?.available === true // Store availability (always boolean from API)
+          available: defaultVariant?.available === true,
+          // Preserve variants and options for variant selection in modal
+          variants: processedVariants,
+          options: processedOptions,
+          // Preserve images array for modal gallery
+          images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+          description: product.description || ''
         }];
       }
     });
@@ -2345,48 +2962,110 @@ class BundleWidgetFullPage {
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
     // Update quantity display without full re-render
     const productCard = document.querySelector(`[data-product-id="${productId}"]`);
-    if (productCard) {
-      const quantityDisplay = productCard.querySelector('.qty-display');
-      const addBtn = productCard.querySelector('.product-add-btn');
-      let selectedOverlay = productCard.querySelector('.selected-overlay');
+    if (!productCard) return;
 
-      if (quantityDisplay) {
-        quantityDisplay.textContent = quantity;
+    const contentWrapper = productCard.querySelector('.product-content-wrapper');
+    if (!contentWrapper) return;
+
+    // Find existing action elements
+    const existingAddBtn = productCard.querySelector('.product-add-btn');
+    const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
+    let selectedOverlay = productCard.querySelector('.selected-overlay');
+
+    // Toggle between "Add to Bundle" button and quantity controls
+    if (quantity > 0) {
+      // Show quantity controls, hide button
+      if (existingAddBtn) {
+        existingAddBtn.remove();
       }
 
-      if (addBtn) {
-        if (quantity > 0) {
-          addBtn.textContent = '✓ Added to Bundle';
-          addBtn.classList.add('added');
-        } else {
-          addBtn.textContent = 'Choose Options';
-          addBtn.classList.remove('added');
+      if (existingQuantityControls) {
+        // Just update the quantity display
+        const qtyDisplay = existingQuantityControls.querySelector('.inline-qty-display');
+        if (qtyDisplay) {
+          qtyDisplay.textContent = quantity;
         }
-      }
-
-      // Handle selected overlay (create if doesn't exist)
-      if (quantity > 0) {
-        if (!selectedOverlay) {
-          // Create the overlay if it doesn't exist
-          selectedOverlay = document.createElement('div');
-          selectedOverlay.className = 'selected-overlay';
-          selectedOverlay.textContent = '✓';
-          productCard.appendChild(selectedOverlay);
-        }
-        selectedOverlay.style.display = 'flex';
       } else {
-        if (selectedOverlay) {
-          selectedOverlay.style.display = 'none';
+        // Create quantity controls
+        const quantityControls = document.createElement('div');
+        quantityControls.className = 'inline-quantity-controls';
+        quantityControls.innerHTML = `
+          <button class="inline-qty-btn qty-decrease" data-product-id="${productId}">−</button>
+          <span class="inline-qty-display">${quantity}</span>
+          <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
+        `;
+        contentWrapper.appendChild(quantityControls);
+
+        // Attach event listeners to the new buttons
+        const increaseBtn = quantityControls.querySelector('.qty-increase');
+        const decreaseBtn = quantityControls.querySelector('.qty-decrease');
+
+        if (increaseBtn) {
+          increaseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+            this.updateProductSelection(stepIndex, productId, currentQty + 1);
+          });
+        }
+
+        if (decreaseBtn) {
+          decreaseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+            if (currentQty > 0) {
+              this.updateProductSelection(stepIndex, productId, currentQty - 1);
+            }
+          });
         }
       }
 
-      // Update card visual state
-      if (quantity > 0) {
-        productCard.classList.add('selected');
-      } else {
-        productCard.classList.remove('selected');
+      // Show selected overlay
+      if (!selectedOverlay) {
+        selectedOverlay = document.createElement('div');
+        selectedOverlay.className = 'selected-overlay';
+        selectedOverlay.textContent = '✓';
+        productCard.appendChild(selectedOverlay);
       }
+      selectedOverlay.style.display = 'flex';
+      productCard.classList.add('selected');
+
+    } else {
+      // Show "Add to Bundle" button, hide quantity controls
+      if (existingQuantityControls) {
+        existingQuantityControls.remove();
+      }
+
+      if (!existingAddBtn) {
+        // Find product info to determine button text
+        const product = this.findProductById(stepIndex, productId);
+        const hasVariants = product?.variants && product.variants.length > 1;
+        const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
+
+        const addButton = document.createElement('button');
+        addButton.className = 'product-add-btn';
+        addButton.dataset.productId = productId;
+        addButton.textContent = buttonText;
+        contentWrapper.appendChild(addButton);
+
+        // Attach event listener to the new button
+        addButton.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.updateProductSelection(stepIndex, productId, 1);
+        });
+      }
+
+      // Hide selected overlay
+      if (selectedOverlay) {
+        selectedOverlay.style.display = 'none';
+      }
+      productCard.classList.remove('selected');
     }
+  }
+
+  // Helper to find product by ID across all step data
+  findProductById(stepIndex, productId) {
+    const products = this.stepProductData[stepIndex] || [];
+    return products.find(p => (p.variantId || p.id) === productId);
   }
 
   validateStepCondition(stepIndex, productId, newQuantity) {
@@ -2453,8 +3132,9 @@ class BundleWidgetFullPage {
       totalQuantitySelected += quantity;
     }
 
+    // If no conditions are set, step is optional - always valid
     if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return totalQuantitySelected > 0; // Any selection is valid
+      return true; // Optional step - can proceed with 0 products
     }
 
     const requiredQuantity = step.conditionValue;
@@ -2471,7 +3151,7 @@ class BundleWidgetFullPage {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
         return totalQuantitySelected <= requiredQuantity;
       default:
-        return totalQuantitySelected > 0;
+        return true; // No recognized condition - step is optional
     }
   }
 

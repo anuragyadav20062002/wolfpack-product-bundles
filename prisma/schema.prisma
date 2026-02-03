@@ -257,6 +257,9 @@ model DesignSettings {
   // General Section
   generalSettings             Json?
 
+  // Promo Banner Section (Full Page)
+  promoBannerSettings         Json?
+
   // Advanced Settings - Custom CSS
   customCss                   String?
 
