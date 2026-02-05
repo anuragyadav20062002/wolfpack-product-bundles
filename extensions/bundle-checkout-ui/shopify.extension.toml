@@ -19,6 +19,7 @@ uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
   [[extensions.targeting]]
   module = "./src/index.tsx"
   target = "purchase.checkout.cart-line-item.render-after"
+  export = "checkoutExtension"
 
   # Thank you page cart line item - shows pricing breakdown after purchase
   [[extensions.targeting]]

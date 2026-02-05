@@ -85,3 +85,20 @@ The MERGE operation in `cart_transform_run.ts` was not setting any `attributes` 
 - [x] Phase 4: Verify build passes
 - [x] Phase 5: Add attributes to MERGE operation for checkout UI
 - [x] Phase 6: Fix checkout UI to render bundles with 0% discount
+
+### 2026-02-05 - Fix Checkout Page Extension Not Rendering
+
+**Problem 6: Checkout extension not rendering on payment page**
+The checkout target (`purchase.checkout.cart-line-item.render-after`) relied on a default export while the working thank-you target used an explicit named export. Switched to consistent named exports for all targets.
+
+**Files Modified:**
+
+6. `extensions/bundle-checkout-ui/src/index.tsx`
+   - Replaced default export `extension()` with named export `checkoutExtension()`
+   - Both targets now use explicit named exports for consistency
+
+7. `extensions/bundle-checkout-ui/shopify.extension.toml`
+   - Added `export = "checkoutExtension"` to the checkout target
+   - Both targets now explicitly reference their named exports
+
+- [x] Phase 7: Fix checkout page extension rendering with explicit named exports
