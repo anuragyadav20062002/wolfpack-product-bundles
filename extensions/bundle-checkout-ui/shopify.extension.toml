@@ -24,7 +24,6 @@ uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
   [[extensions.targeting]]
   module = "./src/index.tsx"
   target = "purchase.thank-you.cart-line-item.render-after"
-  export = "thankYouExtension"
 
   [extensions.capabilities]
   # Gives your extension access to directly query Shopify's storefront API.

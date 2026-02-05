@@ -85,3 +85,29 @@ The MERGE operation in `cart_transform_run.ts` was not setting any `attributes` 
 - [x] Phase 4: Verify build passes
 - [x] Phase 5: Add attributes to MERGE operation for checkout UI
 - [x] Phase 6: Fix checkout UI to render bundles with 0% discount
+
+### 2026-02-05 - Fix Checkout Extension Build & Duplicate Bundle Consolidation
+
+**Problem 6: Checkout extension build failed with named exports**
+Shopify's Preact extension build system requires a default export for all targets. Named exports with `export` field in toml are not supported for Preact extensions. Reverted to default export and removed `export` fields from toml.
+
+**Problem 7: Duplicate bundles consolidated into single line in checkout**
+When a customer adds the same bundle twice, Shopify consolidates the MERGE results because they share the same `parentVariantId` + `title`. Added unique title suffixes (e.g., "Sports Kit", "Sports Kit (2)") to prevent consolidation.
+
+**Files Modified:**
+
+6. `extensions/bundle-checkout-ui/src/index.tsx`
+   - Reverted to single default export (Preact extensions require this)
+
+7. `extensions/bundle-checkout-ui/shopify.extension.toml`
+   - Removed `export` fields from both targets (Preact uses default imports)
+
+8. `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts`
+   - Added `bundleNameCounts` map to track bundle name occurrences
+   - Appends index suffix to duplicate bundle names to prevent MERGE consolidation
+
+9. `extensions/bundle-cart-transform-ts/dist/function.wasm`
+   - Rebuilt WASM with unique title changes
+
+- [x] Phase 7: Fix Preact extension build (restore default export)
+- [x] Phase 8: Prevent duplicate bundle consolidation with unique MERGE titles
