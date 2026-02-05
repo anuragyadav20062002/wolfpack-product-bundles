@@ -9,3 +9,7 @@ import {BundlePricingExtension} from './Checkout';
 export default function extension() {
   render(<BundlePricingExtension />, document.body);
 }
+
+export function thankYouExtension() {
+  render(<BundlePricingExtension />, document.body);
+}
