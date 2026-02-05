@@ -4,13 +4,8 @@ import '@shopify/ui-extensions/preact';  // Runtime import for Preact with Shopi
 import {render} from 'preact';
 import {BundlePricingExtension} from './Checkout';
 
-// Named exports for each extension target in shopify.extension.toml
-
-export function checkoutExtension() {
+// Shopify's Preact extension build system uses default imports for all targets.
+// Both checkout and thank-you targets share this single entry point.
+export default function extension() {
   render(<BundlePricingExtension />, document.body);
 }
-
-export function thankYouExtension() {
-  render(<BundlePricingExtension />, document.body);
-}
-

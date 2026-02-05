@@ -304,6 +304,10 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
     const operations: CartTransformOperation[] = [];
     const processedLines = new Set<string>();
     const processedBundleIds = new Set<string>();
+    // Track how many times each bundle name is used for unique MERGE titles
+    // Shopify consolidates MERGE results with the same parentVariantId + title,
+    // so we must use unique titles to keep separate bundle instances apart.
+    const bundleNameCounts = new Map<string, number>();
 
     // ========================================================================
     // OPERATION 1: MERGE - Combine component products into bundles
@@ -432,8 +436,12 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         });
       }
 
-      // Get bundle name from attributes
-      const bundleName = getBundleName(line);
+      // Get bundle name and generate unique title to prevent Shopify consolidation
+      const baseBundleName = getBundleName(line);
+      const nameCount = (bundleNameCounts.get(baseBundleName) || 0) + 1;
+      bundleNameCounts.set(baseBundleName, nameCount);
+      // Append index only when there are multiple instances of the same bundle name
+      const bundleName = nameCount > 1 ? `${baseBundleName} (${nameCount})` : baseBundleName;
 
       // Build component details for checkout UI display
       const originalTotalCents = Math.round(originalTotal * 100);
