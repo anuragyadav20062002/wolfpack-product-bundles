@@ -34,6 +34,18 @@ export function calculateComponentPricing(
 
   console.log("   - Total retail (cents):", totalRetailCents);
 
+  // Guard against division by zero when all component prices are $0
+  if (totalRetailCents === 0) {
+    console.log("   - Total retail is 0, returning components with no discount");
+    return components.map(component => ({
+      variantId: component.variantId,
+      retailPrice: component.priceCents,
+      bundlePrice: component.priceCents,
+      discountPercent: 0,
+      savingsAmount: 0
+    }));
+  }
+
   return components.map(component => {
     const retailPriceCents = component.priceCents;
     let bundlePriceCents: number;
@@ -43,7 +55,7 @@ export function calculateComponentPricing(
       // Direct percentage discount - apply same percentage to each component
       componentDiscountPercent = discountValue;
       bundlePriceCents = Math.round(retailPriceCents * (1 - discountValue / 100));
-    } else if (discountMethod === 'fixed_amount' || discountMethod === 'fixed') {
+    } else if (discountMethod === 'fixed_amount_off' || discountMethod === 'fixed_amount' || discountMethod === 'fixed') {
       // Fixed amount discount - distribute proportionally based on price weight
       // Each component gets a discount proportional to its share of total retail
       const priceWeight = retailPriceCents / totalRetailCents;
@@ -52,6 +64,17 @@ export function calculateComponentPricing(
       componentDiscountPercent = retailPriceCents > 0
         ? Math.round((componentDiscountCents / retailPriceCents) * 10000) / 100
         : 0;
+    } else if (discountMethod === 'fixed_bundle_price') {
+      // Fixed bundle price: target total in cents, distribute proportionally
+      if (discountValue < totalRetailCents) {
+        const overallDiscountPercent = ((totalRetailCents - discountValue) / totalRetailCents) * 100;
+        componentDiscountPercent = overallDiscountPercent;
+        bundlePriceCents = Math.round(retailPriceCents * (1 - overallDiscountPercent / 100));
+      } else {
+        // Target price >= retail total, no discount
+        bundlePriceCents = retailPriceCents;
+        componentDiscountPercent = 0;
+      }
     } else {
       // No discount or unknown method
       bundlePriceCents = retailPriceCents;

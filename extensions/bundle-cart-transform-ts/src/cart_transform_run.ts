@@ -200,30 +200,36 @@ function calculateDiscountPercentage(
   }
 
   // Calculate discount based on method
+  let result = 0;
+
   switch (method) {
     case 'percentage_off':
-      return value;
+      result = value;
+      break;
 
     case 'fixed_amount_off':
       // Value is in cents, convert to decimal
       const amountOff = value / 100;
       if (originalTotal > 0) {
-        return (amountOff / originalTotal) * 100;
+        result = (amountOff / originalTotal) * 100;
       }
-      return 0;
+      break;
 
     case 'fixed_bundle_price':
       // Value is in cents, convert to decimal
       const fixedPrice = value / 100;
       if (originalTotal > 0 && fixedPrice < originalTotal) {
-        return ((originalTotal - fixedPrice) / originalTotal) * 100;
+        result = ((originalTotal - fixedPrice) / originalTotal) * 100;
       }
-      return 0;
+      break;
 
     default:
       Logger.warn('Unknown pricing method', { phase: 'discount' }, { method });
-      return 0;
+      break;
   }
+
+  // Clamp to valid 0-100 range
+  return Math.max(0, Math.min(100, result));
 }
 
 /**
@@ -435,6 +441,9 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       });
 
       // Create merge operation
+      // IMPORTANT: Always include price field with percentageDecrease
+      // When discount is 0, this ensures Shopify uses the sum of component prices
+      // Without price field, Shopify would use the parent variant's price ($0 for container products)
       const mergeOp: CartTransformOperation = {
         merge: {
           cartLines: bundleComponentLines.map(l => ({
@@ -443,13 +452,11 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           })),
           parentVariantId,
           title: bundleName,
-          ...(discountPercentage > 0 && {
-            price: {
-              percentageDecrease: {
-                value: discountPercentage.toFixed(2)
-              }
+          price: {
+            percentageDecrease: {
+              value: discountPercentage.toFixed(2)
             }
-          })
+          }
         }
       };
 
