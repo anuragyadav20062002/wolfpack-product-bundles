@@ -114,10 +114,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
       console.error('[BundleCheckout] Failed to parse components:', e);
     }
 
-    // If no discount/savings, don't show breakdown
-    if (totalSavingsCents <= 0 && discountPercent <= 0) {
-      return null;
-    }
+    const hasDiscount = totalSavingsCents > 0 || discountPercent > 0;
 
     const toggleExpand = () => setIsExpanded(!isExpanded);
 
@@ -127,34 +124,45 @@ export const BundlePricingExtension: FunctionComponent = () => {
 
         {/* Bundle Summary Header */}
         <s-stack direction="block" gap="extraTight">
-          {/* Bundle Pricing Summary */}
-          <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-            <s-text size="small" tone="subdued">Retail Price:</s-text>
-            <s-text size="small" tone="subdued" strikethrough>
-              {formatMoney(totalRetailCents)}
-            </s-text>
-          </s-stack>
+          {/* Bundle Pricing Summary - only show savings when there is a discount */}
+          {hasDiscount && (
+            <>
+              <s-stack direction="inline" gap="tight" inline-alignment="space-between">
+                <s-text size="small" tone="subdued">Retail Price:</s-text>
+                <s-text size="small" tone="subdued" strikethrough>
+                  {formatMoney(totalRetailCents)}
+                </s-text>
+              </s-stack>
 
-          <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-            <s-text size="small">Bundle Price:</s-text>
-            <s-text size="small" emphasis="bold">
-              {formatMoney(totalBundleCents)}
-            </s-text>
-          </s-stack>
+              <s-stack direction="inline" gap="tight" inline-alignment="space-between">
+                <s-text size="small">Bundle Price:</s-text>
+                <s-text size="small" emphasis="bold">
+                  {formatMoney(totalBundleCents)}
+                </s-text>
+              </s-stack>
 
-          <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-            <s-text size="small" tone="subdued">Percentage Savings:</s-text>
-            <s-badge tone="success">
-              {discountPercent.toFixed(discountPercent % 1 === 0 ? 0 : 2)}%
-            </s-badge>
-          </s-stack>
+              <s-stack direction="inline" gap="tight" inline-alignment="space-between">
+                <s-text size="small" tone="subdued">Percentage Savings:</s-text>
+                <s-badge tone="success">
+                  {discountPercent.toFixed(discountPercent % 1 === 0 ? 0 : 2)}%
+                </s-badge>
+              </s-stack>
 
-          <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-            <s-text size="small" tone="subdued">Exact Savings:</s-text>
-            <s-text size="small" emphasis="bold" tone="success">
-              {formatMoney(totalSavingsCents)}
+              <s-stack direction="inline" gap="tight" inline-alignment="space-between">
+                <s-text size="small" tone="subdued">Exact Savings:</s-text>
+                <s-text size="small" emphasis="bold" tone="success">
+                  {formatMoney(totalSavingsCents)}
+                </s-text>
+              </s-stack>
+            </>
+          )}
+
+          {/* No discount - just show bundle label */}
+          {!hasDiscount && (
+            <s-text size="small" tone="subdued">
+              Bundle ({componentCount} items)
             </s-text>
-          </s-stack>
+          )}
         </s-stack>
 
         {/* Expandable Component List Toggle */}

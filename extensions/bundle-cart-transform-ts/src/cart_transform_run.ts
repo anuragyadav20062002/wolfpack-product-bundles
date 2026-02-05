@@ -68,6 +68,10 @@ export interface CartTransformOperation {
         value: string;
       };
     };
+    attributes?: Array<{
+      key: string;
+      value: string;
+    }>;
   };
   expand?: {
     cartLineId: string;
@@ -431,6 +435,25 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // Get bundle name from attributes
       const bundleName = getBundleName(line);
 
+      // Build component details for checkout UI display
+      const originalTotalCents = Math.round(originalTotal * 100);
+      const discountedTotalCents = Math.round(originalTotal * (1 - discountPercentage / 100) * 100);
+      const savingsCents = originalTotalCents - discountedTotalCents;
+
+      const componentDetails = bundleComponentLines.map((l, index) => {
+        const retailCents = Math.round(parseFloat(l.cost.amountPerQuantity.amount) * 100);
+        const bundleCents = Math.round(retailCents * (1 - discountPercentage / 100));
+        return {
+          variantId: l.merchandise.id,
+          title: l.merchandise.product?.title || `Component ${index + 1}`,
+          quantity: l.quantity,
+          retailPrice: retailCents,
+          bundlePrice: bundleCents,
+          discountPercent: discountPercentage,
+          savingsAmount: retailCents - bundleCents
+        };
+      });
+
       Logger.info('Creating merge operation', { phase: 'merge' }, {
         bundleId,
         parentVariantId,
@@ -456,7 +479,17 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
             percentageDecrease: {
               value: discountPercentage.toFixed(2)
             }
-          }
+          },
+          attributes: [
+            { key: '_is_bundle_parent', value: 'true' },
+            { key: '_bundle_name', value: bundleName },
+            { key: '_bundle_component_count', value: String(componentDetails.length) },
+            { key: '_bundle_components', value: JSON.stringify(componentDetails) },
+            { key: '_bundle_total_retail_cents', value: String(originalTotalCents) },
+            { key: '_bundle_total_price_cents', value: String(discountedTotalCents) },
+            { key: '_bundle_total_savings_cents', value: String(savingsCents) },
+            { key: '_bundle_discount_percent', value: discountPercentage.toFixed(2) }
+          ]
         }
       };
 

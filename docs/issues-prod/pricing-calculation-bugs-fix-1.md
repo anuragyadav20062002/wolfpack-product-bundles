@@ -30,7 +30,7 @@ In `pricing.ts`, when `totalRetailCents === 0`, the line `priceWeight = retailPr
 
 ## Progress Log
 
-### 2026-02-05 - All Fixes Completed
+### 2026-02-05 - Pricing Fixes Completed
 
 **Files Modified:**
 
@@ -46,6 +46,26 @@ In `pricing.ts`, when `totalRetailCents === 0`, the line `priceWeight = retailPr
 3. `extensions/bundle-cart-transform-ts/dist/function.wasm`
    - Rebuilt cart transform WASM successfully
 
+### 2026-02-05 - Checkout UI Extension Fixes
+
+**Problem 4: MERGE operation missing attributes**
+The MERGE operation in `cart_transform_run.ts` was not setting any `attributes` on the merged parent line. The `MergeOperation` schema does support `attributes` but the code never populated them. The checkout UI extension reads `_is_bundle_parent` and other attributes to render, so MERGE bundles were invisible in checkout.
+
+**Problem 5: EXPAND + no discount returned null**
+`Checkout.tsx` returned `null` when `totalSavingsCents <= 0 && discountPercent <= 0`, so bundles with 0% discount showed nothing in checkout.
+
+**Files Modified:**
+
+4. `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts`
+   - Added `attributes` to `CartTransformOperation.merge` interface
+   - Populated attributes on merge operation with bundle pricing data (`_is_bundle_parent`, `_bundle_components`, savings, etc.)
+   - Built component details array from actual cart line prices
+
+5. `extensions/bundle-checkout-ui/src/Checkout.tsx`
+   - Removed early `return null` for 0% discount bundles
+   - Conditionally show pricing breakdown only when `hasDiscount` is true
+   - Show "Bundle (N items)" label when no discount, with expandable component list still available
+
 ---
 
 ## Files Modified
@@ -53,6 +73,7 @@ In `pricing.ts`, when `totalRetailCents === 0`, the line `priceWeight = retailPr
 1. `app/services/bundles/metafield-sync/utils/pricing.ts`
 2. `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts`
 3. `extensions/bundle-cart-transform-ts/dist/function.wasm`
+4. `extensions/bundle-checkout-ui/src/Checkout.tsx`
 
 ---
 
@@ -62,3 +83,5 @@ In `pricing.ts`, when `totalRetailCents === 0`, the line `priceWeight = retailPr
 - [x] Phase 2: Fix cart_transform_run.ts (percentage clamping)
 - [x] Phase 3: Rebuild cart transform WASM
 - [x] Phase 4: Verify build passes
+- [x] Phase 5: Add attributes to MERGE operation for checkout UI
+- [x] Phase 6: Fix checkout UI to render bundles with 0% discount
