@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    shopify?: { config?: { shop?: string } };
+  }
+}
+
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
