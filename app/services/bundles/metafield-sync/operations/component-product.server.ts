@@ -108,8 +108,9 @@ export async function updateComponentProductMetafields(
   console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentVariantIds.size} component variants to update`);
 
   // Build price_adjustment config for MERGE discount calculation
+  // IMPORTANT: Always provide a fallback for method to ensure cart transform works correctly
   const priceAdjustment: PriceAdjustment = {
-    method: bundleConfig.pricing?.method, // Use global method as primary source
+    method: bundleConfig.pricing?.method || 'percentage_off', // Fallback to percentage_off
     value: 0
   };
 
