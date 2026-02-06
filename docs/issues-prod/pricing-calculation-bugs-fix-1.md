@@ -132,3 +132,4 @@ The cart-line-item targets are static and render automatically — they don't ap
     - Cart-line mode uses `useCartLineTarget()` for single line display
 
 - [x] Phase 9: Add block targets for checkout editor placement
+- [x] Phase 10: Remove block targets (static cart-line targets auto-render, no editor needed)
