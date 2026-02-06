@@ -111,3 +111,24 @@ When a customer adds the same bundle twice, Shopify consolidates the MERGE resul
 
 - [x] Phase 7: Fix Preact extension build (restore default export)
 - [x] Phase 8: Prevent duplicate bundle consolidation with unique MERGE titles
+
+### 2026-02-06 - Add Block Targets for Checkout Editor Placement
+
+**Problem 8: Extension only appears in thank-you page section of checkout editor**
+The cart-line-item targets are static and render automatically — they don't appear in the checkout editor as placeable blocks. Added block targets for both checkout and thank-you pages.
+
+**Files Modified:**
+
+10. `extensions/bundle-checkout-ui/shopify.extension.toml`
+    - Added `purchase.checkout.block.render` target (checkout page block)
+    - Added `purchase.thank-you.block.render` target (thank-you page block)
+    - Now has 4 targets: 2 blocks (editor-placeable) + 2 cart-line (static)
+
+11. `extensions/bundle-checkout-ui/src/Checkout.tsx`
+    - Refactored to support both cart-line and block targets
+    - Added `BundleDisplay` reusable component
+    - Added `parseBundleFromLine` helper function
+    - Block mode uses `useCartLines()` to show all bundles in cart
+    - Cart-line mode uses `useCartLineTarget()` for single line display
+
+- [x] Phase 9: Add block targets for checkout editor placement
