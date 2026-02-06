@@ -6,35 +6,17 @@
 api_version = "2025-10"
 
 # =============================================================================
-# Extension 1: Checkout Page - Cart Line Item
+# Checkout Page - Cart Line Item
 # Static target that auto-renders after each cart line in checkout
 # =============================================================================
 [[extensions]]
 type = "ui_extension"
 name = "Bundle Pricing - Checkout"
-handle = "bundle-checkout-ui-checkout"
-uid = "67431996-05e4-e091-cc4d-5d0a3b1c4a600bb3cc48"
+handle = "bundle-checkout-ui"
 
   [[extensions.targeting]]
   module = "./src/index.tsx"
   target = "purchase.checkout.cart-line-item.render-after"
-
-  [extensions.capabilities]
-  api_access = true
-
-# =============================================================================
-# Extension 2: Thank You Page - Cart Line Item
-# Static target that auto-renders after each cart line on thank-you page
-# =============================================================================
-[[extensions]]
-type = "ui_extension"
-name = "Bundle Pricing - Thank You"
-handle = "bundle-checkout-ui-thankyou"
-uid = "bacdb5e7-cc16-e5ec-fd4b-f55b64c2bd2751245260"
-
-  [[extensions.targeting]]
-  module = "./src/index.tsx"
-  target = "purchase.thank-you.cart-line-item.render-after"
 
   [extensions.capabilities]
   api_access = true
