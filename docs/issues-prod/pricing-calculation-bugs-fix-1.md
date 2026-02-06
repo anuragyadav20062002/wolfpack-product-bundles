@@ -157,3 +157,26 @@ The cart transform requires both `_bundle_id` (unique per add-to-cart) and `_bun
     - Rebuilt widget bundle
 
 - [x] Phase 11: Fix full-page widget to set unique `_bundle_id` and `_bundle_name` attributes
+
+### 2026-02-06 - Fix Checkout UI Extension Not Loading
+
+**Problem 10: Checkout UI extension not loading at all**
+The extension wasn't executing - no console logs appeared. Root cause: `shopify app build` was failing due to unsupported `[metafields]` and `[shop]` sections in app TOML config.
+
+**Problem 11: Multiple targets in one extension caused issues**
+Having two targeting blocks in one extension was problematic. Simplified to single checkout target.
+
+**Files Modified:**
+
+14. `shopify.app.toml` and `shopify.app.wolfpack-product-bundles-sit.toml`
+    - Removed unsupported `[metafields]` and `[shop.metafields.*]` sections
+    - These metafield definitions should be managed via Admin API instead
+
+15. `extensions/bundle-checkout-ui/shopify.extension.toml`
+    - Simplified to single extension with checkout cart-line-item target only
+    - Removed thank-you page target to isolate and fix checkout rendering
+
+16. `extensions/bundle-checkout-ui/shopify.d.ts`
+    - Updated type declarations to match single-target configuration
+
+- [ ] Phase 12: Fix checkout UI extension build and deployment

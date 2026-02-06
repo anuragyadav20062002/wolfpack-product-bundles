@@ -10,10 +10,10 @@ api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = [
-  "app_subscriptions/update",
+  "products/update",
   "products/delete",
-  "app_purchases_one_time/update",
-  "products/update"
+  "app_subscriptions/update",
+  "app_purchases_one_time/update"
 ]
   uri = "pubsub://light-quest-455608-i3:wolfpack-product-bundles-staging"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
@@ -36,41 +36,13 @@ url = "https://wolfpack-product-bundle-app-sit.onrender.com"
 subpath = "product-bundles"
 prefix = "apps"
 
-[metafields]
-api_version = "2025-10"
-
-[shop.metafields.app.serverUrl]
-type = "single_line_text_field"
-name = "App Server URL"
-description = "URL of the app server for widget API calls"
-
-  [shop.metafields.app.serverUrl.access]
-  admin = "merchant_read_write"
-  storefront = "public_read"
-
-[shop.metafields.app.lastSync]
-type = "single_line_text_field"
-name = "Last Sync Timestamp"
-description = "ISO timestamp of last successful sync with app server"
-
-  [shop.metafields.app.lastSync.access]
-  admin = "merchant_read"
-  storefront = "none"
-
-[shop.metafields.app.productPageWidgetInstalled]
-type = "boolean"
-name = "Product Page Widget Installed"
-description = "Indicates if the product page bundle widget has been installed in the theme"
-
-  [shop.metafields.app.productPageWidgetInstalled.access]
-  admin = "merchant_read_write"
-  storefront = "none"
-
-[shop.metafields.app.fullPageWidgetInstalled]
-type = "boolean"
-name = "Full Page Widget Installed"
-description = "Indicates if the full-page bundle widget has been installed in the theme"
-
-  [shop.metafields.app.fullPageWidgetInstalled.access]
-  admin = "merchant_read_write"
-  storefront = "none"
+# NOTE: Metafields and shop sections commented out - unsupported in current Shopify CLI
+# These metafields should be defined via the Shopify Admin API instead
+#
+# [metafields]
+# api_version = "2025-10"
+#
+# [shop.metafields.app.serverUrl]
+# type = "single_line_text_field"
+# name = "App Server URL"
+# ...etc
