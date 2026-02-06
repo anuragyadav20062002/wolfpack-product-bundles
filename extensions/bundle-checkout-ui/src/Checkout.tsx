@@ -32,18 +32,8 @@ import {
   useTotalAmount,
 } from '@shopify/ui-extensions/checkout/preact';
 
-interface LineItemAttribute {
-  key: string;
-  value: string;
-}
-
-interface LineItemWithAttributes {
-  attributes?: LineItemAttribute[];
-  quantity?: number;
-  merchandise?: {
-    title?: string;
-  };
-}
+// Note: useCartLineTarget() returns CartLine type from @shopify/ui-extensions
+// which includes: id, merchandise, quantity, cost, attributes, discountAllocations, lineComponents
 
 interface ComponentDetail {
   variantId: string;
@@ -59,15 +49,23 @@ export const BundlePricingExtension: FunctionComponent = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Get the cart line item using the Preact hook
-  const lineItem = useCartLineTarget() as LineItemWithAttributes | null;
+  const lineItem = useCartLineTarget();
   const totalAmount = useTotalAmount();
 
+  // DEBUG: Log extension execution
+  console.log('[BundleCheckoutUI] Extension rendered, lineItem:', lineItem);
+
   if (!lineItem) {
+    console.log('[BundleCheckoutUI] No lineItem found, returning null');
     return null;
   }
 
   // Get attributes from the cart line
-  const attributes: LineItemAttribute[] = lineItem.attributes ?? [];
+  const attributes = lineItem.attributes ?? [];
+
+  // DEBUG: Log all attributes
+  console.log('[BundleCheckoutUI] Cart line attributes:', attributes);
+  console.log('[BundleCheckoutUI] Merchandise title:', lineItem.merchandise?.title);
 
   // Helper to get attribute value
   const getAttr = (key: string): string | undefined => {
@@ -80,7 +78,12 @@ export const BundlePricingExtension: FunctionComponent = () => {
   // Also support legacy component-level display
   const isBundleComponent = getAttr('_is_bundle_component') === 'true';
 
+  // DEBUG: Log bundle detection
+  console.log('[BundleCheckoutUI] isBundleParent:', isBundleParent);
+  console.log('[BundleCheckoutUI] isBundleComponent:', isBundleComponent);
+
   if (!isBundleParent && !isBundleComponent) {
+    console.log('[BundleCheckoutUI] Not a bundle, returning null');
     return null;
   }
 
