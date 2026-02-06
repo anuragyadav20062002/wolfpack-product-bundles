@@ -15,12 +15,12 @@ uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
   # and the file that contains your extension's source code. Learn more:
   # https://shopify.dev/docs/api/checkout-ui-extensions/latest/extension-targets-overview
 
-  # Checkout cart line item - shows pricing breakdown for bundle components
+  # Checkout cart line item - renders automatically on each bundle line
   [[extensions.targeting]]
   module = "./src/index.tsx"
   target = "purchase.checkout.cart-line-item.render-after"
 
-  # Thank you page cart line item - shows pricing breakdown after purchase
+  # Thank you page cart line item - renders automatically on each bundle line
   [[extensions.targeting]]
   module = "./src/index.tsx"
   target = "purchase.thank-you.cart-line-item.render-after"
