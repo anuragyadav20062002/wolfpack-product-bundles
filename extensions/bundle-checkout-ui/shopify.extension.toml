@@ -13,6 +13,7 @@ api_version = "2025-10"
 type = "ui_extension"
 name = "Bundle Pricing - Checkout"
 handle = "bundle-checkout-ui-checkout"
+uid = "67431996-05e4-e091-cc4d-5d0a3b1c4a600bb3cc48"
 
   [[extensions.targeting]]
   module = "./src/index.tsx"
@@ -29,6 +30,7 @@ handle = "bundle-checkout-ui-checkout"
 type = "ui_extension"
 name = "Bundle Pricing - Thank You"
 handle = "bundle-checkout-ui-thankyou"
+uid = "bacdb5e7-cc16-e5ec-fd4b-f55b64c2bd2751245260"
 
   [[extensions.targeting]]
   module = "./src/index.tsx"
