@@ -1,10 +1,10 @@
 # Issue: Pricing Calculation Bugs Fix
 
 **Issue ID:** pricing-calculation-bugs-fix-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** High
 **Created:** 2026-02-05
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-02-06
 
 ---
 
@@ -133,3 +133,27 @@ The cart-line-item targets are static and render automatically — they don't ap
 
 - [x] Phase 9: Add block targets for checkout editor placement
 - [x] Phase 10: Remove block targets (static cart-line targets auto-render, no editor needed)
+
+### 2026-02-06 - Fix Full-Page Bundle MERGE Not Working
+
+**Problem 9: Full-page bundle MERGE not triggering - cart transform only doing EXPAND**
+The full-page widget's `addBundleToCart()` method had two critical issues:
+1. Used static `this.selectedBundle.id` (database ID) as `_bundle_id` instead of unique instance ID
+2. Missing `_bundle_name` attribute entirely
+
+The cart transform requires both `_bundle_id` (unique per add-to-cart) and `_bundle_name` (for display) to trigger MERGE operation.
+
+**Root Cause:**
+- Line 2058: `'_bundle_id': this.selectedBundle.id` - same ID for every add-to-cart
+- Missing `_bundle_name` property in cart line properties
+
+**Files Modified:**
+
+12. `app/assets/bundle-widget-full-page.js`
+    - Generate unique `_bundle_id` using `crypto.randomUUID()` for each add-to-cart
+    - Add `_bundle_name` attribute with `this.selectedBundle.name`
+
+13. `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`
+    - Rebuilt widget bundle
+
+- [x] Phase 11: Fix full-page widget to set unique `_bundle_id` and `_bundle_name` attributes
