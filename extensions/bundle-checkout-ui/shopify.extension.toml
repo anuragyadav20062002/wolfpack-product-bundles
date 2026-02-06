@@ -10,6 +10,7 @@ api_version = "2025-10"
 # Static target that auto-renders after each cart line in checkout
 # =============================================================================
 [[extensions]]
+uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
 type = "ui_extension"
 name = "Bundle Pricing - Checkout"
 handle = "bundle-checkout-ui"
