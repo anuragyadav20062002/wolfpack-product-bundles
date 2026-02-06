@@ -4121,6 +4121,14 @@ class BundleWidgetFullPage {
       // Build cart items from selected products
       const items = [];
 
+      // Generate unique bundle instance ID for this add-to-cart action
+      // This allows cart transform to group components and prevents Shopify from
+      // consolidating separate bundle instances added at different times
+      const bundleInstanceId = crypto.randomUUID();
+      const bundleName = this.selectedBundle.name || 'Bundle';
+
+      console.log('[CART] Creating bundle instance:', { bundleInstanceId, bundleName });
+
       this.selectedBundle.steps.forEach((step, stepIndex) => {
         const stepSelections = this.selectedProducts[stepIndex] || {};
 
@@ -4141,8 +4149,9 @@ class BundleWidgetFullPage {
               id: numericVariantId,
               quantity: quantity,
               properties: {
-                '_bundle_id': this.selectedBundle.id,
-                '_step_index': stepIndex,
+                '_bundle_id': bundleInstanceId,
+                '_bundle_name': bundleName,
+                '_step_index': String(stepIndex),
                 '_step_name': step.name
               }
             });
