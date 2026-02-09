@@ -191,7 +191,6 @@ class BundleWidgetProductPage {
       hideDefaultButtons: dataset.hideDefaultButtons === 'true',
       showTitle: dataset.showTitle !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
-      showFooterMessaging: dataset.showFooterMessaging !== 'false',
       // Quantity selector visibility settings (default: show on card)
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
       // Messages will be set from bundle.pricing.messages after bundle loads

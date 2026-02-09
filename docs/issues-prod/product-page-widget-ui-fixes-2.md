@@ -31,3 +31,4 @@ Multiple UI issues on the product-page bundle widget and admin configuration pag
 - [x] Phase 5: Fix modal tab z-index
 - [x] Phase 6: Scroll to new step on Add Step click
 - [x] Phase 7: Fix widget installation banner (add polling + dismiss clears flag)
+- [x] Phase 8: Clean up obsolete theme editor settings (progress bar removed)

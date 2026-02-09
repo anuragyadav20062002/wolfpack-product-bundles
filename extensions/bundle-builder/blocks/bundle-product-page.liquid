@@ -93,46 +93,6 @@
       "default": true
     },
     {
-      "type": "checkbox",
-      "id": "show_footer_messaging",
-      "label": "t:bundle_product_page.settings.show_footer_messaging_label",
-      "info": "t:bundle_product_page.settings.show_footer_messaging_info",
-      "default": true
-    },
-    {
-      "type": "header",
-      "content": "t:bundle_product_page.settings.progress_bar_styling_header"
-    },
-    {
-      "type": "color",
-      "id": "success_color",
-      "label": "t:bundle_product_page.settings.success_color_label",
-      "info": "t:bundle_product_page.settings.success_color_info",
-      "default": "#28a745"
-    },
-    {
-      "type": "range",
-      "id": "progress_bar_height",
-      "min": 6,
-      "max": 20,
-      "step": 2,
-      "unit": "px",
-      "label": "t:bundle_product_page.settings.progress_bar_height_label",
-      "default": 12,
-      "info": "t:bundle_product_page.settings.progress_bar_height_info"
-    },
-    {
-      "type": "range",
-      "id": "progress_bar_border_radius",
-      "min": 0,
-      "max": 50,
-      "step": 5,
-      "unit": "px",
-      "label": "t:bundle_product_page.settings.progress_bar_border_radius_label",
-      "default": 50,
-      "info": "t:bundle_product_page.settings.progress_bar_border_radius_info"
-    },
-    {
       "type": "header",
       "content": "t:bundle_product_page.settings.spacing_layout_header"
     },
@@ -339,7 +299,6 @@
       data-hide-default-buttons="{{ hide_default_buttons }}"
       data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
-      data-show-footer-messaging="{{ block.settings.show_footer_messaging }}"
       style="
         --step-box-size: {{ block.settings.step_box_size }}px;
         --bundle-add-to-cart-button-height: {{ block.settings.button_height }}px;
@@ -353,10 +312,6 @@
         --button-spacing: 25px;
         --modal-footer-bg-color: #ffffff;
         --modal-footer-text-color: #2d3748;
-        --footer-bg-color: #f8f9fa;
-        --progress-bar-height: {{ block.settings.progress_bar_height | default: 12 }}px;
-        --progress-bar-border-radius: {{ block.settings.progress_bar_border_radius | default: 999 }}px;
-        --savings-badge-color: {{ block.settings.success_color }};
         --bundle-header-tab-radius: {{ block.settings.step_tab_border_radius }}px;
         --modal-product-card-height: {{ block.settings.modal_product_card_height }}px;
         --modal-product-image-height: {{ block.settings.modal_product_image_height }}px;
@@ -383,22 +338,6 @@
 
       <button class="add-bundle-to-cart">Add Bundle to Cart</button>
 
-      <!-- Footer discount messaging with progress bar -->
-      {% if block.settings.show_footer_messaging %}
-      <div class="bundle-footer-messaging" style="display: none;">
-        <div class="footer-discount-text"></div>
-        <div class="footer-progress-container">
-          <div class="progress-bar">
-            <div class="progress-fill"></div>
-          </div>
-          <div class="progress-details">
-            <span class="progress-text">
-              <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
-            </span>
-          </div>
-        </div>
-      </div>
-      {% endif %}
     </div>
 
     <!-- 🔧 [THEME_DEBUG] Bundle Widget Debugging Information -->
