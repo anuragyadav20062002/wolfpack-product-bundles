@@ -49,8 +49,8 @@ export function useBundleSteps({ initialSteps, shopify, onStateChange }: UseBund
     onStateChange?.();
   }, [onStateChange]);
 
-  // Add a new step
-  const addStep = useCallback(() => {
+  // Add a new step - returns new step ID for scroll targeting
+  const addStep = useCallback((): string => {
     const newStep: BundleStep = {
       id: `step-${Date.now()}`,
       name: `Step ${steps.length + 1}`,
@@ -62,6 +62,7 @@ export function useBundleSteps({ initialSteps, shopify, onStateChange }: UseBund
     setSteps(prev => [...prev, newStep]);
     setExpandedSteps(prev => new Set([...prev, newStep.id]));
     shopify.toast.show("Step added successfully", { isError: false });
+    return newStep.id;
   }, [steps.length, shopify, setSteps]);
 
   // Update a step field

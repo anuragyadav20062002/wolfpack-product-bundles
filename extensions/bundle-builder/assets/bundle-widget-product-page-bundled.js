@@ -1503,9 +1503,6 @@ class BundleWidgetProductPage {
     if (!this.container.querySelector('.bundle-steps')) {
       this.container.appendChild(this.elements.stepsContainer);
     }
-    if (!this.container.querySelector('.bundle-footer-messaging')) {
-      this.container.appendChild(this.elements.footer);
-    }
     if (!this.container.querySelector('.add-bundle-to-cart')) {
       this.container.appendChild(this.elements.addToCartButton);
     }
@@ -1528,22 +1525,10 @@ class BundleWidgetProductPage {
   }
 
   createFooter() {
+    // Footer/progress bar removed by design
     const footer = document.createElement('div');
     footer.className = 'bundle-footer-messaging';
     footer.style.display = 'none';
-    footer.innerHTML = `
-      <div class="footer-discount-text"></div>
-      <div class="footer-progress-container">
-        <div class="progress-bar">
-          <div class="progress-fill"></div>
-        </div>
-        <div class="progress-details">
-          <span class="progress-text">
-            <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
-          </span>
-        </div>
-      </div>
-    `;
     return footer;
   }
 
@@ -1744,14 +1729,6 @@ class BundleWidgetProductPage {
     stepName.textContent = step.name || `Step ${stepIndex + 1}`;
     stepBox.appendChild(stepName);
 
-    // Add selection instruction
-    const selectionCount = document.createElement('div');
-    selectionCount.className = 'step-selection-count';
-    if (step.conditionValue) {
-      selectionCount.textContent = `Select ${step.conditionValue} product${step.conditionValue > 1 ? 's' : ''}`;
-    }
-    stepBox.appendChild(selectionCount);
-
     // Add click handler to open modal
     stepBox.addEventListener('click', () => this.openModal(stepIndex));
 
@@ -1774,7 +1751,11 @@ class BundleWidgetProductPage {
       Object.entries(stepSelections || {}).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
           stepTotalQuantity += quantity;
-          const product = products.find(p => (p.variantId || p.id) === variantId);
+          const product = products.find(p => {
+            if ((p.variantId || p.id) === variantId) return true;
+            if (p.variants) return p.variants.some(v => String(v.id) === String(variantId));
+            return false;
+          });
           if (product) {
             // Add one entry per quantity unit
             for (let i = 0; i < quantity; i++) {
@@ -1957,103 +1938,13 @@ class BundleWidgetProductPage {
   }
 
   renderFooter() {
-    if (!this.config.showFooterMessaging) {
-      this.elements.footer.style.display = 'none';
-      return;
-    }
-
-    this.updateFooterMessaging();
-    this.elements.footer.style.display = 'block';
+    // Footer/progress bar removed by design
+    return;
   }
 
   updateFooterMessaging() {
-    // Check if discount is enabled before showing messaging
-    if (!this.selectedBundle?.pricing?.enabled) {
-      this.elements.footer.style.display = 'none';
-      return;
-    }
-
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData
-    );
-
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity
-    );
-
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      discountInfo,
-      currencyInfo
-    );
-
-    const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
-    const progressFill = this.elements.footer.querySelector('.progress-fill');
-    const currentQuantitySpan = this.elements.footer.querySelector('.current-quantity');
-    const targetQuantitySpan = this.elements.footer.querySelector('.target-quantity');
-
-    if (discountInfo.qualifiesForDiscount) {
-      // Success message
-      const successMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate,
-        variables
-      );
-      footerDiscountText.innerHTML = successMessage;
-      this.elements.footer.classList.add('qualified');
-    } else {
-      // Progress message
-      const progressMessage = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate,
-        variables
-      );
-      footerDiscountText.innerHTML = progressMessage;
-      this.elements.footer.classList.remove('qualified');
-    }
-
-    // Update progress bar based on condition type
-    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
-
-    let progressPercentage = 0;
-
-    if (ruleToUse) {
-      const conditionType = ruleToUse.condition?.type || 'quantity';
-      const targetValue = ruleToUse.condition?.value || 0;
-
-      if (conditionType === 'amount') {
-        // Amount-based condition
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
-
-        // Update text to show formatted currency values
-        if (currentQuantitySpan && targetQuantitySpan) {
-          const currentFormatted = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-          const targetFormatted = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
-          currentQuantitySpan.textContent = currentFormatted;
-          targetQuantitySpan.textContent = targetFormatted; // No "items" suffix for amount
-        }
-      } else {
-        // Quantity-based condition
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
-
-        // Update text to show quantity values
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = totalQuantity.toString();
-          targetQuantitySpan.textContent = targetValue.toString(); // Remove "items" suffix, add via CSS
-        }
-      }
-    }
-
-    console.log('[PROGRESS] Progress:', progressPercentage + '%', 'Total:', totalPrice, 'Target:', ruleToUse?.condition?.value);
-
-    if (progressFill) {
-      progressFill.style.width = `${progressPercentage}%`;
-    }
+    // Footer/progress bar removed by design
+    return;
   }
 
   updateAddToCartButton() {
@@ -2083,40 +1974,52 @@ class BundleWidgetProductPage {
       }
       button.disabled = true;
       button.classList.add('disabled');
+      this.updateDiscountPill(null);
     } else {
       // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
       const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
 
-      console.log('[ADD_TO_CART_BUTTON] Discount info:', {
-        hasDiscount: discountInfo.hasDiscount,
-        showDiscountDisplay: this.selectedBundle.pricing?.messages?.showDiscountDisplay,
-        shouldShowStrikethrough: discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false
-      });
-
       if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
         const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-        console.log('[ADD_TO_CART_BUTTON] Showing strikethrough:', { originalPrice, discountedPrice: formattedPrice });
 
-        // Calculate discount percentage for the pill
+        // Calculate discount percentage for the top-right pill
         const discountPercentage = Math.round(((totalPrice - discountInfo.finalPrice) / totalPrice) * 100);
-        const showDiscountPill = discountPercentage > 0;
+        this.updateDiscountPill(discountPercentage > 0 ? discountPercentage : null);
 
         button.innerHTML = `
           <span class="button-price-wrapper">
             <span class="button-price-strike">${originalPrice}</span>
-            <span class="button-price-final">Add Bundle to Cart • ${formattedPrice}</span>
-            ${showDiscountPill ? `<span class="discount-pill">${discountPercentage}% off</span>` : ''}
+            <span class="button-price-final">Add Bundle to Cart &bull; ${formattedPrice}</span>
           </span>
         `;
       } else {
-        console.log('[ADD_TO_CART_BUTTON] No strikethrough shown');
-        button.textContent = `Add Bundle to Cart • ${formattedPrice}`;
+        button.textContent = `Add Bundle to Cart \u2022 ${formattedPrice}`;
+        this.updateDiscountPill(null);
       }
 
       button.disabled = false;
       button.classList.remove('disabled');
     }
+  }
+
+  // Update or create the discount pill in the top-right of the widget
+  updateDiscountPill(discountPercentage) {
+    let pill = this.container.querySelector('.bundle-discount-pill');
+
+    if (!discountPercentage) {
+      // Remove pill if no discount
+      if (pill) pill.remove();
+      return;
+    }
+
+    if (!pill) {
+      pill = document.createElement('span');
+      pill.className = 'bundle-discount-pill';
+      this.container.appendChild(pill);
+    }
+
+    pill.textContent = `${discountPercentage}% off`;
   }
   // ========================================================================
   // MODAL FUNCTIONALITY
