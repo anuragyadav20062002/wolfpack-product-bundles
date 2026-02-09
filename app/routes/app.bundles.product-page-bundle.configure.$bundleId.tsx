@@ -505,6 +505,18 @@ export default function ConfigureBundleFlow() {
     }
   }, [widgetInstallation?.recommendedAction, widgetInstallationInitiated, bundle.id, setWidgetInstallationInitiated]);
 
+  // Poll widget installation status while installation is in progress
+  useEffect(() => {
+    if (!widgetInstallationInitiated) return;
+    if (widgetInstallation?.recommendedAction === 'configured') return;
+
+    const pollInterval = setInterval(() => {
+      revalidator.revalidate();
+    }, 15000); // Check every 15 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [widgetInstallationInitiated, widgetInstallation?.recommendedAction, revalidator]);
+
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
@@ -1003,7 +1015,14 @@ export default function ConfigureBundleFlow() {
   // Banner dismiss handler
   const handleDismissBanner = useCallback((bannerId: string) => {
     setDismissedBanners(prev => new Set([...prev, bannerId]));
-  }, []);
+    // If dismissing the install_widget banner, also clear the localStorage flag
+    if (bannerId === 'install_widget' && widgetInstallationInitiated) {
+      setWidgetInstallationInitiated(false);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`widget_installation_${bundle.id}`);
+      }
+    }
+  }, [widgetInstallationInitiated, bundle.id, setWidgetInstallationInitiated]);
 
   // Revalidate data when window regains focus (to check if widget was placed in theme editor)
   useEffect(() => {
@@ -1651,6 +1670,7 @@ export default function ConfigureBundleFlow() {
                         background="bg-surface-secondary"
                       >
                         <div
+                          data-step-id={step.id}
                           draggable
                           onDragStart={(e) => handleDragStart(e, step.id, index)}
                           onDragEnd={handleDragEnd}
@@ -1917,7 +1937,14 @@ export default function ConfigureBundleFlow() {
                       variant="plain"
                       fullWidth
                       icon={PlusIcon}
-                      onClick={stepsState.addStep}
+                      onClick={() => {
+                        const newStepId = stepsState.addStep();
+                        // Scroll to the new step after React renders it
+                        requestAnimationFrame(() => {
+                          const el = document.querySelector(`[data-step-id="${newStepId}"]`);
+                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        });
+                      }}
                     >
                       Add Step
                     </Button>

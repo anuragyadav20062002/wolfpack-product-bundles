@@ -10,6 +10,7 @@
   border: none;
   outline: none;
   box-shadow: none;
+  position: relative;
 }
 
 
@@ -363,20 +364,23 @@
   transform: translateY(-1px);
 }
 
-/* Discount pill on Add to Cart button */
-.add-bundle-to-cart .discount-pill {
+/* Discount pill - positioned at top-right of widget */
+.bundle-discount-pill {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bundle-discount-pill-bg, #22c55e);
-  color: var(--bundle-discount-pill-text, #ffffff);
-  font-size: var(--bundle-discount-pill-font-size, 12px);
-  font-weight: var(--bundle-discount-pill-font-weight, 600);
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  font-size: 11px;
+  font-weight: 500;
   padding: 4px 10px;
-  border-radius: var(--bundle-discount-pill-border-radius, 20px);
-  margin-left: 8px;
+  border-radius: 20px;
   white-space: nowrap;
-  text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
@@ -556,6 +560,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  z-index: 1;
+  padding-top: 4px;
 }
 
 /* Tab scroll arrows */
@@ -604,10 +610,10 @@
   justify-content: center;
   flex: 1;
   gap: 20px;
-  padding: 0 20px;
+  padding: 4px 20px;
   box-sizing: border-box;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
@@ -1558,26 +1564,25 @@
 /* Toast Notifications */
 .bundle-toast {
   position: fixed;
-  top: 20px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
   background-color: var(--bundle-toast-bg, #000000);
   color: var(--bundle-toast-text, #FFFFFF);
-  padding: 20px 40px;
-  border-radius: 11px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000001;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  font-size: 24px;
-  font-weight: 400;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
   animation: slideDown 0.3s ease-out;
-  max-width: 90%;
-  min-height: 81px;
+  max-width: 360px;
+  min-height: auto;
   width: auto;
-  max-width: 495px;
 }
 
 @keyframes slideDown {
@@ -1776,151 +1781,9 @@
   font-size: 0.9em;
 }
 
-/* Bundle footer messaging with progress bars - Modern Design */
+/* Bundle footer messaging - hidden by design */
 .bundle-footer-messaging {
-  padding: 20px;
-  margin: 20px 0;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
-  border: 2px solid #e5e7eb;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.footer-discount-text {
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-  text-align: center;
-  margin: 0 0 8px 0;
-  line-height: 1.3;
-  letter-spacing: -0.02em;
-}
-
-.bundle-footer-messaging.qualified {
-  background: var(--bundle-success-message-bg-color, linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%));
-  border-color: #10b981;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-}
-
-.bundle-footer-messaging.qualified .footer-discount-text {
-  color: var(--bundle-success-message-text-color, #065f46);
-  font-size: var(--bundle-success-message-font-size, 16px);
-  font-weight: var(--bundle-success-message-font-weight, 600);
-}
-
-.footer-progress-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-/* Progress bar styling - Modern minimal design */
-.progress-bar {
-  width: 100%;
-  height: var(--progress-bar-height, 8px);
-  background: var(--bundle-footer-progress-empty, #E3E3E3);
-  border-radius: var(--progress-bar-border-radius, 4px);
-  overflow: hidden;
-  position: relative;
-  box-shadow: none;
-  border: none;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--bundle-footer-progress-filled, #000000);
-  border-radius: var(--progress-bar-border-radius, 4px);
-  transition: width 0.3s ease;
-  width: 0%;
-  position: relative;
-  display: block !important;
-  box-shadow: none;
-}
-
-/* Progress details below the bar */
-.progress-details {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Removed shimmer effect to match preview */
-
-.progress-text {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
-  padding: 4px 10px;
-  background: #f9fafb;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-}
-
-/* Qualified state - green theme */
-.bundle-footer-messaging.qualified .progress-fill {
-  background: var(--bundle-footer-progress-filled, #000000);
-  box-shadow: none;
-}
-
-.bundle-footer-messaging.qualified .progress-text {
-  color: #059669;
-  background: #ecfdf5;
-  border-color: #a7f3d0;
-}
-
-.footer-savings-display {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 8px;
-}
-
-.savings-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--savings-badge-color, #10b981);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.savings-badge::before {
-  content: "•";
-  color: var(--savings-badge-color, #10b981);
-  font-size: 18px;
-}
-
-.savings-badge .savings-amount {
-  margin-left: 4px;
-  font-weight: 700;
-}
-
-/* Progress bar completion effects */
-.progress-fill.completed {
-  background: linear-gradient(90deg, var(--bundle-footer-progress-filled, #000000) 0%, var(--bundle-footer-progress-filled, #000000) 100%);
-  animation: progressComplete 0.6s ease-out;
-}
-
-@keyframes progressComplete {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
-}
-
-/* Milestone indicators on progress bar - REMOVED for clean design */
-.progress-bar::before {
-  display: none;
+  display: none !important;
 }
 
 /* Responsive adjustments for mobile */
@@ -1943,29 +1806,6 @@
     font-size: 0.9em;
   }
 
-  .bundle-footer-messaging {
-    margin: var(--element-spacing, 15px) 0 0 0;
-    padding: var(--element-spacing, 15px);
-  }
-
-  .progress-bar-wrapper {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .progress-text {
-    order: -1;
-    min-width: auto;
-  }
-
-  .footer-discount-text {
-    font-size: 0.95em;
-  }
-
-  .savings-badge {
-    padding: 6px 12px;
-    font-size: 0.85em;
-  }
 }
 
 /* Ensure modal always renders above other content */
@@ -2036,36 +1876,6 @@
   }
 }
 
-/* Enhanced visual feedback for different discount states */
-.bundle-footer-messaging.nearly-qualified {
-  border-color: #ffc107;
-  background: linear-gradient(135deg, #fff3cd 0%, #fef7e0 100%);
-}
-
-.bundle-footer-messaging.nearly-qualified .progress-fill {
-  background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%);
-}
-
-.bundle-footer-messaging.qualified {
-  border-color: var(--savings-badge-color, #28a745);
-  background: var(--bundle-success-message-bg-color, linear-gradient(135deg, #d4edda 0%, #e8f5e8 100%));
-}
-
-.bundle-footer-messaging.qualified .footer-discount-text {
-  color: var(--bundle-success-message-text-color, #155724);
-  font-size: var(--bundle-success-message-font-size, 16px);
-  font-weight: var(--bundle-success-message-font-weight, 600);
-}
-
-/* Animated encouragement messages */
-.encouragement-message {
-  font-size: 0.9em;
-  color: #6c757d;
-  text-align: center;
-  margin-top: 8px;
-  font-style: italic;
-  opacity: 0.8;
-}
 
 /* ==========================================
    FULL-PAGE BUNDLE LAYOUT STYLES

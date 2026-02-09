@@ -3036,6 +3036,7 @@ body:has(.bundle-widget-full-page) #MainContent {
 .bundle-modal-quantity {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
 }
 
