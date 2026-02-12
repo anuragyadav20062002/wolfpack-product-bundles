@@ -265,24 +265,53 @@ class BundleWidgetProductPage {
   }
 
   updateMessagesFromBundle() {
-    // Use bundle pricing messages if available, otherwise keep defaults
-    if (this.selectedBundle?.pricing?.messages) {
-      const messages = this.selectedBundle.pricing.messages;
+    // Read messaging from the metafield structure (top-level `messaging` field)
+    const messaging = this.selectedBundle?.messaging;
+    // Also check legacy path (pricing.messages) for backwards compatibility
+    const pricingMessages = this.selectedBundle?.pricing?.messages;
 
-      if (messages.progress) {
-        this.config.discountTextTemplate = messages.progress;
+    if (messaging) {
+      // Metafield structure: messaging.progressTemplate / messaging.successTemplate
+      if (messaging.progressTemplate) {
+        this.config.discountTextTemplate = messaging.progressTemplate;
+      }
+      if (messaging.successTemplate) {
+        this.config.successMessageTemplate = messaging.successTemplate;
       }
 
-      if (messages.qualified) {
-        this.config.successMessageTemplate = messages.qualified;
-      }
+      // Set visibility flags from messaging config
+      this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
+      this.config.showProgressBar = messaging.showProgressBar || false;
 
-      console.log('[BUNDLE_MESSAGES] Using bundle pricing messages:', {
+      console.log('[BUNDLE_MESSAGES] Using messaging config:', {
         progress: this.config.discountTextTemplate,
-        qualified: this.config.successMessageTemplate
+        qualified: this.config.successMessageTemplate,
+        showDiscountMessaging: this.config.showDiscountMessaging,
+        showProgressBar: this.config.showProgressBar
+      });
+    } else if (pricingMessages) {
+      // Legacy path: pricing.messages.progress / pricing.messages.qualified
+      if (pricingMessages.progress) {
+        this.config.discountTextTemplate = pricingMessages.progress;
+      }
+      if (pricingMessages.qualified) {
+        this.config.successMessageTemplate = pricingMessages.qualified;
+      }
+
+      this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging !== false;
+      this.config.showProgressBar = pricingMessages.showProgressBar || false;
+
+      console.log('[BUNDLE_MESSAGES] Using legacy pricing messages:', {
+        progress: this.config.discountTextTemplate,
+        qualified: this.config.successMessageTemplate,
+        showDiscountMessaging: this.config.showDiscountMessaging,
+        showProgressBar: this.config.showProgressBar
       });
     } else {
-      console.log('[BUNDLE_MESSAGES] No pricing messages in bundle, using defaults');
+      // Default: show discount messaging if pricing is enabled
+      this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
+      this.config.showProgressBar = false;
+      console.log('[BUNDLE_MESSAGES] No messaging config found, using defaults');
     }
   }
 
@@ -744,8 +773,21 @@ class BundleWidgetProductPage {
     productTitle.title = product.title; // Full title on hover
     stepBox.appendChild(productTitle);
 
-    // Add click handler to open modal for editing
-    stepBox.addEventListener('click', () => this.openModal(stepIndex));
+    // Add click handler - check if step limit is reached before opening modal
+    stepBox.addEventListener('click', () => {
+      // If step has a limit of 1 and is already fulfilled, show toast instead of opening modal
+      const stepData = this.selectedBundle.steps[stepIndex];
+      if (stepData && stepData.conditionValue && stepData.conditionOperator) {
+        const isLimitOne = stepData.conditionValue === 1 &&
+          (stepData.conditionOperator === BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO ||
+           stepData.conditionOperator === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO);
+        if (isLimitOne && this.validateStep(stepIndex)) {
+          ToastManager.show('Product limit reached for this step.');
+          return;
+        }
+      }
+      this.openModal(stepIndex);
+    });
 
     return stepBox;
   }

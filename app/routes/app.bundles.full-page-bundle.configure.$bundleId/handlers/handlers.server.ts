@@ -417,11 +417,18 @@ export async function handleSaveBundle(admin: any, session: any, bundleId: strin
             showFooter: discountData.showFooter !== false,
             showProgressBar: discountData.showProgressBar || false
           },
-          messages: discountData.messages || {
-            progress: 'Add {conditionText} to get {discountText}',
-            qualified: 'Congratulations! You got {discountText}',
-            showInCart: true
-          }
+          messages: (() => {
+            // Build messages from ruleMessages (per-rule messaging from admin form)
+            const firstRuleId = discountData.discountRules?.[0]?.id;
+            const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
+            return {
+              progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
+              qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+              showDiscountMessaging: discountData.discountMessagingEnabled || false,
+              showProgressBar: discountData.showProgressBar || false,
+              showInCart: true
+            };
+          })()
         },
         // CRITICAL: Include bundle parent variant ID for cart transform merge operations
         bundleParentVariantId: bundleParentVariantId,

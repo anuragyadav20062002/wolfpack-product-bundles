@@ -200,10 +200,11 @@ export async function updateBundleProductMetafields(
       }))
     } : null,
     messaging: {
-      progressTemplate: bundleConfiguration.messaging?.progressTemplate || 'Add {items} more items',
-      successTemplate: bundleConfiguration.messaging?.successTemplate || 'Discount unlocked!',
-      showProgressBar: bundleConfiguration.messaging?.showProgressBar !== false,
-      showFooter: bundleConfiguration.messaging?.showFooter !== false
+      progressTemplate: bundleConfiguration.pricing?.messages?.progress || bundleConfiguration.messaging?.progressTemplate || 'Add {conditionText} to get {discountText}',
+      successTemplate: bundleConfiguration.pricing?.messages?.qualified || bundleConfiguration.messaging?.successTemplate || 'Congratulations! You got {discountText}',
+      showProgressBar: bundleConfiguration.pricing?.messages?.showProgressBar || bundleConfiguration.pricing?.display?.showProgressBar || bundleConfiguration.messaging?.showProgressBar || false,
+      showDiscountMessaging: bundleConfiguration.pricing?.messages?.showDiscountMessaging || false,
+      showFooter: bundleConfiguration.pricing?.display?.showFooter !== false && bundleConfiguration.messaging?.showFooter !== false
     }
   };
 

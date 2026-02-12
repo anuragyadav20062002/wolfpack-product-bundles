@@ -456,6 +456,8 @@ export default function ConfigureBundleFlow() {
         discountEnabled: pricingState.discountEnabled,
         discountType: pricingState.discountType,
         discountRules: pricingState.discountRules,
+        showProgressBar: pricingState.showProgressBar,
+        showFooter: pricingState.showFooter,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
         ruleMessages
       }));
