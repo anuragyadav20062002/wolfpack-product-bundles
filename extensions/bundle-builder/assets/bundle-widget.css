@@ -466,11 +466,11 @@
   right: 0;
   z-index: 1000000;
 
-  /* Full width, 80% height drawer from bottom */
+  /* Full width, 90% height drawer from bottom */
   width: 100% !important;
   max-width: 100% !important;
-  height: 80vh !important;
-  max-height: 80vh !important;
+  height: 90vh !important;
+  max-height: 90vh !important;
 
   /* Layout */
   display: flex;
@@ -518,7 +518,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: calc(var(--modal-header-padding, 40px) * 0.5) var(--modal-header-padding, 40px) calc(var(--modal-header-padding, 40px) * 0.5);
+  padding: 12px 24px 8px;
   border-bottom: 1px solid #E5E7EB;
   margin-bottom: 0;
   position: relative;
@@ -531,52 +531,52 @@
 .modal-header::before {
   content: '';
   position: absolute;
-  top: 12px;
+  top: 6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 40px;
+  width: 36px;
   height: 4px;
   background-color: rgba(0, 0, 0, 0.15);
   border-radius: 2px;
 }
 
 .modal-step-title {
-  font-size: 1.4em;
-  font-weight: 700;
-  color: var(--modal-step-title-color, #1a1a1a);
+  font-size: 0.95em;
+  font-weight: 500;
+  color: var(--modal-step-title-color, #4b5563);
   text-align: center;
-  margin-bottom: 8px;
-  margin-top: 12px;
+  margin-bottom: 6px;
+  margin-top: 8px;
   padding: 0 20px;
   line-height: 1.3;
-  letter-spacing: -0.3px;
+  letter-spacing: 0;
 }
 
 /* Modal tabs wrapper with arrows */
 .modal-tabs-wrapper {
   position: relative;
   width: 100%;
-  margin-bottom: 24px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   z-index: 1;
-  padding-top: 4px;
+  padding-top: 0;
 }
 
 /* Tab scroll arrows */
 .tab-arrow {
   background: #FFFFFF;
-  border: 2px solid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   color: #6B7280;
   transition: all 0.2s ease;
@@ -628,20 +628,20 @@
   scrollbar-width: none;
 }
 
-/* Bundle Header Tab - Bigger with Shopify Style */
+/* Bundle Header Tab - Compact Shopify Style */
 .bundle-header-tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 32px;
+  padding: 10px 24px;
   border-radius: var(--bundle-header-tab-radius, 8px);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  min-height: 48px;
-  min-width: 140px;
+  min-height: 38px;
+  min-width: 100px;
   border: none;
   outline: none;
   letter-spacing: 0.2px;
@@ -738,16 +738,16 @@
 
 .close-button {
   color: #777;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: normal;
   cursor: pointer;
   position: absolute;
-  top: 20px;
-  right: 25px;
+  top: 12px;
+  right: 16px;
   z-index: 1000001; /* Above modal content */
   background: rgba(255, 255, 255, 0.9);
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -786,7 +786,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: calc(var(--modal-body-padding, 40px) * 0.8) var(--modal-body-padding, 40px) calc(var(--modal-body-padding, 40px) * 0.8);
+  padding: 16px 24px;
   box-sizing: border-box;
   background-color: #F3F4F6;
   /* Ensure proper scrolling within the modal content */
@@ -819,19 +819,25 @@
 }
 
 /* Modal product cards - compact design with proper sizing */
-/* Modal-specific product grid - uses DCP setting for cards per row */
+/* Modal-specific product grid - 5 columns on desktop for clean layout */
 .modal-body .product-grid {
   display: grid;
-  grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), 1fr);
-  gap: 20px;
-  max-width: 1200px;
+  grid-template-columns: repeat(var(--bundle-product-cards-per-row, 5), 1fr);
+  gap: 16px;
+  max-width: 1400px;
   width: 100%;
   margin: 0 auto;
 }
 
 @media (min-width: 769px) {
   .modal-body .product-grid {
-    grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), 1fr);
+    grid-template-columns: repeat(var(--bundle-product-cards-per-row, 5), 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .modal-body .product-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -843,31 +849,31 @@
 
 @media (max-width: 480px) {
   .modal-body .product-grid {
-    grid-template-columns: repeat(1, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Modal product cards - Floating Effect */
+/* Modal product cards - Clean Compact Design */
 .modal-body .product-card {
   background-color: var(--bundle-product-card-bg, #FFFFFF);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 12px;
   width: 100%;
-  min-height: var(--modal-product-card-height, 420px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+  min-height: auto;
+  box-shadow: none;
   position: relative;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  border: 1.5px solid #e5e7eb;
   transform: translateY(0);
 }
 
 .modal-body .product-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 6px 12px rgba(0, 0, 0, 0.1);
-  border-color: rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
   z-index: 10;
 }
 
@@ -890,10 +896,11 @@
 
 .modal-body .product-card .product-image {
   width: 100%;
-  height: var(--modal-product-image-height, 200px);
+  height: auto;
+  aspect-ratio: 1 / 1;
   background-color: #F8F8F8;
-  border-radius: 12px;
-  margin-bottom: 16px;
+  border-radius: 8px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -918,10 +925,10 @@
 
 .modal-body .product-card .product-title {
   color: var(--bundle-product-card-font-color, #111827);
-  font-size: calc(var(--bundle-product-card-font-size, 16px) * var(--modal-product-title-size, 100%) / 100);
-  font-weight: var(--bundle-product-card-font-weight, 700);
+  font-size: 14px;
+  font-weight: 600;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -937,14 +944,14 @@
 }
 
 .modal-body .product-card .product-price-row {
-  margin: 12px 0;
+  margin: 4px 0 8px;
   text-align: center;
   flex-shrink: 0;
   position: relative;
-  background: var(--bundle-product-price-bg-color, var(--modal-product-price-bg, #F0F8F0));
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  border: none;
   display: var(--bundle-product-price-display, block);
   white-space: nowrap;
 }
@@ -968,7 +975,7 @@
 
 .modal-body .product-card .product-spacer {
   flex: 1;
-  min-height: 8px;
+  min-height: 4px;
 }
 
 /* Variant Selector in Modal */
@@ -980,21 +987,20 @@
 
 .modal-body .product-card .variant-selector {
   width: 100%;
-  padding: 14px 16px;
-  border-radius: var(--bundle-variant-selector-border-radius, 10px);
-  border: 2px solid #E5E7EB;
+  padding: 8px 12px;
+  border-radius: var(--bundle-variant-selector-border-radius, 8px);
+  border: 1px solid #E5E7EB;
   background-color: var(--bundle-variant-selector-bg, #FFFFFF);
-  background-image: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
   color: var(--bundle-variant-selector-text-color, #000000);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   appearance: none;
-  background-image: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%), url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23303030' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat, no-repeat;
-  background-position: center, right 16px center;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23303030' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: all 0.2s ease;
+  box-shadow: none;
 }
 
 .modal-body .product-card .variant-selector:hover {
@@ -1023,27 +1029,27 @@
   display: flex;
   align-items: center;
   gap: 0px;
-  background: linear-gradient(135deg, var(--bundle-quantity-selector-bg, #000000) 0%, rgba(0, 0, 0, 0.9) 100%);
+  background: var(--bundle-quantity-selector-bg, #5f5d5d);
   color: var(--bundle-quantity-selector-text-color, #FFFFFF);
-  border-radius: var(--bundle-quantity-selector-border-radius, 10px);
+  border-radius: var(--bundle-quantity-selector-border-radius, 8px);
   overflow: hidden;
-  border: 2px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  border: none;
+  box-shadow: none;
 }
 
 .modal-body .product-card .qty-btn {
   background-color: transparent;
   color: inherit;
   border: none;
-  padding: 12px 18px;
-  font-size: 20px;
+  padding: 8px 14px;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 44px;
+  transition: all 0.2s ease;
+  min-width: 36px;
 }
 
 .modal-body .product-card .qty-btn:hover {
@@ -1064,40 +1070,41 @@
   text-align: center;
 }
 
-/* Add to Bundle Button in Modal - Enhanced */
+/* Add to Bundle Button in Modal - Compact */
 .modal-body .product-card .product-add-btn {
   width: 100%;
-  background: linear-gradient(135deg, var(--bundle-button-bg, #000000) 0%, rgba(0, 0, 0, 0.9) 100%);
+  background: var(--bundle-button-bg, #6B8DD6);
   color: var(--bundle-button-text-color, #FFFFFF);
   border: none;
-  border-radius: var(--bundle-button-border-radius, 10px);
-  padding: 16px 24px;
-  font-size: var(--bundle-button-font-size, 16px);
-  font-weight: var(--bundle-button-font-weight, 700);
+  border-radius: var(--bundle-button-border-radius, 8px);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .modal-body .product-card .product-add-btn:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0.9;
 }
 
 .modal-body .product-card .product-add-btn:active {
-  transform: translateY(-1px) scale(0.98);
+  transform: scale(0.98);
 }
 
 .modal-body .product-card .product-add-btn.added {
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  background: #10B981;
+  box-shadow: none;
 }
 
 .product-grid {
@@ -1259,17 +1266,17 @@
   z-index: 10;
 }
 
-/* Modal Footer - Floating Effect */
+/* Modal Footer - Clean Compact */
 .modal-footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--bundle-footer-padding, 24px 40px);
+  padding: 12px 24px;
   border-top: 1px solid #E5E7EB;
   margin-top: 0;
   background-color: var(--bundle-footer-bg, #FFFFFF);
   border-radius: var(--bundle-footer-border-radius, 0px);
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
   z-index: 10;
   width: 100%;
 }
@@ -1425,22 +1432,22 @@
   }
 }
 
-/* Navigation Buttons - New Centered Layout Design */
+/* Navigation Buttons - Compact Centered Layout */
 .modal-nav-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 14px 32px;
+  gap: 6px;
+  padding: 10px 28px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   white-space: nowrap;
-  min-width: 120px;
+  min-width: 100px;
   border: none;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .modal-nav-button svg {
@@ -1816,11 +1823,11 @@
 /* Mobile-specific optimizations */
 @media (max-width: 480px) {
   .modal-body {
-    padding: 0 calc(var(--modal-body-padding, 40px) * 0.375) calc(var(--modal-body-padding, 40px) * 0.375);
+    padding: 12px 12px;
   }
 
   .modal-header {
-    padding: calc(var(--modal-header-padding, 40px) * 0.375) calc(var(--modal-header-padding, 40px) * 0.5) calc(var(--modal-header-padding, 40px) * 0.125);
+    padding: 10px 16px 6px;
   }
   
   .modal-footer {
@@ -1841,10 +1848,10 @@
     height: 14px;
   }
 
-  /* Ensure 1 column grid on mobile */
+  /* Keep 2 column grid on small mobile */
   .bundle-builder-modal .modal-body .product-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
   /* Scale down footer elements */
@@ -1876,6 +1883,42 @@
   }
 }
 
+
+/* ==========================================
+   DEFAULT STOREFRONT UI OVERRIDES
+   (Hardcoded defaults for clean design)
+   ========================================== */
+
+/* Inline quantity controls default styling */
+.inline-quantity-controls {
+  background: #5f5d5d;
+}
+
+/* Footer total section label */
+.footer-total-section .total-label {
+  font-size: 20px;
+  font-weight: 550;
+  color: var(--bundle-full-page-footer-total-label-color, #333333);
+  font-family: inherit;
+}
+
+/* Footer products tiles wrapper */
+.footer-products-tiles-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 10px 44px;
+  max-width: 850px;
+}
+
+/* Full-page product grid: 2 cols on mobile */
+@media (max-width: 768px) {
+  .full-page-product-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 
 /* ==========================================
    FULL-PAGE BUNDLE LAYOUT STYLES
