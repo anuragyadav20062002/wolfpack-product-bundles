@@ -10,7 +10,6 @@ import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
 import { ThemeTemplateService } from "../../../../services/theme-template.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
-import { WidgetInstallationFlagsService } from "../../../../services/widget-installation-flags.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -1670,61 +1669,6 @@ export async function handleValidateWidgetPlacement(admin: any, session: any, bu
     return json({
       success: false,
       error: (error as Error).message || "Widget placement validation failed"
-    }, { status: 500 });
-  }
-}
-
-/**
- * Handle marking widget as installed
- */
-export async function handleMarkWidgetInstalled(admin: any, session: any, formData: FormData) {
-  try {
-    const widgetType = formData.get("widgetType") as 'product_page' | 'full_page';
-    const installed = formData.get("installed") === 'true';
-
-    if (!widgetType) {
-      return json({
-        success: false,
-        error: "Widget type is required"
-      }, { status: 400 });
-    }
-
-    AppLogger.info("[WIDGET_FLAGS] Setting widget installation flag", {
-      shop: session.shop,
-      widgetType,
-      installed
-    });
-
-    const success = await WidgetInstallationFlagsService.setInstallationFlag(
-      admin,
-      session.shop,
-      widgetType,
-      installed
-    );
-
-    if (!success) {
-      return json({
-        success: false,
-        error: "Failed to update widget installation flag"
-      }, { status: 500 });
-    }
-
-    AppLogger.info("[WIDGET_FLAGS] Widget installation flag updated", {
-      shop: session.shop,
-      widgetType,
-      installed
-    });
-
-    return json({
-      success: true,
-      message: `Widget marked as ${installed ? 'installed' : 'not installed'}`
-    });
-
-  } catch (error) {
-    AppLogger.error("[WIDGET_FLAGS] Error updating widget installation flag:", {}, error as any);
-    return json({
-      success: false,
-      error: (error as Error).message || "Failed to update widget installation flag"
     }, { status: 500 });
   }
 }

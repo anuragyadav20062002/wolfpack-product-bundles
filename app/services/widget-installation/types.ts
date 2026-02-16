@@ -37,9 +37,3 @@ export interface ProductBundleWidgetStatus {
   requiresOneTimeSetup: boolean;
 }
 
-export interface BundleInstallationContext {
-  widgetInstalled: boolean;
-  bundleConfigured: boolean;
-  recommendedAction: 'install_widget' | 'add_bundle' | 'configured' | 'update_bundle';
-  themeName?: string;
-}

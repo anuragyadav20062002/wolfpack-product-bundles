@@ -46,21 +46,12 @@ export interface BundleData {
   pricing?: BundlePricing;
 }
 
-export interface WidgetInstallationInfo {
-  installed: boolean;
-  bundleConfigured: boolean;
-  recommendedAction: 'install_widget' | 'add_bundle' | 'configured' | 'update_bundle';
-  themeName?: string;
-  installationLink: string;
-}
-
 export interface LoaderData {
   bundle: BundleData;
   bundleProduct?: any;
   shop: string;
   apiKey: string;
   blockHandle: string;
-  widgetInstallation?: WidgetInstallationInfo;
 }
 
 export interface BundleStatusSectionProps {

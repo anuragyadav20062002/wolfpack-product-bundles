@@ -14,7 +14,6 @@ import {
   Modal,
   FormLayout,
   TextField,
-  Banner,
   Icon,
   ChoiceList,
   Tooltip,
@@ -24,7 +23,6 @@ import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
-import { WidgetInstallationFlagsService } from "../../../services/widget-installation-flags.server";
 import { useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
@@ -125,9 +123,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get subscription info for upgrade prompt
   const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
 
-  // Check widget installation status using metafield flags (Built for Shopify compliant!)
-  const widgetFlags = await WidgetInstallationFlagsService.getInstallationFlags(admin, session.shop);
-
   // Get API key for deep linking
   const apiKey = process.env.SHOPIFY_API_KEY || '';
 
@@ -140,11 +135,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       bundleLimit: subscriptionInfo.bundleLimit,
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
-    widgetInstallation: {
-      productPageInstalled: widgetFlags.productPageWidgetInstalled,
-      fullPageInstalled: widgetFlags.fullPageWidgetInstalled,
-      showPrompt: !widgetFlags.productPageWidgetInstalled && !widgetFlags.fullPageWidgetInstalled,
-    },
     apiKey,
   });
 };
@@ -232,7 +222,7 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, widgetInstallation, apiKey, shop } = useLoaderData<typeof loader>();
+  const { bundles, subscription, apiKey, shop } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -611,32 +601,6 @@ export default function Dashboard() {
                 bundleLimit={subscription.bundleLimit}
                 canCreateBundle={subscription.canCreateBundle}
               />
-            </Layout.Section>
-          )}
-
-          {/* Widget Installation Success - Informational Only */}
-          {(widgetInstallation?.productPageInstalled || widgetInstallation?.fullPageInstalled) && (
-            <Layout.Section>
-              <Banner
-                title="✅ Bundle Widgets Installed"
-                tone="success"
-              >
-                <BlockStack gap="200">
-                  {widgetInstallation.productPageInstalled && (
-                    <Text as="p" variant="bodyMd">
-                      ✓ Product Page Widget is active
-                    </Text>
-                  )}
-                  {widgetInstallation.fullPageInstalled && (
-                    <Text as="p" variant="bodyMd">
-                      ✓ Full-Page Widget is active
-                    </Text>
-                  )}
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    Edit any bundle to configure display settings.
-                  </Text>
-                </BlockStack>
-              </Banner>
             </Layout.Section>
           )}
 
