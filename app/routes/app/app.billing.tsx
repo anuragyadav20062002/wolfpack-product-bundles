@@ -106,8 +106,9 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (intent === "upgrade") {
     try {
-      const appUrl = process.env.SHOPIFY_APP_URL || "";
-      const returnUrl = `${appUrl}/app/billing/callback`;
+      const storeHandle = shopDomain.replace(".myshopify.com", "");
+      const apiKey = process.env.SHOPIFY_API_KEY;
+      const returnUrl = `https://admin.shopify.com/store/${storeHandle}/apps/${apiKey}/app/billing/callback`;
 
       const result = await BillingService.createSubscription(admin, {
         shopDomain,

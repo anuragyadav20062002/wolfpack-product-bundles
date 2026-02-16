@@ -14,5 +14,4 @@ export {
   handleEnsureBundleTemplates,
   handleCheckFullPageTemplate,
   handleValidateWidgetPlacement,
-  handleMarkWidgetInstalled,
 } from './handlers.server';

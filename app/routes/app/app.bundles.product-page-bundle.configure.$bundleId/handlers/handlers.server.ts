@@ -10,7 +10,6 @@ import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
 import { ThemeTemplateService } from "../../../../services/theme-template.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
-import { WidgetInstallationFlagsService } from "../../../../services/widget-installation-flags.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -1549,47 +1548,6 @@ export async function handleValidateWidgetPlacement(admin: any, session: any, bu
     return json({
       success: false,
       error: (error as Error).message || "Widget placement validation failed"
-    }, { status: 500 });
-  }
-}
-
-/**
- * Handle marking widget as installed for product page bundles
- */
-export async function handleMarkWidgetInstalled(admin: any, session: any) {
-  try {
-    AppLogger.info("[WIDGET_INSTALLATION] Marking product page widget as installed", {
-      shop: session.shop
-    });
-
-    // Mark the widget as installed in shop metafields
-    const success = await WidgetInstallationFlagsService.markAsInstalled(
-      admin,
-      session.shop,
-      'product_page'
-    );
-
-    if (!success) {
-      return json({
-        success: false,
-        error: "Failed to mark widget as installed"
-      }, { status: 500 });
-    }
-
-    AppLogger.info("[WIDGET_INSTALLATION] Product page widget marked as installed", {
-      shop: session.shop
-    });
-
-    return json({
-      success: true,
-      message: "Widget marked as installed successfully"
-    });
-
-  } catch (error) {
-    AppLogger.error("[WIDGET_INSTALLATION] Error marking widget as installed:", {}, error as any);
-    return json({
-      success: false,
-      error: (error as Error).message || "Failed to mark widget as installed"
     }, { status: 500 });
   }
 }

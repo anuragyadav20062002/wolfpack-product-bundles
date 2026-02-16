@@ -6,9 +6,7 @@
  */
 
 import { AppLogger } from "../../lib/logger";
-import { WidgetInstallationFlagsService } from "../widget-installation-flags.server";
 import {
-  generateProductBundleInstallationLink,
   generateProductBundleConfigurationLink
 } from "./widget-theme-editor-links.server";
 import type { ProductBundleWidgetStatus } from "./types";
@@ -16,17 +14,15 @@ import type { ProductBundleWidgetStatus } from "./types";
 /**
  * Validate product bundle widget setup and provide guidance
  *
- * Checks if the bundle widget is installed using metafield flags.
+ * Widget is a theme app extension — always assumed installed.
  * Returns appropriate links and guidance for merchant.
- *
- * Built for Shopify compliant - uses metafields instead of theme file reads.
  *
  * @param admin - Shopify admin API client
  * @param shop - Shop domain
  * @param apiKey - App API key
  * @param bundleId - Bundle ID
  * @param shopifyProductId - Shopify product ID (optional)
- * @returns Widget status with installation/configuration links
+ * @returns Widget status with configuration links
  */
 export async function validateProductBundleWidgetSetup(
   admin: any,
@@ -43,36 +39,7 @@ export async function validateProductBundleWidgetSetup(
       shopifyProductId
     });
 
-    // Check if widget is already installed using metafield flags
-    const widgetInstalled = await WidgetInstallationFlagsService.isWidgetInstalled(
-      admin,
-      shop,
-      'product_page'
-    );
-
-    if (!widgetInstalled) {
-      // Widget not installed - provide one-time setup link
-      const installLink = generateProductBundleInstallationLink(
-        shop,
-        apiKey,
-        bundleId
-      );
-
-      AppLogger.info('Product widget not installed, returning setup link', {
-        component: 'WidgetProductBundle',
-        shop,
-        bundleId
-      });
-
-      return {
-        widgetInstalled: false,
-        requiresOneTimeSetup: true,
-        installationLink: installLink,
-        message: 'One-time setup: Please add the Bundle Widget to your product template'
-      };
-    }
-
-    // Widget is installed! Now provide links to the bundle product
+    // Provide links to the bundle product if it exists
     if (shopifyProductId) {
       // Get product handle
       const GET_PRODUCT = `
@@ -117,7 +84,7 @@ export async function validateProductBundleWidgetSetup(
       }
     }
 
-    // Widget installed, but no product yet
+    // No product yet
     return {
       widgetInstalled: true,
       requiresOneTimeSetup: false,
@@ -132,9 +99,9 @@ export async function validateProductBundleWidgetSetup(
     }, error);
 
     return {
-      widgetInstalled: false,
-      requiresOneTimeSetup: true,
-      message: 'Failed to check widget installation status'
+      widgetInstalled: true,
+      requiresOneTimeSetup: false,
+      message: 'Failed to check widget setup'
     };
   }
 }

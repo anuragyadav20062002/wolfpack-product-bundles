@@ -33,17 +33,10 @@ export interface SubscriptionInfo {
   canCreateBundle: boolean;
 }
 
-export interface WidgetInstallationStatus {
-  productPageInstalled: boolean;
-  fullPageInstalled: boolean;
-  showPrompt: boolean;
-}
-
 export interface LoaderData {
   bundles: BundleWithPreview[];
   shop: string;
   subscription: SubscriptionInfo | null;
-  widgetInstallation: WidgetInstallationStatus;
   apiKey: string;
 }
 
@@ -53,11 +46,6 @@ export interface ActionResponse {
   bundleId?: string;
   bundleProductId?: string;
   redirectTo?: string;
-  widgetStatus?: {
-    productPageInstalled: boolean;
-    fullPageInstalled: boolean;
-    needsWidgetSetup: boolean;
-  };
 }
 
 export interface CloneBundleResponse extends ActionResponse {

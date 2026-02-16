@@ -6,7 +6,6 @@
  */
 
 import { AppLogger } from "../../lib/logger";
-import { WidgetInstallationFlagsService } from "../widget-installation-flags.server";
 import type { FullPageBundleResult } from "./types";
 
 /**
@@ -190,47 +189,11 @@ export async function createFullPageBundle(
       });
     }
 
-    // Step 3: Check if widget is installed using metafield flags
-    // Built for Shopify compliant - no theme file reads required!
-    const widgetInstalled = await WidgetInstallationFlagsService.isWidgetInstalled(
-      admin,
-      shop,
-      'full_page'
-    );
-
     const shopDomain = shop.replace('.myshopify.com', '');
     const pageUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
 
-    // If widget NOT installed, return page info + installation link to this specific page
-    if (!widgetInstalled) {
-      const appBlockId = `${apiKey}/bundle-full-page`;
-
-      // Create deep link to theme editor with the actual page preview
-      // CRITICAL: Use previewPath to load the actual page (not template preview)
-      // This ensures page.metafields[app_namespace].bundle_id is available in Liquid
-      const installLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?` +
-        `previewPath=/pages/${pageHandle}&addAppBlockId=${appBlockId}&target=mainSection`;
-
-      AppLogger.info('Page created, but widget not installed - returning setup link', {
-        component: 'WidgetFullPageBundle',
-        shop,
-        bundleId,
-        pageHandle: createdPage.handle,
-        installLink
-      });
-
-      return {
-        success: true,
-        pageId: createdPage.id,
-        pageHandle: createdPage.handle,
-        pageUrl: pageUrl,
-        widgetInstallationRequired: true,
-        widgetInstallationLink: installLink
-      };
-    }
-
-    // Step 4: Widget is installed - return success with storefront URL
-    AppLogger.info('Full-page bundle created successfully (widget already installed)', {
+    // Step 3: Return success with storefront URL
+    AppLogger.info('Full-page bundle created successfully', {
       component: 'WidgetFullPageBundle',
       shop,
       bundleId,

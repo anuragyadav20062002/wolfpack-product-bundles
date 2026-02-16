@@ -16,7 +16,6 @@ export type {
   ThemeEditorDeepLink,
   FullPageBundleResult,
   ProductBundleWidgetStatus,
-  BundleInstallationContext
 } from './types';
 
 // Theme editor deep link functions (for direct access)

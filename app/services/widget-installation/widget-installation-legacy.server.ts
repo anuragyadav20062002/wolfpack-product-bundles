@@ -3,9 +3,9 @@
  *
  * @deprecated These methods are NO LONGER USED.
  * They read theme files which requires read_themes scope.
- * For "Built for Shopify" compliance, use WidgetInstallationFlagsService instead.
+ * For "Built for Shopify" compliance, use WidgetInstallationService instead.
  *
- * @see WidgetInstallationFlagsService.isWidgetInstalled()
+ * @see WidgetInstallationService.isWidgetInstalled()
  *
  * Kept for backward compatibility and reference.
  */
@@ -17,9 +17,9 @@ import type { WidgetInstallationStatus } from "./types";
  * @deprecated Legacy method - NO LONGER USED
  *
  * This method reads theme files which requires read_themes scope.
- * For "Built for Shopify" compliance, use WidgetInstallationFlagsService instead.
+ * For "Built for Shopify" compliance, use WidgetInstallationService instead.
  *
- * @see WidgetInstallationFlagsService.isWidgetInstalled()
+ * @see WidgetInstallationService.isWidgetInstalled()
  *
  * Check if the Bundle Widget block exists in product templates
  *
@@ -164,9 +164,9 @@ export async function checkWidgetInstallation(
  * @deprecated Legacy method - NO LONGER USED
  *
  * This method reads theme files which requires read_themes scope.
- * For "Built for Shopify" compliance, use WidgetInstallationFlagsService instead.
+ * For "Built for Shopify" compliance, use WidgetInstallationService instead.
  *
- * @see WidgetInstallationFlagsService.isWidgetInstalled()
+ * @see WidgetInstallationService.isWidgetInstalled()
  *
  * Check if full-page bundle widget exists in page templates
  *

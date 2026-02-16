@@ -1594,7 +1594,7 @@ class BundleWidgetProductPage {
           <div class="modal-footer">
             <!-- Centered Grouped Content Container -->
             <div class="modal-footer-grouped-content">
-              <!-- Total Pill - Sits Above Buttons -->
+              <!-- Total Pill - Sits Above Everything -->
               <div class="modal-footer-total-pill">
                 <span class="total-price-strike"></span>
                 <span class="total-price-final"></span>
@@ -1609,25 +1609,15 @@ class BundleWidgetProductPage {
                 </span>
               </div>
 
-              <!-- Buttons Row - Below Pill -->
-              <div class="modal-footer-buttons-row">
-                <button class="modal-nav-button prev-button">BACK</button>
-                <button class="modal-nav-button next-button">NEXT</button>
-              </div>
-
-              <!-- Discount Messaging Section -->
+              <!-- Discount Messaging Section - Between Price and Buttons -->
               <div class="modal-footer-discount-messaging">
                 <div class="footer-discount-text"></div>
               </div>
 
-              <!-- Progress Bar Section -->
-              <div class="modal-footer-progress-section">
-                <div class="modal-footer-progress-bar">
-                  <div class="modal-footer-progress-fill"></div>
-                </div>
-                <div class="modal-footer-progress-details">
-                  <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
-                </div>
+              <!-- Buttons Row - At Bottom -->
+              <div class="modal-footer-buttons-row">
+                <button class="modal-nav-button prev-button">BACK</button>
+                <button class="modal-nav-button next-button">NEXT</button>
               </div>
             </div>
           </div>
@@ -2066,42 +2056,16 @@ class BundleWidgetProductPage {
   // MODAL FUNCTIONALITY
   // ========================================================================
 
-  // Helper method to get formatted header text
+  // Helper method to get formatted header text (always step name)
   getFormattedHeaderText() {
-    // If discount is not enabled, show step name
-    if (!this.selectedBundle?.pricing?.enabled) {
-      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      return currentStep?.name || `Step ${this.currentStepIndex + 1}`;
-    }
-
-    const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity
-    );
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      discountInfo,
-      currencyInfo
-    );
-
-    return TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
+    const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+    return currentStep?.name || `Step ${this.currentStepIndex + 1}`;
   }
 
   openModal(stepIndex) {
     this.currentStepIndex = stepIndex;
 
-    // Update modal header
+    // Update modal header with step name
     const modal = this.elements.modal;
     const headerText = this.getFormattedHeaderText();
 
@@ -2995,39 +2959,28 @@ class BundleWidgetProductPage {
     const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
     if (!modalStepTitle) return;
 
-    // If discount is not enabled, show step name
-    if (!this.selectedBundle?.pricing?.enabled) {
-      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      modalStepTitle.innerHTML = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
-      return;
-    }
-
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      discountInfo,
-      currencyInfo
-    );
-
-    const headerText = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-
-    modalStepTitle.innerHTML = headerText;
+    // Always show step name in header - discount messaging is in footer only
+    const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+    modalStepTitle.innerHTML = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
   }
 
   updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
-    const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
-    const progressBar = this.elements.modal.querySelector('.modal-footer-progress-bar');
-    const currentQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .current-quantity');
-    const targetQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .target-quantity');
     const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
-    const progressSection = this.elements.modal.querySelector('.modal-footer-progress-section');
 
-    if (!footerDiscountText || !progressFill) return;
+    if (!footerDiscountText) return;
+
+    // Check if any discount rules exist
+    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
+    const ruleToUse = discountInfo.applicableRule || nextRule;
+    const hasDiscountRules = !!ruleToUse;
+
+    // Hide messaging entirely when no discount rules are configured
+    if (discountSection) {
+      discountSection.style.display = (this.config.showDiscountMessaging && hasDiscountRules) ? 'block' : 'none';
+    }
+
+    if (!hasDiscountRules) return;
 
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
@@ -3053,43 +3006,6 @@ class BundleWidgetProductPage {
       );
       footerDiscountText.innerHTML = progressMessage;
       if (discountSection) discountSection.classList.remove('qualified');
-    }
-
-    // Update progress bar
-    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
-
-    let progressPercentage = 0;
-
-    if (ruleToUse) {
-      const conditionType = ruleToUse.condition?.type || 'quantity';
-      const targetValue = ruleToUse.condition?.value || 0;
-
-      if (conditionType === 'amount') {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-          targetQuantitySpan.textContent = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
-        }
-      } else {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = totalQuantity.toString();
-          targetQuantitySpan.textContent = targetValue.toString();
-        }
-      }
-    }
-
-    if (progressFill) {
-      progressFill.style.width = `${progressPercentage}%`;
-    }
-
-    // Show/hide sections based on config
-    if (discountSection) {
-      discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
-    }
-    if (progressSection) {
-      progressSection.style.display = this.config.showProgressBar ? 'block' : 'none';
     }
   }
 

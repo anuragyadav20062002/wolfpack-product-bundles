@@ -183,12 +183,10 @@ export function useBundleConfigurationState({
 
   // ===== LOADING STATES =====
   const [isLoadingPages, setIsLoadingPages] = useState(false);
-  const [isCheckingWidgetStatus, setIsCheckingWidgetStatus] = useState(false);
 
   // ===== DATA STATES =====
   const [availablePages, setAvailablePages] = useState<any[]>([]);
   const [selectedPage, setSelectedPage] = useState<any>(null);
-  const [widgetInstallationLink, setWidgetInstallationLink] = useState<string>('');
 
   // Bundle product state
   const [bundleProduct, setBundleProductRaw] = useState<any>(loadedBundleProduct || null);
@@ -248,15 +246,6 @@ export function useBundleConfigurationState({
   // Banner states
   const [showAutoPlacementBanner, setShowAutoPlacementBanner] = useState(false);
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
-
-  // Widget installation tracking
-  const [widgetInstallationInitiated, setWidgetInstallationInitiated] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(`widget_installation_${bundle.id}`);
-      return stored === 'true';
-    }
-    return false;
-  });
 
   // ===== ORIGINAL VALUES REF (for discard) =====
   const originalValuesRef = useRef({
@@ -411,20 +400,12 @@ export function useBundleConfigurationState({
     // Loading states
     isLoadingPages,
     setIsLoadingPages,
-    isCheckingWidgetStatus,
-    setIsCheckingWidgetStatus,
 
     // Page selection data
     availablePages,
     setAvailablePages,
     selectedPage,
     setSelectedPage,
-
-    // Widget installation
-    widgetInstallationLink,
-    setWidgetInstallationLink,
-    widgetInstallationInitiated,
-    setWidgetInstallationInitiated,
 
     // Bundle product data
     bundleProduct,
