@@ -646,10 +646,19 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         }
       });
 
-      // Calculate overall discount percentage
-      const overallDiscountPercent = totalRetailCents > 0
-        ? ((totalRetailCents - totalBundleCents) / totalRetailCents * 100)
-        : discountPercentage;
+      // Use discountPercentage from price_adjustment as the single source of truth.
+      // This matches the actual percentageDecrease charged by Shopify, avoiding
+      // divergence between displayed and charged discount from rounding differences.
+      const overallDiscountPercent = discountPercentage;
+
+      // If component_pricing was empty (all components missing pricing), recalculate
+      // totals from the bundle line price and discountPercentage so display is consistent
+      if (totalRetailCents === 0 && originalTotal > 0) {
+        const bundleTotalCents = Math.round(originalTotal * 100);
+        totalRetailCents = bundleTotalCents;
+        totalBundleCents = Math.round(bundleTotalCents * (1 - discountPercentage / 100));
+        totalSavingsCents = totalRetailCents - totalBundleCents;
+      }
 
       Logger.info('Creating Flex Bundles-style expand operation', { phase: 'expand' }, {
         bundleVariantId: line.merchandise.id,
