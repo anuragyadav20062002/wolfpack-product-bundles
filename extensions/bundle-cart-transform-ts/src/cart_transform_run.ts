@@ -618,6 +618,8 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // This keeps the JSON well under Shopify's attribute value size limit (~255 chars)
       const componentDetails: Array<[string, number, number, number, number, number]> = [];
 
+      let hasMissingPricing = false;
+
       componentReferences.forEach((variantId, index) => {
         const pricing = pricingMap.get(variantId);
         const qty = componentQuantities[index] * line.quantity;
@@ -634,31 +636,34 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
             pricing.discountPercent, pricing.savingsAmount
           ]);
         } else {
-          // Pricing missing for this component — still show it with zero prices
-          // so the checkout UI doesn't silently hide bundle items
+          hasMissingPricing = true;
           Logger.warn('Missing pricing for component variant', { phase: 'expand' }, {
             variantId,
             index,
             componentCount: componentReferences.length
           });
-          const title = `Component ${index + 1}`.slice(0, 25);
-          componentDetails.push([title, qty, 0, 0, 0, 0]);
         }
       });
+
+      // If ANY component is missing pricing, clear the entire breakdown.
+      // The checkout UI will fall back to the simple "Bundle (N items)" view.
+      // Showing partial/fabricated data is worse than showing nothing — 0% error tolerance.
+      if (hasMissingPricing) {
+        Logger.warn('Incomplete pricing data — omitting component breakdown', { phase: 'expand' }, {
+          lineId: line.id,
+          totalComponents: componentReferences.length,
+          pricedComponents: componentDetails.length
+        });
+        componentDetails.length = 0;
+        totalRetailCents = 0;
+        totalBundleCents = 0;
+        totalSavingsCents = 0;
+      }
 
       // Use discountPercentage from price_adjustment as the single source of truth.
       // This matches the actual percentageDecrease charged by Shopify, avoiding
       // divergence between displayed and charged discount from rounding differences.
       const overallDiscountPercent = discountPercentage;
-
-      // If component_pricing was empty (all components missing pricing), recalculate
-      // totals from the bundle line price and discountPercentage so display is consistent
-      if (totalRetailCents === 0 && originalTotal > 0) {
-        const bundleTotalCents = Math.round(originalTotal * 100);
-        totalRetailCents = bundleTotalCents;
-        totalBundleCents = Math.round(bundleTotalCents * (1 - discountPercentage / 100));
-        totalSavingsCents = totalRetailCents - totalBundleCents;
-      }
 
       Logger.info('Creating Flex Bundles-style expand operation', { phase: 'expand' }, {
         bundleVariantId: line.merchandise.id,

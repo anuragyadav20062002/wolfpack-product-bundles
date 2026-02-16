@@ -37,11 +37,16 @@ When pricing data is missing for a component, use fallback values instead of ski
 - Components without pricing data are completely invisible to customers
 - Next: Add fallback values when pricing is missing
 
-### 2026-02-16 15:05 - All Phases Completed
-- Added `else` branch at line 636 with fallback values (0 for all prices)
-- Logs a warning when pricing is missing for a component variant
-- Component still appears in checkout UI with title and quantity
+### 2026-02-16 15:05 - Phase 1 (Initial Approach)
+- Added `else` branch with fallback zeros ($0.00 prices)
+- Commit: 9a4fa31
+
+### 2026-02-16 15:20 - Phase 1 (Revised: Hide Rather Than Fabricate)
+- Reverted fallback zeros approach — showing $0.00 is misrepresentation
+- New approach: if ANY component is missing pricing, clear entire breakdown
+- Checkout UI falls back to simple "Bundle (N items)" view
+- Principle: hide inaccurate data rather than fabricate it (0% error tolerance)
 - Files Modified:
-  - `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts` (lines 636-645)
+  - `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts` (lines 636-660)
 
 **Status:** Completed

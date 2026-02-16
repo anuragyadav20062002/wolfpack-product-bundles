@@ -36,11 +36,17 @@ Use `discountPercentage` (from `price_adjustment`) as the single source of truth
 - Rounding differences in fixed_amount and fixed_bundle_price methods
 - Next: Unify discount source
 
-### 2026-02-16 15:15 - All Phases Completed
-- Replaced `overallDiscountPercent` derivation from component_pricing totals with `discountPercentage` from price_adjustment
-- Added fallback: when all component pricing is missing (totalRetailCents === 0), recalculate totals from bundle line price and discountPercentage
-- Displayed discount now always matches charged discount
+### 2026-02-16 15:15 - Phase 1 (Initial Approach)
+- Replaced `overallDiscountPercent` with `discountPercentage` from price_adjustment
+- Added fabricated totals fallback when component_pricing empty
+- Commit: dfc5073
+
+### 2026-02-16 15:20 - Phase 1 (Revised: No Fabricated Data)
+- Kept `discountPercentage` as single source of truth for `_bundle_discount_percent`
+- Removed fabricated totals fallback — if pricing is missing, totals stay at 0
+- Checkout UI handles this: `hasDiscount = false` shows simple "Bundle (N items)" view
+- Principle: never invent display data from incomplete sources
 - Files Modified:
-  - `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts` (lines 649-659)
+  - `extensions/bundle-cart-transform-ts/src/cart_transform_run.ts` (lines 649-662)
 
 **Status:** Completed
