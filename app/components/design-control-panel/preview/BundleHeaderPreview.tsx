@@ -1,5 +1,10 @@
 import { Text } from "@shopify/polaris";
 
+const HIGHLIGHT_STYLE = {
+  outline: "2px dashed #5C6AC4",
+  outlineOffset: "4px",
+};
+
 interface BundleHeaderPreviewProps {
   activeSubSection: string;
   headerTabActiveBgColor: string;
@@ -46,18 +51,21 @@ export function BundleHeaderPreview(props: BundleHeaderPreviewProps) {
             justifyContent: "center",
             backgroundColor: "#FAFAFA"
           }}>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center", alignItems: "center", ...(activeSubSection === "headerTabs" ? HIGHLIGHT_STYLE : {}) }}>
               {/* Active Tab */}
               <button style={{
                 backgroundColor: headerTabActiveBgColor,
                 color: headerTabActiveTextColor,
                 borderRadius: `${headerTabRadius}px`,
                 padding: "10px 24px",
-                border: "none",
+                border: `2px solid ${headerTabActiveBgColor}`,
                 fontSize: "14px",
                 fontWeight: 600,
                 cursor: "pointer",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+                transform: "translateY(-2px)",
+                minHeight: "38px",
+                minWidth: "100px",
               }}>
                 Step 1
               </button>
@@ -105,12 +113,12 @@ export function BundleHeaderPreview(props: BundleHeaderPreviewProps) {
         </Text>
         <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
           {/* Header Text Preview */}
-          <div style={{ maxWidth: "397px", width: "100%", position: "relative" }}>
+          <div style={{ maxWidth: "397px", width: "100%", position: "relative", ...(activeSubSection === "headerText" ? HIGHLIGHT_STYLE : {}) }}>
             {/* Conditions Text */}
             <div style={{ marginBottom: "40px", position: "relative" }}>
               <h2 style={{
                 color: conditionsTextColor,
-                fontSize: `${conditionsTextFontSize * 2}px`,
+                fontSize: `${conditionsTextFontSize}px`,
                 fontWeight: 600,
                 margin: 0,
                 textAlign: "center",
@@ -124,7 +132,7 @@ export function BundleHeaderPreview(props: BundleHeaderPreviewProps) {
             <div style={{ position: "relative" }}>
               <p style={{
                 color: discountTextColor,
-                fontSize: `${discountTextFontSize * 1.2}px`,
+                fontSize: `${discountTextFontSize}px`,
                 fontWeight: 400,
                 margin: 0,
                 textAlign: "center",

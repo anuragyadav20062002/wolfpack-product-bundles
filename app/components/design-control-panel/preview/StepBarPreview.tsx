@@ -1,6 +1,11 @@
 import { Text } from "@shopify/polaris";
 import type { DesignSettings } from "../../../types/state.types";
 
+const HIGHLIGHT_STYLE = {
+  outline: "2px dashed #5C6AC4",
+  outlineOffset: "4px",
+};
+
 interface StepBarPreviewProps {
   activeSubSection: string;
   settings: DesignSettings;
@@ -49,6 +54,7 @@ export function StepBarPreview({ activeSubSection, settings }: StepBarPreviewPro
               backgroundColor: stepBarProgressEmptyColor,
               borderRadius: "4px",
               zIndex: 0,
+              ...(activeSubSection === "stepBarProgressBar" ? HIGHLIGHT_STYLE : {}),
             }}
           >
             {/* Progress Bar Filled */}
@@ -70,6 +76,7 @@ export function StepBarPreview({ activeSubSection, settings }: StepBarPreviewPro
               alignItems: "center",
               position: "relative",
               zIndex: 1,
+              ...(activeSubSection === "stepName" ? HIGHLIGHT_STYLE : {}),
             }}
           >
             {/* Step 1 - Completed */}
@@ -85,6 +92,7 @@ export function StepBarPreview({ activeSubSection, settings }: StepBarPreviewPro
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: "12px",
+                  ...(activeSubSection === "completedStep" ? HIGHLIGHT_STYLE : {}),
                 }}
               >
                 <svg
@@ -127,6 +135,7 @@ export function StepBarPreview({ activeSubSection, settings }: StepBarPreviewPro
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: "12px",
+                  ...(activeSubSection === "completedStep" ? HIGHLIGHT_STYLE : {}),
                 }}
               >
                 <svg
@@ -169,6 +178,7 @@ export function StepBarPreview({ activeSubSection, settings }: StepBarPreviewPro
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: "12px",
+                  ...(activeSubSection === "incompleteStep" ? HIGHLIGHT_STYLE : {}),
                 }}
               >
                 <span
@@ -204,6 +214,7 @@ export function StepBarPreview({ activeSubSection, settings }: StepBarPreviewPro
               border: `1px solid ${tabsBorderColor}`,
               borderRadius: `${tabsBorderRadius}px`,
               overflow: "hidden",
+              ...(activeSubSection === "stepBarTabs" ? HIGHLIGHT_STYLE : {}),
             }}
           >
             <div
