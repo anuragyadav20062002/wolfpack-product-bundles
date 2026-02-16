@@ -1614,16 +1614,6 @@ class BundleWidgetProductPage {
                 <div class="footer-discount-text"></div>
               </div>
 
-              <!-- Progress Bar Section - Between Price and Buttons -->
-              <div class="modal-footer-progress-section">
-                <div class="modal-footer-progress-bar">
-                  <div class="modal-footer-progress-fill"></div>
-                </div>
-                <div class="modal-footer-progress-details">
-                  <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
-                </div>
-              </div>
-
               <!-- Buttons Row - At Bottom -->
               <div class="modal-footer-buttons-row">
                 <button class="modal-nav-button prev-button">BACK</button>
@@ -2976,14 +2966,21 @@ class BundleWidgetProductPage {
 
   updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
-    const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
-    const progressBar = this.elements.modal.querySelector('.modal-footer-progress-bar');
-    const currentQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .current-quantity');
-    const targetQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .target-quantity');
     const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
-    const progressSection = this.elements.modal.querySelector('.modal-footer-progress-section');
 
-    if (!footerDiscountText || !progressFill) return;
+    if (!footerDiscountText) return;
+
+    // Check if any discount rules exist
+    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
+    const ruleToUse = discountInfo.applicableRule || nextRule;
+    const hasDiscountRules = !!ruleToUse;
+
+    // Hide messaging entirely when no discount rules are configured
+    if (discountSection) {
+      discountSection.style.display = (this.config.showDiscountMessaging && hasDiscountRules) ? 'block' : 'none';
+    }
+
+    if (!hasDiscountRules) return;
 
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
@@ -3009,45 +3006,6 @@ class BundleWidgetProductPage {
       );
       footerDiscountText.innerHTML = progressMessage;
       if (discountSection) discountSection.classList.remove('qualified');
-    }
-
-    // Update progress bar
-    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
-
-    let progressPercentage = 0;
-
-    if (ruleToUse) {
-      const conditionType = ruleToUse.condition?.type || 'quantity';
-      const targetValue = ruleToUse.condition?.value || 0;
-
-      if (conditionType === 'amount') {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-          targetQuantitySpan.textContent = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
-        }
-      } else {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = totalQuantity.toString();
-          targetQuantitySpan.textContent = targetValue.toString();
-        }
-      }
-    }
-
-    if (progressFill) {
-      progressFill.style.width = `${progressPercentage}%`;
-    }
-
-    // Show/hide sections based on config and whether discount rules actually exist
-    // Hide messaging entirely when no discount rules are configured (no ruleToUse means "No discount")
-    const hasDiscountRules = !!ruleToUse;
-    if (discountSection) {
-      discountSection.style.display = (this.config.showDiscountMessaging && hasDiscountRules) ? 'block' : 'none';
-    }
-    if (progressSection) {
-      progressSection.style.display = (this.config.showProgressBar && hasDiscountRules) ? 'block' : 'none';
     }
   }
 
