@@ -143,6 +143,16 @@ interface ComponentPricingItem {
 // ============================================================================
 
 /**
+ * Parse a float string safely — returns 0 on NaN/Infinity/undefined.
+ * Critical: one unguarded NaN cascades through every calculation.
+ */
+function safeParseFloat(value: string | undefined): number {
+  if (!value) return 0;
+  const num = parseFloat(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+/**
  * Parse JSON safely with error handling
  */
 function parseJSON<T>(value: string | undefined, defaultValue: T, context: string): T {
@@ -233,8 +243,9 @@ function calculateDiscountPercentage(
       break;
   }
 
-  // Clamp to valid 0-100 range
-  return Math.max(0, Math.min(100, result));
+  // Clamp to valid 0-100 range. NaN must be caught explicitly —
+  // Math.max(0, Math.min(100, NaN)) returns NaN, not 0.
+  return Number.isFinite(result) ? Math.max(0, Math.min(100, result)) : 0;
 }
 
 /**
@@ -404,6 +415,14 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       const parent = componentParents[0];
       const parentVariantId = parent.id;
 
+      if (!parentVariantId) {
+        Logger.error('Missing parent variant ID in component_parents', { phase: 'merge' }, {
+          bundleId,
+          lineId: line.id
+        });
+        continue;
+      }
+
       Logger.debug('Retrieved parent variant', { phase: 'merge' }, {
         bundleId,
         parentVariantId,
@@ -413,7 +432,7 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // Calculate bundle totals from ACTUAL selected component prices
       const totalQuantity = bundleComponentLines.reduce((sum, l) => sum + l.quantity, 0);
       const originalTotal = bundleComponentLines.reduce(
-        (sum, l) => sum + parseFloat(l.cost.totalAmount.amount),
+        (sum, l) => sum + safeParseFloat(l.cost.totalAmount.amount),
         0
       );
 
@@ -452,7 +471,7 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // Compact format: array of [title, qty, retailCents, bundleCents, discountPct, savingsCents]
       // This keeps the JSON well under Shopify's attribute value size limit (~255 chars)
       const componentDetails = bundleComponentLines.map((l, index) => {
-        const retailCents = Math.round(parseFloat(l.cost.amountPerQuantity.amount) * 100);
+        const retailCents = Math.round(safeParseFloat(l.cost.amountPerQuantity.amount) * 100);
         const bundleCents = Math.round(retailCents * (1 - discountPercentage / 100));
         const title = (l.merchandise.product?.title || `Component ${index + 1}`).slice(0, 25);
         return [title, l.quantity, retailCents, bundleCents, discountPercentage, retailCents - bundleCents];
@@ -574,7 +593,7 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       // Calculate bundle totals for discount calculation
       const totalQuantity = componentQuantities.reduce((sum, qty) => sum + qty, 0) * line.quantity;
-      const originalTotal = parseFloat(line.cost.totalAmount.amount);
+      const originalTotal = safeParseFloat(line.cost.totalAmount.amount);
 
       // Get price adjustment
       let discountPercentage = 0;

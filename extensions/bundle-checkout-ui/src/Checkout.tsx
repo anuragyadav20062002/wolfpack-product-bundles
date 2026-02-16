@@ -47,26 +47,32 @@ function parseComponents(json: string): ComponentDetail[] {
   const parsed = JSON.parse(json);
   if (!Array.isArray(parsed) || parsed.length === 0) return [];
 
+  // Safe number coercion — returns 0 on NaN/Infinity/non-numeric
+  const num = (v: unknown): number => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
   // Detect format: compact arrays vs legacy objects
   if (Array.isArray(parsed[0])) {
     return parsed.map((item: any[]) => ({
-      title: item[0] || '',
-      quantity: item[1] || 0,
-      retailPrice: item[2] || 0,
-      bundlePrice: item[3] || 0,
-      discountPercent: item[4] || 0,
-      savingsAmount: item[5] || 0,
+      title: String(item[0] ?? ''),
+      quantity: num(item[1]),
+      retailPrice: num(item[2]),
+      bundlePrice: num(item[3]),
+      discountPercent: num(item[4]),
+      savingsAmount: num(item[5]),
     }));
   }
 
   // Legacy object format
   return parsed.map((item: any) => ({
-    title: item.title || '',
-    quantity: item.quantity || 0,
-    retailPrice: item.retailPrice || 0,
-    bundlePrice: item.bundlePrice || 0,
-    discountPercent: item.discountPercent || 0,
-    savingsAmount: item.savingsAmount || 0,
+    title: String(item.title ?? ''),
+    quantity: num(item.quantity),
+    retailPrice: num(item.retailPrice),
+    bundlePrice: num(item.bundlePrice),
+    discountPercent: num(item.discountPercent),
+    savingsAmount: num(item.savingsAmount),
   }));
 }
 
@@ -96,7 +102,8 @@ export const BundlePricingExtension: FunctionComponent = () => {
   const currency = totalAmount?.currencyCode || 'USD';
 
   const formatMoney = (cents: number) => {
-    const amount = cents / 100;
+    const safeCents = Number.isFinite(cents) ? cents : 0;
+    const amount = safeCents / 100;
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
@@ -105,19 +112,30 @@ export const BundlePricingExtension: FunctionComponent = () => {
     }).format(amount);
   };
 
-  // Helper to safely format discount percentage
+  // Helper to safely format discount percentage — guards against NaN
   const formatPercent = (pct: unknown): string => {
     const num = Number(pct ?? 0);
+    if (!Number.isFinite(num)) return '0';
     return num.toFixed(num % 1 === 0 ? 0 : 2);
+  };
+
+  // Safe number parsing — returns 0 on NaN to prevent "NaN" display
+  const safeInt = (val: string | undefined): number => {
+    const n = parseInt(val ?? '0', 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const safeFloat = (val: string | undefined): number => {
+    const n = parseFloat(val ?? '0');
+    return Number.isFinite(n) ? n : 0;
   };
 
   // Bundle Parent with Expandable Components
   const bundleName = getAttr('_bundle_name') || 'Bundle';
-  const componentCount = parseInt(getAttr('_bundle_component_count') ?? '0', 10);
-  const totalRetailCents = parseInt(getAttr('_bundle_total_retail_cents') ?? '0', 10);
-  const totalBundleCents = parseInt(getAttr('_bundle_total_price_cents') ?? '0', 10);
-  const totalSavingsCents = parseInt(getAttr('_bundle_total_savings_cents') ?? '0', 10);
-  const discountPercent = parseFloat(getAttr('_bundle_discount_percent') ?? '0');
+  const componentCount = safeInt(getAttr('_bundle_component_count'));
+  const totalRetailCents = safeInt(getAttr('_bundle_total_retail_cents'));
+  const totalBundleCents = safeInt(getAttr('_bundle_total_price_cents'));
+  const totalSavingsCents = safeInt(getAttr('_bundle_total_savings_cents'));
+  const discountPercent = safeFloat(getAttr('_bundle_discount_percent'));
 
   let components: ComponentDetail[] = [];
   try {
