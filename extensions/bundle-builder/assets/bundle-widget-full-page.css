@@ -871,10 +871,10 @@
    PRODUCT GRID - MOBILE-FIRST RESPONSIVE GRID
    ============================================================================ */
 
-/* Mobile-first: Single column by default */
+/* Mobile-first: 2 columns by default */
 .full-page-product-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin: 16px 0;
   padding: 0 8px;
@@ -883,7 +883,7 @@
   overflow-x: hidden;
 }
 
-/* Tablet (640px+): 2 columns */
+/* Tablet (640px+): 2 columns with more spacing */
 @media (min-width: 640px) {
   .full-page-product-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1049,10 +1049,10 @@
 /* Product Title - Mobile-First */
 .product-title {
   color: var(--bundle-product-card-font-color, #111827);
-  font-size: 14px; /* Mobile: Readable minimum */
+  font-size: var(--bundle-product-card-font-size, 20px);
   font-weight: var(--bundle-product-card-font-weight, 600);
   text-align: center;
-  margin-bottom: 6px;
+  margin-bottom: -14px;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1062,32 +1062,10 @@
   overflow-wrap: break-word;
   flex-shrink: 0;
   position: relative;
-  letter-spacing: 0.1px;
-  line-height: 1.35;
+  letter-spacing: 0.2px;
+  line-height: 1.4;
   font-family: inherit;
-  min-height: calc(1.35em * 2);
-}
-
-/* Tablet (640px+): Larger title */
-@media (min-width: 640px) {
-  .product-title {
-    font-size: 15px;
-    margin-bottom: 8px;
-    line-height: 1.4;
-    min-height: calc(1.4em * 2);
-  }
-}
-
-/* Desktop (1024px+): Full title size */
-@media (min-width: 1024px) {
-  .product-title {
-    font-size: calc(var(--bundle-product-card-font-size, 16px) * 1);
-    font-weight: var(--bundle-product-card-font-weight, 700);
-    margin-bottom: 10px;
-    letter-spacing: 0.2px;
-    line-height: 1.4;
-    min-height: calc(1.4em * 2);
-  }
+  min-height: calc(1.4em * 2);
 }
 
 /* Price Row - Integrated into Product Card */
@@ -1250,7 +1228,7 @@
 /* Add to Bundle Button - Enhanced Style */
 .product-add-btn {
   width: 100%;
-  background: linear-gradient(135deg, var(--bundle-button-bg, #000000) 0%, rgba(0, 0, 0, 0.9) 100%);
+  background: var(--bundle-button-bg, #FF9000);
   color: var(--bundle-button-text-color, #FFFFFF);
   border: none;
   border-radius: var(--bundle-button-border-radius, 10px);
@@ -1296,10 +1274,10 @@
   justify-content: center;
   gap: 0;
   width: 100%;
-  background: var(--bundle-inline-qty-bg, #00BCD4);
+  background: var(--bundle-inline-qty-bg, #5f5d5d);
   border-radius: var(--bundle-button-border-radius, 10px);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+  box-shadow: 0 4px 12px rgba(95, 93, 93, 0.3);
 }
 
 .inline-qty-btn {
@@ -1914,8 +1892,8 @@
 }
 
 .footer-total-section .total-label {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 550;
   color: var(--bundle-full-page-footer-total-label-color, #333333);
   font-family: inherit;
 }
@@ -2075,12 +2053,11 @@
 .footer-products-tiles-wrapper {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: 16px;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 8px 12px;
-  /* Restrict to show ~3 products on desktop (each tile ~180px + 12px gap) */
-  max-width: 580px;
+  padding: 10px 44px;
+  max-width: 850px;
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   scroll-behavior: smooth;

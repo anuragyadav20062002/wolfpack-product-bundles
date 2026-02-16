@@ -24,8 +24,8 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   /* PRODUCT CARD */
   --bundle-product-card-bg: ${s.productCardBgColor || '#FFFFFF'};
   --bundle-product-card-font-color: ${s.productCardFontColor || globalPrimaryText};
-  --bundle-product-card-font-size: ${s.productCardFontSize || 16}px;
-  --bundle-product-card-font-weight: ${s.productCardFontWeight || 400};
+  --bundle-product-card-font-size: ${s.productCardFontSize || 20}px;
+  --bundle-product-card-font-weight: ${s.productCardFontWeight || 600};
   --bundle-product-card-image-fit: ${s.productCardImageFit || 'cover'};
   --bundle-product-cards-per-row: ${s.productCardsPerRow || 3};
   --bundle-product-price-display: ${s.productPriceVisibility !== false ? 'block' : 'none'};
@@ -38,7 +38,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-product-final-price-font-weight: ${s.productFinalPriceFontWeight || 700};
 
   /* BUTTON */
-  --bundle-button-bg: ${s.buttonBgColor || globalPrimaryButton};
+  --bundle-button-bg: ${s.buttonBgColor || '#FF9000'};
   --bundle-button-text-color: ${s.buttonTextColor || globalButtonText};
   --bundle-button-font-size: ${s.buttonFontSize || 16}px;
   --bundle-button-font-weight: ${s.buttonFontWeight || 600};
@@ -51,7 +51,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-variant-selector-border-radius: ${s.variantSelectorBorderRadius || 8}px;
 
   /* QUANTITY SELECTOR */
-  --bundle-quantity-selector-bg: ${s.quantitySelectorBgColor || globalPrimaryButton};
+  --bundle-quantity-selector-bg: ${s.quantitySelectorBgColor || '#5f5d5d'};
   --bundle-quantity-selector-text-color: ${s.quantitySelectorTextColor || globalButtonText};
   --bundle-quantity-selector-font-size: ${s.quantitySelectorFontSize || 16}px;
   --bundle-quantity-selector-border-radius: ${s.quantitySelectorBorderRadius || 8}px;

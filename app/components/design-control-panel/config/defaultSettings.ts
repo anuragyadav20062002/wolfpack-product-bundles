@@ -23,8 +23,8 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   // Product Card - Basic
   productCardBgColor: "#FFFFFF",
   productCardFontColor: "#000000",
-  productCardFontSize: 16,
-  productCardFontWeight: 400,
+  productCardFontSize: 20,
+  productCardFontWeight: 600,
   productCardImageFit: "cover",
   productCardsPerRow: 3,
   productTitleVisibility: true,
@@ -40,16 +40,16 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   productFinalPriceFontWeight: 700,
 
   // Button
-  buttonBgColor: "#000000",
+  buttonBgColor: "#FF9000",
   buttonTextColor: "#FFFFFF",
   buttonFontSize: 16,
   buttonFontWeight: 600,
   buttonBorderRadius: 8,
-  buttonHoverBgColor: "#333333",
+  buttonHoverBgColor: "#E68200",
   buttonAddToCartText: "Add to bundle",
 
   // Quantity Selector
-  quantitySelectorBgColor: "#000000",
+  quantitySelectorBgColor: "#5f5d5d",
   quantitySelectorTextColor: "#FFFFFF",
   quantitySelectorFontSize: 16,
   quantitySelectorBorderRadius: 8,
@@ -239,8 +239,8 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Product Card - Basic
   productCardBgColor: "#F9FAFB",
   productCardFontColor: "#111827",
-  productCardFontSize: 18,
-  productCardFontWeight: 500,
+  productCardFontSize: 20,
+  productCardFontWeight: 600,
   productCardImageFit: "contain",
   productCardsPerRow: 4,
   productTitleVisibility: true,
@@ -256,16 +256,16 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   productFinalPriceFontWeight: 700,
 
   // Button
-  buttonBgColor: "#7132FF",
+  buttonBgColor: "#FF9000",
   buttonTextColor: "#FFFFFF",
   buttonFontSize: 18,
   buttonFontWeight: 700,
   buttonBorderRadius: 12,
-  buttonHoverBgColor: "#5F2DD8",
+  buttonHoverBgColor: "#E68200",
   buttonAddToCartText: "Add to bundle",
 
   // Quantity Selector
-  quantitySelectorBgColor: "#7132FF",
+  quantitySelectorBgColor: "#5f5d5d",
   quantitySelectorTextColor: "#FFFFFF",
   quantitySelectorFontSize: 18,
   quantitySelectorBorderRadius: 12,
