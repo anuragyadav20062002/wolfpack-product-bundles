@@ -633,6 +633,16 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
             title, qty, pricing.retailPrice, pricing.bundlePrice,
             pricing.discountPercent, pricing.savingsAmount
           ]);
+        } else {
+          // Pricing missing for this component — still show it with zero prices
+          // so the checkout UI doesn't silently hide bundle items
+          Logger.warn('Missing pricing for component variant', { phase: 'expand' }, {
+            variantId,
+            index,
+            componentCount: componentReferences.length
+          });
+          const title = `Component ${index + 1}`.slice(0, 25);
+          componentDetails.push([title, qty, 0, 0, 0, 0]);
         }
       });
 
