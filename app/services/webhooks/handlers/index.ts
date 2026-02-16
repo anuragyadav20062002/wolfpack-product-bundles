@@ -23,3 +23,9 @@ export {
   handleCustomerRedact,
   handleShopRedact,
 } from './gdpr.server';
+
+// Lifecycle handlers
+export {
+  handleAppUninstalled,
+  handleScopesUpdate,
+} from './lifecycle.server';

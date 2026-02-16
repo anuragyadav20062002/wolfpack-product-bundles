@@ -6,5 +6,4 @@ export default Promise.all([
   flatRoutes({ rootDirectory: "routes/app" }),
   flatRoutes({ rootDirectory: "routes/auth" }),
   flatRoutes({ rootDirectory: "routes/assets" }),
-  flatRoutes({ rootDirectory: "routes/webhooks" }),
 ]).then((results) => results.flat());

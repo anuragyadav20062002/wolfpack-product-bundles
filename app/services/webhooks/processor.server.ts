@@ -32,6 +32,10 @@ import {
   handleCustomerRedact,
   handleShopRedact,
 } from "./handlers/gdpr.server";
+import {
+  handleAppUninstalled,
+  handleScopesUpdate,
+} from "./handlers/lifecycle.server";
 
 /**
  * Main webhook processor entry point
@@ -142,6 +146,16 @@ export class WebhookProcessor {
         case "shop/redact":
         case "SHOP_REDACT":
           result = await handleShopRedact(shopDomain, payload, webhookEvent.id);
+          break;
+
+        case "app/uninstalled":
+        case "APP_UNINSTALLED":
+          result = await handleAppUninstalled(shopDomain, payload);
+          break;
+
+        case "app/scopes_update":
+        case "APP_SCOPES_UPDATE":
+          result = await handleScopesUpdate(shopDomain, payload);
           break;
 
         default:

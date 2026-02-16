@@ -75,8 +75,6 @@ export default defineConfig({
           // Don't generate chunks for routes with minimal content
           if (chunkInfo.name && (
             chunkInfo.name.includes('api.create-bundle-discount') ||
-            chunkInfo.name.includes('webhooks.app.scopes_update') ||
-            chunkInfo.name.includes('webhooks.app.uninstalled') ||
             chunkInfo.name.includes('api.get-function-id') ||
             chunkInfo.name.includes('api.check-bundles') ||
             chunkInfo.name.includes('auth._')
@@ -91,8 +89,6 @@ export default defineConfig({
         if (warning.code === 'EMPTY_BUNDLE') {
           const knownEmptyRoutes = [
             'api.create-bundle-discount',
-            'webhooks.app.scopes_update', 
-            'webhooks.app.uninstalled',
             'api.get-function-id',
             'api.check-bundles',
             'auth._'
