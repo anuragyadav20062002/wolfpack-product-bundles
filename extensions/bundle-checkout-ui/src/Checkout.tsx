@@ -32,9 +32,6 @@ import {
   useTotalAmount,
 } from '@shopify/ui-extensions/checkout/preact';
 
-// Note: useCartLineTarget() returns CartLine type from @shopify/ui-extensions
-// which includes: id, merchandise, quantity, cost, attributes, discountAllocations, lineComponents
-
 interface ComponentDetail {
   variantId: string;
   title: string;
@@ -48,49 +45,29 @@ interface ComponentDetail {
 export const BundlePricingExtension: FunctionComponent = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Get the cart line item using the Preact hook
   const lineItem = useCartLineTarget();
   const totalAmount = useTotalAmount();
 
-  // DEBUG: Log extension execution
-  console.log('[BundleCheckoutUI] Extension rendered, lineItem:', lineItem);
-
   if (!lineItem) {
-    console.log('[BundleCheckoutUI] No lineItem found, returning null');
     return null;
   }
 
-  // Get attributes from the cart line
   const attributes = lineItem.attributes ?? [];
 
-  // DEBUG: Log all attributes
-  console.log('[BundleCheckoutUI] Cart line attributes:', attributes);
-  console.log('[BundleCheckoutUI] Merchandise title:', lineItem.merchandise?.title);
-
-  // Helper to get attribute value
   const getAttr = (key: string): string | undefined => {
     return attributes.find((attr) => attr.key === key)?.value;
   };
 
-  // Check if this is a bundle parent (Flex Bundles style)
   const isBundleParent = getAttr('_is_bundle_parent') === 'true';
-
-  // Also support legacy component-level display
   const isBundleComponent = getAttr('_is_bundle_component') === 'true';
 
-  // DEBUG: Log bundle detection
-  console.log('[BundleCheckoutUI] isBundleParent:', isBundleParent);
-  console.log('[BundleCheckoutUI] isBundleComponent:', isBundleComponent);
-
   if (!isBundleParent && !isBundleComponent) {
-    console.log('[BundleCheckoutUI] Not a bundle, returning null');
     return null;
   }
 
-  // Get currency from checkout cost
-  const currency = totalAmount?.currencyCode ?? 'USD';
+  // Use || instead of ?? to catch empty string which would cause Intl.NumberFormat to throw
+  const currency = totalAmount?.currencyCode || 'USD';
 
-  // Format prices using the shop's currency
   const formatMoney = (cents: number) => {
     const amount = cents / 100;
     return new Intl.NumberFormat(undefined, {
@@ -99,6 +76,12 @@ export const BundlePricingExtension: FunctionComponent = () => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+  };
+
+  // Helper to safely format discount percentage
+  const formatPercent = (pct: unknown): string => {
+    const num = Number(pct ?? 0);
+    return num.toFixed(num % 1 === 0 ? 0 : 2);
   };
 
   // ================================================================
@@ -112,7 +95,6 @@ export const BundlePricingExtension: FunctionComponent = () => {
     const totalSavingsCents = parseInt(getAttr('_bundle_total_savings_cents') ?? '0', 10);
     const discountPercent = parseFloat(getAttr('_bundle_discount_percent') ?? '0');
 
-    // Parse component details
     let components: ComponentDetail[] = [];
     try {
       const componentsJson = getAttr('_bundle_components');
@@ -120,7 +102,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
         components = JSON.parse(componentsJson);
       }
     } catch (e) {
-      console.error('[BundleCheckout] Failed to parse components:', e);
+      // JSON parse failed — likely truncated attribute value
     }
 
     const hasDiscount = totalSavingsCents > 0 || discountPercent > 0;
@@ -153,7 +135,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
               <s-stack direction="inline" gap="tight" inline-alignment="space-between">
                 <s-text size="small" tone="subdued">Percentage Savings:</s-text>
                 <s-badge tone="success">
-                  {discountPercent.toFixed(discountPercent % 1 === 0 ? 0 : 2)}%
+                  {formatPercent(discountPercent)}%
                 </s-badge>
               </s-stack>
 
@@ -180,7 +162,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
             <s-pressable onPress={toggleExpand}>
               <s-stack direction="inline" gap="tight" inline-alignment="start">
                 <s-text size="small" tone="subdued">
-                  {isExpanded ? `Hide ${componentCount} Items ▲` : `Show ${componentCount} Items ▼`}
+                  {isExpanded ? `Hide ${components.length} Items ▲` : `Show ${components.length} Items ▼`}
                 </s-text>
               </s-stack>
             </s-pressable>
@@ -193,7 +175,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
                     <s-divider />
                     <s-stack direction="block" gap="none">
                       <s-text size="small" emphasis="bold">
-                        {component.quantity}x Item {index + 1}
+                        {component.quantity}x {component.title || `Item ${index + 1}`}
                       </s-text>
                       <s-stack direction="inline" gap="tight" inline-alignment="space-between">
                         <s-text size="small" tone="subdued">Retail Price:</s-text>
@@ -210,7 +192,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
                       <s-stack direction="inline" gap="tight" inline-alignment="space-between">
                         <s-text size="small" tone="subdued">Percentage Savings:</s-text>
                         <s-text size="small" tone="success">
-                          {component.discountPercent.toFixed(component.discountPercent % 1 === 0 ? 0 : 2)}%
+                          {formatPercent(component.discountPercent)}%
                         </s-text>
                       </s-stack>
                       <s-stack direction="inline" gap="tight" inline-alignment="space-between">
@@ -264,7 +246,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
           <s-stack direction="inline" gap="tight" inline-alignment="space-between">
             <s-text size="small" tone="subdued">Percentage Savings:</s-text>
             <s-badge tone="success">
-              {discountPercent.toFixed(discountPercent % 1 === 0 ? 0 : 2)}%
+              {formatPercent(discountPercent)}%
             </s-badge>
           </s-stack>
 
