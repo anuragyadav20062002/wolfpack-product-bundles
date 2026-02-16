@@ -201,13 +201,13 @@ export const BundlePricingExtension: FunctionComponent = () => {
                     <s-stack direction="inline" gap="tight" inline-alignment="space-between">
                       <s-text size="small" tone="subdued">Retail Price:</s-text>
                       <s-text size="small" tone="subdued">
-                        {formatMoney(component.retailPrice)}
+                        {formatMoney(component.retailPrice * component.quantity)}
                       </s-text>
                     </s-stack>
                     <s-stack direction="inline" gap="tight" inline-alignment="space-between">
                       <s-text size="small" tone="subdued">Bundle Price:</s-text>
                       <s-text size="small">
-                        {formatMoney(component.bundlePrice)}
+                        {formatMoney(component.bundlePrice * component.quantity)}
                       </s-text>
                     </s-stack>
                     <s-stack direction="inline" gap="tight" inline-alignment="space-between">
@@ -219,7 +219,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
                     <s-stack direction="inline" gap="tight" inline-alignment="space-between">
                       <s-text size="small" tone="subdued">Exact Savings:</s-text>
                       <s-text size="small" tone="success">
-                        {formatMoney(component.savingsAmount)}
+                        {formatMoney(component.savingsAmount * component.quantity)}
                       </s-text>
                     </s-stack>
                   </s-stack>
