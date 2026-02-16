@@ -10,6 +10,7 @@
  */
 export interface ComponentPricing {
   variantId: string;        // "gid://shopify/ProductVariant/123"
+  title?: string;           // Product title (for checkout display)
   retailPrice: number;      // 9800 (cents) = $98.00
   bundlePrice: number;      // 8820 (cents) = $88.20
   discountPercent: number;  // 10.00 (percentage)

@@ -83,7 +83,7 @@ export async function updateBundleProductMetafields(
 
   // Batch fetch all variants WITH PRICES in a single query (for component pricing)
   // Array to collect component data for pricing calculation
-  const componentPricingData: Array<{ variantId: string; priceCents: number; quantity: number }> = [];
+  const componentPricingData: Array<{ variantId: string; priceCents: number; quantity: number; title?: string }> = [];
 
   if (productIdMap.length > 0) {
     const productIds = productIdMap.map(item => item.productId);
@@ -104,7 +104,8 @@ export async function updateBundleProductMetafields(
         componentPricingData.push({
           variantId: result.variantId,
           priceCents: result.priceCents || 0,
-          quantity: item.stepMinQuantity
+          quantity: item.stepMinQuantity,
+          title: result.title
         });
 
         console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${item.stepMinQuantity}, price ${result.priceCents} cents (from ${item.source})`);
