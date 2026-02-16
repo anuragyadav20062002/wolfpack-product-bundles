@@ -1,6 +1,11 @@
-import { Text, ChoiceList } from "@shopify/polaris";
+import { Text } from "@shopify/polaris";
 import { useState } from "react";
 import { ShoppingCartIcon } from "../icons";
+
+const HIGHLIGHT_STYLE = {
+  outline: "2px dashed #5C6AC4",
+  outlineOffset: "4px",
+};
 
 interface BundleFooterPreviewProps {
   activeSubSection: string;
@@ -31,6 +36,8 @@ interface BundleFooterPreviewProps {
   successMessageTextColor: string;
   successMessageBgColor: string;
 }
+
+type HighlightTarget = "footer" | "footerPrice" | "footerButton" | "footerDiscountProgress" | null;
 
 // Bundle type toggle component for preview
 function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: (value: string) => void }) {
@@ -70,41 +77,32 @@ function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: 
   );
 }
 
-export function BundleFooterPreview(props: BundleFooterPreviewProps) {
-  const [bundleType, setBundleType] = useState<string>("product_page");
-
-  const {
-    activeSubSection,
-    footerBgColor,
-    footerBorderRadius,
-    footerPadding,
-    footerTotalBgColor,
-    footerStrikePriceColor,
-    footerStrikeFontSize,
-    footerStrikeFontWeight,
-    footerFinalPriceColor,
-    footerFinalPriceFontSize,
-    footerFinalPriceFontWeight,
-    footerPriceVisibility,
-    footerBackButtonBgColor,
-    footerBackButtonTextColor,
-    footerBackButtonBorderColor,
-    footerBackButtonBorderRadius,
-    footerNextButtonBgColor,
-    footerNextButtonTextColor,
-    footerNextButtonBorderColor,
-    footerNextButtonBorderRadius,
-    footerDiscountTextVisibility,
-    footerProgressBarFilledColor,
-    footerProgressBarEmptyColor,
-    successMessageFontSize,
-    successMessageFontWeight,
-    successMessageTextColor,
-    successMessageBgColor,
-  } = props;
-
-  // Full-page bundle footer preview component
-  const FullPageFooterPreview = () => (
+// Shared full-page footer layout
+function FullPageFooterLayout({
+  highlightTarget,
+  footerBgColor,
+  footerBorderRadius,
+  footerPadding,
+  footerStrikePriceColor,
+  footerStrikeFontSize,
+  footerStrikeFontWeight,
+  footerFinalPriceColor,
+  footerFinalPriceFontSize,
+  footerFinalPriceFontWeight,
+  footerPriceVisibility,
+  footerBackButtonBgColor,
+  footerBackButtonTextColor,
+  footerBackButtonBorderColor,
+  footerBackButtonBorderRadius,
+  footerNextButtonBgColor,
+  footerNextButtonTextColor,
+  footerNextButtonBorderColor,
+  footerNextButtonBorderRadius,
+  footerDiscountTextVisibility,
+  footerProgressBarFilledColor,
+  footerProgressBarEmptyColor,
+}: Omit<BundleFooterPreviewProps, "activeSubSection" | "footerTotalBgColor" | "successMessageFontSize" | "successMessageFontWeight" | "successMessageTextColor" | "successMessageBgColor"> & { highlightTarget: HighlightTarget }) {
+  return (
     <div
       style={{
         backgroundColor: footerBgColor,
@@ -116,31 +114,16 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
         gap: "16px",
         border: "1px solid rgba(0, 0, 0, 0.1)",
         boxShadow: "0 -2px 8px rgba(0, 0, 0, 0.05)",
+        ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
       }}
     >
-      {/* Progress Section */}
+      {/* Discount Message (full-page footer only shows text, no progress bar) */}
       {footerDiscountTextVisibility && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{
+          ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
+        }}>
           <div style={{ fontSize: "13px", fontWeight: 500, color: "#374151", textAlign: "center" }}>
             Add 1 more item to get <strong style={{ color: footerProgressBarFilledColor }}>10% off</strong>
-          </div>
-          <div
-            style={{
-              width: "100%",
-              height: "6px",
-              backgroundColor: footerProgressBarEmptyColor,
-              borderRadius: "3px",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: "66%",
-                height: "100%",
-                backgroundColor: footerProgressBarFilledColor,
-                borderRadius: "3px",
-              }}
-            />
           </div>
         </div>
       )}
@@ -188,8 +171,11 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
 
         {/* Total Section (Center) */}
         {footerPriceVisibility && (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "11px", color: "#6B7280", marginBottom: "2px" }}>Total</div>
+          <div style={{
+            textAlign: "center",
+            ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
+          }}>
+            <div style={{ fontSize: "16px", color: "#1E1E1E", fontWeight: 600, marginBottom: "2px" }}>Total</div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span
                 style={{
@@ -215,7 +201,11 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
         )}
 
         {/* Navigation Buttons (Right) */}
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div style={{
+          display: "flex",
+          gap: "12px",
+          ...(highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}),
+        }}>
           <button
             style={{
               backgroundColor: footerBackButtonBgColor,
@@ -248,381 +238,265 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
       </div>
     </div>
   );
+}
 
-  // Bundle Footer - Main footer subsection
-  if (activeSubSection === "footer") {
+// Shared product-page footer layout
+function ProductPageFooterLayout({
+  highlightTarget,
+  footerBgColor,
+  footerBorderRadius,
+  footerPadding,
+  footerTotalBgColor,
+  footerStrikePriceColor,
+  footerStrikeFontSize,
+  footerStrikeFontWeight,
+  footerFinalPriceColor,
+  footerFinalPriceFontSize,
+  footerFinalPriceFontWeight,
+  footerPriceVisibility,
+  footerBackButtonBgColor,
+  footerBackButtonTextColor,
+  footerBackButtonBorderColor,
+  footerBackButtonBorderRadius,
+  footerNextButtonBgColor,
+  footerNextButtonTextColor,
+  footerNextButtonBorderColor,
+  footerNextButtonBorderRadius,
+}: {
+  highlightTarget: HighlightTarget;
+  footerBgColor: string;
+  footerBorderRadius: number;
+  footerPadding: number;
+  footerTotalBgColor: string;
+  footerStrikePriceColor: string;
+  footerStrikeFontSize: number;
+  footerStrikeFontWeight: number;
+  footerFinalPriceColor: string;
+  footerFinalPriceFontSize: number;
+  footerFinalPriceFontWeight: number;
+  footerPriceVisibility: boolean;
+  footerBackButtonBgColor: string;
+  footerBackButtonTextColor: string;
+  footerBackButtonBorderColor: string;
+  footerBackButtonBorderRadius: number;
+  footerNextButtonBgColor: string;
+  footerNextButtonTextColor: string;
+  footerNextButtonBorderColor: string;
+  footerNextButtonBorderRadius: number;
+}) {
+  return (
+    <div
+      style={{
+        backgroundColor: footerBgColor,
+        borderRadius: `${footerBorderRadius}px`,
+        padding: "12px 24px",
+        minWidth: "561px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        borderTop: "1px solid #E5E7EB",
+        boxShadow: "0 -2px 8px rgba(0,0,0,0.06)",
+        ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
+      }}
+    >
+      {/* Centered Content */}
+      <div
+        style={{
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "15px",
+        }}
+      >
+        {/* Total Pill */}
+        {footerPriceVisibility !== false && (
+          <div
+            style={{
+              backgroundColor: footerTotalBgColor,
+              padding: "10px 20px",
+              borderRadius: "8px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "14px",
+              fontWeight: 500,
+              position: "relative",
+              ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
+            }}
+          >
+            <span style={{
+              color: footerStrikePriceColor,
+              fontSize: `${footerStrikeFontSize}px`,
+              fontWeight: footerStrikeFontWeight,
+              textDecoration: "line-through",
+            }}>
+              $24.99
+            </span>
+            <span style={{
+              color: footerFinalPriceColor,
+              fontSize: `${footerFinalPriceFontSize}px`,
+              fontWeight: footerFinalPriceFontWeight,
+            }}>
+              $19.99
+            </span>
+            <span style={{ color: "#666" }}>|</span>
+            <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+              2
+              <ShoppingCartIcon width={18} height={18} color="#666" />
+            </span>
+          </div>
+        )}
+
+        {/* Buttons Row */}
+        <div
+          style={{
+            display: "flex",
+            gap: "15px",
+            alignItems: "center",
+            ...(highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}),
+          }}
+        >
+          {/* Back Button */}
+          <button
+            style={{
+              backgroundColor: footerBackButtonBgColor,
+              color: footerBackButtonTextColor,
+              border: `2px solid ${footerBackButtonBorderColor}`,
+              borderRadius: `${footerBackButtonBorderRadius}px`,
+              padding: "10px 28px",
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            BACK
+          </button>
+
+          {/* Next Button */}
+          <button
+            style={{
+              backgroundColor: footerNextButtonBgColor,
+              color: footerNextButtonTextColor,
+              border: `2px solid ${footerNextButtonBorderColor}`,
+              borderRadius: `${footerNextButtonBorderRadius}px`,
+              padding: "10px 28px",
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            }}
+          >
+            NEXT
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BundleFooterPreview(props: BundleFooterPreviewProps) {
+  const [bundleType, setBundleType] = useState<string>("product_page");
+
+  const {
+    activeSubSection,
+    footerBgColor,
+    footerBorderRadius,
+    footerPadding,
+    footerTotalBgColor,
+    footerStrikePriceColor,
+    footerStrikeFontSize,
+    footerStrikeFontWeight,
+    footerFinalPriceColor,
+    footerFinalPriceFontSize,
+    footerFinalPriceFontWeight,
+    footerPriceVisibility,
+    footerBackButtonBgColor,
+    footerBackButtonTextColor,
+    footerBackButtonBorderColor,
+    footerBackButtonBorderRadius,
+    footerNextButtonBgColor,
+    footerNextButtonTextColor,
+    footerNextButtonBorderColor,
+    footerNextButtonBorderRadius,
+    footerDiscountTextVisibility,
+    footerProgressBarFilledColor,
+    footerProgressBarEmptyColor,
+    successMessageFontSize,
+    successMessageFontWeight,
+    successMessageTextColor,
+    successMessageBgColor,
+  } = props;
+
+  const highlightTarget = activeSubSection as HighlightTarget;
+
+  const sharedProductPageProps = {
+    highlightTarget,
+    footerBgColor,
+    footerBorderRadius,
+    footerPadding,
+    footerTotalBgColor,
+    footerStrikePriceColor,
+    footerStrikeFontSize,
+    footerStrikeFontWeight,
+    footerFinalPriceColor,
+    footerFinalPriceFontSize,
+    footerFinalPriceFontWeight,
+    footerPriceVisibility,
+    footerBackButtonBgColor,
+    footerBackButtonTextColor,
+    footerBackButtonBorderColor,
+    footerBackButtonBorderRadius,
+    footerNextButtonBgColor,
+    footerNextButtonTextColor,
+    footerNextButtonBorderColor,
+    footerNextButtonBorderRadius,
+  };
+
+  const sharedFullPageProps = {
+    highlightTarget,
+    footerBgColor,
+    footerBorderRadius,
+    footerPadding,
+    footerStrikePriceColor,
+    footerStrikeFontSize,
+    footerStrikeFontWeight,
+    footerFinalPriceColor,
+    footerFinalPriceFontSize,
+    footerFinalPriceFontWeight,
+    footerPriceVisibility,
+    footerBackButtonBgColor,
+    footerBackButtonTextColor,
+    footerBackButtonBorderColor,
+    footerBackButtonBorderRadius,
+    footerNextButtonBgColor,
+    footerNextButtonTextColor,
+    footerNextButtonBorderColor,
+    footerNextButtonBorderRadius,
+    footerDiscountTextVisibility,
+    footerProgressBarFilledColor,
+    footerProgressBarEmptyColor,
+  };
+
+  // Subsection title mapping
+  const titles: Record<string, string> = {
+    footer: "Footer",
+    footerPrice: "Price",
+    footerButton: "Button",
+    footerDiscountProgress: "Discount Text & Progress Bar",
+  };
+
+  // For footerDiscountProgress, show dedicated discount/progress layout when product_page
+  if (activeSubSection === "footerDiscountProgress" && bundleType === "product_page") {
     return (
       <div style={{ textAlign: "center", position: "relative" }}>
         <Text as="h3" variant="headingLg" fontWeight="semibold">
-          Footer
+          {titles[activeSubSection]}
         </Text>
         <div style={{ marginTop: "24px" }}>
           <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
         </div>
         <div style={{ marginTop: "24px", display: "inline-block", position: "relative" }}>
-          {bundleType === "full_page" ? (
-            <FullPageFooterPreview />
-          ) : (
-            /* Product Page Bundle Footer Container */
-            <div
-              style={{
-                backgroundColor: footerBgColor,
-                borderRadius: `${footerBorderRadius}px`,
-                padding: `${footerPadding}px`,
-                minWidth: "561px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
-              }}
-            >
-              {/* Centered Content */}
-              <div
-                style={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "15px",
-                }}
-              >
-                {/* Total Pill */}
-                <div
-                  style={{
-                    backgroundColor: footerTotalBgColor,
-                    padding: "6px 16px",
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    position: "relative",
-                  }}
-                >
-                  <span style={{
-                    color: footerStrikePriceColor,
-                    fontSize: `${footerStrikeFontSize}px`,
-                    fontWeight: footerStrikeFontWeight,
-                    textDecoration: "line-through",
-                  }}>
-                    $24.99
-                  </span>
-                  <span style={{
-                    color: footerFinalPriceColor,
-                    fontSize: `${footerFinalPriceFontSize}px`,
-                    fontWeight: footerFinalPriceFontWeight,
-                  }}>
-                    $19.99
-                  </span>
-                  <span style={{ color: "#666" }}>|</span>
-                  <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                    2
-                    <ShoppingCartIcon width={18} height={18} color="#666" />
-                  </span>
-                </div>
-
-                {/* Buttons Row */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "15px",
-                    alignItems: "center",
-                  }}
-                >
-                  {/* Back Button */}
-                  <button
-                    style={{
-                      backgroundColor: footerBackButtonBgColor,
-                      color: footerBackButtonTextColor,
-                      border: `1px solid ${footerBackButtonBorderColor}`,
-                      borderRadius: `${footerBackButtonBorderRadius}px`,
-                      padding: "12px 56px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    BACK
-                  </button>
-
-                  {/* Next Button */}
-                  <button
-                    style={{
-                      backgroundColor: footerNextButtonBgColor,
-                      color: footerNextButtonTextColor,
-                      border: `1px solid ${footerNextButtonBorderColor}`,
-                      borderRadius: `${footerNextButtonBorderRadius}px`,
-                      padding: "12px 56px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                    }}
-                  >
-                    NEXT
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        <div style={{ marginTop: "16px" }}>
-          <Text as="p" variant="bodySm" tone="subdued">
-            {bundleType === "full_page" ? "Full-page bundle footer layout" : "Product-page bundle footer layout"}
-          </Text>
-        </div>
-      </div>
-    );
-  }
-
-  // Bundle Footer - Price subsection
-  if (activeSubSection === "footerPrice") {
-    return (
-      <div style={{ textAlign: "center", position: "relative" }}>
-        <Text as="h3" variant="headingLg" fontWeight="semibold">
-          Price
-        </Text>
-        <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-          {/* Bundle Footer Container */}
-          <div
-            style={{
-              backgroundColor: footerBgColor,
-              borderRadius: `${footerBorderRadius}px`,
-              padding: `${footerPadding}px`,
-              minWidth: "561px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-            }}
-          >
-            {/* Centered Content */}
-            <div
-              style={{
-                display: "inline-flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "15px",
-              }}
-            >
-              {/* Total Pill with Price Label */}
-              {footerPriceVisibility && (
-                <div
-                  style={{
-                    backgroundColor: footerTotalBgColor,
-                    padding: "6px 16px",
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    position: "relative",
-                  }}
-                >
-                  <span style={{
-                    color: footerStrikePriceColor,
-                    fontSize: `${footerStrikeFontSize}px`,
-                    fontWeight: footerStrikeFontWeight,
-                    textDecoration: "line-through",
-                  }}>
-                    $24.99
-                  </span>
-                  <span style={{
-                    color: footerFinalPriceColor,
-                    fontSize: `${footerFinalPriceFontSize}px`,
-                    fontWeight: footerFinalPriceFontWeight,
-                  }}>
-                    $19.99
-                  </span>
-                  <span style={{ color: "#666" }}>|</span>
-                  <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                    2
-                    <ShoppingCartIcon width={18} height={18} color="#666" />
-                  </span>
-                </div>
-              )}
-
-              {/* Buttons Row */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "15px",
-                  alignItems: "center",
-                }}
-              >
-                {/* Back Button */}
-                <button
-                  style={{
-                    backgroundColor: footerBackButtonBgColor,
-                    color: footerBackButtonTextColor,
-                    border: `1px solid ${footerBackButtonBorderColor}`,
-                    borderRadius: `${footerBackButtonBorderRadius}px`,
-                    padding: "12px 56px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  BACK
-                </button>
-
-                {/* Next Button */}
-                <button
-                  style={{
-                    backgroundColor: footerNextButtonBgColor,
-                    color: footerNextButtonTextColor,
-                    border: `1px solid ${footerNextButtonBorderColor}`,
-                    borderRadius: `${footerNextButtonBorderRadius}px`,
-                    padding: "12px 56px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  NEXT
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Bundle Footer - Button subsection
-  if (activeSubSection === "footerButton") {
-    return (
-      <div style={{ textAlign: "center", position: "relative" }}>
-        <Text as="h3" variant="headingLg" fontWeight="semibold">
-          Button
-        </Text>
-        <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
-          {/* Bundle Footer Container */}
-          <div
-            style={{
-              backgroundColor: footerBgColor,
-              borderRadius: `${footerBorderRadius}px`,
-              padding: `${footerPadding}px`,
-              minWidth: "561px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-            }}
-          >
-            {/* Centered Content */}
-            <div
-              style={{
-                display: "inline-flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "15px",
-              }}
-            >
-              {/* Total Pill */}
-              <div
-                style={{
-                  backgroundColor: footerTotalBgColor,
-                  padding: "6px 16px",
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                }}
-              >
-                <span style={{
-                  color: footerStrikePriceColor,
-                  fontSize: `${footerStrikeFontSize}px`,
-                  fontWeight: footerStrikeFontWeight,
-                  textDecoration: "line-through",
-                }}>
-                  $24.99
-                </span>
-                <span style={{
-                  color: footerFinalPriceColor,
-                  fontSize: `${footerFinalPriceFontSize}px`,
-                  fontWeight: footerFinalPriceFontWeight,
-                }}>
-                  $19.99
-                </span>
-                <span style={{ color: "#666" }}>|</span>
-                <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                  2
-                  <ShoppingCartIcon width={18} height={18} color="#666" />
-                </span>
-              </div>
-
-              {/* Buttons Row with labels */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "15px",
-                  alignItems: "center",
-                }}
-              >
-                {/* Back Button */}
-                <button
-                  style={{
-                    backgroundColor: footerBackButtonBgColor,
-                    color: footerBackButtonTextColor,
-                    border: `1px solid ${footerBackButtonBorderColor}`,
-                    borderRadius: `${footerBackButtonBorderRadius}px`,
-                    padding: "12px 56px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    position: "relative",
-                  }}
-                >
-                  BACK
-                </button>
-
-                {/* Next Button */}
-                <button
-                  style={{
-                    backgroundColor: footerNextButtonBgColor,
-                    color: footerNextButtonTextColor,
-                    border: `1px solid ${footerNextButtonBorderColor}`,
-                    borderRadius: `${footerNextButtonBorderRadius}px`,
-                    padding: "12px 56px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    position: "relative",
-                  }}
-                >
-                  NEXT
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Bundle Footer - Discount & Progress Bar subsection
-  if (activeSubSection === "footerDiscountProgress") {
-    return (
-      <div style={{ textAlign: "center", position: "relative" }}>
-        <Text as="h3" variant="headingLg" fontWeight="semibold">
-          Discount Text & Progress Bar
-        </Text>
-        <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
           {/* Bundle Footer Messaging Container */}
           <div
             style={{
@@ -632,6 +506,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
               minWidth: "422px",
               maxWidth: "500px",
               position: "relative",
+              ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
             }}
           >
             {/* Discount Text */}
@@ -724,5 +599,27 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     );
   }
 
-  return null;
+  // All other subsections: show toggle + shared footer layout
+  return (
+    <div style={{ textAlign: "center", position: "relative" }}>
+      <Text as="h3" variant="headingLg" fontWeight="semibold">
+        {titles[activeSubSection] ?? activeSubSection}
+      </Text>
+      <div style={{ marginTop: "24px" }}>
+        <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
+      </div>
+      <div style={{ marginTop: "24px", display: "inline-block", position: "relative" }}>
+        {bundleType === "full_page" ? (
+          <FullPageFooterLayout {...sharedFullPageProps} />
+        ) : (
+          <ProductPageFooterLayout {...sharedProductPageProps} />
+        )}
+      </div>
+      <div style={{ marginTop: "16px" }}>
+        <Text as="p" variant="bodySm" tone="subdued">
+          {bundleType === "full_page" ? "Full-page bundle footer layout" : "Product-page bundle footer layout"}
+        </Text>
+      </div>
+    </div>
+  );
 }

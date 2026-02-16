@@ -19,5 +19,9 @@ handle = "bundle-checkout-ui"
   module = "./src/index.tsx"
   target = "purchase.checkout.cart-line-item.render-after"
 
+  [[extensions.targeting]]
+  module = "./src/index.tsx"
+  target = "purchase.thank-you.cart-line-item.render-after"
+
   [extensions.capabilities]
   api_access = true

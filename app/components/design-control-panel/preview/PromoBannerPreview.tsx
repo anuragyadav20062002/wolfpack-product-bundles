@@ -1,5 +1,10 @@
 import { Text } from "@shopify/polaris";
 
+const HIGHLIGHT_STYLE = {
+  outline: "2px dashed #5C6AC4",
+  outlineOffset: "4px",
+};
+
 interface PromoBannerPreviewProps {
   promoBannerEnabled: boolean;
   promoBannerBgColor: string;
@@ -50,6 +55,7 @@ export function PromoBannerPreview(props: PromoBannerPreviewProps) {
             position: "relative",
             boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
             opacity: promoBannerEnabled ? 1 : 0.5,
+            ...HIGHLIGHT_STYLE,
           }}
         >
           {/* Disabled Badge */}

@@ -1,6 +1,12 @@
 import { Text } from "@shopify/polaris";
 
+const HIGHLIGHT_STYLE = {
+  outline: "2px dashed #5C6AC4",
+  outlineOffset: "4px",
+};
+
 interface ProductCardPreviewProps {
+  activeSubSection: string;
   productCardBgColor: string;
   productCardFontColor: string;
   productCardFontSize: number;
@@ -55,6 +61,7 @@ interface ProductCardPreviewProps {
 
 export function ProductCardPreview(props: ProductCardPreviewProps) {
   const {
+    activeSubSection,
     productCardBgColor,
     productCardFontColor,
     productCardFontSize,
@@ -120,6 +127,7 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
           position: "relative",
           display: "flex",
           flexDirection: "column",
+          ...(activeSubSection === "productCard" ? HIGHLIGHT_STYLE : {}),
         }}
       >
         {/* Checkmark Badge for Selected State */}
@@ -173,71 +181,74 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
 
         {/* Content Container with Flex Grow */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-          {/* Product Title - Conditional Rendering */}
-          {productTitleVisibility && (
-            <div
-              style={{
-                color: productCardFontColor,
-                fontSize: `${productCardFontSize}px`,
-                fontWeight: productCardFontWeight,
+          {/* Typography Area (Title + Price) */}
+          <div style={activeSubSection === "productCardTypography" ? HIGHLIGHT_STYLE : {}}>
+            {/* Product Title - Conditional Rendering */}
+            {productTitleVisibility && (
+              <div
+                style={{
+                  color: productCardFontColor,
+                  fontSize: `${productCardFontSize}px`,
+                  fontWeight: productCardFontWeight,
+                  textAlign: "center",
+                  marginBottom: "8px",
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  lineHeight: 1.4,
+                  minHeight: "calc(1.4em * 2)",
+                  flexShrink: 0,
+                  position: "relative",
+                }}
+              >
+                PRODUCT NAME
+              </div>
+            )}
+
+            {/* Prices */}
+            {productPriceVisibility && (
+              <div style={{
+                margin: "12px 0",
                 textAlign: "center",
-                marginBottom: "8px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
                 flexShrink: 0,
                 position: "relative",
-              }}
-            >
-              PRODUCT NAME
-            </div>
-          )}
-
-          {/* Prices */}
-          {productPriceVisibility && (
-            <div style={{
-              margin: "12px 0",
-              textAlign: "center",
-              flexShrink: 0,
-              position: "relative",
-              backgroundColor: productPriceBgColor,
-              padding: "10px 12px",
-              borderRadius: "10px",
-              border: "1px solid rgba(0, 0, 0, 0.06)"
-            }}>
-              <span
-                style={{
-                  color: productStrikePriceColor,
-                  fontSize: `${productStrikeFontSize}px`,
-                  fontWeight: productStrikeFontWeight,
-                  textDecoration: "line-through",
-                  marginRight: "8px",
-                }}
-              >
-                $19.99
-              </span>
-              <span
-                style={{
-                  color: productFinalPriceColor,
-                  fontSize: `${productFinalPriceFontSize}px`,
-                  fontWeight: productFinalPriceFontWeight,
-                  letterSpacing: "0.3px"
-                }}
-              >
-                $14.99
-              </span>
-            </div>
-          )}
+              }}>
+                <span
+                  style={{
+                    color: productStrikePriceColor,
+                    fontSize: `${productStrikeFontSize}px`,
+                    fontWeight: productStrikeFontWeight,
+                    textDecoration: "line-through",
+                    marginRight: "8px",
+                  }}
+                >
+                  $19.99
+                </span>
+                <span
+                  style={{
+                    color: productFinalPriceColor,
+                    fontSize: `${productFinalPriceFontSize}px`,
+                    fontWeight: productFinalPriceFontWeight,
+                  }}
+                >
+                  $14.99
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Spacer */}
           <div style={{ flex: 1, minHeight: "8px" }} />
 
+          {/* Variant & Quantity Selectors */}
+          <div style={activeSubSection === "quantityVariantSelector" ? HIGHLIGHT_STYLE : {}}>
           {/* Variant Selector */}
           <div style={{ marginBottom: "12px", flexShrink: 0, position: "relative" }}>
             <select
               style={{
                 width: "100%",
-                padding: "10px 12px",
+                padding: "10px 14px",
                 borderRadius: `${variantSelectorBorderRadius}px`,
                 border: "1px solid #D1D1D1",
                 backgroundColor: variantSelectorBgColor,
@@ -254,27 +265,28 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
             </select>
           </div>
 
-          {/* Quantity Selector */}
-          <div style={{ marginBottom: "12px", flexShrink: 0, position: "relative", display: "flex", justifyContent: "center" }}>
+          {/* Inline Quantity Controls (matches storefront .inline-quantity-controls) */}
+          <div style={{ marginBottom: "12px", flexShrink: 0, position: "relative" }}>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "0px",
-                backgroundColor: quantitySelectorBgColor,
-                borderRadius: `${quantitySelectorBorderRadius}px`,
+                width: "100%",
+                backgroundColor: buttonBgColor,
+                borderRadius: `${buttonBorderRadius}px`,
                 overflow: "hidden",
-                border: "1px solid #D1D1D1",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
               }}
             >
               {/* Minus Button */}
               <button
                 style={{
                   backgroundColor: "transparent",
-                  color: quantitySelectorTextColor,
+                  color: buttonTextColor,
                   border: "none",
-                  padding: "10px 16px",
-                  fontSize: "18px",
+                  width: "48px",
+                  height: "48px",
+                  fontSize: "24px",
                   fontWeight: "bold",
                   cursor: "pointer",
                   display: "flex",
@@ -288,11 +300,10 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               {/* Quantity Display */}
               <div
                 style={{
-                  color: quantitySelectorTextColor,
+                  color: buttonTextColor,
                   fontSize: "16px",
-                  fontWeight: 500,
-                  padding: "0 16px",
-                  minWidth: "40px",
+                  fontWeight: 600,
+                  flex: 1,
                   textAlign: "center",
                 }}
               >
@@ -303,10 +314,11 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               <button
                 style={{
                   backgroundColor: "transparent",
-                  color: quantitySelectorTextColor,
+                  color: buttonTextColor,
                   border: "none",
-                  padding: "10px 16px",
-                  fontSize: "18px",
+                  width: "48px",
+                  height: "48px",
+                  fontSize: "24px",
                   fontWeight: "bold",
                   cursor: "pointer",
                   display: "flex",
@@ -318,16 +330,17 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               </button>
             </div>
           </div>
+          </div>
 
           {/* Add to Bundle Button */}
           <button
             style={{
               width: "100%",
-              backgroundColor: buttonBgColor,
+              background: `linear-gradient(135deg, ${buttonBgColor} 0%, rgba(0,0,0,0.9) 100%)`,
               color: buttonTextColor,
               border: "none",
               borderRadius: `${buttonBorderRadius}px`,
-              padding: "12px 24px",
+              padding: "14px 20px",
               fontSize: `${buttonFontSize}px`,
               fontWeight: buttonFontWeight,
               cursor: "pointer",
@@ -336,6 +349,11 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
               position: "relative",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              marginTop: "auto",
+              ...(activeSubSection === "button" ? HIGHLIGHT_STYLE : {}),
             }}
           >
             {buttonAddToCartText}
@@ -383,22 +401,32 @@ export function ProductCardPreview(props: ProductCardPreviewProps) {
             $14.99
           </div>
 
-          {/* Modal Variant Selector */}
-          <select
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              borderRadius: `${modalVariantBorderRadius}px`,
-              border: "1px solid #D1D1D1",
-              backgroundColor: variantSelectorBgColor,
-              color: variantSelectorTextColor,
-              fontSize: "14px",
-              marginBottom: "16px",
-              cursor: "pointer",
-            }}
-          >
-            <option>Select Size</option>
-          </select>
+          {/* Modal Variant Buttons */}
+          <div style={{ marginBottom: "16px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 500, color: productCardFontColor, marginBottom: "8px" }}>
+              Size: <span style={{ fontWeight: 600 }}>M</span>
+            </div>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {["S", "M", "L"].map((size) => (
+                <button
+                  key={size}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: `${modalVariantBorderRadius}px`,
+                    border: size === "M" ? "2px solid #000" : "1px solid #D1D1D1",
+                    backgroundColor: size === "M" ? "#F3F4F6" : "#FFFFFF",
+                    color: productCardFontColor,
+                    fontSize: "13px",
+                    fontWeight: size === "M" ? 600 : 400,
+                    cursor: "pointer",
+                    minWidth: "44px",
+                  }}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Add To Box Button */}
           <button

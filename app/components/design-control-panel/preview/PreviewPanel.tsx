@@ -5,6 +5,7 @@ import { BundleHeaderPreview } from "./BundleHeaderPreview";
 import { GeneralPreview } from "./GeneralPreview";
 import { StepBarPreview } from "./StepBarPreview";
 import { PromoBannerPreview } from "./PromoBannerPreview";
+import { GlobalColorsPreview } from "./GlobalColorsPreview";
 
 interface PreviewPanelProps {
   activeSubSection: string;
@@ -16,9 +17,23 @@ interface PreviewPanelProps {
  * preview based on the active subsection.
  */
 export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) {
-  // Global Colors and Custom CSS - No preview needed
-  if (activeSubSection === "globalColors" || activeSubSection === "customCss") {
+  // Custom CSS - No preview needed
+  if (activeSubSection === "customCss") {
     return null;
+  }
+
+  // Global Colors preview
+  if (activeSubSection === "globalColors") {
+    return (
+      <GlobalColorsPreview
+        globalPrimaryButtonColor={settings.globalPrimaryButtonColor}
+        globalButtonTextColor={settings.globalButtonTextColor}
+        globalPrimaryTextColor={settings.globalPrimaryTextColor}
+        globalSecondaryTextColor={settings.globalSecondaryTextColor}
+        globalFooterBgColor={settings.globalFooterBgColor}
+        globalFooterTextColor={settings.globalFooterTextColor}
+      />
+    );
   }
 
   // Promo Banner subsection (Full-page bundles only)
@@ -120,6 +135,7 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
   // Product Card subsections (default) - productCard, productCardTypography, button, quantityVariantSelector
   return (
     <ProductCardPreview
+      activeSubSection={activeSubSection}
       productCardBgColor={settings.productCardBgColor}
       productCardFontColor={settings.productCardFontColor}
       productCardFontSize={settings.productCardFontSize}

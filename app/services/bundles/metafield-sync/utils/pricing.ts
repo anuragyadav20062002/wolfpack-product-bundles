@@ -18,7 +18,7 @@ import type { ComponentPricing } from "../types";
  * @returns Array of ComponentPricing objects with all values in cents
  */
 export function calculateComponentPricing(
-  components: Array<{ variantId: string; priceCents: number; quantity: number }>,
+  components: Array<{ variantId: string; priceCents: number; quantity: number; title?: string }>,
   discountMethod: string,
   discountValue: number
 ): ComponentPricing[] {
@@ -39,6 +39,7 @@ export function calculateComponentPricing(
     console.log("   - Total retail is 0, returning components with no discount");
     return components.map(component => ({
       variantId: component.variantId,
+      ...(component.title && { title: component.title }),
       retailPrice: component.priceCents,
       bundlePrice: component.priceCents,
       discountPercent: 0,
@@ -85,6 +86,7 @@ export function calculateComponentPricing(
 
     const pricing: ComponentPricing = {
       variantId: component.variantId,
+      ...(component.title && { title: component.title }),
       retailPrice: retailPriceCents,
       bundlePrice: bundlePriceCents,
       discountPercent: Math.round(componentDiscountPercent * 100) / 100, // Round to 2 decimals

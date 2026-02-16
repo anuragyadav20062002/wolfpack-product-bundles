@@ -131,6 +131,7 @@ interface ComponentParent {
  */
 interface ComponentPricingItem {
   variantId: string;        // "gid://shopify/ProductVariant/123"
+  title?: string;           // Product title (optional for backwards compat)
   retailPrice: number;      // Price in cents (e.g., 9800 = $98.00)
   bundlePrice: number;      // Discounted price in cents
   discountPercent: number;  // Discount percentage (e.g., 10.00)
@@ -140,6 +141,16 @@ interface ComponentPricingItem {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Parse a float string safely — returns 0 on NaN/Infinity/undefined.
+ * Critical: one unguarded NaN cascades through every calculation.
+ */
+function safeParseFloat(value: string | undefined): number {
+  if (!value) return 0;
+  const num = parseFloat(value);
+  return Number.isFinite(num) ? num : 0;
+}
 
 /**
  * Parse JSON safely with error handling
@@ -232,8 +243,9 @@ function calculateDiscountPercentage(
       break;
   }
 
-  // Clamp to valid 0-100 range
-  return Math.max(0, Math.min(100, result));
+  // Clamp to valid 0-100 range. NaN must be caught explicitly —
+  // Math.max(0, Math.min(100, NaN)) returns NaN, not 0.
+  return Number.isFinite(result) ? Math.max(0, Math.min(100, result)) : 0;
 }
 
 /**
@@ -403,6 +415,14 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       const parent = componentParents[0];
       const parentVariantId = parent.id;
 
+      if (!parentVariantId) {
+        Logger.error('Missing parent variant ID in component_parents', { phase: 'merge' }, {
+          bundleId,
+          lineId: line.id
+        });
+        continue;
+      }
+
       Logger.debug('Retrieved parent variant', { phase: 'merge' }, {
         bundleId,
         parentVariantId,
@@ -412,7 +432,7 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // Calculate bundle totals from ACTUAL selected component prices
       const totalQuantity = bundleComponentLines.reduce((sum, l) => sum + l.quantity, 0);
       const originalTotal = bundleComponentLines.reduce(
-        (sum, l) => sum + parseFloat(l.cost.totalAmount.amount),
+        (sum, l) => sum + safeParseFloat(l.cost.totalAmount.amount),
         0
       );
 
@@ -448,18 +468,13 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       const discountedTotalCents = Math.round(originalTotal * (1 - discountPercentage / 100) * 100);
       const savingsCents = originalTotalCents - discountedTotalCents;
 
+      // Compact format: array of [title, qty, retailCents, bundleCents, discountPct, savingsCents]
+      // This keeps the JSON well under Shopify's attribute value size limit (~255 chars)
       const componentDetails = bundleComponentLines.map((l, index) => {
-        const retailCents = Math.round(parseFloat(l.cost.amountPerQuantity.amount) * 100);
+        const retailCents = Math.round(safeParseFloat(l.cost.amountPerQuantity.amount) * 100);
         const bundleCents = Math.round(retailCents * (1 - discountPercentage / 100));
-        return {
-          variantId: l.merchandise.id,
-          title: l.merchandise.product?.title || `Component ${index + 1}`,
-          quantity: l.quantity,
-          retailPrice: retailCents,
-          bundlePrice: bundleCents,
-          discountPercent: discountPercentage,
-          savingsAmount: retailCents - bundleCents
-        };
+        const title = (l.merchandise.product?.title || `Component ${index + 1}`).slice(0, 25);
+        return [title, l.quantity, retailCents, bundleCents, discountPercentage, retailCents - bundleCents];
       });
 
       Logger.info('Creating merge operation', { phase: 'merge' }, {
@@ -578,7 +593,7 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       // Calculate bundle totals for discount calculation
       const totalQuantity = componentQuantities.reduce((sum, qty) => sum + qty, 0) * line.quantity;
-      const originalTotal = parseFloat(line.cost.totalAmount.amount);
+      const originalTotal = safeParseFloat(line.cost.totalAmount.amount);
 
       // Get price adjustment
       let discountPercentage = 0;
@@ -618,16 +633,11 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       let totalBundleCents = 0;
       let totalSavingsCents = 0;
 
-      // Build component details array for checkout display
-      const componentDetails: Array<{
-        variantId: string;
-        title: string;
-        quantity: number;
-        retailPrice: number;
-        bundlePrice: number;
-        discountPercent: number;
-        savingsAmount: number;
-      }> = [];
+      // Build component details in compact format: [title, qty, retailCents, bundleCents, discountPct, savingsCents]
+      // This keeps the JSON well under Shopify's attribute value size limit (~255 chars)
+      const componentDetails: Array<[string, number, number, number, number, number]> = [];
+
+      let hasMissingPricing = false;
 
       componentReferences.forEach((variantId, index) => {
         const pricing = pricingMap.get(variantId);
@@ -639,22 +649,40 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           totalBundleCents += pricing.bundlePrice * qty;
           totalSavingsCents += pricing.savingsAmount * qty;
 
-          componentDetails.push({
+          const title = (pricing.title || `Component ${index + 1}`).slice(0, 25);
+          componentDetails.push([
+            title, qty, pricing.retailPrice, pricing.bundlePrice,
+            pricing.discountPercent, pricing.savingsAmount
+          ]);
+        } else {
+          hasMissingPricing = true;
+          Logger.warn('Missing pricing for component variant', { phase: 'expand' }, {
             variantId,
-            title: `Component ${index + 1}`, // Will be replaced by product title in checkout UI
-            quantity: qty,
-            retailPrice: pricing.retailPrice,
-            bundlePrice: pricing.bundlePrice,
-            discountPercent: pricing.discountPercent,
-            savingsAmount: pricing.savingsAmount
+            index,
+            componentCount: componentReferences.length
           });
         }
       });
 
-      // Calculate overall discount percentage
-      const overallDiscountPercent = totalRetailCents > 0
-        ? ((totalRetailCents - totalBundleCents) / totalRetailCents * 100)
-        : discountPercentage;
+      // If ANY component is missing pricing, clear the entire breakdown.
+      // The checkout UI will fall back to the simple "Bundle (N items)" view.
+      // Showing partial/fabricated data is worse than showing nothing — 0% error tolerance.
+      if (hasMissingPricing) {
+        Logger.warn('Incomplete pricing data — omitting component breakdown', { phase: 'expand' }, {
+          lineId: line.id,
+          totalComponents: componentReferences.length,
+          pricedComponents: componentDetails.length
+        });
+        componentDetails.length = 0;
+        totalRetailCents = 0;
+        totalBundleCents = 0;
+        totalSavingsCents = 0;
+      }
+
+      // Use discountPercentage from price_adjustment as the single source of truth.
+      // This matches the actual percentageDecrease charged by Shopify, avoiding
+      // divergence between displayed and charged discount from rounding differences.
+      const overallDiscountPercent = discountPercentage;
 
       Logger.info('Creating Flex Bundles-style expand operation', { phase: 'expand' }, {
         bundleVariantId: line.merchandise.id,

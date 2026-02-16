@@ -1,6 +1,11 @@
 import { Text } from "@shopify/polaris";
 import { PlusIcon } from "../icons";
 
+const HIGHLIGHT_STYLE = {
+  outline: "2px dashed #5C6AC4",
+  outlineOffset: "4px",
+};
+
 interface GeneralPreviewProps {
   activeSubSection: string;
   emptyStateCardBgColor: string;
@@ -41,7 +46,7 @@ export function GeneralPreview(props: GeneralPreviewProps) {
         </Text>
         <div style={{ marginTop: "80px", display: "inline-block", position: "relative" }}>
           {/* 3 Empty Cards */}
-          <div style={{ display: "flex", gap: "20px", justifyContent: "center", alignItems: "flex-start" }}>
+          <div style={{ display: "flex", gap: "20px", justifyContent: "center", alignItems: "flex-start", ...(activeSubSection === "emptyState" ? HIGHLIGHT_STYLE : {}) }}>
             {cardLabels.map((label, index) => (
               <div
                 key={index}
@@ -105,6 +110,7 @@ export function GeneralPreview(props: GeneralPreviewProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              ...(activeSubSection === "addToCartButton" ? HIGHLIGHT_STYLE : {}),
             }}
           >
             {buttonAddToCartText || "Add to Cart"}
@@ -128,12 +134,13 @@ export function GeneralPreview(props: GeneralPreviewProps) {
               color: toastTextColor,
               width: "495px",
               height: "81px",
-              borderRadius: "11px",
+              borderRadius: "8px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
               position: "relative",
+              ...(activeSubSection === "toasts" ? HIGHLIGHT_STYLE : {}),
             }}
           >
             <span style={{ fontSize: "24px", fontWeight: 400 }}>
