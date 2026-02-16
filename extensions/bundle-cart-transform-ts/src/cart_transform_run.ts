@@ -131,6 +131,7 @@ interface ComponentParent {
  */
 interface ComponentPricingItem {
   variantId: string;        // "gid://shopify/ProductVariant/123"
+  title?: string;           // Product title (optional for backwards compat)
   retailPrice: number;      // Price in cents (e.g., 9800 = $98.00)
   bundlePrice: number;      // Discounted price in cents
   discountPercent: number;  // Discount percentage (e.g., 10.00)
@@ -448,18 +449,13 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       const discountedTotalCents = Math.round(originalTotal * (1 - discountPercentage / 100) * 100);
       const savingsCents = originalTotalCents - discountedTotalCents;
 
+      // Compact format: array of [title, qty, retailCents, bundleCents, discountPct, savingsCents]
+      // This keeps the JSON well under Shopify's attribute value size limit (~255 chars)
       const componentDetails = bundleComponentLines.map((l, index) => {
         const retailCents = Math.round(parseFloat(l.cost.amountPerQuantity.amount) * 100);
         const bundleCents = Math.round(retailCents * (1 - discountPercentage / 100));
-        return {
-          variantId: l.merchandise.id,
-          title: l.merchandise.product?.title || `Component ${index + 1}`,
-          quantity: l.quantity,
-          retailPrice: retailCents,
-          bundlePrice: bundleCents,
-          discountPercent: discountPercentage,
-          savingsAmount: retailCents - bundleCents
-        };
+        const title = (l.merchandise.product?.title || `Component ${index + 1}`).slice(0, 25);
+        return [title, l.quantity, retailCents, bundleCents, discountPercentage, retailCents - bundleCents];
       });
 
       Logger.info('Creating merge operation', { phase: 'merge' }, {
@@ -618,16 +614,9 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       let totalBundleCents = 0;
       let totalSavingsCents = 0;
 
-      // Build component details array for checkout display
-      const componentDetails: Array<{
-        variantId: string;
-        title: string;
-        quantity: number;
-        retailPrice: number;
-        bundlePrice: number;
-        discountPercent: number;
-        savingsAmount: number;
-      }> = [];
+      // Build component details in compact format: [title, qty, retailCents, bundleCents, discountPct, savingsCents]
+      // This keeps the JSON well under Shopify's attribute value size limit (~255 chars)
+      const componentDetails: Array<[string, number, number, number, number, number]> = [];
 
       componentReferences.forEach((variantId, index) => {
         const pricing = pricingMap.get(variantId);
@@ -639,15 +628,11 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           totalBundleCents += pricing.bundlePrice * qty;
           totalSavingsCents += pricing.savingsAmount * qty;
 
-          componentDetails.push({
-            variantId,
-            title: `Component ${index + 1}`, // Will be replaced by product title in checkout UI
-            quantity: qty,
-            retailPrice: pricing.retailPrice,
-            bundlePrice: pricing.bundlePrice,
-            discountPercent: pricing.discountPercent,
-            savingsAmount: pricing.savingsAmount
-          });
+          const title = (pricing.title || `Component ${index + 1}`).slice(0, 25);
+          componentDetails.push([
+            title, qty, pricing.retailPrice, pricing.bundlePrice,
+            pricing.discountPercent, pricing.savingsAmount
+          ]);
         }
       });
 

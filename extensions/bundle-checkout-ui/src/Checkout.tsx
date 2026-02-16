@@ -33,13 +33,41 @@ import {
 } from '@shopify/ui-extensions/checkout/preact';
 
 interface ComponentDetail {
-  variantId: string;
   title: string;
   quantity: number;
   retailPrice: number;
   bundlePrice: number;
   discountPercent: number;
   savingsAmount: number;
+}
+
+// Parse compact array format [title, qty, retailCents, bundleCents, discountPct, savingsCents]
+// into ComponentDetail objects. Falls back to legacy object format for backwards compatibility.
+function parseComponents(json: string): ComponentDetail[] {
+  const parsed = JSON.parse(json);
+  if (!Array.isArray(parsed) || parsed.length === 0) return [];
+
+  // Detect format: compact arrays vs legacy objects
+  if (Array.isArray(parsed[0])) {
+    return parsed.map((item: any[]) => ({
+      title: item[0] || '',
+      quantity: item[1] || 0,
+      retailPrice: item[2] || 0,
+      bundlePrice: item[3] || 0,
+      discountPercent: item[4] || 0,
+      savingsAmount: item[5] || 0,
+    }));
+  }
+
+  // Legacy object format
+  return parsed.map((item: any) => ({
+    title: item.title || '',
+    quantity: item.quantity || 0,
+    retailPrice: item.retailPrice || 0,
+    bundlePrice: item.bundlePrice || 0,
+    discountPercent: item.discountPercent || 0,
+    savingsAmount: item.savingsAmount || 0,
+  }));
 }
 
 export const BundlePricingExtension: FunctionComponent = () => {
@@ -99,7 +127,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
     try {
       const componentsJson = getAttr('_bundle_components');
       if (componentsJson) {
-        components = JSON.parse(componentsJson);
+        components = parseComponents(componentsJson);
       }
     } catch (e) {
       // JSON parse failed — likely truncated attribute value
