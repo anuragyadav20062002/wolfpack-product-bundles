@@ -408,10 +408,7 @@ class BundleWidgetFullPage {
   }
 
   updateMessagesFromBundle() {
-    // Read messaging from the metafield structure (top-level `messaging` field)
     const messaging = this.selectedBundle?.messaging;
-    // Also check legacy path (pricing.messages) for backwards compatibility
-    const pricingMessages = this.selectedBundle?.pricing?.messages;
 
     if (messaging) {
       if (messaging.progressTemplate) {
@@ -425,23 +422,6 @@ class BundleWidgetFullPage {
       this.config.showProgressBar = messaging.showProgressBar || false;
 
       console.log('[BUNDLE_MESSAGES] Using messaging config:', {
-        progress: this.config.discountTextTemplate,
-        qualified: this.config.successMessageTemplate,
-        showDiscountMessaging: this.config.showDiscountMessaging,
-        showProgressBar: this.config.showProgressBar
-      });
-    } else if (pricingMessages) {
-      if (pricingMessages.progress) {
-        this.config.discountTextTemplate = pricingMessages.progress;
-      }
-      if (pricingMessages.qualified) {
-        this.config.successMessageTemplate = pricingMessages.qualified;
-      }
-
-      this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging !== false;
-      this.config.showProgressBar = pricingMessages.showProgressBar || false;
-
-      console.log('[BUNDLE_MESSAGES] Using legacy pricing messages:', {
         progress: this.config.discountTextTemplate,
         qualified: this.config.successMessageTemplate,
         showDiscountMessaging: this.config.showDiscountMessaging,

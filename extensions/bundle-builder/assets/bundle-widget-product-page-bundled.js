@@ -1393,13 +1393,9 @@ class BundleWidgetProductPage {
   }
 
   updateMessagesFromBundle() {
-    // Read messaging from the metafield structure (top-level `messaging` field)
     const messaging = this.selectedBundle?.messaging;
-    // Also check legacy path (pricing.messages) for backwards compatibility
-    const pricingMessages = this.selectedBundle?.pricing?.messages;
 
     if (messaging) {
-      // Metafield structure: messaging.progressTemplate / messaging.successTemplate
       if (messaging.progressTemplate) {
         this.config.discountTextTemplate = messaging.progressTemplate;
       }
@@ -1407,7 +1403,6 @@ class BundleWidgetProductPage {
         this.config.successMessageTemplate = messaging.successTemplate;
       }
 
-      // Set visibility flags from messaging config
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
       this.config.showProgressBar = messaging.showProgressBar || false;
 
@@ -1417,26 +1412,7 @@ class BundleWidgetProductPage {
         showDiscountMessaging: this.config.showDiscountMessaging,
         showProgressBar: this.config.showProgressBar
       });
-    } else if (pricingMessages) {
-      // Legacy path: pricing.messages.progress / pricing.messages.qualified
-      if (pricingMessages.progress) {
-        this.config.discountTextTemplate = pricingMessages.progress;
-      }
-      if (pricingMessages.qualified) {
-        this.config.successMessageTemplate = pricingMessages.qualified;
-      }
-
-      this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging !== false;
-      this.config.showProgressBar = pricingMessages.showProgressBar || false;
-
-      console.log('[BUNDLE_MESSAGES] Using legacy pricing messages:', {
-        progress: this.config.discountTextTemplate,
-        qualified: this.config.successMessageTemplate,
-        showDiscountMessaging: this.config.showDiscountMessaging,
-        showProgressBar: this.config.showProgressBar
-      });
     } else {
-      // Default: show discount messaging if pricing is enabled
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
       this.config.showProgressBar = false;
       console.log('[BUNDLE_MESSAGES] No messaging config found, using defaults');

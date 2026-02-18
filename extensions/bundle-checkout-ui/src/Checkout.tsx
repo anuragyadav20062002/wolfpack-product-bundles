@@ -42,7 +42,7 @@ interface ComponentDetail {
 }
 
 // Parse compact array format [title, qty, retailCents, bundleCents, discountPct, savingsCents]
-// into ComponentDetail objects. Falls back to legacy object format for backwards compatibility.
+// into ComponentDetail objects.
 function parseComponents(json: string): ComponentDetail[] {
   const parsed = JSON.parse(json);
   if (!Array.isArray(parsed) || parsed.length === 0) return [];
@@ -53,26 +53,13 @@ function parseComponents(json: string): ComponentDetail[] {
     return Number.isFinite(n) ? n : 0;
   };
 
-  // Detect format: compact arrays vs legacy objects
-  if (Array.isArray(parsed[0])) {
-    return parsed.map((item: any[]) => ({
-      title: String(item[0] ?? ''),
-      quantity: num(item[1]),
-      retailPrice: num(item[2]),
-      bundlePrice: num(item[3]),
-      discountPercent: num(item[4]),
-      savingsAmount: num(item[5]),
-    }));
-  }
-
-  // Legacy object format
-  return parsed.map((item: any) => ({
-    title: String(item.title ?? ''),
-    quantity: num(item.quantity),
-    retailPrice: num(item.retailPrice),
-    bundlePrice: num(item.bundlePrice),
-    discountPercent: num(item.discountPercent),
-    savingsAmount: num(item.savingsAmount),
+  return parsed.map((item: any[]) => ({
+    title: String(item[0] ?? ''),
+    quantity: num(item[1]),
+    retailPrice: num(item[2]),
+    bundlePrice: num(item[3]),
+    discountPercent: num(item[4]),
+    savingsAmount: num(item[5]),
   }));
 }
 
