@@ -44,7 +44,6 @@ export {
 // Re-export operations
 export {
   ensureVariantBundleMetafieldDefinitions,
-  ensureBundleMetafieldDefinitions,
   updateBundleProductMetafields,
   updateCartTransformMetafield,
   updateComponentProductMetafields

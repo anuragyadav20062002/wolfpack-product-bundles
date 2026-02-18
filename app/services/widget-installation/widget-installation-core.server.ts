@@ -24,39 +24,16 @@ import {
 } from "./widget-theme-editor-links.server";
 import { createFullPageBundle } from "./widget-full-page-bundle.server";
 import { validateProductBundleWidgetSetup } from "./widget-product-bundle.server";
-import {
-  checkWidgetInstallation,
-  checkFullPageWidgetInstallation,
-  checkBundleInWidget
-} from "./widget-installation-legacy.server";
-
 /**
  * Widget Installation Service
  *
  * Static class that provides all widget installation functionality.
  * Methods are organized into categories:
- * - Widget Detection Methods (Read-Only)
  * - Deep Link Generation (Theme Editor Navigation)
  * - Full-Page Bundle Operations
  * - Product Bundle Operations
- * - Utility Methods
- * - Legacy Methods (Deprecated)
  */
 export class WidgetInstallationService {
-
-  // ==========================================================================
-  // Widget Detection Methods (Read-Only)
-  // ==========================================================================
-
-  /**
-   * @deprecated Legacy method - kept for backward compatibility
-   */
-  static checkWidgetInstallation = checkWidgetInstallation;
-
-  /**
-   * @deprecated Legacy method - kept for backward compatibility
-   */
-  static checkFullPageWidgetInstallation = checkFullPageWidgetInstallation;
 
   // ==========================================================================
   // Deep Link Generation (Theme Editor Navigation)
@@ -95,12 +72,4 @@ export class WidgetInstallationService {
    */
   static validateProductBundleWidgetSetup = validateProductBundleWidgetSetup;
 
-  // ==========================================================================
-  // Legacy Methods (Deprecated)
-  // ==========================================================================
-
-  /**
-   * @deprecated Use database records (shopifyPageHandle field) instead
-   */
-  static checkBundleInWidget = checkBundleInWidget;
 }

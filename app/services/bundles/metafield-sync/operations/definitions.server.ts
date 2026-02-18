@@ -159,11 +159,3 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
   console.log("✅ [METAFIELD_DEF] Finished ensuring variant metafield definitions");
   return true;
 }
-
-/**
- * Legacy function - kept for backwards compatibility
- */
-export async function ensureBundleMetafieldDefinitions(admin: any): Promise<boolean> {
-  // Delegate to the new variant-level function
-  return ensureVariantBundleMetafieldDefinitions(admin);
-}

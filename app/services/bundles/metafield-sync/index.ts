@@ -46,10 +46,7 @@ export {
 export { calculateComponentPricing } from "./utils/pricing";
 
 // Export operations
-export {
-  ensureVariantBundleMetafieldDefinitions,
-  ensureBundleMetafieldDefinitions
-} from "./operations/definitions.server";
+export { ensureVariantBundleMetafieldDefinitions } from "./operations/definitions.server";
 
 export { updateBundleProductMetafields } from "./operations/bundle-product.server";
 

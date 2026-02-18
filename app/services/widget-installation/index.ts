@@ -30,10 +30,3 @@ export { createFullPageBundle } from './widget-full-page-bundle.server';
 
 // Product bundle operations (for direct access)
 export { validateProductBundleWidgetSetup } from './widget-product-bundle.server';
-
-// Legacy methods (deprecated - for backward compatibility)
-export {
-  checkWidgetInstallation,
-  checkFullPageWidgetInstallation,
-  checkBundleInWidget
-} from './widget-installation-legacy.server';
