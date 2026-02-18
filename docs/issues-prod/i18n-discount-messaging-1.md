@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-02-19
-**Last Updated:** 2026-02-19 14:30
+**Last Updated:** 2026-02-19 15:00
 
 ## Overview
 
@@ -38,3 +38,8 @@ Allow merchants to configure discount message templates in multiple languages. A
 - [x] Phase 5: Metafield sync update (`bundle-product.server.ts`) ✅
 - [x] Phase 6: Widget locale detection (`bundle-widget-product-page.js`) ✅
 - [x] Phase 7: Widget rebuild (`npm run build:widgets`) ✅
+
+### 2026-02-19 15:00 - Code Changes Reverted
+- ✅ Reverted all code changes from the i18n implementation (kept docs and feature-pipeline skill)
+- ✅ Files restored to pre-i18n state: `app/types/pricing.ts`, `useBundleConfigurationState.ts`, both configure routes, `handlers.server.ts`, `bundle-product.server.ts`, `bundle-widget-product-page.js`, bundled widget
+- Note: Docs (`docs/i18n-discount-messaging/`) and skill (`.claude/skills/feature-pipeline/`) preserved

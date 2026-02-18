@@ -113,52 +113,6 @@ export interface PricingMessages {
   showInCart: boolean;          // Show discount messages in cart
 }
 
-/** Per-locale message entry for multilingual discount messaging */
-export interface LocalizedMessageEntry {
-  progress: string;
-  qualified: string;
-}
-
-/** New locale-keyed messages format stored in BundlePricing.messages */
-export interface LocalizedPricingMessages {
-  localized: Record<string, LocalizedMessageEntry>; // e.g., { en: {...}, fr: {...} }
-  showInCart: boolean;
-}
-
-/** Union: handles legacy flat format and new locale-keyed format */
-export type AnyPricingMessages = PricingMessages | LocalizedPricingMessages;
-
-/** Type guard: detect legacy flat format (has top-level `progress` key) */
-export function isLegacyMessages(m: AnyPricingMessages): m is PricingMessages {
-  return 'progress' in m;
-}
-
-/** Normalize either format to locale-keyed format */
-export function normalizeMessages(m: AnyPricingMessages | null | undefined): LocalizedPricingMessages {
-  if (!m) return { localized: {}, showInCart: true };
-  if (isLegacyMessages(m)) {
-    return {
-      localized: { en: { progress: m.progress, qualified: m.qualified } },
-      showInCart: m.showInCart,
-    };
-  }
-  return m;
-}
-
-/** Get the message entry for a locale with en fallback chain */
-export function getMessageForLocale(
-  m: AnyPricingMessages | null | undefined,
-  locale: string
-): LocalizedMessageEntry {
-  const normalized = normalizeMessages(m);
-  const subtag = locale.split('-')[0];
-  return (
-    normalized.localized[subtag] ||
-    normalized.localized['en'] ||
-    { progress: '', qualified: '' }
-  );
-}
-
 /**
  * Complete pricing configuration for a bundle
  */

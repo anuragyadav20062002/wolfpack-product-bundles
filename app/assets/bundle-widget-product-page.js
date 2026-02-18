@@ -270,29 +270,20 @@ class BundleWidgetProductPage {
     // Also check legacy path (pricing.messages) for backwards compatibility
     const pricingMessages = this.selectedBundle?.pricing?.messages;
 
-    // Detect buyer's locale from Shopify's storefront global — e.g. "fr-FR" → subtag "fr"
-    const rawLocale = (typeof window !== 'undefined' && window.Shopify && window.Shopify.locale) || 'en';
-    const locale = rawLocale.split('-')[0];
-
     if (messaging) {
-      // Try locale-keyed map first (new format), then fall back to legacy flat fields
-      const localizedMap = messaging.localizedMessages || {};
-      const localeEntry = localizedMap[locale] || localizedMap['en'] || null;
-
-      if (localeEntry) {
-        this.config.discountTextTemplate = localeEntry.progress || messaging.progressTemplate || '';
-        this.config.successMessageTemplate = localeEntry.qualified || messaging.successTemplate || '';
-      } else {
-        // Legacy flat fallback
-        this.config.discountTextTemplate = messaging.progressTemplate || '';
-        this.config.successMessageTemplate = messaging.successTemplate || '';
+      // Metafield structure: messaging.progressTemplate / messaging.successTemplate
+      if (messaging.progressTemplate) {
+        this.config.discountTextTemplate = messaging.progressTemplate;
+      }
+      if (messaging.successTemplate) {
+        this.config.successMessageTemplate = messaging.successTemplate;
       }
 
       // Set visibility flags from messaging config
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
       this.config.showProgressBar = messaging.showProgressBar || false;
 
-      console.log('[BUNDLE_MESSAGES] Using messaging config (locale: ' + locale + '):', {
+      console.log('[BUNDLE_MESSAGES] Using messaging config:', {
         progress: this.config.discountTextTemplate,
         qualified: this.config.successMessageTemplate,
         showDiscountMessaging: this.config.showDiscountMessaging,

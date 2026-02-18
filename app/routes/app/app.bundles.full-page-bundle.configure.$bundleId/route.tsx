@@ -80,26 +80,6 @@ import type {
 } from "./types";
 
 
-const SUPPORTED_LANGUAGES: { label: string; value: string }[] = [
-  { label: 'en — English',              value: 'en' },
-  { label: 'fr — French',               value: 'fr' },
-  { label: 'de — German',               value: 'de' },
-  { label: 'es — Spanish',              value: 'es' },
-  { label: 'it — Italian',              value: 'it' },
-  { label: 'ja — Japanese',             value: 'ja' },
-  { label: 'ko — Korean',               value: 'ko' },
-  { label: 'pt — Portuguese',           value: 'pt' },
-  { label: 'zh — Chinese (Simplified)', value: 'zh' },
-  { label: 'nl — Dutch',                value: 'nl' },
-  { label: 'da — Danish',               value: 'da' },
-  { label: 'sv — Swedish',              value: 'sv' },
-  { label: 'pl — Polish',               value: 'pl' },
-  { label: 'cs — Czech',                value: 'cs' },
-  { label: 'fi — Finnish',              value: 'fi' },
-  { label: 'tr — Turkish',              value: 'tr' },
-  { label: 'nb — Norwegian',            value: 'nb' },
-];
-
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
   const { bundleId } = params;
@@ -374,9 +354,6 @@ export default function ConfigureBundleFlow() {
     // Original values ref
     originalValuesRef,
   } = configState;
-
-  // Language selector for discount messaging — UI-only state, not persisted directly
-  const [selectedMessageLocale, setSelectedMessageLocale] = useState<string>('en');
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
@@ -1084,19 +1061,16 @@ export default function ConfigureBundleFlow() {
   // NOTE: Discount rule management (addDiscountRule, removeDiscountRule, updateDiscountRule)
   // is now provided by pricingState hook
 
-  // Rule message management — locale-aware
-  const updateRuleMessage = useCallback((ruleId: string, field: 'discountText' | 'successMessage', value: string, locale: string) => {
+  // Rule message management
+  const updateRuleMessage = useCallback((ruleId: string, field: 'discountText' | 'successMessage', value: string) => {
     setRuleMessages(prev => ({
       ...prev,
       [ruleId]: {
         ...prev[ruleId],
-        [locale]: {
-          ...(prev[ruleId]?.[locale] ?? {}),
-          [field]: value,
-        },
-      },
+        [field]: value
+      }
     }));
-  }, [setRuleMessages]);
+  }, []);
 
   // Function to load available pages or templates based on bundle type
   const loadAvailablePages = useCallback(() => {
@@ -1927,17 +1901,6 @@ export default function ConfigureBundleFlow() {
                           />
                         </InlineStack>
 
-                        {/* Language selector */}
-                        {pricingState.discountMessagingEnabled && (
-                          <Select
-                            label="Language"
-                            options={SUPPORTED_LANGUAGES}
-                            value={selectedMessageLocale}
-                            onChange={setSelectedMessageLocale}
-                            helpText="Configure discount messages for the selected language. The storefront will automatically show the buyer's language."
-                          />
-                        )}
-
                         {/* Integrated Variables Helper */}
                         <details>
                           <summary style={{ cursor: 'pointer', color: '#007ace', fontSize: '14px', fontWeight: '500' }}>
@@ -1990,11 +1953,10 @@ export default function ConfigureBundleFlow() {
                                     </Text>
                                     <TextField
                                       label="Discount Text"
-                                      value={ruleMessages[rule.id]?.[selectedMessageLocale]?.discountText ?? ''}
-                                      onChange={(value) => updateRuleMessage(rule.id, 'discountText', value, selectedMessageLocale)}
+                                      value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
+                                      onChange={(value) => updateRuleMessage(rule.id, 'discountText', value)}
                                       multiline={2}
                                       autoComplete="off"
-                                      placeholder="Add {{conditionText}} to get {{discountText}}"
                                       helpText="This message appears when the customer is close to qualifying for the discount"
                                     />
                                   </BlockStack>
@@ -2004,11 +1966,10 @@ export default function ConfigureBundleFlow() {
                                   <BlockStack gap="200">
                                     <TextField
                                       label="Success Message"
-                                      value={ruleMessages[rule.id]?.[selectedMessageLocale]?.successMessage ?? ''}
-                                      onChange={(value) => updateRuleMessage(rule.id, 'successMessage', value, selectedMessageLocale)}
+                                      value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
+                                      onChange={(value) => updateRuleMessage(rule.id, 'successMessage', value)}
                                       multiline={2}
                                       autoComplete="off"
-                                      placeholder="Congratulations! You got {{discountText}} on {{bundleName}}! 🎉"
                                       helpText="This message appears when the customer qualifies for the discount"
                                     />
                                   </BlockStack>

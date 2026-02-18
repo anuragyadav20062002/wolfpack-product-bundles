@@ -200,22 +200,13 @@ export async function updateBundleProductMetafields(
         }
       }))
     } : null,
-    messaging: (() => {
-      const msgs = bundleConfiguration.pricing?.messages as any;
-      const localizedMap: Record<string, { progress: string; qualified: string }> = msgs?.localized || {};
-      const enProgress = localizedMap['en']?.progress || msgs?.progress || bundleConfiguration.messaging?.progressTemplate || 'Add {conditionText} to get {discountText}';
-      const enQualified = localizedMap['en']?.qualified || msgs?.qualified || bundleConfiguration.messaging?.successTemplate || 'Congratulations! You got {discountText}';
-      return {
-        // Locale-keyed map for multilingual widget support
-        localizedMessages: localizedMap,
-        // Legacy flat fields: en fallback for old widget builds
-        progressTemplate: enProgress,
-        successTemplate: enQualified,
-        showProgressBar: msgs?.showProgressBar || bundleConfiguration.pricing?.display?.showProgressBar || bundleConfiguration.messaging?.showProgressBar || false,
-        showDiscountMessaging: msgs?.showDiscountMessaging || false,
-        showFooter: bundleConfiguration.pricing?.display?.showFooter !== false && bundleConfiguration.messaging?.showFooter !== false,
-      };
-    })()
+    messaging: {
+      progressTemplate: bundleConfiguration.pricing?.messages?.progress || bundleConfiguration.messaging?.progressTemplate || 'Add {conditionText} to get {discountText}',
+      successTemplate: bundleConfiguration.pricing?.messages?.qualified || bundleConfiguration.messaging?.successTemplate || 'Congratulations! You got {discountText}',
+      showProgressBar: bundleConfiguration.pricing?.messages?.showProgressBar || bundleConfiguration.pricing?.display?.showProgressBar || bundleConfiguration.messaging?.showProgressBar || false,
+      showDiscountMessaging: bundleConfiguration.pricing?.messages?.showDiscountMessaging || false,
+      showFooter: bundleConfiguration.pricing?.display?.showFooter !== false && bundleConfiguration.messaging?.showFooter !== false
+    }
   };
 
   // Check metafield sizes and log warnings
