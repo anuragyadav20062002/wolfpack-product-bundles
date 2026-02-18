@@ -820,13 +820,6 @@ class BundleWidgetProductPage {
     this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }
 
-  // Legacy method - kept for reference but no longer used
-  // New approach uses createEmptyStateCard, createSelectedProductCard, and createAddMoreCard
-  getStepSelectionText(selectedProducts) {
-    const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
-    return totalSelected > 0 ? `${totalSelected} selected` : '';
-  }
-
   clearStepSelections(stepIndex) {
     // Clear all product selections for this step
     this.selectedProducts[stepIndex] = {};
