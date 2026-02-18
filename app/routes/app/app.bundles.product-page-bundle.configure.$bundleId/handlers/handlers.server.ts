@@ -417,15 +417,35 @@ export async function handleSaveBundle(admin: any, session: any, bundleId: strin
             showProgressBar: discountData.showProgressBar || false
           },
           messages: (() => {
-            // Build messages from ruleMessages (per-rule messaging from admin form)
+            // Build locale-keyed messages from first rule's per-locale entries
+            const rawRuleMessages: Record<string, Record<string, { discountText: string; successMessage: string }>> =
+              discountData.ruleMessages || {};
             const firstRuleId = discountData.discountRules?.[0]?.id;
-            const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
+            const firstRuleLocales: Record<string, { discountText: string; successMessage: string }> =
+              (firstRuleId ? rawRuleMessages[firstRuleId] : null) ?? {};
+
+            // Build localized map — only store non-empty locale entries
+            const localized: Record<string, { progress: string; qualified: string }> = {};
+            for (const [locale, msgs] of Object.entries(firstRuleLocales)) {
+              if (msgs.discountText || msgs.successMessage) {
+                localized[locale] = {
+                  progress: msgs.discountText || '',
+                  qualified: msgs.successMessage || '',
+                };
+              }
+            }
+
+            const enProgress = localized['en']?.progress || 'Add {conditionText} to get {discountText}';
+            const enQualified = localized['en']?.qualified || 'Congratulations! You got {discountText}';
+
             return {
-              progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
-              qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+              localized,
+              // Keep legacy flat fields for backward compat with old widget builds
+              progress: enProgress,
+              qualified: enQualified,
               showDiscountMessaging: discountData.discountMessagingEnabled || false,
               showProgressBar: discountData.showProgressBar || false,
-              showInCart: true
+              showInCart: true,
             };
           })()
         },

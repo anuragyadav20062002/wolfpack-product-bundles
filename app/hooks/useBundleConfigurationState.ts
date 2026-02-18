@@ -226,13 +226,13 @@ export function useBundleConfigurationState({
     markAsDirty();
   }, [markAsDirty]);
 
-  // Rule messages state
-  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>({});
+  // Rule messages state: ruleId → locale → { discountText, successMessage }
+  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, Record<string, { discountText: string; successMessage: string }>>>({});
 
   const setRuleMessages = useCallback((
-    value: Record<string, { discountText: string; successMessage: string }> |
-    ((prev: Record<string, { discountText: string; successMessage: string }>) =>
-      Record<string, { discountText: string; successMessage: string }>)
+    value: Record<string, Record<string, { discountText: string; successMessage: string }>> |
+    ((prev: Record<string, Record<string, { discountText: string; successMessage: string }>>) =>
+      Record<string, Record<string, { discountText: string; successMessage: string }>>)
   ) => {
     setRuleMessagesRaw(value);
     markAsDirty();
