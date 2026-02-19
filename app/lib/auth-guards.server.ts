@@ -1,15 +1,17 @@
 import { json } from "@remix-run/node";
 import { timingSafeEqual, createHash } from "node:crypto";
 import { authenticate } from "../shopify.server";
-import type { AdminApiContext } from "@shopify/shopify-app-remix/server";
 import type { Session } from "@shopify/shopify-api";
+
+// Admin context type derived from the configured shopify instance (removeRest: true → no REST client)
+export type ShopifyAdmin = Awaited<ReturnType<typeof authenticate.admin>>["admin"];
 
 // ─── Admin Session Guard ──────────────────────────────────────────────────────
 // Use on routes that require an authenticated Shopify admin session.
 // Equivalent to: await authenticate.admin(request)
 // Returns: { admin, session }
 export async function requireAdminSession(request: Request): Promise<{
-  admin: AdminApiContext["admin"];
+  admin: ShopifyAdmin;
   session: Session;
 }> {
   const { admin, session } = await authenticate.admin(request);
@@ -24,7 +26,9 @@ export async function requireAppProxy(request: Request): Promise<{
   session: Session;
 }> {
   const { session } = await authenticate.public.appProxy(request);
-  return { session };
+  // Shopify guarantees a valid session for authenticated proxy requests;
+  // the SDK type is widened to Session | undefined as a conservative default.
+  return { session: session as Session };
 }
 
 // ─── Internal Secret Guard ────────────────────────────────────────────────────

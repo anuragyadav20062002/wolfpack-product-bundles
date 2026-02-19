@@ -1,10 +1,10 @@
 # Issue: Handlers Simplification
 
 **Issue ID:** handlers-simplification-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-02-19
-**Last Updated:** 2026-02-19 05:30
+**Last Updated:** 2026-02-19 06:30
 
 ## Overview
 
@@ -28,7 +28,7 @@ Code-simplification audit of all four `handlers.server.ts` files identified 10 C
 - [x] Phase 1: Fix C1–C6 — MIXED_PROMISES + SILENT_SWALLOW in both bundle handlers ✅
 - [x] Phase 2: Fix C9–C10 — TRIPLE_VALIDATION — extract normaliseShopifyProductId ✅
 - [x] Phase 3: Fix C7–C8 — ANY_ESCAPE — proper types on all exported handler signatures ✅
-- [ ] Phase 4: Fix W14 — consolidate near-identical files into shared module
+- [x] Phase 4: Fix W14 — consolidate near-identical files into shared module ✅
 
 ## Progress Log
 
@@ -67,6 +67,46 @@ Code-simplification audit of all four `handlers.server.ts` files identified 10 C
   - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
 - Lint: 0 errors (warnings only, pre-existing)
 - Next: Phase 4 — W14 file duplication consolidation
+
+### 2026-02-19 06:30 - Phase 4 Completed + All Phases Done
+
+- ✅ W14: Created `app/services/bundles/bundle-configure-handlers.server.ts` — shared module containing 8 identical functions
+  - `normaliseShopifyProductId`, `safeJsonParse`
+  - `handleUpdateBundleStatus`, `handleUpdateBundleProduct`
+  - `handleGetPages`, `handleGetThemeTemplates`, `handleGetCurrentTheme`, `handleEnsureBundleTemplates`
+- ✅ Full-page handler: reduced from 1685 → 1004 lines; re-exports shared functions via barrel
+- ✅ Product-page handler: reduced from 1564 → 883 lines; re-exports shared functions via barrel
+- ✅ Phase 3 type fix: `AdminApiContext["admin"]` was wrong for `removeRest: true` apps
+  - Created `ShopifyAdmin = Awaited<ReturnType<typeof authenticate.admin>>["admin"]` in `auth-guards.server.ts`
+  - Used across all 3 files — derives exact type from the configured shopify instance
+- ✅ Additional TS errors surfaced by proper typing and fixed:
+  - `admin.rest.session` → `session.accessToken / session.shop` (REST not available, removeRest: true)
+  - `response.json()` cast to `{ data: Record<string, any>; errors?: ... }` (FetchResponseBody missing errors field)
+  - `session` from appProxy cast to `Session` (SDK type is Session | undefined, guaranteed by auth)
+  - `accessToken ?? ""` guard for fetch headers (Session.accessToken is string | undefined)
+- Files modified:
+  - `app/lib/auth-guards.server.ts` — added ShopifyAdmin type, fixed appProxy session cast
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts` (1685→1004 lines)
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts` (1564→883 lines)
+- Files created:
+  - `app/services/bundles/bundle-configure-handlers.server.ts`
+- Lint: 0 errors | TypeScript: 0 errors in modified source files
+- Total lines removed: ~1362 (dead duplication eliminated)
+
+### 2026-02-19 06:30 - All Phases Completed
+
+**Total Commits:** 4 (one per phase)
+**Lines Removed:** ~1362 (net, excluding shared module creation)
+**Files Created:** 1 (`bundle-configure-handlers.server.ts`)
+**Files Modified:** 5
+
+### Key Achievements:
+- ✅ Silent failures eliminated — MIXED_PROMISES + SILENT_SWALLOW fixed
+- ✅ Dead validation code removed — normaliseShopifyProductId at boundary only
+- ✅ `admin: any` eliminated — ShopifyAdmin type derived from actual configured instance
+- ✅ ~95% duplication removed — shared module with 8 extracted functions
+
+**Status:** Ready for testing and review
 
 ### 2026-02-19 03:30 - Issue Created, Starting Phase 1
 - Audit produced by `/code-simplification` skill subagent
