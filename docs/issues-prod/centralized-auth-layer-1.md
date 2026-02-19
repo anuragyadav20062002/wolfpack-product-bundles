@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-02-19
-**Last Updated:** 2026-02-19 01:00
+**Last Updated:** 2026-02-19 01:30
 
 ## Overview
 
@@ -64,6 +64,10 @@ auditable via grep.
 - [x] Phase 5: Add `requireInternalSecret` to `api.webhooks.pubsub.tsx` ✅
 - [x] Phase 6: Add `// auth: public` annotations to public routes ✅
 - [x] Phase 7: Build verification + run full test suite ✅
+
+### 2026-02-19 01:30 - Remove api.cleanup-all-orphaned-metafields.ts
+- Deleted `app/routes/api/api.cleanup-all-orphaned-metafields.ts` — no active callers, no longer needed
+- No external references found (grep confirmed)
 
 ## Related Documentation
 - `docs/issues-prod/webhook-pubsub-auth-1.md` — webhook endpoint auth (related)
