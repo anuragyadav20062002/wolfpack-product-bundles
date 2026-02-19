@@ -35,7 +35,6 @@ class BundleProductModal {
   init() {
     this.createModalHTML();
     this.attachEventListeners();
-    console.log('[MODAL] ✅ Product modal initialized');
   }
 
   /**
@@ -284,7 +283,6 @@ class BundleProductModal {
    * @param {Object} step - Step data
    */
   open(product, step) {
-    console.log('[MODAL] Opening modal for product:', product);
 
     this.currentProduct = product;
     this.currentStep = step;
@@ -399,7 +397,6 @@ class BundleProductModal {
     const prevBtn = document.getElementById('modal-carousel-prev');
     const nextBtn = document.getElementById('modal-carousel-next');
 
-    console.log('[MODAL] Loading images:', images);
 
     if (images.length === 0) {
       // Use fallback placeholder
@@ -492,13 +489,11 @@ class BundleProductModal {
     const variantsContainer = document.getElementById('modal-variants-container');
     const variants = this.currentProduct.variants || [];
 
-    console.log('[MODAL] Creating variant selectors. Variants:', variants.length, 'Product:', this.currentProduct);
 
     // If only one variant (no options) or no variants, hide variant selectors
     if (variants.length <= 1) {
       variantsContainer.innerHTML = '';
       this.selectedVariant = variants[0] || this.currentProduct;
-      console.log('[MODAL] Single/no variant, using:', this.selectedVariant);
       return;
     }
 
@@ -524,11 +519,9 @@ class BundleProductModal {
       // No variant options, use first variant
       this.selectedVariant = variants[0];
       variantsContainer.innerHTML = '';
-      console.log('[MODAL] No option names found, using first variant');
       return;
     }
 
-    console.log('[MODAL] Option names:', optionNames);
 
     // Store selected options for tracking
     this.selectedOptions = {};
@@ -678,7 +671,6 @@ class BundleProductModal {
       .sort((a, b) => parseInt(a) - parseInt(b))
       .map(key => this.selectedOptions[key]);
 
-    console.log('[MODAL] Looking for variant with options:', selectedOptionValues);
 
     // Find matching variant
     this.selectedVariant = variants.find(variant => {
@@ -691,10 +683,8 @@ class BundleProductModal {
     // If no match found, use first variant
     if (!this.selectedVariant && variants.length > 0) {
       this.selectedVariant = variants[0];
-      console.log('[MODAL] No exact match, using first variant');
     }
 
-    console.log('[MODAL] Selected variant:', this.selectedVariant);
 
     // Update selection summary
     this.updateSelectionSummary();
@@ -879,7 +869,6 @@ class BundleProductModal {
    */
   addToBundle() {
     if (!this.currentProduct || !this.currentStep) {
-      console.error('[MODAL] Missing product or step data');
       return;
     }
 
@@ -890,7 +879,6 @@ class BundleProductModal {
                         variant.availableForSale !== false;
 
     if (!isAvailable) {
-      console.warn('[MODAL] Cannot add out of stock variant');
       return;
     }
 
@@ -899,7 +887,6 @@ class BundleProductModal {
     const stepIndex = steps.findIndex(s => s.id === this.currentStep.id);
 
     if (stepIndex === -1) {
-      console.error('[MODAL] Could not find step index for step:', this.currentStep.id);
       return;
     }
 
@@ -907,13 +894,6 @@ class BundleProductModal {
     // This matches how the widget stores product selections
     const productId = variant.variantId || variant.id || this.currentProduct.id;
 
-    console.log('[MODAL] Adding to bundle:', {
-      stepIndex,
-      productId,
-      quantity: this.selectedQuantity,
-      variant: variant,
-      variantTitle: variant.title
-    });
 
     // Call widget's method to add product
     if (this.widget.updateProductSelection) {
@@ -923,7 +903,6 @@ class BundleProductModal {
         this.selectedQuantity
       );
     } else {
-      console.error('[MODAL] Widget does not have updateProductSelection method');
       return;
     }
 
@@ -942,7 +921,6 @@ class BundleProductModal {
     if (this.widget && this.widget.showToast) {
       this.widget.showToast('Product added to bundle!', 'success');
     } else {
-      console.log('[MODAL] ✅ Product added to bundle');
     }
   }
 }
