@@ -53,4 +53,4 @@ Research code simplification and refactoring best practices in the Remix + Shopi
 **Skill design:** SKILL.md acts as orchestrator — on `/code-simplification` invocation, spawns `feature-dev:code-reviewer` Task subagent with prompt that reads both reference files before auditing scope.
 
 **Status:** Completed
-- Commit: (pending)
+- Commit: bb884fe
