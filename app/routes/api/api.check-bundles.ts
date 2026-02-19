@@ -1,10 +1,10 @@
 import { json } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 
 export async function loader({ request }: any) {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireAdminSession(request);
   
   try {
     // Get all bundles for this shop

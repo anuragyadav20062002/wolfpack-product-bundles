@@ -1,6 +1,6 @@
 import { json } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import { AppLogger } from "../../lib/logger";
 
 /**
@@ -10,7 +10,7 @@ import { AppLogger } from "../../lib/logger";
  */
 export const action = async ({ request }: ActionFunctionArgs) => {
   try {
-    const { admin, session } = await authenticate.admin(request);
+    const { admin, session } = await requireAdminSession(request);
 
     const body = await request.json();
     const { productHandle, bundleId } = body;

@@ -1,10 +1,10 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import { CartTransformService } from "../../services/cart-transform-service.server";
 import { AppLogger } from "../../lib/logger";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { admin, session } = await authenticate.admin(request);
+  const { admin, session } = await requireAdminSession(request);
   const shopDomain = session.shop;
 
   try {

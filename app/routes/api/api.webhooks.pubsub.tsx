@@ -1,4 +1,5 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { requireInternalSecret } from "../../lib/auth-guards.server";
 import { WebhookProcessor } from "../../services/webhook-processor.server";
 import { AppLogger } from "../../lib/logger";
 
@@ -31,6 +32,9 @@ import { AppLogger } from "../../lib/logger";
  * 3. Webhook ID validation
  */
 export async function action({ request }: ActionFunctionArgs) {
+  const authError = requireInternalSecret(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
 

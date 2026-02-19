@@ -2,7 +2,7 @@ import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
 import { createStorefrontAccessToken } from "../../services/storefront-token.server";
-import { authenticate } from "../../shopify.server";
+// auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
 /**
  * Public API endpoint to fetch products using Storefront API

@@ -2,6 +2,8 @@ import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
 
+// auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
+
 /**
  * Public API endpoint to fetch products from collections using Storefront API
  * This replaces the legacy /collections/{handle}/products.json REST endpoint

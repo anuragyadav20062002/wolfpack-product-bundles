@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import { BillingService } from "../../services/billing.server";
 import { AppLogger } from "../../lib/logger";
 
@@ -12,7 +12,7 @@ import { AppLogger } from "../../lib/logger";
  * Archives excess bundles if over free plan limit (3 bundles)
  */
 export async function action({ request }: ActionFunctionArgs) {
-  const { admin, session } = await authenticate.admin(request);
+  const { admin, session } = await requireAdminSession(request);
   const shopDomain = session.shop;
 
   try {
