@@ -1,5 +1,5 @@
 import { json } from "@remix-run/node";
-import { timingSafeEqual, createHash } from "crypto";
+import { timingSafeEqual, createHash } from "node:crypto";
 import { authenticate } from "../shopify.server";
 import type { AdminApiContext } from "@shopify/shopify-app-remix/server";
 import type { Session } from "@shopify/shopify-api";

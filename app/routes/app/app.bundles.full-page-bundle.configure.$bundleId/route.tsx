@@ -1245,7 +1245,7 @@ export default function ConfigureBundleFlow() {
             }
           : {
               content: "Add to Storefront",
-              onAction: handleAddToStorefront,
+              onAction: () => { void handleAddToStorefront(); },
               loading: fetcher.state === 'submitting',
             }
       }
@@ -1264,7 +1264,7 @@ export default function ConfigureBundleFlow() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          handleSave();
+          void handleSave();
         }}
         onReset={(e) => {
           e.preventDefault();
