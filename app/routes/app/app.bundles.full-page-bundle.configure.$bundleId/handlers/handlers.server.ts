@@ -6,6 +6,8 @@
  */
 
 import { json } from "@remix-run/node";
+import type { AdminApiContext } from "@shopify/shopify-app-remix/server";
+import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
 import { ThemeTemplateService } from "../../../../services/theme-template.server";
@@ -81,7 +83,7 @@ export const safeJsonParse = (value: any, defaultValue: any = []) => {
 /**
  * Handle saving bundle configuration
  */
-export async function handleSaveBundle(admin: any, session: any, bundleId: string, formData: FormData) {
+export async function handleSaveBundle(admin: AdminApiContext["admin"], session: Session, bundleId: string, formData: FormData) {
   const endTimer = AppLogger.startTimer('Bundle save process', {
     component: 'bundle-config',
     operation: 'save',
@@ -540,7 +542,7 @@ export async function handleSaveBundle(admin: any, session: any, bundleId: strin
 /**
  * Handle updating bundle status
  */
-export async function handleUpdateBundleStatus(admin: any, session: any, bundleId: string, formData: FormData) {
+export async function handleUpdateBundleStatus(admin: AdminApiContext["admin"], session: Session, bundleId: string, formData: FormData) {
   const status = formData.get("status") as string;
 
   const updatedBundle = await db.bundle.update({
@@ -613,7 +615,7 @@ export async function handleUpdateBundleStatus(admin: any, session: any, bundleI
 /**
  * Handle syncing bundle product
  */
-export async function handleSyncProduct(admin: any, session: any, bundleId: string, _formData: FormData) {
+export async function handleSyncProduct(admin: AdminApiContext["admin"], session: Session, bundleId: string, _formData: FormData) {
   const bundle = await db.bundle.findUnique({
     where: {
       id: bundleId,
@@ -944,7 +946,7 @@ export async function handleSyncProduct(admin: any, session: any, bundleId: stri
 /**
  * Handle updating bundle product details (title and image)
  */
-export async function handleUpdateBundleProduct(admin: any, session: any, bundleId: string, formData: FormData) {
+export async function handleUpdateBundleProduct(admin: AdminApiContext["admin"], session: Session, bundleId: string, formData: FormData) {
   try {
     const productId = formData.get("productId") as string;
     const productTitle = formData.get("productTitle") as string;
@@ -1053,7 +1055,7 @@ export async function handleUpdateBundleProduct(admin: any, session: any, bundle
 /**
  * Handle getting available pages for widget placement
  */
-export async function handleGetPages(admin: any, _session: any) {
+export async function handleGetPages(admin: AdminApiContext["admin"], _session: Session) {
   const GET_PAGES = `
     query getPages($first: Int!) {
       pages(first: $first) {
@@ -1090,7 +1092,7 @@ export async function handleGetPages(admin: any, _session: any) {
 /**
  * Handle getting theme templates
  */
-export async function handleGetThemeTemplates(admin: any, session: any) {
+export async function handleGetThemeTemplates(admin: AdminApiContext["admin"], session: Session) {
   try {
     // Get the published theme directly
     const GET_PUBLISHED_THEME = `
@@ -1372,7 +1374,7 @@ export async function handleGetThemeTemplates(admin: any, session: any) {
 /**
  * Handle getting current theme for deep linking
  */
-export async function handleGetCurrentTheme(admin: any, _session: any) {
+export async function handleGetCurrentTheme(admin: AdminApiContext["admin"], _session: Session) {
   const GET_CURRENT_THEME = `
     query getCurrentTheme {
       themes(first: 1, query: "role:main") {
@@ -1406,7 +1408,7 @@ export async function handleGetCurrentTheme(admin: any, _session: any) {
 /**
  * Handle ensuring bundle templates exist
  */
-export async function handleEnsureBundleTemplates(admin: any, session: any) {
+export async function handleEnsureBundleTemplates(admin: AdminApiContext["admin"], session: Session) {
   try {
     AppLogger.debug("[TEMPLATE_HANDLER] Ensuring bundle templates exist");
 
@@ -1517,7 +1519,7 @@ export async function handleEnsureBundleTemplates(admin: any, session: any) {
 /**
  * Check if full-page-bundle template exists in the theme
  */
-export async function handleCheckFullPageTemplate(admin: any, session: any) {
+export async function handleCheckFullPageTemplate(admin: AdminApiContext["admin"], session: Session) {
   try {
     AppLogger.debug("[TEMPLATE_CHECK] Checking for full-page-bundle template");
 
@@ -1598,7 +1600,7 @@ export async function handleCheckFullPageTemplate(admin: any, session: any) {
 /**
  * Handle widget placement validation with automated page creation
  */
-export async function handleValidateWidgetPlacement(admin: any, session: any, bundleId: string) {
+export async function handleValidateWidgetPlacement(admin: AdminApiContext["admin"], session: Session, bundleId: string) {
   try {
     AppLogger.debug("[WIDGET_PLACEMENT] Validating widget placement (single-click flow)", { bundleId });
 

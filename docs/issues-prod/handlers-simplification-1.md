@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-02-19
-**Last Updated:** 2026-02-19 05:00
+**Last Updated:** 2026-02-19 05:30
 
 ## Overview
 
@@ -27,7 +27,7 @@ Code-simplification audit of all four `handlers.server.ts` files identified 10 C
 
 - [x] Phase 1: Fix C1–C6 — MIXED_PROMISES + SILENT_SWALLOW in both bundle handlers ✅
 - [x] Phase 2: Fix C9–C10 — TRIPLE_VALIDATION — extract normaliseShopifyProductId ✅
-- [ ] Phase 3: Fix C7–C8 — ANY_ESCAPE — proper types on all exported handler signatures
+- [x] Phase 3: Fix C7–C8 — ANY_ESCAPE — proper types on all exported handler signatures ✅
 - [ ] Phase 4: Fix W14 — consolidate near-identical files into shared module
 
 ## Progress Log
@@ -57,6 +57,16 @@ Code-simplification audit of all four `handlers.server.ts` files identified 10 C
   - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
 - Lint: 0 errors
 - Next: Phase 3 — ANY_ESCAPE (proper types on exported handler signatures)
+
+### 2026-02-19 05:30 - Phase 3 Completed
+
+- ✅ C7/C8: Added `import type { AdminApiContext } from "@shopify/shopify-app-remix/server"` and `import type { Session } from "@shopify/shopify-api"` to both files
+- ✅ Replaced all 10 occurrences of `admin: any, session: any` (and `_session: any` variants) with `admin: AdminApiContext["admin"], session: Session` across both files
+- Files modified:
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
+- Lint: 0 errors (warnings only, pre-existing)
+- Next: Phase 4 — W14 file duplication consolidation
 
 ### 2026-02-19 03:30 - Issue Created, Starting Phase 1
 - Audit produced by `/code-simplification` skill subagent
