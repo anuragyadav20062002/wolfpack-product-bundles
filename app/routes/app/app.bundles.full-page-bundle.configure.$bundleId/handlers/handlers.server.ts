@@ -332,6 +332,16 @@ export async function handleSaveBundle(admin: any, session: any, bundleId: strin
 
         const responseData = await response.json();
 
+        // Layer 1: Transport errors
+        if (responseData.errors?.length) {
+          AppLogger.error("[PRODUCT_SYNC] GraphQL transport error updating product status:", {
+            component: "app.bundles.cart-transform.configure",
+            operation: "sync-product-status",
+            productId: updatedBundle.shopifyProductId,
+          }, responseData.errors);
+        }
+
+        // Layer 2: Mutation user errors
         if (responseData.data?.productUpdate?.userErrors?.length > 0) {
           const errors = responseData.data.productUpdate.userErrors;
           AppLogger.error("[PRODUCT_SYNC] Shopify returned errors while updating product status:", {
@@ -470,54 +480,46 @@ export async function handleSaveBundle(admin: any, session: any, bundleId: strin
       // Extract shopifyProductId to a const for TypeScript type narrowing
       const shopifyProductId = updatedBundle.shopifyProductId;
 
-      try {
-        // Parallelize independent metafield updates for better performance
-        AppLogger.debug("[METAFIELDS] Updating all metafields in parallel");
+      // Parallelize independent metafield updates for better performance
+      AppLogger.debug("[METAFIELDS] Updating all metafields in parallel");
+      const [standardResult, componentResult, variantResult] = await Promise.allSettled([
+        // STANDARD METAFIELDS: For Shopify cart transform compatibility (non-critical)
+        (async () => {
+          AppLogger.debug("[STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
+          const { metafields: standardMetafields, errors: conversionErrors } = await convertBundleToStandardMetafields(admin, baseConfiguration);
+          if (conversionErrors.length > 0) {
+            AppLogger.warn("[STANDARD_METAFIELD] Some products could not be processed:", conversionErrors);
+          }
+          if (Object.keys(standardMetafields).length > 0) {
+            await updateProductStandardMetafields(admin, shopifyProductId, standardMetafields);
+            AppLogger.debug("[STANDARD_METAFIELD] Standard metafields updated successfully");
+          } else {
+            AppLogger.debug("[STANDARD_METAFIELD] No standard metafields to update");
+          }
+        })(),
+        // COMPONENT METAFIELDS: CRITICAL for cart transform MERGE operation
+        updateComponentProductMetafields(admin, shopifyProductId, fullBundleConfig),
+        // BUNDLE VARIANT METAFIELDS: CRITICAL — without this, the widget cannot load on the storefront
+        updateBundleProductMetafields(admin, shopifyProductId, fullBundleConfig),
+      ]);
 
-        await Promise.all([
-          // STANDARD METAFIELDS: For Shopify cart transform compatibility
-          (async () => {
-            try {
-              AppLogger.debug("[STANDARD_METAFIELD] Updating standard Shopify metafields for bundle product");
-              const { metafields: standardMetafields, errors: conversionErrors } = await convertBundleToStandardMetafields(admin, baseConfiguration);
-              if (conversionErrors.length > 0) {
-                AppLogger.warn("[STANDARD_METAFIELD] Some products could not be processed:", conversionErrors);
-              }
-              if (Object.keys(standardMetafields).length > 0) {
-                await updateProductStandardMetafields(admin, shopifyProductId, standardMetafields);
-                AppLogger.debug("[STANDARD_METAFIELD] Standard metafields updated successfully");
-              } else {
-                AppLogger.debug("[STANDARD_METAFIELD] No standard metafields to update");
-              }
-            } catch (error) {
-              AppLogger.debug("[STANDARD_METAFIELD] Skipping standard metafields (optional):", {}, (error as Error).message);
-            }
-          })(),
-
-          // COMPONENT METAFIELDS: Update component products with component_parents metafield
-          // CRITICAL: This metafield is required for cart transform MERGE operation
-          (async () => {
-            AppLogger.debug("[COMPONENT_METAFIELD] Updating component products with component_parents metafield");
-            await updateComponentProductMetafields(admin, shopifyProductId, fullBundleConfig);
-            AppLogger.debug("[COMPONENT_METAFIELD] Component product metafields updated successfully");
-          })(),
-
-          // BUNDLE VARIANT METAFIELDS: Set bundle_ui_config and other variant-level metafields
-          // This is CRITICAL - without this, the widget cannot load on the storefront
-          (async () => {
-            AppLogger.debug("[BUNDLE_VARIANT_METAFIELD] Updating bundle variant metafields (bundle_ui_config, component_reference, etc.)");
-            await updateBundleProductMetafields(admin, shopifyProductId, fullBundleConfig);
-            AppLogger.debug("[BUNDLE_VARIANT_METAFIELD] Bundle variant metafields updated successfully");
-          })()
-        ]);
-
-        AppLogger.debug("[METAFIELDS] All metafields updated successfully");
-
-      } catch (error) {
-        AppLogger.error("Failed to update bundle product metafields:", {}, error as any);
-        // Don't fail the entire operation - just log the error
-        // Metafield update failures shouldn't block the save
+      // Standard metafields: non-critical, warn only
+      if (standardResult.status === "rejected") {
+        AppLogger.warn("[STANDARD_METAFIELD] Standard metafields update failed (non-critical):", {
+          component: "handlers.server",
+          shopifyProductId,
+        }, standardResult.reason);
       }
+      // Component metafields: CRITICAL for cart transform — propagate failure
+      if (componentResult.status === "rejected") {
+        throw new Error(`Failed to update component metafields (cart transform will break): ${componentResult.reason}`);
+      }
+      // Bundle variant metafields: CRITICAL for widget load — propagate failure
+      if (variantResult.status === "rejected") {
+        throw new Error(`Failed to update bundle variant metafields (widget will not load): ${variantResult.reason}`);
+      }
+
+      AppLogger.debug("[METAFIELDS] All metafields updated successfully");
     }
 
     // BUNDLE INDEX: No longer needed
@@ -535,11 +537,9 @@ export async function handleSaveBundle(admin: any, session: any, bundleId: strin
     });
 
   } catch (error) {
-    AppLogger.error("[BUNDLE_CONFIG] Error saving bundle:", {}, error as any);
-    return json({
-      success: false,
-      error: (error as Error).message || "Failed to save bundle configuration"
-    }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to save bundle configuration";
+    AppLogger.error("[BUNDLE_CONFIG] Error saving bundle:", { component: "handlers.server", bundleId }, error);
+    return json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -582,7 +582,7 @@ export async function handleUpdateBundleStatus(admin: any, session: any, bundleI
         }
       `;
 
-      await admin.graphql(UPDATE_PRODUCT_STATUS, {
+      const statusResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
         variables: {
           input: {
             id: updatedBundle.shopifyProductId,
@@ -590,6 +590,20 @@ export async function handleUpdateBundleStatus(admin: any, session: any, bundleI
           }
         }
       });
+      const statusData = await statusResponse.json();
+      if (statusData.errors?.length) {
+        AppLogger.error("[PRODUCT_SYNC] GraphQL transport error updating product status:", {
+          component: "handlers.server",
+          productId: updatedBundle.shopifyProductId,
+        }, statusData.errors);
+      }
+      const statusUserErrors = statusData.data?.productUpdate?.userErrors ?? [];
+      if (statusUserErrors.length > 0) {
+        AppLogger.warn("[PRODUCT_SYNC] Shopify rejected status update:", {
+          component: "handlers.server",
+          productId: updatedBundle.shopifyProductId,
+        }, statusUserErrors);
+      }
     } catch (error) {
       AppLogger.error("[PRODUCT_SYNC] Failed to sync product status:", {}, error as any);
     }
@@ -793,10 +807,11 @@ export async function handleSyncProduct(admin: any, session: any, bundleId: stri
       });
 
     } catch (error) {
-      AppLogger.error("Sync error:", {}, error as any);
+      const message = error instanceof Error ? error.message : "Unknown sync error";
+      AppLogger.error("Sync error:", { component: "handlers.server", bundleId }, error);
       return json({
         success: false,
-        error: `Failed to sync product: ${(error as Error).message}`
+        error: `Failed to sync product: ${message}`
       }, { status: 500 });
     }
   }
