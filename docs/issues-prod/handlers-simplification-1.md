@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-02-19
-**Last Updated:** 2026-02-19 03:30
+**Last Updated:** 2026-02-19 05:00
 
 ## Overview
 
@@ -26,7 +26,7 @@ Code-simplification audit of all four `handlers.server.ts` files identified 10 C
 ## Phases Checklist
 
 - [x] Phase 1: Fix C1–C6 — MIXED_PROMISES + SILENT_SWALLOW in both bundle handlers ✅
-- [ ] Phase 2: Fix C9–C10 — TRIPLE_VALIDATION — extract normaliseShopifyProductId
+- [x] Phase 2: Fix C9–C10 — TRIPLE_VALIDATION — extract normaliseShopifyProductId ✅
 - [ ] Phase 3: Fix C7–C8 — ANY_ESCAPE — proper types on all exported handler signatures
 - [ ] Phase 4: Fix W14 — consolidate near-identical files into shared module
 
@@ -46,6 +46,17 @@ Code-simplification audit of all four `handlers.server.ts` files identified 10 C
   - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
 - Lint: 0 errors
 - Next: Phase 2 — TRIPLE_VALIDATION (extract normaliseShopifyProductId)
+
+### 2026-02-19 05:00 - Phase 2 Completed
+
+- ✅ C9/C10: Extracted `normaliseShopifyProductId()` — validates + normalises in a single boundary call
+- ✅ Replaced upfront UUID-only check loop with normalise-in-place loop (IDs mutated before Prisma `.map()`)
+- ✅ Removed 40-line duplicate validation block inside Prisma `.map()` in both files — now a single comment + `product.id` reference
+- Files modified:
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
+- Lint: 0 errors
+- Next: Phase 3 — ANY_ESCAPE (proper types on exported handler signatures)
 
 ### 2026-02-19 03:30 - Issue Created, Starting Phase 1
 - Audit produced by `/code-simplification` skill subagent

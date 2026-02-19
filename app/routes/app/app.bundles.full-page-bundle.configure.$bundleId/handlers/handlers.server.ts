@@ -25,6 +25,41 @@ import {
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
 
+/**
+ * Validate and normalise a Shopify product ID to the GID format.
+ * Throws with a clear message for UUIDs (corrupted browser state) or unrecognised formats.
+ * Called once at the boundary — callers can use the returned value directly.
+ */
+function normaliseShopifyProductId(raw: string, context: { title: string; stepName: string }): string {
+  if (!raw || typeof raw !== "string") {
+    throw new Error(`Invalid product ID: must be a non-empty string. Got: ${typeof raw}`);
+  }
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (UUID_RE.test(raw)) {
+    throw new Error(
+      `Invalid product ID detected: UUID "${raw}" for product "${context.title}" in step "${context.stepName}". ` +
+      `This indicates corrupted browser state. Please refresh the page and re-select the product using the product picker.`
+    );
+  }
+  if (raw.startsWith("gid://shopify/Product/")) {
+    const numericId = raw.replace("gid://shopify/Product/", "");
+    if (!/^\d+$/.test(numericId)) {
+      throw new Error(
+        `Invalid product ID format: "${raw}" for product "${context.title}". ` +
+        `Shopify product IDs must be numeric. Expected format: gid://shopify/Product/123456`
+      );
+    }
+    return raw;
+  }
+  if (/^\d+$/.test(raw)) {
+    return `gid://shopify/Product/${raw}`;
+  }
+  throw new Error(
+    `Invalid product ID format: "${raw}" for product "${context.title}". ` +
+    `Expected Shopify GID (gid://shopify/Product/123456) or numeric ID (123456).`
+  );
+}
+
 // Utility function for safe JSON parsing
 export const safeJsonParse = (value: any, defaultValue: any = []) => {
   if (!value) return defaultValue;
@@ -98,20 +133,16 @@ export async function handleSaveBundle(admin: any, session: any, bundleId: strin
       }
     });
 
-    // VALIDATION: Check for UUID product IDs and reject them
-    // This prevents corrupted browser state from creating invalid data
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
+    // VALIDATION + NORMALISATION: Validate and normalise all product IDs in one pass at the boundary.
+    // normaliseShopifyProductId rejects UUIDs (corrupted browser state) and converts numeric IDs to GIDs.
+    // IDs are mutated in place so the Prisma .map() below can use product.id directly.
     for (const step of stepsData) {
       if (!step.StepProduct || !Array.isArray(step.StepProduct)) continue;
-
       for (const product of step.StepProduct) {
-        if (uuidRegex.test(product.id)) {
-          const errorMsg = `Invalid product ID detected: UUID "${product.id}" for product "${product.title || product.name}" in step "${step.name}". ` +
-            `This indicates corrupted browser state. Please refresh the page and re-select the product using the product picker.`;
-          AppLogger.error(errorMsg);
-          throw new Error(errorMsg);
-        }
+        product.id = normaliseShopifyProductId(product.id, {
+          title: product.title || product.name || "unknown",
+          stepName: step.name,
+        });
       }
     }
 
@@ -206,46 +237,9 @@ export async function handleSaveBundle(admin: any, session: any, bundleId: strin
                 // Create StepProduct records for selected products
                 StepProduct: {
                   create: (step.StepProduct || []).map((product: any, productIndex: number) => {
-                    // STRICT VALIDATION: Only allow Shopify GIDs
-                    let productId = product.id;
-
-                    if (!productId || typeof productId !== 'string') {
-                      throw new Error(`Invalid product ID: Product ID is required and must be a string. Got: ${typeof productId}`);
-                    }
-
-                    // Check if it's a UUID (reject immediately)
-                    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId);
-                    if (isUUID) {
-                      throw new Error(
-                        `Invalid product ID: UUID detected "${productId}" for product "${product.title || product.name}". ` +
-                        `Only Shopify product IDs are allowed. Please re-select the product using the product picker.`
-                      );
-                    }
-
-                    // Normalize to Shopify GID format
-                    if (productId.startsWith('gid://shopify/Product/')) {
-                      // Already in correct format - validate it's numeric after the prefix
-                      const numericId = productId.replace('gid://shopify/Product/', '');
-                      if (!/^\d+$/.test(numericId)) {
-                        throw new Error(
-                          `Invalid product ID format: "${productId}" for product "${product.title || product.name}". ` +
-                          `Shopify product IDs must be numeric. Expected format: gid://shopify/Product/123456`
-                        );
-                      }
-                      // Valid Shopify GID
-                    } else if (/^\d+$/.test(productId)) {
-                      // Numeric ID - convert to GID
-                      productId = `gid://shopify/Product/${productId}`;
-                    } else {
-                      // Invalid format - reject
-                      throw new Error(
-                        `Invalid product ID format: "${productId}" for product "${product.title || product.name}". ` +
-                        `Expected Shopify GID (gid://shopify/Product/123456) or numeric ID (123456).`
-                      );
-                    }
-
+                    // IDs already validated and normalised at the boundary above
                     return {
-                      productId: productId,
+                      productId: product.id,
                       title: product.title || product.name || 'Unnamed Product',
                       imageUrl: product.imageUrl || product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null,
                       variants: product.variants || null,
