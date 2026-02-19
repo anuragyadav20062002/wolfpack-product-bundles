@@ -229,6 +229,31 @@ npm run test:coverage # coverage report
 6. **NO code for new features without completing the feature-pipeline first** ❌
 7. **NEVER run `shopify app deploy` autonomously** — see Shopify Deploy Rule below ❌
 8. **Write tests BEFORE implementation for all new code** ✅
+9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
+
+## 🔍 Lint Before Commit Rule
+
+### MANDATORY: Run ESLint on modified files before every commit
+
+Before staging and committing any code changes, run ESLint on the files you modified to catch errors introduced by the change.
+
+```bash
+# Lint only the files you changed (fast — avoids scanning the whole project)
+npx eslint --max-warnings 9999 <file1> <file2> ...
+
+# Or lint the full project if many files changed
+npm run lint -- --max-warnings 9999
+```
+
+**The commit MUST produce zero ESLint errors.** Warnings are acceptable (pre-existing issues are tracked as warnings, not errors).
+
+**Why `--max-warnings 9999`:** The project has ~6500 pre-existing warnings (widespread `any` usage, nullish coalescing suggestions). Without this flag, ESLint exits non-zero on any warning, which would block the lint check entirely.
+
+**When to fix vs. warn:**
+- **New code you wrote** that triggers an error → fix it
+- **Pre-existing warnings** in files you touched but didn't author → leave as-is (they're tracked as `warn`, not `error`)
+
+---
 
 ## 🚢 Shopify Deploy Rule
 
