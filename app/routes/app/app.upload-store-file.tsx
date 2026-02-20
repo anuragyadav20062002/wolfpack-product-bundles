@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../../shopify.server";
 import type { StoreFile } from "./app.store-files";
 
@@ -75,7 +75,7 @@ function filenameFromUrl(url: string): string {
 }
 
 function errorResponse(message: string) {
-  return Response.json({ ok: false, error: message });
+  return json({ ok: false, error: message });
 }
 
 // Loader — called by the client to poll file status after upload
@@ -84,7 +84,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const fileId = new URL(request.url).searchParams.get("fileId");
 
   if (!fileId) {
-    return Response.json({ error: "Missing fileId" }, { status: 400 });
+    return json({ error: "Missing fileId" }, { status: 400 });
   }
 
   const pollRes = await admin.graphql(FILE_STATUS_QUERY, {
@@ -94,7 +94,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const node = pollData.data?.node;
 
   if (!node) {
-    return Response.json({ error: "File not found" }, { status: 404 });
+    return json({ error: "File not found" }, { status: 404 });
   }
 
   if (node.fileStatus === "READY" && node.image?.url) {
@@ -106,10 +106,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
       alt: node.alt ?? "",
       createdAt: node.createdAt ?? new Date().toISOString(),
     };
-    return Response.json({ fileStatus: "READY", file: storeFile });
+    return json({ fileStatus: "READY", file: storeFile });
   }
 
-  return Response.json({ fileStatus: node.fileStatus ?? "PROCESSING" });
+  return json({ fileStatus: node.fileStatus ?? "PROCESSING" });
 }
 
 // Action — receives the file, runs stagedUpload + fileCreate, returns fileId immediately.
@@ -205,5 +205,5 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // Return fileId immediately — client polls the loader for READY status
-  return Response.json({ ok: true, fileId: createdFile.id as string });
+  return json({ ok: true, fileId: createdFile.id as string });
 }

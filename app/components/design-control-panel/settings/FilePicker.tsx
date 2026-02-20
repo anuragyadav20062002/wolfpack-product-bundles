@@ -1,15 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useFetcher } from "@remix-run/react";
 import {
-  Modal,
   BlockStack,
   InlineStack,
   TextField,
   Button,
   Text,
   Spinner,
-  Thumbnail,
   Banner,
+  Icon,
 } from "@shopify/polaris";
 import { ImageIcon, XCircleIcon, UploadIcon } from "@shopify/polaris-icons";
 import type { StoreFile } from "../../../routes/app/app.store-files";
@@ -103,6 +103,7 @@ function ProgressCircle({ status }: { status: "spinning" | "success" }) {
 
 export function FilePicker({ value, onChange }: FilePickerProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [files, setFiles] = useState<StoreFile[]>([]);
   const [search, setSearch] = useState("");
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
@@ -114,7 +115,6 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
   const [pendingFileId, setPendingFileId] = useState<string | null>(null);
-  // pollTrigger increments each time we need to schedule the next poll
   const [pollTrigger, setPollTrigger] = useState(0);
   const pollCountRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,8 +128,12 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
   const statusFetcher = useFetcher<StatusResult>();
 
   const filesLoading = filesFetcher.state === "loading";
-  // Block grid + buttons while upload or polling is in progress
   const isBlocked = uploadStatus === "uploading" || uploadStatus === "polling";
+
+  // Mark mounted so createPortal is safe on the client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load initial files when picker opens
   useEffect(() => {
@@ -152,7 +156,7 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     }
   }, [filesFetcher.data]);
 
-  // Handle upload action result — transition from "uploading" to "polling"
+  // Handle upload action result → transition to polling
   useEffect(() => {
     if (uploadFetcher.state === "idle" && uploadFetcher.data) {
       const result = uploadFetcher.data;
@@ -168,7 +172,7 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     }
   }, [uploadFetcher.state, uploadFetcher.data]);
 
-  // Schedule a status poll whenever polling state or pollTrigger changes
+  // Schedule a status poll when in "polling" state
   useEffect(() => {
     if (uploadStatus !== "polling" || !pendingFileId) return;
 
@@ -208,7 +212,6 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
       setUploadError("Upload processing failed. Please try again.");
       setPendingFileId(null);
     } else {
-      // Still PROCESSING — schedule the next poll
       setPollTrigger((n) => n + 1);
     }
   }, [statusFetcher.state, statusFetcher.data, uploadStatus]);
@@ -219,6 +222,31 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     const timer = setTimeout(() => setUploadStatus("idle"), 1500);
     return () => clearTimeout(timer);
   }, [uploadStatus]);
+
+  // Capture Escape to prevent the DCP modal from closing while picker is open
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        handleClose();
+      }
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lock body scroll while picker is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   const resetUploadState = useCallback(() => {
     setUploadStatus("idle");
@@ -270,12 +298,10 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
   const handleFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      // Reset input so the same file can be re-selected after an error
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       if (!file) return;
 
-      // Client-side size check
       if (file.size > MAX_BYTES) {
         setSizeError("File must be under 20 MB.");
         return;
@@ -304,8 +330,10 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
 
   const currentFilename = value ? filenameFromUrl(value) : null;
 
-  const showProgressCircle = uploadStatus === "uploading" || uploadStatus === "polling" || uploadStatus === "success";
-  const progressCircleStatus: "spinning" | "success" = uploadStatus === "success" ? "success" : "spinning";
+  const showProgressCircle =
+    uploadStatus === "uploading" || uploadStatus === "polling" || uploadStatus === "success";
+  const progressCircleStatus: "spinning" | "success" =
+    uploadStatus === "success" ? "success" : "spinning";
   const progressLabel =
     uploadStatus === "uploading"
       ? "Uploading…"
@@ -315,60 +343,135 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
   const progressTone: "subdued" | "success" =
     uploadStatus === "success" ? "success" : "subdued";
 
-  return (
-    <BlockStack gap="200">
-      <Text as="p" variant="bodyMd" fontWeight="semibold">
-        Background Image
-      </Text>
+  // ─── Trigger area ──────────────────────────────────────────────────────────
 
-      {value ? (
-        <InlineStack gap="300" blockAlign="center">
-          <Thumbnail
-            source={value}
-            alt={currentFilename ?? "Background image"}
-            size="small"
-          />
-          <BlockStack gap="100">
-            <Text as="p" variant="bodySm" tone="subdued">
-              {truncate(currentFilename ?? value, 30)}
-            </Text>
-            <Button
-              variant="plain"
-              tone="critical"
-              icon={XCircleIcon}
-              onClick={handleRemove}
-            >
-              Remove image
+  const trigger = value ? (
+    // Selected state
+    <div
+      style={{
+        border: "1px solid #c9cccf",
+        borderRadius: "8px",
+        padding: "10px",
+        background: "#fafbfb",
+      }}
+    >
+      <InlineStack gap="200" blockAlign="start">
+        <img
+          src={value}
+          alt={currentFilename ?? "Background image"}
+          style={{
+            width: "52px",
+            height: "52px",
+            objectFit: "cover",
+            borderRadius: "4px",
+            flexShrink: 0,
+            border: "1px solid #e1e3e5",
+          }}
+        />
+        <BlockStack gap="100">
+          <Text as="p" variant="bodyXs" tone="subdued">
+            {truncate(currentFilename ?? value, 24)}
+          </Text>
+          <InlineStack gap="200">
+            <Button variant="plain" size="slim" onClick={handleOpen}>
+              Change
             </Button>
-          </BlockStack>
-        </InlineStack>
-      ) : (
-        <Button variant="plain" icon={ImageIcon} onClick={handleOpen}>
-          Choose from store files
-        </Button>
-      )}
+            <Button variant="plain" tone="critical" size="slim" icon={XCircleIcon} onClick={handleRemove}>
+              Remove
+            </Button>
+          </InlineStack>
+        </BlockStack>
+      </InlineStack>
+    </div>
+  ) : (
+    // Empty state — dashed upload zone button
+    <button
+      type="button"
+      onClick={handleOpen}
+      style={{
+        width: "100%",
+        border: "2px dashed #c9cccf",
+        borderRadius: "8px",
+        padding: "18px 12px",
+        background: "#fafbfb",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "6px",
+      }}
+    >
+      <Icon source={ImageIcon} tone="subdued" />
+      <Text as="p" variant="bodySm" fontWeight="medium">
+        Choose background image
+      </Text>
+      <Text as="p" variant="bodyXs" tone="subdued">
+        Select from store files or upload
+      </Text>
+    </button>
+  );
 
-      {/* Hidden native file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={ACCEPTED_TYPES}
-        style={{ display: "none" }}
-        onChange={handleFileInputChange}
-      />
+  // ─── Portal modal ──────────────────────────────────────────────────────────
 
-      <Modal
-        open={open}
-        onClose={handleClose}
-        title="Choose background image"
-        primaryAction={{
-          content: "Select",
-          disabled: !selectedUrl || isBlocked,
-          onAction: handleSelect,
+  const dialogContent = (
+    // Outer overlay — captures backdrop clicks
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+    >
+      {/* Backdrop */}
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} />
+
+      {/* Dialog */}
+      <div
+        style={{
+          position: "relative",
+          width: "min(90vw, 680px)",
+          maxHeight: "82vh",
+          background: "#fff",
+          borderRadius: "12px",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
-        secondaryActions={[{ content: "Cancel", onAction: handleClose }]}
       >
-        <Modal.Section>
+        {/* Header */}
+        <div
+          style={{
+            padding: "14px 20px",
+            borderBottom: "1px solid #e1e3e5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text as="span" variant="headingMd">
+            Choose background image
+          </Text>
+          <button
+            type="button"
+            onClick={handleClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "4px",
+              display: "flex",
+              alignItems: "center",
+              borderRadius: "4px",
+              color: "#6d7175",
+              fontSize: "18px",
+              lineHeight: 1,
+            }}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
           <BlockStack gap="400">
             {/* Search + upload row */}
             <InlineStack gap="200" blockAlign="center">
@@ -402,7 +505,7 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
               </Text>
             )}
 
-            {/* Progress circle with status label */}
+            {/* Progress circle */}
             {showProgressCircle && (
               <InlineStack gap="300" blockAlign="center">
                 <ProgressCircle status={progressCircleStatus} />
@@ -514,8 +617,50 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
               </div>
             )}
           </BlockStack>
-        </Modal.Section>
-      </Modal>
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            padding: "12px 20px",
+            borderTop: "1px solid #e1e3e5",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "8px",
+          }}
+        >
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button
+            variant="primary"
+            disabled={!selectedUrl || isBlocked}
+            onClick={handleSelect}
+          >
+            Select
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <BlockStack gap="200">
+      <Text as="p" variant="bodyMd" fontWeight="semibold">
+        Background Image
+      </Text>
+
+      {trigger}
+
+      {/* Hidden native file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_TYPES}
+        style={{ display: "none" }}
+        onChange={handleFileInputChange}
+      />
+
+      {/* Portal modal — renders above the App Bridge DCP modal */}
+      {mounted && open ? createPortal(dialogContent, document.body) : null}
     </BlockStack>
   );
 }

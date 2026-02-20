@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-02-20
-**Last Updated:** 2026-02-20 02:00
+**Last Updated:** 2026-02-20 03:00
 
 ## Overview
 
@@ -35,6 +35,13 @@ Files to change:
 - ✅ Phase 3: `FilePicker.tsx` — upload button, hidden file input, uploadFetcher, uploadStatus state machine, error/timeout banners, grid disable during upload
 - ✅ Lint: 0 errors (32 pre-existing warnings)
 
+### 2026-02-20 03:00 - Completed Phase 5: Bug fixes + UX polish
+
+- ✅ `app.upload-store-file.tsx` — fixed `TypeError: Response.json is not a function` by replacing `Response.json()` with `json()` from `@remix-run/node` (matches codebase pattern)
+- ✅ `FilePicker.tsx` — replaced Polaris `Modal` with `createPortal` overlay at `z-index: 99999` so it renders above the App Bridge `<Modal variant="max">` DCP modal; added Escape key capture (stops propagation) to prevent DCP close while picker is open; body scroll locked while picker is open
+- ✅ `FilePicker.tsx` — redesigned trigger: dashed-border upload zone when no image, thumbnail + Change/Remove buttons when image selected
+- ✅ Lint: 0 errors
+
 ### 2026-02-20 02:00 - Completed Phase 4: Client-side polling refactor
 
 User feedback: action must not hold HTTP connection open for 30s polling; instead
@@ -52,5 +59,8 @@ use fast action + client-side polling with a progress circle.
 - [x] Lint
 - [x] Commit (7c7a953)
 - [x] Phase 4: Client-side polling refactor + ProgressCircle
+- [x] Lint
+- [x] Commit
+- [x] Phase 5: Bug fixes + UX polish
 - [x] Lint
 - [x] Commit
