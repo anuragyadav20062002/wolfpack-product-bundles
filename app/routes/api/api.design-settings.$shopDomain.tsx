@@ -4,6 +4,9 @@ import { prisma } from "../../db.server";
 import { sanitizeCss } from "../../lib/css-sanitizer";
 import { generateCSSFromSettings } from "../../lib/css-generators";
 
+// auth: public — served via <link> tag in storefront theme; browser request, no session available.
+// Data is non-sensitive CSS design tokens (colors, fonts, spacing).
+
 /**
  * API endpoint that returns design settings as CSS variables
  * Usage: <link rel="stylesheet" href="https://your-app.com/api/design-settings/{shopDomain}.css" />

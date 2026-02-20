@@ -30,7 +30,6 @@ export class BundleDataManager {
           bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
         // Valid bundle type
       } else {
-        console.warn(`Unknown bundle type: ${bundle.bundleType}`);
       }
 
       // Validate steps

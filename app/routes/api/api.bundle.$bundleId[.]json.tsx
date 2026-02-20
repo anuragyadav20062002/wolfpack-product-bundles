@@ -1,6 +1,6 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunction } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { requireAppProxy } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 
@@ -134,7 +134,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     console.log('[APP_PROXY] 🔐 Attempting authentication...');
 
     // Authenticate the request via app proxy
-    const { session } = await authenticate.public.appProxy(request);
+    const { session } = await requireAppProxy(request);
 
     console.log('[APP_PROXY] Authentication result:', { hasSession: !!session, shop: session?.shop });
 
@@ -259,7 +259,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     });
 
     // Fetch full product details from Shopify for all products in the bundle
-    const authResult = await authenticate.public.appProxy(request);
+    const authResult = await requireAppProxy(request);
     const admin = authResult.admin;
 
     // Collect all unique product IDs from all steps

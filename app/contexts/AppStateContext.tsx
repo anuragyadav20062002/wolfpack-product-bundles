@@ -26,8 +26,9 @@ import React, {
   useMemo,
   type ReactNode,
 } from "react";
+import type {
+  AppStateService} from "../services/app.state.service";
 import {
-  AppStateService,
   appState as appStateService,
 } from "../services/app.state.service";
 import type {

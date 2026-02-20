@@ -127,13 +127,13 @@ export default function DesignControlPanel() {
 
     if (hasUnsavedChanges) {
       if (!saveBarVisibleRef.current) {
-        shopify.saveBar.show('dcp-save-bar');
+        void shopify.saveBar.show('dcp-save-bar');
         saveBarVisibleRef.current = true;
       }
     } else {
       saveBarTimeoutRef.current = setTimeout(() => {
         if (!hasUnsavedChanges && saveBarVisibleRef.current) {
-          shopify.saveBar.hide('dcp-save-bar');
+          void shopify.saveBar.hide('dcp-save-bar');
           saveBarVisibleRef.current = false;
         }
       }, 100);
@@ -148,7 +148,7 @@ export default function DesignControlPanel() {
 
   // Modal handlers
   const handleOpenModal = useCallback(() => {
-    shopify.modal.show('dcp-customization-modal');
+    void shopify.modal.show('dcp-customization-modal');
   }, [shopify]);
 
   // Handle action data (form submission response)
@@ -163,7 +163,7 @@ export default function DesignControlPanel() {
       setToastError(!actionData.success);
 
       if (actionData.success) {
-        shopify.saveBar.hide('dcp-save-bar');
+        void shopify.saveBar.hide('dcp-save-bar');
         saveBarVisibleRef.current = false;
         markAsSaved();
       }

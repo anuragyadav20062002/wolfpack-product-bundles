@@ -123,6 +123,102 @@ git commit -m "[full-page-design-improvements-1] type: your message"
 git push origin STAGING
 ```
 
+## 🚀 Feature Pipeline — Mandatory for New Features
+
+### When to invoke the `feature-pipeline` skill
+
+**BEFORE writing any code for a new feature or capability**, you MUST invoke the
+`feature-pipeline` skill. This applies whenever the user gives a high-level requirement,
+capability request, or "I want to add X" instruction.
+
+The pipeline runs four sequential stages:
+1. **BR** — Research + Business Requirement document
+2. **PO** — Product Owner Requirements + acceptance criteria
+3. **Architect** — Architecture Decision Record + file-by-file plan
+4. **SDE** — Implementation (actual code)
+
+**The SDE stage (code writing) must NOT begin until stages BR → PO → Architect are complete
+and the architecture document exists.**
+
+### When NOT to invoke `feature-pipeline`
+
+Do NOT use `feature-pipeline` for:
+- Bug fixes or error corrections
+- Debugging sessions
+- Small isolated fixes (typos, config values, single-line corrections)
+- Refactors explicitly scoped to a single file or function
+- Documentation-only changes
+
+**Decision rule:** If the user says "fix", "debug", "it's broken", or points at a specific
+error — skip the pipeline. If the user says "add", "build", "implement", "I want", "we need",
+or describes a new capability — the pipeline is mandatory.
+
+### Enforcement
+
+```
+❌ NO code changes for new features without completing BR → PO → Architect stages first
+❌ NO skipping stages — all four must run in order
+✅ Each stage produces a document in docs/{feature-name}/
+✅ SDE stage creates the issue file per the Issue Tracking System below
+```
+
+---
+
+## 🧪 Test-Driven Development (TDD)
+
+### Always prefer TDD
+
+For all new code — helpers, services, route handlers, utilities — write tests **before** the
+implementation. The cycle is: Red → Green → Refactor.
+
+```
+1. Write a failing test that describes the expected behaviour
+2. Run tests — confirm they fail (Red)
+3. Write the minimum implementation to make tests pass (Green)
+4. Refactor if needed — tests must still pass
+5. Repeat for the next behaviour
+```
+
+### Test file location and naming
+
+```
+tests/
+├── unit/
+│   ├── lib/          ← helpers, utilities (e.g. auth-guards, css-sanitizer)
+│   ├── services/     ← server services
+│   ├── routes/       ← route action/loader functions
+│   └── extensions/   ← cart transform, checkout UI
+├── integration/      ← multi-layer flows (DB + service + route)
+└── e2e/              ← full request lifecycle
+```
+
+File naming: `{module-name}.test.ts`
+
+### What must be tested
+
+- Every exported function in `app/lib/`
+- Every auth guard path (authorized, unauthorized, missing env var)
+- Every route `action` and `loader` — happy path + error cases
+- Any function containing conditional branching or security logic
+
+### Running tests
+
+```bash
+npm test              # all tests
+npm run test:unit     # unit only
+npm run test:watch    # watch mode during development
+npm run test:coverage # coverage report
+```
+
+### TDD does NOT apply to
+
+- One-line config changes
+- CSS/style-only changes
+- Documentation changes
+- Route annotation comments (`// auth: public`)
+
+---
+
 ## 🚫 Strict Rules
 
 1. **NO commits without updating issue file first** ❌
@@ -130,6 +226,66 @@ git push origin STAGING
 3. **ALL changes must be logged in progress log** ✅
 4. **Update issue file BEFORE and AFTER each commit** ✅
 5. **Every commit must reference the issue ID** ✅
+6. **NO code for new features without completing the feature-pipeline first** ❌
+7. **NEVER run `shopify app deploy` autonomously** — see Shopify Deploy Rule below ❌
+8. **Write tests BEFORE implementation for all new code** ✅
+9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
+
+## 🔍 Lint Before Commit Rule
+
+### MANDATORY: Run ESLint on modified files before every commit
+
+Before staging and committing any code changes, run ESLint on the files you modified to catch errors introduced by the change.
+
+```bash
+# Lint only the files you changed (fast — avoids scanning the whole project)
+npx eslint --max-warnings 9999 <file1> <file2> ...
+
+# Or lint the full project if many files changed
+npm run lint -- --max-warnings 9999
+```
+
+**The commit MUST produce zero ESLint errors.** Warnings are acceptable (pre-existing issues are tracked as warnings, not errors).
+
+**Why `--max-warnings 9999`:** The project has ~6500 pre-existing warnings (widespread `any` usage, nullish coalescing suggestions). Without this flag, ESLint exits non-zero on any warning, which would block the lint check entirely.
+
+**When to fix vs. warn:**
+- **New code you wrote** that triggers an error → fix it
+- **Pre-existing warnings** in files you touched but didn't author → leave as-is (they're tracked as `warn`, not `error`)
+
+---
+
+## 🚢 Shopify Deploy Rule
+
+### NEVER run `shopify app deploy` autonomously
+
+The `shopify app deploy` command pushes extensions and app configuration to Shopify's
+servers and can affect live merchant stores. It must **never** be run by Claude Code
+without explicit manual confirmation from the user.
+
+**Rule:** If a workflow step requires `shopify app deploy`, stop and display the following
+prompt to the user:
+
+```
+ACTION REQUIRED — Manual deploy needed.
+
+Run the following command in your terminal:
+
+  shopify app deploy
+
+Reason: [brief explanation of why deploy is needed]
+
+Let me know once it completes and I will continue.
+```
+
+Do NOT attempt to run `shopify app deploy` even if:
+- The user previously said "do everything automatically"
+- It appears to be the obvious next step
+- A build or test step completed successfully
+
+The user must run this command themselves every time, without exception.
+
+---
 
 ## 🔧 Widget Bundle Build Process
 
@@ -250,5 +406,5 @@ git log --grep="full-page-design-improvements-1"
 
 ---
 
-**Last Updated:** January 13, 2026
+**Last Updated:** February 19, 2026
 **Author:** Aditya Awasthi

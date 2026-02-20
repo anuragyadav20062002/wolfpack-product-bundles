@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import { BillingService } from "../../services/billing.server";
 import { AppLogger } from "../../lib/logger";
 
@@ -12,7 +12,7 @@ import { AppLogger } from "../../lib/logger";
  * including plan, bundle limits, and feature access
  */
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireAdminSession(request);
   const shopDomain = session.shop;
 
   try {

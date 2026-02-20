@@ -182,7 +182,6 @@ class BundleDataManager {
           bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
         // Valid bundle type
       } else {
-        console.warn(`Unknown bundle type: ${bundle.bundleType}`);
       }
 
       // Validate steps
@@ -352,12 +351,6 @@ class PricingCalculator {
     let totalPrice = 0;
     let totalQuantity = 0;
 
-    console.log('[CALCULATE_TOTAL_DEBUG] Starting calculation', {
-      selectedProductsLength: selectedProducts.length,
-      stepProductDataLength: stepProductData.length,
-      step0Length: stepProductData[0]?.length,
-      step0FirstProduct: stepProductData[0]?.[0]
-    });
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = stepProductData[stepIndex] || [];
@@ -394,16 +387,11 @@ class PricingCalculator {
       });
     });
 
-    console.log('[CALCULATE_TOTAL_DEBUG] Final:', { totalPrice, totalQuantity, step0Data: stepProductData[0] });
     return { totalPrice, totalQuantity };
   }
 
   static calculateDiscount(bundle, totalPrice, totalQuantity) {
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
-      console.log('[DISCOUNT] No pricing enabled or no rules', {
-        enabled: bundle?.pricing?.enabled,
-        rulesLength: bundle?.pricing?.rules?.length
-      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -442,11 +430,6 @@ class PricingCalculator {
     }
 
     if (!bestRule) {
-      console.log('[DISCOUNT] No rule matched conditions', {
-        totalPrice,
-        totalQuantity,
-        rulesChecked: rules.length
-      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -492,14 +475,6 @@ class PricingCalculator {
       discountMethod
     };
 
-    console.log('[DISCOUNT] Calculated discount:', {
-      hasDiscount: result.hasDiscount,
-      discountAmount: result.discountAmount,
-      finalPrice: result.finalPrice,
-      originalPrice: totalPrice,
-      discountPercentage: result.discountPercentage.toFixed(2) + '%',
-      method: discountMethod
-    });
 
     return result;
   }
@@ -1201,8 +1176,6 @@ class ComponentGenerator {
 
 // Import shared components and utilities
 
-console.log('[PRODUCT_PAGE_WIDGET] Initializing...');
-
 class BundleWidgetProductPage {
 
   constructor(containerElement) {
@@ -1219,14 +1192,11 @@ class BundleWidgetProductPage {
     this.productModal = null;
     if (window.BundleProductModal) {
       this.productModal = new window.BundleProductModal(this);
-      console.log('[PDP_WIDGET] ✅ BundleProductModal initialized');
     } else {
-      console.warn('[PDP_WIDGET] ⚠️ BundleProductModal not loaded, variant modal disabled');
     }
 
     // Call async init but don't block constructor
     this.init().catch(error => {
-      console.error('[WIDGET_INIT] ❌ Initialization failed:', error);
       this.showError(error.message);
     });
   }
@@ -1290,7 +1260,6 @@ class BundleWidgetProductPage {
       const shopDomain = window.Shopify?.shop || this.container.dataset.shop;
 
       if (!shopDomain) {
-        console.warn('[BUNDLE_WIDGET] No shop domain found, skipping design settings');
         return;
       }
 
@@ -1298,13 +1267,10 @@ class BundleWidgetProductPage {
       // No need to load it here - just verify it's present
       const existingLink = document.querySelector('link[href*="design-settings"]');
       if (existingLink) {
-        console.log('[BUNDLE_WIDGET] ✅ Design CSS already loaded by loader script');
       } else {
-        console.warn('[BUNDLE_WIDGET] ⚠️ Design CSS not found - loader script may have failed');
       }
 
     } catch (error) {
-      console.warn('[BUNDLE_WIDGET] Failed to load design settings CSS:', error);
       // Don't throw - widget should work even if design CSS fails to load
     }
   }
@@ -1341,15 +1307,11 @@ class BundleWidgetProductPage {
         // Validate parsed result is a valid object with an id
         if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
           bundleData = { [singleBundle.id]: singleBundle };
-          console.log('[WIDGET_INIT] ✅ Loaded bundle data from data-bundle-config:', singleBundle.id);
         } else {
-          console.warn('[WIDGET_INIT] ⚠️ Parsed bundle config is invalid (missing id):', singleBundle);
         }
       } catch (error) {
-        console.error('[WIDGET_INIT] ❌ Failed to parse data-bundle-config:', error, 'Value:', configValue.substring(0, 100));
       }
     } else {
-      console.warn('[WIDGET_INIT] ⚠️ data-bundle-config is empty, null, or undefined:', configValue);
     }
 
     // Widget only works on container products with bundleConfig metafield
@@ -1364,25 +1326,16 @@ class BundleWidgetProductPage {
 
       // Show helpful preview in theme editor instead of error
       if (isThemeEditor && bundleIdFromDataset) {
-        console.log('[WIDGET_INIT] 🎨 Theme editor preview mode - showing placeholder');
         this.showThemeEditorPreview(bundleIdFromDataset);
         return; // Don't throw error, just show preview
       }
 
       // For production/storefront: show proper error
       const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
-      console.error('[WIDGET_INIT] ❌', errorMsg);
-      console.error('[WIDGET_INIT] 🔍 Debug info:', {
-        isContainerProduct: !!configValue,
-        configValue: configValue?.substring(0, 100),
-        containerDataset: this.container.dataset,
-        bundleIdFromDataset: bundleIdFromDataset
-      });
       throw new Error(errorMsg);
     }
 
     this.bundleData = bundleData;
-    console.log('[WIDGET_INIT] ✅ Bundle data loaded successfully from container product metafield');
   }
 
   selectBundle() {
@@ -1406,16 +1359,9 @@ class BundleWidgetProductPage {
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
       this.config.showProgressBar = messaging.showProgressBar || false;
 
-      console.log('[BUNDLE_MESSAGES] Using messaging config:', {
-        progress: this.config.discountTextTemplate,
-        qualified: this.config.successMessageTemplate,
-        showDiscountMessaging: this.config.showDiscountMessaging,
-        showProgressBar: this.config.showProgressBar
-      });
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
       this.config.showProgressBar = false;
-      console.log('[BUNDLE_MESSAGES] No messaging config found, using defaults');
     }
   }
 
@@ -1433,7 +1379,6 @@ class BundleWidgetProductPage {
    * Show a helpful preview in theme editor when testing on non-bundle products
    */
   showThemeEditorPreview(bundleId) {
-    console.log('[WIDGET_PREVIEW] Showing theme editor preview for bundle:', bundleId);
 
     this.container.innerHTML = `
       <div style="
@@ -1911,7 +1856,6 @@ class BundleWidgetProductPage {
   renderFullPageLayout() {
     // TODO: Implement tabs-based layout for full-page bundles
     // For now, use the same layout as product-page until custom UI is provided
-    console.log('[BUNDLE_WIDGET] Full-page bundle detected - using tabs layout');
 
     // Temporary: Render same as product-page layout
     // This will be replaced with custom tabs UI later
@@ -2083,16 +2027,6 @@ class BundleWidgetProductPage {
       return;
     }
 
-    console.log('[LOAD_PRODUCTS] Step data:', {
-      stepIndex,
-      hasProducts: !!step.products,
-      productsLength: step.products?.length,
-      hasStepProduct: !!step.StepProduct,
-      stepProductLength: step.StepProduct?.length,
-      hasCollections: !!step.collections,
-      collectionsLength: step.collections?.length,
-      fullStep: step
-    });
 
     let allProducts = [];
 
@@ -2105,29 +2039,22 @@ class BundleWidgetProductPage {
       const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
 
-      console.log('[LOAD_PRODUCTS] Fetching products from Storefront API. IDs:', productIds);
-      console.log('[LOAD_PRODUCTS] Using API base URL:', apiBaseUrl);
 
       try {
         const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`);
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('[LOAD_PRODUCTS] API request failed:', response.status, errorText);
           return;
         }
 
         const data = await response.json();
-        console.log('[LOAD_PRODUCTS] API response:', data);
 
         if (data.products && data.products.length > 0) {
           allProducts = allProducts.concat(data.products);
-          console.log('[LOAD_PRODUCTS] Added', data.products.length, 'products');
         } else {
-          console.warn('[LOAD_PRODUCTS] No products returned');
         }
       } catch (error) {
-        console.error('[LOAD_PRODUCTS] Error fetching products:', error);
       }
     }
 
@@ -2136,7 +2063,6 @@ class BundleWidgetProductPage {
       const shop = window.Shopify?.shop || window.location.host;
 
       if (productGids.length > 0) {
-        console.log('[LOAD_PRODUCTS] Fetching StepProduct data. IDs:', productGids);
 
         // Get app URL (same as above)
         const appUrl = window.__BUNDLE_APP_URL__ || '';
@@ -2146,16 +2072,13 @@ class BundleWidgetProductPage {
           const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
 
           if (!response.ok) {
-            console.error('[LOAD_PRODUCTS] API request failed for StepProduct:', response.status);
           } else {
             const data = await response.json();
             if (data.products && data.products.length > 0) {
               allProducts = allProducts.concat(data.products);
-              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'StepProducts');
             }
           }
         } catch (error) {
-          console.error('[LOAD_PRODUCTS] Error fetching StepProduct:', error);
         }
       }
     }
@@ -2171,7 +2094,6 @@ class BundleWidgetProductPage {
         const appUrl = window.__BUNDLE_APP_URL__ || '';
         const apiBaseUrl = appUrl || window.location.origin;
 
-        console.log('[LOAD_PRODUCTS] Fetching products from collections via Storefront API:', collectionHandles);
 
         try {
           const response = await fetch(
@@ -2182,25 +2104,18 @@ class BundleWidgetProductPage {
             const data = await response.json();
             if (data.products && data.products.length > 0) {
               allProducts = allProducts.concat(data.products);
-              console.log('[LOAD_PRODUCTS] Added', data.products.length, 'products from collections');
             }
           } else {
-            console.error('[LOAD_PRODUCTS] Failed to fetch collection products:', response.status);
           }
         } catch (error) {
-          console.error('[LOAD_PRODUCTS] Error fetching collection products:', error);
         }
       }
     }
 
     // Process and normalize product data
-    console.log('[LOAD_PRODUCTS] Raw products for step', stepIndex, ':', allProducts.length, 'products');
-    console.log('[LOAD_PRODUCTS] First product sample:', allProducts[0]);
 
     const processedProducts = this.processProductsForStep(allProducts, step);
 
-    console.log('[LOAD_PRODUCTS] Processed products:', processedProducts.length);
-    console.log('[LOAD_PRODUCTS] First processed:', processedProducts[0]);
 
     // Remove duplicates
     const seen = new Set();
@@ -2213,7 +2128,6 @@ class BundleWidgetProductPage {
       return true;
     });
 
-    console.log('[LOAD_PRODUCTS] Final stepProductData[' + stepIndex + ']:', this.stepProductData[stepIndex]);
   }
 
   processProductsForStep(products, step) {
@@ -2573,25 +2487,20 @@ class BundleWidgetProductPage {
 
     // Check if there is a next step
     if (nextStepIndex >= this.selectedBundle.steps.length) {
-      console.log('[PRELOAD] No next step to preload');
       return;
     }
 
     // Check if next step products are already loaded
     if (this.stepProductData[nextStepIndex]?.length > 0) {
-      console.log('[PRELOAD] Next step products already cached');
       return;
     }
 
-    console.log(`[PRELOAD] Preloading products for step ${nextStepIndex + 1} in background`);
 
     // Load in background (don't await)
     this.loadStepProducts(nextStepIndex)
       .then(() => {
-        console.log(`[PRELOAD] ✅ Successfully preloaded step ${nextStepIndex + 1}`);
       })
       .catch(error => {
-        console.warn(`[PRELOAD] Failed to preload step ${nextStepIndex + 1}:`, error);
         // Don't show error to user - preloading is optimization only
       });
   }
@@ -3064,11 +2973,6 @@ class BundleWidgetProductPage {
     const cartItems = [];
     const bundleInstanceId = this.generateBundleInstanceId();
 
-    console.log('[CART] Building cart items for bundle:', {
-      bundleId: this.selectedBundle.id,
-      bundleName: this.selectedBundle.name,
-      bundleInstanceId
-    });
 
     // Add ACTUAL selected component products to cart
     // Each component gets _bundle_id property for grouping in cart transform
@@ -3083,24 +2987,10 @@ class BundleWidgetProductPage {
           if (product) {
             // Check availability before adding to cart
             if (product.available !== true) {
-              console.warn('[CART] Product not available for sale:', {
-                stepIndex,
-                variantId,
-                productTitle: product.title,
-                availabilityStatus: product.available
-              });
               unavailableProducts.push(product.title);
               return; // Skip this product
             }
 
-            console.log('[CART] Adding component:', {
-              stepIndex,
-              variantId,
-              quantity,
-              productTitle: product.title,
-              bundleInstanceId,
-              available: product.available
-            });
 
             const cartItem = {
               id: parseInt(variantId),
@@ -3118,7 +3008,6 @@ class BundleWidgetProductPage {
       });
     });
 
-    console.log('[CART] Cart items to add (components with _bundle_id property):', cartItems);
 
     // Throw error if any products are unavailable
     if (unavailableProducts.length > 0) {
@@ -3139,7 +3028,6 @@ class BundleWidgetProductPage {
       const uuid = crypto.randomUUID();
       const bundleInstanceId = `${this.selectedBundle.id}_${uuid}`;
 
-      console.log('[CART] Generated UUID-based bundle instance ID:', bundleInstanceId);
       return bundleInstanceId;
     }
 
@@ -3148,8 +3036,6 @@ class BundleWidgetProductPage {
     const random = Math.floor(Math.random() * 1000000);
     const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
 
-    console.warn('[CART] crypto.randomUUID() not available, using fallback ID generation');
-    console.log('[CART] Generated fallback bundle instance ID:', bundleInstanceId);
     return bundleInstanceId;
   }
   // ========================================================================
@@ -3310,7 +3196,6 @@ function initializeProductPageWidget() {
   });
 }
 
-console.log('[PRODUCT_PAGE_WIDGET] Module loaded');
 
 
 })();

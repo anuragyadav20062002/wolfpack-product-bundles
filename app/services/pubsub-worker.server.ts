@@ -17,11 +17,12 @@
  * - Alternative: Set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable (local dev)
  */
 
-import { PubSub, Message } from "@google-cloud/pubsub";
+import type { Message } from "@google-cloud/pubsub";
+import { PubSub } from "@google-cloud/pubsub";
 import { WebhookProcessor } from "./webhook-processor.server";
 import { AppLogger } from "../lib/logger";
-import { fileURLToPath } from "url";
-import { readFileSync, existsSync } from "fs";
+import { fileURLToPath } from "node:url";
+import { readFileSync, existsSync } from "node:fs";
 
 // Environment validation
 const GOOGLE_CLOUD_PROJECT = process.env.GOOGLE_CLOUD_PROJECT;

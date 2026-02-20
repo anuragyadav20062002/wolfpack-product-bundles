@@ -3,9 +3,9 @@
  * Orchestrates all test suites and provides detailed reporting
  */
 
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import { execSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 interface TestResult {
   suite: string;
@@ -384,11 +384,11 @@ const args = process.argv.slice(2);
 const testRunner = new TestRunner();
 
 if (args.length === 0) {
-  testRunner.runAllTests();
+  void testRunner.runAllTests();
 } else {
   const testType = args[0] as 'unit' | 'integration' | 'e2e';
   if (['unit', 'integration', 'e2e'].includes(testType)) {
-    testRunner.runTestType(testType);
+    void testRunner.runTestType(testType);
   } else {
     console.error('❌ Invalid test type. Use: unit, integration, or e2e');
     process.exit(1);

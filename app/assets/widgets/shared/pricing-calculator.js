@@ -15,12 +15,6 @@ export class PricingCalculator {
     let totalPrice = 0;
     let totalQuantity = 0;
 
-    console.log('[CALCULATE_TOTAL_DEBUG] Starting calculation', {
-      selectedProductsLength: selectedProducts.length,
-      stepProductDataLength: stepProductData.length,
-      step0Length: stepProductData[0]?.length,
-      step0FirstProduct: stepProductData[0]?.[0]
-    });
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = stepProductData[stepIndex] || [];
@@ -57,16 +51,11 @@ export class PricingCalculator {
       });
     });
 
-    console.log('[CALCULATE_TOTAL_DEBUG] Final:', { totalPrice, totalQuantity, step0Data: stepProductData[0] });
     return { totalPrice, totalQuantity };
   }
 
   static calculateDiscount(bundle, totalPrice, totalQuantity) {
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
-      console.log('[DISCOUNT] No pricing enabled or no rules', {
-        enabled: bundle?.pricing?.enabled,
-        rulesLength: bundle?.pricing?.rules?.length
-      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -105,11 +94,6 @@ export class PricingCalculator {
     }
 
     if (!bestRule) {
-      console.log('[DISCOUNT] No rule matched conditions', {
-        totalPrice,
-        totalQuantity,
-        rulesChecked: rules.length
-      });
       return {
         hasDiscount: false,
         discountAmount: 0,
@@ -155,14 +139,6 @@ export class PricingCalculator {
       discountMethod
     };
 
-    console.log('[DISCOUNT] Calculated discount:', {
-      hasDiscount: result.hasDiscount,
-      discountAmount: result.discountAmount,
-      finalPrice: result.finalPrice,
-      originalPrice: totalPrice,
-      discountPercentage: result.discountPercentage.toFixed(2) + '%',
-      method: discountMethod
-    });
 
     return result;
   }

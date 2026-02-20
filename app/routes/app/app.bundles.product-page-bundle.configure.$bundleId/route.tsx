@@ -1,9 +1,3 @@
-declare global {
-  interface Window {
-    shopify?: { config?: { shop?: string } };
-  }
-}
-
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
@@ -84,6 +78,12 @@ import type {
   BundleStatusSectionProps,
   BundleProductCardProps,
 } from "./types";
+
+declare global {
+  interface Window {
+    shopify?: { config?: { shop?: string } };
+  }
+}
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -1241,7 +1241,7 @@ export default function ConfigureBundleFlow() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          handleSave();
+          void handleSave();
         }}
         onReset={(e) => {
           e.preventDefault();
