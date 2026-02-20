@@ -209,7 +209,6 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   // Promo Banner (disabled for product page by default)
   promoBannerEnabled: false,
   promoBannerBgColor: "#F3F4F6",
-  promoBannerBgImage: null,
   promoBannerTitleColor: "#111827",
   promoBannerTitleFontSize: 24,
   promoBannerTitleFontWeight: 700,
@@ -426,7 +425,6 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Promo Banner (enabled for full-page bundles with light-gray background)
   promoBannerEnabled: true,
   promoBannerBgColor: "#F3F4F6",
-  promoBannerBgImage: null,
   promoBannerTitleColor: "#111827",
   promoBannerTitleFontSize: 28,
   promoBannerTitleFontWeight: 700,

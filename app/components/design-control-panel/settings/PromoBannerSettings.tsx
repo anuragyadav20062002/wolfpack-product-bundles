@@ -1,6 +1,5 @@
-import { BlockStack, Text, Divider, Button, ButtonGroup, RangeSlider, Checkbox } from "@shopify/polaris";
+import { BlockStack, Text, Divider, Button, RangeSlider, Checkbox } from "@shopify/polaris";
 import { ColorPicker } from "../common/ColorPicker";
-import { FilePicker } from "./FilePicker";
 import type { SettingsComponentProps } from "./types";
 
 /**
@@ -31,11 +30,6 @@ export function PromoBannerSettings({ settings, onUpdate }: SettingsComponentPro
         label="Background Color"
         value={settings.promoBannerBgColor}
         onChange={(value) => onUpdate("promoBannerBgColor", value)}
-      />
-
-      <FilePicker
-        value={settings.promoBannerBgImage ?? null}
-        onChange={(url) => onUpdate("promoBannerBgImage", url)}
       />
 
       <RangeSlider
@@ -84,26 +78,32 @@ export function PromoBannerSettings({ settings, onUpdate }: SettingsComponentPro
         <Text as="p" variant="bodySm">
           Title Font Weight
         </Text>
-        <ButtonGroup variant="segmented">
-          <Button
-            pressed={settings.promoBannerTitleFontWeight === 400}
-            onClick={() => onUpdate("promoBannerTitleFontWeight", 400)}
-          >
-            Normal
-          </Button>
-          <Button
-            pressed={settings.promoBannerTitleFontWeight === 600}
-            onClick={() => onUpdate("promoBannerTitleFontWeight", 600)}
-          >
-            Semi-Bold
-          </Button>
-          <Button
-            pressed={settings.promoBannerTitleFontWeight === 700}
-            onClick={() => onUpdate("promoBannerTitleFontWeight", 700)}
-          >
-            Bold
-          </Button>
-        </ButtonGroup>
+        <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", border: "1px solid #8c9196" }}>
+          {([
+            { label: "Normal", value: 400 },
+            { label: "Semi-Bold", value: 600 },
+            { label: "Bold", value: 700 },
+          ] as const).map((opt, i) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onUpdate("promoBannerTitleFontWeight", opt.value)}
+              style={{
+                flex: 1,
+                padding: "6px 4px",
+                fontSize: "13px",
+                border: "none",
+                borderLeft: i > 0 ? "1px solid #8c9196" : "none",
+                cursor: "pointer",
+                background: settings.promoBannerTitleFontWeight === opt.value ? "#f2f2f7" : "#fff",
+                fontWeight: settings.promoBannerTitleFontWeight === opt.value ? 600 : 400,
+                color: settings.promoBannerTitleFontWeight === opt.value ? "#202223" : "#6d7175",
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </BlockStack>
 
       <Divider />
