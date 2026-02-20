@@ -713,11 +713,7 @@ class BundleWidgetFullPage {
       contentSection.appendChild(stepTimeline);
     }
 
-    // 2. Render bundle header (instruction text)
-    const bundleHeader = this.createBundleInstructions();
-    contentSection.appendChild(bundleHeader);
-
-    // 3. Render search input for filtering products
+    // 2. Render search input for filtering products
     const searchInput = this.createSearchInput();
     contentSection.appendChild(searchInput);
 
