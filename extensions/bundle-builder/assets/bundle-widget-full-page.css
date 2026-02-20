@@ -588,6 +588,9 @@
   padding: 20px 16px; /* Mobile: Compact padding */
   margin-bottom: 16px;
   background: var(--bundle-promo-banner-bg, #F3F4F6);
+  background-image: var(--bundle-promo-banner-bg-image, none);
+  background-size: cover;
+  background-position: center;
   text-align: center;
   border-radius: var(--bundle-promo-banner-radius, 12px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -706,6 +709,9 @@
 /* Promo banner without discount - elegant and simple */
 .promo-banner.no-discount {
   background: var(--bundle-promo-banner-bg, linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%));
+  background-image: var(--bundle-promo-banner-bg-image, none);
+  background-size: cover;
+  background-position: center;
 }
 
 .promo-banner.no-discount .promo-banner-note {

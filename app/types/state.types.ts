@@ -242,6 +242,7 @@ export interface GeneralSettings {
 export interface PromoBannerSettings {
   promoBannerEnabled: boolean;
   promoBannerBgColor: string;
+  promoBannerBgImage: string | null;
   promoBannerTitleColor: string;
   promoBannerTitleFontSize: number;
   promoBannerTitleFontWeight: number;

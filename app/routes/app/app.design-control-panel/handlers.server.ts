@@ -125,6 +125,7 @@ function extractPromoBannerSettings(settings: any) {
   return {
     promoBannerEnabled: settings.promoBannerEnabled,
     promoBannerBgColor: settings.promoBannerBgColor,
+    promoBannerBgImage: settings.promoBannerBgImage ?? null,
     promoBannerTitleColor: settings.promoBannerTitleColor,
     promoBannerTitleFontSize: settings.promoBannerTitleFontSize,
     promoBannerTitleFontWeight: settings.promoBannerTitleFontWeight,

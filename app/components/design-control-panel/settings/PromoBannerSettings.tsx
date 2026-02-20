@@ -1,5 +1,6 @@
 import { BlockStack, Text, Divider, Button, ButtonGroup, RangeSlider, Checkbox } from "@shopify/polaris";
 import { ColorPicker } from "../common/ColorPicker";
+import { FilePicker } from "./FilePicker";
 import type { SettingsComponentProps } from "./types";
 
 /**
@@ -30,6 +31,11 @@ export function PromoBannerSettings({ settings, onUpdate }: SettingsComponentPro
         label="Background Color"
         value={settings.promoBannerBgColor}
         onChange={(value) => onUpdate("promoBannerBgColor", value)}
+      />
+
+      <FilePicker
+        value={settings.promoBannerBgImage ?? null}
+        onChange={(url) => onUpdate("promoBannerBgImage", url)}
       />
 
       <RangeSlider

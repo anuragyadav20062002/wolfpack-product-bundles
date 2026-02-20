@@ -86,6 +86,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   /* PROMO BANNER (Full-Page Bundles) */
   --bundle-promo-banner-enabled: ${s.promoBannerEnabled !== false ? '1' : '0'};
   --bundle-promo-banner-bg: ${s.promoBannerBgColor || '#F3F4F6'};
+  --bundle-promo-banner-bg-image: ${s.promoBannerBgImage ? `url('${s.promoBannerBgImage}')` : 'none'};
   --bundle-promo-banner-title-color: ${s.promoBannerTitleColor || '#111827'};
   --bundle-promo-banner-title-font-size: ${s.promoBannerTitleFontSize || 28}px;
   --bundle-promo-banner-title-font-weight: ${s.promoBannerTitleFontWeight || 700};
