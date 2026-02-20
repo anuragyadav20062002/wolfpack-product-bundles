@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useFetcher } from "@remix-run/react";
 import {
   Modal,
@@ -9,8 +9,9 @@ import {
   Text,
   Spinner,
   Thumbnail,
+  Banner,
 } from "@shopify/polaris";
-import { ImageIcon, XCircleIcon } from "@shopify/polaris-icons";
+import { ImageIcon, XCircleIcon, UploadIcon } from "@shopify/polaris-icons";
 import type { StoreFile } from "../../../routes/app/app.store-files";
 
 interface FilePickerProps {
@@ -18,13 +19,29 @@ interface FilePickerProps {
   onChange: (url: string | null) => void;
 }
 
+type UploadStatus = "idle" | "uploading" | "timeout" | "error";
+
+interface UploadResult {
+  ok: boolean;
+  file?: StoreFile;
+  error?: string;
+  timeout?: boolean;
+}
+
+const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/avif";
+const MAX_BYTES = 20 * 1024 * 1024;
+
 function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max - 1) + "…" : str;
 }
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    return new Date(iso).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   } catch {
     return iso;
   }
@@ -34,7 +51,7 @@ function filenameFromUrl(url: string): string {
   try {
     const path = new URL(url).pathname;
     const parts = path.split("/");
-    return decodeURIComponent(parts[parts.length - 1] || url);
+    return decodeURIComponent(parts[parts.length - 1] ?? url);
   } catch {
     return url;
   }
@@ -48,20 +65,33 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasNextPage, setHasNextPage] = useState(false);
 
-  const fetcher = useFetcher<{ files: StoreFile[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } }>();
-  const loading = fetcher.state === "loading";
+  // Upload state
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [sizeError, setSizeError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const filesFetcher = useFetcher<{
+    files: StoreFile[];
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+  }>();
+
+  const uploadFetcher = useFetcher<UploadResult>();
+
+  const filesLoading = filesFetcher.state === "loading";
+  const isUploading = uploadStatus === "uploading";
 
   // Load initial files when picker opens
   useEffect(() => {
     if (open && files.length === 0) {
-      fetcher.load("/app/store-files");
+      filesFetcher.load("/app/store-files");
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Append fetcher results to file list
+  // Append files-fetcher results
   useEffect(() => {
-    if (fetcher.data) {
-      const { files: newFiles, pageInfo } = fetcher.data;
+    if (filesFetcher.data) {
+      const { files: newFiles, pageInfo } = filesFetcher.data;
       setFiles((prev) => {
         const existingIds = new Set(prev.map((f) => f.id));
         const unique = newFiles.filter((f) => !existingIds.has(f.id));
@@ -70,18 +100,46 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
       setHasNextPage(pageInfo.hasNextPage);
       setCursor(pageInfo.endCursor ?? null);
     }
-  }, [fetcher.data]);
+  }, [filesFetcher.data]);
+
+  // Handle upload result
+  useEffect(() => {
+    if (uploadFetcher.state === "idle" && uploadFetcher.data) {
+      const result = uploadFetcher.data;
+      if (result.ok && result.file) {
+        // Prepend new file and auto-select it
+        setFiles((prev) => {
+          const existingIds = new Set(prev.map((f) => f.id));
+          if (existingIds.has(result.file!.id)) return prev;
+          return [result.file!, ...prev];
+        });
+        setSelectedUrl(result.file.url);
+        setUploadStatus("idle");
+      } else if (result.timeout) {
+        setUploadStatus("timeout");
+      } else {
+        setUploadStatus("error");
+        setUploadError(result.error ?? "Upload failed. Please try again.");
+      }
+    }
+  }, [uploadFetcher.state, uploadFetcher.data]);
 
   const handleOpen = useCallback(() => {
     setOpen(true);
     setSelectedUrl(null);
     setSearch("");
+    setUploadStatus("idle");
+    setUploadError(null);
+    setSizeError(null);
   }, []);
 
   const handleClose = useCallback(() => {
     setOpen(false);
     setSelectedUrl(null);
     setSearch("");
+    setUploadStatus("idle");
+    setUploadError(null);
+    setSizeError(null);
   }, []);
 
   const handleSelect = useCallback(() => {
@@ -91,6 +149,9 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     setOpen(false);
     setSelectedUrl(null);
     setSearch("");
+    setUploadStatus("idle");
+    setUploadError(null);
+    setSizeError(null);
   }, [selectedUrl, onChange]);
 
   const handleRemove = useCallback(() => {
@@ -99,15 +160,51 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
 
   const handleLoadMore = useCallback(() => {
     if (cursor) {
-      fetcher.load(`/app/store-files?cursor=${encodeURIComponent(cursor)}`);
+      filesFetcher.load(`/app/store-files?cursor=${encodeURIComponent(cursor)}`);
     }
-  }, [cursor, fetcher]);
+  }, [cursor, filesFetcher]);
+
+  const handleUploadClick = useCallback(() => {
+    setUploadStatus("idle");
+    setUploadError(null);
+    setSizeError(null);
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset input so same file can be re-selected after an error
+      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      if (!file) return;
+
+      // Client-side size check
+      if (file.size > MAX_BYTES) {
+        setSizeError("File must be under 20 MB.");
+        return;
+      }
+
+      setSizeError(null);
+      setUploadStatus("uploading");
+
+      const form = new FormData();
+      form.append("file", file);
+      uploadFetcher.submit(form, {
+        method: "POST",
+        action: "/app/upload-store-file",
+        encType: "multipart/form-data",
+      });
+    },
+    [uploadFetcher],
+  );
 
   const filteredFiles = search
     ? files.filter((f) => f.filename.toLowerCase().includes(search.toLowerCase()))
     : files;
 
   const currentFilename = value ? filenameFromUrl(value) : null;
+  const gridDisabled = isUploading;
 
   return (
     <BlockStack gap="200">
@@ -119,12 +216,12 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
         <InlineStack gap="300" blockAlign="center">
           <Thumbnail
             source={value}
-            alt={currentFilename || "Background image"}
+            alt={currentFilename ?? "Background image"}
             size="small"
           />
           <BlockStack gap="100">
             <Text as="p" variant="bodySm" tone="subdued">
-              {truncate(currentFilename || value, 30)}
+              {truncate(currentFilename ?? value, 30)}
             </Text>
             <Button
               variant="plain"
@@ -142,37 +239,97 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
         </Button>
       )}
 
+      {/* Hidden native file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_TYPES}
+        style={{ display: "none" }}
+        onChange={handleFileInputChange}
+      />
+
       <Modal
         open={open}
         onClose={handleClose}
         title="Choose background image"
         primaryAction={{
           content: "Select",
-          disabled: !selectedUrl,
+          disabled: !selectedUrl || isUploading,
           onAction: handleSelect,
         }}
         secondaryActions={[{ content: "Cancel", onAction: handleClose }]}
       >
         <Modal.Section>
           <BlockStack gap="400">
-            <TextField
-              label="Search files"
-              labelHidden
-              placeholder="Search files…"
-              value={search}
-              onChange={setSearch}
-              autoComplete="off"
-              clearButton
-              onClearButtonClick={() => setSearch("")}
-            />
+            {/* Search + upload row */}
+            <InlineStack gap="200" blockAlign="center">
+              <div style={{ flex: 1 }}>
+                <TextField
+                  label="Search files"
+                  labelHidden
+                  placeholder="Search files…"
+                  value={search}
+                  onChange={setSearch}
+                  autoComplete="off"
+                  clearButton
+                  onClearButtonClick={() => setSearch("")}
+                  disabled={isUploading}
+                />
+              </div>
+              <Button
+                variant="plain"
+                icon={UploadIcon}
+                onClick={handleUploadClick}
+                disabled={isUploading}
+              >
+                Upload image
+              </Button>
+            </InlineStack>
 
-            {loading && files.length === 0 ? (
+            {/* Client-side size error */}
+            {sizeError && (
+              <Text as="p" variant="bodySm" tone="critical">
+                {sizeError}
+              </Text>
+            )}
+
+            {/* Upload error banner */}
+            {uploadStatus === "error" && uploadError && (
+              <Banner title="Upload failed" tone="critical">
+                <p>{uploadError}</p>
+              </Banner>
+            )}
+
+            {/* Upload timeout message */}
+            {uploadStatus === "timeout" && (
+              <Banner title="Processing" tone="info">
+                <p>
+                  Upload successful — image may take a moment to appear in your
+                  library. Close and re-open the picker to see it.
+                </p>
+              </Banner>
+            )}
+
+            {/* Upload loading state */}
+            {isUploading && (
+              <InlineStack gap="200" blockAlign="center">
+                <Spinner size="small" />
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Uploading…
+                </Text>
+              </InlineStack>
+            )}
+
+            {/* Files grid */}
+            {filesLoading && files.length === 0 ? (
               <div style={{ display: "flex", justifyContent: "center", padding: "32px" }}>
                 <Spinner size="large" />
               </div>
             ) : filteredFiles.length === 0 ? (
               <Text as="p" variant="bodySm" tone="subdued">
-                {search ? "No files match your search." : "No image files found in your store."}
+                {search
+                  ? "No files match your search."
+                  : "No image files found in your store."}
               </Text>
             ) : (
               <div
@@ -180,6 +337,8 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
                   gap: "12px",
+                  opacity: gridDisabled ? 0.5 : 1,
+                  pointerEvents: gridDisabled ? "none" : "auto",
                 }}
               >
                 {filteredFiles.map((file) => {
@@ -189,11 +348,12 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
                       key={file.id}
                       type="button"
                       onClick={() => setSelectedUrl(file.url)}
+                      disabled={gridDisabled}
                       style={{
                         border: isSelected ? "2px solid #5c6ac4" : "2px solid #e1e3e5",
                         borderRadius: "8px",
                         padding: "8px",
-                        cursor: "pointer",
+                        cursor: gridDisabled ? "default" : "pointer",
                         background: isSelected ? "#f4f6f8" : "#fff",
                         textAlign: "center",
                         display: "flex",
@@ -205,10 +365,22 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
                       <img
                         src={`${file.url}${file.url.includes("?") ? "&" : "?"}width=80`}
                         alt={file.alt || file.filename}
-                        style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "4px" }}
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          objectFit: "cover",
+                          borderRadius: "4px",
+                        }}
                         loading="lazy"
                       />
-                      <span style={{ fontSize: "11px", color: "#6d7175", wordBreak: "break-all", lineHeight: 1.3 }}>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "#6d7175",
+                          wordBreak: "break-all",
+                          lineHeight: 1.3,
+                        }}
+                      >
                         {truncate(file.filename, 24)}
                       </span>
                       <span style={{ fontSize: "10px", color: "#9ca3af" }}>
@@ -222,7 +394,12 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
 
             {hasNextPage && !search && (
               <div style={{ display: "flex", justifyContent: "center" }}>
-                <Button variant="plain" onClick={handleLoadMore} loading={loading}>
+                <Button
+                  variant="plain"
+                  onClick={handleLoadMore}
+                  loading={filesLoading}
+                  disabled={isUploading}
+                >
                   Load more
                 </Button>
               </div>

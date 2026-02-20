@@ -10,12 +10,12 @@ handle = "wolfpack-product-bundles-4"
 api_version = "2025-10"
 
   [[webhooks.subscriptions]]
-  uri = "pubsub://light-quest-455608-i3:wolfpack-product-bundles"
+  uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_product_listings,read_products,read_publications,read_themes,unauthenticated_read_content,unauthenticated_read_product_listings,write_app_proxy,write_cart_transforms,write_content,write_discounts,write_products,write_publications,write_themes"
+scopes = "read_product_listings,read_products,read_publications,read_themes,unauthenticated_read_content,unauthenticated_read_product_listings,write_app_proxy,write_cart_transforms,write_content,write_discounts,write_files,write_products,write_publications,write_themes"
 
 [auth]
 redirect_urls = [
