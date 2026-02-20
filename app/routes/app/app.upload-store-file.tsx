@@ -1,4 +1,4 @@
-import { type ActionFunctionArgs } from "@remix-run/node";
+import { type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../../shopify.server";
 import type { StoreFile } from "./app.store-files";
 
@@ -12,8 +12,6 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
-const POLL_INTERVAL_MS = 2000;
-const MAX_POLLS = 15;
 
 const STAGED_UPLOADS_CREATE = `
   mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
@@ -39,14 +37,7 @@ const FILE_CREATE = `
     fileCreate(files: $files) {
       files {
         id
-        alt
-        createdAt
         fileStatus
-        ... on MediaImage {
-          image {
-            url
-          }
-        }
       }
       userErrors {
         field
@@ -60,7 +51,10 @@ const FILE_CREATE = `
 const FILE_STATUS_QUERY = `
   query GetFileStatus($id: ID!) {
     node(id: $id) {
+      id
       ... on MediaImage {
+        alt
+        createdAt
         fileStatus
         image {
           url
@@ -84,6 +78,42 @@ function errorResponse(message: string) {
   return Response.json({ ok: false, error: message });
 }
 
+// Loader — called by the client to poll file status after upload
+export async function loader({ request }: LoaderFunctionArgs) {
+  const { admin } = await authenticate.admin(request);
+  const fileId = new URL(request.url).searchParams.get("fileId");
+
+  if (!fileId) {
+    return Response.json({ error: "Missing fileId" }, { status: 400 });
+  }
+
+  const pollRes = await admin.graphql(FILE_STATUS_QUERY, {
+    variables: { id: fileId },
+  });
+  const pollData = await pollRes.json();
+  const node = pollData.data?.node;
+
+  if (!node) {
+    return Response.json({ error: "File not found" }, { status: 404 });
+  }
+
+  if (node.fileStatus === "READY" && node.image?.url) {
+    const cdnUrl: string = node.image.url;
+    const storeFile: StoreFile = {
+      id: fileId,
+      url: cdnUrl,
+      filename: filenameFromUrl(cdnUrl),
+      alt: node.alt ?? "",
+      createdAt: node.createdAt ?? new Date().toISOString(),
+    };
+    return Response.json({ fileStatus: "READY", file: storeFile });
+  }
+
+  return Response.json({ fileStatus: node.fileStatus ?? "PROCESSING" });
+}
+
+// Action — receives the file, runs stagedUpload + fileCreate, returns fileId immediately.
+// The client polls the loader above until the file is READY.
 export async function action({ request }: ActionFunctionArgs) {
   const { admin } = await authenticate.admin(request);
 
@@ -174,33 +204,6 @@ export async function action({ request }: ActionFunctionArgs) {
     return errorResponse("Upload failed. Please try again.");
   }
 
-  // Step 4 — poll for READY
-  for (let i = 0; i < MAX_POLLS; i++) {
-    await new Promise<void>((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-
-    const pollRes = await admin.graphql(FILE_STATUS_QUERY, {
-      variables: { id: createdFile.id },
-    });
-    const pollData = await pollRes.json();
-    const node = pollData.data?.node;
-
-    if (node?.fileStatus === "READY" && node?.image?.url) {
-      const cdnUrl: string = node.image.url;
-      const storeFile: StoreFile = {
-        id: createdFile.id,
-        url: cdnUrl,
-        filename: filenameFromUrl(cdnUrl),
-        alt: createdFile.alt ?? file.name,
-        createdAt: createdFile.createdAt ?? new Date().toISOString(),
-      };
-      return Response.json({ ok: true, file: storeFile });
-    }
-
-    if (node?.fileStatus === "FAILED") {
-      return errorResponse("Upload failed. Please try again.");
-    }
-  }
-
-  // Timeout — file is in Shopify Files but not yet READY
-  return Response.json({ ok: false, timeout: true, error: "timeout" });
+  // Return fileId immediately — client polls the loader for READY status
+  return Response.json({ ok: true, fileId: createdFile.id as string });
 }

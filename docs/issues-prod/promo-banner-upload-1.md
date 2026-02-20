@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-02-20
-**Last Updated:** 2026-02-20 01:00
+**Last Updated:** 2026-02-20 02:00
 
 ## Overview
 
@@ -35,10 +35,22 @@ Files to change:
 - ✅ Phase 3: `FilePicker.tsx` — upload button, hidden file input, uploadFetcher, uploadStatus state machine, error/timeout banners, grid disable during upload
 - ✅ Lint: 0 errors (32 pre-existing warnings)
 
+### 2026-02-20 02:00 - Completed Phase 4: Client-side polling refactor
+
+User feedback: action must not hold HTTP connection open for 30s polling; instead
+use fast action + client-side polling with a progress circle.
+
+- ✅ `app/routes/app/app.upload-store-file.tsx` — added `loader` for status checks (`?fileId=`), removed polling loop from `action` (now returns `{ ok, fileId }` immediately after fileCreate ~2–3s)
+- ✅ `app/components/design-control-panel/settings/FilePicker.tsx` — added `ProgressCircle` SVG component (spinning/success states), `statusFetcher`, `pollTrigger` state, `pollCountRef`; new upload state machine: "idle" | "uploading" | "polling" | "success" | "timeout" | "error"; grid/buttons blocked only during uploading+polling; success auto-resets to idle after 1.5s
+- ✅ Lint: 0 errors
+
 ## Phases Checklist
 
 - [x] Phase 1: Scope addition (shopify.app.toml)
-- [x] Phase 2: Upload action route
-- [x] Phase 3: FilePicker upload UX
+- [x] Phase 2: Upload action route (initial blocking implementation)
+- [x] Phase 3: FilePicker upload UX (initial)
+- [x] Lint
+- [x] Commit (7c7a953)
+- [x] Phase 4: Client-side polling refactor + ProgressCircle
 - [x] Lint
 - [x] Commit

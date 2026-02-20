@@ -19,17 +19,23 @@ interface FilePickerProps {
   onChange: (url: string | null) => void;
 }
 
-type UploadStatus = "idle" | "uploading" | "timeout" | "error";
+type UploadStatus = "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
 
-interface UploadResult {
+interface UploadActionResult {
   ok: boolean;
+  fileId?: string;
+  error?: string;
+}
+
+interface StatusResult {
+  fileStatus?: string;
   file?: StoreFile;
   error?: string;
-  timeout?: boolean;
 }
 
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/avif";
 const MAX_BYTES = 20 * 1024 * 1024;
+const MAX_POLLS = 15;
 
 function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max - 1) + "…" : str;
@@ -57,6 +63,44 @@ function filenameFromUrl(url: string): string {
   }
 }
 
+function ProgressCircle({ status }: { status: "spinning" | "success" }) {
+  if (status === "success") {
+    return (
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="Upload complete">
+        <circle cx="14" cy="14" r="12" stroke="#008060" strokeWidth="2" fill="#f1f8f5" />
+        <polyline
+          points="8,14 12,18 20,10"
+          stroke="#008060"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  return (
+    <>
+      <style>{`@keyframes wpa-spin{to{transform:rotate(360deg)}}`}</style>
+      <svg
+        width="28"
+        height="28"
+        viewBox="0 0 28 28"
+        fill="none"
+        aria-label="Uploading"
+        style={{ animation: "wpa-spin 0.75s linear infinite" }}
+      >
+        <circle cx="14" cy="14" r="11" stroke="#e1e3e5" strokeWidth="2.5" />
+        <path
+          d="M14 3 A11 11 0 0 1 25 14"
+          stroke="#5c6ac4"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    </>
+  );
+}
+
 export function FilePicker({ value, onChange }: FilePickerProps) {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<StoreFile[]>([]);
@@ -69,6 +113,10 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
+  const [pendingFileId, setPendingFileId] = useState<string | null>(null);
+  // pollTrigger increments each time we need to schedule the next poll
+  const [pollTrigger, setPollTrigger] = useState(0);
+  const pollCountRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filesFetcher = useFetcher<{
@@ -76,10 +124,12 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     pageInfo: { hasNextPage: boolean; endCursor: string | null };
   }>();
 
-  const uploadFetcher = useFetcher<UploadResult>();
+  const uploadFetcher = useFetcher<UploadActionResult>();
+  const statusFetcher = useFetcher<StatusResult>();
 
   const filesLoading = filesFetcher.state === "loading";
-  const isUploading = uploadStatus === "uploading";
+  // Block grid + buttons while upload or polling is in progress
+  const isBlocked = uploadStatus === "uploading" || uploadStatus === "polling";
 
   // Load initial files when picker opens
   useEffect(() => {
@@ -102,21 +152,15 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     }
   }, [filesFetcher.data]);
 
-  // Handle upload result
+  // Handle upload action result — transition from "uploading" to "polling"
   useEffect(() => {
     if (uploadFetcher.state === "idle" && uploadFetcher.data) {
       const result = uploadFetcher.data;
-      if (result.ok && result.file) {
-        // Prepend new file and auto-select it
-        setFiles((prev) => {
-          const existingIds = new Set(prev.map((f) => f.id));
-          if (existingIds.has(result.file!.id)) return prev;
-          return [result.file!, ...prev];
-        });
-        setSelectedUrl(result.file.url);
-        setUploadStatus("idle");
-      } else if (result.timeout) {
-        setUploadStatus("timeout");
+      if (result.ok && result.fileId) {
+        setPendingFileId(result.fileId);
+        pollCountRef.current = 0;
+        setPollTrigger(0);
+        setUploadStatus("polling");
       } else {
         setUploadStatus("error");
         setUploadError(result.error ?? "Upload failed. Please try again.");
@@ -124,23 +168,78 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     }
   }, [uploadFetcher.state, uploadFetcher.data]);
 
+  // Schedule a status poll whenever polling state or pollTrigger changes
+  useEffect(() => {
+    if (uploadStatus !== "polling" || !pendingFileId) return;
+
+    if (pollCountRef.current >= MAX_POLLS) {
+      setUploadStatus("timeout");
+      setPendingFileId(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      pollCountRef.current += 1;
+      statusFetcher.load(
+        `/app/upload-store-file?fileId=${encodeURIComponent(pendingFileId)}`,
+      );
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [uploadStatus, pendingFileId, pollTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle status poll result
+  useEffect(() => {
+    if (statusFetcher.state !== "idle" || !statusFetcher.data || uploadStatus !== "polling") return;
+
+    const result = statusFetcher.data;
+
+    if (result.fileStatus === "READY" && result.file) {
+      setFiles((prev) => {
+        const existingIds = new Set(prev.map((f) => f.id));
+        if (existingIds.has(result.file!.id)) return prev;
+        return [result.file!, ...prev];
+      });
+      setSelectedUrl(result.file.url);
+      setUploadStatus("success");
+      setPendingFileId(null);
+    } else if (result.fileStatus === "FAILED") {
+      setUploadStatus("error");
+      setUploadError("Upload processing failed. Please try again.");
+      setPendingFileId(null);
+    } else {
+      // Still PROCESSING — schedule the next poll
+      setPollTrigger((n) => n + 1);
+    }
+  }, [statusFetcher.state, statusFetcher.data, uploadStatus]);
+
+  // Auto-reset success indicator after a brief delay
+  useEffect(() => {
+    if (uploadStatus !== "success") return;
+    const timer = setTimeout(() => setUploadStatus("idle"), 1500);
+    return () => clearTimeout(timer);
+  }, [uploadStatus]);
+
+  const resetUploadState = useCallback(() => {
+    setUploadStatus("idle");
+    setUploadError(null);
+    setSizeError(null);
+    setPendingFileId(null);
+  }, []);
+
   const handleOpen = useCallback(() => {
     setOpen(true);
     setSelectedUrl(null);
     setSearch("");
-    setUploadStatus("idle");
-    setUploadError(null);
-    setSizeError(null);
-  }, []);
+    resetUploadState();
+  }, [resetUploadState]);
 
   const handleClose = useCallback(() => {
     setOpen(false);
     setSelectedUrl(null);
     setSearch("");
-    setUploadStatus("idle");
-    setUploadError(null);
-    setSizeError(null);
-  }, []);
+    resetUploadState();
+  }, [resetUploadState]);
 
   const handleSelect = useCallback(() => {
     if (selectedUrl) {
@@ -149,10 +248,8 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     setOpen(false);
     setSelectedUrl(null);
     setSearch("");
-    setUploadStatus("idle");
-    setUploadError(null);
-    setSizeError(null);
-  }, [selectedUrl, onChange]);
+    resetUploadState();
+  }, [selectedUrl, onChange, resetUploadState]);
 
   const handleRemove = useCallback(() => {
     onChange(null);
@@ -165,16 +262,15 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
   }, [cursor, filesFetcher]);
 
   const handleUploadClick = useCallback(() => {
-    setUploadStatus("idle");
-    setUploadError(null);
     setSizeError(null);
+    setUploadError(null);
     fileInputRef.current?.click();
   }, []);
 
   const handleFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      // Reset input so same file can be re-selected after an error
+      // Reset input so the same file can be re-selected after an error
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       if (!file) return;
@@ -186,6 +282,9 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
       }
 
       setSizeError(null);
+      setPendingFileId(null);
+      pollCountRef.current = 0;
+      setPollTrigger(0);
       setUploadStatus("uploading");
 
       const form = new FormData();
@@ -204,7 +303,17 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
     : files;
 
   const currentFilename = value ? filenameFromUrl(value) : null;
-  const gridDisabled = isUploading;
+
+  const showProgressCircle = uploadStatus === "uploading" || uploadStatus === "polling" || uploadStatus === "success";
+  const progressCircleStatus: "spinning" | "success" = uploadStatus === "success" ? "success" : "spinning";
+  const progressLabel =
+    uploadStatus === "uploading"
+      ? "Uploading…"
+      : uploadStatus === "polling"
+        ? "Processing…"
+        : "Upload complete!";
+  const progressTone: "subdued" | "success" =
+    uploadStatus === "success" ? "success" : "subdued";
 
   return (
     <BlockStack gap="200">
@@ -254,7 +363,7 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
         title="Choose background image"
         primaryAction={{
           content: "Select",
-          disabled: !selectedUrl || isUploading,
+          disabled: !selectedUrl || isBlocked,
           onAction: handleSelect,
         }}
         secondaryActions={[{ content: "Cancel", onAction: handleClose }]}
@@ -273,14 +382,14 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
                   autoComplete="off"
                   clearButton
                   onClearButtonClick={() => setSearch("")}
-                  disabled={isUploading}
+                  disabled={isBlocked}
                 />
               </div>
               <Button
                 variant="plain"
                 icon={UploadIcon}
                 onClick={handleUploadClick}
-                disabled={isUploading}
+                disabled={isBlocked}
               >
                 Upload image
               </Button>
@@ -293,6 +402,16 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
               </Text>
             )}
 
+            {/* Progress circle with status label */}
+            {showProgressCircle && (
+              <InlineStack gap="300" blockAlign="center">
+                <ProgressCircle status={progressCircleStatus} />
+                <Text as="p" variant="bodySm" tone={progressTone}>
+                  {progressLabel}
+                </Text>
+              </InlineStack>
+            )}
+
             {/* Upload error banner */}
             {uploadStatus === "error" && uploadError && (
               <Banner title="Upload failed" tone="critical">
@@ -300,7 +419,7 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
               </Banner>
             )}
 
-            {/* Upload timeout message */}
+            {/* Upload timeout banner */}
             {uploadStatus === "timeout" && (
               <Banner title="Processing" tone="info">
                 <p>
@@ -308,16 +427,6 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
                   library. Close and re-open the picker to see it.
                 </p>
               </Banner>
-            )}
-
-            {/* Upload loading state */}
-            {isUploading && (
-              <InlineStack gap="200" blockAlign="center">
-                <Spinner size="small" />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Uploading…
-                </Text>
-              </InlineStack>
             )}
 
             {/* Files grid */}
@@ -337,8 +446,8 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
                   gap: "12px",
-                  opacity: gridDisabled ? 0.5 : 1,
-                  pointerEvents: gridDisabled ? "none" : "auto",
+                  opacity: isBlocked ? 0.5 : 1,
+                  pointerEvents: isBlocked ? "none" : "auto",
                 }}
               >
                 {filteredFiles.map((file) => {
@@ -348,12 +457,12 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
                       key={file.id}
                       type="button"
                       onClick={() => setSelectedUrl(file.url)}
-                      disabled={gridDisabled}
+                      disabled={isBlocked}
                       style={{
                         border: isSelected ? "2px solid #5c6ac4" : "2px solid #e1e3e5",
                         borderRadius: "8px",
                         padding: "8px",
-                        cursor: gridDisabled ? "default" : "pointer",
+                        cursor: isBlocked ? "default" : "pointer",
                         background: isSelected ? "#f4f6f8" : "#fff",
                         textAlign: "center",
                         display: "flex",
@@ -398,7 +507,7 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
                   variant="plain"
                   onClick={handleLoadMore}
                   loading={filesLoading}
-                  disabled={isUploading}
+                  disabled={isBlocked}
                 >
                   Load more
                 </Button>
