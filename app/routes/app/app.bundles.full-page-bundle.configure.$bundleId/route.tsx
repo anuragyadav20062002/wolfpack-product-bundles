@@ -368,6 +368,12 @@ export default function ConfigureBundleFlow() {
   );
   const originalPromoBannerBgImageRef = useRef<string | null>(bundle.promoBannerBgImage ?? null);
 
+  // Promo banner image crop state
+  const [promoBannerBgImageCrop, setPromoBannerBgImageCrop] = useState<string | null>(
+    bundle.promoBannerBgImageCrop ?? null
+  );
+  const originalPromoBannerBgImageCropRef = useRef<string | null>(bundle.promoBannerBgImageCrop ?? null);
+
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
   // Save handler
@@ -399,6 +405,7 @@ export default function ConfigureBundleFlow() {
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
       formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
+      formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
@@ -431,6 +438,7 @@ export default function ConfigureBundleFlow() {
     bundleProduct,
     productStatus,
     promoBannerBgImage,
+    promoBannerBgImageCrop,
     shopify
   ]);
 
@@ -590,10 +598,11 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Discard handler - resets hook state and local image state
+  // Discard handler - resets hook state and local image/crop state
   const handleDiscard = useCallback(() => {
     hookHandleDiscard();
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
+    setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
   }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
@@ -2036,6 +2045,11 @@ export default function ConfigureBundleFlow() {
                       value={promoBannerBgImage}
                       onChange={(url) => {
                         setPromoBannerBgImage(url);
+                        markAsDirty();
+                      }}
+                      cropValue={promoBannerBgImageCrop}
+                      onCropChange={(crop) => {
+                        setPromoBannerBgImageCrop(crop);
                         markAsDirty();
                       }}
                     />

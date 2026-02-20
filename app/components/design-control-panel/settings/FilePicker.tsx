@@ -13,10 +13,13 @@ import {
 } from "@shopify/polaris";
 import { ImageIcon, XCircleIcon, UploadIcon } from "@shopify/polaris-icons";
 import type { StoreFile } from "../../../routes/app/app.store-files";
+import { ImageCropEditor } from "./ImageCropEditor";
 
 interface FilePickerProps {
   value: string | null;
   onChange: (url: string | null) => void;
+  cropValue?: string | null;
+  onCropChange?: (crop: string | null) => void;
 }
 
 type UploadStatus = "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
@@ -101,8 +104,9 @@ function ProgressCircle({ status }: { status: "spinning" | "success" }) {
   );
 }
 
-export function FilePicker({ value, onChange }: FilePickerProps) {
+export function FilePicker({ value, onChange, cropValue, onCropChange }: FilePickerProps) {
   const [open, setOpen] = useState(false);
+  const [cropEditorOpen, setCropEditorOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [files, setFiles] = useState<StoreFile[]>([]);
   const [search, setSearch] = useState("");
@@ -281,7 +285,8 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
 
   const handleRemove = useCallback(() => {
     onChange(null);
-  }, [onChange]);
+    onCropChange?.(null);
+  }, [onChange, onCropChange]);
 
   const handleLoadMore = useCallback(() => {
     if (cursor) {
@@ -375,6 +380,9 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
           <InlineStack gap="200">
             <Button variant="plain" size="slim" onClick={handleOpen}>
               Change
+            </Button>
+            <Button variant="plain" size="slim" onClick={() => setCropEditorOpen(true)}>
+              Adjust Image
             </Button>
             <Button variant="plain" tone="critical" size="slim" icon={XCircleIcon} onClick={handleRemove}>
               Remove
@@ -661,6 +669,19 @@ export function FilePicker({ value, onChange }: FilePickerProps) {
 
       {/* Portal modal — renders above the App Bridge DCP modal */}
       {mounted && open ? createPortal(dialogContent, document.body) : null}
+
+      {/* Crop editor — higher z-index than the file picker modal */}
+      {mounted && cropEditorOpen && value && (
+        <ImageCropEditor
+          imageUrl={value}
+          cropValue={cropValue ?? null}
+          onConfirm={(crop) => {
+            onCropChange?.(crop);
+            setCropEditorOpen(false);
+          }}
+          onClose={() => setCropEditorOpen(false)}
+        />
+      )}
     </BlockStack>
   );
 }
