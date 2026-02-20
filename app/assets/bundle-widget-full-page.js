@@ -1516,49 +1516,26 @@ class BundleWidgetFullPage {
     const progressSection = document.createElement('div');
     progressSection.className = 'footer-progress-section';
 
-    // Build discount messaging
+    // Build discount messaging using configured templates (same pattern as product-page footer)
     let discountMessage = '';
     if (this.selectedBundle?.pricing?.enabled) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        discountInfo,
+        currencyInfo
+      );
       if (discountInfo.hasDiscount) {
-        const variables = TemplateManager.createDiscountVariables(
-          this.selectedBundle,
-          totalPrice,
-          totalQuantity,
-          discountInfo,
-          currencyInfo
-        );
         discountMessage = TemplateManager.replaceVariables(
           this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
           variables
         );
       } else if (nextRule) {
-        // Calculate remaining items needed from nested rule structure
-        const targetQuantity = nextRule.condition?.value || 0;
-        const remaining = Math.max(0, targetQuantity - totalQuantity);
-
-        // Build discount text from nested discount structure
-        let discountText = '';
-        const discountMethod = nextRule.discount?.method;
-        const discountValue = nextRule.discount?.value || 0;
-
-        if (discountMethod === 'percentage') {
-          discountText = `${discountValue}% off`;
-        } else if (discountMethod === 'fixed_amount') {
-          discountText = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format) + ' off';
-        } else if (discountMethod === 'fixed_price') {
-          discountText = 'a special price of ' + CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
-        } else {
-          discountText = 'a discount';
-        }
-
-        // Improved messaging with encouraging copy
-        if (remaining === 1) {
-          discountMessage = `Almost there! Add 1 more item to unlock ${discountText}`;
-        } else if (remaining <= 3) {
-          discountMessage = `Just ${remaining} more items to unlock ${discountText}!`;
-        } else {
-          discountMessage = `Add ${remaining} more items to get ${discountText}`;
-        }
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
       }
     }
 
