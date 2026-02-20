@@ -35,6 +35,7 @@ import {
   List,
   Spinner,
   Divider,
+  Box,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -51,7 +52,10 @@ import {
   ListNumberedIcon,
   DiscountIcon,
   RefreshIcon,
+  ImageIcon,
+  LockIcon,
 } from "@shopify/polaris-icons";
+import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../../../shopify.server";
@@ -233,8 +237,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.full-page-bundle.configure.$bundleId/handlers/
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
-  { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
-  { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
+  { id: "step_setup",       label: "Step Setup",          icon: ListNumberedIcon, fullPageOnly: false },
+  { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
+  { id: "images_gifs",      label: "Images & GIFs",       icon: ImageIcon,        fullPageOnly: true  },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
@@ -357,6 +362,12 @@ export default function ConfigureBundleFlow() {
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
+  // Per-bundle promo banner background image state
+  const [promoBannerBgImage, setPromoBannerBgImage] = useState<string | null>(
+    bundle.promoBannerBgImage ?? null
+  );
+  const originalPromoBannerBgImageRef = useRef<string | null>(bundle.promoBannerBgImage ?? null);
+
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
   // Save handler
@@ -387,6 +398,7 @@ export default function ConfigureBundleFlow() {
       }));
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
+      formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
@@ -418,6 +430,7 @@ export default function ConfigureBundleFlow() {
     conditionsState.stepConditions,
     bundleProduct,
     productStatus,
+    promoBannerBgImage,
     shopify
   ]);
 
@@ -577,8 +590,11 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Discard handler - uses the hook's implementation
-  const handleDiscard = hookHandleDiscard;
+  // Discard handler - resets hook state and local image state
+  const handleDiscard = useCallback(() => {
+    hookHandleDiscard();
+    setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
+  }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
@@ -1329,19 +1345,21 @@ export default function ConfigureBundleFlow() {
                   </Text>
 
                   <BlockStack gap="100">
-                    {bundleSetupItems.map((item) => (
-                      <Button
-                        key={item.id}
-                        variant={activeSection === item.id ? "primary" : "tertiary"}
-                        fullWidth
-                        textAlign="start"
-                        icon={item.icon}
-                        disabled={false}
-                        onClick={() => handleSectionChange(item.id)}
-                      >
-                        {item.label}
-                      </Button>
-                    ))}
+                    {bundleSetupItems
+                      .filter(item => !item.fullPageOnly || bundle.bundleType === "full_page")
+                      .map((item) => (
+                        <Button
+                          key={item.id}
+                          variant={activeSection === item.id ? "primary" : "tertiary"}
+                          fullWidth
+                          textAlign="start"
+                          icon={item.icon}
+                          disabled={false}
+                          onClick={() => handleSectionChange(item.id)}
+                        >
+                          {item.label}
+                        </Button>
+                      ))}
                   </BlockStack>
                 </BlockStack>
               </Card>
@@ -1992,6 +2010,52 @@ export default function ConfigureBundleFlow() {
                       </BlockStack>
                     </BlockStack>
                   )}
+                </BlockStack>
+              </Card>
+            )}
+
+            {activeSection === "images_gifs" && (
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd" as="h2">
+                    Images & GIFs
+                  </Text>
+                  <Divider />
+
+                  <BlockStack gap="200">
+                    <Text variant="headingSm" as="p">
+                      Promo Banner Background
+                    </Text>
+                    <Text tone="subdued" variant="bodySm" as="p">
+                      Sets the background image for the promo banner at the top of this bundle page.
+                    </Text>
+                    <Text tone="subdued" variant="bodySm" as="p">
+                      Best results: 1600×280px or 16:3 ratio.
+                    </Text>
+                    <FilePicker
+                      value={promoBannerBgImage}
+                      onChange={(url) => {
+                        setPromoBannerBgImage(url);
+                        markAsDirty();
+                      }}
+                    />
+                  </BlockStack>
+
+                  <Divider />
+
+                  <Box background="bg-surface-secondary" padding="400" borderRadius="200">
+                    <InlineStack gap="300" blockAlign="start">
+                      <Icon source={LockIcon} tone="subdued" />
+                      <BlockStack gap="100">
+                        <Text variant="headingSm" as="p">
+                          More media options
+                        </Text>
+                        <Text tone="subdued" variant="bodySm" as="p">
+                          Coming soon: hero images, step illustrations, and GIF overlays.
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                  </Box>
                 </BlockStack>
               </Card>
             )}

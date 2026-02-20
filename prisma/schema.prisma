@@ -85,6 +85,7 @@ model Bundle {
   shopifyPageHandle String? // Shopify Page handle for full-page bundles (e.g., "build-your-bundle")
   shopifyPageId    String? // Shopify Page ID (GID) for full-page bundles
   templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
+  promoBannerBgImage String? // URL of the promo banner background image (full-page bundles only)
   bundleType       BundleType        @default(product_page)
   status           BundleStatus      @default(draft)
   createdAt        DateTime          @default(now())

@@ -3148,6 +3148,12 @@ class BundleWidgetFullPage {
       ${promoNote ? `<div class="promo-banner-note">${promoNote}</div>` : ''}
     `;
 
+    // Apply per-bundle promo banner background image
+    const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
+    banner.style.setProperty(
+      '--bundle-promo-banner-bg-image',
+      bgImageUrl ? `url('${bgImageUrl}')` : 'none'
+    );
 
     return banner;
   }

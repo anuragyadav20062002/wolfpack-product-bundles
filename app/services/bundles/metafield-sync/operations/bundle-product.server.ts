@@ -206,7 +206,8 @@ export async function updateBundleProductMetafields(
       showProgressBar: bundleConfiguration.pricing?.messages?.showProgressBar || bundleConfiguration.pricing?.display?.showProgressBar || bundleConfiguration.messaging?.showProgressBar || false,
       showDiscountMessaging: bundleConfiguration.pricing?.messages?.showDiscountMessaging || false,
       showFooter: bundleConfiguration.pricing?.display?.showFooter !== false && bundleConfiguration.messaging?.showFooter !== false
-    }
+    },
+    promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
   };
 
   // Check metafield sizes and log warnings

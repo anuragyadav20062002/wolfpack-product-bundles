@@ -54,6 +54,7 @@ export interface BundleUiConfig {
   steps: BundleUiStep[];
   pricing: BundleUiPricing | null;
   messaging: BundleUiMessaging;
+  promoBannerBgImage?: string | null;
 }
 
 export interface BundleUiStep {
