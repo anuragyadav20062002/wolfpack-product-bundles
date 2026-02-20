@@ -879,29 +879,6 @@ class BundleWidgetFullPage {
     return productImages;
   }
 
-  // Create bundle instructions header (only shows step instruction, not bundle title)
-  createBundleInstructions() {
-    const header = document.createElement('div');
-    header.className = 'bundle-header bundle-step-instruction';
-
-    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[this.currentStepIndex]) {
-      return header;
-    }
-
-    const currentStep = this.selectedBundle.steps[this.currentStepIndex];
-
-    // Use custom instruction if provided, otherwise use step instruction or auto-generated text
-    const defaultInstruction = currentStep.instruction || `Select ${currentStep.minQuantity || 1} or more items from ${currentStep.name}`;
-    const instructionText = this.config.customInstruction || defaultInstruction;
-
-    // Only show instruction text (title is shown in promo banner)
-    header.innerHTML = `
-      <p class="bundle-instruction">${instructionText}</p>
-    `;
-
-    return header;
-  }
-
   // Create search input for filtering products within the current step
   createSearchInput() {
     const searchContainer = document.createElement('div');
