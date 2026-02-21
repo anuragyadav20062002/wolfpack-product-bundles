@@ -2400,7 +2400,12 @@ class BundleWidgetFullPage {
   }
 
   updateMessagesFromBundle() {
+    // Product-page bundles (metafield path) expose a top-level `messaging` object with
+    // camelCase keys (progressTemplate / successTemplate).
+    // Full-page bundles (API path) expose messages inside `pricing.messages` with
+    // snake-style keys (progress / qualified). Try both shapes.
     const messaging = this.selectedBundle?.messaging;
+    const pricingMessages = this.selectedBundle?.pricing?.messages;
 
     if (messaging) {
       if (messaging.progressTemplate) {
@@ -2412,6 +2417,18 @@ class BundleWidgetFullPage {
 
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
       this.config.showProgressBar = messaging.showProgressBar || false;
+
+    } else if (pricingMessages) {
+      // Full-page bundle API path: read merchant-configured templates
+      if (pricingMessages.progress) {
+        this.config.discountTextTemplate = pricingMessages.progress;
+      }
+      if (pricingMessages.qualified) {
+        this.config.successMessageTemplate = pricingMessages.qualified;
+      }
+
+      this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
+      this.config.showProgressBar = pricingMessages.showProgressBar || false;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
