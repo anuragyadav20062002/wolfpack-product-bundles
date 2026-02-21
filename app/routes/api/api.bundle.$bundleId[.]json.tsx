@@ -384,6 +384,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       status: bundle.status,
       bundleType: bundle.bundleType,
       shopifyProductId: bundle.shopifyProductId,
+      promoBannerBgImage: bundle.promoBannerBgImage ?? null,
+      promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
       steps: bundle.steps.map(step => {
         console.log('[API_DEBUG] Processing step:', {
           stepId: step.id,
