@@ -1083,29 +1083,32 @@ class BundleWidgetFullPage {
       ${promoNote ? `<div class="promo-banner-note">${promoNote}</div>` : ''}
     `;
 
-    // Apply per-bundle promo banner background image
+    // Apply per-bundle promo banner background image directly as inline style.
+    // Using banner.style.backgroundImage (not a CSS custom property) so the inline style
+    // always wins regardless of theme stylesheet specificity.
     const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
-    banner.style.setProperty(
-      '--bundle-promo-banner-bg-image',
-      bgImageUrl ? `url('${bgImageUrl}')` : 'none'
-    );
+    if (bgImageUrl) {
+      banner.style.backgroundImage = `url('${bgImageUrl}')`;
+      banner.style.backgroundSize = 'cover';
+      banner.style.backgroundPosition = 'center';
 
-    // Apply crop offsets when crop data is present
-    const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
-    if (bgImageUrl && cropRaw) {
-      try {
-        const crop = JSON.parse(cropRaw);
-        const cw = crop.width / 100;    // normalized crop width (0–1)
-        const ch = cw * (3 / 16);       // derived height fraction (same aspect as banner)
-        const cx = crop.x / 100;        // normalized left edge
-        const cy = crop.y / 100;        // normalized top edge
-        const bgSize = `${(1 / cw) * 100}%`;
-        const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
-        const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
-        banner.style.backgroundSize = bgSize;
-        banner.style.backgroundPosition = `${posX}% ${posY}%`;
-      } catch (_e) {
-        // Invalid crop JSON — fall back to default cover/center
+      // Apply crop offsets when crop data is present (overrides cover/center defaults above)
+      const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
+      if (cropRaw) {
+        try {
+          const crop = JSON.parse(cropRaw);
+          const cw = crop.width / 100;    // normalized crop width (0–1)
+          const ch = cw * (3 / 16);       // derived height fraction (same aspect as banner)
+          const cx = crop.x / 100;        // normalized left edge
+          const cy = crop.y / 100;        // normalized top edge
+          const bgSize = `${(1 / cw) * 100}%`;
+          const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
+          const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
+          banner.style.backgroundSize = bgSize;
+          banner.style.backgroundPosition = `${posX}% ${posY}%`;
+        } catch (_e) {
+          // Invalid crop JSON — fall back to default cover/center set above
+        }
       }
     }
 
