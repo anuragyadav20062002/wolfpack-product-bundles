@@ -2024,23 +2024,20 @@ export default function ConfigureBundleFlow() {
             )}
 
             {activeSection === "images_gifs" && (
-              <Card>
-                <BlockStack gap="400">
-                  <Text variant="headingMd" as="h2">
-                    Images & GIFs
-                  </Text>
-                  <Divider />
-
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="p">
-                      Promo Banner Background
-                    </Text>
-                    <Text tone="subdued" variant="bodySm" as="p">
-                      Sets the background image for the promo banner at the top of this bundle page.
-                    </Text>
-                    <Text tone="subdued" variant="bodySm" as="p">
-                      Best results: 1600×280px or 16:3 ratio.
-                    </Text>
+              <BlockStack gap="300">
+                <Card>
+                  <BlockStack gap="300">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Icon source={ImageIcon} tone="subdued" />
+                      <BlockStack gap="0">
+                        <Text variant="headingSm" fontWeight="medium" as="p">
+                          Promo Banner
+                        </Text>
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          16:3 aspect ratio · 1600×280px recommended
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
                     <FilePicker
                       value={promoBannerBgImage}
                       onChange={(url) => {
@@ -2054,24 +2051,17 @@ export default function ConfigureBundleFlow() {
                       }}
                     />
                   </BlockStack>
+                </Card>
 
-                  <Divider />
-
-                  <Box background="bg-surface-secondary" padding="400" borderRadius="200">
-                    <InlineStack gap="300" blockAlign="start">
-                      <Icon source={LockIcon} tone="subdued" />
-                      <BlockStack gap="100">
-                        <Text variant="headingSm" as="p">
-                          More media options
-                        </Text>
-                        <Text tone="subdued" variant="bodySm" as="p">
-                          Coming soon: hero images, step illustrations, and GIF overlays.
-                        </Text>
-                      </BlockStack>
-                    </InlineStack>
-                  </Box>
-                </BlockStack>
-              </Card>
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={LockIcon} tone="subdued" />
+                    <Text variant="bodySm" tone="subdued" as="span">
+                      More media options coming soon
+                    </Text>
+                  </InlineStack>
+                </Box>
+              </BlockStack>
             )}
           </Layout.Section>
         </Layout>

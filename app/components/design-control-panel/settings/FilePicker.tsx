@@ -652,10 +652,6 @@ export function FilePicker({ value, onChange, cropValue, onCropChange }: FilePic
 
   return (
     <BlockStack gap="200">
-      <Text as="p" variant="bodyMd" fontWeight="semibold">
-        Background Image
-      </Text>
-
       {trigger}
 
       {/* Hidden native file input */}
