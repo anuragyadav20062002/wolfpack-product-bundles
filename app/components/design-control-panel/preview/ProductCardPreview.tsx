@@ -1,456 +1,196 @@
-import { Text } from "@shopify/polaris";
+/**
+ * ProductCardPreview
+ *
+ * Renders real widget HTML for the product card and modal previews.
+ * CSS variables are injected by the parent <PreviewScope>; this component
+ * just provides the correct DOM structure that the real widget CSS styles.
+ *
+ * Shows two cards side-by-side: unselected state and selected state.
+ * For the modal sub-section, shows the real modal-content structure.
+ */
 
-const HIGHLIGHT_STYLE = {
-  outline: "2px dashed #5C6AC4",
-  outlineOffset: "4px",
-};
+import { Text } from "@shopify/polaris";
+import { HighlightBox } from "./HighlightBox";
+
+const PLACEHOLDER_IMG =
+  "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png";
+
+// Real product card HTML matching ComponentGenerator.renderProductCard() output
+const unselectedCardHTML = `
+<div class="product-card" data-product-id="preview-unselected">
+  <div class="product-image">
+    <img src="${PLACEHOLDER_IMG}" alt="Sample Product" loading="lazy">
+  </div>
+  <div class="product-content-wrapper">
+    <div class="product-title">Sample Product</div>
+    <div class="product-price-row">
+      <span class="product-price-strike">$19.99</span>
+      <span class="product-price">$14.99</span>
+    </div>
+    <div class="product-spacer"></div>
+    <select class="variant-selector" data-product-id="preview-unselected">
+      <option>Size: M</option>
+      <option>Size: L</option>
+      <option>Size: XL</option>
+    </select>
+    <button class="product-add-btn" data-product-id="preview-unselected">Add to Bundle</button>
+  </div>
+</div>
+`.trim();
+
+// Selected state card
+const selectedCardHTML = `
+<div class="product-card selected" data-product-id="preview-selected">
+  <div class="selected-overlay">✓</div>
+  <div class="product-image">
+    <img src="${PLACEHOLDER_IMG}" alt="Sample Product" loading="lazy">
+  </div>
+  <div class="product-content-wrapper">
+    <div class="product-title">Sample Product</div>
+    <div class="product-price-row">
+      <span class="product-price-strike">$19.99</span>
+      <span class="product-price">$14.99</span>
+    </div>
+    <div class="product-spacer"></div>
+    <div class="inline-quantity-controls">
+      <button class="inline-qty-btn qty-decrease" data-product-id="preview-selected">−</button>
+      <span class="inline-qty-display">2</span>
+      <button class="inline-qty-btn qty-increase" data-product-id="preview-selected">+</button>
+    </div>
+  </div>
+</div>
+`.trim();
+
+// Real modal structure matching ComponentGenerator.createModalHTML()
+const modalHTML = `
+<div class="modal-content" style="position:relative;max-width:680px;margin:0 auto;">
+  <div class="modal-header">
+    <div class="modal-step-title">Choose your products</div>
+    <div class="modal-tabs-wrapper">
+      <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&#x2039;</button>
+      <div class="modal-tabs">
+        <button class="bundle-header-tab active" data-step-index="0">Step 1</button>
+        <button class="bundle-header-tab" data-step-index="1">Step 2</button>
+        <button class="bundle-header-tab" data-step-index="2">Step 3</button>
+      </div>
+      <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&#x203a;</button>
+    </div>
+    <span class="close-button">&times;</span>
+  </div>
+  <div class="modal-body">
+    <div class="product-grid">
+      <div class="product-card" data-product-id="m1">
+        <div class="product-image"><img src="${PLACEHOLDER_IMG}" alt="Product 1" loading="lazy"></div>
+        <div class="product-content-wrapper">
+          <div class="product-title">Product 1</div>
+          <div class="product-price-row"><span class="product-price">$14.99</span></div>
+          <div class="product-spacer"></div>
+          <button class="product-add-btn" data-product-id="m1">Add to Bundle</button>
+        </div>
+      </div>
+      <div class="product-card selected" data-product-id="m2">
+        <div class="selected-overlay">✓</div>
+        <div class="product-image"><img src="${PLACEHOLDER_IMG}" alt="Product 2" loading="lazy"></div>
+        <div class="product-content-wrapper">
+          <div class="product-title">Product 2</div>
+          <div class="product-price-row"><span class="product-price">$19.99</span></div>
+          <div class="product-spacer"></div>
+          <div class="inline-quantity-controls">
+            <button class="inline-qty-btn qty-decrease" data-product-id="m2">−</button>
+            <span class="inline-qty-display">1</span>
+            <button class="inline-qty-btn qty-increase" data-product-id="m2">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="modal-footer-grouped-content">
+      <div class="modal-footer-total-pill">
+        <span class="total-price-strike">$39.98</span>
+        <span class="total-price-final">$29.99</span>
+        <span class="price-cart-separator">|</span>
+        <span class="cart-badge-wrapper">
+          <span class="cart-badge-count">2</span>
+          <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+          </svg>
+        </span>
+      </div>
+      <div class="modal-footer-buttons-row">
+        <button class="modal-nav-button prev-button">BACK</button>
+        <button class="modal-nav-button next-button">NEXT</button>
+      </div>
+    </div>
+  </div>
+</div>
+`.trim();
 
 interface ProductCardPreviewProps {
   activeSubSection: string;
-  productCardBgColor: string;
-  productCardFontColor: string;
-  productCardFontSize: number;
-  productCardFontWeight: number;
-  productCardImageFit: string;
-  productTitleVisibility: boolean;
-  productPriceVisibility: boolean;
-  productPriceBgColor: string;
-  productStrikePriceColor: string;
-  productStrikeFontSize: number;
-  productStrikeFontWeight: number;
-  productFinalPriceColor: string;
-  productFinalPriceFontSize: number;
-  productFinalPriceFontWeight: number;
-  variantSelectorBgColor: string;
-  variantSelectorTextColor: string;
-  variantSelectorBorderRadius: number;
-  quantitySelectorBgColor: string;
-  quantitySelectorTextColor: string;
-  quantitySelectorBorderRadius: number;
-  buttonBgColor: string;
-  buttonTextColor: string;
-  buttonBorderRadius: number;
-  buttonFontSize: number;
-  buttonFontWeight: number;
-  buttonAddToCartText: string;
-  // Phase 6 - Product Card Layout & Dimensions
-  productCardWidth: number;
-  productCardHeight: number;
-  productCardSpacing: number;
-  productCardBorderRadius: number;
-  productCardPadding: number;
-  productCardBorderWidth: number;
-  productCardBorderColor: string;
-  productCardShadow: string;
-  productCardHoverShadow: string;
-  // Phase 6 - Product Image
-  productImageHeight: number;
-  productImageBorderRadius: number;
-  productImageBgColor: string;
-  // Phase 6 - Product Modal Styling
-  modalBgColor: string;
-  modalBorderRadius: number;
-  modalTitleFontSize: number;
-  modalTitleFontWeight: number;
-  modalPriceFontSize: number;
-  modalVariantBorderRadius: number;
-  modalButtonBgColor: string;
-  modalButtonTextColor: string;
-  modalButtonBorderRadius: number;
 }
 
-export function ProductCardPreview(props: ProductCardPreviewProps) {
-  const {
-    activeSubSection,
-    productCardBgColor,
-    productCardFontColor,
-    productCardFontSize,
-    productCardFontWeight,
-    productCardImageFit,
-    productTitleVisibility,
-    productPriceVisibility,
-    productPriceBgColor,
-    productStrikePriceColor,
-    productStrikeFontSize,
-    productStrikeFontWeight,
-    productFinalPriceColor,
-    productFinalPriceFontSize,
-    productFinalPriceFontWeight,
-    variantSelectorBgColor,
-    variantSelectorTextColor,
-    variantSelectorBorderRadius,
-    quantitySelectorBgColor,
-    quantitySelectorTextColor,
-    quantitySelectorBorderRadius,
-    buttonBgColor,
-    buttonTextColor,
-    buttonBorderRadius,
-    buttonFontSize,
-    buttonFontWeight,
-    buttonAddToCartText,
-    // Phase 6 props
-    productCardWidth,
-    productCardHeight,
-    productCardSpacing,
-    productCardBorderRadius,
-    productCardPadding,
-    productCardBorderWidth,
-    productCardBorderColor,
-    productCardShadow,
-    productCardHoverShadow,
-    productImageHeight,
-    productImageBorderRadius,
-    productImageBgColor,
-    modalBgColor,
-    modalBorderRadius,
-    modalTitleFontSize,
-    modalTitleFontWeight,
-    modalPriceFontSize,
-    modalVariantBorderRadius,
-    modalButtonBgColor,
-    modalButtonTextColor,
-    modalButtonBorderRadius,
-  } = props;
+export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps) {
+  // Modal sub-section — show real modal-content structure
+  if (activeSubSection === "productCardContent") {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Product Modal
+        </Text>
+        <div style={{ marginTop: "24px", position: "relative" }}>
+          <HighlightBox active>
+            {/* eslint-disable-next-line react/no-danger */}
+            <div dangerouslySetInnerHTML={{ __html: modalHTML }} />
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "24px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Preview updates as you customize
+          </Text>
+        </div>
+      </div>
+    );
+  }
 
+  // All other product card sub-sections: show two cards side-by-side
   return (
-    <div style={{ textAlign: "center", marginTop: "80px", display: "inline-block", position: "relative" }}>
-      {/* Product Card Preview */}
+    <div style={{ textAlign: "center" }}>
+      <Text as="h3" variant="headingLg" fontWeight="semibold">
+        Product Card
+      </Text>
       <div
         style={{
-          backgroundColor: productCardBgColor,
-          borderRadius: `${productCardBorderRadius}px`,
-          padding: `${productCardPadding}px`,
-          width: `${productCardWidth}px`,
-          minHeight: `${productCardHeight}px`,
-          boxShadow: productCardShadow,
-          border: `${productCardBorderWidth}px solid ${productCardBorderColor}`,
-          position: "relative",
+          marginTop: "24px",
           display: "flex",
-          flexDirection: "column",
-          ...(activeSubSection === "productCard" ? HIGHLIGHT_STYLE : {}),
+          gap: "24px",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
         }}
       >
-        {/* Checkmark Badge for Selected State */}
-        <div
-          style={{
-            position: "absolute",
-            top: "8px",
-            right: "8px",
-            width: "24px",
-            height: "24px",
-            borderRadius: "50%",
-            backgroundColor: "#4CAF50",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-            fontSize: "14px",
-            fontWeight: "bold",
-            zIndex: 1,
-          }}
+        {/* Unselected card */}
+        <HighlightBox active={activeSubSection === "productCard"}>
+          {/* eslint-disable-next-line react/no-danger */}
+          <div dangerouslySetInnerHTML={{ __html: unselectedCardHTML }} />
+        </HighlightBox>
+
+        {/* Selected card */}
+        <HighlightBox
+          active={
+            activeSubSection === "quantityVariantSelector" ||
+            activeSubSection === "button"
+          }
         >
-          ✓
-        </div>
-
-        {/* Product Image */}
-        <div
-          style={{
-            width: "100%",
-            height: `${productImageHeight}px`,
-            backgroundColor: productImageBgColor,
-            borderRadius: `${productImageBorderRadius}px`,
-            marginBottom: "12px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            flexShrink: 0,
-            position: "relative",
-          }}
-        >
-          <img
-            src="/bundle.png"
-            alt="Product"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: productCardImageFit as any,
-            }}
-          />
-        </div>
-
-        {/* Content Container with Flex Grow */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-          {/* Typography Area (Title + Price) */}
-          <div style={activeSubSection === "productCardTypography" ? HIGHLIGHT_STYLE : {}}>
-            {/* Product Title - Conditional Rendering */}
-            {productTitleVisibility && (
-              <div
-                style={{
-                  color: productCardFontColor,
-                  fontSize: `${productCardFontSize}px`,
-                  fontWeight: productCardFontWeight,
-                  textAlign: "center",
-                  marginBottom: "8px",
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  lineHeight: 1.4,
-                  minHeight: "calc(1.4em * 2)",
-                  flexShrink: 0,
-                  position: "relative",
-                }}
-              >
-                PRODUCT NAME
-              </div>
-            )}
-
-            {/* Prices */}
-            {productPriceVisibility && (
-              <div style={{
-                margin: "12px 0",
-                textAlign: "center",
-                flexShrink: 0,
-                position: "relative",
-              }}>
-                <span
-                  style={{
-                    color: productStrikePriceColor,
-                    fontSize: `${productStrikeFontSize}px`,
-                    fontWeight: productStrikeFontWeight,
-                    textDecoration: "line-through",
-                    marginRight: "8px",
-                  }}
-                >
-                  $19.99
-                </span>
-                <span
-                  style={{
-                    color: productFinalPriceColor,
-                    fontSize: `${productFinalPriceFontSize}px`,
-                    fontWeight: productFinalPriceFontWeight,
-                  }}
-                >
-                  $14.99
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Spacer */}
-          <div style={{ flex: 1, minHeight: "8px" }} />
-
-          {/* Variant & Quantity Selectors */}
-          <div style={activeSubSection === "quantityVariantSelector" ? HIGHLIGHT_STYLE : {}}>
-          {/* Variant Selector */}
-          <div style={{ marginBottom: "12px", flexShrink: 0, position: "relative" }}>
-            <select
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                borderRadius: `${variantSelectorBorderRadius}px`,
-                border: "1px solid #D1D1D1",
-                backgroundColor: variantSelectorBgColor,
-                color: variantSelectorTextColor,
-                fontSize: "14px",
-                cursor: "pointer",
-                appearance: "none",
-                backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23303030' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 12px center",
-              }}
-            >
-              <option>Size: M</option>
-            </select>
-          </div>
-
-          {/* Inline Quantity Controls (matches storefront .inline-quantity-controls) */}
-          <div style={{ marginBottom: "12px", flexShrink: 0, position: "relative" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "100%",
-                backgroundColor: buttonBgColor,
-                borderRadius: `${buttonBorderRadius}px`,
-                overflow: "hidden",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-              }}
-            >
-              {/* Minus Button */}
-              <button
-                style={{
-                  backgroundColor: "transparent",
-                  color: buttonTextColor,
-                  border: "none",
-                  width: "48px",
-                  height: "48px",
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                −
-              </button>
-
-              {/* Quantity Display */}
-              <div
-                style={{
-                  color: buttonTextColor,
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  flex: 1,
-                  textAlign: "center",
-                }}
-              >
-                1
-              </div>
-
-              {/* Plus Button */}
-              <button
-                style={{
-                  backgroundColor: "transparent",
-                  color: buttonTextColor,
-                  border: "none",
-                  width: "48px",
-                  height: "48px",
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                +
-              </button>
-            </div>
-          </div>
-          </div>
-
-          {/* Add to Bundle Button */}
-          <button
-            style={{
-              width: "100%",
-              background: `linear-gradient(135deg, ${buttonBgColor} 0%, rgba(0,0,0,0.9) 100%)`,
-              color: buttonTextColor,
-              border: "none",
-              borderRadius: `${buttonBorderRadius}px`,
-              padding: "14px 20px",
-              fontSize: `${buttonFontSize}px`,
-              fontWeight: buttonFontWeight,
-              cursor: "pointer",
-              flexShrink: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              position: "relative",
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-              marginTop: "auto",
-              ...(activeSubSection === "button" ? HIGHLIGHT_STYLE : {}),
-            }}
-          >
-            {buttonAddToCartText}
-          </button>
-        </div>
+          {/* eslint-disable-next-line react/no-danger */}
+          <div dangerouslySetInnerHTML={{ __html: selectedCardHTML }} />
+        </HighlightBox>
       </div>
 
-      {/* Modal Preview Section (Phase 6) */}
-      <div style={{ marginTop: "32px", textAlign: "center" }}>
-        <Text as="p" variant="headingSm" tone="subdued" fontWeight="semibold">
-          Product Modal Preview
-        </Text>
-        <div
-          style={{
-            marginTop: "16px",
-            backgroundColor: modalBgColor,
-            borderRadius: `${modalBorderRadius}px`,
-            padding: "24px",
-            width: "320px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-            textAlign: "left",
-          }}
-        >
-          {/* Modal Title */}
-          <div
-            style={{
-              fontSize: `${modalTitleFontSize}px`,
-              fontWeight: modalTitleFontWeight,
-              color: productCardFontColor,
-              marginBottom: "12px",
-            }}
-          >
-            Product Modal
-          </div>
-
-          {/* Modal Price */}
-          <div
-            style={{
-              fontSize: `${modalPriceFontSize}px`,
-              fontWeight: 600,
-              color: productFinalPriceColor,
-              marginBottom: "16px",
-            }}
-          >
-            $14.99
-          </div>
-
-          {/* Modal Variant Buttons */}
-          <div style={{ marginBottom: "16px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 500, color: productCardFontColor, marginBottom: "8px" }}>
-              Size: <span style={{ fontWeight: 600 }}>M</span>
-            </div>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {["S", "M", "L"].map((size) => (
-                <button
-                  key={size}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: `${modalVariantBorderRadius}px`,
-                    border: size === "M" ? "2px solid #000" : "1px solid #D1D1D1",
-                    backgroundColor: size === "M" ? "#F3F4F6" : "#FFFFFF",
-                    color: productCardFontColor,
-                    fontSize: "13px",
-                    fontWeight: size === "M" ? 600 : 400,
-                    cursor: "pointer",
-                    minWidth: "44px",
-                  }}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Add To Box Button */}
-          <button
-            style={{
-              width: "100%",
-              backgroundColor: modalButtonBgColor,
-              color: modalButtonTextColor,
-              border: "none",
-              borderRadius: `${modalButtonBorderRadius}px`,
-              padding: "12px 24px",
-              fontSize: "15px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Add To Box
-          </button>
-        </div>
-      </div>
-
-      {/* Annotation Labels */}
-      <div style={{ marginTop: "40px" }}>
+      <div style={{ marginTop: "32px" }}>
         <Text as="p" variant="bodySm" tone="subdued">
-          Preview updates as you customize
+          Left: unselected · Right: selected with quantity controls
         </Text>
       </div>
     </div>
