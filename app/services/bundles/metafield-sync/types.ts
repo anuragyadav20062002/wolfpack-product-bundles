@@ -56,6 +56,7 @@ export interface BundleUiConfig {
   messaging: BundleUiMessaging;
   promoBannerBgImage?: string | null;
   promoBannerBgImageCrop?: string | null;
+  loadingGif?: string | null;
 }
 
 export interface BundleUiStep {

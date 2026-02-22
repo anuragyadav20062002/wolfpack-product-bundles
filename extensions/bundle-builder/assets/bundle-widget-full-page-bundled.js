@@ -2333,6 +2333,9 @@ class BundleWidgetFullPage {
         this.hidePageTitle();
       }
 
+      // Show spinner overlay immediately (no gif url yet — bundle data not loaded)
+      this.showLoadingOverlay(null);
+
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
 
@@ -2343,6 +2346,7 @@ class BundleWidgetFullPage {
       this.selectBundle();
 
       if (!this.selectedBundle) {
+        this.hideLoadingOverlay();
         this.showFallbackUI();
         return;
       }
@@ -2356,6 +2360,9 @@ class BundleWidgetFullPage {
       // Render initial UI (async for full-page bundles to load products)
       await this.renderUI();
 
+      // Hide overlay now that UI is fully rendered
+      this.hideLoadingOverlay();
+
       // Attach event listeners
       this.attachEventListeners();
 
@@ -2364,6 +2371,7 @@ class BundleWidgetFullPage {
       this.isInitialized = true;
 
     } catch (error) {
+      this.hideLoadingOverlay();
       this.showErrorUI(error);
     }
   }
@@ -2935,6 +2943,7 @@ class BundleWidgetFullPage {
     this.renderFullPageFooter();
 
     // Load products asynchronously and update grid
+    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
     try {
       await this.loadStepProducts(this.currentStepIndex);
 
@@ -2946,9 +2955,12 @@ class BundleWidgetFullPage {
       // Update footer with correct product data
       this.renderFullPageFooter();
 
+      this.hideLoadingOverlay();
+
       // PRELOAD NEXT STEP: Load next step's products in the background
       this.preloadNextStep();
     } catch (error) {
+      this.hideLoadingOverlay();
       productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
     }
   }
@@ -4160,29 +4172,41 @@ class BundleWidgetFullPage {
         return;
       }
 
+      // Disable the Add to Cart button and show loading overlay
+      const nextBtn = this.container.querySelector('.footer-btn-next');
+      if (nextBtn) nextBtn.disabled = true;
+      this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
-      // Add to Shopify cart
-      const response = await fetch('/cart/add.js', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ items })
-      });
+      try {
+        // Add to Shopify cart
+        const response = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ items })
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to add to cart');
+        if (!response.ok) {
+          throw new Error('Failed to add to cart');
+        }
+
+        const result = await response.json();
+
+        // Show success message
+        ToastManager.show('Bundle added to cart successfully!');
+
+        // Redirect to cart page after short delay
+        setTimeout(() => {
+          window.location.href = '/cart';
+        }, 1000);
+
+      } catch (fetchError) {
+        ToastManager.show('Failed to add bundle to cart. Please try again.');
+      } finally {
+        this.hideLoadingOverlay();
+        if (nextBtn) nextBtn.disabled = false;
       }
-
-      const result = await response.json();
-
-      // Show success message
-      ToastManager.show('Bundle added to cart successfully!');
-
-      // Redirect to cart page after short delay
-      setTimeout(() => {
-        window.location.href = '/cart';
-      }, 1000);
 
     } catch (error) {
       ToastManager.show('Failed to add bundle to cart. Please try again.');
@@ -5241,6 +5265,46 @@ class BundleWidgetFullPage {
       strikePriceEl.style.display = 'none';
       finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
     }
+  }
+
+  // ========================================================================
+  // LOADING OVERLAY
+  // ========================================================================
+
+  showLoadingOverlay(gifUrl) {
+    if (!this.container) return;
+    // Ensure container is positioned so absolute overlay works
+    const pos = getComputedStyle(this.container).position;
+    if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
+      this.container.style.position = 'relative';
+    }
+    // Remove any existing overlay (idempotent)
+    this.container.querySelector('.bundle-loading-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'bundle-loading-overlay';
+
+    if (gifUrl) {
+      const img = document.createElement('img');
+      img.className = 'bundle-loading-overlay__gif';
+      img.src = gifUrl;
+      img.alt = '';
+      overlay.appendChild(img);
+    } else {
+      const spinner = document.createElement('div');
+      spinner.className = 'bundle-loading-overlay__spinner';
+      overlay.appendChild(spinner);
+    }
+
+    this.container.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+  }
+
+  hideLoadingOverlay() {
+    const overlay = this.container?.querySelector('.bundle-loading-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('is-visible');
+    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
   }
 
   // ========================================================================

@@ -76,6 +76,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const promoBannerBgImage = promoBannerBgImageRaw || null;
     const promoBannerBgImageCropRaw = formData.get("promoBannerBgImageCrop") as string;
     const promoBannerBgImageCrop = promoBannerBgImageCropRaw || null;
+    const loadingGifRaw = formData.get("loadingGif") as string;
+    const loadingGif = loadingGifRaw || null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -184,6 +186,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         templateName: templateName,
         promoBannerBgImage: promoBannerBgImage,
         promoBannerBgImageCrop: promoBannerBgImageCrop,
+        loadingGif: loadingGif,
         // Update steps if provided
         ...(stepsData && {
           steps: {

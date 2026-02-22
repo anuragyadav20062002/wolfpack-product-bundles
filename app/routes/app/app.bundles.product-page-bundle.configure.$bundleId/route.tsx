@@ -51,7 +51,9 @@ import {
   ListNumberedIcon,
   DiscountIcon,
   RefreshIcon,
+  ImageIcon,
 } from "@shopify/polaris-icons";
+import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../../../shopify.server";
@@ -241,6 +243,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 const bundleSetupItems = [
   { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
   { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
+  { id: "images_gifs", label: "Images & GIFs", icon: ImageIcon },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
@@ -426,6 +429,10 @@ export default function ConfigureBundleFlow() {
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
+  // Loading GIF state
+  const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
+  const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
+
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
   // Save handler
@@ -455,6 +462,7 @@ export default function ConfigureBundleFlow() {
       }));
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
+      formData.append("loadingGif", loadingGif ?? "");
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
@@ -485,6 +493,7 @@ export default function ConfigureBundleFlow() {
     conditionsState.stepConditions,
     bundleProduct,
     productStatus,
+    loadingGif,
     shopify
   ]);
 
@@ -602,8 +611,11 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Use the discard handler from the hook
-  const handleDiscard = hookHandleDiscard;
+  // Discard handler - resets hook state and local gif state
+  const handleDiscard = useCallback(() => {
+    hookHandleDiscard();
+    setLoadingGif(originalLoadingGifRef.current);
+  }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
@@ -1897,6 +1909,33 @@ export default function ConfigureBundleFlow() {
                   )}
                 </BlockStack>
               </Card>
+            )}
+
+            {activeSection === "images_gifs" && (
+              <BlockStack gap="300">
+                <Card>
+                  <BlockStack gap="300">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Icon source={ImageIcon} tone="subdued" />
+                      <BlockStack gap="0">
+                        <Text variant="headingSm" fontWeight="medium" as="p">
+                          Loading Animation
+                        </Text>
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          GIF only · max 120×120 px recommended
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                    <FilePicker
+                      value={loadingGif}
+                      onChange={(url) => {
+                        setLoadingGif(url);
+                        markAsDirty();
+                      }}
+                    />
+                  </BlockStack>
+                </Card>
+              </BlockStack>
             )}
           </Layout.Section>
         </Layout>

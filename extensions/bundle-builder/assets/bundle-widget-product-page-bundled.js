@@ -1379,6 +1379,11 @@ class BundleWidgetProductPage {
       // Parse configuration
       this.parseConfiguration();
 
+      // Show loading overlay immediately — read gif from dataset before async fetch
+      let initialGif = null;
+      try { initialGif = JSON.parse(this.container.dataset.bundleConfig || '{}')?.loadingGif || null; } catch {}
+      this.showLoadingOverlay(initialGif);
+
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
 
@@ -1389,6 +1394,7 @@ class BundleWidgetProductPage {
       this.selectBundle();
 
       if (!this.selectedBundle) {
+        this.hideLoadingOverlay();
         this.showFallbackUI();
         return;
       }
@@ -1402,6 +1408,9 @@ class BundleWidgetProductPage {
       // Render initial UI
       this.renderUI();
 
+      // Hide overlay now that UI is rendered
+      this.hideLoadingOverlay();
+
       // Attach event listeners
       this.attachEventListeners();
 
@@ -1410,6 +1419,7 @@ class BundleWidgetProductPage {
       this.isInitialized = true;
 
     } catch (error) {
+      this.hideLoadingOverlay();
       this.showErrorUI(error);
     }
   }
@@ -2469,7 +2479,12 @@ class BundleWidgetProductPage {
         this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
         // Load products for this step if not already loaded
-        await this.loadStepProducts(index);
+        this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+        try {
+          await this.loadStepProducts(index);
+        } finally {
+          this.hideLoadingOverlay();
+        }
 
         // Re-render everything
         this.renderModalTabs();
@@ -3009,6 +3024,46 @@ class BundleWidgetProductPage {
   }
 
   // ========================================================================
+  // LOADING OVERLAY
+  // ========================================================================
+
+  showLoadingOverlay(gifUrl) {
+    if (!this.container) return;
+    // Ensure container is positioned so absolute overlay works
+    const pos = getComputedStyle(this.container).position;
+    if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
+      this.container.style.position = 'relative';
+    }
+    // Remove any existing overlay (idempotent)
+    this.container.querySelector('.bundle-loading-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'bundle-loading-overlay';
+
+    if (gifUrl) {
+      const img = document.createElement('img');
+      img.className = 'bundle-loading-overlay__gif';
+      img.src = gifUrl;
+      img.alt = '';
+      overlay.appendChild(img);
+    } else {
+      const spinner = document.createElement('div');
+      spinner.className = 'bundle-loading-overlay__spinner';
+      overlay.appendChild(spinner);
+    }
+
+    this.container.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+  }
+
+  hideLoadingOverlay() {
+    const overlay = this.container?.querySelector('.bundle-loading-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('is-visible');
+    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+  }
+
+  // ========================================================================
   // CART OPERATIONS
   // ========================================================================
 
@@ -3033,9 +3088,10 @@ class BundleWidgetProductPage {
 
       const cartItems = this.buildCartItems();
 
-      // Disable button during request
+      // Disable button and show loading overlay during request
       this.elements.addToCartButton.disabled = true;
       this.elements.addToCartButton.textContent = 'Adding to Cart...';
+      this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
       const response = await fetch('/cart/add.js', {
         method: 'POST',
@@ -3062,7 +3118,8 @@ class BundleWidgetProductPage {
     } catch (error) {
       ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
     } finally {
-      // Re-enable button
+      // Re-enable button and hide overlay
+      this.hideLoadingOverlay();
       this.updateAddToCartButton();
     }
   }

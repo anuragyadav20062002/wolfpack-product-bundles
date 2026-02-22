@@ -375,6 +375,10 @@ export default function ConfigureBundleFlow() {
   );
   const originalPromoBannerBgImageCropRef = useRef<string | null>(bundle.promoBannerBgImageCrop ?? null);
 
+  // Loading GIF state
+  const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
+  const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
+
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
   // Save handler
@@ -406,6 +410,7 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
       formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
       formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
+      formData.append("loadingGif", loadingGif ?? "");
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
@@ -438,6 +443,7 @@ export default function ConfigureBundleFlow() {
     productStatus,
     promoBannerBgImage,
     promoBannerBgImageCrop,
+    loadingGif,
     shopify
   ]);
 
@@ -596,11 +602,12 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Discard handler - resets hook state and local image/crop state
+  // Discard handler - resets hook state and local image/crop/gif state
   const handleDiscard = useCallback(() => {
     hookHandleDiscard();
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
     setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
+    setLoadingGif(originalLoadingGifRef.current);
   }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
@@ -2043,14 +2050,28 @@ export default function ConfigureBundleFlow() {
                   </BlockStack>
                 </Card>
 
-                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                  <InlineStack gap="200" blockAlign="center">
-                    <Icon source={LockIcon} tone="subdued" />
-                    <Text variant="bodySm" tone="subdued" as="span">
-                      More media options coming soon
-                    </Text>
-                  </InlineStack>
-                </Box>
+                <Card>
+                  <BlockStack gap="300">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Icon source={ImageIcon} tone="subdued" />
+                      <BlockStack gap="0">
+                        <Text variant="headingSm" fontWeight="medium" as="p">
+                          Loading Animation
+                        </Text>
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          GIF only · max 120×120 px recommended
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                    <FilePicker
+                      value={loadingGif}
+                      onChange={(url) => {
+                        setLoadingGif(url);
+                        markAsDirty();
+                      }}
+                    />
+                  </BlockStack>
+                </Card>
               </BlockStack>
             )}
           </Layout.Section>

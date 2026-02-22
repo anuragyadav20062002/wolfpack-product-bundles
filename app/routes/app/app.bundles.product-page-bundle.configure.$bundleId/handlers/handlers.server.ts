@@ -72,6 +72,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleDescription = formData.get("bundleDescription") as string;
     const bundleStatus = formData.get("bundleStatus") as string;
     const templateName = formData.get("templateName") as string || null;
+    const loadingGifRaw = formData.get("loadingGif") as string;
+    const loadingGif = loadingGifRaw || null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -178,6 +180,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         // Preserve existing shopifyProductId if not provided in form
         shopifyProductId: bundleProductData?.id || existingBundle?.shopifyProductId || null,
         templateName: templateName,
+        loadingGif: loadingGif,
         // Update steps if provided
         ...(stepsData && {
           steps: {

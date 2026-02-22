@@ -208,6 +208,7 @@ export async function updateBundleProductMetafields(
     },
     promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
     promoBannerBgImageCrop: bundleConfiguration.promoBannerBgImageCrop ?? null,
+    loadingGif: bundleConfiguration.loadingGif ?? null,
   };
 
   // Check metafield sizes and log warnings
