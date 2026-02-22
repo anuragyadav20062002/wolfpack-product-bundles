@@ -643,6 +643,11 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           }))
         }));
 
+        const syncMsgs = safeJsonParse(bundle.pricing.messages, {});
+        const syncRuleMessages = syncMsgs.ruleMessages || {};
+        const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
+        const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
+
         const bundleConfiguration = {
           bundleId: bundle.id,
           name: bundle.name,
@@ -659,7 +664,13 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
               value: rule.value || 0, // Keep as decimal - widget will convert to cents
               discountValue: rule.discountValue || 0,
               fixedBundlePrice: rule.fixedBundlePrice || 0
-            }))
+            })),
+            messages: {
+              progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
+              qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+              showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
+              showProgressBar: bundle.pricing.showProgressBar || false,
+            }
           },
           lastSynced: new Date().toISOString(),
           shopifyProduct: {
@@ -793,6 +804,11 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       }))
     }));
 
+    const syncMsgs2 = safeJsonParse(bundle.pricing.messages, {});
+    const syncRuleMessages2 = syncMsgs2.ruleMessages || {};
+    const syncFirstRuleId2 = Object.keys(syncRuleMessages2)[0];
+    const syncFirstRuleMsg2 = syncFirstRuleId2 ? syncRuleMessages2[syncFirstRuleId2] : null;
+
     const bundleConfiguration = {
       bundleId: bundle.id,
       name: bundle.name,
@@ -809,7 +825,13 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           value: rule.value || 0, // Keep as decimal - widget will convert to cents
           discountValue: rule.discountValue || 0,
           fixedBundlePrice: rule.fixedBundlePrice || 0
-        }))
+        })),
+        messages: {
+          progress: syncFirstRuleMsg2?.discountText || 'Add {conditionText} to get {discountText}',
+          qualified: syncFirstRuleMsg2?.successMessage || 'Congratulations! You got {discountText}',
+          showDiscountMessaging: syncMsgs2.showDiscountMessaging || false,
+          showProgressBar: bundle.pricing.showProgressBar || false,
+        }
       },
       updatedAt: new Date().toISOString()
     };

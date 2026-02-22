@@ -502,6 +502,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         method: bundle.pricing.method,
         rules: bundle.pricing.rules || [],
         showFooter: bundle.pricing.showFooter,
+        showProgressBar: bundle.pricing.showProgressBar || false,
         messages: bundle.pricing.messages || {}
       } : null
     };

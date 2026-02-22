@@ -2419,16 +2419,18 @@ class BundleWidgetFullPage {
       this.config.showProgressBar = messaging.showProgressBar || false;
 
     } else if (pricingMessages) {
-      // Full-page bundle API path: read merchant-configured templates
-      if (pricingMessages.progress) {
-        this.config.discountTextTemplate = pricingMessages.progress;
+      // Full-page bundle API path: templates live in ruleMessages (first rule = global template)
+      const ruleMessages = pricingMessages.ruleMessages;
+      const firstRuleMsg = ruleMessages && Object.values(ruleMessages)[0];
+      if (firstRuleMsg?.discountText) {
+        this.config.discountTextTemplate = firstRuleMsg.discountText;
       }
-      if (pricingMessages.qualified) {
-        this.config.successMessageTemplate = pricingMessages.qualified;
+      if (firstRuleMsg?.successMessage) {
+        this.config.successMessageTemplate = firstRuleMsg.successMessage;
       }
 
-      this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
-      this.config.showProgressBar = pricingMessages.showProgressBar || false;
+      this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
+      this.config.showProgressBar = this.selectedBundle?.pricing?.showProgressBar || false;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
