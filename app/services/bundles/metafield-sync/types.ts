@@ -91,7 +91,6 @@ export interface BundleUiPricingRule {
 export interface BundleUiMessaging {
   progressTemplate: string;
   successTemplate: string;
-  showProgressBar: boolean;
   showFooter: boolean;
 }
 

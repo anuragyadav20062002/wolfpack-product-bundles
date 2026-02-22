@@ -378,7 +378,6 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
-      this.config.showProgressBar = messaging.showProgressBar || false;
 
     } else if (pricingMessages) {
       // Full-page bundle API path: templates live in ruleMessages (first rule = global template)
@@ -392,11 +391,9 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
-      this.config.showProgressBar = this.selectedBundle?.pricing?.showProgressBar || false;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
-      this.config.showProgressBar = false;
     }
   }
 
@@ -526,16 +523,6 @@ class BundleWidgetFullPage {
     footer.style.display = 'none';
     footer.innerHTML = `
       <div class="footer-discount-text"></div>
-      <div class="footer-progress-container">
-        <div class="progress-bar">
-          <div class="progress-fill"></div>
-        </div>
-        <div class="progress-details">
-          <span class="progress-text">
-            <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
-          </span>
-        </div>
-      </div>
     `;
     return footer;
   }
@@ -590,16 +577,6 @@ class BundleWidgetFullPage {
               <!-- Discount Messaging Section -->
               <div class="modal-footer-discount-messaging">
                 <div class="footer-discount-text"></div>
-              </div>
-
-              <!-- Progress Bar Section -->
-              <div class="modal-footer-progress-section">
-                <div class="modal-footer-progress-bar">
-                  <div class="modal-footer-progress-fill"></div>
-                </div>
-                <div class="modal-footer-progress-details">
-                  <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
-                </div>
               </div>
             </div>
           </div>
@@ -2180,9 +2157,6 @@ class BundleWidgetFullPage {
     );
 
     const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
-    const progressFill = this.elements.footer.querySelector('.progress-fill');
-    const currentQuantitySpan = this.elements.footer.querySelector('.current-quantity');
-    const targetQuantitySpan = this.elements.footer.querySelector('.target-quantity');
 
     if (discountInfo.qualifiesForDiscount) {
       // Success message
@@ -2200,44 +2174,6 @@ class BundleWidgetFullPage {
       );
       footerDiscountText.innerHTML = progressMessage;
       this.elements.footer.classList.remove('qualified');
-    }
-
-    // Update progress bar based on condition type
-    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
-
-    let progressPercentage = 0;
-
-    if (ruleToUse) {
-      const conditionType = ruleToUse.condition?.type || 'quantity';
-      const targetValue = ruleToUse.condition?.value || 0;
-
-      if (conditionType === 'amount') {
-        // Amount-based condition
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
-
-        // Update text to show formatted currency values
-        if (currentQuantitySpan && targetQuantitySpan) {
-          const currentFormatted = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-          const targetFormatted = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
-          currentQuantitySpan.textContent = currentFormatted;
-          targetQuantitySpan.textContent = targetFormatted; // No "items" suffix for amount
-        }
-      } else {
-        // Quantity-based condition
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
-
-        // Update text to show quantity values
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = totalQuantity.toString();
-          targetQuantitySpan.textContent = targetValue.toString(); // Remove "items" suffix, add via CSS
-        }
-      }
-    }
-
-
-    if (progressFill) {
-      progressFill.style.width = `${progressPercentage}%`;
     }
   }
 
@@ -3110,14 +3046,9 @@ class BundleWidgetFullPage {
 
   updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
-    const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
-    const progressBar = this.elements.modal.querySelector('.modal-footer-progress-bar');
-    const currentQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .current-quantity');
-    const targetQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .target-quantity');
     const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
-    const progressSection = this.elements.modal.querySelector('.modal-footer-progress-section');
 
-    if (!footerDiscountText || !progressFill) return;
+    if (!footerDiscountText) return;
 
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
@@ -3145,41 +3076,9 @@ class BundleWidgetFullPage {
       if (discountSection) discountSection.classList.remove('qualified');
     }
 
-    // Update progress bar
-    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
-
-    let progressPercentage = 0;
-
-    if (ruleToUse) {
-      const conditionType = ruleToUse.condition?.type || 'quantity';
-      const targetValue = ruleToUse.condition?.value || 0;
-
-      if (conditionType === 'amount') {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-          targetQuantitySpan.textContent = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
-        }
-      } else {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = totalQuantity.toString();
-          targetQuantitySpan.textContent = targetValue.toString();
-        }
-      }
-    }
-
-    if (progressFill) {
-      progressFill.style.width = `${progressPercentage}%`;
-    }
-
-    // Show/hide sections based on config
+    // Show/hide discount section based on config
     if (discountSection) {
       discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
-    }
-    if (progressSection) {
-      progressSection.style.display = this.config.showProgressBar ? 'block' : 'none';
     }
   }
 

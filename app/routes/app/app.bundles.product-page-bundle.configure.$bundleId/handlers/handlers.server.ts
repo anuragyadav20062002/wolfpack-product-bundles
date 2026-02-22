@@ -387,7 +387,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
           }),
           display: {
             showFooter: discountData.showFooter !== false,
-            showProgressBar: discountData.showProgressBar || false
           },
           messages: (() => {
             // Build messages from ruleMessages (per-rule messaging from admin form)
@@ -397,7 +396,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
               progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
               qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
               showDiscountMessaging: discountData.discountMessagingEnabled || false,
-              showProgressBar: discountData.showProgressBar || false,
               showInCart: true
             };
           })()
@@ -829,7 +827,6 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
           qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
           showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
-          showProgressBar: bundle.pricing.showProgressBar || false,
         }
       },
       updatedAt: new Date().toISOString()
