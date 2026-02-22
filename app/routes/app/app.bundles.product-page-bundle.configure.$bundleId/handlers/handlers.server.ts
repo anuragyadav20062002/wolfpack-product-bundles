@@ -669,7 +669,6 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
               progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
               qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
               showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
-              showProgressBar: bundle.pricing.showProgressBar || false,
             }
           },
           lastSynced: new Date().toISOString(),
