@@ -2021,20 +2021,47 @@ export default function ConfigureBundleFlow() {
             )}
 
             {activeSection === "images_gifs" && (
-              <BlockStack gap="300">
+              <BlockStack gap="400">
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={ImageIcon} tone="subdued" />
+                    <BlockStack gap="0">
+                      <Text variant="headingSm" fontWeight="semibold" as="p">Media Assets</Text>
+                      <Text variant="bodyXs" tone="subdued" as="p">
+                        Add visual media to enhance the bundle experience for shoppers.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+                </Box>
+
                 <Card>
-                  <BlockStack gap="300">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Icon source={ImageIcon} tone="subdued" />
-                      <BlockStack gap="0">
-                        <Text variant="headingSm" fontWeight="medium" as="p">
-                          Promo Banner
-                        </Text>
-                        <Text variant="bodyXs" tone="subdued" as="p">
-                          16:3 aspect ratio · 1600×280px recommended
-                        </Text>
-                      </BlockStack>
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="300" blockAlign="center">
+                        <Icon source={ImageIcon} tone="base" />
+                        <BlockStack gap="100">
+                          <Text variant="headingSm" fontWeight="semibold" as="p">Promo Banner</Text>
+                          <Text variant="bodyXs" tone="subdued" as="p">Wide banner displayed at the top of the full-page bundle</Text>
+                        </BlockStack>
+                      </InlineStack>
+                      <Badge tone="info">Page header</Badge>
                     </InlineStack>
+
+                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                      <InlineStack gap="600">
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
+                          <Text variant="bodySm" as="p">JPG, PNG, WebP</Text>
+                        </BlockStack>
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
+                          <Text variant="bodySm" as="p">1600 × 280 px · 16:3 ratio</Text>
+                        </BlockStack>
+                      </InlineStack>
+                    </Box>
+
+                    <Divider />
+
                     <FilePicker
                       value={promoBannerBgImage}
                       onChange={(url) => {
@@ -2051,18 +2078,42 @@ export default function ConfigureBundleFlow() {
                 </Card>
 
                 <Card>
-                  <BlockStack gap="300">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Icon source={ImageIcon} tone="subdued" />
-                      <BlockStack gap="0">
-                        <Text variant="headingSm" fontWeight="medium" as="p">
-                          Loading Animation
-                        </Text>
-                        <Text variant="bodyXs" tone="subdued" as="p">
-                          GIF only · max 120×120 px recommended
-                        </Text>
-                      </BlockStack>
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="300" blockAlign="center">
+                        <Icon source={RefreshIcon} tone="magic" />
+                        <BlockStack gap="100">
+                          <Text variant="headingSm" fontWeight="semibold" as="p">Loading Animation</Text>
+                          <Text variant="bodyXs" tone="subdued" as="p">Overlay shown while bundle content is loading</Text>
+                        </BlockStack>
+                      </InlineStack>
+                      <Badge tone="magic">Storefront</Badge>
                     </InlineStack>
+
+                    <BlockStack gap="100">
+                      <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">APPEARS DURING</Text>
+                      <InlineStack gap="150" wrap>
+                        <Badge tone="info">Initial load</Badge>
+                        <Badge tone="info">Step transitions</Badge>
+                        <Badge tone="info">Add to cart</Badge>
+                      </InlineStack>
+                    </BlockStack>
+
+                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                      <InlineStack gap="600">
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
+                          <Text variant="bodySm" as="p">GIF only</Text>
+                        </BlockStack>
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
+                          <Text variant="bodySm" as="p">Max 120 × 120 px</Text>
+                        </BlockStack>
+                      </InlineStack>
+                    </Box>
+
+                    <Divider />
+
                     <FilePicker
                       value={loadingGif}
                       onChange={(url) => {

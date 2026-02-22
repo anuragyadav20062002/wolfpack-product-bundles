@@ -15,8 +15,10 @@ import {
   FormLayout,
   TextField,
   ButtonGroup,
+  Box,
+  Icon,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, CheckCircleIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../../shopify.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
@@ -756,18 +758,31 @@ export default function CartTransformBundles() {
             {/* Cart Transform Bundle Features */}
             <div className={cartTransformStyles.flexContainer}>
               <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h4">
-                  It will create a Parent bundle product in Shopify, but during checkout, it will pull stock from your regular Shopify inventory in real time.
-
-                  </Text>
-                  <div className={cartTransformStyles.demoImageContainer}>
-                    <img
-                      src="/demo.jpeg"
-                      alt="Bundle Cart Transform Demo"
-                      className={cartTransformStyles.demoImage}
-                    />
-                  </div>
+                <BlockStack gap="400">
+                  <BlockStack gap="100">
+                    <Text variant="headingSm" fontWeight="semibold" as="h4">
+                      How Cart Transform works
+                    </Text>
+                    <Text variant="bodySm" tone="subdued" as="p">
+                      Creates a parent bundle in your Shopify catalog while pulling real-time stock from your existing component products at checkout — no duplicate inventory tracking needed.
+                    </Text>
+                  </BlockStack>
+                  <BlockStack gap="200">
+                    {[
+                      "One parent bundle product in your Shopify catalog",
+                      "Stock pulled from component products at checkout",
+                      "No duplicate inventory tracking required",
+                      "Discounts applied automatically at cart level",
+                      "Cart transform merges components into the bundle",
+                    ].map((feature) => (
+                      <InlineStack key={feature} gap="200" blockAlign="center">
+                        <Box>
+                          <Icon source={CheckCircleIcon} tone="success" />
+                        </Box>
+                        <Text variant="bodySm" as="span">{feature}</Text>
+                      </InlineStack>
+                    ))}
+                  </BlockStack>
                 </BlockStack>
               </Card>
             </div>
