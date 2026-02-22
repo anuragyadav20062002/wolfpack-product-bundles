@@ -28,7 +28,7 @@ import { BundleAnalyticsService } from "../../services/bundle-analytics.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
 import { useCallback, useEffect, useState } from "react";
-import billingStyles from "./app.billing.module.css";
+import billingStyles from "../../styles/routes/app-billing.module.css";
 import { useBillingState } from "../../hooks/useBillingState";
 import {
   calculateUsagePercentage,

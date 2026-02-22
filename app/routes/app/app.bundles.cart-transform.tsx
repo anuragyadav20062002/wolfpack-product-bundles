@@ -27,7 +27,7 @@ import { useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../components/UpgradePromptBanner";
 import { useCartTransformState } from "../../hooks/useCartTransformState";
-import cartTransformStyles from "./app.bundles.cart-transform.module.css";
+import cartTransformStyles from "../../styles/routes/cart-transform.module.css";
 
 /**
  * Add image to a product using productCreateMedia mutation

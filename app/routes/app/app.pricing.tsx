@@ -18,7 +18,7 @@ import { BillingService } from "../../services/billing.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
 import { useCallback, useEffect, useState } from "react";
-import pricingStyles from "./app.pricing.module.css";
+import pricingStyles from "../../styles/routes/app-pricing.module.css";
 
 // Import shared billing components
 import {

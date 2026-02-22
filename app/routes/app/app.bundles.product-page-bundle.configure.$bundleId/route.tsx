@@ -57,7 +57,7 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
-import productPageBundleStyles from "./product-page-bundle.configure.module.css";
+import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
 
 // Action handlers - extracted to separate module for better organization
 import {

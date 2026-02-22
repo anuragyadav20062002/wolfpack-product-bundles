@@ -12,7 +12,7 @@ import {
 import { authenticate } from "../../shopify.server";
 import { CartIcon } from "@shopify/polaris-icons";
 import { AppLogger } from "../../lib/logger";
-import indexStyles from "./app._index.module.css";
+import indexStyles from "../../styles/routes/app-index.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { admin } = await authenticate.admin(request);

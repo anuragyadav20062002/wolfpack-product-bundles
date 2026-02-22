@@ -24,7 +24,7 @@ import { DEFAULT_SETTINGS, mergeSettings } from "../../../components/design-cont
 
 // Import action handler
 import { handleSaveSettings } from "./handlers.server";
-import designControlPanelStyles from "./design-control-panel.module.css";
+import designControlPanelStyles from "../../../styles/routes/design-control-panel.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
