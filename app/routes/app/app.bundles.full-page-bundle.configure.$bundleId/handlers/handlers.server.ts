@@ -237,7 +237,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
-                showProgressBar: discountData.showProgressBar || false,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
@@ -249,7 +248,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
-                showProgressBar: discountData.showProgressBar || false,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,

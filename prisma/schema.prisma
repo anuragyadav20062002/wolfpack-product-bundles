@@ -158,7 +158,6 @@ model BundlePricing {
   method         DiscountMethodType @default(percentage_off)
   rules          Json? // Stores array of standardized pricing rules with nested condition/discount structure
   showFooter     Boolean            @default(true)
-  showProgressBar Boolean           @default(false)
   messages       Json? // Stores progress and qualified messages with showInCart flag
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt

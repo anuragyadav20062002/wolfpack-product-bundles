@@ -281,7 +281,6 @@ export async function handleCloneBundle(
           rules: originalBundle.pricing.rules || [],
           messages: originalBundle.pricing.messages || [],
           showFooter: originalBundle.pricing.showFooter,
-          showProgressBar: originalBundle.pricing.showProgressBar,
         },
       });
     }

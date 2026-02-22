@@ -397,7 +397,6 @@ export default function ConfigureBundleFlow() {
         discountEnabled: pricingState.discountEnabled,
         discountType: pricingState.discountType,
         discountRules: pricingState.discountRules,
-        showProgressBar: pricingState.showProgressBar,
         showFooter: pricingState.showFooter,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
         ruleMessages
@@ -429,7 +428,6 @@ export default function ConfigureBundleFlow() {
     pricingState.discountEnabled,
     pricingState.discountType,
     pricingState.discountRules,
-    pricingState.showProgressBar,
     pricingState.showFooter,
     pricingState.discountMessagingEnabled,
     ruleMessages,
@@ -516,7 +514,6 @@ export default function ConfigureBundleFlow() {
             discountEnabled: pricingState.discountEnabled,
             discountType: pricingState.discountType,
             discountRules: JSON.stringify(pricingState.discountRules),
-            showProgressBar: pricingState.showProgressBar,
             showFooter: pricingState.showFooter,
             discountMessagingEnabled: pricingState.discountMessagingEnabled,
             selectedCollections: JSON.stringify(selectedCollections),
@@ -1332,7 +1329,6 @@ export default function ConfigureBundleFlow() {
           discountType: pricingState.discountType,
           discountRules: pricingState.discountRules,
           showFooter: pricingState.showFooter,
-          showProgressBar: pricingState.showProgressBar,
           discountMessagingEnabled: pricingState.discountMessagingEnabled,
           ruleMessages
         })} />

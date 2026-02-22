@@ -5,7 +5,7 @@
  * - Discount enable/disable
  * - Discount type selection
  * - Pricing rules management
- * - Progress bar and footer visibility
+ * - Footer visibility
  * - Rule messaging
  */
 
@@ -17,7 +17,6 @@ interface UseBundlePricingProps {
     enabled: boolean;
     method: DiscountMethod | string;
     rules: any;
-    showProgressBar?: boolean;
     showFooter?: boolean;
   } | null;
   onStateChange?: () => void;
@@ -32,7 +31,6 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
   const [discountRules, setDiscountRulesRaw] = useState<PricingRule[]>(
     Array.isArray(initialPricing?.rules) ? initialPricing.rules : []
   );
-  const [showProgressBar, setShowProgressBarRaw] = useState(initialPricing?.showProgressBar || false);
   const [showFooter, setShowFooterRaw] = useState(initialPricing?.showFooter !== false);
   const [discountMessagingEnabled, setDiscountMessagingEnabledRaw] = useState(true);
 
@@ -53,11 +51,6 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
 
   const setDiscountRules = useCallback((value: PricingRule[] | ((prev: PricingRule[]) => PricingRule[])) => {
     setDiscountRulesRaw(value);
-    onStateChange?.();
-  }, [onStateChange]);
-
-  const setShowProgressBar = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    setShowProgressBarRaw(value);
     onStateChange?.();
   }, [onStateChange]);
 
@@ -128,11 +121,6 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     setDiscountType(type);
   }, [setDiscountType]);
 
-  // Toggle progress bar
-  const toggleProgressBar = useCallback((show: boolean) => {
-    setShowProgressBar(show);
-  }, [setShowProgressBar]);
-
   // Toggle footer
   const toggleFooter = useCallback((show: boolean) => {
     setShowFooter(show);
@@ -149,19 +137,17 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
       discountEnabled,
       discountType,
       discountRules,
-      showProgressBar,
       showFooter,
       discountMessagingEnabled,
       ruleMessages
     };
-  }, [discountEnabled, discountType, discountRules, showProgressBar, showFooter, discountMessagingEnabled, ruleMessages]);
+  }, [discountEnabled, discountType, discountRules, showFooter, discountMessagingEnabled, ruleMessages]);
 
   return {
     // State
     discountEnabled,
     discountType,
     discountRules,
-    showProgressBar,
     showFooter,
     discountMessagingEnabled,
     ruleMessages,
@@ -171,7 +157,6 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     setDiscountEnabled,
     setDiscountType,
     setDiscountRules,
-    setShowProgressBar,
     setShowFooter,
     setDiscountMessagingEnabled,
     setRuleMessages,
@@ -184,7 +169,6 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     updateRuleMessage,
     toggleDiscountEnabled,
     changeDiscountType,
-    toggleProgressBar,
     toggleFooter,
     toggleVariablesPanel,
     getPricingData,

@@ -90,7 +90,6 @@ export interface PricingRule {
  */
 export interface PricingDisplay {
   showFooter: boolean;          // Show discount footer messaging in widget
-  showProgressBar: boolean;     // Show progress bar to next discount tier
 }
 
 /**
@@ -207,8 +206,7 @@ export function validatePricingConfiguration(config: any): config is PricingConf
     return false;
   }
 
-  if (typeof config.display.showFooter !== 'boolean' ||
-      typeof config.display.showProgressBar !== 'boolean') {
+  if (typeof config.display.showFooter !== 'boolean') {
     return false;
   }
 
@@ -236,7 +234,6 @@ export function createEmptyPricingConfig(): PricingConfiguration {
     rules: [],
     display: {
       showFooter: true,
-      showProgressBar: false
     },
     messages: {
       progress: "Add {conditionText} to get {discountText}",

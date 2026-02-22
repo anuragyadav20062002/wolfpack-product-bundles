@@ -274,7 +274,6 @@ export async function action({ request }: ActionFunctionArgs) {
             rules: originalBundle.pricing.rules || [],
             messages: originalBundle.pricing.messages || [],
             showFooter: originalBundle.pricing.showFooter,
-            showProgressBar: originalBundle.pricing.showProgressBar,
             // Don't clone: discountId (Shopify ID), published (should start unpublished)
           },
         });
