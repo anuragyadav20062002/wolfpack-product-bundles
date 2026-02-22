@@ -1,0 +1,199 @@
+/* Bundle Type Selection */
+.bundleTypeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.bundleTypeCard {
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #c9cccf;
+  background-color: white;
+}
+
+.bundleTypeCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bundleTypeCardSelected {
+  border: 2px solid #005bd3;
+  background-color: #f6f6f7;
+}
+
+.bundleThumbnailLink {
+  display: block;
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.bundleThumbnailImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.bundleThumbnailLink:hover .bundleThumbnailImg {
+  transform: scale(1.02);
+}
+
+.bundlePlayButton {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.bundleThumbnailLink:hover .bundlePlayButton {
+  opacity: 1;
+}
+
+/* Hidden form submit button */
+.hiddenSubmit {
+  display: none;
+}
+
+/* Delete Modal */
+.deleteModalIconWrapper {
+  background-color: #fef3f2;
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* DataTable */
+.dataTableWrapper {
+  width: 100%;
+}
+
+/* Bottom section layout */
+.bottomSection {
+  display: flex;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.bottomSectionCol {
+  flex: 1;
+}
+
+/* Account Manager Card */
+.accountManagerCard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  position: relative;
+}
+
+.accountManagerHeader {
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #006fbb 0%, #004d87 100%);
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 1rem;
+}
+
+.accountManagerContent {
+  padding: 0 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.accountManagerAvatarWrapper {
+  position: relative;
+  min-width: 120px;
+}
+
+.accountManagerAvatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.accountManagerAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.accountManagerStatusIndicator {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 18px;
+  height: 18px;
+  background-color: #00a047;
+  border-radius: 50%;
+  border: 3px solid white;
+  z-index: 10;
+}
+
+.accountManagerServiceBullet {
+  width: 16px;
+  height: 16px;
+  background-color: #006fbb;
+  border-radius: 50%;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.accountManagerCtaSection {
+  padding: 1.5rem;
+  margin-top: auto;
+}
+
+.accountManagerCtaButton {
+  margin-top: 12px;
+}
+
+/* Demo Pricing Link */
+.demoPricingLink {
+  display: block;
+  border: 2px solid #e1e3e5;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+.demoPricingLink:hover {
+  border-color: #f4c430;
+  box-shadow: 0 0 16px rgba(244, 196, 48, 0.5), 0 0 32px rgba(244, 196, 48, 0.25);
+}
+
+.demoPricingImg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* DataTable overrides */
+.dataTableWrapper .Polaris-DataTable__Table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.dataTableWrapper .Polaris-DataTable__Cell {
+  width: 25%;
+}
