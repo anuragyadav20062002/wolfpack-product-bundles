@@ -1964,6 +1964,7 @@ export default function ConfigureBundleFlow() {
                     <Divider />
 
                     <FilePicker
+                      label="Choose loading GIF"
                       value={loadingGif}
                       onChange={(url) => {
                         setLoadingGif(url);

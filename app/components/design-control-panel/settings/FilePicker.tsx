@@ -20,6 +20,7 @@ interface FilePickerProps {
   onChange: (url: string | null) => void;
   cropValue?: string | null;
   onCropChange?: (crop: string | null) => void;
+  label?: string;
 }
 
 type UploadStatus = "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
@@ -104,7 +105,7 @@ function ProgressCircle({ status }: { status: "spinning" | "success" }) {
   );
 }
 
-export function FilePicker({ value, onChange, cropValue, onCropChange }: FilePickerProps) {
+export function FilePicker({ value, onChange, cropValue, onCropChange, label = "Choose background image" }: FilePickerProps) {
   const [open, setOpen] = useState(false);
   const [cropEditorOpen, setCropEditorOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -411,7 +412,7 @@ export function FilePicker({ value, onChange, cropValue, onCropChange }: FilePic
     >
       <Icon source={ImageIcon} tone="subdued" />
       <Text as="p" variant="bodySm" fontWeight="medium">
-        Choose background image
+        {label}
       </Text>
       <Text as="p" variant="bodyXs" tone="subdued">
         Select from store files or upload
@@ -455,7 +456,7 @@ export function FilePicker({ value, onChange, cropValue, onCropChange }: FilePic
           }}
         >
           <Text as="span" variant="headingMd">
-            Choose background image
+            {label}
           </Text>
           <button
             type="button"
