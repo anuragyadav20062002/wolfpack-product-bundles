@@ -18,7 +18,7 @@ api_version = "2025-10"
     "app/uninstalled",
     "app/scopes_update"
   ]
-  uri = "https://wolfpack-production-pubsub-worker.onrender.com/webhooks"
+  uri = "https://wolfpack-production-webhook-processor.onrender.com/webhooks"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access_scopes]
