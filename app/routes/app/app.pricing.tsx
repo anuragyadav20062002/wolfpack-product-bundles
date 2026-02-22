@@ -174,6 +174,7 @@ export default function PricingPage() {
       <Page
         title="Pricing"
         subtitle="Choose the plan that's right for your business"
+        backAction={{ content: "Back", url: "/app/dashboard" }}
       >
         <Layout>
           <Layout.Section>

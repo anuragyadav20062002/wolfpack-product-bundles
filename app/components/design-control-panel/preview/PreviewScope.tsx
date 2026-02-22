@@ -18,10 +18,14 @@
 import { useEffect } from 'react';
 import type { DesignSettings } from '../../../types/state.types';
 import { settingsToCSSVarRecord } from '../../../lib/preview-css-vars';
-// Vite ?raw import — bundles the CSS as a string at build time
-import bundleWidgetCSS from '../../../../extensions/bundle-builder/assets/bundle-widget-full-page.css?raw';
+// Vite ?raw imports — bundle both CSS files as strings at build time.
+// bundle-widget-full-page.css contains layout/structural styles.
+// bundle-widget.css contains component styles: .bundle-header-tab, .empty-state-card, etc.
+import bundleWidgetFullPageCSS from '../../../../extensions/bundle-builder/assets/bundle-widget-full-page.css?raw';
+import bundleWidgetCSS from '../../../../extensions/bundle-builder/assets/bundle-widget.css?raw';
 
 const STYLE_ID = 'dcp-bundle-widget-css';
+const STYLE_ID_WIDGET = 'dcp-bundle-widget-component-css';
 
 interface PreviewScopeProps {
   settings: DesignSettings;
@@ -30,11 +34,19 @@ interface PreviewScopeProps {
 
 export function PreviewScope({ settings, children }: PreviewScopeProps) {
   // Inject real widget CSS once into the document head (client-side only).
-  // The style element is shared across all sub-previews and never removed.
+  // The style elements are shared across all sub-previews and never removed.
+  // Both CSS files are needed: full-page has layout styles; bundle-widget.css has
+  // component class styles (.bundle-header-tab, .empty-state-card, etc.).
   useEffect(() => {
     if (!document.getElementById(STYLE_ID)) {
       const el = document.createElement('style');
       el.id = STYLE_ID;
+      el.textContent = bundleWidgetFullPageCSS;
+      document.head.appendChild(el);
+    }
+    if (!document.getElementById(STYLE_ID_WIDGET)) {
+      const el = document.createElement('style');
+      el.id = STYLE_ID_WIDGET;
       el.textContent = bundleWidgetCSS;
       document.head.appendChild(el);
     }
