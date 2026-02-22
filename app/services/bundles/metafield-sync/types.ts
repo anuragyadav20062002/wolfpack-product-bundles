@@ -69,6 +69,8 @@ export interface BundleUiStep {
   conditionType?: string;
   conditionOperator?: string;
   conditionValue?: string;
+  conditionOperator2?: string;
+  conditionValue2?: string;
 }
 
 export interface BundleUiPricing {
@@ -119,6 +121,8 @@ export interface OptimizedStepConfig {
   conditionType?: string;
   conditionOperator?: string;
   conditionValue?: string | number;
+  conditionOperator2?: string;
+  conditionValue2?: string | number;
 }
 
 export interface OptimizedPricingConfig {

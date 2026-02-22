@@ -189,6 +189,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
               // Get conditions for this step from stepConditionsData
               const stepConditions = stepConditionsData[step.id] || [];
               const firstCondition = stepConditions.length > 0 ? stepConditions[0] : null;
+              const secondCondition = stepConditions.length > 1 ? stepConditions[1] : null;
               AppLogger.debug(`[DEBUG] Step ${step.id} conditions:`, stepConditions);
               AppLogger.debug(`[DEBUG] Step ${step.id} first condition:`, firstCondition);
               AppLogger.debug(`[DEBUG] Will save to DB - conditionType: ${firstCondition?.type || null}, conditionOperator: ${firstCondition?.operator || null}, conditionValue: ${firstCondition?.value ? parseInt(firstCondition.value) || null : null}`);
@@ -206,6 +207,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,
                 conditionValue: firstCondition?.value ? parseInt(firstCondition.value) || null : null,
+                conditionOperator2: secondCondition?.operator || null,
+                conditionValue2: secondCondition?.value ? parseInt(secondCondition.value) || null : null,
                 // Create StepProduct records for selected products
                 StepProduct: {
                   create: (step.StepProduct || []).map((product: any, productIndex: number) => {
@@ -342,6 +345,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         conditionType: stepConditionsData[step.id]?.[0]?.type || null,
         conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
         conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
+        conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
+        conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
         // Store essential product data (IDs, titles, and images)
         products: (step.StepProduct || []).map((product: any) => ({
           id: product.id,

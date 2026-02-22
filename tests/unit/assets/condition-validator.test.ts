@@ -362,6 +362,170 @@ describe('isStepConditionSatisfied — unknown operator', () => {
   });
 });
 
+// ─── Multi-condition: canUpdateQuantity ───────────────────────────────────────
+
+function makeStep2(op1: string, val1: number, op2: string, val2: number, type = 'quantity') {
+  return {
+    conditionType: type,
+    conditionOperator: op1,
+    conditionValue: val1,
+    conditionOperator2: op2,
+    conditionValue2: val2,
+  };
+}
+
+describe('canUpdateQuantity — two conditions (GTE + LTE, i.e. range)', () => {
+  // step: quantity >= 2 AND quantity <= 6
+  const step = makeStep2(GTE, 2, LTE, 6);
+
+  it('allows total 1 (primary GTE 2 allows increases, secondary LTE 6 allows)', () => {
+    expect(canUpdateQuantity(step, {}, 'A', 1).allowed).toBe(true);
+  });
+
+  it('allows total 6 (at the upper bound — LTE passes)', () => {
+    expect(canUpdateQuantity(step, { A: 5 }, 'A', 6).allowed).toBe(true);
+  });
+
+  it('blocks total 7 — secondary LTE 6 blocks the increase', () => {
+    const result = canUpdateQuantity(step, { A: 6 }, 'A', 7);
+    expect(result.allowed).toBe(false);
+    expect(result.limitText).toBe('at most 6');
+  });
+
+  it('blocks when new product pushes total above 6', () => {
+    // A:6 already at cap. Adding B:1 → total 7 → blocked.
+    const result = canUpdateQuantity(step, { A: 6 }, 'B', 1);
+    expect(result.allowed).toBe(false);
+    expect(result.limitText).toBe('at most 6');
+  });
+
+  it('allows decreasing from 7 back to 6 (decrease always permitted by LTE)', () => {
+    // A:6, B:1 → set A to 5 → total 6 → allowed
+    expect(canUpdateQuantity(step, { A: 6, B: 1 }, 'A', 5).allowed).toBe(true);
+  });
+});
+
+describe('canUpdateQuantity — two conditions (GT + LT, i.e. exclusive range)', () => {
+  // step: quantity > 1 AND quantity < 5  →  2 ≤ total ≤ 4
+  const step = makeStep2(GT, 1, LT, 5);
+
+  it('allows total 1 (building up; neither blocks increases below cap)', () => {
+    expect(canUpdateQuantity(step, {}, 'A', 1).allowed).toBe(true);
+  });
+
+  it('allows total 4 (4 < 5 passes)', () => {
+    expect(canUpdateQuantity(step, { A: 3 }, 'A', 4).allowed).toBe(true);
+  });
+
+  it('blocks total 5 — secondary LT 5 blocks', () => {
+    const result = canUpdateQuantity(step, { A: 4 }, 'A', 5);
+    expect(result.allowed).toBe(false);
+    expect(result.limitText).toBe('less than 5');
+  });
+});
+
+describe('canUpdateQuantity — single lower-bound only (no second condition)', () => {
+  // Existing behaviour must be preserved: always allows increases
+  const step = makeStep(GTE, 2);
+
+  it('always allows increases with no second condition', () => {
+    expect(canUpdateQuantity(step, {}, 'A', 1).allowed).toBe(true);
+    expect(canUpdateQuantity(step, { A: 2 }, 'A', 10).allowed).toBe(true);
+    expect(canUpdateQuantity(step, { A: 100 }, 'B', 50).allowed).toBe(true);
+  });
+});
+
+describe('canUpdateQuantity — null / undefined second condition fields', () => {
+  it('treats conditionOperator2: null as no second condition', () => {
+    const step = { conditionType: 'quantity', conditionOperator: GTE, conditionValue: 2, conditionOperator2: null, conditionValue2: 6 };
+    expect(canUpdateQuantity(step, { A: 6 }, 'A', 10).allowed).toBe(true);
+  });
+
+  it('treats conditionValue2: null as no second condition', () => {
+    const step = { conditionType: 'quantity', conditionOperator: GTE, conditionValue: 2, conditionOperator2: LTE, conditionValue2: null };
+    expect(canUpdateQuantity(step, { A: 6 }, 'A', 10).allowed).toBe(true);
+  });
+
+  it('treats both second fields undefined as no second condition', () => {
+    const step = { conditionType: 'quantity', conditionOperator: GTE, conditionValue: 2 };
+    expect(canUpdateQuantity(step, { A: 6 }, 'A', 10).allowed).toBe(true);
+  });
+});
+
+// ─── Multi-condition: isStepConditionSatisfied ────────────────────────────────
+
+describe('isStepConditionSatisfied — two conditions (GTE 2 AND LTE 6)', () => {
+  const step = makeStep2(GTE, 2, LTE, 6);
+
+  it('not satisfied when total = 1 (primary GTE 2 fails)', () => {
+    expect(isStepConditionSatisfied(step, { A: 1 })).toBe(false);
+  });
+
+  it('satisfied when total = 2 (both conditions pass)', () => {
+    expect(isStepConditionSatisfied(step, { A: 2 })).toBe(true);
+  });
+
+  it('satisfied when total = 6 (at the upper bound)', () => {
+    expect(isStepConditionSatisfied(step, { A: 3, B: 3 })).toBe(true);
+  });
+
+  it('not satisfied when total = 7 (secondary LTE 6 fails — newly fixed case)', () => {
+    expect(isStepConditionSatisfied(step, { A: 7 })).toBe(false);
+  });
+
+  it('not satisfied with empty selections', () => {
+    expect(isStepConditionSatisfied(step, {})).toBe(false);
+  });
+
+  it('not satisfied with null selections', () => {
+    expect(isStepConditionSatisfied(step, null)).toBe(false);
+  });
+});
+
+describe('isStepConditionSatisfied — two conditions (GT 1 AND LT 5)', () => {
+  const step = makeStep2(GT, 1, LT, 5);
+
+  it('not satisfied at total = 1 (1 > 1 fails)', () => {
+    expect(isStepConditionSatisfied(step, { A: 1 })).toBe(false);
+  });
+
+  it('satisfied at total = 2', () => {
+    expect(isStepConditionSatisfied(step, { A: 2 })).toBe(true);
+  });
+
+  it('satisfied at total = 4', () => {
+    expect(isStepConditionSatisfied(step, { A: 4 })).toBe(true);
+  });
+
+  it('not satisfied at total = 5 (5 < 5 fails)', () => {
+    expect(isStepConditionSatisfied(step, { A: 5 })).toBe(false);
+  });
+});
+
+describe('isStepConditionSatisfied — single lower-bound only (GTE 2, no second)', () => {
+  const step = makeStep(GTE, 2);
+
+  it('satisfied at total = 7 (no upper bound — existing behaviour preserved)', () => {
+    expect(isStepConditionSatisfied(step, { A: 7 })).toBe(true);
+  });
+
+  it('not satisfied at total = 1', () => {
+    expect(isStepConditionSatisfied(step, { A: 1 })).toBe(false);
+  });
+});
+
+describe('isStepConditionSatisfied — null / undefined second condition fields', () => {
+  it('treats conditionOperator2: null as no second condition', () => {
+    const step = { conditionType: 'quantity', conditionOperator: GTE, conditionValue: 2, conditionOperator2: null, conditionValue2: 6 };
+    expect(isStepConditionSatisfied(step, { A: 10 })).toBe(true);
+  });
+
+  it('treats conditionValue2: null as no second condition', () => {
+    const step = { conditionType: 'quantity', conditionOperator: GTE, conditionValue: 2, conditionOperator2: LTE, conditionValue2: null };
+    expect(isStepConditionSatisfied(step, { A: 10 })).toBe(true);
+  });
+});
+
 // ─── OPERATORS export ─────────────────────────────────────────────────────────
 
 describe('OPERATORS constants', () => {

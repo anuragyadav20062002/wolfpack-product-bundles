@@ -120,6 +120,8 @@ model BundleStep {
   conditionType               String?
   conditionOperator           String?
   conditionValue              Int?
+  conditionOperator2          String?
+  conditionValue2             Int?
   bundleId                    String
   bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]
