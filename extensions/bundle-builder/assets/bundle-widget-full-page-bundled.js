@@ -3068,7 +3068,6 @@ class BundleWidgetFullPage {
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
             <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
-            <span class="tab-hint">${step.minQuantity ? `Select ${step.minQuantity}+` : 'Choose items'}</span>
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">
