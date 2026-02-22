@@ -39,7 +39,7 @@ Allow merchants to configure two conditions on a single step (e.g. quantity >= 2
 - ✅ 25 new multi-condition unit tests added (84 total, all passing)
 - ✅ ConditionValidator: added _evaluateCanUpdate + _evaluateSatisfied helpers, AND logic for both public functions
 - ✅ prisma/schema.prisma: conditionOperator2 String? + conditionValue2 Int? added to Step
-- ✅ prisma generate run; db push pending (run manually against SIT then prod)
+- ✅ prisma generate run; migration file created: 20260222020000_add_step_condition2_columns
 - ✅ metafield-sync/types.ts: BundleUiStep + OptimizedStepConfig extended
 - ✅ Both configure handlers: save secondCondition to new DB fields
 - ✅ Both configure handlers: optimized metafield step config includes second condition
