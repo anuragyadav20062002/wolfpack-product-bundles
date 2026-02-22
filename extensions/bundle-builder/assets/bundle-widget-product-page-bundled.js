@@ -71,54 +71,42 @@ const ConditionValidator = (function () {
    * @returns {{ allowed: boolean, limitText: string|null }}
    */
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
-    // No valid condition → always allow
+    // No valid primary condition → always allow
     if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
       return { allowed: true, limitText: null };
     }
 
-    const required = step.conditionValue;
     const totalAfter = calculateStepTotalAfterUpdate(
       currentSelections,
       targetProductId,
       newQuantity,
     );
 
-    let allowed;
-    switch (step.conditionOperator) {
-      case OPERATORS.EQUAL_TO:
-        // Allow building up to exactly N; prevent exceeding N.
-        // Final step validation (isStepConditionSatisfied) then enforces exactly N.
-        allowed = totalAfter <= required;
-        break;
-      case OPERATORS.LESS_THAN:
-        allowed = totalAfter < required;
-        break;
-      case OPERATORS.LESS_THAN_OR_EQUAL_TO:
-        allowed = totalAfter <= required;
-        break;
-      case OPERATORS.GREATER_THAN:
-      case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-        // No upper bound for minimum-quantity conditions — always allow increases.
-        allowed = true;
-        break;
-      default:
-        allowed = true;
+    // Primary condition
+    const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
+    if (!primary.allowed) return primary;
+
+    // Secondary condition — AND logic (only when both fields are non-null)
+    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+      const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
+      if (!secondary.allowed) return secondary;
     }
 
-    const limitText = allowed ? null : _buildLimitText(step.conditionOperator, required);
-    return { allowed, limitText };
+    return { allowed: true, limitText: null };
   }
 
   /**
-   * Check whether a step's current selection fully satisfies its condition.
+   * Check whether a step's current selection fully satisfies its condition(s).
    * Called at navigation time (Next / Add to Cart) to gate step completion.
+   *
+   * When a second condition is present, both must be satisfied (AND logic).
    *
    * @param {object}  step              Step config object
    * @param {Record<string, number>} currentSelections  Current selections for this step
    * @returns {boolean}
    */
   function isStepConditionSatisfied(step, currentSelections) {
-    // No valid condition → step is optional, always satisfied.
+    // No valid primary condition → step is optional, always satisfied.
     if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
       return true;
     }
@@ -129,18 +117,60 @@ const ConditionValidator = (function () {
       total += qty || 0;
     }
 
-    const required = step.conditionValue;
-    switch (step.conditionOperator) {
-      case OPERATORS.EQUAL_TO:               return total === required;
-      case OPERATORS.GREATER_THAN:           return total > required;
-      case OPERATORS.LESS_THAN:              return total < required;
-      case OPERATORS.GREATER_THAN_OR_EQUAL_TO: return total >= required;
-      case OPERATORS.LESS_THAN_OR_EQUAL_TO:  return total <= required;
-      default:                               return true;
+    // Primary condition
+    if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
+
+    // Secondary condition — AND logic
+    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+      return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
     }
+
+    return true;
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Evaluate a single condition's "can update" rule for the proposed total.
+   * Lower-bound operators never block increases (no upper cap from them alone).
+   */
+  function _evaluateCanUpdate(operator, required, totalAfter) {
+    let allowed;
+    switch (operator) {
+      case OPERATORS.EQUAL_TO:
+        // Allow building up to exactly N; prevent exceeding N.
+        allowed = totalAfter <= required;
+        break;
+      case OPERATORS.LESS_THAN:
+        allowed = totalAfter < required;
+        break;
+      case OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        allowed = totalAfter <= required;
+        break;
+      case OPERATORS.GREATER_THAN:
+      case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+        // Lower-bound: no upper cap — always allow increases.
+        allowed = true;
+        break;
+      default:
+        allowed = true;
+    }
+    return { allowed, limitText: allowed ? null : _buildLimitText(operator, required) };
+  }
+
+  /**
+   * Evaluate whether a total satisfies a single condition at step-completion time.
+   */
+  function _evaluateSatisfied(operator, required, total) {
+    switch (operator) {
+      case OPERATORS.EQUAL_TO:                 return total === required;
+      case OPERATORS.GREATER_THAN:             return total > required;
+      case OPERATORS.LESS_THAN:               return total < required;
+      case OPERATORS.GREATER_THAN_OR_EQUAL_TO: return total >= required;
+      case OPERATORS.LESS_THAN_OR_EQUAL_TO:   return total <= required;
+      default:                                return true;
+    }
+  }
 
   function _buildLimitText(operator, required) {
     const map = {

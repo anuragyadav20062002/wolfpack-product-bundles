@@ -90,12 +90,21 @@ export function useBundleConfigurationState({
     const initialConditions: Record<string, any[]> = {};
     (bundle.steps || []).forEach((step: any) => {
       if (step.conditionType && step.conditionOperator && step.conditionValue !== null) {
-        initialConditions[step.id] = [{
-          id: `condition_${step.id}_${Date.now()}`,
+        const rules: any[] = [{
+          id: `condition_${step.id}_1_${Date.now()}`,
           type: step.conditionType,
           operator: step.conditionOperator,
           value: step.conditionValue.toString()
         }];
+        if (step.conditionOperator2 && step.conditionValue2 != null) {
+          rules.push({
+            id: `condition_${step.id}_2_${Date.now()}`,
+            type: step.conditionType,
+            operator: step.conditionOperator2,
+            value: step.conditionValue2.toString()
+          });
+        }
+        initialConditions[step.id] = rules;
       }
     });
     return initialConditions;

@@ -180,7 +180,9 @@ export async function updateBundleProductMetafields(
       products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter((p: { id: string }) => p.id),
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
-      conditionValue: step.conditionValue
+      conditionValue: step.conditionValue,
+      conditionOperator2: step.conditionOperator2,
+      conditionValue2: step.conditionValue2
     })),
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,

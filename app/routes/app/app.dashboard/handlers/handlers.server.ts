@@ -250,6 +250,8 @@ export async function handleCloneBundle(
             conditionType: step.conditionType,
             conditionOperator: step.conditionOperator,
             conditionValue: step.conditionValue,
+            conditionOperator2: step.conditionOperator2,
+            conditionValue2: step.conditionValue2,
           },
         });
 

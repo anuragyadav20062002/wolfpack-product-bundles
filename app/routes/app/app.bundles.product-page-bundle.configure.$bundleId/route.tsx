@@ -1609,7 +1609,13 @@ export default function ConfigureBundleFlow() {
                                     variant="tertiary"
                                     fullWidth
                                     icon={PlusIcon}
-                                    onClick={() => conditionsState.addConditionRule(step.id)}
+                                    onClick={() => {
+                                      if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                                        shopify.toast.show('A step can have at most 2 conditions', { isError: false });
+                                        return;
+                                      }
+                                      conditionsState.addConditionRule(step.id);
+                                    }}
                                   >
                                     Add Rule
                                   </Button>

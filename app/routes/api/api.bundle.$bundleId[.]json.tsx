@@ -495,7 +495,9 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           StepProduct: enrichedStepProducts,
           conditionType: step.conditionType,
           conditionOperator: step.conditionOperator,
-          conditionValue: step.conditionValue
+          conditionValue: step.conditionValue,
+          conditionOperator2: step.conditionOperator2,
+          conditionValue2: step.conditionValue2
         };
       }),
       pricing: bundle.pricing ? {
