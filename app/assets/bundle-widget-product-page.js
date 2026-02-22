@@ -1587,53 +1587,20 @@ class BundleWidgetProductPage {
 
   validateStepCondition(stepIndex, productId, newQuantity) {
     const step = this.selectedBundle.steps[stepIndex];
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    const currentQty = currentSelections[productId] || 0;
 
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return true; // No conditions to validate
-    }
+    const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
+      step,
+      currentSelections,
+      productId,
+      newQuantity,
+    );
 
-    // Calculate what the total would be with this change
-    let totalQuantityWouldBe = 0;
-    for (const [pid, qty] of Object.entries(this.selectedProducts[stepIndex])) {
-      if (pid === productId) {
-        totalQuantityWouldBe += newQuantity;
-      } else {
-        totalQuantityWouldBe += qty;
-      }
-    }
-
-    const requiredQuantity = step.conditionValue;
-    let allowUpdate = false;
-
-    switch (step.conditionOperator) {
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        allowUpdate = totalQuantityWouldBe <= requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
-        allowUpdate = totalQuantityWouldBe < requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
-        allowUpdate = totalQuantityWouldBe <= requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-        allowUpdate = true; // Allow any increase
-        break;
-      default:
-        allowUpdate = true;
-    }
-
-    if (!allowUpdate && newQuantity > (this.selectedProducts[stepIndex][productId] || 0)) {
-      const operatorText = {
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO]: `exactly ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN]: `less than ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO]: `at most ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN]: `more than ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO]: `at least ${requiredQuantity}`
-      };
-
-      const limitText = operatorText[step.conditionOperator] || requiredQuantity;
-      ToastManager.show(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`);
+    // Only block and toast on increases — decreases are always permitted.
+    if (!allowed && newQuantity > currentQty) {
+      const required = step.conditionValue;
+      ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
       return false;
     }
 
@@ -1642,34 +1609,8 @@ class BundleWidgetProductPage {
 
   validateStep(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
-    const selectedProductsInStep = this.selectedProducts[stepIndex];
-
-    let totalQuantitySelected = 0;
-    for (const quantity of Object.values(selectedProductsInStep)) {
-      totalQuantitySelected += quantity;
-    }
-
-    // If no conditions are set, step is optional - always valid
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return true; // Optional step - can proceed with 0 products
-    }
-
-    const requiredQuantity = step.conditionValue;
-
-    switch (step.conditionOperator) {
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        return totalQuantitySelected === requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
-        return totalQuantitySelected > requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
-        return totalQuantitySelected < requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-        return totalQuantitySelected >= requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
-        return totalQuantitySelected <= requiredQuantity;
-      default:
-        return true; // No recognized condition - step is optional
-    }
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
   }
 
   isStepAccessible(stepIndex) {
