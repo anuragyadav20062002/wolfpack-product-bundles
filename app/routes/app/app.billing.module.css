@@ -1,0 +1,16 @@
+/* Star icon color for Grow plan */
+.starIcon {
+  color: #ffc453;
+}
+
+/* Features grid layout */
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+/* Check icon color for features */
+.checkIcon {
+  color: #008060;
+}

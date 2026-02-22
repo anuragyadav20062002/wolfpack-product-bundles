@@ -61,6 +61,7 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
+import fullPageBundleStyles from "./full-page-bundle.configure.module.css";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -1416,14 +1417,7 @@ export default function ConfigureBundleFlow() {
                         </InlineStack>
                       </BlockStack>
                     ) : (
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: '80px',
-                        border: '1px dashed #ccc',
-                        borderRadius: '8px'
-                      }}>
+                      <div className={fullPageBundleStyles.productSelectionPlaceholder}>
                         <BlockStack gap="100" inlineAlign="center">
                           <Icon source={ProductIcon} />
                           <Button
@@ -1926,12 +1920,12 @@ export default function ConfigureBundleFlow() {
 
                         {/* Integrated Variables Helper */}
                         <details>
-                          <summary style={{ cursor: 'pointer', color: '#007ace', fontSize: '14px', fontWeight: '500' }}>
+                          <summary className={fullPageBundleStyles.helpSummary}>
                             Show Variables
                           </summary>
-                          <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '13px' }}>
+                          <div className={fullPageBundleStyles.helpContainer}>
                             {/* Essential Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={fullPageBundleStyles.helpItem}>
                               <strong>Essential (Most Used):</strong><br />
                               <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
                               <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
@@ -1939,7 +1933,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Specific Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={fullPageBundleStyles.helpItem}>
                               <strong>Specific:</strong><br />
                               <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
                               <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
@@ -1947,7 +1941,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Pricing Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={fullPageBundleStyles.helpItem}>
                               <strong>Pricing:</strong><br />
                               <code>{'{{currentAmount}}'}</code> - Current total<br />
                               <code>{'{{finalPrice}}'}</code> - Price after discount<br />
@@ -1955,7 +1949,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Quick Examples */}
-                            <div style={{ borderTop: '1px solid #e1e3e5', paddingTop: '8px', fontSize: '12px', color: '#6c757d' }}>
+                            <div className={fullPageBundleStyles.helpFooter}>
                               <strong>Quick Examples:</strong><br />
                               💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
                               📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />

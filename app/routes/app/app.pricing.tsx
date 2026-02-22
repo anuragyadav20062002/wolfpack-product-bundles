@@ -18,6 +18,7 @@ import { BillingService } from "../../services/billing.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
 import { useCallback, useEffect, useState } from "react";
+import pricingStyles from "./app.pricing.module.css";
 
 // Import shared billing components
 import {
@@ -190,12 +191,7 @@ export default function PricingPage() {
               {isFreePlan && <ValuePropsSection />}
 
               {/* Plan Cards - Side by Side on Desktop */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: mdDown ? '1fr' : '1fr 1fr',
-                gap: '1rem',
-                alignItems: 'stretch'
-              }}>
+              <div className={pricingStyles.planCardsGrid}>
                 <FreePlanCard isCurrentPlan={isFreePlan} />
                 <GrowPlanCard
                   isCurrentPlan={isGrowPlan}

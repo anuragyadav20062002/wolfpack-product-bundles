@@ -1,0 +1,28 @@
+/* Hidden form submit button */
+.hiddenSubmit {
+  display: none;
+}
+
+/* Flex containers for layout */
+.flexContainer {
+  flex: 1;
+}
+
+/* Demo image container */
+.demoImageContainer {
+  border: 2px solid #e1e3e5;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.demoImageContainer:hover {
+  transform: scale(1.05);
+}
+
+.demoImage {
+  width: 100%;
+  height: auto;
+  display: block;
+}

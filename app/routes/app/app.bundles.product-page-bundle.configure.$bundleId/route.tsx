@@ -57,6 +57,7 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
+import productPageBundleStyles from "./product-page-bundle.configure.module.css";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -299,14 +300,7 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
           </InlineStack>
         </BlockStack>
       ) : (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '80px',
-          border: '1px dashed #ccc',
-          borderRadius: '8px'
-        }}>
+        <div className={productPageBundleStyles.productSelectionPlaceholder}>
           <BlockStack gap="100" inlineAlign="center">
             <Icon source={ProductIcon} />
             <Button
@@ -1374,26 +1368,11 @@ export default function ConfigureBundleFlow() {
                           onDragOver={(e) => handleDragOver(e, index)}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, index)}
-                          style={{
-                            cursor: draggedStep === step.id ? 'grabbing' : 'grab',
-                            transition: 'all 0.2s ease',
-                            transform: dragOverIndex === index && draggedStep !== step.id ? 'translateY(-4px)' : 'translateY(0)',
-                            boxShadow: dragOverIndex === index && draggedStep !== step.id
-                              ? '0 8px 16px rgba(0,0,0,0.15), 0 0 0 2px rgba(33, 150, 243, 0.3)'
-                              : draggedStep === step.id
-                                ? '0 4px 12px rgba(0,0,0,0.2)'
-                                : 'none',
-                            opacity: draggedStep === step.id ? 0.6 : 1,
-                            border: dragOverIndex === index && draggedStep !== step.id
-                              ? '2px dashed rgba(33, 150, 243, 0.5)'
-                              : '2px solid transparent',
-                            borderRadius: '8px',
-                            position: 'relative' as const,
-                            zIndex: draggedStep === step.id ? 1000 : 1,
-                            background: dragOverIndex === index && draggedStep !== step.id
-                              ? 'rgba(33, 150, 243, 0.05)'
-                              : undefined
-                          }}
+                          className={`${productPageBundleStyles.stepCard} ${
+                            draggedStep === step.id ? productPageBundleStyles.stepCardDragging : ''
+                          } ${
+                            dragOverIndex === index && draggedStep !== step.id ? productPageBundleStyles.stepCardDragOver : ''
+                          }`}
                         >
                           <BlockStack gap="300">
                             {/* Step Header */}
@@ -1827,12 +1806,12 @@ export default function ConfigureBundleFlow() {
 
                         {/* Integrated Variables Helper */}
                         <details>
-                          <summary style={{ cursor: 'pointer', color: '#007ace', fontSize: '14px', fontWeight: '500' }}>
+                          <summary className={productPageBundleStyles.helpSummary}>
                             Show Variables
                           </summary>
-                          <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '13px' }}>
+                          <div className={productPageBundleStyles.helpContainer}>
                             {/* Essential Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={productPageBundleStyles.helpItem}>
                               <strong>Essential (Most Used):</strong><br />
                               <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
                               <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
@@ -1840,7 +1819,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Specific Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={productPageBundleStyles.helpItem}>
                               <strong>Specific:</strong><br />
                               <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
                               <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
@@ -1848,7 +1827,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Pricing Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={productPageBundleStyles.helpItem}>
                               <strong>Pricing:</strong><br />
                               <code>{'{{currentAmount}}'}</code> - Current total<br />
                               <code>{'{{finalPrice}}'}</code> - Price after discount<br />
@@ -1856,7 +1835,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Quick Examples */}
-                            <div style={{ borderTop: '1px solid #e1e3e5', paddingTop: '8px', fontSize: '12px', color: '#6c757d' }}>
+                            <div className={productPageBundleStyles.helpFooter}>
                               <strong>Quick Examples:</strong><br />
                               💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
                               📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />

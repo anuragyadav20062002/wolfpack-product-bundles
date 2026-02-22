@@ -12,6 +12,7 @@ import {
 import { authenticate } from "../../shopify.server";
 import { CartIcon } from "@shopify/polaris-icons";
 import { AppLogger } from "../../lib/logger";
+import indexStyles from "./app._index.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { admin } = await authenticate.admin(request);
@@ -119,14 +120,8 @@ export default function Index() {
     <Page>
       <Layout>
         <Layout.Section>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            minHeight: '70vh',
-            width: '100%'
-          }}>
-            <div style={{ width: '100%', maxWidth: '700px' }}>
+          <div className={indexStyles.welcomeContainer}>
+            <div className={indexStyles.contentWrapper}>
               <Card padding="800">
                 <BlockStack gap="600" align="center">
                   <BlockStack gap="400" align="center">

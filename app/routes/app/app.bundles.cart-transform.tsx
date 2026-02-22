@@ -27,6 +27,7 @@ import { useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../components/UpgradePromptBanner";
 import { useCartTransformState } from "../../hooks/useCartTransformState";
+import cartTransformStyles from "./app.bundles.cart-transform.module.css";
 
 /**
  * Add image to a product using productCreateMedia mutation
@@ -628,7 +629,7 @@ export default function CartTransformBundles() {
               <button 
                 ref={submitButtonRef}
                 type="submit" 
-                style={{ display: 'none' }}
+                className={cartTransformStyles.hiddenSubmit}
                 aria-hidden="true"
               />
             </FormLayout>
@@ -702,7 +703,7 @@ export default function CartTransformBundles() {
         <Layout.Section>
           <InlineStack gap="400" align="start" blockAlign="start">
             {/* Cart Transform Bundle Setup Instructions */}
-            <div style={{ flex: '1' }}>
+            <div className={cartTransformStyles.flexContainer}>
               <BundleSetupInstructions
                 title="Cart Transform Bundle Setup"
                 subtitle="Follow these steps to create your cart transform bundle"
@@ -753,34 +754,18 @@ export default function CartTransformBundles() {
             </div>
 
             {/* Cart Transform Bundle Features */}
-            <div style={{ flex: '1' }}>
+            <div className={cartTransformStyles.flexContainer}>
               <Card>
                 <BlockStack gap="300">
                   <Text variant="headingSm" as="h4">
                   It will create a Parent bundle product in Shopify, but during checkout, it will pull stock from your regular Shopify inventory in real time.
 
                   </Text>
-                  <div style={{
-                    border: '2px solid #e1e3e5',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    transition: 'transform 0.3s ease',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}>
+                  <div className={cartTransformStyles.demoImageContainer}>
                     <img
-                      src="/demo.png"
+                      src="/demo.jpeg"
                       alt="Bundle Cart Transform Demo"
-                      style={{
-                        width: '100%',
-                        height: 'auto',
-                        display: 'block'
-                      }}
+                      className={cartTransformStyles.demoImage}
                     />
                   </div>
                 </BlockStack>
