@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useNavigate, useLoaderData, Form, useNavigation, useActionData } from "@remix-run/react";
+import { useFetcher, useNavigate, useLoaderData, Form, useNavigation, useActionData, Link } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -37,6 +37,8 @@ import {
 
 // Types - extracted to separate module for better organization
 import type { BundleActionsButtonsProps } from "./types";
+
+import dashboardStyles from "./dashboard.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -399,64 +401,15 @@ export default function Dashboard() {
 
               {/* Bundle Type Selection */}
               <BlockStack gap="200">
-                <style>{`
-                  .bundle-type-card {
-                    border-radius: 8px;
-                    padding: 12px;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                  }
-                  .bundle-type-card:hover {
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                  }
-                  .bundle-thumbnail-link {
-                    display: block;
-                    position: relative;
-                    border-radius: 6px;
-                    overflow: hidden;
-                    cursor: pointer;
-                  }
-                  .bundle-thumbnail-img {
-                    width: 100%;
-                    height: auto;
-                    display: block;
-                    transition: transform 0.2s ease;
-                  }
-                  .bundle-thumbnail-link:hover .bundle-thumbnail-img {
-                    transform: scale(1.02);
-                  }
-                  .bundle-play-button {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background-color: rgba(0, 0, 0, 0.7);
-                    border-radius: 50%;
-                    width: 48px;
-                    height: 48px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    opacity: 0;
-                    transition: opacity 0.2s ease;
-                  }
-                  .bundle-thumbnail-link:hover .bundle-play-button {
-                    opacity: 1;
-                  }
-                `}</style>
                 <Text variant="headingSm" as="h4">Bundle Type</Text>
                 <Text variant="bodySm" as="p" tone="subdued">
                   Click on the thumbnails to watch demo videos
                 </Text>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className={dashboardStyles.bundleTypeGrid}>
                   {/* Product Page Bundle */}
                   <div
-                    className="bundle-type-card"
+                    className={`${dashboardStyles.bundleTypeCard} ${bundleType[0] === 'product_page' ? dashboardStyles.bundleTypeCardSelected : ''}`}
                     onClick={() => setBundleType(['product_page'])}
-                    style={{
-                      border: bundleType[0] === 'product_page' ? '2px solid #005BD3' : '1px solid #c9cccf',
-                      backgroundColor: bundleType[0] === 'product_page' ? '#f6f6f7' : 'white'
-                    }}
                   >
                     <BlockStack gap="200">
                       <a
@@ -464,14 +417,14 @@ export default function Dashboard() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="bundle-thumbnail-link"
+                        className={dashboardStyles.bundleThumbnailLink}
                       >
                         <img
                           src="/pdp.jpeg"
                           alt="Product Page Bundle Demo"
-                          className="bundle-thumbnail-img"
+                          className={dashboardStyles.bundleThumbnailImg}
                         />
-                        <div className="bundle-play-button">
+                        <div className={dashboardStyles.bundlePlayButton}>
                           <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
                             <path d="M5 3l12 7-12 7V3z" />
                           </svg>
@@ -490,12 +443,8 @@ export default function Dashboard() {
 
                   {/* Full Page Bundle */}
                   <div
-                    className="bundle-type-card"
+                    className={`${dashboardStyles.bundleTypeCard} ${bundleType[0] === 'full_page' ? dashboardStyles.bundleTypeCardSelected : ''}`}
                     onClick={() => setBundleType(['full_page'])}
-                    style={{
-                      border: bundleType[0] === 'full_page' ? '2px solid #005BD3' : '1px solid #c9cccf',
-                      backgroundColor: bundleType[0] === 'full_page' ? '#f6f6f7' : 'white'
-                    }}
                   >
                     <BlockStack gap="200">
                       <a
@@ -503,14 +452,14 @@ export default function Dashboard() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="bundle-thumbnail-link"
+                        className={dashboardStyles.bundleThumbnailLink}
                       >
                         <img
                           src="/full.jpeg"
                           alt="Full Page Bundle Demo"
-                          className="bundle-thumbnail-img"
+                          className={dashboardStyles.bundleThumbnailImg}
                         />
-                        <div className="bundle-play-button">
+                        <div className={dashboardStyles.bundlePlayButton}>
                           <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
                             <path d="M5 3l12 7-12 7V3z" />
                           </svg>
@@ -535,7 +484,7 @@ export default function Dashboard() {
               <button
                 ref={submitButtonRef}
                 type="submit"
-                style={{ display: 'none' }}
+                className={dashboardStyles.hiddenSubmit}
                 aria-hidden="true"
               />
             </FormLayout>
@@ -554,14 +503,7 @@ export default function Dashboard() {
         <Modal.Section>
           <BlockStack gap="300">
             <InlineStack gap="200" blockAlign="center">
-              <div style={{
-                backgroundColor: '#FEF3F2',
-                borderRadius: '50%',
-                padding: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <div className={dashboardStyles.deleteModalIconWrapper}>
                 <Icon source={AlertTriangleIcon} tone="critical" />
               </div>
               <Text variant="headingMd" as="h2">Delete Bundle?</Text>
@@ -640,16 +582,7 @@ export default function Dashboard() {
                     </BlockStack>
                   </Card>
                 ) : (
-                  <div style={{ width: '100%' }}>
-                    <style>{`
-                      .Polaris-DataTable__Table {
-                        width: 100%;
-                        table-layout: fixed;
-                      }
-                      .Polaris-DataTable__Cell {
-                        width: 25%;
-                      }
-                    `}</style>
+                  <div className={dashboardStyles.dataTableWrapper}>
                     <DataTable
                       columnContentTypes={["text", "text", "text", "text"]}
                       headings={["Bundle Name", "Status", "Type", "Actions"]}
@@ -663,9 +596,9 @@ export default function Dashboard() {
 
           {/* Bottom section with setup instructions and account manager */}
           <Layout.Section>
-            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'stretch' }}>
+            <div className={dashboardStyles.bottomSection}>
               {/* Cart Transform Bundle Setup Instructions */}
-              <div style={{ flex: '1' }}>
+              <div className={dashboardStyles.bottomSectionCol}>
                 <BundleSetupInstructions
                   title="Bundle Setup Steps"
                   subtitle="Follow these steps to create your bundle"
@@ -731,44 +664,29 @@ export default function Dashboard() {
               </div>
 
               {/* Your Account Manager Card */}
-              <div style={{ flex: '1' }}>
+              <div className={dashboardStyles.bottomSectionCol}>
                 <Card>
-                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: '320px', position: 'relative' }}>
+                  <div className={dashboardStyles.accountManagerCard}>
                     {/* Header with gradient background */}
-                    <div style={{
-                      padding: '1rem 1.5rem',
-                      background: 'linear-gradient(135deg, #006fbb 0%, #004d87 100%)',
-                      borderRadius: '8px 8px 0 0',
-                      marginBottom: '1rem'
-                    }}>
+                    <div className={dashboardStyles.accountManagerHeader}>
                       <Text variant="headingSm" as="h4" tone="text-inverse">
                         Your Account Manager
                       </Text>
                     </div>
 
                     {/* Content area */}
-                    <div style={{ padding: '0 1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div className={dashboardStyles.accountManagerContent}>
                       <InlineStack gap="400" align="start" blockAlign="start">
-                        <div style={{ position: 'relative', minWidth: '120px' }}>
-                          <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+                        <div className={dashboardStyles.accountManagerAvatarWrapper}>
+                          <div className={dashboardStyles.accountManagerAvatar}>
                             <img
                               src="/Parth.jpeg"
                               alt="Parth (Founder)"
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              className={dashboardStyles.accountManagerAvatarImg}
                             />
                           </div>
                           {/* Online status indicator */}
-                          <div style={{
-                            position: 'absolute',
-                            bottom: '-3px',
-                            right: '-3px',
-                            width: '18px',
-                            height: '18px',
-                            backgroundColor: '#00A047',
-                            borderRadius: '50%',
-                            border: '3px solid white',
-                            zIndex: 10
-                          }} />
+                          <div className={dashboardStyles.accountManagerStatusIndicator} />
                         </div>
 
                         <BlockStack gap="200" align="start">
@@ -784,19 +702,19 @@ export default function Dashboard() {
                           {/* Services offered with icons */}
                           <BlockStack gap="150">
                             <InlineStack gap="200" align="start">
-                              <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
+                              <div className={dashboardStyles.accountManagerServiceBullet} />
                               <Text as="span" variant="bodySm">
                                 Bundle setup & publishing
                               </Text>
                             </InlineStack>
                             <InlineStack gap="200" align="start">
-                              <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
+                              <div className={dashboardStyles.accountManagerServiceBullet} />
                               <Text as="span" variant="bodySm">
                                 Custom design & styling
                               </Text>
                             </InlineStack>
                             <InlineStack gap="200" align="start">
-                              <div style={{ width: '16px', height: '16px', backgroundColor: '#006fbb', borderRadius: '50%', marginTop: '2px', flexShrink: 0 }} />
+                              <div className={dashboardStyles.accountManagerServiceBullet} />
                               <Text as="span" variant="bodySm">
                                 Technical support
                               </Text>
@@ -807,15 +725,15 @@ export default function Dashboard() {
                     </div>
 
                     {/* CTA Section */}
-                    <div style={{ padding: '1.5rem', marginTop: 'auto' }}>
+                    <div className={dashboardStyles.accountManagerCtaSection}>
                       <InlineStack gap="300" align="center">
-                        <div style={{ flex: 1 }}>
+                        <div className={dashboardStyles.accountManagerCtaText}>
                           <Text as="span" variant="bodySm" tone="subdued">
                             Available Mon-Fri • Responds within 1hr
                           </Text>
                         </div>
                       </InlineStack>
-                      <div style={{ marginTop: '12px' }}>
+                      <div className={dashboardStyles.accountManagerCtaButton}>
                         <Button variant="primary" fullWidth onClick={handleDirectChat}>
                           Chat Directly with Parth
                         </Button>
@@ -834,29 +752,13 @@ export default function Dashboard() {
                 <Text variant="headingSm" as="h4">
                   Your bundles appear as products in your store, but they automatically sync with your existing inventory — no duplicate stock tracking needed!
                 </Text>
-                <div style={{
-                  border: '2px solid #e1e3e5',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  transition: 'transform 0.3s ease',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}>
+                <Link to="/app/pricing" className={dashboardStyles.demoPricingLink}>
                   <img
-                    src="/demo.png"
+                    src="/demo.jpeg"
                     alt="Bundle Demo"
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      display: 'block'
-                    }}
+                    className={dashboardStyles.demoPricingImg}
                   />
-                </div>
+                </Link>
               </BlockStack>
             </Card>
           </Layout.Section>
