@@ -2470,15 +2470,16 @@
   display: block;
 }
 
-.bundle-loading-overlay__spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: bundle-spin 0.75s linear infinite;
+.bundle-loading-overlay__default-animation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes bundle-spin {
-  to { transform: rotate(360deg); }
+.bundle-loading-overlay__default-animation svg {
+  max-width: 120px;
+  max-height: 40px;
+  width: auto;
+  height: auto;
+  display: block;
 }

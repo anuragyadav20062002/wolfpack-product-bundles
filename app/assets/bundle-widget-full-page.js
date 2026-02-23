@@ -3088,9 +3088,8 @@ class BundleWidgetFullPage {
       img.alt = '';
       overlay.appendChild(img);
     } else {
-      const spinner = document.createElement('div');
-      spinner.className = 'bundle-loading-overlay__spinner';
-      overlay.appendChild(spinner);
+      const animation = createDefaultLoadingAnimation();
+      overlay.appendChild(animation);
     }
 
     this.container.appendChild(overlay);
