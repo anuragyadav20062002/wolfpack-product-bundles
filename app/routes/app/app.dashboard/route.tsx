@@ -530,8 +530,8 @@ export default function Dashboard() {
       </Modal>
 
       <Page
-        title="Welcome to Wolfpack: Product Bundles"
-        subtitle="Upgrade your store for maximum earning potential"
+        title="Dashboard: Wolfpack Bundle Builder"
+        subtitle="Access your bundles, customer support & more."
       >
         <Layout>
           {/* Upgrade Prompt Banner for Free Users */}
@@ -619,8 +619,8 @@ export default function Dashboard() {
                     },
                     {
                       id: "create_bundle_modal",
-                      title: 'Click "Create Bundle" in the popup',
-                      description: "This will create your bundle and take you to the setup page.",
+                      title: 'Click "Bundle Settings"',
+                      description: "This will take you to your bundle set up page.",
                       onClick: () =>  {},
                     },
                     {
@@ -670,7 +670,7 @@ export default function Dashboard() {
                     {/* Header with gradient background */}
                     <div className={dashboardStyles.accountManagerHeader}>
                       <Text variant="headingSm" as="h4" tone="text-inverse">
-                        Your Account Manager
+                        Need Help? Speak to Parth!
                       </Text>
                     </div>
 
@@ -735,7 +735,7 @@ export default function Dashboard() {
                       </InlineStack>
                       <div className={dashboardStyles.accountManagerCtaButton}>
                         <Button variant="primary" fullWidth onClick={handleDirectChat}>
-                          Chat Directly with Parth
+                          Chat with Parth
                         </Button>
                       </div>
                     </div>
@@ -750,7 +750,7 @@ export default function Dashboard() {
             <Card>
               <BlockStack gap="300">
                 <Text variant="headingSm" as="h4">
-                  Your bundles appear as products in your store, but they automatically sync with your existing inventory — no duplicate stock tracking needed!
+                  Bundles appear as separate products but your inventory syncs automatically. No need to worry about inventory tracking!
                 </Text>
                 <Link to="/app/pricing" className={dashboardStyles.demoPricingLink}>
                   <img

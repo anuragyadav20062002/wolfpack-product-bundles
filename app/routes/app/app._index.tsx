@@ -128,27 +128,22 @@ export default function Index() {
                     <Icon source={CartIcon} tone="primary" />
                     <BlockStack gap="200" align="center">
                       <Text variant="headingXl" as="h1" alignment="center">
-                        Welcome to Wolfpack: Product Bundles
+                        Welcome to Wolfpack Bundle Builder
                       </Text>
                       <Text variant="bodyLg" tone="subdued" alignment="center" as="p">
-                        Create powerful product bundles that increase your average order value 
-                        and provide exceptional customer experiences.
+                        Create impactful bundle builders that deliver an immersive shopping experience &amp; increase your AOV.
                       </Text>
                     </BlockStack>
                   </BlockStack>
                   
                   <BlockStack gap="400" align="center">
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       size="large"
                       onClick={handleStartJourney}
                     >
-                      Start My Bundling Journey
+                      Create My Bundles Now
                     </Button>
-                    
-                    <Text variant="bodySm" tone="subdued" alignment="center" as="p">
-                      Set up your first bundle in just a few minutes
-                    </Text>
                   </BlockStack>
                 </BlockStack>
               </Card>
