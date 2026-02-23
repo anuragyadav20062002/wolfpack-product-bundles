@@ -1573,9 +1573,11 @@ class BundleWidgetFullPage {
     nextBtn.addEventListener('click', () => {
       if (isLastStep) {
         this.addBundleToCart();
-      } else if (canProceed) {
+      } else if (this.canProceedToNextStep()) {
         this.currentStepIndex++;
         this.renderFullPageLayout();
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
       }
     });
 
@@ -1888,19 +1890,11 @@ class BundleWidgetFullPage {
     );
   }
 
-  // Helper: Check if step is completed
+  // Helper: Check if step is completed (delegates to ConditionValidator)
   isStepCompleted(stepIndex) {
-    const stepSelections = this.selectedProducts[stepIndex] || {};
-    const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
     const step = this.selectedBundle.steps[stepIndex];
-
-    // If no conditions are set, step is optional - user can skip without selecting products
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return true; // Optional step - always valid, can proceed with 0 products
-    }
-
-    // Otherwise use minQuantity for step completion
-    return totalQuantity >= (step.minQuantity || 1);
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
   }
 
   // Helper: Check if step is accessible
@@ -1930,6 +1924,13 @@ class BundleWidgetFullPage {
   // Add bundle to cart
   async addBundleToCart() {
     try {
+      // Final validation: all step conditions must be satisfied
+      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+      if (!allStepsValid) {
+        ToastManager.show('Please complete all bundle steps before adding to cart.');
+        return;
+      }
+
       // Build cart items from selected products
       const items = [];
 
