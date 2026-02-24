@@ -149,7 +149,9 @@ export class PricingCalculator {
 
     switch (normalizedCondition) {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        return value === targetValue;
+        // For discount pricing rules, "equal to N" means "at N or more" (threshold).
+        // For step conditions, the ConditionValidator handles exact matching separately.
+        return value >= targetValue;
       case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
         return value > targetValue;
       case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
