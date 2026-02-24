@@ -5,12 +5,14 @@
  * CSS variables are injected by the parent <PreviewScope>.
  *
  * Sub-sections:
- * - headerTabs: Shows .bundle-header-tab buttons using --bundle-header-tab-* vars
+ * - headerTabs: Shows tabs for both product-page (.bundle-header-tab) and
+ *   full-page (.step-tab) bundle widgets with a toggle to switch between them
  * - headerText: Shows .bundle-header-instructions text using --bundle-conditions-text-*
  *   and --bundle-discount-text-* vars
  */
 
 import { Text } from "@shopify/polaris";
+import { useState } from "react";
 import { HighlightBox } from "./HighlightBox";
 
 // Real modal header tab HTML matching ComponentGenerator.renderTab() output.
@@ -23,11 +25,89 @@ const headerTabsHTML = `
 </div>
 `.trim();
 
+// Full-page step tabs HTML matching createStepTimeline() output.
+// Classes: .step-tabs-container > .step-tab(.active|.completed|.locked)
+// Uses real CSS classes from bundle-widget-full-page.css (injected by PreviewScope)
+const fullPageTabsHTML = `
+<div class="step-tabs-container" style="max-width:580px;">
+  <div class="step-tab active completed" data-step-index="0">
+    <div class="tab-number">1</div>
+    <div class="tab-info">
+      <span class="tab-name">Choose Tops</span>
+      <span class="tab-count">2 selected</span>
+    </div>
+    <div class="tab-check">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+  <div class="step-tab" data-step-index="1">
+    <div class="tab-number">2</div>
+    <div class="tab-info">
+      <span class="tab-name">Choose Bottoms</span>
+    </div>
+  </div>
+  <div class="step-tab locked" data-step-index="2">
+    <div class="tab-number">3</div>
+    <div class="tab-info">
+      <span class="tab-name">Accessories</span>
+    </div>
+    <div class="tab-lock">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+  </div>
+</div>
+`.trim();
+
+// Bundle type toggle component for preview
+function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: (value: string) => void }) {
+  return (
+    <div style={{ marginBottom: "16px", display: "flex", gap: "8px", justifyContent: "center" }}>
+      <button
+        onClick={() => onChange("product_page")}
+        style={{
+          padding: "8px 16px",
+          border: `2px solid ${selected === "product_page" ? "#000" : "#ddd"}`,
+          borderRadius: "6px",
+          background: selected === "product_page" ? "#000" : "#fff",
+          color: selected === "product_page" ? "#fff" : "#333",
+          cursor: "pointer",
+          fontSize: "12px",
+          fontWeight: 500,
+        }}
+      >
+        Product Page
+      </button>
+      <button
+        onClick={() => onChange("full_page")}
+        style={{
+          padding: "8px 16px",
+          border: `2px solid ${selected === "full_page" ? "#000" : "#ddd"}`,
+          borderRadius: "6px",
+          background: selected === "full_page" ? "#000" : "#fff",
+          color: selected === "full_page" ? "#fff" : "#333",
+          cursor: "pointer",
+          fontSize: "12px",
+          fontWeight: 500,
+        }}
+      >
+        Full Page
+      </button>
+    </div>
+  );
+}
+
 interface BundleHeaderPreviewProps {
   activeSubSection: string;
 }
 
 export function BundleHeaderPreview({ activeSubSection }: BundleHeaderPreviewProps) {
+  const [bundleType, setBundleType] = useState<string>("product_page");
+
   // Header Tabs sub-section
   if (activeSubSection === "headerTabs") {
     return (
@@ -35,9 +115,12 @@ export function BundleHeaderPreview({ activeSubSection }: BundleHeaderPreviewPro
         <Text as="h3" variant="headingLg" fontWeight="semibold">
           Tabs
         </Text>
+        <div style={{ marginTop: "24px" }}>
+          <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
+        </div>
         <div
           style={{
-            marginTop: "80px",
+            marginTop: "24px",
             padding: "40px",
             border: "1px solid #E3E3E3",
             borderRadius: "8px",
@@ -46,9 +129,19 @@ export function BundleHeaderPreview({ activeSubSection }: BundleHeaderPreviewPro
           }}
         >
           <HighlightBox active>
-            {/* eslint-disable-next-line react/no-danger */}
-            <div dangerouslySetInnerHTML={{ __html: headerTabsHTML }} />
+            {bundleType === "full_page" ? (
+              /* eslint-disable-next-line react/no-danger */
+              <div dangerouslySetInnerHTML={{ __html: fullPageTabsHTML }} />
+            ) : (
+              /* eslint-disable-next-line react/no-danger */
+              <div dangerouslySetInnerHTML={{ __html: headerTabsHTML }} />
+            )}
           </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            {bundleType === "full_page" ? "Full-page bundle step tabs" : "Product-page modal header tabs"}
+          </Text>
         </div>
       </div>
     );
