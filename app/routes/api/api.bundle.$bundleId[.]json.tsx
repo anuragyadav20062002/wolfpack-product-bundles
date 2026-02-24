@@ -383,6 +383,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       description: bundle.description,
       status: bundle.status,
       bundleType: bundle.bundleType,
+      fullPageLayout: bundle.fullPageLayout ?? null,
       shopifyProductId: bundle.shopifyProductId,
       promoBannerBgImage: bundle.promoBannerBgImage ?? null,
       promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,

@@ -2949,7 +2949,12 @@ class BundleWidgetFullPage {
 
     if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
       // Full-page bundle: Render with tabs layout (async to load products)
-      await this.renderFullPageLayout();
+      const layout = this.selectedBundle.fullPageLayout || 'footer_bottom';
+      if (layout === 'footer_side') {
+        await this.renderFullPageLayoutWithSidebar();
+      } else {
+        await this.renderFullPageLayout();
+      }
     } else {
       // Product-page bundle: Render with step boxes (current implementation)
       this.renderProductPageLayout();
@@ -3035,6 +3040,252 @@ class BundleWidgetFullPage {
       this.hideLoadingOverlay();
       productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
     }
+  }
+
+  // Full-page bundle layout with sidebar panel (footer_side)
+  async renderFullPageLayoutWithSidebar() {
+    this.hidePageTitle();
+
+    this.elements.stepsContainer.innerHTML = '';
+    this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
+
+    // Hide the bottom footer — sidebar replaces it
+    if (this.elements.footer) {
+      this.elements.footer.style.display = 'none';
+    }
+
+    // Two-column wrapper: content (left) + sidebar (right)
+    const twoColWrapper = document.createElement('div');
+    twoColWrapper.className = 'sidebar-layout-wrapper';
+
+    // LEFT: Main content (same as footer_bottom minus the footer)
+    const contentSection = document.createElement('div');
+    contentSection.className = 'full-page-content-section sidebar-content';
+
+    const promoBanner = this.createPromoBanner();
+    if (promoBanner) contentSection.appendChild(promoBanner);
+
+    if (this.config.showStepTimeline) {
+      contentSection.appendChild(this.createStepTimeline());
+    }
+
+    contentSection.appendChild(this.createSearchInput());
+
+    if (this.config.showCategoryTabs) {
+      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+      if (categoryTabs) contentSection.appendChild(categoryTabs);
+    }
+
+    const productGridContainer = document.createElement('div');
+    productGridContainer.className = 'full-page-product-grid-container';
+    productGridContainer.innerHTML = this.createProductGridLoadingState();
+    contentSection.appendChild(productGridContainer);
+
+    twoColWrapper.appendChild(contentSection);
+
+    // RIGHT: Side panel
+    const sidePanel = document.createElement('div');
+    sidePanel.className = 'full-page-side-panel';
+    this.renderSidePanel(sidePanel);
+    twoColWrapper.appendChild(sidePanel);
+
+    this.elements.stepsContainer.appendChild(twoColWrapper);
+
+    // Load products
+    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+    try {
+      await this.loadStepProducts(this.currentStepIndex);
+      const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+      productGridContainer.innerHTML = '';
+      productGridContainer.appendChild(productGrid);
+      this.renderSidePanel(sidePanel);
+      this.hideLoadingOverlay();
+      this.preloadNextStep();
+    } catch (error) {
+      this.hideLoadingOverlay();
+      productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+    }
+  }
+
+  // Render the sidebar panel content (used by footer_side layout)
+  renderSidePanel(panel) {
+    if (!panel) return;
+    panel.innerHTML = '';
+
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const allSelectedProducts = this.getAllSelectedProductsData();
+    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+
+    // Header: "Your Bundle" + Clear
+    const header = document.createElement('div');
+    header.className = 'side-panel-header';
+    const headerTitle = document.createElement('span');
+    headerTitle.className = 'side-panel-title';
+    headerTitle.textContent = 'Your Bundle';
+    header.appendChild(headerTitle);
+
+    if (allSelectedProducts.length > 0) {
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'side-panel-clear-btn';
+      clearBtn.textContent = 'Clear all';
+      clearBtn.addEventListener('click', () => {
+        this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+        const layout = this.selectedBundle.fullPageLayout || 'footer_bottom';
+        if (layout === 'footer_side') {
+          this.renderFullPageLayoutWithSidebar();
+        } else {
+          this.renderFullPageLayout();
+        }
+      });
+      header.appendChild(clearBtn);
+    }
+    panel.appendChild(header);
+
+    // Discount messaging
+    if (this.selectedBundle?.pricing?.enabled) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+      );
+      let discountMessage = '';
+      if (discountInfo.hasDiscount) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
+      }
+      if (discountMessage) {
+        const msgEl = document.createElement('div');
+        msgEl.className = 'side-panel-discount-message';
+        msgEl.innerHTML = discountMessage;
+        panel.appendChild(msgEl);
+      }
+    }
+
+    // Progress bar
+    const progressPercent = this.calculateDiscountProgress(totalQuantity);
+    if (progressPercent !== null && this.selectedBundle?.pricing?.enabled) {
+      const progressWrap = document.createElement('div');
+      progressWrap.className = 'side-panel-progress';
+      progressWrap.innerHTML = `
+        <div class="side-panel-progress-bar-bg">
+          <div class="side-panel-progress-bar-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
+        </div>
+      `;
+      panel.appendChild(progressWrap);
+    }
+
+    // Selected products list
+    const productsContainer = document.createElement('div');
+    productsContainer.className = 'side-panel-products';
+
+    if (allSelectedProducts.length === 0) {
+      productsContainer.innerHTML = '<div class="side-panel-empty">No products selected yet</div>';
+    } else {
+      allSelectedProducts.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'side-panel-product-row';
+
+        const imgSrc = item.image || item.imageUrl || '';
+        const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
+
+        row.innerHTML = `
+          <div class="side-panel-product-img-wrap">
+            ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+            ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+          </div>
+          <div class="side-panel-product-info">
+            <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+            ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+          </div>
+          <span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>
+        `;
+
+        // Remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'side-panel-product-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.addEventListener('click', () => {
+          const stepIndex = item.stepIndex ?? this.currentStepIndex;
+          const productId = item.variantId || item.productId || item.id;
+          this.updateProductSelection(stepIndex, productId, 0);
+        });
+        row.appendChild(removeBtn);
+
+        productsContainer.appendChild(row);
+      });
+    }
+    panel.appendChild(productsContainer);
+
+    // Divider
+    const divider = document.createElement('div');
+    divider.className = 'side-panel-divider';
+    panel.appendChild(divider);
+
+    // Total
+    const totalSection = document.createElement('div');
+    totalSection.className = 'side-panel-total';
+    totalSection.innerHTML = `
+      <span class="side-panel-total-label">Total</span>
+      <div class="side-panel-total-prices">
+        ${discountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
+        <span class="side-panel-total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+      </div>
+    `;
+    panel.appendChild(totalSection);
+
+    // Navigation buttons
+    const navSection = document.createElement('div');
+    navSection.className = 'side-panel-nav';
+
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+    const canProceed = this.canProceedToNextStep();
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'side-panel-btn side-panel-btn-next';
+    nextBtn.textContent = isLastStep ? 'Add to Cart' : 'Next Step';
+    if (isLastStep ? !this.areBundleConditionsMet() : !canProceed) {
+      nextBtn.disabled = true;
+    }
+    nextBtn.addEventListener('click', () => {
+      if (isLastStep) {
+        this.addBundleToCart();
+      } else if (this.canProceedToNextStep()) {
+        this.currentStepIndex++;
+        this.renderFullPageLayoutWithSidebar();
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      }
+    });
+
+    const backBtn = document.createElement('button');
+    backBtn.className = 'side-panel-btn side-panel-btn-back';
+    backBtn.textContent = 'Back';
+    if (this.currentStepIndex === 0) backBtn.disabled = true;
+    backBtn.addEventListener('click', () => {
+      if (this.currentStepIndex > 0) {
+        this.currentStepIndex--;
+        this.renderFullPageLayoutWithSidebar();
+      }
+    });
+
+    navSection.appendChild(nextBtn);
+    navSection.appendChild(backBtn);
+    panel.appendChild(navSection);
   }
 
   // Escape HTML special characters to prevent innerHTML injection
@@ -5079,10 +5330,16 @@ class BundleWidgetFullPage {
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
 
-    // For full-page bundles, re-render the footer to show selected products
+    // For full-page bundles, re-render the footer/sidebar to show selected products
     const bundleType = this.container.dataset.bundleType;
     if (bundleType === 'full_page') {
-      this.renderFullPageFooter();
+      const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+      if (layout === 'footer_side') {
+        const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
+        this.renderSidePanel(sidePanel);
+      } else {
+        this.renderFullPageFooter();
+      }
     } else {
       this.updateFooterMessaging();
     }

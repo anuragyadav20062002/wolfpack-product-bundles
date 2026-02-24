@@ -17,6 +17,7 @@ interface BundleFormData {
   description: string;
   status: BundleStatus;
   templateName: string;
+  fullPageLayout: string;
 }
 
 interface UseBundleFormProps {
@@ -30,6 +31,7 @@ export function useBundleForm({ initialData, onStateChange }: UseBundleFormProps
   const [bundleDescription, setBundleDescriptionRaw] = useState(initialData.description);
   const [bundleStatus, setBundleStatusRaw] = useState<BundleStatus>(initialData.status);
   const [templateName, setTemplateNameRaw] = useState(initialData.templateName);
+  const [fullPageLayout, setFullPageLayoutRaw] = useState(initialData.fullPageLayout);
 
   // UI state (doesn't trigger dirty flag)
   const [activeSection, setActiveSection] = useState("step_setup");
@@ -55,12 +57,18 @@ export function useBundleForm({ initialData, onStateChange }: UseBundleFormProps
     onStateChange?.();
   }, [onStateChange]);
 
+  const setFullPageLayout = useCallback((value: string | ((prev: string) => string)) => {
+    setFullPageLayoutRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
+
   return {
     // State
     bundleName,
     bundleDescription,
     bundleStatus,
     templateName,
+    fullPageLayout,
     activeSection,
 
     // Setters
@@ -68,6 +76,7 @@ export function useBundleForm({ initialData, onStateChange }: UseBundleFormProps
     setBundleDescription,
     setBundleStatus,
     setTemplateName,
+    setFullPageLayout,
     setActiveSection,
   };
 }

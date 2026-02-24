@@ -242,6 +242,8 @@ export default function Dashboard() {
     setDescription,
     bundleType,
     setBundleType,
+    fullPageLayout,
+    setFullPageLayout,
     resetForm,
     deleteModalOpen,
     bundleToDelete,
@@ -478,8 +480,127 @@ export default function Dashboard() {
                 </div>
               </BlockStack>
 
-              {/* Hidden input to pass bundleType to form */}
+              {/* Layout Selection — only for full-page bundles */}
+              {bundleType[0] === 'full_page' && (
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h4">Page Layout</Text>
+                  <Text variant="bodySm" as="p" tone="subdued">
+                    Choose how the bundle summary is displayed on the storefront
+                  </Text>
+                  <div className={dashboardStyles.bundleTypeGrid}>
+                    {/* Footer at Bottom */}
+                    <div
+                      className={`${dashboardStyles.bundleTypeCard} ${fullPageLayout === 'footer_bottom' ? dashboardStyles.bundleTypeCardSelected : ''}`}
+                      onClick={() => setFullPageLayout('footer_bottom')}
+                    >
+                      <BlockStack gap="200">
+                        {/* Mini storefront illustration — bottom footer */}
+                        <div className={dashboardStyles.layoutIllustration}>
+                          {/* Step tabs */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2C2C2C' }} />
+                            <div style={{ width: 20, height: 2, background: '#ccc' }} />
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ccc' }} />
+                            <div style={{ width: 20, height: 2, background: '#ccc' }} />
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ccc' }} />
+                          </div>
+                          {/* Product cards row */}
+                          <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                            {[0, 1, 2].map(i => (
+                              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+                                <div style={{ flex: 1, background: '#E8E8E8', borderRadius: 3 }} />
+                                <div style={{ height: 4, background: '#D0D0D0', borderRadius: 2, width: '60%' }} />
+                                <div style={{ height: 8, background: '#2C2C2C', borderRadius: 2 }} />
+                              </div>
+                            ))}
+                          </div>
+                          {/* Bottom footer bar */}
+                          <div style={{ height: 14, background: '#2C2C2C', borderRadius: 3, marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px' }}>
+                            <div style={{ display: 'flex', gap: 2 }}>
+                              {[0, 1].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />)}
+                            </div>
+                            <div style={{ width: 20, height: 6, borderRadius: 2, background: 'rgba(255,255,255,0.5)' }} />
+                          </div>
+                        </div>
+                        <BlockStack gap="100">
+                          <Text variant="bodyMd" as="p" fontWeight="semibold">Footer at Bottom</Text>
+                          <Text variant="bodySm" as="p" tone="subdued">
+                            Sticky footer bar at the bottom with product tiles and navigation
+                          </Text>
+                        </BlockStack>
+                      </BlockStack>
+                    </div>
+
+                    {/* Footer at Side */}
+                    <div
+                      className={`${dashboardStyles.bundleTypeCard} ${fullPageLayout === 'footer_side' ? dashboardStyles.bundleTypeCardSelected : ''}`}
+                      onClick={() => setFullPageLayout('footer_side')}
+                    >
+                      <BlockStack gap="200">
+                        {/* Mini storefront illustration — side panel */}
+                        <div className={dashboardStyles.layoutIllustration} style={{ display: 'flex', gap: 0 }}>
+                          {/* Left: product grid area */}
+                          <div style={{ flex: 2, display: 'flex', flexDirection: 'column' as const, padding: '0 4px 0 0', gap: 4 }}>
+                            {/* Step tabs */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2C2C2C' }} />
+                              <div style={{ width: 16, height: 2, background: '#ccc' }} />
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ccc' }} />
+                            </div>
+                            {/* Product cards */}
+                            <div style={{ display: 'flex', gap: 3, flex: 1 }}>
+                              {[0, 1].map(i => (
+                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+                                  <div style={{ flex: 1, background: '#E8E8E8', borderRadius: 3 }} />
+                                  <div style={{ height: 4, background: '#D0D0D0', borderRadius: 2, width: '60%' }} />
+                                  <div style={{ height: 7, background: '#2C2C2C', borderRadius: 2 }} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Right: sidebar panel */}
+                          <div style={{ flex: 1, borderLeft: '1px solid #D0D0D0', paddingLeft: 4, display: 'flex', flexDirection: 'column' as const, gap: 3 }}>
+                            <div style={{ fontSize: 5, fontWeight: 700, color: '#2C2C2C', lineHeight: 1 }}>Your Bundle</div>
+                            {/* Tier pill */}
+                            <div style={{ display: 'flex', gap: 2 }}>
+                              <div style={{ height: 6, width: 28, borderRadius: 3, background: '#2C2C2C' }} />
+                              <div style={{ height: 6, width: 28, borderRadius: 3, background: '#E8E8E8' }} />
+                            </div>
+                            {/* Progress bar */}
+                            <div style={{ height: 3, background: '#E8E8E8', borderRadius: 2 }}>
+                              <div style={{ height: '100%', width: '40%', background: '#2C2C2C', borderRadius: 2 }} />
+                            </div>
+                            {/* Product slots */}
+                            <div style={{ display: 'flex', gap: 2, flex: 1 }}>
+                              <div style={{ flex: 1, background: '#D0D0D0', borderRadius: 2 }} />
+                              <div style={{ flex: 1, border: '1px dashed #ccc', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ fontSize: 8, color: '#aaa' }}>+</span>
+                              </div>
+                            </div>
+                            {/* Total + nav */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ fontSize: 5, color: '#2C2C2C', fontWeight: 600, lineHeight: 1 }}>$0.00</div>
+                              <div style={{ height: 7, width: 20, background: '#2C2C2C', borderRadius: 2 }} />
+                            </div>
+                          </div>
+                        </div>
+                        <BlockStack gap="100">
+                          <Text variant="bodyMd" as="p" fontWeight="semibold">Footer at Side</Text>
+                          <Text variant="bodySm" as="p" tone="subdued">
+                            Sidebar panel with bundle summary, discount tiers, and selected products
+                          </Text>
+                        </BlockStack>
+                      </BlockStack>
+                    </div>
+                  </div>
+                </BlockStack>
+              )}
+
+              {/* Hidden inputs to pass bundleType and layout to form */}
               <input type="hidden" name="bundleType" value={bundleType[0]} />
+              {bundleType[0] === 'full_page' && (
+                <input type="hidden" name="fullPageLayout" value={fullPageLayout} />
+              )}
 
               <button
                 ref={submitButtonRef}

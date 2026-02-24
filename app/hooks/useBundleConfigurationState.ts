@@ -31,6 +31,7 @@ export interface BundleData {
   status: BundleStatus;
   bundleType: string;
   templateName?: string;
+  fullPageLayout?: string | null;
   shopifyProductId?: string;
   shopifyPageHandle?: string;
   shopifyPageId?: string;
@@ -80,7 +81,8 @@ export function useBundleConfigurationState({
       name: bundle.name,
       description: bundle.description || "",
       status: bundle.status,
-      templateName: bundle.templateName || ""
+      templateName: bundle.templateName || "",
+      fullPageLayout: bundle.fullPageLayout || "footer_bottom",
     },
     onStateChange: markAsDirty
   });
@@ -262,6 +264,7 @@ export function useBundleConfigurationState({
     name: formState.bundleName,
     description: formState.bundleDescription,
     templateName: formState.templateName,
+    fullPageLayout: formState.fullPageLayout,
     steps: JSON.stringify(transformedSteps),
     discountEnabled: pricingState.discountEnabled,
     discountType: pricingState.discountType,
@@ -286,6 +289,7 @@ export function useBundleConfigurationState({
       formState.setBundleName(originalValues.name);
       formState.setBundleDescription(originalValues.description);
       formState.setTemplateName(originalValues.templateName);
+      formState.setFullPageLayout(originalValues.fullPageLayout);
 
       // Reset steps
       const originalSteps = JSON.parse(originalValues.steps);
@@ -340,6 +344,7 @@ export function useBundleConfigurationState({
       name: formState.bundleName,
       description: formState.bundleDescription,
       templateName: formState.templateName,
+      fullPageLayout: formState.fullPageLayout,
       steps: JSON.stringify(stepsState.steps),
       discountEnabled: pricingState.discountEnabled,
       discountType: pricingState.discountType,

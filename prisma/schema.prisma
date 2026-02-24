@@ -51,6 +51,11 @@ enum BundleType {
   full_page     // Dedicated bundle page (future feature)
 }
 
+enum FullPageLayout {
+  footer_bottom  // Sticky footer at viewport bottom (default)
+  footer_side    // Sidebar panel to the right of product grid
+}
+
 model Session {
   id                     String    @id
   shop                   String
@@ -89,6 +94,7 @@ model Bundle {
   promoBannerBgImageCrop String? // JSON {x,y,width} percentages defining the visible crop region
   loadingGif       String? // URL of the loading GIF shown during bundle load, step transitions, and add-to-cart
   bundleType       BundleType        @default(product_page)
+  fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt

@@ -72,6 +72,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleDescription = formData.get("bundleDescription") as string;
     const bundleStatus = formData.get("bundleStatus") as string;
     const templateName = formData.get("templateName") as string || null;
+    const fullPageLayout = formData.get("fullPageLayout") as string || "footer_bottom";
     const promoBannerBgImageRaw = formData.get("promoBannerBgImage") as string;
     const promoBannerBgImage = promoBannerBgImageRaw || null;
     const promoBannerBgImageCropRaw = formData.get("promoBannerBgImageCrop") as string;
@@ -184,6 +185,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         // Preserve existing shopifyProductId if not provided in form
         shopifyProductId: bundleProductData?.id || existingBundle?.shopifyProductId || null,
         templateName: templateName,
+        fullPageLayout: fullPageLayout as any,
         promoBannerBgImage: promoBannerBgImage,
         promoBannerBgImageCrop: promoBannerBgImageCrop,
         loadingGif: loadingGif,
@@ -377,6 +379,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         description: updatedBundle.description,
         status: updatedBundle.status,
         bundleType: updatedBundle.bundleType,
+        fullPageLayout: updatedBundle.fullPageLayout || "footer_bottom",
         templateName: updatedBundle.templateName,
         steps: optimizedSteps,
         pricing: {

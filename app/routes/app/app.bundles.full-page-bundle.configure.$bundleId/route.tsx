@@ -390,6 +390,7 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleName", formState.bundleName);
       formData.append("bundleDescription", formState.bundleDescription);
       formData.append("templateName", formState.templateName);
+      formData.append("fullPageLayout", formState.fullPageLayout);
       formData.append("bundleStatus", formState.bundleStatus);
       // Merge collections data into steps before saving
       const stepsWithCollections = stepsState.steps.map(step => ({
@@ -1451,6 +1452,24 @@ export default function ConfigureBundleFlow() {
                     status={formState.bundleStatus}
                     onChange={formState.setBundleStatus}
                   />
+                </Card>
+              )}
+
+              {/* Layout Selection - For full-page bundles */}
+              {bundle.bundleType === 'full_page' && (
+                <Card>
+                  <BlockStack gap="200">
+                    <Text variant="headingSm" as="h3">Page Layout</Text>
+                    <Select
+                      label="Footer position"
+                      options={[
+                        { label: "Footer at bottom", value: "footer_bottom" },
+                        { label: "Footer at side", value: "footer_side" },
+                      ]}
+                      value={formState.fullPageLayout}
+                      onChange={formState.setFullPageLayout}
+                    />
+                  </BlockStack>
                 </Card>
               )}
 

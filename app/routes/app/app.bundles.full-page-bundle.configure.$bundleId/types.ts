@@ -41,6 +41,7 @@ export interface BundleData {
   bundleType: string;
   status: BundleStatus;
   templateName?: string;
+  fullPageLayout?: string | null;
   steps: BundleStep[];
   pricing?: BundlePricing;
 }
