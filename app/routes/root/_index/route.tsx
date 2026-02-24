@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
+import { useEffect } from "react";
 
 import { login } from "../../../shopify.server";
 
@@ -18,6 +19,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function App() {
   const { showForm } = useLoaderData<typeof loader>();
+
+  // If running inside the Shopify Admin iframe (embedded app), the user is
+  // already authenticated. Redirect to /app where App Bridge handles the session.
+  // This prevents the awkward login form from showing when navigating back.
+  useEffect(() => {
+    try {
+      if (window.self !== window.top) {
+        window.location.replace("/app");
+      }
+    } catch {
+      // Cross-origin access error means we're inside an iframe — redirect.
+      window.location.replace("/app");
+    }
+  }, []);
 
   return (
     <div className={styles.index}>
