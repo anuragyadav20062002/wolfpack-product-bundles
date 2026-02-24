@@ -106,15 +106,19 @@ const ConditionValidator = (function () {
    * @returns {boolean}
    */
   function isStepConditionSatisfied(step, currentSelections) {
-    // No valid primary condition → step is optional, always satisfied.
-    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
-      return true;
-    }
+    if (!step) return true;
 
     const selections = currentSelections || {};
     let total = 0;
     for (const qty of Object.values(selections)) {
       total += qty || 0;
+    }
+
+    // No explicit condition configured → fallback to minQuantity.
+    // A step with minQuantity requires at least that many items selected.
+    if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+      const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
+      return total >= min;
     }
 
     // Primary condition
@@ -4013,6 +4017,13 @@ class BundleWidgetFullPage {
       return;
     }
 
+    // Safety guard: sidebar layout uses the side panel, not the bottom footer
+    const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+    if (layout === 'footer_side') {
+      this.elements.footer.style.display = 'none';
+      return;
+    }
+
     this.elements.footer.innerHTML = '';
     this.elements.footer.className = 'full-page-footer redesigned';
     this.elements.footer.style.display = 'block';
@@ -4675,8 +4686,16 @@ class BundleWidgetFullPage {
   renderFooter() {
     const bundleType = this.container.dataset.bundleType;
 
-    // Full-page bundles use their own footer with selected products, totals, and navigation
+    // Full-page bundles: sidebar layout handles its own panel, skip bottom footer entirely
     if (bundleType === 'full_page') {
+      const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+      if (layout === 'footer_side') {
+        // Sidebar layout — footer is hidden; side panel handles navigation
+        if (this.elements.footer) {
+          this.elements.footer.style.display = 'none';
+        }
+        return;
+      }
       this.renderFullPageFooter();
       return;
     }

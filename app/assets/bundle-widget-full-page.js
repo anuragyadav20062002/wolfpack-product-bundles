@@ -1736,6 +1736,13 @@ class BundleWidgetFullPage {
       return;
     }
 
+    // Safety guard: sidebar layout uses the side panel, not the bottom footer
+    const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+    if (layout === 'footer_side') {
+      this.elements.footer.style.display = 'none';
+      return;
+    }
+
     this.elements.footer.innerHTML = '';
     this.elements.footer.className = 'full-page-footer redesigned';
     this.elements.footer.style.display = 'block';
@@ -2398,8 +2405,16 @@ class BundleWidgetFullPage {
   renderFooter() {
     const bundleType = this.container.dataset.bundleType;
 
-    // Full-page bundles use their own footer with selected products, totals, and navigation
+    // Full-page bundles: sidebar layout handles its own panel, skip bottom footer entirely
     if (bundleType === 'full_page') {
+      const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+      if (layout === 'footer_side') {
+        // Sidebar layout — footer is hidden; side panel handles navigation
+        if (this.elements.footer) {
+          this.elements.footer.style.display = 'none';
+        }
+        return;
+      }
       this.renderFullPageFooter();
       return;
     }

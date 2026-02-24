@@ -100,15 +100,19 @@ const ConditionValidator = (function () {
    * @returns {boolean}
    */
   function isStepConditionSatisfied(step, currentSelections) {
-    // No valid primary condition → step is optional, always satisfied.
-    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
-      return true;
-    }
+    if (!step) return true;
 
     const selections = currentSelections || {};
     let total = 0;
     for (const qty of Object.values(selections)) {
       total += qty || 0;
+    }
+
+    // No explicit condition configured → fallback to minQuantity.
+    // A step with minQuantity requires at least that many items selected.
+    if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+      const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
+      return total >= min;
     }
 
     // Primary condition
