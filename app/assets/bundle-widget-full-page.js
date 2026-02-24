@@ -882,6 +882,16 @@ class BundleWidgetFullPage {
       if (isAccessible) {
         tab.style.cursor = 'pointer';
         tab.addEventListener('click', () => {
+          // Re-check accessibility at click time (not stale closure)
+          if (!this.isStepAccessible(index)) {
+            ToastManager.show('Please complete the previous steps first.');
+            return;
+          }
+          // Block forward navigation if current step condition is not met
+          if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
+            ToastManager.show('Please meet the step conditions before proceeding.');
+            return;
+          }
           this.currentStepIndex = index;
           this.searchQuery = ''; // Clear search when changing steps
           this.renderFullPageLayout();
@@ -1925,20 +1935,6 @@ class BundleWidgetFullPage {
     return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
   }
 
-  // Helper: Check if step is accessible
-  isStepAccessible(stepIndex) {
-    if (stepIndex === 0) return true;
-
-    // Check if all previous steps meet minimum requirements
-    for (let i = 0; i < stepIndex; i++) {
-      if (!this.isStepCompleted(i)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   // Helper: Check if can proceed to next step
   canProceedToNextStep() {
     return this.isStepCompleted(this.currentStepIndex);
@@ -2546,7 +2542,8 @@ class BundleWidgetFullPage {
   }
 
   renderModalTabs() {
-    const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
+    const tabsContainer = this.elements.modal?.querySelector('.modal-tabs');
+    if (!tabsContainer) return; // Modal not active (full-page mode)
     tabsContainer.innerHTML = '';
 
     this.selectedBundle.steps.forEach((step, index) => {
@@ -2964,8 +2961,11 @@ class BundleWidgetFullPage {
   }
 
   updateModalNavigation() {
-    const prevButton = this.elements.modal.querySelector('.prev-button');
-    const nextButton = this.elements.modal.querySelector('.next-button');
+    const prevButton = this.elements.modal?.querySelector('.prev-button');
+    const nextButton = this.elements.modal?.querySelector('.next-button');
+
+    // In full-page mode the modal may be hidden/empty — skip without crashing
+    if (!prevButton || !nextButton) return;
 
     prevButton.disabled = this.currentStepIndex === 0;
 
@@ -2981,6 +2981,9 @@ class BundleWidgetFullPage {
   }
 
   updateModalFooterMessaging() {
+    // Skip if modal is not active (full-page mode uses inline footer instead)
+    if (!this.elements.modal || this.elements.modal.style.display === 'none') return;
+
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData

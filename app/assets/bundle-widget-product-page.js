@@ -1201,8 +1201,14 @@ class BundleWidgetProductPage {
 
       // Click handler
       tabButton.addEventListener('click', async () => {
-        if (!isAccessible) {
+        // Re-check accessibility at click time (not stale closure from render time)
+        if (!this.isStepAccessible(index)) {
           ToastManager.show('Please complete the previous steps first.');
+          return;
+        }
+        // Block forward navigation if current step condition is not met
+        if (index > this.currentStepIndex && !this.validateStep(this.currentStepIndex)) {
+          ToastManager.show('Please meet the step conditions before proceeding.');
           return;
         }
 
@@ -1639,8 +1645,10 @@ class BundleWidgetProductPage {
   }
 
   updateModalNavigation() {
-    const prevButton = this.elements.modal.querySelector('.prev-button');
-    const nextButton = this.elements.modal.querySelector('.next-button');
+    const prevButton = this.elements.modal?.querySelector('.prev-button');
+    const nextButton = this.elements.modal?.querySelector('.next-button');
+
+    if (!prevButton || !nextButton) return;
 
     prevButton.disabled = this.currentStepIndex === 0;
 
