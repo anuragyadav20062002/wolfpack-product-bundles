@@ -865,12 +865,7 @@ class BundleWidgetFullPage {
       clearBtn.textContent = 'Clear all';
       clearBtn.addEventListener('click', () => {
         this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
-        const layout = this.selectedBundle.fullPageLayout || 'footer_bottom';
-        if (layout === 'footer_side') {
-          this.renderFullPageLayoutWithSidebar();
-        } else {
-          this.renderFullPageLayout();
-        }
+        this.reRenderFullPage();
       });
       header.appendChild(clearBtn);
     }
@@ -1019,23 +1014,6 @@ class BundleWidgetFullPage {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Generate a short condition hint for the step tab (e.g., "Select 1+", "Select exactly 3")
-  _getConditionHint(step) {
-    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
-      return '';
-    }
-    const val = step.conditionValue;
-    const op = step.conditionOperator;
-    const hintMap = {
-      'equal_to': `Select exactly ${val}`,
-      'greater_than': `Select ${val + 1}+`,
-      'greater_than_or_equal_to': `Select ${val}+`,
-      'less_than': `Select up to ${val - 1}`,
-      'less_than_or_equal_to': `Select up to ${val}`,
-    };
-    return hintMap[op] || '';
-  }
-
   // Create horizontal step tabs - clickable tabs showing step names
   createStepTimeline() {
     const tabsContainer = document.createElement('div');
@@ -1066,8 +1044,7 @@ class BundleWidgetFullPage {
 
       // Escape step name to prevent HTML injection (e.g., step name "1<QTY<4")
       const escapedName = this._escapeHTML(step.name) || `Step ${index + 1}`;
-      const conditionHint = this._getConditionHint(step);
-      const hintHTML = conditionHint ? `<span class="tab-hint">${this._escapeHTML(conditionHint)}</span>` : '';
+      // Condition hints removed — step conditions are enforced via the Next button and tab click guards
 
       // Tab content structure
       let tabContent = '';
@@ -1114,7 +1091,6 @@ class BundleWidgetFullPage {
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
             <span class="tab-name">${escapedName}</span>
-            ${hintHTML}
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">
@@ -1145,7 +1121,7 @@ class BundleWidgetFullPage {
           }
           this.currentStepIndex = index;
           this.searchQuery = ''; // Clear search when changing steps
-          this.renderFullPageLayout();
+          this.reRenderFullPage();
         });
       }
 
@@ -1435,7 +1411,7 @@ class BundleWidgetFullPage {
     allTab.innerHTML = `<span class="tab-label">All</span>`;
     allTab.addEventListener('click', () => {
       this.activeCollectionId = null;
-      this.renderFullPageLayout();
+      this.reRenderFullPage();
     });
     tabsContainer.appendChild(allTab);
 
@@ -1449,7 +1425,7 @@ class BundleWidgetFullPage {
       tab.innerHTML = `<span class="tab-label">${collection.title}</span>`;
       tab.addEventListener('click', () => {
         this.activeCollectionId = collection.id;
-        this.renderFullPageLayout();
+        this.reRenderFullPage();
       });
       tabsContainer.appendChild(tab);
     });
@@ -2150,7 +2126,7 @@ class BundleWidgetFullPage {
         const variantId = e.target.dataset.variantId;
         this.updateProductSelection(stepIndex, variantId, 0);
         document.body.removeChild(overlay);
-        this.renderFullPageLayout();
+        this.reRenderFullPage();
       });
     });
 
@@ -2187,6 +2163,16 @@ class BundleWidgetFullPage {
   }
 
   // Helper: Check if can proceed to next step
+  // Layout-aware re-render dispatch for full-page bundles
+  reRenderFullPage() {
+    const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+    if (layout === 'footer_side') {
+      this.renderFullPageLayoutWithSidebar();
+    } else {
+      this.renderFullPageLayout();
+    }
+  }
+
   canProceedToNextStep() {
     return this.isStepCompleted(this.currentStepIndex);
   }
