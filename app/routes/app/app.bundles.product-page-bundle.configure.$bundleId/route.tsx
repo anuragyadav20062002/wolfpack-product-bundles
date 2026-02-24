@@ -1962,7 +1962,7 @@ export default function ConfigureBundleFlow() {
                         </BlockStack>
                         <BlockStack gap="100">
                           <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
-                          <Text variant="bodySm" as="p">Max 120 × 120 px</Text>
+                          <Text variant="bodySm" as="p">Max 150 × 150 px</Text>
                         </BlockStack>
                       </InlineStack>
                     </Box>
@@ -1976,6 +1976,7 @@ export default function ConfigureBundleFlow() {
                         setLoadingGif(url);
                         markAsDirty();
                       }}
+                      hideCropEditor
                     />
                   </BlockStack>
                 </Card>

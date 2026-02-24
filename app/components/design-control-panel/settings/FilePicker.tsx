@@ -21,6 +21,7 @@ interface FilePickerProps {
   cropValue?: string | null;
   onCropChange?: (crop: string | null) => void;
   label?: string;
+  hideCropEditor?: boolean;
 }
 
 type UploadStatus = "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
@@ -105,7 +106,7 @@ function ProgressCircle({ status }: { status: "spinning" | "success" }) {
   );
 }
 
-export function FilePicker({ value, onChange, cropValue, onCropChange, label = "Choose background image" }: FilePickerProps) {
+export function FilePicker({ value, onChange, cropValue, onCropChange, label = "Choose background image", hideCropEditor = false }: FilePickerProps) {
   const [open, setOpen] = useState(false);
   const [cropEditorOpen, setCropEditorOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -382,9 +383,11 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
             <Button variant="plain" size="slim" onClick={handleOpen}>
               Change
             </Button>
-            <Button variant="plain" size="slim" onClick={() => setCropEditorOpen(true)}>
-              Adjust Image
-            </Button>
+            {!hideCropEditor && (
+              <Button variant="plain" size="slim" onClick={() => setCropEditorOpen(true)}>
+                Adjust Image
+              </Button>
+            )}
             <Button variant="plain" tone="critical" size="slim" icon={XCircleIcon} onClick={handleRemove}>
               Remove
             </Button>
@@ -668,7 +671,7 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
       {mounted && open ? createPortal(dialogContent, document.body) : null}
 
       {/* Crop editor — higher z-index than the file picker modal */}
-      {mounted && cropEditorOpen && value && (
+      {mounted && !hideCropEditor && cropEditorOpen && value && (
         <ImageCropEditor
           imageUrl={value}
           cropValue={cropValue ?? null}
