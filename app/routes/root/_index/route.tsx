@@ -10,8 +10,15 @@ import styles from "./styles.module.css";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
 
-  if (url.searchParams.get("shop")) {
+  // Redirect to /app when any Shopify context params are present
+  if (url.searchParams.get("shop") || url.searchParams.get("host") || url.searchParams.get("id_token")) {
     throw redirect(`/app?${url.searchParams.toString()}`);
+  }
+
+  // Check if request comes from embedded context via headers
+  const secFetchDest = request.headers.get("sec-fetch-dest");
+  if (secFetchDest === "iframe") {
+    throw redirect("/app/dashboard");
   }
 
   return { showForm: Boolean(login) };
