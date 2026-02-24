@@ -1473,11 +1473,6 @@ export default function ConfigureBundleFlow() {
                                           </Badge>
                                         )}
                                       </InlineStack>
-                                      <Checkbox
-                                        label="Display variants as individual products"
-                                        checked={step.displayVariantsAsIndividual || false}
-                                        onChange={(checked) => stepsState.updateStepField(step.id, 'displayVariantsAsIndividual', checked)}
-                                      />
                                     </BlockStack>
                                   )}
 
