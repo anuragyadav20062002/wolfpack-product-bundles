@@ -65,8 +65,6 @@
       "custom_title_info": "Override the bundle name with custom text. Leave empty to use bundle name from app.",
       "custom_description_label": "Custom description (optional)",
       "custom_description_info": "Add a custom description below the title. Leave empty to use bundle description from app.",
-      "custom_instruction_label": "Custom instruction text (optional)",
-      "custom_instruction_info": "Override the default instruction text. Leave empty to use auto-generated instructions.",
       "display_header": "Display Settings",
       "show_bundle_title_label": "Show bundle title",
       "show_bundle_description_label": "Show bundle description",

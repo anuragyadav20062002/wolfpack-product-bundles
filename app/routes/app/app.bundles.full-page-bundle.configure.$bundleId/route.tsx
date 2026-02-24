@@ -1279,16 +1279,6 @@ export default function ConfigureBundleFlow() {
               loading: fetcher.state === 'submitting',
             }
       }
-      secondaryActions={[
-        {
-          content: "Open in Theme Editor",
-          icon: ExternalIcon,
-          onAction: () => {
-            const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=page&addAppBlockId=${apiKey}/${blockHandle}&target=mainSection`;
-            window.open(themeEditorUrl, '_blank');
-          },
-        },
-      ]}
     >
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form

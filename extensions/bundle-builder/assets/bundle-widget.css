@@ -2059,13 +2059,6 @@
   font-family: var(--bundle-heading-font-family, inherit);
 }
 
-.bundle-instruction {
-  font-size: 14px;
-  color: var(--bundle-text-color, #6b7280);
-  margin: 0;
-  font-family: var(--bundle-font-family, inherit);
-}
-
 /* ==========================================
    CATEGORY TABS (Collection Filters)
    ========================================== */
@@ -2425,10 +2418,6 @@
 
   .bundle-title {
     font-size: 20px;
-  }
-
-  .bundle-instruction {
-    font-size: 13px;
   }
 
   .full-page-product-grid .product-card {

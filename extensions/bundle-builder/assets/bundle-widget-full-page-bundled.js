@@ -2518,7 +2518,6 @@ class BundleWidgetFullPage {
       // Custom content from theme editor
       customTitle: dataset.customTitle || null,
       customDescription: dataset.customDescription || null,
-      customInstruction: dataset.customInstruction || null,
       // Card layout settings from theme editor
       productCardSpacing: parseInt(dataset.productCardSpacing) || 20,
       productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
@@ -3038,6 +3037,29 @@ class BundleWidgetFullPage {
     }
   }
 
+  // Escape HTML special characters to prevent innerHTML injection
+  _escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // Generate a short condition hint for the step tab (e.g., "Select 1+", "Select exactly 3")
+  _getConditionHint(step) {
+    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+      return '';
+    }
+    const val = step.conditionValue;
+    const op = step.conditionOperator;
+    const hintMap = {
+      'equal_to': `Select exactly ${val}`,
+      'greater_than': `Select ${val + 1}+`,
+      'greater_than_or_equal_to': `Select ${val}+`,
+      'less_than': `Select up to ${val - 1}`,
+      'less_than_or_equal_to': `Select up to ${val}`,
+    };
+    return hintMap[op] || '';
+  }
+
   // Create horizontal step tabs - clickable tabs showing step names
   createStepTimeline() {
     const tabsContainer = document.createElement('div');
@@ -3066,6 +3088,11 @@ class BundleWidgetFullPage {
       const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
       const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
 
+      // Escape step name to prevent HTML injection (e.g., step name "1<QTY<4")
+      const escapedName = this._escapeHTML(step.name) || `Step ${index + 1}`;
+      const conditionHint = this._getConditionHint(step);
+      const hintHTML = conditionHint ? `<span class="tab-hint">${this._escapeHTML(conditionHint)}</span>` : '';
+
       // Tab content structure
       let tabContent = '';
 
@@ -3074,12 +3101,12 @@ class BundleWidgetFullPage {
         const productImages = this.getStepProductImages(index);
         if (productImages.length > 0) {
           const imagesHtml = productImages.slice(0, 3).map(img =>
-            `<img src="${img.url}" alt="${img.alt}" class="tab-product-image">`
+            `<img src="${img.url}" alt="${this._escapeHTML(img.alt)}" class="tab-product-image">`
           ).join('');
           tabContent = `
             <div class="tab-images">${imagesHtml}</div>
             <div class="tab-info">
-              <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
+              <span class="tab-name">${escapedName}</span>
               <span class="tab-count">${totalQuantity} selected</span>
             </div>
             <div class="tab-check">
@@ -3092,7 +3119,7 @@ class BundleWidgetFullPage {
           // No images, just show checkmark
           tabContent = `
             <div class="tab-info">
-              <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
+              <span class="tab-name">${escapedName}</span>
               <span class="tab-count">${totalQuantity} selected</span>
             </div>
             <div class="tab-check">
@@ -3103,14 +3130,15 @@ class BundleWidgetFullPage {
           `;
         }
       } else {
-        // Empty step - show step number and name
+        // Empty step - show step number, name, and condition hint
         // Get previous step name for locked tooltip
-        const prevStepName = index > 0 ? (this.selectedBundle.steps[index - 1]?.name || `Step ${index}`) : '';
+        const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
 
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
-            <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
+            <span class="tab-name">${escapedName}</span>
+            ${hintHTML}
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">
@@ -4482,10 +4510,10 @@ class BundleWidgetFullPage {
 
   // Helper method to get formatted header text
   getFormattedHeaderText() {
-    // If discount is not enabled, show step name
+    // If discount is not enabled, show step name (escaped)
     if (!this.selectedBundle?.pricing?.enabled) {
       const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      return currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+      return this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
     }
 
     const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
@@ -4847,7 +4875,7 @@ class BundleWidgetFullPage {
     if (products.length === 0) {
       // Show empty state cards like in DCP preview
       const currentStep = this.selectedBundle.steps[stepIndex];
-      const stepName = currentStep?.name || `Step ${stepIndex + 1}`;
+      const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
       const labelText = `Select ${stepName}`;
 
       const emptyStateCards = Array(3).fill(0).map((_, index) => `
@@ -5261,10 +5289,10 @@ class BundleWidgetFullPage {
     const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
     if (!modalStepTitle) return;
 
-    // If discount is not enabled, show step name
+    // If discount is not enabled, show step name (escaped)
     if (!this.selectedBundle?.pricing?.enabled) {
       const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      modalStepTitle.innerHTML = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+      modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
       return;
     }
 
