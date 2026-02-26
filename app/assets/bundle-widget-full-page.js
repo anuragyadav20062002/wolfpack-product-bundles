@@ -1730,6 +1730,17 @@ class BundleWidgetFullPage {
     }
   }
 
+  // Refresh the step timeline tabs in-place when product selections change.
+  // Called after every updateProductSelection() so tabs reflect current completion
+  // state (completed/active/locked classes, click listeners, product images, counts).
+  updateStepTimeline() {
+    if (!this.config.showStepTimeline) return;
+    const existing = this.elements.stepsContainer.querySelector('.step-tabs-container');
+    if (!existing) return;
+    const fresh = this.createStepTimeline();
+    existing.parentNode.replaceChild(fresh, existing);
+  }
+
   // Render fixed footer with selected products and navigation (Competitor-Inspired Design)
   renderFullPageFooter() {
     if (!this.elements.footer) {
@@ -3066,6 +3077,9 @@ class BundleWidgetFullPage {
       } else {
         this.renderFullPageFooter();
       }
+      // Update step timeline tabs so completion state, images, counts, and
+      // click listeners all reflect the new selection immediately.
+      this.updateStepTimeline();
     } else {
       this.updateFooterMessaging();
     }

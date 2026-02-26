@@ -71,8 +71,15 @@ const ConditionValidator = (function () {
    * @returns {{ allowed: boolean, limitText: string|null }}
    */
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
-    // No valid primary condition → always allow
+    // No valid primary condition → enforce maxQuantity as an upper bound if set, otherwise allow
     if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+      if (step && step.maxQuantity != null && Number(step.maxQuantity) > 0) {
+        const max = Number(step.maxQuantity);
+        const totalAfter = calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity);
+        if (totalAfter > max) {
+          return { allowed: false, limitText: `at most ${max}` };
+        }
+      }
       return { allowed: true, limitText: null };
     }
 
@@ -114,11 +121,13 @@ const ConditionValidator = (function () {
       total += qty || 0;
     }
 
-    // No explicit condition configured → fallback to minQuantity.
-    // A step with minQuantity requires at least that many items selected.
+    // No explicit condition configured → fallback to minQuantity / maxQuantity range.
     if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
-      return total >= min;
+      const max = step.maxQuantity != null ? Number(step.maxQuantity) : null;
+      if (total < min) return false;
+      if (max !== null && max > 0 && total > max) return false;
+      return true;
     }
 
     // Primary condition
