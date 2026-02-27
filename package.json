@@ -24,7 +24,7 @@
     "generate:prisma": "prisma generate",
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
-    "pubsub-worker": "tsx scripts/pubsub-worker.ts",
+    "webhook-worker": "tsx scripts/webhook-worker.ts",
     "test": "ts-node tests/test-runner.ts",
     "test:unit": "ts-node tests/test-runner.ts unit",
     "test:integration": "ts-node tests/test-runner.ts integration",
@@ -39,7 +39,6 @@
     "node": "^18.20 || ^20.10 || >=21.0.0"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^4.11.0",
     "@prisma/adapter-pg": "^6.10.1",
     "@prisma/client": "^6.14.0",
     "@remix-run/dev": "^2.16.1",

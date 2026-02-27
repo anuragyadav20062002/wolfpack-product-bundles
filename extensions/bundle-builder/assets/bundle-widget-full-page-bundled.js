@@ -6,6 +6,216 @@
   // ============================================================================
 
 /**
+ * Step Condition Validator
+ *
+ * Pure functions for evaluating step conditions in bundle widgets.
+ * Used by both the product-page and full-page bundle widgets.
+ *
+ * Exported as a single `ConditionValidator` object so that:
+ *  - The bundle build (IIFE) can access it as a local variable in scope
+ *  - Node.js test environments can require() it via module.exports
+ *
+ * @version 1.0.0
+ */
+
+
+// NOTE: This file intentionally uses an IIFE + module.exports pattern (not ES module export)
+// so that Jest/Node.js tests can require() it without a transform step. All other files in
+// this directory use ES module syntax. Do not convert without updating the test config.
+const ConditionValidator = (function () {
+  // ─── Operator constants ───────────────────────────────────────────────────
+  const OPERATORS = {
+    EQUAL_TO:                'equal_to',
+    GREATER_THAN:            'greater_than',
+    LESS_THAN:               'less_than',
+    GREATER_THAN_OR_EQUAL_TO: 'greater_than_or_equal_to',
+    LESS_THAN_OR_EQUAL_TO:   'less_than_or_equal_to',
+  };
+
+  /**
+   * Calculate the total quantity in a step AFTER a proposed update.
+   *
+   * Correctly handles both:
+   *  - Existing products: replaces their current quantity with newQuantity
+   *  - New products (not yet in currentSelections): adds newQuantity to existing total
+   *
+   * @param {Record<string, number>} currentSelections  Current { productId → qty } map
+   * @param {string}  targetProductId  The product whose quantity is being changed
+   * @param {number}  newQuantity      The proposed new quantity (0 = remove)
+   * @returns {number}  Total quantity across all products in the step after the update
+   */
+  function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity) {
+    const selections = currentSelections || {};
+
+    // Start with the target product's new quantity (handles new products correctly).
+    let total = newQuantity;
+
+    // Add every OTHER product's existing quantity unchanged.
+    for (const pid of Object.keys(selections)) {
+      if (pid !== targetProductId) {
+        total += selections[pid] || 0;
+      }
+    }
+
+    return total;
+  }
+
+  /**
+   * Determine whether a proposed quantity update is permitted by the step's condition.
+   *
+   * Only blocks INCREASES that would violate an upper-bound operator.
+   * Decreases are always permitted regardless of the condition state (so the
+   * customer can switch products without getting permanently stuck).
+   *
+   * @param {object}  step              Step config object (conditionType, conditionOperator, conditionValue)
+   * @param {Record<string, number>} currentSelections  Current selections for this step
+   * @param {string}  targetProductId   Product being updated
+   * @param {number}  newQuantity       Proposed quantity (0 = remove)
+   * @returns {{ allowed: boolean, limitText: string|null }}
+   */
+  function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
+    // No valid primary condition → enforce maxQuantity as an upper bound if set, otherwise allow
+    if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+      if (step && step.maxQuantity != null && Number(step.maxQuantity) > 0) {
+        const max = Number(step.maxQuantity);
+        const totalAfter = calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity);
+        if (totalAfter > max) {
+          return { allowed: false, limitText: `at most ${max}` };
+        }
+      }
+      return { allowed: true, limitText: null };
+    }
+
+    const totalAfter = calculateStepTotalAfterUpdate(
+      currentSelections,
+      targetProductId,
+      newQuantity,
+    );
+
+    // Primary condition
+    const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
+    if (!primary.allowed) return primary;
+
+    // Secondary condition — AND logic (only when both fields are non-null)
+    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+      const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
+      if (!secondary.allowed) return secondary;
+    }
+
+    return { allowed: true, limitText: null };
+  }
+
+  /**
+   * Check whether a step's current selection fully satisfies its condition(s).
+   * Called at navigation time (Next / Add to Cart) to gate step completion.
+   *
+   * When a second condition is present, both must be satisfied (AND logic).
+   *
+   * @param {object}  step              Step config object
+   * @param {Record<string, number>} currentSelections  Current selections for this step
+   * @returns {boolean}
+   */
+  function isStepConditionSatisfied(step, currentSelections) {
+    if (!step) return true;
+
+    const selections = currentSelections || {};
+    let total = 0;
+    for (const qty of Object.values(selections)) {
+      total += qty || 0;
+    }
+
+    // No explicit condition configured → fallback to minQuantity / maxQuantity range.
+    if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
+      const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
+      const max = step.maxQuantity != null ? Number(step.maxQuantity) : null;
+      if (total < min) return false;
+      if (max !== null && max > 0 && total > max) return false;
+      return true;
+    }
+
+    // Primary condition
+    if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
+
+    // Secondary condition — AND logic
+    if (step.conditionOperator2 != null && step.conditionValue2 != null) {
+      return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
+    }
+
+    return true;
+  }
+
+  // ─── Private helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Evaluate a single condition's "can update" rule for the proposed total.
+   * Lower-bound operators never block increases (no upper cap from them alone).
+   */
+  function _evaluateCanUpdate(operator, required, totalAfter) {
+    let allowed;
+    switch (operator) {
+      case OPERATORS.EQUAL_TO:
+        // Allow building up to exactly N; prevent exceeding N.
+        allowed = totalAfter <= required;
+        break;
+      case OPERATORS.LESS_THAN:
+        allowed = totalAfter < required;
+        break;
+      case OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        allowed = totalAfter <= required;
+        break;
+      case OPERATORS.GREATER_THAN:
+      case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+        // Lower-bound: no upper cap — always allow increases.
+        allowed = true;
+        break;
+      default:
+        allowed = true;
+    }
+    return { allowed, limitText: allowed ? null : _buildLimitText(operator, required) };
+  }
+
+  /**
+   * Evaluate whether a total satisfies a single condition at step-completion time.
+   */
+  function _evaluateSatisfied(operator, required, total) {
+    switch (operator) {
+      case OPERATORS.EQUAL_TO:                 return total === required;
+      case OPERATORS.GREATER_THAN:             return total > required;
+      case OPERATORS.LESS_THAN:               return total < required;
+      case OPERATORS.GREATER_THAN_OR_EQUAL_TO: return total >= required;
+      case OPERATORS.LESS_THAN_OR_EQUAL_TO:   return total <= required;
+      default:                                return true;
+    }
+  }
+
+  function _buildLimitText(operator, required) {
+    const map = {
+      [OPERATORS.EQUAL_TO]:                `exactly ${required}`,
+      [OPERATORS.LESS_THAN]:               `less than ${required}`,
+      [OPERATORS.LESS_THAN_OR_EQUAL_TO]:   `at most ${required}`,
+      [OPERATORS.GREATER_THAN]:            `more than ${required}`,
+      [OPERATORS.GREATER_THAN_OR_EQUAL_TO]: `at least ${required}`,
+    };
+    return map[operator] || String(required);
+  }
+
+  // ─── Public API ───────────────────────────────────────────────────────────
+  return {
+    OPERATORS,
+    calculateStepTotalAfterUpdate,
+    canUpdateQuantity,
+    isStepConditionSatisfied,
+  };
+}());
+
+// CommonJS export for Node.js / Jest test environment.
+// Harmless in browsers (no `module` global in IIFE context).
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ConditionValidator;
+}
+
+
+/**
  * Bundle Widget - Global Constants and Configuration
  *
  * Central configuration used across all bundle widget modules.
@@ -53,7 +263,10 @@ const BUNDLE_WIDGET = {
     PERCENTAGE_OFF: 'percentage_off',
     FIXED_AMOUNT_OFF: 'fixed_amount_off',
     FIXED_BUNDLE_PRICE: 'fixed_bundle_price'
-  }
+  },
+
+  // Shared asset URLs
+  PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
 };
 
 
@@ -87,8 +300,8 @@ class CurrencyManager {
       };
     }
 
-    // Fallback: Shop base currency
-    return this.getShopBaseCurrency();
+    // Fallback: Shop base currency (include rate: 1 so downstream math doesn't produce NaN)
+    return { ...this.getShopBaseCurrency(), rate: 1 };
   }
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
@@ -99,7 +312,7 @@ class CurrencyManager {
       try {
         return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
-        // Fallback to manual conversion
+        console.warn('[BUNDLE_WIDGET] Shopify.currency.convert failed, using rate fallback:', e);
       }
     }
 
@@ -178,10 +391,14 @@ class BundleDataManager {
       });
 
       // Validate bundle type
-      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
-          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-        // Valid bundle type
-      } else {
+      if (
+        bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+        bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE
+      ) {
+        throw new Error(
+          `Bundle ${bundle.id} has invalid bundleType: "${bundle.bundleType}". ` +
+          `Expected "${BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE}" or "${BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE}".`
+        );
       }
 
       // Validate steps
@@ -212,10 +429,9 @@ class BundleDataManager {
     return true;
   }
 
-  static filterActivePublishedBundles(bundles) {
-    return bundles.filter(bundle =>
-      bundle.status === 'active' || bundle.status === 'published'
-    );
+  static filterActiveBundles(bundles) {
+    // BundleStatus enum: draft | active | archived — 'published' is not a valid status
+    return bundles.filter(bundle => bundle.status === 'active');
   }
 
   static getProductPageBundles(bundles) {
@@ -317,21 +533,18 @@ class BundleDataManager {
       }
     }
 
-    // Fallback: First active bundle
-    const fallbackBundle = bundles[0];
-    if (fallbackBundle) {
-      return fallbackBundle;
-    }
+    // No bundle matched the config criteria — return null so the widget hides itself
+    console.warn('[BUNDLE_WIDGET] selectBundle: no bundle matched config:', config);
     return null;
   }
 
   static isThemeEditorContext() {
-    return window.isThemeEditorContext ||
+    return window.Shopify?.designMode ||
+      window.isThemeEditorContext ||
       window.location.pathname.includes('/editor') ||
       window.location.search.includes('preview_theme_id') ||
       window.location.search.includes('previewPath') ||
       document.referrer.includes('admin.shopify.com') ||
-      window.parent !== window ||
       window.autoDetectedBundleId;
   }
 }
@@ -377,9 +590,10 @@ class PricingCalculator {
         }
 
         if (product && quantity > 0) {
-          // Use variant price if found within nested variants, otherwise use product price
+          // All prices in our pipeline are in cents (see MEMORY.md pricing pipeline).
+          // Use variant price if matched via nested lookup, otherwise use product-level price.
           const price = matchedVariant
-            ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : parseFloat(matchedVariant.price || '0') * 100)
+            ? (Number(matchedVariant.price) || 0)
             : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
@@ -462,6 +676,8 @@ class PricingCalculator {
         discountAmount = 0;
     }
 
+    // Clamp discount so it never exceeds total (prevents >100% display)
+    discountAmount = Math.min(discountAmount, totalPrice);
     const finalPrice = Math.max(0, totalPrice - discountAmount);
     const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
@@ -485,7 +701,9 @@ class PricingCalculator {
 
     switch (normalizedCondition) {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        return value === targetValue;
+        // For discount pricing rules, "equal to N" means "at N or more" (threshold).
+        // For step conditions, the ConditionValidator handles exact matching separately.
+        return value >= targetValue;
       case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
         return value > targetValue;
       case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
@@ -523,8 +741,8 @@ class PricingCalculator {
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
     if (!bundle?.pricing?.rules?.length) return null;
 
-    // Sort rules by condition value (ascending)
-    const rules = bundle.pricing.rules.sort((a, b) => a.condition.value - b.condition.value);
+    // Sort rules by condition value (ascending) — copy to avoid mutating the original
+    const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
 
     for (const rule of rules) {
       const conditionType = rule.condition.type;
@@ -561,6 +779,17 @@ class PricingCalculator {
 
 
 class ToastManager {
+  /** Escape HTML to prevent XSS in toast messages */
+  static _escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -573,11 +802,16 @@ class ToastManager {
     toast.id = 'bundle-toast';
     toast.className = `bundle-toast`;
     toast.innerHTML = `
-      <span>${message}</span>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;" onclick="this.parentElement.remove()">
+      <span>${this._escapeHtml(message)}</span>
+      <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
+
+    // Attach close listener (consistent with showWithUndo pattern)
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      toast.remove();
+    });
 
     // Add to page (styles come from bundle-widget.css with DCP CSS variables)
     document.body.appendChild(toast);
@@ -605,7 +839,7 @@ class ToastManager {
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast bundle-toast-with-undo';
     toast.innerHTML = `
-      <span class="toast-message">${message}</span>
+      <span class="toast-message">${this._escapeHtml(message)}</span>
       <button class="toast-undo-btn" type="button">Undo</button>
       <svg class="toast-close" width="18" height="18" viewBox="0 0 24 24" fill="none">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -662,11 +896,8 @@ class TemplateManager {
 
     let result = template;
 
-    // Replace variables with both single and double curly braces
+    // Replace variables — double braces first to prevent single-brace partial matches
     Object.entries(variables).forEach(([key, value]) => {
-      const singleBrace = new RegExp(`\\{${key}\\}`, 'g');
-      const doubleBrace = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-
       // Wrap conditionText and discountText with styled spans
       let replacementValue = value;
       if (key === 'conditionText') {
@@ -675,8 +906,9 @@ class TemplateManager {
         replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit);">${value}</span>`;
       }
 
-      result = result.replace(singleBrace, replacementValue);
-      result = result.replace(doubleBrace, replacementValue);
+      // Single pass: match {{key}} or {key} (double-brace variant matched first)
+      const combined = new RegExp(`\\{\\{${key}\\}\\}|\\{${key}\\}`, 'g');
+      result = result.replace(combined, replacementValue);
     });
     return result;
   }
@@ -692,11 +924,12 @@ class TemplateManager {
     // Extract rule data using nested structure
     const conditionType = ruleToUse.condition.type;
     const targetValue = ruleToUse.condition.value;
+    const conditionOperator = ruleToUse.condition.operator;
     const discountMethod = ruleToUse.discount.method;
     const rawDiscountValue = ruleToUse.discount.value;
 
     // Calculate condition-specific values
-    const conditionData = this.calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo);
+    const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
     // Calculate discount-specific values
     const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
@@ -744,7 +977,28 @@ class TemplateManager {
     return variables;
   }
 
-  static calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo) {
+  static formatOperatorText(operator, targetValue, unit) {
+    const normalizedOp = PricingCalculator.normalizeCondition(operator);
+    const label = targetValue === 1 ? unit : `${unit}s`;
+
+    switch (normalizedOp) {
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
+        return `more than ${targetValue} ${label}`;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
+        return `fewer than ${targetValue} ${label}`;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        return `${targetValue} or fewer ${label}`;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+      default:
+        // "equal_to" acts as a threshold (>= N) in discount rules,
+        // and "greater_than_or_equal_to" is the most common default.
+        // Both render as plain "N items" for natural-sounding text.
+        return `${targetValue} ${label}`;
+    }
+  }
+
+  static calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo) {
     if (conditionType === 'amount') {
       // Amount-based condition - targetValue is already in cents
       const amountNeeded = Math.max(0, targetValue - totalPrice);
@@ -770,12 +1024,23 @@ class TemplateManager {
       // Check if already qualified (amount needed is 0)
       const alreadyQualified = amountNeeded <= 0;
 
+      // Build operator-aware condition text for amount
+      const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
+      let conditionText;
+      if (alreadyQualified) {
+        conditionText = `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met`;
+      } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN) {
+        conditionText = `more than ${currencyInfo.display.symbol}${amountNeededFormatted}`;
+      } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN) {
+        conditionText = `less than ${currencyInfo.display.symbol}${amountNeededFormatted}`;
+      } else {
+        conditionText = `${currencyInfo.display.symbol}${amountNeededFormatted}`;
+      }
+
       return {
         amountNeeded: amountNeededFormatted,
         itemsNeeded: '0',
-        conditionText: alreadyQualified ?
-          `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met` :
-          `${currencyInfo.display.symbol}${amountNeededFormatted}`,
+        conditionText,
         alreadyQualified
       };
     } else {
@@ -785,19 +1050,27 @@ class TemplateManager {
       // Check if already qualified (items needed is 0)
       const alreadyQualified = itemsNeeded <= 0;
 
+      // Build operator-aware condition text for quantity
+      let conditionText;
+      if (alreadyQualified) {
+        conditionText = `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met`;
+      } else {
+        conditionText = this.formatOperatorText(conditionOperator, itemsNeeded, 'item');
+      }
+
       return {
         amountNeeded: '0',
         itemsNeeded: itemsNeeded.toString(),
-        conditionText: alreadyQualified ?
-          `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met` :
-          `${itemsNeeded} ${itemsNeeded === 1 ? 'item' : 'items'}`,
+        conditionText,
         alreadyQualified
       };
     }
   }
 
   static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
-    // Add safety check for undefined/null values
+    if (rawDiscountValue == null) {
+      console.warn('[BUNDLE_WIDGET] calculateDiscountData: rawDiscountValue is', rawDiscountValue);
+    }
     const safeValue = parseFloat(rawDiscountValue) || 0;
 
     switch (discountMethod) {
@@ -886,6 +1159,17 @@ class TemplateManager {
 
 
 class ComponentGenerator {
+  /** Escape HTML special characters to prevent XSS in innerHTML contexts */
+  static escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   /**
    * Generates HTML for a product card with variant selector and quantity controls
    * @param {Object} product - Product data
@@ -901,7 +1185,7 @@ class ComponentGenerator {
 
     // Check if this is an expanded variant card (has parentProductId and no variants array)
     // In this case, don't show variant selector - each card IS a variant
-    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0 || product.variants === null);
+    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0);
 
     // Render inline quantity controls when item is selected (competitor-inspired design)
     const renderInlineQuantityControls = () => {
@@ -936,7 +1220,7 @@ class ComponentGenerator {
     // Render variant badge if this is an expanded variant card
     const renderVariantBadge = () => {
       if (isExpandedVariantCard && product.variantTitle) {
-        return `<div class="product-variant-badge">${product.variantTitle}</div>`;
+        return `<div class="product-variant-badge">${this.escapeHtml(product.variantTitle)}</div>`;
       }
       return '';
     };
@@ -948,11 +1232,11 @@ class ComponentGenerator {
         ` : ''}
 
         <div class="product-image">
-          <img src="${product.imageUrl || product.image?.src || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'}" alt="${product.title}" loading="lazy" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'">
+          <img src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
         </div>
 
         <div class="product-content-wrapper">
-          <div class="product-title">${product.parentTitle || product.title}</div>
+          <div class="product-title">${this.escapeHtml(product.parentTitle || product.title)}</div>
           ${renderVariantBadge()}
 
           ${product.price ? `
@@ -982,7 +1266,7 @@ class ComponentGenerator {
           <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
           <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
         </svg>
-        <p class="empty-state-card-text">${labelText}</p>
+        <p class="empty-state-card-text">${this.escapeHtml(labelText)}</p>
       </div>
     `).join('');
 
@@ -999,7 +1283,7 @@ class ComponentGenerator {
 
     const options = product.variants.map(variant => {
       const isAvailable = variant.available !== false;
-      const label = variant.title === 'Default Title' ? product.title : variant.title;
+      const label = this.escapeHtml(variant.title === 'Default Title' ? product.title : variant.title);
       return `<option value="${variant.id}" ${!isAvailable ? 'disabled' : ''}>${label}${!isAvailable ? ' (Out of Stock)' : ''}</option>`;
     }).join('');
 
@@ -1104,6 +1388,49 @@ class ComponentGenerator {
       </div>
     `;
   }
+}
+
+
+
+/**
+ * Default Loading Animation
+ *
+ * A polished three-dot pulsing loader rendered as inline SVG with CSS animations.
+ * Designed from a Lottie JSON source (see default-loading-animation.json).
+ * Used as the fallback when merchants have not uploaded a custom loading GIF.
+ */
+
+/**
+ * Creates and returns the default loading animation DOM element.
+ * The animation is a three-dot pulse rendered as inline SVG.
+ * CSS keyframes are injected once on first call (idempotent).
+ *
+ * @returns {HTMLDivElement} A wrapper div containing the animated SVG
+ */
+function createDefaultLoadingAnimation() {
+  // Inject CSS keyframes once (idempotent check)
+  if (!document.getElementById('bundle-default-loading-keyframes')) {
+    const style = document.createElement('style');
+    style.id = 'bundle-default-loading-keyframes';
+    style.textContent = `
+      @keyframes bundle-dot-pulse {
+        0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+        40% { transform: scale(1); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'bundle-loading-overlay__default-animation';
+
+  wrapper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40" role="img" aria-label="Loading">
+  <circle cx="20" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out -0.32s infinite; transform-origin: 20px 20px;" />
+  <circle cx="60" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out -0.16s infinite; transform-origin: 60px 20px;" />
+  <circle cx="100" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out 0s infinite; transform-origin: 100px 20px;" />
+</svg>`;
+
+  return wrapper;
 }
 
 
@@ -1512,7 +1839,7 @@ class BundleProductModal {
 
     if (images.length === 0) {
       // Use fallback placeholder
-      mainImageEl.src = 'https://via.placeholder.com/600x600?text=No+Image';
+      mainImageEl.src = BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
       mainImageEl.alt = this.currentProduct.title;
       thumbnailsContainer.innerHTML = '';
       imageCounter.style.display = 'none';
@@ -1916,7 +2243,7 @@ class BundleProductModal {
 
     let priceHTML = '';
 
-    if (compareAtPrice && parseFloat(compareAtPrice) > parseFloat(price)) {
+    if (compareAtPrice && Number(compareAtPrice) > Number(price)) {
       priceHTML = `
         <span class="bundle-modal-price-strike">${this.formatPrice(compareAtPrice)}</span>
         <span class="bundle-modal-price-sale">${this.formatPrice(price)}</span>
@@ -1951,10 +2278,9 @@ class BundleProductModal {
     const addBtn = document.getElementById('modal-add-to-box');
     const variant = this.selectedVariant || this.currentProduct;
 
-    // Check if variant is available (handle different property names)
+    // Check if variant is available (handle different property names from Storefront API)
     const isAvailable = variant.available !== false &&
-                        variant.availableForSale !== false &&
-                        variant.inventory_quantity !== 0;
+                        variant.availableForSale !== false;
 
     if (!isAvailable) {
       addBtn.disabled = true;
@@ -2169,6 +2495,9 @@ class BundleWidgetFullPage {
         this.hidePageTitle();
       }
 
+      // Show spinner overlay immediately (no gif url yet — bundle data not loaded)
+      this.showLoadingOverlay(null);
+
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
 
@@ -2179,6 +2508,7 @@ class BundleWidgetFullPage {
       this.selectBundle();
 
       if (!this.selectedBundle) {
+        this.hideLoadingOverlay();
         this.showFallbackUI();
         return;
       }
@@ -2192,6 +2522,9 @@ class BundleWidgetFullPage {
       // Render initial UI (async for full-page bundles to load products)
       await this.renderUI();
 
+      // Hide overlay now that UI is fully rendered
+      this.hideLoadingOverlay();
+
       // Attach event listeners
       this.attachEventListeners();
 
@@ -2200,6 +2533,7 @@ class BundleWidgetFullPage {
       this.isInitialized = true;
 
     } catch (error) {
+      this.hideLoadingOverlay();
       this.showErrorUI(error);
     }
   }
@@ -2273,7 +2607,6 @@ class BundleWidgetFullPage {
       // Custom content from theme editor
       customTitle: dataset.customTitle || null,
       customDescription: dataset.customDescription || null,
-      customInstruction: dataset.customInstruction || null,
       // Card layout settings from theme editor
       productCardSpacing: parseInt(dataset.productCardSpacing) || 20,
       productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
@@ -2400,7 +2733,12 @@ class BundleWidgetFullPage {
   }
 
   updateMessagesFromBundle() {
+    // Product-page bundles (metafield path) expose a top-level `messaging` object with
+    // camelCase keys (progressTemplate / successTemplate).
+    // Full-page bundles (API path) expose messages inside `pricing.messages` with
+    // snake-style keys (progress / qualified). Try both shapes.
     const messaging = this.selectedBundle?.messaging;
+    const pricingMessages = this.selectedBundle?.pricing?.messages;
 
     if (messaging) {
       if (messaging.progressTemplate) {
@@ -2411,11 +2749,22 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
-      this.config.showProgressBar = messaging.showProgressBar || false;
+
+    } else if (pricingMessages) {
+      // Full-page bundle API path: templates live in ruleMessages (first rule = global template)
+      const ruleMessages = pricingMessages.ruleMessages;
+      const firstRuleMsg = ruleMessages && Object.values(ruleMessages)[0];
+      if (firstRuleMsg?.discountText) {
+        this.config.discountTextTemplate = firstRuleMsg.discountText;
+      }
+      if (firstRuleMsg?.successMessage) {
+        this.config.successMessageTemplate = firstRuleMsg.successMessage;
+      }
+
+      this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
-      this.config.showProgressBar = false;
     }
   }
 
@@ -2520,10 +2869,10 @@ class BundleWidgetFullPage {
     // Use custom description if provided, otherwise use bundle description
     const description = this.config.customDescription || this.selectedBundle.description;
 
-    // Build header HTML
-    const titleHTML = `<h2 class="bundle-title">${title}</h2>`;
+    // Build header HTML (escape user-provided content)
+    const titleHTML = `<h2 class="bundle-title">${ComponentGenerator.escapeHtml(title)}</h2>`;
     const descriptionHTML = (description && this.config.showDescription)
-      ? `<p class="bundle-description">${description}</p>`
+      ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(description)}</p>`
       : '';
 
     header.innerHTML = `
@@ -2545,16 +2894,6 @@ class BundleWidgetFullPage {
     footer.style.display = 'none';
     footer.innerHTML = `
       <div class="footer-discount-text"></div>
-      <div class="footer-progress-container">
-        <div class="progress-bar">
-          <div class="progress-fill"></div>
-        </div>
-        <div class="progress-details">
-          <span class="progress-text">
-            <span class="current-quantity">0</span> / <span class="target-quantity">0</span>
-          </span>
-        </div>
-      </div>
     `;
     return footer;
   }
@@ -2609,16 +2948,6 @@ class BundleWidgetFullPage {
               <!-- Discount Messaging Section -->
               <div class="modal-footer-discount-messaging">
                 <div class="footer-discount-text"></div>
-              </div>
-
-              <!-- Progress Bar Section -->
-              <div class="modal-footer-progress-section">
-                <div class="modal-footer-progress-bar">
-                  <div class="modal-footer-progress-fill"></div>
-                </div>
-                <div class="modal-footer-progress-details">
-                  <span class="current-quantity">0</span> / <span class="target-quantity">0</span> items
-                </div>
               </div>
             </div>
           </div>
@@ -2709,7 +3038,12 @@ class BundleWidgetFullPage {
 
     if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
       // Full-page bundle: Render with tabs layout (async to load products)
-      await this.renderFullPageLayout();
+      const layout = this.selectedBundle.fullPageLayout || 'footer_bottom';
+      if (layout === 'footer_side') {
+        await this.renderFullPageLayoutWithSidebar();
+      } else {
+        await this.renderFullPageLayout();
+      }
     } else {
       // Product-page bundle: Render with step boxes (current implementation)
       this.renderProductPageLayout();
@@ -2751,11 +3085,7 @@ class BundleWidgetFullPage {
       contentSection.appendChild(stepTimeline);
     }
 
-    // 2. Render bundle header (instruction text)
-    const bundleHeader = this.createBundleInstructions();
-    contentSection.appendChild(bundleHeader);
-
-    // 3. Render search input for filtering products
+    // 2. Render search input for filtering products
     const searchInput = this.createSearchInput();
     contentSection.appendChild(searchInput);
 
@@ -2779,6 +3109,7 @@ class BundleWidgetFullPage {
     this.renderFullPageFooter();
 
     // Load products asynchronously and update grid
+    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
     try {
       await this.loadStepProducts(this.currentStepIndex);
 
@@ -2790,11 +3121,261 @@ class BundleWidgetFullPage {
       // Update footer with correct product data
       this.renderFullPageFooter();
 
+      this.hideLoadingOverlay();
+
       // PRELOAD NEXT STEP: Load next step's products in the background
       this.preloadNextStep();
     } catch (error) {
+      this.hideLoadingOverlay();
       productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
     }
+  }
+
+  // Full-page bundle layout with sidebar panel (footer_side)
+  async renderFullPageLayoutWithSidebar() {
+    this.hidePageTitle();
+
+    this.elements.stepsContainer.innerHTML = '';
+    this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
+
+    // Hide the bottom footer — sidebar replaces it
+    if (this.elements.footer) {
+      this.elements.footer.style.display = 'none';
+    }
+
+    // Two-column wrapper: content (left) + sidebar (right)
+    const twoColWrapper = document.createElement('div');
+    twoColWrapper.className = 'sidebar-layout-wrapper';
+
+    // LEFT: Main content (same as footer_bottom minus the footer)
+    const contentSection = document.createElement('div');
+    contentSection.className = 'full-page-content-section sidebar-content';
+
+    const promoBanner = this.createPromoBanner();
+    if (promoBanner) contentSection.appendChild(promoBanner);
+
+    if (this.config.showStepTimeline) {
+      contentSection.appendChild(this.createStepTimeline());
+    }
+
+    contentSection.appendChild(this.createSearchInput());
+
+    if (this.config.showCategoryTabs) {
+      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+      if (categoryTabs) contentSection.appendChild(categoryTabs);
+    }
+
+    const productGridContainer = document.createElement('div');
+    productGridContainer.className = 'full-page-product-grid-container';
+    productGridContainer.innerHTML = this.createProductGridLoadingState();
+    contentSection.appendChild(productGridContainer);
+
+    twoColWrapper.appendChild(contentSection);
+
+    // RIGHT: Side panel
+    const sidePanel = document.createElement('div');
+    sidePanel.className = 'full-page-side-panel';
+    this.renderSidePanel(sidePanel);
+    twoColWrapper.appendChild(sidePanel);
+
+    this.elements.stepsContainer.appendChild(twoColWrapper);
+
+    // Load products
+    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+    try {
+      await this.loadStepProducts(this.currentStepIndex);
+      const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+      productGridContainer.innerHTML = '';
+      productGridContainer.appendChild(productGrid);
+      this.renderSidePanel(sidePanel);
+      this.hideLoadingOverlay();
+      this.preloadNextStep();
+    } catch (error) {
+      this.hideLoadingOverlay();
+      productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+    }
+  }
+
+  // Render the sidebar panel content (used by footer_side layout)
+  renderSidePanel(panel) {
+    if (!panel) return;
+    panel.innerHTML = '';
+
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const allSelectedProducts = this.getAllSelectedProductsData();
+    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+
+    // Header: "Your Bundle" + Clear
+    const header = document.createElement('div');
+    header.className = 'side-panel-header';
+    const headerTitle = document.createElement('span');
+    headerTitle.className = 'side-panel-title';
+    headerTitle.textContent = 'Your Bundle';
+    header.appendChild(headerTitle);
+
+    if (allSelectedProducts.length > 0) {
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'side-panel-clear-btn';
+      clearBtn.textContent = 'Clear all';
+      clearBtn.addEventListener('click', () => {
+        this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+        this.reRenderFullPage();
+      });
+      header.appendChild(clearBtn);
+    }
+    panel.appendChild(header);
+
+    // Discount messaging
+    if (this.selectedBundle?.pricing?.enabled) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+      );
+      let discountMessage = '';
+      if (discountInfo.hasDiscount) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
+      }
+      if (discountMessage) {
+        const msgEl = document.createElement('div');
+        msgEl.className = 'side-panel-discount-message';
+        msgEl.innerHTML = discountMessage;
+        panel.appendChild(msgEl);
+      }
+    }
+
+    // Progress bar
+    const progressPercent = this.calculateDiscountProgress(totalQuantity);
+    if (progressPercent !== null && this.selectedBundle?.pricing?.enabled) {
+      const progressWrap = document.createElement('div');
+      progressWrap.className = 'side-panel-progress';
+      progressWrap.innerHTML = `
+        <div class="side-panel-progress-bar-bg">
+          <div class="side-panel-progress-bar-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
+        </div>
+      `;
+      panel.appendChild(progressWrap);
+    }
+
+    // Selected products list
+    const productsContainer = document.createElement('div');
+    productsContainer.className = 'side-panel-products';
+
+    if (allSelectedProducts.length === 0) {
+      productsContainer.innerHTML = '<div class="side-panel-empty">No products selected yet</div>';
+    } else {
+      allSelectedProducts.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'side-panel-product-row';
+
+        const imgSrc = item.image || item.imageUrl || '';
+        const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
+
+        row.innerHTML = `
+          <div class="side-panel-product-img-wrap">
+            ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+            ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+          </div>
+          <div class="side-panel-product-info">
+            <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+            ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+          </div>
+          <span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>
+        `;
+
+        // Remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'side-panel-product-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.addEventListener('click', () => {
+          const stepIndex = item.stepIndex ?? this.currentStepIndex;
+          const productId = item.variantId || item.productId || item.id;
+          this.updateProductSelection(stepIndex, productId, 0);
+        });
+        row.appendChild(removeBtn);
+
+        productsContainer.appendChild(row);
+      });
+    }
+    panel.appendChild(productsContainer);
+
+    // Divider
+    const divider = document.createElement('div');
+    divider.className = 'side-panel-divider';
+    panel.appendChild(divider);
+
+    // Total
+    const totalSection = document.createElement('div');
+    totalSection.className = 'side-panel-total';
+    totalSection.innerHTML = `
+      <span class="side-panel-total-label">Total</span>
+      <div class="side-panel-total-prices">
+        ${discountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
+        <span class="side-panel-total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+      </div>
+    `;
+    panel.appendChild(totalSection);
+
+    // Navigation buttons
+    const navSection = document.createElement('div');
+    navSection.className = 'side-panel-nav';
+
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+    const canProceed = this.canProceedToNextStep();
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'side-panel-btn side-panel-btn-next';
+    nextBtn.textContent = isLastStep ? 'Add to Cart' : 'Next Step';
+    if (isLastStep ? !this.areBundleConditionsMet() : !canProceed) {
+      nextBtn.disabled = true;
+    }
+    nextBtn.addEventListener('click', () => {
+      if (isLastStep) {
+        this.addBundleToCart();
+      } else if (this.canProceedToNextStep()) {
+        this.currentStepIndex++;
+        this.renderFullPageLayoutWithSidebar();
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      }
+    });
+
+    const backBtn = document.createElement('button');
+    backBtn.className = 'side-panel-btn side-panel-btn-back';
+    backBtn.textContent = 'Back';
+    if (this.currentStepIndex === 0) backBtn.disabled = true;
+    backBtn.addEventListener('click', () => {
+      if (this.currentStepIndex > 0) {
+        this.currentStepIndex--;
+        this.renderFullPageLayoutWithSidebar();
+      }
+    });
+
+    navSection.appendChild(nextBtn);
+    navSection.appendChild(backBtn);
+    panel.appendChild(navSection);
+  }
+
+  // Escape HTML special characters to prevent innerHTML injection
+  _escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   // Create horizontal step tabs - clickable tabs showing step names
@@ -2825,6 +3406,10 @@ class BundleWidgetFullPage {
       const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
       const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
 
+      // Escape step name to prevent HTML injection (e.g., step name "1<QTY<4")
+      const escapedName = this._escapeHTML(step.name) || `Step ${index + 1}`;
+      // Condition hints removed — step conditions are enforced via the Next button and tab click guards
+
       // Tab content structure
       let tabContent = '';
 
@@ -2833,12 +3418,12 @@ class BundleWidgetFullPage {
         const productImages = this.getStepProductImages(index);
         if (productImages.length > 0) {
           const imagesHtml = productImages.slice(0, 3).map(img =>
-            `<img src="${img.url}" alt="${img.alt}" class="tab-product-image">`
+            `<img src="${img.url}" alt="${this._escapeHTML(img.alt)}" class="tab-product-image">`
           ).join('');
           tabContent = `
             <div class="tab-images">${imagesHtml}</div>
             <div class="tab-info">
-              <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
+              <span class="tab-name">${escapedName}</span>
               <span class="tab-count">${totalQuantity} selected</span>
             </div>
             <div class="tab-check">
@@ -2851,7 +3436,7 @@ class BundleWidgetFullPage {
           // No images, just show checkmark
           tabContent = `
             <div class="tab-info">
-              <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
+              <span class="tab-name">${escapedName}</span>
               <span class="tab-count">${totalQuantity} selected</span>
             </div>
             <div class="tab-check">
@@ -2862,15 +3447,14 @@ class BundleWidgetFullPage {
           `;
         }
       } else {
-        // Empty step - show step number and name
+        // Empty step - show step number, name, and condition hint
         // Get previous step name for locked tooltip
-        const prevStepName = index > 0 ? (this.selectedBundle.steps[index - 1]?.name || `Step ${index}`) : '';
+        const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
 
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
-            <span class="tab-name">${step.name || `Step ${index + 1}`}</span>
-            <span class="tab-hint">${step.minQuantity ? `Select ${step.minQuantity}+` : 'Choose items'}</span>
+            <span class="tab-name">${escapedName}</span>
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">
@@ -2889,9 +3473,19 @@ class BundleWidgetFullPage {
       if (isAccessible) {
         tab.style.cursor = 'pointer';
         tab.addEventListener('click', () => {
+          // Re-check accessibility at click time (not stale closure)
+          if (!this.isStepAccessible(index)) {
+            ToastManager.show('Please complete the previous steps first.');
+            return;
+          }
+          // Block forward navigation if current step condition is not met
+          if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
+            ToastManager.show('Please meet the step conditions before proceeding.');
+            return;
+          }
           this.currentStepIndex = index;
           this.searchQuery = ''; // Clear search when changing steps
-          this.renderFullPageLayout();
+          this.reRenderFullPage();
         });
       }
 
@@ -2919,29 +3513,6 @@ class BundleWidgetFullPage {
     });
 
     return productImages;
-  }
-
-  // Create bundle instructions header (only shows step instruction, not bundle title)
-  createBundleInstructions() {
-    const header = document.createElement('div');
-    header.className = 'bundle-header bundle-step-instruction';
-
-    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[this.currentStepIndex]) {
-      return header;
-    }
-
-    const currentStep = this.selectedBundle.steps[this.currentStepIndex];
-
-    // Use custom instruction if provided, otherwise use step instruction or auto-generated text
-    const defaultInstruction = currentStep.instruction || `Select ${currentStep.minQuantity || 1} or more items from ${currentStep.name}`;
-    const instructionText = this.config.customInstruction || defaultInstruction;
-
-    // Only show instruction text (title is shown in promo banner)
-    header.innerHTML = `
-      <p class="bundle-instruction">${instructionText}</p>
-    `;
-
-    return header;
   }
 
   // Create search input for filtering products within the current step
@@ -3097,28 +3668,32 @@ class BundleWidgetFullPage {
     if (pricing?.enabled && rules.length > 0) {
       // Find the best discount to highlight (use nested structure)
       const bestRule = rules.reduce((best, rule) => {
-        const discountValue = rule.discount?.method === 'percentage'
+        const discountValue = rule.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
           ? rule.discount?.value || 0
           : ((rule.discount?.value || 0) / 100);
-        const bestValue = best.discount?.method === 'percentage'
+        const bestValue = best.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
           ? best.discount?.value || 0
           : ((best.discount?.value || 0) / 100);
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
       // Build discount message based on best rule (using nested structure)
-      const targetQty = bestRule.condition?.value || bestRule.minQuantity || 0;
-      const discountMethod = bestRule.discount?.method || bestRule.discountType;
-      const discountValue = bestRule.discount?.value || bestRule.discountValue || 0;
+      const targetQty = bestRule.condition?.value || 0;
+      const conditionOperator = bestRule.condition?.operator;
+      const discountMethod = bestRule.discount?.method;
+      const discountValue = bestRule.discount?.value || 0;
 
-      if (discountMethod === 'percentage' && discountValue > 0) {
-        discountMessage = `Add ${targetQty} items and get ${discountValue}% off!`;
-      } else if (discountMethod === 'fixed_amount' && discountValue > 0) {
-        const formattedAmount = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
-        discountMessage = `Add ${targetQty} items and save ${formattedAmount}!`;
-      } else if (discountMethod === 'fixed_price' && discountValue > 0) {
-        const formattedPrice = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
-        discountMessage = `Add ${targetQty} items for just ${formattedPrice}!`;
+      // Build operator-aware quantity text
+      const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');
+
+      if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
+        discountMessage = `Add ${qtyText} and get ${discountValue}% off!`;
+      } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
+        const formattedAmount = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
+        discountMessage = `Add ${qtyText} and save ${formattedAmount}!`;
+      } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
+        const formattedPrice = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
+        discountMessage = `Add ${qtyText} for just ${formattedPrice}!`;
       }
     }
 
@@ -3143,11 +3718,39 @@ class BundleWidgetFullPage {
     banner.className = 'promo-banner';
     banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
     banner.innerHTML = `
-      ${promoSubtitle ? `<div class="promo-banner-subtitle">${promoSubtitle}</div>` : ''}
-      <h2 class="promo-banner-title">${promoTitle}</h2>
-      ${promoNote ? `<div class="promo-banner-note">${promoNote}</div>` : ''}
+      ${promoSubtitle ? `<div class="promo-banner-subtitle">${ComponentGenerator.escapeHtml(promoSubtitle)}</div>` : ''}
+      <h2 class="promo-banner-title">${ComponentGenerator.escapeHtml(promoTitle)}</h2>
+      ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
     `;
 
+    // Apply per-bundle promo banner background image directly as inline style.
+    // Using banner.style.backgroundImage (not a CSS custom property) so the inline style
+    // always wins regardless of theme stylesheet specificity.
+    const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
+    if (bgImageUrl) {
+      banner.style.backgroundImage = `url('${bgImageUrl}')`;
+      banner.style.backgroundSize = 'cover';
+      banner.style.backgroundPosition = 'center';
+
+      // Apply crop offsets when crop data is present (overrides cover/center defaults above)
+      const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
+      if (cropRaw) {
+        try {
+          const crop = JSON.parse(cropRaw);
+          const cw = crop.width / 100;    // normalized crop width (0–1)
+          const ch = cw * (3 / 16);       // derived height fraction (same aspect as banner)
+          const cx = crop.x / 100;        // normalized left edge
+          const cy = crop.y / 100;        // normalized top edge
+          const bgSize = `${(1 / cw) * 100}%`;
+          const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
+          const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
+          banner.style.backgroundSize = bgSize;
+          banner.style.backgroundPosition = `${posX}% ${posY}%`;
+        } catch (_e) {
+          // Invalid crop JSON — fall back to default cover/center set above
+        }
+      }
+    }
 
     return banner;
   }
@@ -3176,7 +3779,7 @@ class BundleWidgetFullPage {
     allTab.innerHTML = `<span class="tab-label">All</span>`;
     allTab.addEventListener('click', () => {
       this.activeCollectionId = null;
-      this.renderFullPageLayout();
+      this.reRenderFullPage();
     });
     tabsContainer.appendChild(allTab);
 
@@ -3187,10 +3790,10 @@ class BundleWidgetFullPage {
       if (this.activeCollectionId === collection.id) {
         tab.classList.add('active');
       }
-      tab.innerHTML = `<span class="tab-label">${collection.title}</span>`;
+      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(collection.title)}</span>`;
       tab.addEventListener('click', () => {
         this.activeCollectionId = collection.id;
-        this.renderFullPageLayout();
+        this.reRenderFullPage();
       });
       tabsContainer.appendChild(tab);
     });
@@ -3237,7 +3840,7 @@ class BundleWidgetFullPage {
     if (expandedProducts.length === 0) {
       // Show appropriate message based on whether there's a search query
       const message = this.searchQuery
-        ? `No products match "${this.searchQuery}"`
+        ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
         : 'No products available in this step.';
       grid.innerHTML = `<p class="no-products">${message}</p>`;
       return grid;
@@ -3268,7 +3871,7 @@ class BundleWidgetFullPage {
           .filter(variant => variant.available !== false) // Only show available variants
           .map(variant => {
             // Use variant image if available, fallback to product image
-            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               ...product,
@@ -3387,16 +3990,11 @@ class BundleWidgetFullPage {
       product.imageUrl = product.image?.src ||
                         product.featuredImage?.url ||
                         product.images?.[0]?.url ||
-                        'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png';
+                        BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
     }
 
     // Get currency info for formatting
-    const currencyInfo = {
-      display: {
-        currency: window.shopCurrency || 'USD',
-        format: window.shopMoneyFormat || '${{amount}}'
-      }
-    };
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     // Use ComponentGenerator to render HTML (available in same scope after bundling)
     const htmlString = ComponentGenerator.renderProductCard(
@@ -3495,9 +4093,27 @@ class BundleWidgetFullPage {
     }
   }
 
+  // Refresh the step timeline tabs in-place when product selections change.
+  // Called after every updateProductSelection() so tabs reflect current completion
+  // state (completed/active/locked classes, click listeners, product images, counts).
+  updateStepTimeline() {
+    if (!this.config.showStepTimeline) return;
+    const existing = this.elements.stepsContainer.querySelector('.step-tabs-container');
+    if (!existing) return;
+    const fresh = this.createStepTimeline();
+    existing.parentNode.replaceChild(fresh, existing);
+  }
+
   // Render fixed footer with selected products and navigation (Competitor-Inspired Design)
   renderFullPageFooter() {
     if (!this.elements.footer) {
+      return;
+    }
+
+    // Safety guard: sidebar layout uses the side panel, not the bottom footer
+    const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+    if (layout === 'footer_side') {
+      this.elements.footer.style.display = 'none';
       return;
     }
 
@@ -3529,49 +4145,26 @@ class BundleWidgetFullPage {
     const progressSection = document.createElement('div');
     progressSection.className = 'footer-progress-section';
 
-    // Build discount messaging
+    // Build discount messaging using configured templates (same pattern as product-page footer)
     let discountMessage = '';
     if (this.selectedBundle?.pricing?.enabled) {
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle,
+        totalPrice,
+        totalQuantity,
+        discountInfo,
+        currencyInfo
+      );
       if (discountInfo.hasDiscount) {
-        const variables = TemplateManager.createDiscountVariables(
-          this.selectedBundle,
-          totalPrice,
-          totalQuantity,
-          discountInfo,
-          currencyInfo
-        );
         discountMessage = TemplateManager.replaceVariables(
           this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
           variables
         );
       } else if (nextRule) {
-        // Calculate remaining items needed from nested rule structure
-        const targetQuantity = nextRule.condition?.value || 0;
-        const remaining = Math.max(0, targetQuantity - totalQuantity);
-
-        // Build discount text from nested discount structure
-        let discountText = '';
-        const discountMethod = nextRule.discount?.method;
-        const discountValue = nextRule.discount?.value || 0;
-
-        if (discountMethod === 'percentage') {
-          discountText = `${discountValue}% off`;
-        } else if (discountMethod === 'fixed_amount') {
-          discountText = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format) + ' off';
-        } else if (discountMethod === 'fixed_price') {
-          discountText = 'a special price of ' + CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
-        } else {
-          discountText = 'a discount';
-        }
-
-        // Improved messaging with encouraging copy
-        if (remaining === 1) {
-          discountMessage = `Almost there! Add 1 more item to unlock ${discountText}`;
-        } else if (remaining <= 3) {
-          discountMessage = `Just ${remaining} more items to unlock ${discountText}!`;
-        } else {
-          discountMessage = `Add ${remaining} more items to get ${discountText}`;
-        }
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
       }
     }
 
@@ -3626,9 +4219,11 @@ class BundleWidgetFullPage {
     nextBtn.addEventListener('click', () => {
       if (isLastStep) {
         this.addBundleToCart();
-      } else if (canProceed) {
+      } else if (this.canProceedToNextStep()) {
         this.currentStepIndex++;
         this.renderFullPageLayout();
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
       }
     });
 
@@ -3672,14 +4267,14 @@ class BundleWidgetFullPage {
 
       tile.innerHTML = `
         <div class="tile-image-wrapper">
-          <img src="${item.imageUrl || 'https://via.placeholder.com/50'}" alt="${item.title}" class="tile-image">
+          <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(item.title)}" class="tile-image">
           <span class="tile-quantity-badge">${item.quantity}</span>
         </div>
         <div class="tile-info">
-          <span class="tile-product-name">${displayTitle}</span>
-          ${variantInfo ? `<span class="tile-variant-name">${variantInfo}</span>` : ''}
+          <span class="tile-product-name">${ComponentGenerator.escapeHtml(displayTitle)}</span>
+          ${variantInfo ? `<span class="tile-variant-name">${ComponentGenerator.escapeHtml(variantInfo)}</span>` : ''}
         </div>
-        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${item.title}">×</button>
+        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">×</button>
       `;
 
       // Attach remove handler with undo support
@@ -3727,8 +4322,8 @@ class BundleWidgetFullPage {
     const rules = this.selectedBundle.pricing.rules || [];
     if (rules.length === 0) return 0;
 
-    // Find the highest threshold
-    const maxThreshold = Math.max(...rules.map(r => r.minQuantity || 0));
+    // Find the highest threshold (nested structure: rule.condition.value)
+    const maxThreshold = Math.max(...rules.map(r => r.condition?.value || 0));
     if (maxThreshold === 0) return 0;
 
     return Math.min(100, (currentQuantity / maxThreshold) * 100);
@@ -3912,7 +4507,7 @@ class BundleWidgetFullPage {
         const variantId = e.target.dataset.variantId;
         this.updateProductSelection(stepIndex, variantId, 0);
         document.body.removeChild(overlay);
-        this.renderFullPageLayout();
+        this.reRenderFullPage();
       });
     });
 
@@ -3941,36 +4536,24 @@ class BundleWidgetFullPage {
     );
   }
 
-  // Helper: Check if step is completed
+  // Helper: Check if step is completed (delegates to ConditionValidator)
   isStepCompleted(stepIndex) {
-    const stepSelections = this.selectedProducts[stepIndex] || {};
-    const totalQuantity = Object.values(stepSelections).reduce((sum, qty) => sum + qty, 0);
     const step = this.selectedBundle.steps[stepIndex];
-
-    // If no conditions are set, step is optional - user can skip without selecting products
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return true; // Optional step - always valid, can proceed with 0 products
-    }
-
-    // Otherwise use minQuantity for step completion
-    return totalQuantity >= (step.minQuantity || 1);
-  }
-
-  // Helper: Check if step is accessible
-  isStepAccessible(stepIndex) {
-    if (stepIndex === 0) return true;
-
-    // Check if all previous steps meet minimum requirements
-    for (let i = 0; i < stepIndex; i++) {
-      if (!this.isStepCompleted(i)) {
-        return false;
-      }
-    }
-
-    return true;
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
   }
 
   // Helper: Check if can proceed to next step
+  // Layout-aware re-render dispatch for full-page bundles
+  reRenderFullPage() {
+    const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+    if (layout === 'footer_side') {
+      this.renderFullPageLayoutWithSidebar();
+    } else {
+      this.renderFullPageLayout();
+    }
+  }
+
   canProceedToNextStep() {
     return this.isStepCompleted(this.currentStepIndex);
   }
@@ -3983,6 +4566,13 @@ class BundleWidgetFullPage {
   // Add bundle to cart
   async addBundleToCart() {
     try {
+      // Final validation: all step conditions must be satisfied
+      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+      if (!allStepsValid) {
+        ToastManager.show('Please complete all bundle steps before adding to cart.');
+        return;
+      }
+
       // Build cart items from selected products
       const items = [];
 
@@ -4022,29 +4612,41 @@ class BundleWidgetFullPage {
         return;
       }
 
+      // Disable the Add to Cart button and show loading overlay
+      const nextBtn = this.container.querySelector('.footer-btn-next');
+      if (nextBtn) nextBtn.disabled = true;
+      this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
-      // Add to Shopify cart
-      const response = await fetch('/cart/add.js', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ items })
-      });
+      try {
+        // Add to Shopify cart
+        const response = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ items })
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to add to cart');
+        if (!response.ok) {
+          throw new Error('Failed to add to cart');
+        }
+
+        const result = await response.json();
+
+        // Show success message
+        ToastManager.show('Bundle added to cart successfully!');
+
+        // Redirect to cart page after short delay
+        setTimeout(() => {
+          window.location.href = '/cart';
+        }, 1000);
+
+      } catch (fetchError) {
+        ToastManager.show('Failed to add bundle to cart. Please try again.');
+      } finally {
+        this.hideLoadingOverlay();
+        if (nextBtn) nextBtn.disabled = false;
       }
-
-      const result = await response.json();
-
-      // Show success message
-      ToastManager.show('Bundle added to cart successfully!');
-
-      // Redirect to cart page after short delay
-      setTimeout(() => {
-        window.location.href = '/cart';
-      }, 1000);
 
     } catch (error) {
       ToastManager.show('Failed to add bundle to cart. Please try again.');
@@ -4177,8 +4779,16 @@ class BundleWidgetFullPage {
   renderFooter() {
     const bundleType = this.container.dataset.bundleType;
 
-    // Full-page bundles use their own footer with selected products, totals, and navigation
+    // Full-page bundles: sidebar layout handles its own panel, skip bottom footer entirely
     if (bundleType === 'full_page') {
+      const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+      if (layout === 'footer_side') {
+        // Sidebar layout — footer is hidden; side panel handles navigation
+        if (this.elements.footer) {
+          this.elements.footer.style.display = 'none';
+        }
+        return;
+      }
       this.renderFullPageFooter();
       return;
     }
@@ -4221,9 +4831,6 @@ class BundleWidgetFullPage {
     );
 
     const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
-    const progressFill = this.elements.footer.querySelector('.progress-fill');
-    const currentQuantitySpan = this.elements.footer.querySelector('.current-quantity');
-    const targetQuantitySpan = this.elements.footer.querySelector('.target-quantity');
 
     if (discountInfo.qualifiesForDiscount) {
       // Success message
@@ -4242,44 +4849,6 @@ class BundleWidgetFullPage {
       footerDiscountText.innerHTML = progressMessage;
       this.elements.footer.classList.remove('qualified');
     }
-
-    // Update progress bar based on condition type
-    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
-
-    let progressPercentage = 0;
-
-    if (ruleToUse) {
-      const conditionType = ruleToUse.condition?.type || 'quantity';
-      const targetValue = ruleToUse.condition?.value || 0;
-
-      if (conditionType === 'amount') {
-        // Amount-based condition
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
-
-        // Update text to show formatted currency values
-        if (currentQuantitySpan && targetQuantitySpan) {
-          const currentFormatted = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-          const targetFormatted = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
-          currentQuantitySpan.textContent = currentFormatted;
-          targetQuantitySpan.textContent = targetFormatted; // No "items" suffix for amount
-        }
-      } else {
-        // Quantity-based condition
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
-
-        // Update text to show quantity values
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = totalQuantity.toString();
-          targetQuantitySpan.textContent = targetValue.toString(); // Remove "items" suffix, add via CSS
-        }
-      }
-    }
-
-
-    if (progressFill) {
-      progressFill.style.width = `${progressPercentage}%`;
-    }
   }
 
   // ========================================================================
@@ -4288,10 +4857,10 @@ class BundleWidgetFullPage {
 
   // Helper method to get formatted header text
   getFormattedHeaderText() {
-    // If discount is not enabled, show step name
+    // If discount is not enabled, show step name (escaped)
     if (!this.selectedBundle?.pricing?.enabled) {
       const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      return currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+      return this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
     }
 
     const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
@@ -4599,7 +5168,8 @@ class BundleWidgetFullPage {
   }
 
   renderModalTabs() {
-    const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
+    const tabsContainer = this.elements.modal?.querySelector('.modal-tabs');
+    if (!tabsContainer) return; // Modal not active (full-page mode)
     tabsContainer.innerHTML = '';
 
     this.selectedBundle.steps.forEach((step, index) => {
@@ -4653,7 +5223,7 @@ class BundleWidgetFullPage {
     if (products.length === 0) {
       // Show empty state cards like in DCP preview
       const currentStep = this.selectedBundle.steps[stepIndex];
-      const stepName = currentStep?.name || `Step ${stepIndex + 1}`;
+      const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
       const labelText = `Select ${stepName}`;
 
       const emptyStateCards = Array(3).fill(0).map((_, index) => `
@@ -4682,11 +5252,11 @@ class BundleWidgetFullPage {
           ` : ''}
 
           <div class="product-image">
-            <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+            <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           </div>
 
           <div class="product-content-wrapper">
-            <div class="product-title">${product.title}</div>
+            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
 
             ${product.price ? `
               <div class="product-price-row">
@@ -4860,10 +5430,19 @@ class BundleWidgetFullPage {
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
 
-    // For full-page bundles, re-render the footer to show selected products
+    // For full-page bundles, re-render the footer/sidebar to show selected products
     const bundleType = this.container.dataset.bundleType;
     if (bundleType === 'full_page') {
-      this.renderFullPageFooter();
+      const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+      if (layout === 'footer_side') {
+        const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
+        this.renderSidePanel(sidePanel);
+      } else {
+        this.renderFullPageFooter();
+      }
+      // Update step timeline tabs so completion state, images, counts, and
+      // click listeners all reflect the new selection immediately.
+      this.updateStepTimeline();
     } else {
       this.updateFooterMessaging();
     }
@@ -4980,53 +5559,20 @@ class BundleWidgetFullPage {
 
   validateStepCondition(stepIndex, productId, newQuantity) {
     const step = this.selectedBundle.steps[stepIndex];
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    const currentQty = currentSelections[productId] || 0;
 
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return true; // No conditions to validate
-    }
+    const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
+      step,
+      currentSelections,
+      productId,
+      newQuantity,
+    );
 
-    // Calculate what the total would be with this change
-    let totalQuantityWouldBe = 0;
-    for (const [pid, qty] of Object.entries(this.selectedProducts[stepIndex])) {
-      if (pid === productId) {
-        totalQuantityWouldBe += newQuantity;
-      } else {
-        totalQuantityWouldBe += qty;
-      }
-    }
-
-    const requiredQuantity = step.conditionValue;
-    let allowUpdate = false;
-
-    switch (step.conditionOperator) {
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        allowUpdate = totalQuantityWouldBe <= requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
-        allowUpdate = totalQuantityWouldBe < requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
-        allowUpdate = totalQuantityWouldBe <= requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-        allowUpdate = true; // Allow any increase
-        break;
-      default:
-        allowUpdate = true;
-    }
-
-    if (!allowUpdate && newQuantity > (this.selectedProducts[stepIndex][productId] || 0)) {
-      const operatorText = {
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO]: `exactly ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN]: `less than ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO]: `at most ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN]: `more than ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO]: `at least ${requiredQuantity}`
-      };
-
-      const limitText = operatorText[step.conditionOperator] || requiredQuantity;
-      ToastManager.show(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`);
+    // Only block and toast on increases — decreases are always permitted.
+    if (!allowed && newQuantity > currentQty) {
+      const required = step.conditionValue;
+      ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
       return false;
     }
 
@@ -5035,34 +5581,8 @@ class BundleWidgetFullPage {
 
   validateStep(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
-    const selectedProductsInStep = this.selectedProducts[stepIndex];
-
-    let totalQuantitySelected = 0;
-    for (const quantity of Object.values(selectedProductsInStep)) {
-      totalQuantitySelected += quantity;
-    }
-
-    // If no conditions are set, step is optional - always valid
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return true; // Optional step - can proceed with 0 products
-    }
-
-    const requiredQuantity = step.conditionValue;
-
-    switch (step.conditionOperator) {
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        return totalQuantitySelected === requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
-        return totalQuantitySelected > requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
-        return totalQuantitySelected < requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-        return totalQuantitySelected >= requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
-        return totalQuantitySelected <= requiredQuantity;
-      default:
-        return true; // No recognized condition - step is optional
-    }
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
   }
 
   isStepAccessible(stepIndex) {
@@ -5076,8 +5596,11 @@ class BundleWidgetFullPage {
   }
 
   updateModalNavigation() {
-    const prevButton = this.elements.modal.querySelector('.prev-button');
-    const nextButton = this.elements.modal.querySelector('.next-button');
+    const prevButton = this.elements.modal?.querySelector('.prev-button');
+    const nextButton = this.elements.modal?.querySelector('.next-button');
+
+    // In full-page mode the modal may be hidden/empty — skip without crashing
+    if (!prevButton || !nextButton) return;
 
     prevButton.disabled = this.currentStepIndex === 0;
 
@@ -5093,6 +5616,9 @@ class BundleWidgetFullPage {
   }
 
   updateModalFooterMessaging() {
+    // Skip if modal is not active (full-page mode uses inline footer instead)
+    if (!this.elements.modal || this.elements.modal.style.display === 'none') return;
+
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
@@ -5126,10 +5652,10 @@ class BundleWidgetFullPage {
     const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
     if (!modalStepTitle) return;
 
-    // If discount is not enabled, show step name
+    // If discount is not enabled, show step name (escaped)
     if (!this.selectedBundle?.pricing?.enabled) {
       const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      modalStepTitle.innerHTML = currentStep?.name || `Step ${this.currentStepIndex + 1}`;
+      modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
       return;
     }
 
@@ -5151,14 +5677,9 @@ class BundleWidgetFullPage {
 
   updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
-    const progressFill = this.elements.modal.querySelector('.modal-footer-progress-fill');
-    const progressBar = this.elements.modal.querySelector('.modal-footer-progress-bar');
-    const currentQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .current-quantity');
-    const targetQuantitySpan = this.elements.modal.querySelector('.modal-footer-progress-details .target-quantity');
     const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
-    const progressSection = this.elements.modal.querySelector('.modal-footer-progress-section');
 
-    if (!footerDiscountText || !progressFill) return;
+    if (!footerDiscountText) return;
 
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
@@ -5186,41 +5707,9 @@ class BundleWidgetFullPage {
       if (discountSection) discountSection.classList.remove('qualified');
     }
 
-    // Update progress bar
-    const nextRule = PricingCalculator.getNextDiscountRule(this.selectedBundle, totalQuantity, totalPrice);
-    const ruleToUse = discountInfo.applicableRule || nextRule;
-
-    let progressPercentage = 0;
-
-    if (ruleToUse) {
-      const conditionType = ruleToUse.condition?.type || 'quantity';
-      const targetValue = ruleToUse.condition?.value || 0;
-
-      if (conditionType === 'amount') {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalPrice / targetValue) * 100) : 0;
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-          targetQuantitySpan.textContent = CurrencyManager.formatMoney(targetValue, currencyInfo.display.format);
-        }
-      } else {
-        progressPercentage = targetValue > 0 ? Math.min(100, (totalQuantity / targetValue) * 100) : 0;
-        if (currentQuantitySpan && targetQuantitySpan) {
-          currentQuantitySpan.textContent = totalQuantity.toString();
-          targetQuantitySpan.textContent = targetValue.toString();
-        }
-      }
-    }
-
-    if (progressFill) {
-      progressFill.style.width = `${progressPercentage}%`;
-    }
-
-    // Show/hide sections based on config
+    // Show/hide discount section based on config
     if (discountSection) {
       discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
-    }
-    if (progressSection) {
-      progressSection.style.display = this.config.showProgressBar ? 'block' : 'none';
     }
   }
 
@@ -5240,6 +5729,45 @@ class BundleWidgetFullPage {
       strikePriceEl.style.display = 'none';
       finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
     }
+  }
+
+  // ========================================================================
+  // LOADING OVERLAY
+  // ========================================================================
+
+  showLoadingOverlay(gifUrl) {
+    if (!this.container) return;
+    // Ensure container is positioned so absolute overlay works
+    const pos = getComputedStyle(this.container).position;
+    if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
+      this.container.style.position = 'relative';
+    }
+    // Remove any existing overlay (idempotent)
+    this.container.querySelector('.bundle-loading-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'bundle-loading-overlay';
+
+    if (gifUrl) {
+      const img = document.createElement('img');
+      img.className = 'bundle-loading-overlay__gif';
+      img.src = gifUrl;
+      img.alt = '';
+      overlay.appendChild(img);
+    } else {
+      const animation = createDefaultLoadingAnimation();
+      overlay.appendChild(animation);
+    }
+
+    this.container.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+  }
+
+  hideLoadingOverlay() {
+    const overlay = this.container?.querySelector('.bundle-loading-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('is-visible');
+    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
   }
 
   // ========================================================================

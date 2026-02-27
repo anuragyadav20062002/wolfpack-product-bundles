@@ -1,0 +1,14 @@
+/* Welcome page container */
+.welcomeContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  width: 100%;
+}
+
+/* Content wrapper */
+.contentWrapper {
+  width: 100%;
+  max-width: 700px;
+}

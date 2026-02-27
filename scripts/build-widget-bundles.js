@@ -23,6 +23,7 @@ const ROOT_DIR = join(__dirname, '..');
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
+  join(ROOT_DIR, 'app/assets/widgets/shared/condition-validator.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/constants.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/currency-manager.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/bundle-data-manager.js'),
@@ -30,6 +31,7 @@ const SHARED_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/shared/toast-manager.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/template-manager.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/component-generator.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/default-loading-animation.js'),
 ];
 
 // Source files

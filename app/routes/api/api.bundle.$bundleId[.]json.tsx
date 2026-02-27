@@ -383,7 +383,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       description: bundle.description,
       status: bundle.status,
       bundleType: bundle.bundleType,
+      fullPageLayout: bundle.fullPageLayout ?? null,
       shopifyProductId: bundle.shopifyProductId,
+      promoBannerBgImage: bundle.promoBannerBgImage ?? null,
+      promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
+      loadingGif: bundle.loadingGif ?? null,
       steps: bundle.steps.map(step => {
         console.log('[API_DEBUG] Processing step:', {
           stepId: step.id,
@@ -492,7 +496,9 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           StepProduct: enrichedStepProducts,
           conditionType: step.conditionType,
           conditionOperator: step.conditionOperator,
-          conditionValue: step.conditionValue
+          conditionValue: step.conditionValue,
+          conditionOperator2: step.conditionOperator2,
+          conditionValue2: step.conditionValue2
         };
       }),
       pricing: bundle.pricing ? {

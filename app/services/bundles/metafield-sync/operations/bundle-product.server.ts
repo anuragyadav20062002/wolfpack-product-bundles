@@ -180,7 +180,9 @@ export async function updateBundleProductMetafields(
       products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter((p: { id: string }) => p.id),
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
-      conditionValue: step.conditionValue
+      conditionValue: step.conditionValue,
+      conditionOperator2: step.conditionOperator2,
+      conditionValue2: step.conditionValue2
     })),
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,
@@ -203,10 +205,12 @@ export async function updateBundleProductMetafields(
     messaging: {
       progressTemplate: bundleConfiguration.pricing?.messages?.progress || bundleConfiguration.messaging?.progressTemplate || 'Add {conditionText} to get {discountText}',
       successTemplate: bundleConfiguration.pricing?.messages?.qualified || bundleConfiguration.messaging?.successTemplate || 'Congratulations! You got {discountText}',
-      showProgressBar: bundleConfiguration.pricing?.messages?.showProgressBar || bundleConfiguration.pricing?.display?.showProgressBar || bundleConfiguration.messaging?.showProgressBar || false,
       showDiscountMessaging: bundleConfiguration.pricing?.messages?.showDiscountMessaging || false,
       showFooter: bundleConfiguration.pricing?.display?.showFooter !== false && bundleConfiguration.messaging?.showFooter !== false
-    }
+    },
+    promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
+    promoBannerBgImageCrop: bundleConfiguration.promoBannerBgImageCrop ?? null,
+    loadingGif: bundleConfiguration.loadingGif ?? null,
   };
 
   // Check metafield sizes and log warnings

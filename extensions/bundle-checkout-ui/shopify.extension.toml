@@ -3,7 +3,7 @@
 
 # The version of APIs your extension will receive. Learn more:
 # https://shopify.dev/docs/api/usage/versioning
-api_version = "2025-10"
+api_version = "2026-01"
 
 # =============================================================================
 # Checkout Page - Cart Line Item

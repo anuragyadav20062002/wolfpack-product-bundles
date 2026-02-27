@@ -400,7 +400,7 @@ class BundleProductModal {
 
     if (images.length === 0) {
       // Use fallback placeholder
-      mainImageEl.src = 'https://via.placeholder.com/600x600?text=No+Image';
+      mainImageEl.src = BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
       mainImageEl.alt = this.currentProduct.title;
       thumbnailsContainer.innerHTML = '';
       imageCounter.style.display = 'none';
@@ -804,7 +804,7 @@ class BundleProductModal {
 
     let priceHTML = '';
 
-    if (compareAtPrice && parseFloat(compareAtPrice) > parseFloat(price)) {
+    if (compareAtPrice && Number(compareAtPrice) > Number(price)) {
       priceHTML = `
         <span class="bundle-modal-price-strike">${this.formatPrice(compareAtPrice)}</span>
         <span class="bundle-modal-price-sale">${this.formatPrice(price)}</span>
@@ -839,10 +839,9 @@ class BundleProductModal {
     const addBtn = document.getElementById('modal-add-to-box');
     const variant = this.selectedVariant || this.currentProduct;
 
-    // Check if variant is available (handle different property names)
+    // Check if variant is available (handle different property names from Storefront API)
     const isAvailable = variant.available !== false &&
-                        variant.availableForSale !== false &&
-                        variant.inventory_quantity !== 0;
+                        variant.availableForSale !== false;
 
     if (!isAvailable) {
       addBtn.disabled = true;

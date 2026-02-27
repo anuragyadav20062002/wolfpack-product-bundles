@@ -29,8 +29,8 @@ export class CurrencyManager {
       };
     }
 
-    // Fallback: Shop base currency
-    return this.getShopBaseCurrency();
+    // Fallback: Shop base currency (include rate: 1 so downstream math doesn't produce NaN)
+    return { ...this.getShopBaseCurrency(), rate: 1 };
   }
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
@@ -41,7 +41,7 @@ export class CurrencyManager {
       try {
         return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
-        // Fallback to manual conversion
+        console.warn('[BUNDLE_WIDGET] Shopify.currency.convert failed, using rate fallback:', e);
       }
     }
 

@@ -19,6 +19,8 @@ export default {
       },
       diagnostics: false,
     }],
+    // Transform ES-module .js widget files (pricing-calculator, constants, etc.)
+    '^.+\\.js$': ['babel-jest', { plugins: ['@babel/plugin-transform-modules-commonjs'] }],
   },
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
@@ -51,6 +53,7 @@ export default {
           },
           diagnostics: false,
         }],
+        '^.+\\.js$': ['babel-jest', { plugins: ['@babel/plugin-transform-modules-commonjs'] }],
       },
       moduleNameMapper: {
         '^~/(.*)$': '<rootDir>/app/$1',
@@ -71,6 +74,7 @@ export default {
           },
           diagnostics: false,
         }],
+        '^.+\\.js$': ['babel-jest', { plugins: ['@babel/plugin-transform-modules-commonjs'] }],
       },
       moduleNameMapper: {
         '^~/(.*)$': '<rootDir>/app/$1',
@@ -91,6 +95,7 @@ export default {
           },
           diagnostics: false,
         }],
+        '^.+\\.js$': ['babel-jest', { plugins: ['@babel/plugin-transform-modules-commonjs'] }],
       },
       moduleNameMapper: {
         '^~/(.*)$': '<rootDir>/app/$1',

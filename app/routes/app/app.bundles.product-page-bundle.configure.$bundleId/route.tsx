@@ -35,6 +35,7 @@ import {
   List,
   Spinner,
   Divider,
+  Box,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -51,12 +52,15 @@ import {
   ListNumberedIcon,
   DiscountIcon,
   RefreshIcon,
+  ImageIcon,
 } from "@shopify/polaris-icons";
+import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
+import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -240,6 +244,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 const bundleSetupItems = [
   { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
   { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
+  { id: "images_gifs", label: "Images & GIFs", icon: ImageIcon },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
@@ -299,14 +304,7 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
           </InlineStack>
         </BlockStack>
       ) : (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '80px',
-          border: '1px dashed #ccc',
-          borderRadius: '8px'
-        }}>
+        <div className={productPageBundleStyles.productSelectionPlaceholder}>
           <BlockStack gap="100" inlineAlign="center">
             <Icon source={ProductIcon} />
             <Button
@@ -432,6 +430,10 @@ export default function ConfigureBundleFlow() {
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
+  // Loading GIF state
+  const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
+  const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
+
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
   // Save handler
@@ -455,13 +457,13 @@ export default function ConfigureBundleFlow() {
         discountEnabled: pricingState.discountEnabled,
         discountType: pricingState.discountType,
         discountRules: pricingState.discountRules,
-        showProgressBar: pricingState.showProgressBar,
         showFooter: pricingState.showFooter,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
         ruleMessages
       }));
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
+      formData.append("loadingGif", loadingGif ?? "");
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
@@ -485,7 +487,6 @@ export default function ConfigureBundleFlow() {
     pricingState.discountEnabled,
     pricingState.discountType,
     pricingState.discountRules,
-    pricingState.showProgressBar,
     pricingState.showFooter,
     pricingState.discountMessagingEnabled,
     ruleMessages,
@@ -493,6 +494,7 @@ export default function ConfigureBundleFlow() {
     conditionsState.stepConditions,
     bundleProduct,
     productStatus,
+    loadingGif,
     shopify
   ]);
 
@@ -610,8 +612,11 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Use the discard handler from the hook
-  const handleDiscard = hookHandleDiscard;
+  // Discard handler - resets hook state and local gif state
+  const handleDiscard = useCallback(() => {
+    hookHandleDiscard();
+    setLoadingGif(originalLoadingGifRef.current);
+  }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
@@ -1284,7 +1289,6 @@ export default function ConfigureBundleFlow() {
           discountType: pricingState.discountType,
           discountRules: pricingState.discountRules,
           showFooter: pricingState.showFooter,
-          showProgressBar: pricingState.showProgressBar,
           discountMessagingEnabled: pricingState.discountMessagingEnabled,
           ruleMessages
         })} />
@@ -1377,26 +1381,11 @@ export default function ConfigureBundleFlow() {
                           onDragOver={(e) => handleDragOver(e, index)}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, index)}
-                          style={{
-                            cursor: draggedStep === step.id ? 'grabbing' : 'grab',
-                            transition: 'all 0.2s ease',
-                            transform: dragOverIndex === index && draggedStep !== step.id ? 'translateY(-4px)' : 'translateY(0)',
-                            boxShadow: dragOverIndex === index && draggedStep !== step.id
-                              ? '0 8px 16px rgba(0,0,0,0.15), 0 0 0 2px rgba(33, 150, 243, 0.3)'
-                              : draggedStep === step.id
-                                ? '0 4px 12px rgba(0,0,0,0.2)'
-                                : 'none',
-                            opacity: draggedStep === step.id ? 0.6 : 1,
-                            border: dragOverIndex === index && draggedStep !== step.id
-                              ? '2px dashed rgba(33, 150, 243, 0.5)'
-                              : '2px solid transparent',
-                            borderRadius: '8px',
-                            position: 'relative' as const,
-                            zIndex: draggedStep === step.id ? 1000 : 1,
-                            background: dragOverIndex === index && draggedStep !== step.id
-                              ? 'rgba(33, 150, 243, 0.05)'
-                              : undefined
-                          }}
+                          className={`${productPageBundleStyles.stepCard} ${
+                            draggedStep === step.id ? productPageBundleStyles.stepCardDragging : ''
+                          } ${
+                            dragOverIndex === index && draggedStep !== step.id ? productPageBundleStyles.stepCardDragOver : ''
+                          }`}
                         >
                           <BlockStack gap="300">
                             {/* Step Header */}
@@ -1484,11 +1473,6 @@ export default function ConfigureBundleFlow() {
                                           </Badge>
                                         )}
                                       </InlineStack>
-                                      <Checkbox
-                                        label="Display variants as individual products"
-                                        checked={step.displayVariantsAsIndividual || false}
-                                        onChange={(checked) => stepsState.updateStepField(step.id, 'displayVariantsAsIndividual', checked)}
-                                      />
                                     </BlockStack>
                                   )}
 
@@ -1620,7 +1604,13 @@ export default function ConfigureBundleFlow() {
                                     variant="tertiary"
                                     fullWidth
                                     icon={PlusIcon}
-                                    onClick={() => conditionsState.addConditionRule(step.id)}
+                                    onClick={() => {
+                                      if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                                        shopify.toast.show('A step can have at most 2 conditions', { isError: false });
+                                        return;
+                                      }
+                                      conditionsState.addConditionRule(step.id);
+                                    }}
                                   >
                                     Add Rule
                                   </Button>
@@ -1830,12 +1820,12 @@ export default function ConfigureBundleFlow() {
 
                         {/* Integrated Variables Helper */}
                         <details>
-                          <summary style={{ cursor: 'pointer', color: '#007ace', fontSize: '14px', fontWeight: '500' }}>
+                          <summary className={productPageBundleStyles.helpSummary}>
                             Show Variables
                           </summary>
-                          <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '13px' }}>
+                          <div className={productPageBundleStyles.helpContainer}>
                             {/* Essential Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={productPageBundleStyles.helpItem}>
                               <strong>Essential (Most Used):</strong><br />
                               <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
                               <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
@@ -1843,7 +1833,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Specific Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={productPageBundleStyles.helpItem}>
                               <strong>Specific:</strong><br />
                               <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
                               <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
@@ -1851,7 +1841,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Pricing Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={productPageBundleStyles.helpItem}>
                               <strong>Pricing:</strong><br />
                               <code>{'{{currentAmount}}'}</code> - Current total<br />
                               <code>{'{{finalPrice}}'}</code> - Price after discount<br />
@@ -1859,7 +1849,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Quick Examples */}
-                            <div style={{ borderTop: '1px solid #e1e3e5', paddingTop: '8px', fontSize: '12px', color: '#6c757d' }}>
+                            <div className={productPageBundleStyles.helpFooter}>
                               <strong>Quick Examples:</strong><br />
                               💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
                               📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
@@ -1921,6 +1911,71 @@ export default function ConfigureBundleFlow() {
                   )}
                 </BlockStack>
               </Card>
+            )}
+
+            {activeSection === "images_gifs" && (
+              <BlockStack gap="400">
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={ImageIcon} tone="subdued" />
+                    <BlockStack gap="0">
+                      <Text variant="headingSm" fontWeight="semibold" as="p">Media Assets</Text>
+                      <Text variant="bodyXs" tone="subdued" as="p">
+                        Add visual media to enhance the bundle experience for shoppers.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+                </Box>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="300" blockAlign="center">
+                        <Icon source={RefreshIcon} tone="magic" />
+                        <BlockStack gap="100">
+                          <Text variant="headingSm" fontWeight="semibold" as="p">Loading Animation</Text>
+                          <Text variant="bodyXs" tone="subdued" as="p">Overlay shown while bundle content is loading</Text>
+                        </BlockStack>
+                      </InlineStack>
+                      <Badge tone="magic">Storefront</Badge>
+                    </InlineStack>
+
+                    <BlockStack gap="100">
+                      <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">APPEARS DURING</Text>
+                      <InlineStack gap="150" wrap>
+                        <Badge tone="info">Initial load</Badge>
+                        <Badge tone="info">Step transitions</Badge>
+                        <Badge tone="info">Add to cart</Badge>
+                      </InlineStack>
+                    </BlockStack>
+
+                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                      <InlineStack gap="600">
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
+                          <Text variant="bodySm" as="p">GIF only</Text>
+                        </BlockStack>
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
+                          <Text variant="bodySm" as="p">Max 150 × 150 px</Text>
+                        </BlockStack>
+                      </InlineStack>
+                    </Box>
+
+                    <Divider />
+
+                    <FilePicker
+                      label="Choose loading GIF"
+                      value={loadingGif}
+                      onChange={(url) => {
+                        setLoadingGif(url);
+                        markAsDirty();
+                      }}
+                      hideCropEditor
+                    />
+                  </BlockStack>
+                </Card>
+              </BlockStack>
             )}
           </Layout.Section>
         </Layout>

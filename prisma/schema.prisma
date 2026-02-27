@@ -51,6 +51,11 @@ enum BundleType {
   full_page     // Dedicated bundle page (future feature)
 }
 
+enum FullPageLayout {
+  footer_bottom  // Sticky footer at viewport bottom (default)
+  footer_side    // Sidebar panel to the right of product grid
+}
+
 model Session {
   id                     String    @id
   shop                   String
@@ -85,7 +90,11 @@ model Bundle {
   shopifyPageHandle String? // Shopify Page handle for full-page bundles (e.g., "build-your-bundle")
   shopifyPageId    String? // Shopify Page ID (GID) for full-page bundles
   templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
+  promoBannerBgImage String? // URL of the promo banner background image (full-page bundles only)
+  promoBannerBgImageCrop String? // JSON {x,y,width} percentages defining the visible crop region
+  loadingGif       String? // URL of the loading GIF shown during bundle load, step transitions, and add-to-cart
   bundleType       BundleType        @default(product_page)
+  fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -117,6 +126,8 @@ model BundleStep {
   conditionType               String?
   conditionOperator           String?
   conditionValue              Int?
+  conditionOperator2          String?
+  conditionValue2             Int?
   bundleId                    String
   bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]
@@ -156,7 +167,6 @@ model BundlePricing {
   method         DiscountMethodType @default(percentage_off)
   rules          Json? // Stores array of standardized pricing rules with nested condition/discount structure
   showFooter     Boolean            @default(true)
-  showProgressBar Boolean           @default(false)
   messages       Json? // Stores progress and qualified messages with showInCart flag
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt

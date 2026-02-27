@@ -54,6 +54,9 @@ export interface BundleUiConfig {
   steps: BundleUiStep[];
   pricing: BundleUiPricing | null;
   messaging: BundleUiMessaging;
+  promoBannerBgImage?: string | null;
+  promoBannerBgImageCrop?: string | null;
+  loadingGif?: string | null;
 }
 
 export interface BundleUiStep {
@@ -66,6 +69,8 @@ export interface BundleUiStep {
   conditionType?: string;
   conditionOperator?: string;
   conditionValue?: string;
+  conditionOperator2?: string;
+  conditionValue2?: string;
 }
 
 export interface BundleUiPricing {
@@ -89,7 +94,6 @@ export interface BundleUiPricingRule {
 export interface BundleUiMessaging {
   progressTemplate: string;
   successTemplate: string;
-  showProgressBar: boolean;
   showFooter: boolean;
 }
 
@@ -117,6 +121,8 @@ export interface OptimizedStepConfig {
   conditionType?: string;
   conditionOperator?: string;
   conditionValue?: string | number;
+  conditionOperator2?: string;
+  conditionValue2?: string | number;
 }
 
 export interface OptimizedPricingConfig {

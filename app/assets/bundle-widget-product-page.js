@@ -113,6 +113,11 @@ class BundleWidgetProductPage {
       // Parse configuration
       this.parseConfiguration();
 
+      // Show loading overlay immediately — read gif from dataset before async fetch
+      let initialGif = null;
+      try { initialGif = JSON.parse(this.container.dataset.bundleConfig || '{}')?.loadingGif || null; } catch {}
+      this.showLoadingOverlay(initialGif);
+
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
 
@@ -123,6 +128,7 @@ class BundleWidgetProductPage {
       this.selectBundle();
 
       if (!this.selectedBundle) {
+        this.hideLoadingOverlay();
         this.showFallbackUI();
         return;
       }
@@ -136,6 +142,9 @@ class BundleWidgetProductPage {
       // Render initial UI
       this.renderUI();
 
+      // Hide overlay now that UI is rendered
+      this.hideLoadingOverlay();
+
       // Attach event listeners
       this.attachEventListeners();
 
@@ -144,6 +153,7 @@ class BundleWidgetProductPage {
       this.isInitialized = true;
 
     } catch (error) {
+      this.hideLoadingOverlay();
       this.showErrorUI(error);
     }
   }
@@ -255,11 +265,9 @@ class BundleWidgetProductPage {
       }
 
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
-      this.config.showProgressBar = messaging.showProgressBar || false;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
-      this.config.showProgressBar = false;
     }
   }
 
@@ -359,8 +367,8 @@ class BundleWidgetProductPage {
     const header = document.createElement('div');
     header.className = 'bundle-header';
     header.innerHTML = `
-      <h2 class="bundle-title">${this.selectedBundle.name}</h2>
-      ${this.selectedBundle.description ? `<p class="bundle-description">${this.selectedBundle.description}</p>` : ''}
+      <h2 class="bundle-title">${ComponentGenerator.escapeHtml(this.selectedBundle.name)}</h2>
+      ${this.selectedBundle.description ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(this.selectedBundle.description)}</p>` : ''}
     `;
     return header;
   }
@@ -692,7 +700,7 @@ class BundleWidgetProductPage {
     imagesContainer.className = 'step-images single-image';
 
     const img = document.createElement('img');
-    img.src = product.imageUrl || 'https://via.placeholder.com/150';
+    img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
     img.alt = product.title || '';
     img.className = 'step-image';
     imagesContainer.appendChild(img);
@@ -1054,7 +1062,7 @@ class BundleWidgetProductPage {
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
             // Storefront API: prioritize variant image, fallback to product featured image
-            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               id: this.extractId(variant.id),
@@ -1083,7 +1091,7 @@ class BundleWidgetProductPage {
         }
 
         // Storefront API: prioritize variant image, fallback to product featured image
-        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
         // Process variants array for variant selection in modal
         const processedVariants = (product.variants || []).map(v => ({
@@ -1152,7 +1160,7 @@ class BundleWidgetProductPage {
           .filter(variant => variant.available !== false) // Only show available variants
           .map(variant => {
             // Use variant image if available, fallback to product image
-            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               ...product,
@@ -1193,8 +1201,14 @@ class BundleWidgetProductPage {
 
       // Click handler
       tabButton.addEventListener('click', async () => {
-        if (!isAccessible) {
+        // Re-check accessibility at click time (not stale closure from render time)
+        if (!this.isStepAccessible(index)) {
           ToastManager.show('Please complete the previous steps first.');
+          return;
+        }
+        // Block forward navigation if current step condition is not met
+        if (index > this.currentStepIndex && !this.validateStep(this.currentStepIndex)) {
+          ToastManager.show('Please meet the step conditions before proceeding.');
           return;
         }
 
@@ -1205,7 +1219,12 @@ class BundleWidgetProductPage {
         this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
         // Load products for this step if not already loaded
-        await this.loadStepProducts(index);
+        this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+        try {
+          await this.loadStepProducts(index);
+        } finally {
+          this.hideLoadingOverlay();
+        }
 
         // Re-render everything
         this.renderModalTabs();
@@ -1265,11 +1284,11 @@ class BundleWidgetProductPage {
           ` : ''}
 
           <div class="product-image">
-            <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+            <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           </div>
 
           <div class="product-content-wrapper">
-            <div class="product-title">${product.title}</div>
+            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
 
             ${product.price ? `
               <div class="product-price-row">
@@ -1589,53 +1608,20 @@ class BundleWidgetProductPage {
 
   validateStepCondition(stepIndex, productId, newQuantity) {
     const step = this.selectedBundle.steps[stepIndex];
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    const currentQty = currentSelections[productId] || 0;
 
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return true; // No conditions to validate
-    }
+    const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
+      step,
+      currentSelections,
+      productId,
+      newQuantity,
+    );
 
-    // Calculate what the total would be with this change
-    let totalQuantityWouldBe = 0;
-    for (const [pid, qty] of Object.entries(this.selectedProducts[stepIndex])) {
-      if (pid === productId) {
-        totalQuantityWouldBe += newQuantity;
-      } else {
-        totalQuantityWouldBe += qty;
-      }
-    }
-
-    const requiredQuantity = step.conditionValue;
-    let allowUpdate = false;
-
-    switch (step.conditionOperator) {
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        allowUpdate = totalQuantityWouldBe <= requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
-        allowUpdate = totalQuantityWouldBe < requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
-        allowUpdate = totalQuantityWouldBe <= requiredQuantity;
-        break;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-        allowUpdate = true; // Allow any increase
-        break;
-      default:
-        allowUpdate = true;
-    }
-
-    if (!allowUpdate && newQuantity > (this.selectedProducts[stepIndex][productId] || 0)) {
-      const operatorText = {
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO]: `exactly ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN]: `less than ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO]: `at most ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN]: `more than ${requiredQuantity}`,
-        [BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO]: `at least ${requiredQuantity}`
-      };
-
-      const limitText = operatorText[step.conditionOperator] || requiredQuantity;
-      ToastManager.show(`This step allows ${limitText} product${requiredQuantity !== 1 ? 's' : ''} only.`);
+    // Only block and toast on increases — decreases are always permitted.
+    if (!allowed && newQuantity > currentQty) {
+      const required = step.conditionValue;
+      ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
       return false;
     }
 
@@ -1644,34 +1630,8 @@ class BundleWidgetProductPage {
 
   validateStep(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
-    const selectedProductsInStep = this.selectedProducts[stepIndex];
-
-    let totalQuantitySelected = 0;
-    for (const quantity of Object.values(selectedProductsInStep)) {
-      totalQuantitySelected += quantity;
-    }
-
-    // If no conditions are set, step is optional - always valid
-    if (!step.conditionType || !step.conditionOperator || step.conditionValue === null) {
-      return true; // Optional step - can proceed with 0 products
-    }
-
-    const requiredQuantity = step.conditionValue;
-
-    switch (step.conditionOperator) {
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        return totalQuantitySelected === requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
-        return totalQuantitySelected > requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
-        return totalQuantitySelected < requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-        return totalQuantitySelected >= requiredQuantity;
-      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
-        return totalQuantitySelected <= requiredQuantity;
-      default:
-        return true; // No recognized condition - step is optional
-    }
+    const currentSelections = this.selectedProducts[stepIndex] || {};
+    return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
   }
 
   isStepAccessible(stepIndex) {
@@ -1685,8 +1645,10 @@ class BundleWidgetProductPage {
   }
 
   updateModalNavigation() {
-    const prevButton = this.elements.modal.querySelector('.prev-button');
-    const nextButton = this.elements.modal.querySelector('.next-button');
+    const prevButton = this.elements.modal?.querySelector('.prev-button');
+    const nextButton = this.elements.modal?.querySelector('.next-button');
+
+    if (!prevButton || !nextButton) return;
 
     prevButton.disabled = this.currentStepIndex === 0;
 
@@ -1804,6 +1766,45 @@ class BundleWidgetProductPage {
   }
 
   // ========================================================================
+  // LOADING OVERLAY
+  // ========================================================================
+
+  showLoadingOverlay(gifUrl) {
+    if (!this.container) return;
+    // Ensure container is positioned so absolute overlay works
+    const pos = getComputedStyle(this.container).position;
+    if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
+      this.container.style.position = 'relative';
+    }
+    // Remove any existing overlay (idempotent)
+    this.container.querySelector('.bundle-loading-overlay')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'bundle-loading-overlay';
+
+    if (gifUrl) {
+      const img = document.createElement('img');
+      img.className = 'bundle-loading-overlay__gif';
+      img.src = gifUrl;
+      img.alt = '';
+      overlay.appendChild(img);
+    } else {
+      const animation = createDefaultLoadingAnimation();
+      overlay.appendChild(animation);
+    }
+
+    this.container.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+  }
+
+  hideLoadingOverlay() {
+    const overlay = this.container?.querySelector('.bundle-loading-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('is-visible');
+    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+  }
+
+  // ========================================================================
   // CART OPERATIONS
   // ========================================================================
 
@@ -1828,9 +1829,10 @@ class BundleWidgetProductPage {
 
       const cartItems = this.buildCartItems();
 
-      // Disable button during request
+      // Disable button and show loading overlay during request
       this.elements.addToCartButton.disabled = true;
       this.elements.addToCartButton.textContent = 'Adding to Cart...';
+      this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
       const response = await fetch('/cart/add.js', {
         method: 'POST',
@@ -1857,7 +1859,8 @@ class BundleWidgetProductPage {
     } catch (error) {
       ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
     } finally {
-      // Re-enable button
+      // Re-enable button and hide overlay
+      this.hideLoadingOverlay();
       this.updateAddToCartButton();
     }
   }

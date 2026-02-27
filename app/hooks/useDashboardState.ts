@@ -18,6 +18,7 @@ export interface CreateBundleFormState {
   bundleName: string;
   description: string;
   bundleType: string[];
+  fullPageLayout: string;
 }
 
 export interface DeleteModalState {
@@ -37,6 +38,7 @@ export function useDashboardState() {
   const [bundleName, setBundleName] = useState("");
   const [description, setDescription] = useState("");
   const [bundleType, setBundleType] = useState<string[]>(["product_page"]);
+  const [fullPageLayout, setFullPageLayout] = useState<string>("footer_bottom");
 
   // Delete confirmation modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -59,6 +61,7 @@ export function useDashboardState() {
     setBundleName("");
     setDescription("");
     setBundleType(["product_page"]);
+    setFullPageLayout("footer_bottom");
     appStateService.closeModal('dashboard_createBundle');
   }, []);
 
@@ -67,6 +70,7 @@ export function useDashboardState() {
     setBundleName("");
     setDescription("");
     setBundleType(["product_page"]);
+    setFullPageLayout("footer_bottom");
   }, []);
 
   // Open delete confirmation modal
@@ -112,6 +116,8 @@ export function useDashboardState() {
     setDescription,
     bundleType,
     setBundleType,
+    fullPageLayout,
+    setFullPageLayout,
     resetForm,
     getFormData,
 

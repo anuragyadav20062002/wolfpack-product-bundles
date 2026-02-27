@@ -73,7 +73,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   headerTabRadius: 67,
 
   // Bundle Header - Header Text
-  conditionsTextColor: "#FFFFFF",
+  conditionsTextColor: "#000000",
   conditionsTextFontSize: 16,
   discountTextColor: "#000000",
   discountTextFontSize: 14,
@@ -289,7 +289,7 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   headerTabRadius: 67,
 
   // Bundle Header - Header Text
-  conditionsTextColor: "#FFFFFF",
+  conditionsTextColor: "#000000",
   conditionsTextFontSize: 16,
   discountTextColor: "#111827",
   discountTextFontSize: 14,

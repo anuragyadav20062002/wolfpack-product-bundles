@@ -31,6 +31,7 @@ export interface BundleData {
   status: BundleStatus;
   bundleType: string;
   templateName?: string;
+  fullPageLayout?: string | null;
   shopifyProductId?: string;
   shopifyPageHandle?: string;
   shopifyPageId?: string;
@@ -80,7 +81,8 @@ export function useBundleConfigurationState({
       name: bundle.name,
       description: bundle.description || "",
       status: bundle.status,
-      templateName: bundle.templateName || ""
+      templateName: bundle.templateName || "",
+      fullPageLayout: bundle.fullPageLayout || "footer_bottom",
     },
     onStateChange: markAsDirty
   });
@@ -90,12 +92,21 @@ export function useBundleConfigurationState({
     const initialConditions: Record<string, any[]> = {};
     (bundle.steps || []).forEach((step: any) => {
       if (step.conditionType && step.conditionOperator && step.conditionValue !== null) {
-        initialConditions[step.id] = [{
-          id: `condition_${step.id}_${Date.now()}`,
+        const rules: any[] = [{
+          id: `condition_${step.id}_1_${Date.now()}`,
           type: step.conditionType,
           operator: step.conditionOperator,
           value: step.conditionValue.toString()
         }];
+        if (step.conditionOperator2 && step.conditionValue2 != null) {
+          rules.push({
+            id: `condition_${step.id}_2_${Date.now()}`,
+            type: step.conditionType,
+            operator: step.conditionOperator2,
+            value: step.conditionValue2.toString()
+          });
+        }
+        initialConditions[step.id] = rules;
       }
     });
     return initialConditions;
@@ -253,11 +264,11 @@ export function useBundleConfigurationState({
     name: formState.bundleName,
     description: formState.bundleDescription,
     templateName: formState.templateName,
+    fullPageLayout: formState.fullPageLayout,
     steps: JSON.stringify(transformedSteps),
     discountEnabled: pricingState.discountEnabled,
     discountType: pricingState.discountType,
     discountRules: JSON.stringify(pricingState.discountRules),
-    showProgressBar: pricingState.showProgressBar,
     showFooter: pricingState.showFooter,
     discountMessagingEnabled: pricingState.discountMessagingEnabled,
     selectedCollections: JSON.stringify({}),
@@ -278,6 +289,7 @@ export function useBundleConfigurationState({
       formState.setBundleName(originalValues.name);
       formState.setBundleDescription(originalValues.description);
       formState.setTemplateName(originalValues.templateName);
+      formState.setFullPageLayout(originalValues.fullPageLayout);
 
       // Reset steps
       const originalSteps = JSON.parse(originalValues.steps);
@@ -287,7 +299,6 @@ export function useBundleConfigurationState({
       pricingState.setDiscountEnabled(originalValues.discountEnabled);
       pricingState.setDiscountType(originalValues.discountType);
       pricingState.setDiscountRules(JSON.parse(originalValues.discountRules));
-      pricingState.setShowProgressBar(originalValues.showProgressBar);
       pricingState.setShowFooter(originalValues.showFooter);
       pricingState.setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
 
@@ -333,11 +344,11 @@ export function useBundleConfigurationState({
       name: formState.bundleName,
       description: formState.bundleDescription,
       templateName: formState.templateName,
+      fullPageLayout: formState.fullPageLayout,
       steps: JSON.stringify(stepsState.steps),
       discountEnabled: pricingState.discountEnabled,
       discountType: pricingState.discountType,
       discountRules: JSON.stringify(pricingState.discountRules),
-      showProgressBar: pricingState.showProgressBar,
       showFooter: pricingState.showFooter,
       discountMessagingEnabled: pricingState.discountMessagingEnabled,
       selectedCollections: JSON.stringify(selectedCollections),

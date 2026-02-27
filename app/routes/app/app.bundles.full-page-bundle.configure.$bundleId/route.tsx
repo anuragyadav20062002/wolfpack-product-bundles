@@ -35,6 +35,7 @@ import {
   List,
   Spinner,
   Divider,
+  Box,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -51,12 +52,16 @@ import {
   ListNumberedIcon,
   DiscountIcon,
   RefreshIcon,
+  ImageIcon,
+  LockIcon,
 } from "@shopify/polaris-icons";
+import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
+import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-configure.module.css";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -233,8 +238,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.full-page-bundle.configure.$bundleId/handlers/
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
-  { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
-  { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
+  { id: "step_setup",       label: "Step Setup",          icon: ListNumberedIcon, fullPageOnly: false },
+  { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
+  { id: "images_gifs",      label: "Images & GIFs",       icon: ImageIcon,        fullPageOnly: true  },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
@@ -357,6 +363,22 @@ export default function ConfigureBundleFlow() {
 
   AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
+  // Per-bundle promo banner background image state
+  const [promoBannerBgImage, setPromoBannerBgImage] = useState<string | null>(
+    bundle.promoBannerBgImage ?? null
+  );
+  const originalPromoBannerBgImageRef = useRef<string | null>(bundle.promoBannerBgImage ?? null);
+
+  // Promo banner image crop state
+  const [promoBannerBgImageCrop, setPromoBannerBgImageCrop] = useState<string | null>(
+    bundle.promoBannerBgImageCrop ?? null
+  );
+  const originalPromoBannerBgImageCropRef = useRef<string | null>(bundle.promoBannerBgImageCrop ?? null);
+
+  // Loading GIF state
+  const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
+  const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
+
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
   // Save handler
@@ -368,6 +390,7 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleName", formState.bundleName);
       formData.append("bundleDescription", formState.bundleDescription);
       formData.append("templateName", formState.templateName);
+      formData.append("fullPageLayout", formState.fullPageLayout);
       formData.append("bundleStatus", formState.bundleStatus);
       // Merge collections data into steps before saving
       const stepsWithCollections = stepsState.steps.map(step => ({
@@ -380,13 +403,15 @@ export default function ConfigureBundleFlow() {
         discountEnabled: pricingState.discountEnabled,
         discountType: pricingState.discountType,
         discountRules: pricingState.discountRules,
-        showProgressBar: pricingState.showProgressBar,
         showFooter: pricingState.showFooter,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
         ruleMessages
       }));
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
+      formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
+      formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
+      formData.append("loadingGif", loadingGif ?? "");
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
@@ -410,7 +435,6 @@ export default function ConfigureBundleFlow() {
     pricingState.discountEnabled,
     pricingState.discountType,
     pricingState.discountRules,
-    pricingState.showProgressBar,
     pricingState.showFooter,
     pricingState.discountMessagingEnabled,
     ruleMessages,
@@ -418,6 +442,9 @@ export default function ConfigureBundleFlow() {
     conditionsState.stepConditions,
     bundleProduct,
     productStatus,
+    promoBannerBgImage,
+    promoBannerBgImageCrop,
+    loadingGif,
     shopify
   ]);
 
@@ -495,7 +522,6 @@ export default function ConfigureBundleFlow() {
             discountEnabled: pricingState.discountEnabled,
             discountType: pricingState.discountType,
             discountRules: JSON.stringify(pricingState.discountRules),
-            showProgressBar: pricingState.showProgressBar,
             showFooter: pricingState.showFooter,
             discountMessagingEnabled: pricingState.discountMessagingEnabled,
             selectedCollections: JSON.stringify(selectedCollections),
@@ -577,8 +603,13 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Discard handler - uses the hook's implementation
-  const handleDiscard = hookHandleDiscard;
+  // Discard handler - resets hook state and local image/crop/gif state
+  const handleDiscard = useCallback(() => {
+    hookHandleDiscard();
+    setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
+    setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
+    setLoadingGif(originalLoadingGifRef.current);
+  }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
@@ -1249,16 +1280,6 @@ export default function ConfigureBundleFlow() {
               loading: fetcher.state === 'submitting',
             }
       }
-      secondaryActions={[
-        {
-          content: "Open in Theme Editor",
-          icon: ExternalIcon,
-          onAction: () => {
-            const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=page&addAppBlockId=${apiKey}/${blockHandle}&target=mainSection`;
-            window.open(themeEditorUrl, '_blank');
-          },
-        },
-      ]}
     >
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
@@ -1307,7 +1328,6 @@ export default function ConfigureBundleFlow() {
           discountType: pricingState.discountType,
           discountRules: pricingState.discountRules,
           showFooter: pricingState.showFooter,
-          showProgressBar: pricingState.showProgressBar,
           discountMessagingEnabled: pricingState.discountMessagingEnabled,
           ruleMessages
         })} />
@@ -1329,19 +1349,21 @@ export default function ConfigureBundleFlow() {
                   </Text>
 
                   <BlockStack gap="100">
-                    {bundleSetupItems.map((item) => (
-                      <Button
-                        key={item.id}
-                        variant={activeSection === item.id ? "primary" : "tertiary"}
-                        fullWidth
-                        textAlign="start"
-                        icon={item.icon}
-                        disabled={false}
-                        onClick={() => handleSectionChange(item.id)}
-                      >
-                        {item.label}
-                      </Button>
-                    ))}
+                    {bundleSetupItems
+                      .filter(item => !item.fullPageOnly || bundle.bundleType === "full_page")
+                      .map((item) => (
+                        <Button
+                          key={item.id}
+                          variant={activeSection === item.id ? "primary" : "tertiary"}
+                          fullWidth
+                          textAlign="start"
+                          icon={item.icon}
+                          disabled={false}
+                          onClick={() => handleSectionChange(item.id)}
+                        >
+                          {item.label}
+                        </Button>
+                      ))}
                   </BlockStack>
                 </BlockStack>
               </Card>
@@ -1393,14 +1415,7 @@ export default function ConfigureBundleFlow() {
                         </InlineStack>
                       </BlockStack>
                     ) : (
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: '80px',
-                        border: '1px dashed #ccc',
-                        borderRadius: '8px'
-                      }}>
+                      <div className={fullPageBundleStyles.productSelectionPlaceholder}>
                         <BlockStack gap="100" inlineAlign="center">
                           <Icon source={ProductIcon} />
                           <Button
@@ -1437,6 +1452,112 @@ export default function ConfigureBundleFlow() {
                     status={formState.bundleStatus}
                     onChange={formState.setBundleStatus}
                   />
+                </Card>
+              )}
+
+              {/* Layout Selection - For full-page bundles */}
+              {bundle.bundleType === 'full_page' && (
+                <Card>
+                  <BlockStack gap="300">
+                    <Text variant="headingSm" as="h3">Page Layout</Text>
+                    <Text variant="bodySm" as="p" tone="subdued">
+                      Choose where the bundle summary and navigation appears
+                    </Text>
+                    <InlineStack gap="300" wrap={false}>
+                      {/* Footer Bottom Option */}
+                      <div
+                        onClick={() => formState.setFullPageLayout("footer_bottom")}
+                        style={{
+                          flex: 1,
+                          border: formState.fullPageLayout === "footer_bottom"
+                            ? "2px solid var(--p-color-border-interactive)"
+                            : "1px solid var(--p-color-border-secondary)",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          cursor: "pointer",
+                          background: formState.fullPageLayout === "footer_bottom"
+                            ? "var(--p-color-bg-surface-selected)"
+                            : "var(--p-color-bg-surface)",
+                          transition: "border 0.15s, background 0.15s",
+                        }}
+                      >
+                        <BlockStack gap="200" inlineAlign="center">
+                          {/* SVG Illustration — Footer Bottom */}
+                          <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="1" y="1" width="118" height="78" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                            {/* Product grid area */}
+                            <rect x="10" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="36" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="62" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="88" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="10" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="36" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="62" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="88" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            {/* Bottom footer bar */}
+                            <rect x="1" y="56" width="118" height="22" rx="0" fill="#7C3AED" opacity="0.85" />
+                            <rect x="10" y="62" width="40" height="4" rx="2" fill="white" opacity="0.8" />
+                            <rect x="10" y="69" width="25" height="3" rx="1.5" fill="white" opacity="0.5" />
+                            <rect x="80" y="61" width="30" height="12" rx="3" fill="white" opacity="0.7" />
+                          </svg>
+                          <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
+                            Footer at bottom
+                          </Text>
+                          <Text variant="bodySm" as="p" tone="subdued" alignment="center">
+                            Sticky bar at the bottom with summary and navigation
+                          </Text>
+                        </BlockStack>
+                      </div>
+
+                      {/* Footer Side Option */}
+                      <div
+                        onClick={() => formState.setFullPageLayout("footer_side")}
+                        style={{
+                          flex: 1,
+                          border: formState.fullPageLayout === "footer_side"
+                            ? "2px solid var(--p-color-border-interactive)"
+                            : "1px solid var(--p-color-border-secondary)",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          cursor: "pointer",
+                          background: formState.fullPageLayout === "footer_side"
+                            ? "var(--p-color-bg-surface-selected)"
+                            : "var(--p-color-bg-surface)",
+                          transition: "border 0.15s, background 0.15s",
+                        }}
+                      >
+                        <BlockStack gap="200" inlineAlign="center">
+                          {/* SVG Illustration — Sidebar */}
+                          <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="1" y="1" width="118" height="78" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                            {/* Product grid area (left) */}
+                            <rect x="8" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="29" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="50" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="8" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="29" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="50" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="8" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="29" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="50" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            {/* Side panel (right) */}
+                            <rect x="74" y="1" width="45" height="78" rx="0" fill="#7C3AED" opacity="0.85" />
+                            <rect x="80" y="10" width="32" height="4" rx="2" fill="white" opacity="0.8" />
+                            <rect x="80" y="20" width="32" height="8" rx="2" fill="white" opacity="0.15" />
+                            <rect x="80" y="32" width="32" height="8" rx="2" fill="white" opacity="0.15" />
+                            <rect x="80" y="44" width="32" height="8" rx="2" fill="white" opacity="0.15" />
+                            <rect x="80" y="60" width="32" height="12" rx="3" fill="white" opacity="0.7" />
+                          </svg>
+                          <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
+                            Sidebar panel
+                          </Text>
+                          <Text variant="bodySm" as="p" tone="subdued" alignment="center">
+                            Side panel on the right with summary and navigation
+                          </Text>
+                        </BlockStack>
+                      </div>
+                    </InlineStack>
+                  </BlockStack>
                 </Card>
               )}
 
@@ -1561,11 +1682,6 @@ export default function ConfigureBundleFlow() {
                                           </Badge>
                                         )}
                                       </InlineStack>
-                                      <Checkbox
-                                        label="Display variants as individual products"
-                                        checked={step.displayVariantsAsIndividual || false}
-                                        onChange={(checked) => stepsState.updateStepField(step.id, 'displayVariantsAsIndividual', checked)}
-                                      />
                                     </BlockStack>
                                   )}
 
@@ -1697,7 +1813,13 @@ export default function ConfigureBundleFlow() {
                                     variant="tertiary"
                                     fullWidth
                                     icon={PlusIcon}
-                                    onClick={() => conditionsState.addConditionRule(step.id)}
+                                    onClick={() => {
+                                      if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                                        shopify.toast.show('A step can have at most 2 conditions', { isError: false });
+                                        return;
+                                      }
+                                      conditionsState.addConditionRule(step.id);
+                                    }}
                                   >
                                     Add Rule
                                   </Button>
@@ -1903,12 +2025,12 @@ export default function ConfigureBundleFlow() {
 
                         {/* Integrated Variables Helper */}
                         <details>
-                          <summary style={{ cursor: 'pointer', color: '#007ace', fontSize: '14px', fontWeight: '500' }}>
+                          <summary className={fullPageBundleStyles.helpSummary}>
                             Show Variables
                           </summary>
-                          <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', fontSize: '13px' }}>
+                          <div className={fullPageBundleStyles.helpContainer}>
                             {/* Essential Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={fullPageBundleStyles.helpItem}>
                               <strong>Essential (Most Used):</strong><br />
                               <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
                               <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
@@ -1916,7 +2038,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Specific Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={fullPageBundleStyles.helpItem}>
                               <strong>Specific:</strong><br />
                               <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
                               <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
@@ -1924,7 +2046,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Pricing Variables */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div className={fullPageBundleStyles.helpItem}>
                               <strong>Pricing:</strong><br />
                               <code>{'{{currentAmount}}'}</code> - Current total<br />
                               <code>{'{{finalPrice}}'}</code> - Price after discount<br />
@@ -1932,7 +2054,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {/* Quick Examples */}
-                            <div style={{ borderTop: '1px solid #e1e3e5', paddingTop: '8px', fontSize: '12px', color: '#6c757d' }}>
+                            <div className={fullPageBundleStyles.helpFooter}>
                               <strong>Quick Examples:</strong><br />
                               💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
                               📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
@@ -1994,6 +2116,114 @@ export default function ConfigureBundleFlow() {
                   )}
                 </BlockStack>
               </Card>
+            )}
+
+            {activeSection === "images_gifs" && (
+              <BlockStack gap="400">
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={ImageIcon} tone="subdued" />
+                    <BlockStack gap="0">
+                      <Text variant="headingSm" fontWeight="semibold" as="p">Media Assets</Text>
+                      <Text variant="bodyXs" tone="subdued" as="p">
+                        Add visual media to enhance the bundle experience for shoppers.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+                </Box>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="300" blockAlign="center">
+                        <Icon source={ImageIcon} tone="base" />
+                        <BlockStack gap="100">
+                          <Text variant="headingSm" fontWeight="semibold" as="p">Promo Banner</Text>
+                          <Text variant="bodyXs" tone="subdued" as="p">Wide banner displayed at the top of the full-page bundle</Text>
+                        </BlockStack>
+                      </InlineStack>
+                      <Badge tone="info">Page header</Badge>
+                    </InlineStack>
+
+                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                      <InlineStack gap="600">
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
+                          <Text variant="bodySm" as="p">JPG, PNG, WebP</Text>
+                        </BlockStack>
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
+                          <Text variant="bodySm" as="p">1600 × 280 px · 16:3 ratio</Text>
+                        </BlockStack>
+                      </InlineStack>
+                    </Box>
+
+                    <Divider />
+
+                    <FilePicker
+                      value={promoBannerBgImage}
+                      onChange={(url) => {
+                        setPromoBannerBgImage(url);
+                        markAsDirty();
+                      }}
+                      cropValue={promoBannerBgImageCrop}
+                      onCropChange={(crop) => {
+                        setPromoBannerBgImageCrop(crop);
+                        markAsDirty();
+                      }}
+                    />
+                  </BlockStack>
+                </Card>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="300" blockAlign="center">
+                        <Icon source={RefreshIcon} tone="magic" />
+                        <BlockStack gap="100">
+                          <Text variant="headingSm" fontWeight="semibold" as="p">Loading Animation</Text>
+                          <Text variant="bodyXs" tone="subdued" as="p">Overlay shown while bundle content is loading</Text>
+                        </BlockStack>
+                      </InlineStack>
+                      <Badge tone="magic">Storefront</Badge>
+                    </InlineStack>
+
+                    <BlockStack gap="100">
+                      <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">APPEARS DURING</Text>
+                      <InlineStack gap="150" wrap>
+                        <Badge tone="info">Initial load</Badge>
+                        <Badge tone="info">Step transitions</Badge>
+                        <Badge tone="info">Add to cart</Badge>
+                      </InlineStack>
+                    </BlockStack>
+
+                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                      <InlineStack gap="600">
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
+                          <Text variant="bodySm" as="p">GIF only</Text>
+                        </BlockStack>
+                        <BlockStack gap="100">
+                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
+                          <Text variant="bodySm" as="p">Max 150 × 150 px</Text>
+                        </BlockStack>
+                      </InlineStack>
+                    </Box>
+
+                    <Divider />
+
+                    <FilePicker
+                      label="Choose loading GIF"
+                      value={loadingGif}
+                      onChange={(url) => {
+                        setLoadingGif(url);
+                        markAsDirty();
+                      }}
+                      hideCropEditor
+                    />
+                  </BlockStack>
+                </Card>
+              </BlockStack>
             )}
           </Layout.Section>
         </Layout>

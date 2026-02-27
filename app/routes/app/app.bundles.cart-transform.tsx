@@ -15,8 +15,10 @@ import {
   FormLayout,
   TextField,
   ButtonGroup,
+  Box,
+  Icon,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, CheckCircleIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../../shopify.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
@@ -27,6 +29,7 @@ import { useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../components/UpgradePromptBanner";
 import { useCartTransformState } from "../../hooks/useCartTransformState";
+import cartTransformStyles from "../../styles/routes/cart-transform.module.css";
 
 /**
  * Add image to a product using productCreateMedia mutation
@@ -274,7 +277,6 @@ export async function action({ request }: ActionFunctionArgs) {
             rules: originalBundle.pricing.rules || [],
             messages: originalBundle.pricing.messages || [],
             showFooter: originalBundle.pricing.showFooter,
-            showProgressBar: originalBundle.pricing.showProgressBar,
             // Don't clone: discountId (Shopify ID), published (should start unpublished)
           },
         });
@@ -629,7 +631,7 @@ export default function CartTransformBundles() {
               <button 
                 ref={submitButtonRef}
                 type="submit" 
-                style={{ display: 'none' }}
+                className={cartTransformStyles.hiddenSubmit}
                 aria-hidden="true"
               />
             </FormLayout>
@@ -703,7 +705,7 @@ export default function CartTransformBundles() {
         <Layout.Section>
           <InlineStack gap="400" align="start" blockAlign="start">
             {/* Cart Transform Bundle Setup Instructions */}
-            <div style={{ flex: '1' }}>
+            <div className={cartTransformStyles.flexContainer}>
               <BundleSetupInstructions
                 title="Cart Transform Bundle Setup"
                 subtitle="Follow these steps to create your cart transform bundle"
@@ -754,36 +756,33 @@ export default function CartTransformBundles() {
             </div>
 
             {/* Cart Transform Bundle Features */}
-            <div style={{ flex: '1' }}>
+            <div className={cartTransformStyles.flexContainer}>
               <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h4">
-                  It will create a Parent bundle product in Shopify, but during checkout, it will pull stock from your regular Shopify inventory in real time.
-
-                  </Text>
-                  <div style={{
-                    border: '2px solid #e1e3e5',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    transition: 'transform 0.3s ease',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }}>
-                    <img
-                      src="/demo.png"
-                      alt="Bundle Cart Transform Demo"
-                      style={{
-                        width: '100%',
-                        height: 'auto',
-                        display: 'block'
-                      }}
-                    />
-                  </div>
+                <BlockStack gap="400">
+                  <BlockStack gap="100">
+                    <Text variant="headingSm" fontWeight="semibold" as="h4">
+                      How Cart Transform works
+                    </Text>
+                    <Text variant="bodySm" tone="subdued" as="p">
+                      Creates a parent bundle in your Shopify catalog while pulling real-time stock from your existing component products at checkout — no duplicate inventory tracking needed.
+                    </Text>
+                  </BlockStack>
+                  <BlockStack gap="200">
+                    {[
+                      "One parent bundle product in your Shopify catalog",
+                      "Stock pulled from component products at checkout",
+                      "No duplicate inventory tracking required",
+                      "Discounts applied automatically at cart level",
+                      "Cart transform merges components into the bundle",
+                    ].map((feature) => (
+                      <InlineStack key={feature} gap="200" blockAlign="center">
+                        <Box>
+                          <Icon source={CheckCircleIcon} tone="success" />
+                        </Box>
+                        <Text variant="bodySm" as="span">{feature}</Text>
+                      </InlineStack>
+                    ))}
+                  </BlockStack>
                 </BlockStack>
               </Card>
             </div>

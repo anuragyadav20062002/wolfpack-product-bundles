@@ -1,38 +1,39 @@
-import { Text } from "@shopify/polaris";
+/**
+ * PromoBannerPreview
+ *
+ * Renders the real .promo-banner HTML structure.
+ * CSS variables are injected by the parent <PreviewScope>:
+ *   --bundle-promo-banner-bg, --bundle-promo-banner-title-color/font-size/font-weight,
+ *   --bundle-promo-banner-subtitle-color/font-size, --bundle-promo-banner-note-color/font-size,
+ *   --bundle-promo-banner-radius, --bundle-promo-banner-padding
+ */
 
-const HIGHLIGHT_STYLE = {
-  outline: "2px dashed #5C6AC4",
-  outlineOffset: "4px",
-};
+import { Text } from "@shopify/polaris";
+import { HighlightBox } from "./HighlightBox";
 
 interface PromoBannerPreviewProps {
   promoBannerEnabled: boolean;
   promoBannerBgColor: string;
-  promoBannerTitleColor: string;
-  promoBannerTitleFontSize: number;
-  promoBannerTitleFontWeight: number;
-  promoBannerSubtitleColor: string;
-  promoBannerSubtitleFontSize: number;
-  promoBannerNoteColor: string;
-  promoBannerNoteFontSize: number;
-  promoBannerBorderRadius: number;
-  promoBannerPadding: number;
 }
 
-export function PromoBannerPreview(props: PromoBannerPreviewProps) {
-  const {
-    promoBannerEnabled,
-    promoBannerBgColor,
-    promoBannerTitleColor,
-    promoBannerTitleFontSize,
-    promoBannerTitleFontWeight,
-    promoBannerSubtitleColor,
-    promoBannerSubtitleFontSize,
-    promoBannerNoteColor,
-    promoBannerNoteFontSize,
-    promoBannerBorderRadius,
-    promoBannerPadding,
-  } = props;
+export function PromoBannerPreview({ promoBannerEnabled, promoBannerBgColor }: PromoBannerPreviewProps) {
+  // Real .promo-banner HTML matching the widget's createPromoBanner() output.
+  // Classes: .promo-banner > .promo-banner-content > .promo-banner-subtitle +
+  //          .promo-banner-title + .promo-banner-note
+  const promoBannerHTML = `
+<div class="promo-banner" style="opacity:${promoBannerEnabled ? 1 : 0.5};position:relative;">
+  ${!promoBannerEnabled ? `
+    <div style="position:absolute;top:12px;right:12px;background:#EF4444;color:#fff;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
+      Disabled
+    </div>
+  ` : ''}
+  <div class="promo-banner-content">
+    <div class="promo-banner-subtitle">Special Offer</div>
+    <div class="promo-banner-title">Add any 3 products, get 20% off!</div>
+    <div class="promo-banner-note">*Discount applied automatically at checkout</div>
+  </div>
+</div>
+  `.trim();
 
   return (
     <div style={{ textAlign: "center", position: "relative" }}>
@@ -42,83 +43,11 @@ export function PromoBannerPreview(props: PromoBannerPreviewProps) {
       <Text as="p" variant="bodySm" tone="subdued">
         Full-page bundles only
       </Text>
-      <div style={{ marginTop: "40px", display: "inline-block", position: "relative" }}>
-        {/* Promo Banner Container */}
-        <div
-          style={{
-            backgroundColor: promoBannerBgColor,
-            borderRadius: `${promoBannerBorderRadius}px`,
-            padding: `${promoBannerPadding}px 48px`,
-            minWidth: "500px",
-            maxWidth: "600px",
-            textAlign: "center",
-            position: "relative",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
-            opacity: promoBannerEnabled ? 1 : 0.5,
-            ...HIGHLIGHT_STYLE,
-          }}
-        >
-          {/* Disabled Badge */}
-          {!promoBannerEnabled && (
-            <div
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                backgroundColor: "#EF4444",
-                color: "#FFFFFF",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "10px",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Disabled
-            </div>
-          )}
-
-          {/* Subtitle */}
-          <div
-            style={{
-              fontSize: `${promoBannerSubtitleFontSize}px`,
-              fontWeight: 600,
-              color: promoBannerSubtitleColor,
-              textTransform: "uppercase",
-              letterSpacing: "2px",
-              marginBottom: "12px",
-            }}
-          >
-            Special Offer
-          </div>
-
-          {/* Title */}
-          <div
-            style={{
-              fontSize: `${promoBannerTitleFontSize}px`,
-              fontWeight: promoBannerTitleFontWeight,
-              color: promoBannerTitleColor,
-              margin: "0 0 12px",
-              lineHeight: 1.3,
-            }}
-          >
-            Add any 3 products to your basket, get 20% off!
-          </div>
-
-          {/* Note */}
-          <div
-            style={{
-              fontSize: `${promoBannerNoteFontSize}px`,
-              color: promoBannerNoteColor,
-              fontStyle: "italic",
-            }}
-          >
-            *Discount applied automatically at checkout
-          </div>
-        </div>
-
-        {/* Preview Label */}
+      <div style={{ marginTop: "40px", display: "inline-block", maxWidth: "100%" }}>
+        <HighlightBox active>
+          {/* eslint-disable-next-line react/no-danger */}
+          <div dangerouslySetInnerHTML={{ __html: promoBannerHTML }} />
+        </HighlightBox>
         <div style={{ marginTop: "24px" }}>
           <Text as="p" variant="bodySm" tone="subdued">
             Preview updates as you customize

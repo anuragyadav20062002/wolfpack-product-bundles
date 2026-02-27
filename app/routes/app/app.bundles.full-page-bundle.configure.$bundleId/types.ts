@@ -27,7 +27,6 @@ export interface BundlePricing {
   method: string;
   rules: PricingRule[] | string;
   showFooter: boolean;
-  showProgressBar: boolean;
   messages: any;
 }
 
@@ -42,6 +41,7 @@ export interface BundleData {
   bundleType: string;
   status: BundleStatus;
   templateName?: string;
+  fullPageLayout?: string | null;
   steps: BundleStep[];
   pricing?: BundlePricing;
 }

@@ -39,6 +39,13 @@ interface BundleFooterPreviewProps {
 
 type HighlightTarget = "footer" | "footerPrice" | "footerButton" | "footerDiscountProgress" | null;
 
+// Sample product data for preview tiles
+const SAMPLE_PRODUCTS = [
+  { name: "Classic T-Shirt", variant: "Medium / Black", qty: 1 },
+  { name: "Running Shorts", variant: "Large / Navy", qty: 2 },
+  { name: "Sport Socks", variant: "", qty: 1 },
+];
+
 // Bundle type toggle component for preview
 function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: (value: string) => void }) {
   return (
@@ -77,7 +84,7 @@ function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: 
   );
 }
 
-// Shared full-page footer layout
+// Full-page footer layout — matches storefront: Progress Message → Product Tiles → Back | Total | Next
 function FullPageFooterLayout({
   highlightTarget,
   footerBgColor,
@@ -107,60 +114,161 @@ function FullPageFooterLayout({
       style={{
         backgroundColor: footerBgColor,
         borderRadius: `${footerBorderRadius}px`,
-        padding: `${footerPadding}px 24px`,
-        minWidth: "600px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        border: "1px solid rgba(0, 0, 0, 0.1)",
-        boxShadow: "0 -2px 8px rgba(0, 0, 0, 0.05)",
+        padding: 0,
+        minWidth: "560px",
+        maxWidth: "680px",
+        display: "block",
+        borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+        boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.08)",
         ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
       }}
     >
-      {/* Discount Message (full-page footer only shows text, no progress bar) */}
+      {/* SECTION 1: Progress / Discount Message */}
       {footerDiscountTextVisibility && (
-        <div style={{
-          ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
-        }}>
-          <div style={{ fontSize: "13px", fontWeight: 500, color: "#374151", textAlign: "center" }}>
-            Add 1 more item to get <strong style={{ color: footerProgressBarFilledColor }}>10% off</strong>
+        <div
+          style={{
+            padding: "16px 40px 12px",
+            textAlign: "center",
+            ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
+          }}
+        >
+          <div
+            style={{
+              fontSize: "15px",
+              fontWeight: 600,
+              color: footerProgressBarFilledColor,
+            }}
+          >
+            Add 1 more item to get <strong>10% off</strong>
           </div>
         </div>
       )}
 
-      {/* Products Strip + Total + Buttons Row */}
-      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-        {/* Products Strip (Left) */}
-        <div style={{ display: "flex", gap: "8px", flex: 1 }}>
-          {[1, 2].map((i) => (
+      {/* SECTION 2: Scrollable Product Tiles */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "12px 24px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "16px",
+            overflowX: "auto",
+            padding: "10px 44px",
+            maxWidth: "100%",
+            alignItems: "center",
+          }}
+        >
+          {SAMPLE_PRODUCTS.map((product, i) => (
             <div
               key={i}
               style={{
-                width: "50px",
-                height: "50px",
-                backgroundColor: "#F3F4F6",
-                borderRadius: "6px",
                 display: "flex",
+                flexDirection: "row",
                 alignItems: "center",
-                justifyContent: "center",
+                gap: "10px",
+                padding: "8px 12px",
+                background: "#f8f9fa",
+                border: "1px solid rgba(0, 0, 0, 0.08)",
+                borderRadius: "8px",
+                flexShrink: 0,
+                minWidth: "160px",
+                maxWidth: "180px",
                 position: "relative",
               }}
             >
-              <div style={{ width: "30px", height: "30px", backgroundColor: "#D1D5DB", borderRadius: "4px" }} />
+              {/* Tile Image + Quantity Badge */}
+              <div style={{ position: "relative", flexShrink: 0, width: "44px", height: "44px" }}>
+                <div
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "6px",
+                    background: "#E5E7EB",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div style={{ width: "28px", height: "28px", backgroundColor: "#D1D5DB", borderRadius: "4px" }} />
+                </div>
+                {/* Quantity Badge */}
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-6px",
+                    right: "-6px",
+                    minWidth: "20px",
+                    height: "20px",
+                    padding: "0 5px",
+                    background: footerNextButtonBgColor,
+                    color: footerNextButtonTextColor,
+                    borderRadius: "10px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)",
+                  }}
+                >
+                  {product.qty}
+                </span>
+              </div>
+
+              {/* Tile Info */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0, flex: 1 }}>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#333",
+                    lineHeight: 1.3,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {product.name}
+                </span>
+                {product.variant && (
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "#666",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {product.variant}
+                  </span>
+                )}
+              </div>
+
+              {/* Remove Button */}
               <div
                 style={{
                   position: "absolute",
-                  top: "-4px",
-                  right: "-4px",
-                  width: "16px",
-                  height: "16px",
-                  backgroundColor: "#EF4444",
-                  borderRadius: "50%",
+                  top: "-8px",
+                  right: "-8px",
+                  width: "22px",
+                  height: "22px",
+                  background: "#ff4444",
                   color: "#fff",
-                  fontSize: "10px",
+                  border: "2px solid #fff",
+                  borderRadius: "50%",
+                  fontSize: "13px",
+                  fontWeight: "bold",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.2)",
+                  lineHeight: 1,
                 }}
               >
                 &times;
@@ -168,15 +276,54 @@ function FullPageFooterLayout({
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Total Section (Center) */}
+      {/* SECTION 3: Navigation — Back | Total | Next */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "16px",
+          padding: `0 40px ${footerPadding}px`,
+        }}
+      >
+        {/* Back Button */}
+        <div style={highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}}>
+          <button
+            style={{
+              backgroundColor: footerBackButtonBgColor,
+              color: footerBackButtonTextColor,
+              border: `1px solid ${footerBackButtonBorderColor}`,
+              borderRadius: `${footerBackButtonBorderRadius}px`,
+              padding: "12px 28px",
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: "pointer",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              minWidth: "100px",
+            }}
+          >
+            Back
+          </button>
+        </div>
+
+        {/* Total Section (between buttons) */}
         {footerPriceVisibility && (
-          <div style={{
-            textAlign: "center",
-            ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
-          }}>
-            <div style={{ fontSize: "16px", color: "#1E1E1E", fontWeight: 600, marginBottom: "2px" }}>Total</div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: "8px",
+              padding: "0 20px",
+              ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
+            }}
+          >
+            <span style={{ fontSize: "20px", fontWeight: 550, color: "#333" }}>Total</span>
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "baseline", gap: "8px" }}>
               <span
                 style={{
                   color: footerStrikePriceColor,
@@ -200,36 +347,21 @@ function FullPageFooterLayout({
           </div>
         )}
 
-        {/* Navigation Buttons (Right) */}
-        <div style={{
-          display: "flex",
-          gap: "12px",
-          ...(highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}),
-        }}>
-          <button
-            style={{
-              backgroundColor: footerBackButtonBgColor,
-              color: footerBackButtonTextColor,
-              border: `1px solid ${footerBackButtonBorderColor}`,
-              borderRadius: `${footerBackButtonBorderRadius}px`,
-              padding: "10px 24px",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Back
-          </button>
+        {/* Next Button */}
+        <div style={highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}}>
           <button
             style={{
               backgroundColor: footerNextButtonBgColor,
               color: footerNextButtonTextColor,
-              border: `1px solid ${footerNextButtonBorderColor}`,
+              border: "none",
               borderRadius: `${footerNextButtonBorderRadius}px`,
-              padding: "10px 24px",
-              fontSize: "13px",
+              padding: "12px 28px",
+              fontSize: "14px",
               fontWeight: 600,
               cursor: "pointer",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              minWidth: "100px",
             }}
           >
             Next
@@ -240,7 +372,7 @@ function FullPageFooterLayout({
   );
 }
 
-// Shared product-page footer layout
+// Product-page (modal) footer layout — matches storefront: Total Pill → Discount Text → Buttons
 function ProductPageFooterLayout({
   highlightTarget,
   footerBgColor,
@@ -262,6 +394,7 @@ function ProductPageFooterLayout({
   footerNextButtonTextColor,
   footerNextButtonBorderColor,
   footerNextButtonBorderRadius,
+  footerDiscountTextVisibility,
 }: {
   highlightTarget: HighlightTarget;
   footerBgColor: string;
@@ -283,6 +416,7 @@ function ProductPageFooterLayout({
   footerNextButtonTextColor: string;
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
+  footerDiscountTextVisibility: boolean;
 }) {
   return (
     <div
@@ -290,26 +424,27 @@ function ProductPageFooterLayout({
         backgroundColor: footerBgColor,
         borderRadius: `${footerBorderRadius}px`,
         padding: "12px 24px",
-        minWidth: "561px",
+        minWidth: "480px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
         borderTop: "1px solid #E5E7EB",
         boxShadow: "0 -2px 8px rgba(0,0,0,0.06)",
+        width: "100%",
         ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
       }}
     >
-      {/* Centered Content */}
+      {/* Centered Grouped Content — matches .modal-footer-grouped-content */}
       <div
         style={{
           display: "inline-flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: "15px",
+          gap: "8px",
         }}
       >
-        {/* Total Pill */}
+        {/* Total Pill — matches .modal-footer-total-pill */}
         {footerPriceVisibility !== false && (
           <div
             style={{
@@ -319,7 +454,7 @@ function ProductPageFooterLayout({
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              fontSize: "14px",
+              fontSize: "16px",
               fontWeight: 500,
               position: "relative",
               ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
@@ -340,26 +475,45 @@ function ProductPageFooterLayout({
             }}>
               $19.99
             </span>
-            <span style={{ color: "#666" }}>|</span>
-            <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ color: "#666", fontWeight: 400 }}>|</span>
+            <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: 600 }}>
               2
               <ShoppingCartIcon width={18} height={18} color="#666" />
             </span>
           </div>
         )}
 
-        {/* Buttons Row */}
+        {/* Discount Messaging — matches .modal-footer-discount-messaging */}
+        {footerDiscountTextVisibility && (
+          <div
+            style={{
+              textAlign: "center",
+              marginBottom: "8px",
+              marginTop: "8px",
+              ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
+            }}
+          >
+            <div style={{ fontSize: "14px", fontWeight: 500, color: "#374151", lineHeight: 1.4 }}>
+              Add 2 more items to get <strong>10% off</strong>
+            </div>
+          </div>
+        )}
+
+        {/* Buttons Row — matches .modal-footer-buttons-row */}
         <div
           style={{
             display: "flex",
-            gap: "15px",
+            gap: "12px",
             alignItems: "center",
             ...(highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}),
           }}
         >
-          {/* Back Button */}
+          {/* Back Button — matches .modal-nav-button.prev-button */}
           <button
             style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               backgroundColor: footerBackButtonBgColor,
               color: footerBackButtonTextColor,
               border: `2px solid ${footerBackButtonBorderColor}`,
@@ -368,14 +522,18 @@ function ProductPageFooterLayout({
               fontSize: "14px",
               fontWeight: 600,
               cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(0, 0, 0, 0.06)",
             }}
           >
             BACK
           </button>
 
-          {/* Next Button */}
+          {/* Next Button — matches .modal-nav-button.next-button */}
           <button
             style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               backgroundColor: footerNextButtonBgColor,
               color: footerNextButtonTextColor,
               border: `2px solid ${footerNextButtonBorderColor}`,
@@ -451,6 +609,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonTextColor,
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
+    footerDiscountTextVisibility,
   };
 
   const sharedFullPageProps = {

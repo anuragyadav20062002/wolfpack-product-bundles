@@ -28,6 +28,7 @@ import { BundleAnalyticsService } from "../../services/bundle-analytics.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
 import { useCallback, useEffect, useState } from "react";
+import billingStyles from "../../styles/routes/app-billing.module.css";
 import { useBillingState } from "../../hooks/useBillingState";
 import {
   calculateUsagePercentage,
@@ -271,7 +272,7 @@ export default function BillingPage() {
                       Current Plan
                     </Text>
                     {isGrowPlan && (
-                      <div style={{ color: '#ffc453' }}>
+                      <div className={billingStyles.starIcon}>
                         <Icon source={StarFilledIcon} />
                       </div>
                     )}
@@ -436,14 +437,10 @@ export default function BillingPage() {
               <Text as="h3" variant="headingMd">
                 Your Plan Features
               </Text>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '12px',
-              }}>
+              <div className={billingStyles.featuresGrid}>
                 {PLANS[currentPlan].features.map((feature, index) => (
                   <InlineStack key={index} gap="200" blockAlign="center">
-                    <div style={{ color: '#008060' }}>
+                    <div className={billingStyles.checkIcon}>
                       <Icon source={CheckCircleIcon} tone="success" />
                     </div>
                     <Text as="span" variant="bodyMd">

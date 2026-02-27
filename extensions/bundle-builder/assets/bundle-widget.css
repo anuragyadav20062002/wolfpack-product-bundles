@@ -2059,13 +2059,6 @@
   font-family: var(--bundle-heading-font-family, inherit);
 }
 
-.bundle-instruction {
-  font-size: 14px;
-  color: var(--bundle-text-color, #6b7280);
-  margin: 0;
-  font-family: var(--bundle-font-family, inherit);
-}
-
 /* ==========================================
    CATEGORY TABS (Collection Filters)
    ========================================== */
@@ -2427,12 +2420,55 @@
     font-size: 20px;
   }
 
-  .bundle-instruction {
-    font-size: 13px;
-  }
-
   .full-page-product-grid .product-card {
     flex: 0 0 240px;
     max-width: 240px;
   }
-} 
+}
+
+/* ============================================================================
+   LOADING OVERLAY
+   Semi-transparent backdrop with GIF or CSS spinner, scoped to widget area.
+   Parent container must have position: relative (enforced in widget JS).
+   ============================================================================ */
+
+.bundle-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  border-radius: inherit;
+}
+
+.bundle-loading-overlay.is-visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.bundle-loading-overlay__gif {
+  max-width: 150px;
+  max-height: 150px;
+  width: auto;
+  height: auto;
+  display: block;
+}
+
+.bundle-loading-overlay__default-animation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bundle-loading-overlay__default-animation svg {
+  max-width: 120px;
+  max-height: 40px;
+  width: auto;
+  height: auto;
+  display: block;
+}

@@ -11,7 +11,7 @@ export interface LogContext {
 }
 
 export class CartTransformLogger {
-  private static enabled = true; // Set to false to disable all logging
+  private static enabled = false; // Disabled to stay within WASM instruction limits
   
   static info(message: string, context?: LogContext, data?: any) {
     if (!this.enabled) return;

@@ -108,7 +108,9 @@ export async function updateCartTransformMetafield(
             // Include conditions for cart transform validation
             conditionType: step.conditionType || undefined,
             conditionOperator: step.conditionOperator || undefined,
-            conditionValue: step.conditionValue || undefined
+            conditionValue: step.conditionValue || undefined,
+            conditionOperator2: step.conditionOperator2 || undefined,
+            conditionValue2: step.conditionValue2 || undefined
           });
         }
 

@@ -9,9 +9,21 @@
 
 'use strict';
 
+import { BUNDLE_WIDGET } from './constants.js';
 import { CurrencyManager } from './currency-manager.js';
 
 export class ComponentGenerator {
+  /** Escape HTML special characters to prevent XSS in innerHTML contexts */
+  static escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   /**
    * Generates HTML for a product card with variant selector and quantity controls
    * @param {Object} product - Product data
@@ -27,7 +39,7 @@ export class ComponentGenerator {
 
     // Check if this is an expanded variant card (has parentProductId and no variants array)
     // In this case, don't show variant selector - each card IS a variant
-    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0 || product.variants === null);
+    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0);
 
     // Render inline quantity controls when item is selected (competitor-inspired design)
     const renderInlineQuantityControls = () => {
@@ -62,7 +74,7 @@ export class ComponentGenerator {
     // Render variant badge if this is an expanded variant card
     const renderVariantBadge = () => {
       if (isExpandedVariantCard && product.variantTitle) {
-        return `<div class="product-variant-badge">${product.variantTitle}</div>`;
+        return `<div class="product-variant-badge">${this.escapeHtml(product.variantTitle)}</div>`;
       }
       return '';
     };
@@ -74,11 +86,11 @@ export class ComponentGenerator {
         ` : ''}
 
         <div class="product-image">
-          <img src="${product.imageUrl || product.image?.src || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'}" alt="${product.title}" loading="lazy" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'">
+          <img src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
         </div>
 
         <div class="product-content-wrapper">
-          <div class="product-title">${product.parentTitle || product.title}</div>
+          <div class="product-title">${this.escapeHtml(product.parentTitle || product.title)}</div>
           ${renderVariantBadge()}
 
           ${product.price ? `
@@ -108,7 +120,7 @@ export class ComponentGenerator {
           <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
           <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
         </svg>
-        <p class="empty-state-card-text">${labelText}</p>
+        <p class="empty-state-card-text">${this.escapeHtml(labelText)}</p>
       </div>
     `).join('');
 
@@ -125,7 +137,7 @@ export class ComponentGenerator {
 
     const options = product.variants.map(variant => {
       const isAvailable = variant.available !== false;
-      const label = variant.title === 'Default Title' ? product.title : variant.title;
+      const label = this.escapeHtml(variant.title === 'Default Title' ? product.title : variant.title);
       return `<option value="${variant.id}" ${!isAvailable ? 'disabled' : ''}>${label}${!isAvailable ? ' (Out of Stock)' : ''}</option>`;
     }).join('');
 

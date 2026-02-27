@@ -72,6 +72,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleDescription = formData.get("bundleDescription") as string;
     const bundleStatus = formData.get("bundleStatus") as string;
     const templateName = formData.get("templateName") as string || null;
+    const fullPageLayout = formData.get("fullPageLayout") as string || "footer_bottom";
+    const promoBannerBgImageRaw = formData.get("promoBannerBgImage") as string;
+    const promoBannerBgImage = promoBannerBgImageRaw || null;
+    const promoBannerBgImageCropRaw = formData.get("promoBannerBgImageCrop") as string;
+    const promoBannerBgImageCrop = promoBannerBgImageCropRaw || null;
+    const loadingGifRaw = formData.get("loadingGif") as string;
+    const loadingGif = loadingGifRaw || null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -178,6 +185,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         // Preserve existing shopifyProductId if not provided in form
         shopifyProductId: bundleProductData?.id || existingBundle?.shopifyProductId || null,
         templateName: templateName,
+        fullPageLayout: fullPageLayout as any,
+        promoBannerBgImage: promoBannerBgImage,
+        promoBannerBgImageCrop: promoBannerBgImageCrop,
+        loadingGif: loadingGif,
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -186,6 +197,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
               // Get conditions for this step from stepConditionsData
               const stepConditions = stepConditionsData[step.id] || [];
               const firstCondition = stepConditions.length > 0 ? stepConditions[0] : null;
+              const secondCondition = stepConditions.length > 1 ? stepConditions[1] : null;
               AppLogger.debug(`[DEBUG] Step ${step.id} conditions:`, stepConditions);
               AppLogger.debug(`[DEBUG] Step ${step.id} first condition:`, firstCondition);
               AppLogger.debug(`[DEBUG] Will save to DB - conditionType: ${firstCondition?.type || null}, conditionOperator: ${firstCondition?.operator || null}, conditionValue: ${firstCondition?.value ? parseInt(firstCondition.value) || null : null}`);
@@ -203,6 +215,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,
                 conditionValue: firstCondition?.value ? parseInt(firstCondition.value) || null : null,
+                conditionOperator2: secondCondition?.operator || null,
+                conditionValue2: secondCondition?.value ? parseInt(secondCondition.value) || null : null,
                 // Create StepProduct records for selected products
                 StepProduct: {
                   create: (step.StepProduct || []).map((product: any, productIndex: number) => {
@@ -231,7 +245,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
-                showProgressBar: discountData.showProgressBar || false,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
@@ -243,7 +256,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
-                showProgressBar: discountData.showProgressBar || false,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
@@ -341,6 +353,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         conditionType: stepConditionsData[step.id]?.[0]?.type || null,
         conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
         conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
+        conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
+        conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
         // Store essential product data (IDs, titles, and images)
         products: (step.StepProduct || []).map((product: any) => ({
           id: product.id,
@@ -365,6 +379,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         description: updatedBundle.description,
         status: updatedBundle.status,
         bundleType: updatedBundle.bundleType,
+        fullPageLayout: updatedBundle.fullPageLayout || "footer_bottom",
         templateName: updatedBundle.templateName,
         steps: optimizedSteps,
         pricing: {
@@ -387,7 +402,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
           }),
           display: {
             showFooter: discountData.showFooter !== false,
-            showProgressBar: discountData.showProgressBar || false
           },
           messages: (() => {
             // Build messages from ruleMessages (per-rule messaging from admin form)
@@ -397,7 +411,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
               progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
               qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
               showDiscountMessaging: discountData.discountMessagingEnabled || false,
-              showProgressBar: discountData.showProgressBar || false,
               showInCart: true
             };
           })()
@@ -651,6 +664,11 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           }))
         }));
 
+        const syncMsgs = safeJsonParse(bundle.pricing.messages, {});
+        const syncRuleMessages = syncMsgs.ruleMessages || {};
+        const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
+        const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
+
         const bundleConfiguration = {
           bundleId: bundle.id,
           name: bundle.name,
@@ -667,7 +685,12 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
               value: rule.value || 0, // Keep as decimal - widget will convert to cents
               discountValue: rule.discountValue || 0,
               fixedBundlePrice: rule.fixedBundlePrice || 0
-            }))
+            })),
+            messages: {
+              progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
+              qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+              showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
+            }
           },
           lastSynced: new Date().toISOString(),
           shopifyProduct: {
@@ -801,6 +824,11 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       }))
     }));
 
+    const syncMsgs = safeJsonParse(bundle.pricing.messages, {});
+    const syncRuleMessages = syncMsgs.ruleMessages || {};
+    const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
+    const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
+
     const bundleConfiguration = {
       bundleId: bundle.id,
       name: bundle.name,
@@ -817,7 +845,12 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           value: rule.value || 0, // Keep as decimal - widget will convert to cents
           discountValue: rule.discountValue || 0,
           fixedBundlePrice: rule.fixedBundlePrice || 0
-        }))
+        })),
+        messages: {
+          progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
+          qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+          showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
+        }
       },
       updatedAt: new Date().toISOString()
     };

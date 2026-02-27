@@ -430,7 +430,6 @@ export interface PricingSettings {
   enabled: boolean;
   method: string;
   rules: PricingRule[];
-  showProgressBar: boolean;
   showFooter: boolean;
 }
 

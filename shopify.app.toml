@@ -10,7 +10,15 @@ handle = "wolfpack-product-bundles-4"
 api_version = "2025-10"
 
   [[webhooks.subscriptions]]
-  uri = "pubsub://light-quest-455608-i3:wolfpack-product-bundles"
+  topics = [
+  "app/uninstalled",
+  "products/update",
+  "products/delete",
+  "app_subscriptions/update",
+  "app/scopes_update",
+  "app_purchases_one_time/update"
+]
+  uri = "https://wolfpack-production-webhook-processor.onrender.com/webhooks"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access_scopes]
