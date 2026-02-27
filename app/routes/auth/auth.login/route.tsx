@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import {
   AppProvider as PolarisAppProvider,
@@ -20,6 +21,19 @@ import { loginErrorMessage } from "./error.server";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const url = new URL(request.url);
+
+  // If we're inside the Shopify Admin iframe, redirect to /app instead
+  // of showing the login form. The embedded auth strategy handles tokens.
+  if (url.searchParams.get("shop") || url.searchParams.get("host") || url.searchParams.get("id_token")) {
+    throw redirect(`/app?${url.searchParams.toString()}`);
+  }
+
+  const secFetchDest = request.headers.get("sec-fetch-dest");
+  if (secFetchDest === "iframe") {
+    throw redirect("/app");
+  }
+
   const errors = loginErrorMessage(await login(request));
 
   return { errors, polarisTranslations };

@@ -1,7 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
-import { useEffect } from "react";
 
 import { login } from "../../../shopify.server";
 
@@ -10,14 +9,21 @@ import styles from "./styles.module.css";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
 
-  // Redirect to /app when any Shopify context params are present
+  // Redirect to /app when any Shopify context params are present.
+  // These params indicate we're being loaded inside the Shopify Admin iframe.
   if (url.searchParams.get("shop") || url.searchParams.get("host") || url.searchParams.get("id_token")) {
     throw redirect(`/app?${url.searchParams.toString()}`);
   }
 
-  // Check if request comes from embedded context via headers
+  // Check if request comes from embedded context via headers.
+  // The Sec-Fetch-Dest header is set by the browser when loading in an iframe.
   const secFetchDest = request.headers.get("sec-fetch-dest");
   if (secFetchDest === "iframe") {
+    throw redirect("/app/dashboard");
+  }
+
+  // Check the embedded parameter that App Bridge may set
+  if (url.searchParams.get("embedded") === "1") {
     throw redirect("/app/dashboard");
   }
 
@@ -26,20 +32,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function App() {
   const { showForm } = useLoaderData<typeof loader>();
-
-  // If running inside the Shopify Admin iframe (embedded app), the user is
-  // already authenticated. Redirect to /app where App Bridge handles the session.
-  // This prevents the awkward login form from showing when navigating back.
-  useEffect(() => {
-    try {
-      if (window.self !== window.top) {
-        window.location.replace("/app");
-      }
-    } catch {
-      // Cross-origin access error means we're inside an iframe — redirect.
-      window.location.replace("/app");
-    }
-  }, []);
 
   return (
     <div className={styles.index}>
