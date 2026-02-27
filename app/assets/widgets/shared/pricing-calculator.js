@@ -41,9 +41,10 @@ export class PricingCalculator {
         }
 
         if (product && quantity > 0) {
-          // Use variant price if found within nested variants, otherwise use product price
+          // All prices in our pipeline are in cents (see MEMORY.md pricing pipeline).
+          // Use variant price if matched via nested lookup, otherwise use product-level price.
           const price = matchedVariant
-            ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : parseFloat(matchedVariant.price || '0') * 100)
+            ? (Number(matchedVariant.price) || 0)
             : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
@@ -126,6 +127,8 @@ export class PricingCalculator {
         discountAmount = 0;
     }
 
+    // Clamp discount so it never exceeds total (prevents >100% display)
+    discountAmount = Math.min(discountAmount, totalPrice);
     const finalPrice = Math.max(0, totalPrice - discountAmount);
     const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
@@ -189,8 +192,8 @@ export class PricingCalculator {
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
     if (!bundle?.pricing?.rules?.length) return null;
 
-    // Sort rules by condition value (ascending)
-    const rules = bundle.pricing.rules.sort((a, b) => a.condition.value - b.condition.value);
+    // Sort rules by condition value (ascending) — copy to avoid mutating the original
+    const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
 
     for (const rule of rules) {
       const conditionType = rule.condition.type;

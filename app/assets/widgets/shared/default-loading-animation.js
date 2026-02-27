@@ -15,7 +15,7 @@
  *
  * @returns {HTMLDivElement} A wrapper div containing the animated SVG
  */
-function createDefaultLoadingAnimation() {
+export function createDefaultLoadingAnimation() {
   // Inject CSS keyframes once (idempotent check)
   if (!document.getElementById('bundle-default-loading-keyframes')) {
     const style = document.createElement('style');

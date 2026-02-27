@@ -19,6 +19,9 @@
  */
 
 
+// NOTE: This file intentionally uses an IIFE + module.exports pattern (not ES module export)
+// so that Jest/Node.js tests can require() it without a transform step. All other files in
+// this directory use ES module syntax. Do not convert without updating the test config.
 const ConditionValidator = (function () {
   // ─── Operator constants ───────────────────────────────────────────────────
   const OPERATORS = {
@@ -260,7 +263,10 @@ const BUNDLE_WIDGET = {
     PERCENTAGE_OFF: 'percentage_off',
     FIXED_AMOUNT_OFF: 'fixed_amount_off',
     FIXED_BUNDLE_PRICE: 'fixed_bundle_price'
-  }
+  },
+
+  // Shared asset URLs
+  PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
 };
 
 
@@ -294,8 +300,8 @@ class CurrencyManager {
       };
     }
 
-    // Fallback: Shop base currency
-    return this.getShopBaseCurrency();
+    // Fallback: Shop base currency (include rate: 1 so downstream math doesn't produce NaN)
+    return { ...this.getShopBaseCurrency(), rate: 1 };
   }
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
@@ -306,7 +312,7 @@ class CurrencyManager {
       try {
         return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
-        // Fallback to manual conversion
+        console.warn('[BUNDLE_WIDGET] Shopify.currency.convert failed, using rate fallback:', e);
       }
     }
 
@@ -385,10 +391,14 @@ class BundleDataManager {
       });
 
       // Validate bundle type
-      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
-          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-        // Valid bundle type
-      } else {
+      if (
+        bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+        bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE
+      ) {
+        throw new Error(
+          `Bundle ${bundle.id} has invalid bundleType: "${bundle.bundleType}". ` +
+          `Expected "${BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE}" or "${BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE}".`
+        );
       }
 
       // Validate steps
@@ -419,10 +429,9 @@ class BundleDataManager {
     return true;
   }
 
-  static filterActivePublishedBundles(bundles) {
-    return bundles.filter(bundle =>
-      bundle.status === 'active' || bundle.status === 'published'
-    );
+  static filterActiveBundles(bundles) {
+    // BundleStatus enum: draft | active | archived — 'published' is not a valid status
+    return bundles.filter(bundle => bundle.status === 'active');
   }
 
   static getProductPageBundles(bundles) {
@@ -524,21 +533,18 @@ class BundleDataManager {
       }
     }
 
-    // Fallback: First active bundle
-    const fallbackBundle = bundles[0];
-    if (fallbackBundle) {
-      return fallbackBundle;
-    }
+    // No bundle matched the config criteria — return null so the widget hides itself
+    console.warn('[BUNDLE_WIDGET] selectBundle: no bundle matched config:', config);
     return null;
   }
 
   static isThemeEditorContext() {
-    return window.isThemeEditorContext ||
+    return window.Shopify?.designMode ||
+      window.isThemeEditorContext ||
       window.location.pathname.includes('/editor') ||
       window.location.search.includes('preview_theme_id') ||
       window.location.search.includes('previewPath') ||
       document.referrer.includes('admin.shopify.com') ||
-      window.parent !== window ||
       window.autoDetectedBundleId;
   }
 }
@@ -584,9 +590,10 @@ class PricingCalculator {
         }
 
         if (product && quantity > 0) {
-          // Use variant price if found within nested variants, otherwise use product price
+          // All prices in our pipeline are in cents (see MEMORY.md pricing pipeline).
+          // Use variant price if matched via nested lookup, otherwise use product-level price.
           const price = matchedVariant
-            ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : parseFloat(matchedVariant.price || '0') * 100)
+            ? (Number(matchedVariant.price) || 0)
             : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
@@ -669,6 +676,8 @@ class PricingCalculator {
         discountAmount = 0;
     }
 
+    // Clamp discount so it never exceeds total (prevents >100% display)
+    discountAmount = Math.min(discountAmount, totalPrice);
     const finalPrice = Math.max(0, totalPrice - discountAmount);
     const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
@@ -732,8 +741,8 @@ class PricingCalculator {
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
     if (!bundle?.pricing?.rules?.length) return null;
 
-    // Sort rules by condition value (ascending)
-    const rules = bundle.pricing.rules.sort((a, b) => a.condition.value - b.condition.value);
+    // Sort rules by condition value (ascending) — copy to avoid mutating the original
+    const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
 
     for (const rule of rules) {
       const conditionType = rule.condition.type;
@@ -770,6 +779,17 @@ class PricingCalculator {
 
 
 class ToastManager {
+  /** Escape HTML to prevent XSS in toast messages */
+  static _escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -782,11 +802,16 @@ class ToastManager {
     toast.id = 'bundle-toast';
     toast.className = `bundle-toast`;
     toast.innerHTML = `
-      <span>${message}</span>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;" onclick="this.parentElement.remove()">
+      <span>${this._escapeHtml(message)}</span>
+      <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
+
+    // Attach close listener (consistent with showWithUndo pattern)
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      toast.remove();
+    });
 
     // Add to page (styles come from bundle-widget.css with DCP CSS variables)
     document.body.appendChild(toast);
@@ -814,7 +839,7 @@ class ToastManager {
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast bundle-toast-with-undo';
     toast.innerHTML = `
-      <span class="toast-message">${message}</span>
+      <span class="toast-message">${this._escapeHtml(message)}</span>
       <button class="toast-undo-btn" type="button">Undo</button>
       <svg class="toast-close" width="18" height="18" viewBox="0 0 24 24" fill="none">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -871,11 +896,8 @@ class TemplateManager {
 
     let result = template;
 
-    // Replace variables with both single and double curly braces
+    // Replace variables — double braces first to prevent single-brace partial matches
     Object.entries(variables).forEach(([key, value]) => {
-      const singleBrace = new RegExp(`\\{${key}\\}`, 'g');
-      const doubleBrace = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-
       // Wrap conditionText and discountText with styled spans
       let replacementValue = value;
       if (key === 'conditionText') {
@@ -884,8 +906,9 @@ class TemplateManager {
         replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit);">${value}</span>`;
       }
 
-      result = result.replace(singleBrace, replacementValue);
-      result = result.replace(doubleBrace, replacementValue);
+      // Single pass: match {{key}} or {key} (double-brace variant matched first)
+      const combined = new RegExp(`\\{\\{${key}\\}\\}|\\{${key}\\}`, 'g');
+      result = result.replace(combined, replacementValue);
     });
     return result;
   }
@@ -1006,7 +1029,9 @@ class TemplateManager {
   }
 
   static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
-    // Add safety check for undefined/null values
+    if (rawDiscountValue == null) {
+      console.warn('[BUNDLE_WIDGET] calculateDiscountData: rawDiscountValue is', rawDiscountValue);
+    }
     const safeValue = parseFloat(rawDiscountValue) || 0;
 
     switch (discountMethod) {
@@ -1095,6 +1120,17 @@ class TemplateManager {
 
 
 class ComponentGenerator {
+  /** Escape HTML special characters to prevent XSS in innerHTML contexts */
+  static escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   /**
    * Generates HTML for a product card with variant selector and quantity controls
    * @param {Object} product - Product data
@@ -1110,7 +1146,7 @@ class ComponentGenerator {
 
     // Check if this is an expanded variant card (has parentProductId and no variants array)
     // In this case, don't show variant selector - each card IS a variant
-    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0 || product.variants === null);
+    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0);
 
     // Render inline quantity controls when item is selected (competitor-inspired design)
     const renderInlineQuantityControls = () => {
@@ -1145,7 +1181,7 @@ class ComponentGenerator {
     // Render variant badge if this is an expanded variant card
     const renderVariantBadge = () => {
       if (isExpandedVariantCard && product.variantTitle) {
-        return `<div class="product-variant-badge">${product.variantTitle}</div>`;
+        return `<div class="product-variant-badge">${this.escapeHtml(product.variantTitle)}</div>`;
       }
       return '';
     };
@@ -1157,11 +1193,11 @@ class ComponentGenerator {
         ` : ''}
 
         <div class="product-image">
-          <img src="${product.imageUrl || product.image?.src || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'}" alt="${product.title}" loading="lazy" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'">
+          <img src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
         </div>
 
         <div class="product-content-wrapper">
-          <div class="product-title">${product.parentTitle || product.title}</div>
+          <div class="product-title">${this.escapeHtml(product.parentTitle || product.title)}</div>
           ${renderVariantBadge()}
 
           ${product.price ? `
@@ -1191,7 +1227,7 @@ class ComponentGenerator {
           <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
           <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
         </svg>
-        <p class="empty-state-card-text">${labelText}</p>
+        <p class="empty-state-card-text">${this.escapeHtml(labelText)}</p>
       </div>
     `).join('');
 
@@ -1208,7 +1244,7 @@ class ComponentGenerator {
 
     const options = product.variants.map(variant => {
       const isAvailable = variant.available !== false;
-      const label = variant.title === 'Default Title' ? product.title : variant.title;
+      const label = this.escapeHtml(variant.title === 'Default Title' ? product.title : variant.title);
       return `<option value="${variant.id}" ${!isAvailable ? 'disabled' : ''}>${label}${!isAvailable ? ' (Out of Stock)' : ''}</option>`;
     }).join('');
 
@@ -1764,7 +1800,7 @@ class BundleProductModal {
 
     if (images.length === 0) {
       // Use fallback placeholder
-      mainImageEl.src = 'https://via.placeholder.com/600x600?text=No+Image';
+      mainImageEl.src = BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
       mainImageEl.alt = this.currentProduct.title;
       thumbnailsContainer.innerHTML = '';
       imageCounter.style.display = 'none';
@@ -2168,7 +2204,7 @@ class BundleProductModal {
 
     let priceHTML = '';
 
-    if (compareAtPrice && parseFloat(compareAtPrice) > parseFloat(price)) {
+    if (compareAtPrice && Number(compareAtPrice) > Number(price)) {
       priceHTML = `
         <span class="bundle-modal-price-strike">${this.formatPrice(compareAtPrice)}</span>
         <span class="bundle-modal-price-sale">${this.formatPrice(price)}</span>
@@ -2203,10 +2239,9 @@ class BundleProductModal {
     const addBtn = document.getElementById('modal-add-to-box');
     const variant = this.selectedVariant || this.currentProduct;
 
-    // Check if variant is available (handle different property names)
+    // Check if variant is available (handle different property names from Storefront API)
     const isAvailable = variant.available !== false &&
-                        variant.availableForSale !== false &&
-                        variant.inventory_quantity !== 0;
+                        variant.availableForSale !== false;
 
     if (!isAvailable) {
       addBtn.disabled = true;
@@ -2795,10 +2830,10 @@ class BundleWidgetFullPage {
     // Use custom description if provided, otherwise use bundle description
     const description = this.config.customDescription || this.selectedBundle.description;
 
-    // Build header HTML
-    const titleHTML = `<h2 class="bundle-title">${title}</h2>`;
+    // Build header HTML (escape user-provided content)
+    const titleHTML = `<h2 class="bundle-title">${ComponentGenerator.escapeHtml(title)}</h2>`;
     const descriptionHTML = (description && this.config.showDescription)
-      ? `<p class="bundle-description">${description}</p>`
+      ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(description)}</p>`
       : '';
 
     header.innerHTML = `
@@ -3594,27 +3629,27 @@ class BundleWidgetFullPage {
     if (pricing?.enabled && rules.length > 0) {
       // Find the best discount to highlight (use nested structure)
       const bestRule = rules.reduce((best, rule) => {
-        const discountValue = rule.discount?.method === 'percentage'
+        const discountValue = rule.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
           ? rule.discount?.value || 0
           : ((rule.discount?.value || 0) / 100);
-        const bestValue = best.discount?.method === 'percentage'
+        const bestValue = best.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
           ? best.discount?.value || 0
           : ((best.discount?.value || 0) / 100);
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
       // Build discount message based on best rule (using nested structure)
-      const targetQty = bestRule.condition?.value || bestRule.minQuantity || 0;
-      const discountMethod = bestRule.discount?.method || bestRule.discountType;
-      const discountValue = bestRule.discount?.value || bestRule.discountValue || 0;
+      const targetQty = bestRule.condition?.value || 0;
+      const discountMethod = bestRule.discount?.method;
+      const discountValue = bestRule.discount?.value || 0;
 
-      if (discountMethod === 'percentage' && discountValue > 0) {
+      if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
         discountMessage = `Add ${targetQty} items and get ${discountValue}% off!`;
-      } else if (discountMethod === 'fixed_amount' && discountValue > 0) {
-        const formattedAmount = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+      } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
+        const formattedAmount = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
         discountMessage = `Add ${targetQty} items and save ${formattedAmount}!`;
-      } else if (discountMethod === 'fixed_price' && discountValue > 0) {
-        const formattedPrice = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+      } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
+        const formattedPrice = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
         discountMessage = `Add ${targetQty} items for just ${formattedPrice}!`;
       }
     }
@@ -3640,9 +3675,9 @@ class BundleWidgetFullPage {
     banner.className = 'promo-banner';
     banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
     banner.innerHTML = `
-      ${promoSubtitle ? `<div class="promo-banner-subtitle">${promoSubtitle}</div>` : ''}
-      <h2 class="promo-banner-title">${promoTitle}</h2>
-      ${promoNote ? `<div class="promo-banner-note">${promoNote}</div>` : ''}
+      ${promoSubtitle ? `<div class="promo-banner-subtitle">${ComponentGenerator.escapeHtml(promoSubtitle)}</div>` : ''}
+      <h2 class="promo-banner-title">${ComponentGenerator.escapeHtml(promoTitle)}</h2>
+      ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
     `;
 
     // Apply per-bundle promo banner background image directly as inline style.
@@ -3712,7 +3747,7 @@ class BundleWidgetFullPage {
       if (this.activeCollectionId === collection.id) {
         tab.classList.add('active');
       }
-      tab.innerHTML = `<span class="tab-label">${collection.title}</span>`;
+      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(collection.title)}</span>`;
       tab.addEventListener('click', () => {
         this.activeCollectionId = collection.id;
         this.reRenderFullPage();
@@ -3762,7 +3797,7 @@ class BundleWidgetFullPage {
     if (expandedProducts.length === 0) {
       // Show appropriate message based on whether there's a search query
       const message = this.searchQuery
-        ? `No products match "${this.searchQuery}"`
+        ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
         : 'No products available in this step.';
       grid.innerHTML = `<p class="no-products">${message}</p>`;
       return grid;
@@ -3793,7 +3828,7 @@ class BundleWidgetFullPage {
           .filter(variant => variant.available !== false) // Only show available variants
           .map(variant => {
             // Use variant image if available, fallback to product image
-            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               ...product,
@@ -3912,16 +3947,11 @@ class BundleWidgetFullPage {
       product.imageUrl = product.image?.src ||
                         product.featuredImage?.url ||
                         product.images?.[0]?.url ||
-                        'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png';
+                        BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
     }
 
     // Get currency info for formatting
-    const currencyInfo = {
-      display: {
-        currency: window.shopCurrency || 'USD',
-        format: window.shopMoneyFormat || '${{amount}}'
-      }
-    };
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     // Use ComponentGenerator to render HTML (available in same scope after bundling)
     const htmlString = ComponentGenerator.renderProductCard(
@@ -4194,14 +4224,14 @@ class BundleWidgetFullPage {
 
       tile.innerHTML = `
         <div class="tile-image-wrapper">
-          <img src="${item.imageUrl || 'https://via.placeholder.com/50'}" alt="${item.title}" class="tile-image">
+          <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(item.title)}" class="tile-image">
           <span class="tile-quantity-badge">${item.quantity}</span>
         </div>
         <div class="tile-info">
-          <span class="tile-product-name">${displayTitle}</span>
-          ${variantInfo ? `<span class="tile-variant-name">${variantInfo}</span>` : ''}
+          <span class="tile-product-name">${ComponentGenerator.escapeHtml(displayTitle)}</span>
+          ${variantInfo ? `<span class="tile-variant-name">${ComponentGenerator.escapeHtml(variantInfo)}</span>` : ''}
         </div>
-        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${item.title}">×</button>
+        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">×</button>
       `;
 
       // Attach remove handler with undo support
@@ -4249,8 +4279,8 @@ class BundleWidgetFullPage {
     const rules = this.selectedBundle.pricing.rules || [];
     if (rules.length === 0) return 0;
 
-    // Find the highest threshold
-    const maxThreshold = Math.max(...rules.map(r => r.minQuantity || 0));
+    // Find the highest threshold (nested structure: rule.condition.value)
+    const maxThreshold = Math.max(...rules.map(r => r.condition?.value || 0));
     if (maxThreshold === 0) return 0;
 
     return Math.min(100, (currentQuantity / maxThreshold) * 100);
@@ -5179,11 +5209,11 @@ class BundleWidgetFullPage {
           ` : ''}
 
           <div class="product-image">
-            <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+            <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           </div>
 
           <div class="product-content-wrapper">
-            <div class="product-title">${product.title}</div>
+            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
 
             ${product.price ? `
               <div class="product-price-row">

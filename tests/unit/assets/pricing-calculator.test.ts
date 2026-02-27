@@ -107,19 +107,22 @@ describe('PricingCalculator.normalizeCondition', () => {
 
 describe('PricingCalculator.checkCondition', () => {
   // equal_to
-  describe('equal_to / eq', () => {
+  describe('equal_to / eq (threshold: >= semantics for discount rules)', () => {
     it('true when value exactly equals target', () => {
       expect(PricingCalculator.checkCondition(5, EQ, 5)).toBe(true);
     });
     it('false when value is one below target', () => {
       expect(PricingCalculator.checkCondition(4, EQ, 5)).toBe(false);
     });
-    it('false when value is one above target', () => {
-      expect(PricingCalculator.checkCondition(6, EQ, 5)).toBe(false);
+    it('true when value is above target (threshold behavior)', () => {
+      // For discount pricing rules, "equal to N" means "at N or more"
+      // so buying 6 when condition is "equal to 5" still qualifies
+      expect(PricingCalculator.checkCondition(6, EQ, 5)).toBe(true);
     });
     it('accepts short operator eq', () => {
       expect(PricingCalculator.checkCondition(3, 'eq', 3)).toBe(true);
-      expect(PricingCalculator.checkCondition(4, 'eq', 3)).toBe(false);
+      // Above threshold also qualifies
+      expect(PricingCalculator.checkCondition(4, 'eq', 3)).toBe(true);
     });
   });
 
@@ -516,11 +519,12 @@ describe('PricingCalculator.calculateDiscount — return shape', () => {
 // ─── calculateDiscount — operator coverage ───────────────────────────────────
 
 describe('PricingCalculator.calculateDiscount — all 5 quantity operators', () => {
-  it('equal_to: discount applied only at exact quantity', () => {
+  it('equal_to: discount applied at and above threshold (>= semantics)', () => {
     const bundle = makeBundle(true, [makeQtyRule('eq', 3, 'percentage_off', 10)]);
     expect(PricingCalculator.calculateDiscount(bundle, 2000, 2).hasDiscount).toBe(false);
     expect(PricingCalculator.calculateDiscount(bundle, 3000, 3).hasDiscount).toBe(true);
-    expect(PricingCalculator.calculateDiscount(bundle, 4000, 4).hasDiscount).toBe(false);
+    // "equal to 3" in discount context means "3 or more" (threshold behavior)
+    expect(PricingCalculator.calculateDiscount(bundle, 4000, 4).hasDiscount).toBe(true);
   });
 
   it('greater_than: discount applied only strictly above threshold', () => {
@@ -551,11 +555,12 @@ describe('PricingCalculator.calculateDiscount — all 5 quantity operators', () 
 });
 
 describe('PricingCalculator.calculateDiscount — all 5 amount operators', () => {
-  it('eq: discount applied only at exact amount', () => {
+  it('eq: discount applied at and above threshold (>= semantics)', () => {
     const bundle = makeBundle(true, [makeAmtRule('eq', 3000, 'percentage_off', 10)]);
     expect(PricingCalculator.calculateDiscount(bundle, 2000, 2).hasDiscount).toBe(false);
     expect(PricingCalculator.calculateDiscount(bundle, 3000, 3).hasDiscount).toBe(true);
-    expect(PricingCalculator.calculateDiscount(bundle, 4000, 4).hasDiscount).toBe(false);
+    // "equal to 3000" in discount context means "3000 or more" (threshold behavior)
+    expect(PricingCalculator.calculateDiscount(bundle, 4000, 4).hasDiscount).toBe(true);
   });
 
   it('gt: discount applied only strictly above threshold', () => {

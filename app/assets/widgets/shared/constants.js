@@ -47,5 +47,8 @@ export const BUNDLE_WIDGET = {
     PERCENTAGE_OFF: 'percentage_off',
     FIXED_AMOUNT_OFF: 'fixed_amount_off',
     FIXED_BUNDLE_PRICE: 'fixed_bundle_price'
-  }
+  },
+
+  // Shared asset URLs
+  PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
 };

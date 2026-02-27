@@ -505,10 +505,10 @@ class BundleWidgetFullPage {
     // Use custom description if provided, otherwise use bundle description
     const description = this.config.customDescription || this.selectedBundle.description;
 
-    // Build header HTML
-    const titleHTML = `<h2 class="bundle-title">${title}</h2>`;
+    // Build header HTML (escape user-provided content)
+    const titleHTML = `<h2 class="bundle-title">${ComponentGenerator.escapeHtml(title)}</h2>`;
     const descriptionHTML = (description && this.config.showDescription)
-      ? `<p class="bundle-description">${description}</p>`
+      ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(description)}</p>`
       : '';
 
     header.innerHTML = `
@@ -1304,27 +1304,27 @@ class BundleWidgetFullPage {
     if (pricing?.enabled && rules.length > 0) {
       // Find the best discount to highlight (use nested structure)
       const bestRule = rules.reduce((best, rule) => {
-        const discountValue = rule.discount?.method === 'percentage'
+        const discountValue = rule.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
           ? rule.discount?.value || 0
           : ((rule.discount?.value || 0) / 100);
-        const bestValue = best.discount?.method === 'percentage'
+        const bestValue = best.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
           ? best.discount?.value || 0
           : ((best.discount?.value || 0) / 100);
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
       // Build discount message based on best rule (using nested structure)
-      const targetQty = bestRule.condition?.value || bestRule.minQuantity || 0;
-      const discountMethod = bestRule.discount?.method || bestRule.discountType;
-      const discountValue = bestRule.discount?.value || bestRule.discountValue || 0;
+      const targetQty = bestRule.condition?.value || 0;
+      const discountMethod = bestRule.discount?.method;
+      const discountValue = bestRule.discount?.value || 0;
 
-      if (discountMethod === 'percentage' && discountValue > 0) {
+      if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
         discountMessage = `Add ${targetQty} items and get ${discountValue}% off!`;
-      } else if (discountMethod === 'fixed_amount' && discountValue > 0) {
-        const formattedAmount = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+      } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
+        const formattedAmount = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
         discountMessage = `Add ${targetQty} items and save ${formattedAmount}!`;
-      } else if (discountMethod === 'fixed_price' && discountValue > 0) {
-        const formattedPrice = CurrencyManager.formatMoney(discountValue * 100, currencyInfo.display.format);
+      } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
+        const formattedPrice = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
         discountMessage = `Add ${targetQty} items for just ${formattedPrice}!`;
       }
     }
@@ -1350,9 +1350,9 @@ class BundleWidgetFullPage {
     banner.className = 'promo-banner';
     banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
     banner.innerHTML = `
-      ${promoSubtitle ? `<div class="promo-banner-subtitle">${promoSubtitle}</div>` : ''}
-      <h2 class="promo-banner-title">${promoTitle}</h2>
-      ${promoNote ? `<div class="promo-banner-note">${promoNote}</div>` : ''}
+      ${promoSubtitle ? `<div class="promo-banner-subtitle">${ComponentGenerator.escapeHtml(promoSubtitle)}</div>` : ''}
+      <h2 class="promo-banner-title">${ComponentGenerator.escapeHtml(promoTitle)}</h2>
+      ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
     `;
 
     // Apply per-bundle promo banner background image directly as inline style.
@@ -1422,7 +1422,7 @@ class BundleWidgetFullPage {
       if (this.activeCollectionId === collection.id) {
         tab.classList.add('active');
       }
-      tab.innerHTML = `<span class="tab-label">${collection.title}</span>`;
+      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(collection.title)}</span>`;
       tab.addEventListener('click', () => {
         this.activeCollectionId = collection.id;
         this.reRenderFullPage();
@@ -1472,7 +1472,7 @@ class BundleWidgetFullPage {
     if (expandedProducts.length === 0) {
       // Show appropriate message based on whether there's a search query
       const message = this.searchQuery
-        ? `No products match "${this.searchQuery}"`
+        ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
         : 'No products available in this step.';
       grid.innerHTML = `<p class="no-products">${message}</p>`;
       return grid;
@@ -1503,7 +1503,7 @@ class BundleWidgetFullPage {
           .filter(variant => variant.available !== false) // Only show available variants
           .map(variant => {
             // Use variant image if available, fallback to product image
-            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               ...product,
@@ -1622,16 +1622,11 @@ class BundleWidgetFullPage {
       product.imageUrl = product.image?.src ||
                         product.featuredImage?.url ||
                         product.images?.[0]?.url ||
-                        'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png';
+                        BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
     }
 
     // Get currency info for formatting
-    const currencyInfo = {
-      display: {
-        currency: window.shopCurrency || 'USD',
-        format: window.shopMoneyFormat || '${{amount}}'
-      }
-    };
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     // Use ComponentGenerator to render HTML (available in same scope after bundling)
     const htmlString = ComponentGenerator.renderProductCard(
@@ -1904,14 +1899,14 @@ class BundleWidgetFullPage {
 
       tile.innerHTML = `
         <div class="tile-image-wrapper">
-          <img src="${item.imageUrl || 'https://via.placeholder.com/50'}" alt="${item.title}" class="tile-image">
+          <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(item.title)}" class="tile-image">
           <span class="tile-quantity-badge">${item.quantity}</span>
         </div>
         <div class="tile-info">
-          <span class="tile-product-name">${displayTitle}</span>
-          ${variantInfo ? `<span class="tile-variant-name">${variantInfo}</span>` : ''}
+          <span class="tile-product-name">${ComponentGenerator.escapeHtml(displayTitle)}</span>
+          ${variantInfo ? `<span class="tile-variant-name">${ComponentGenerator.escapeHtml(variantInfo)}</span>` : ''}
         </div>
-        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${item.title}">×</button>
+        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">×</button>
       `;
 
       // Attach remove handler with undo support
@@ -1959,8 +1954,8 @@ class BundleWidgetFullPage {
     const rules = this.selectedBundle.pricing.rules || [];
     if (rules.length === 0) return 0;
 
-    // Find the highest threshold
-    const maxThreshold = Math.max(...rules.map(r => r.minQuantity || 0));
+    // Find the highest threshold (nested structure: rule.condition.value)
+    const maxThreshold = Math.max(...rules.map(r => r.condition?.value || 0));
     if (maxThreshold === 0) return 0;
 
     return Math.min(100, (currentQuantity / maxThreshold) * 100);
@@ -2889,11 +2884,11 @@ class BundleWidgetFullPage {
           ` : ''}
 
           <div class="product-image">
-            <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+            <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           </div>
 
           <div class="product-content-wrapper">
-            <div class="product-title">${product.title}</div>
+            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
 
             ${product.price ? `
               <div class="product-price-row">

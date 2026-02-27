@@ -13,6 +13,9 @@
 
 'use strict';
 
+// NOTE: This file intentionally uses an IIFE + module.exports pattern (not ES module export)
+// so that Jest/Node.js tests can require() it without a transform step. All other files in
+// this directory use ES module syntax. Do not convert without updating the test config.
 const ConditionValidator = (function () {
   // ─── Operator constants ───────────────────────────────────────────────────
   const OPERATORS = {

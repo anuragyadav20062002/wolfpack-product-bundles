@@ -230,16 +230,23 @@ describe('canUpdateQuantity — unknown operator', () => {
 // ─── isStepConditionSatisfied — no condition ─────────────────────────────────
 
 describe('isStepConditionSatisfied — no condition', () => {
-  it('is satisfied with no conditionType (optional step)', () => {
-    expect(isStepConditionSatisfied({ conditionType: null, conditionOperator: EQ, conditionValue: 2 }, {})).toBe(true);
+  it('falls back to minQuantity (default 1) with no conditionType', () => {
+    // No condition → defaults to minQuantity:1, so empty selections fail
+    expect(isStepConditionSatisfied({ conditionType: null, conditionOperator: EQ, conditionValue: 2 }, {})).toBe(false);
+    // With at least 1 selected, it passes
+    expect(isStepConditionSatisfied({ conditionType: null, conditionOperator: EQ, conditionValue: 2 }, { A: 1 })).toBe(true);
+    // With explicit minQuantity: 0, empty selections pass (truly optional)
+    expect(isStepConditionSatisfied({ conditionType: null, conditionOperator: EQ, conditionValue: 2, minQuantity: 0 }, {})).toBe(true);
   });
 
-  it('is satisfied with no conditionValue', () => {
-    expect(isStepConditionSatisfied({ conditionType: 'quantity', conditionOperator: EQ, conditionValue: null }, {})).toBe(true);
+  it('falls back to minQuantity (default 1) with no conditionValue', () => {
+    expect(isStepConditionSatisfied({ conditionType: 'quantity', conditionOperator: EQ, conditionValue: null }, {})).toBe(false);
+    expect(isStepConditionSatisfied({ conditionType: 'quantity', conditionOperator: EQ, conditionValue: null }, { A: 1 })).toBe(true);
   });
 
-  it('is satisfied with undefined conditionValue', () => {
-    expect(isStepConditionSatisfied({ conditionType: 'quantity', conditionOperator: EQ, conditionValue: undefined }, {})).toBe(true);
+  it('falls back to minQuantity (default 1) with undefined conditionValue', () => {
+    expect(isStepConditionSatisfied({ conditionType: 'quantity', conditionOperator: EQ, conditionValue: undefined }, {})).toBe(false);
+    expect(isStepConditionSatisfied({ conditionType: 'quantity', conditionOperator: EQ, conditionValue: undefined, minQuantity: 0 }, {})).toBe(true);
   });
 
   it('is satisfied with null step', () => {

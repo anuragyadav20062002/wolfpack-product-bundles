@@ -367,8 +367,8 @@ class BundleWidgetProductPage {
     const header = document.createElement('div');
     header.className = 'bundle-header';
     header.innerHTML = `
-      <h2 class="bundle-title">${this.selectedBundle.name}</h2>
-      ${this.selectedBundle.description ? `<p class="bundle-description">${this.selectedBundle.description}</p>` : ''}
+      <h2 class="bundle-title">${ComponentGenerator.escapeHtml(this.selectedBundle.name)}</h2>
+      ${this.selectedBundle.description ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(this.selectedBundle.description)}</p>` : ''}
     `;
     return header;
   }
@@ -700,7 +700,7 @@ class BundleWidgetProductPage {
     imagesContainer.className = 'step-images single-image';
 
     const img = document.createElement('img');
-    img.src = product.imageUrl || 'https://via.placeholder.com/150';
+    img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
     img.alt = product.title || '';
     img.className = 'step-image';
     imagesContainer.appendChild(img);
@@ -1062,7 +1062,7 @@ class BundleWidgetProductPage {
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
             // Storefront API: prioritize variant image, fallback to product featured image
-            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               id: this.extractId(variant.id),
@@ -1091,7 +1091,7 @@ class BundleWidgetProductPage {
         }
 
         // Storefront API: prioritize variant image, fallback to product featured image
-        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
         // Process variants array for variant selection in modal
         const processedVariants = (product.variants || []).map(v => ({
@@ -1160,7 +1160,7 @@ class BundleWidgetProductPage {
           .filter(variant => variant.available !== false) // Only show available variants
           .map(variant => {
             // Use variant image if available, fallback to product image
-            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               ...product,
@@ -1284,11 +1284,11 @@ class BundleWidgetProductPage {
           ` : ''}
 
           <div class="product-image">
-            <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+            <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           </div>
 
           <div class="product-content-wrapper">
-            <div class="product-title">${product.title}</div>
+            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
 
             ${product.price ? `
               <div class="product-price-row">

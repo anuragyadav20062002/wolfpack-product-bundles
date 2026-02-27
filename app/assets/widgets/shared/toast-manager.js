@@ -10,6 +10,17 @@
 'use strict';
 
 export class ToastManager {
+  /** Escape HTML to prevent XSS in toast messages */
+  static _escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -22,11 +33,16 @@ export class ToastManager {
     toast.id = 'bundle-toast';
     toast.className = `bundle-toast`;
     toast.innerHTML = `
-      <span>${message}</span>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;" onclick="this.parentElement.remove()">
+      <span>${this._escapeHtml(message)}</span>
+      <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
+
+    // Attach close listener (consistent with showWithUndo pattern)
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      toast.remove();
+    });
 
     // Add to page (styles come from bundle-widget.css with DCP CSS variables)
     document.body.appendChild(toast);
@@ -54,7 +70,7 @@ export class ToastManager {
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast bundle-toast-with-undo';
     toast.innerHTML = `
-      <span class="toast-message">${message}</span>
+      <span class="toast-message">${this._escapeHtml(message)}</span>
       <button class="toast-undo-btn" type="button">Undo</button>
       <svg class="toast-close" width="18" height="18" viewBox="0 0 24 24" fill="none">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

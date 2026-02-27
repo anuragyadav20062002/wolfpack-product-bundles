@@ -19,11 +19,8 @@ export class TemplateManager {
 
     let result = template;
 
-    // Replace variables with both single and double curly braces
+    // Replace variables — double braces first to prevent single-brace partial matches
     Object.entries(variables).forEach(([key, value]) => {
-      const singleBrace = new RegExp(`\\{${key}\\}`, 'g');
-      const doubleBrace = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-
       // Wrap conditionText and discountText with styled spans
       let replacementValue = value;
       if (key === 'conditionText') {
@@ -32,8 +29,9 @@ export class TemplateManager {
         replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit);">${value}</span>`;
       }
 
-      result = result.replace(singleBrace, replacementValue);
-      result = result.replace(doubleBrace, replacementValue);
+      // Single pass: match {{key}} or {key} (double-brace variant matched first)
+      const combined = new RegExp(`\\{\\{${key}\\}\\}|\\{${key}\\}`, 'g');
+      result = result.replace(combined, replacementValue);
     });
     return result;
   }
@@ -154,7 +152,9 @@ export class TemplateManager {
   }
 
   static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
-    // Add safety check for undefined/null values
+    if (rawDiscountValue == null) {
+      console.warn('[BUNDLE_WIDGET] calculateDiscountData: rawDiscountValue is', rawDiscountValue);
+    }
     const safeValue = parseFloat(rawDiscountValue) || 0;
 
     switch (discountMethod) {

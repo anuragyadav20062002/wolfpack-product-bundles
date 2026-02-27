@@ -26,10 +26,14 @@ export class BundleDataManager {
       });
 
       // Validate bundle type
-      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
-          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-        // Valid bundle type
-      } else {
+      if (
+        bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+        bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE
+      ) {
+        throw new Error(
+          `Bundle ${bundle.id} has invalid bundleType: "${bundle.bundleType}". ` +
+          `Expected "${BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE}" or "${BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE}".`
+        );
       }
 
       // Validate steps
@@ -60,10 +64,9 @@ export class BundleDataManager {
     return true;
   }
 
-  static filterActivePublishedBundles(bundles) {
-    return bundles.filter(bundle =>
-      bundle.status === 'active' || bundle.status === 'published'
-    );
+  static filterActiveBundles(bundles) {
+    // BundleStatus enum: draft | active | archived — 'published' is not a valid status
+    return bundles.filter(bundle => bundle.status === 'active');
   }
 
   static getProductPageBundles(bundles) {
@@ -165,21 +168,18 @@ export class BundleDataManager {
       }
     }
 
-    // Fallback: First active bundle
-    const fallbackBundle = bundles[0];
-    if (fallbackBundle) {
-      return fallbackBundle;
-    }
+    // No bundle matched the config criteria — return null so the widget hides itself
+    console.warn('[BUNDLE_WIDGET] selectBundle: no bundle matched config:', config);
     return null;
   }
 
   static isThemeEditorContext() {
-    return window.isThemeEditorContext ||
+    return window.Shopify?.designMode ||
+      window.isThemeEditorContext ||
       window.location.pathname.includes('/editor') ||
       window.location.search.includes('preview_theme_id') ||
       window.location.search.includes('previewPath') ||
       document.referrer.includes('admin.shopify.com') ||
-      window.parent !== window ||
       window.autoDetectedBundleId;
   }
 }

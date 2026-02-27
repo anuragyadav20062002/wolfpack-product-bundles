@@ -19,6 +19,9 @@
  */
 
 
+// NOTE: This file intentionally uses an IIFE + module.exports pattern (not ES module export)
+// so that Jest/Node.js tests can require() it without a transform step. All other files in
+// this directory use ES module syntax. Do not convert without updating the test config.
 const ConditionValidator = (function () {
   // ─── Operator constants ───────────────────────────────────────────────────
   const OPERATORS = {
@@ -260,7 +263,10 @@ const BUNDLE_WIDGET = {
     PERCENTAGE_OFF: 'percentage_off',
     FIXED_AMOUNT_OFF: 'fixed_amount_off',
     FIXED_BUNDLE_PRICE: 'fixed_bundle_price'
-  }
+  },
+
+  // Shared asset URLs
+  PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
 };
 
 
@@ -294,8 +300,8 @@ class CurrencyManager {
       };
     }
 
-    // Fallback: Shop base currency
-    return this.getShopBaseCurrency();
+    // Fallback: Shop base currency (include rate: 1 so downstream math doesn't produce NaN)
+    return { ...this.getShopBaseCurrency(), rate: 1 };
   }
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
@@ -306,7 +312,7 @@ class CurrencyManager {
       try {
         return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
       } catch (e) {
-        // Fallback to manual conversion
+        console.warn('[BUNDLE_WIDGET] Shopify.currency.convert failed, using rate fallback:', e);
       }
     }
 
@@ -385,10 +391,14 @@ class BundleDataManager {
       });
 
       // Validate bundle type
-      if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
-          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-        // Valid bundle type
-      } else {
+      if (
+        bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+        bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE
+      ) {
+        throw new Error(
+          `Bundle ${bundle.id} has invalid bundleType: "${bundle.bundleType}". ` +
+          `Expected "${BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE}" or "${BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE}".`
+        );
       }
 
       // Validate steps
@@ -419,10 +429,9 @@ class BundleDataManager {
     return true;
   }
 
-  static filterActivePublishedBundles(bundles) {
-    return bundles.filter(bundle =>
-      bundle.status === 'active' || bundle.status === 'published'
-    );
+  static filterActiveBundles(bundles) {
+    // BundleStatus enum: draft | active | archived — 'published' is not a valid status
+    return bundles.filter(bundle => bundle.status === 'active');
   }
 
   static getProductPageBundles(bundles) {
@@ -524,21 +533,18 @@ class BundleDataManager {
       }
     }
 
-    // Fallback: First active bundle
-    const fallbackBundle = bundles[0];
-    if (fallbackBundle) {
-      return fallbackBundle;
-    }
+    // No bundle matched the config criteria — return null so the widget hides itself
+    console.warn('[BUNDLE_WIDGET] selectBundle: no bundle matched config:', config);
     return null;
   }
 
   static isThemeEditorContext() {
-    return window.isThemeEditorContext ||
+    return window.Shopify?.designMode ||
+      window.isThemeEditorContext ||
       window.location.pathname.includes('/editor') ||
       window.location.search.includes('preview_theme_id') ||
       window.location.search.includes('previewPath') ||
       document.referrer.includes('admin.shopify.com') ||
-      window.parent !== window ||
       window.autoDetectedBundleId;
   }
 }
@@ -584,9 +590,10 @@ class PricingCalculator {
         }
 
         if (product && quantity > 0) {
-          // Use variant price if found within nested variants, otherwise use product price
+          // All prices in our pipeline are in cents (see MEMORY.md pricing pipeline).
+          // Use variant price if matched via nested lookup, otherwise use product-level price.
           const price = matchedVariant
-            ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : parseFloat(matchedVariant.price || '0') * 100)
+            ? (Number(matchedVariant.price) || 0)
             : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
@@ -669,6 +676,8 @@ class PricingCalculator {
         discountAmount = 0;
     }
 
+    // Clamp discount so it never exceeds total (prevents >100% display)
+    discountAmount = Math.min(discountAmount, totalPrice);
     const finalPrice = Math.max(0, totalPrice - discountAmount);
     const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
 
@@ -732,8 +741,8 @@ class PricingCalculator {
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
     if (!bundle?.pricing?.rules?.length) return null;
 
-    // Sort rules by condition value (ascending)
-    const rules = bundle.pricing.rules.sort((a, b) => a.condition.value - b.condition.value);
+    // Sort rules by condition value (ascending) — copy to avoid mutating the original
+    const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
 
     for (const rule of rules) {
       const conditionType = rule.condition.type;
@@ -770,6 +779,17 @@ class PricingCalculator {
 
 
 class ToastManager {
+  /** Escape HTML to prevent XSS in toast messages */
+  static _escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -782,11 +802,16 @@ class ToastManager {
     toast.id = 'bundle-toast';
     toast.className = `bundle-toast`;
     toast.innerHTML = `
-      <span>${message}</span>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;" onclick="this.parentElement.remove()">
+      <span>${this._escapeHtml(message)}</span>
+      <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
+
+    // Attach close listener (consistent with showWithUndo pattern)
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      toast.remove();
+    });
 
     // Add to page (styles come from bundle-widget.css with DCP CSS variables)
     document.body.appendChild(toast);
@@ -814,7 +839,7 @@ class ToastManager {
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast bundle-toast-with-undo';
     toast.innerHTML = `
-      <span class="toast-message">${message}</span>
+      <span class="toast-message">${this._escapeHtml(message)}</span>
       <button class="toast-undo-btn" type="button">Undo</button>
       <svg class="toast-close" width="18" height="18" viewBox="0 0 24 24" fill="none">
         <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -871,11 +896,8 @@ class TemplateManager {
 
     let result = template;
 
-    // Replace variables with both single and double curly braces
+    // Replace variables — double braces first to prevent single-brace partial matches
     Object.entries(variables).forEach(([key, value]) => {
-      const singleBrace = new RegExp(`\\{${key}\\}`, 'g');
-      const doubleBrace = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-
       // Wrap conditionText and discountText with styled spans
       let replacementValue = value;
       if (key === 'conditionText') {
@@ -884,8 +906,9 @@ class TemplateManager {
         replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit);">${value}</span>`;
       }
 
-      result = result.replace(singleBrace, replacementValue);
-      result = result.replace(doubleBrace, replacementValue);
+      // Single pass: match {{key}} or {key} (double-brace variant matched first)
+      const combined = new RegExp(`\\{\\{${key}\\}\\}|\\{${key}\\}`, 'g');
+      result = result.replace(combined, replacementValue);
     });
     return result;
   }
@@ -1006,7 +1029,9 @@ class TemplateManager {
   }
 
   static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
-    // Add safety check for undefined/null values
+    if (rawDiscountValue == null) {
+      console.warn('[BUNDLE_WIDGET] calculateDiscountData: rawDiscountValue is', rawDiscountValue);
+    }
     const safeValue = parseFloat(rawDiscountValue) || 0;
 
     switch (discountMethod) {
@@ -1095,6 +1120,17 @@ class TemplateManager {
 
 
 class ComponentGenerator {
+  /** Escape HTML special characters to prevent XSS in innerHTML contexts */
+  static escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   /**
    * Generates HTML for a product card with variant selector and quantity controls
    * @param {Object} product - Product data
@@ -1110,7 +1146,7 @@ class ComponentGenerator {
 
     // Check if this is an expanded variant card (has parentProductId and no variants array)
     // In this case, don't show variant selector - each card IS a variant
-    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0 || product.variants === null);
+    const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0);
 
     // Render inline quantity controls when item is selected (competitor-inspired design)
     const renderInlineQuantityControls = () => {
@@ -1145,7 +1181,7 @@ class ComponentGenerator {
     // Render variant badge if this is an expanded variant card
     const renderVariantBadge = () => {
       if (isExpandedVariantCard && product.variantTitle) {
-        return `<div class="product-variant-badge">${product.variantTitle}</div>`;
+        return `<div class="product-variant-badge">${this.escapeHtml(product.variantTitle)}</div>`;
       }
       return '';
     };
@@ -1157,11 +1193,11 @@ class ComponentGenerator {
         ` : ''}
 
         <div class="product-image">
-          <img src="${product.imageUrl || product.image?.src || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'}" alt="${product.title}" loading="lazy" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'">
+          <img src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
         </div>
 
         <div class="product-content-wrapper">
-          <div class="product-title">${product.parentTitle || product.title}</div>
+          <div class="product-title">${this.escapeHtml(product.parentTitle || product.title)}</div>
           ${renderVariantBadge()}
 
           ${product.price ? `
@@ -1191,7 +1227,7 @@ class ComponentGenerator {
           <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
           <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
         </svg>
-        <p class="empty-state-card-text">${labelText}</p>
+        <p class="empty-state-card-text">${this.escapeHtml(labelText)}</p>
       </div>
     `).join('');
 
@@ -1208,7 +1244,7 @@ class ComponentGenerator {
 
     const options = product.variants.map(variant => {
       const isAvailable = variant.available !== false;
-      const label = variant.title === 'Default Title' ? product.title : variant.title;
+      const label = this.escapeHtml(variant.title === 'Default Title' ? product.title : variant.title);
       return `<option value="${variant.id}" ${!isAvailable ? 'disabled' : ''}>${label}${!isAvailable ? ' (Out of Stock)' : ''}</option>`;
     }).join('');
 
@@ -1721,8 +1757,8 @@ class BundleWidgetProductPage {
     const header = document.createElement('div');
     header.className = 'bundle-header';
     header.innerHTML = `
-      <h2 class="bundle-title">${this.selectedBundle.name}</h2>
-      ${this.selectedBundle.description ? `<p class="bundle-description">${this.selectedBundle.description}</p>` : ''}
+      <h2 class="bundle-title">${ComponentGenerator.escapeHtml(this.selectedBundle.name)}</h2>
+      ${this.selectedBundle.description ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(this.selectedBundle.description)}</p>` : ''}
     `;
     return header;
   }
@@ -2054,7 +2090,7 @@ class BundleWidgetProductPage {
     imagesContainer.className = 'step-images single-image';
 
     const img = document.createElement('img');
-    img.src = product.imageUrl || 'https://via.placeholder.com/150';
+    img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
     img.alt = product.title || '';
     img.className = 'step-image';
     imagesContainer.appendChild(img);
@@ -2416,7 +2452,7 @@ class BundleWidgetProductPage {
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
             // Storefront API: prioritize variant image, fallback to product featured image
-            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               id: this.extractId(variant.id),
@@ -2445,7 +2481,7 @@ class BundleWidgetProductPage {
         }
 
         // Storefront API: prioritize variant image, fallback to product featured image
-        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
         // Process variants array for variant selection in modal
         const processedVariants = (product.variants || []).map(v => ({
@@ -2514,7 +2550,7 @@ class BundleWidgetProductPage {
           .filter(variant => variant.available !== false) // Only show available variants
           .map(variant => {
             // Use variant image if available, fallback to product image
-            const imageUrl = variant.image?.src || variant.image || product.imageUrl || 'https://via.placeholder.com/150';
+            const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               ...product,
@@ -2638,11 +2674,11 @@ class BundleWidgetProductPage {
           ` : ''}
 
           <div class="product-image">
-            <img src="${product.imageUrl}" alt="${product.title}" loading="lazy">
+            <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
           </div>
 
           <div class="product-content-wrapper">
-            <div class="product-title">${product.title}</div>
+            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
 
             ${product.price ? `
               <div class="product-price-row">
