@@ -1458,17 +1458,105 @@ export default function ConfigureBundleFlow() {
               {/* Layout Selection - For full-page bundles */}
               {bundle.bundleType === 'full_page' && (
                 <Card>
-                  <BlockStack gap="200">
+                  <BlockStack gap="300">
                     <Text variant="headingSm" as="h3">Page Layout</Text>
-                    <Select
-                      label="Footer position"
-                      options={[
-                        { label: "Footer at bottom", value: "footer_bottom" },
-                        { label: "Footer at side", value: "footer_side" },
-                      ]}
-                      value={formState.fullPageLayout}
-                      onChange={formState.setFullPageLayout}
-                    />
+                    <Text variant="bodySm" as="p" tone="subdued">
+                      Choose where the bundle summary and navigation appears
+                    </Text>
+                    <InlineStack gap="300" wrap={false}>
+                      {/* Footer Bottom Option */}
+                      <div
+                        onClick={() => formState.setFullPageLayout("footer_bottom")}
+                        style={{
+                          flex: 1,
+                          border: formState.fullPageLayout === "footer_bottom"
+                            ? "2px solid var(--p-color-border-interactive)"
+                            : "1px solid var(--p-color-border-secondary)",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          cursor: "pointer",
+                          background: formState.fullPageLayout === "footer_bottom"
+                            ? "var(--p-color-bg-surface-selected)"
+                            : "var(--p-color-bg-surface)",
+                          transition: "border 0.15s, background 0.15s",
+                        }}
+                      >
+                        <BlockStack gap="200" inlineAlign="center">
+                          {/* SVG Illustration — Footer Bottom */}
+                          <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="1" y="1" width="118" height="78" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                            {/* Product grid area */}
+                            <rect x="10" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="36" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="62" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="88" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="10" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="36" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="62" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="88" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            {/* Bottom footer bar */}
+                            <rect x="1" y="56" width="118" height="22" rx="0" fill="#7C3AED" opacity="0.85" />
+                            <rect x="10" y="62" width="40" height="4" rx="2" fill="white" opacity="0.8" />
+                            <rect x="10" y="69" width="25" height="3" rx="1.5" fill="white" opacity="0.5" />
+                            <rect x="80" y="61" width="30" height="12" rx="3" fill="white" opacity="0.7" />
+                          </svg>
+                          <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
+                            Footer at bottom
+                          </Text>
+                          <Text variant="bodySm" as="p" tone="subdued" alignment="center">
+                            Sticky bar at the bottom with summary and navigation
+                          </Text>
+                        </BlockStack>
+                      </div>
+
+                      {/* Footer Side Option */}
+                      <div
+                        onClick={() => formState.setFullPageLayout("footer_side")}
+                        style={{
+                          flex: 1,
+                          border: formState.fullPageLayout === "footer_side"
+                            ? "2px solid var(--p-color-border-interactive)"
+                            : "1px solid var(--p-color-border-secondary)",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          cursor: "pointer",
+                          background: formState.fullPageLayout === "footer_side"
+                            ? "var(--p-color-bg-surface-selected)"
+                            : "var(--p-color-bg-surface)",
+                          transition: "border 0.15s, background 0.15s",
+                        }}
+                      >
+                        <BlockStack gap="200" inlineAlign="center">
+                          {/* SVG Illustration — Sidebar */}
+                          <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="1" y="1" width="118" height="78" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                            {/* Product grid area (left) */}
+                            <rect x="8" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="29" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="50" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="8" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="29" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="50" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="8" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="29" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="50" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            {/* Side panel (right) */}
+                            <rect x="74" y="1" width="45" height="78" rx="0" fill="#7C3AED" opacity="0.85" />
+                            <rect x="80" y="10" width="32" height="4" rx="2" fill="white" opacity="0.8" />
+                            <rect x="80" y="20" width="32" height="8" rx="2" fill="white" opacity="0.15" />
+                            <rect x="80" y="32" width="32" height="8" rx="2" fill="white" opacity="0.15" />
+                            <rect x="80" y="44" width="32" height="8" rx="2" fill="white" opacity="0.15" />
+                            <rect x="80" y="60" width="32" height="12" rx="3" fill="white" opacity="0.7" />
+                          </svg>
+                          <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
+                            Sidebar panel
+                          </Text>
+                          <Text variant="bodySm" as="p" tone="subdued" alignment="center">
+                            Side panel on the right with summary and navigation
+                          </Text>
+                        </BlockStack>
+                      </div>
+                    </InlineStack>
                   </BlockStack>
                 </Card>
               )}

@@ -3535,6 +3535,7 @@ body.modal-open {
 .sidebar-layout-wrapper .sidebar-content {
   flex: 1 1 0%;
   min-width: 0;
+  width: auto; /* Override .full-page-content-section width:100% that pushes side panel off-screen */
   padding: 20px 40px;
 }
 
