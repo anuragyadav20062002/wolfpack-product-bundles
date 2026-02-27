@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
+import { useEffect } from "react";
 
 import { login } from "../../../shopify.server";
 
@@ -16,7 +17,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   // Check if request comes from embedded context via headers.
-  // The Sec-Fetch-Dest header is set by the browser when loading in an iframe.
   const secFetchDest = request.headers.get("sec-fetch-dest");
   if (secFetchDest === "iframe") {
     throw redirect("/app/dashboard");
@@ -32,6 +32,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function App() {
   const { showForm } = useLoaderData<typeof loader>();
+
+  // Client-side fallback: if the server-side checks didn't catch the embedded
+  // context (e.g. browser didn't send Sec-Fetch-Dest: iframe), detect iframe
+  // here and redirect. This runs after first paint so there's a brief flash,
+  // but it prevents the login form from staying visible in the embedded app.
+  useEffect(() => {
+    try {
+      if (window.self !== window.top) {
+        window.location.replace("/app");
+      }
+    } catch {
+      // Cross-origin access error means we're inside an iframe — redirect.
+      window.location.replace("/app");
+    }
+  }, []);
 
   return (
     <div className={styles.index}>

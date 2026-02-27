@@ -28,19 +28,28 @@ Files to modify:
 - `app/routes/root/_index/route.tsx` — improve server-side redirect for embedded context
 - `app/routes/auth/auth.login/route.tsx` — add embedded context guard
 
-### 2026-02-28 22:15 - Completed Fix
+### 2026-02-28 22:15 - Initial Fix Attempt
 - Added `use_legacy_install_flow = false` to production `shopify.app.toml`
-- Fixed root route: removed client-side `useEffect` iframe hack, added `embedded=1` param check server-side
-- Added embedded context guard to `auth.login/route.tsx` loader (checks `shop`/`host`/`id_token` params and `sec-fetch-dest` header)
-- ESLint: 0 errors, 1 warning (pre-existing)
+- Removed client-side useEffect from root route, added server-side checks
+- Added embedded context guard to auth.login route
+
+### 2026-02-28 22:30 - Fix Redirect Loop
+- Reverted auth.login redirect guard — it caused a redirect loop:
+  `/app` → `authenticate.admin` fails → redirects to `/auth/login?shop=...` →
+  guard redirects to `/app?shop=...` → loop
+- Restored client-side `useEffect` iframe detection in root route as fallback
+  (server-side `sec-fetch-dest: iframe` header is unreliable — not all browsers send it)
+- Added `embedded=1` param check server-side (App Bridge sets this)
+- The `use_legacy_install_flow = false` TOML change is the primary fix — it enables
+  Shopify managed installation which is required for token exchange to work properly
 
 Files modified:
 - `shopify.app.toml`
 - `app/routes/root/_index/route.tsx`
-- `app/routes/auth/auth.login/route.tsx`
+- `app/routes/auth/auth.login/route.tsx` (reverted to original)
 
 ## Phases Checklist
 - [x] Add `use_legacy_install_flow = false` to production TOML
-- [x] Fix root route to not flash login form in embedded context
-- [x] Add embedded guard to auth login route
+- [x] Fix root route embedded context detection
+- [x] Verify auth.login route doesn't create redirect loops
 - [x] Lint modified files
