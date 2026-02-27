@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Bundle Checkout UI Extension - Flex Bundles Style
  *
@@ -18,19 +17,10 @@
  * - _bundle_total_price_cents: Total bundle price in cents
  * - _bundle_total_savings_cents: Total savings in cents
  * - _bundle_discount_percent: Overall discount percentage
- *
- * Note: Shopify web components (s-stack, s-text, etc.) have incomplete type
- * definitions in @shopify/ui-extensions. The components work correctly at
- * runtime but TypeScript doesn't recognize all valid props like 'size', 'tone',
- * 'gap', etc. Using @ts-nocheck until Shopify updates types.
  */
 
 import type {FunctionComponent} from 'preact';
 import {useState} from 'preact/hooks';
-import {
-  useCartLineTarget,
-  useTotalAmount,
-} from '@shopify/ui-extensions/checkout/preact';
 
 interface ComponentDetail {
   title: string;
@@ -66,8 +56,9 @@ function parseComponents(json: string): ComponentDetail[] {
 export const BundlePricingExtension: FunctionComponent = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const lineItem = useCartLineTarget();
-  const totalAmount = useTotalAmount();
+  // Access cart line via Preact shopify global signal
+  const lineItem = shopify.target.value;
+  const currency = shopify.cost.totalAmount.value?.currencyCode || 'USD';
 
   if (!lineItem) {
     return null;
@@ -76,7 +67,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
   const attributes = lineItem.attributes ?? [];
 
   const getAttr = (key: string): string | undefined => {
-    return attributes.find((attr) => attr.key === key)?.value;
+    return attributes.find((attr: {key: string; value?: string}) => attr.key === key)?.value;
   };
 
   const isBundleParent = getAttr('_is_bundle_parent') === 'true';
@@ -84,9 +75,6 @@ export const BundlePricingExtension: FunctionComponent = () => {
   if (!isBundleParent) {
     return null;
   }
-
-  // Use || instead of ?? to catch empty string which would cause Intl.NumberFormat to throw
-  const currency = totalAmount?.currencyCode || 'USD';
 
   const formatMoney = (cents: number) => {
     const safeCents = Number.isFinite(cents) ? cents : 0;
@@ -139,37 +127,37 @@ export const BundlePricingExtension: FunctionComponent = () => {
   const toggleExpand = () => setIsExpanded(!isExpanded);
 
   return (
-    <s-stack direction="block" gap="tight">
+    <s-stack direction="block" gap="small-200">
       <s-divider />
 
       {/* Bundle Summary Header */}
-      <s-stack direction="block" gap="extraTight">
+      <s-stack direction="block" gap="small-100">
         {hasDiscount && (
           <>
-            <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-              <s-text size="small" tone="subdued">Retail Price:</s-text>
-              <s-text size="small" tone="subdued" strikethrough>
+            <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+              <s-text type="small" color="subdued">Retail Price:</s-text>
+              <s-text type="small" color="subdued">
                 {formatMoney(totalRetailCents)}
               </s-text>
             </s-stack>
 
-            <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-              <s-text size="small">Bundle Price:</s-text>
-              <s-text size="small" emphasis="bold">
+            <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+              <s-text type="small">Bundle Price:</s-text>
+              <s-text type="strong">
                 {formatMoney(totalBundleCents)}
               </s-text>
             </s-stack>
 
-            <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-              <s-text size="small" tone="subdued">Percentage Savings:</s-text>
-              <s-badge tone="success">
+            <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+              <s-text type="small" color="subdued">Percentage Savings:</s-text>
+              <s-text tone="success">
                 {formatPercent(discountPercent)}%
-              </s-badge>
+              </s-text>
             </s-stack>
 
-            <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-              <s-text size="small" tone="subdued">Exact Savings:</s-text>
-              <s-text size="small" emphasis="bold" tone="success">
+            <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+              <s-text type="small" color="subdued">Exact Savings:</s-text>
+              <s-text type="strong" tone="success">
                 {formatMoney(totalSavingsCents)}
               </s-text>
             </s-stack>
@@ -177,7 +165,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
         )}
 
         {!hasDiscount && (
-          <s-text size="small" tone="subdued">
+          <s-text type="small" color="subdued">
             Bundle ({componentCount} items)
           </s-text>
         )}
@@ -185,45 +173,45 @@ export const BundlePricingExtension: FunctionComponent = () => {
 
       {/* Expandable Component List */}
       {components.length > 0 && (
-        <s-stack direction="block" gap="extraTight">
-          <s-pressable onPress={toggleExpand}>
-            <s-stack direction="inline" gap="tight" inline-alignment="start">
-              <s-text size="small" tone="subdued">
+        <s-stack direction="block" gap="small-100">
+          <s-clickable onClick={toggleExpand}>
+            <s-stack direction="inline" gap="small-200" justifyContent="start">
+              <s-text type="small" color="subdued">
                 {isExpanded ? `Hide ${components.length} Items ▲` : `Show ${components.length} Items ▼`}
               </s-text>
             </s-stack>
-          </s-pressable>
+          </s-clickable>
 
           {isExpanded && (
-            <s-stack direction="block" gap="extraTight">
+            <s-stack direction="block" gap="small-100">
               {components.map((component, index) => (
                 <s-stack key={index} direction="block" gap="none">
                   <s-divider />
                   <s-stack direction="block" gap="none">
-                    <s-text size="small" emphasis="bold">
+                    <s-text type="strong">
                       {component.quantity}x {component.title || `Item ${index + 1}`}
                     </s-text>
-                    <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-                      <s-text size="small" tone="subdued">Retail Price:</s-text>
-                      <s-text size="small" tone="subdued">
+                    <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+                      <s-text type="small" color="subdued">Retail Price:</s-text>
+                      <s-text type="small" color="subdued">
                         {formatMoney(component.retailPrice * component.quantity)}
                       </s-text>
                     </s-stack>
-                    <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-                      <s-text size="small" tone="subdued">Bundle Price:</s-text>
-                      <s-text size="small">
+                    <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+                      <s-text type="small" color="subdued">Bundle Price:</s-text>
+                      <s-text type="small">
                         {formatMoney(component.bundlePrice * component.quantity)}
                       </s-text>
                     </s-stack>
-                    <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-                      <s-text size="small" tone="subdued">Percentage Savings:</s-text>
-                      <s-text size="small" tone="success">
+                    <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+                      <s-text type="small" color="subdued">Percentage Savings:</s-text>
+                      <s-text type="small" tone="success">
                         {formatPercent(component.discountPercent)}%
                       </s-text>
                     </s-stack>
-                    <s-stack direction="inline" gap="tight" inline-alignment="space-between">
-                      <s-text size="small" tone="subdued">Exact Savings:</s-text>
-                      <s-text size="small" tone="success">
+                    <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+                      <s-text type="small" color="subdued">Exact Savings:</s-text>
+                      <s-text type="small" tone="success">
                         {formatMoney(component.savingsAmount * component.quantity)}
                       </s-text>
                     </s-stack>
