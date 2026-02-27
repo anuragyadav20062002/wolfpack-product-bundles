@@ -160,8 +160,7 @@ function parseJSON<T>(value: string | undefined, defaultValue: T, context: strin
 
   try {
     return JSON.parse(value) as T;
-  } catch (error) {
-    Logger.warn(`Failed to parse ${context}`, { phase: 'parsing' }, { error, value });
+  } catch {
     return defaultValue;
   }
 }
@@ -203,13 +202,6 @@ function calculateDiscountPercentage(
     }
 
     if (!meetsCondition) {
-      Logger.debug('Condition not met', { phase: 'discount' }, {
-        conditionType: conditions.type,
-        conditionOperator: conditions.operator,
-        conditionValue,
-        actualValue,
-        meetsCondition
-      });
       return 0;
     }
   }
@@ -239,7 +231,6 @@ function calculateDiscountPercentage(
       break;
 
     default:
-      Logger.warn('Unknown pricing method', { phase: 'discount' }, { method });
       break;
   }
 
@@ -263,22 +254,27 @@ function getBundleName(line: CartTransformInput['cart']['lines'][0]): string {
 }
 
 /**
- * Find all cart lines that belong to a specific bundle instance by bundle ID
+ * Group all cart lines by their _bundle_id attribute in a single O(n) pass.
+ * Returns a Map of bundleId → lines[], plus a list of lines with no bundle ID.
  */
-function findBundleComponentLinesByBundleId(
-  allLines: CartTransformInput['cart']['lines'],
-  bundleId: string
-): CartTransformInput['cart']['lines'] {
-  const componentLines: CartTransformInput['cart']['lines'] = [];
+function groupLinesByBundleId(
+  allLines: CartTransformInput['cart']['lines']
+): Map<string, CartTransformInput['cart']['lines']> {
+  const groups = new Map<string, CartTransformInput['cart']['lines']>();
 
   for (const line of allLines) {
-    const lineBundleId = getBundleId(line);
-    if (lineBundleId === bundleId) {
-      componentLines.push(line);
+    const bundleId = getBundleId(line);
+    if (!bundleId) continue;
+
+    let group = groups.get(bundleId);
+    if (!group) {
+      group = [];
+      groups.set(bundleId, group);
     }
+    group.push(line);
   }
 
-  return componentLines;
+  return groups;
 }
 
 // ============================================================================
@@ -287,35 +283,17 @@ function findBundleComponentLinesByBundleId(
 
 export function cartTransformRun(input: CartTransformInput): CartTransformResult {
   try {
-    Logger.info('Cart transform started (Shopify Standard)', { phase: 'init' }, {
+    Logger.info('Cart transform started', { phase: 'init' }, {
       cartLines: input?.cart?.lines?.length || 0
     });
 
-    // Log cart line details for debugging
-    if (input?.cart?.lines && input.cart.lines.length > 0) {
-      Logger.debug('Cart lines details', { phase: 'init' }, {
-        lines: input.cart.lines.map(line => ({
-          id: line.id,
-          quantity: line.quantity,
-          bundleId: line.bundleId?.value || null,
-          bundleName: line.bundleName?.value || null,
-          variantId: line.merchandise.id,
-          productTitle: line.merchandise.product?.title || 'Unknown',
-          hasComponentParents: !!line.merchandise.component_parents,
-          hasComponentReference: !!line.merchandise.component_reference
-        }))
-      });
-    }
-
     // Edge case: empty cart
     if (!input?.cart?.lines || input.cart.lines.length === 0) {
-      Logger.info('Empty cart', { phase: 'init' });
       return { operations: [] };
     }
 
     const operations: CartTransformOperation[] = [];
     const processedLines = new Set<string>();
-    const processedBundleIds = new Set<string>();
     // Track how many times each bundle name is used for unique MERGE titles
     // Shopify consolidates MERGE results with the same parentVariantId + title,
     // so we must use unique titles to keep separate bundle instances apart.
@@ -324,56 +302,25 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
     // ========================================================================
     // OPERATION 1: MERGE - Combine component products into bundles
     // ========================================================================
-    // Group cart lines by _bundle_id attribute and merge them into bundle parent
+    // Pre-group cart lines by _bundle_id in a single O(n) pass.
+    // This avoids repeated full scans that caused InstructionCountLimitExceededError.
 
-    for (const line of input.cart.lines) {
-      if (processedLines.has(line.id)) continue;
+    const bundleGroups = groupLinesByBundleId(input.cart.lines);
 
-      // Get bundle ID from cart line attributes
-      const bundleId = getBundleId(line);
-      if (!bundleId) continue;
-
-      // Skip if we've already processed this bundle instance
-      if (processedBundleIds.has(bundleId)) continue;
-
-      // Find all cart lines belonging to this bundle instance
-      const bundleComponentLines = findBundleComponentLinesByBundleId(
-        input.cart.lines,
-        bundleId
-      );
-
-      if (bundleComponentLines.length === 0) continue;
-
-      Logger.debug('Found bundle components by bundle ID', { phase: 'merge' }, {
-        bundleId,
-        componentCount: bundleComponentLines.length
-      });
-
-      // Get component_parents from first line to get parent variant and pricing
-      const componentParentsValue = line.merchandise.component_parents?.value;
-
-      Logger.debug('Checking component_parents metafield', { phase: 'merge' }, {
-        bundleId,
-        lineId: line.id,
-        variantId: line.merchandise.id,
-        hasMetafield: !!componentParentsValue,
-        metafieldType: typeof componentParentsValue,
-        metafieldPreview: componentParentsValue ? componentParentsValue.substring(0, 200) : 'null'
-      });
+    for (const [bundleId, bundleComponentLines] of bundleGroups) {
+      // Find the first line in this group that has component_parents metafield.
+      // Not every component variant has this metafield — only some do.
+      let componentParentsValue: string | undefined;
+      for (const l of bundleComponentLines) {
+        const val = l.merchandise.component_parents?.value;
+        if (val) {
+          componentParentsValue = val;
+          break;
+        }
+      }
 
       if (!componentParentsValue) {
-        Logger.error(
-          'Missing component_parents metafield - cart transform MERGE will fail',
-          { phase: 'merge' },
-          {
-            bundleId,
-            lineId: line.id,
-            variantId: line.merchandise.id,
-            productTitle: line.merchandise.product?.title,
-            error: 'MISSING_COMPONENT_PARENTS_METAFIELD',
-            resolution: 'Ensure component products have component_parents metafield set when bundle is saved'
-          }
-        );
+        Logger.warn('No component_parents metafield in bundle group', { phase: 'merge', bundleId });
         continue;
       }
 
@@ -383,81 +330,34 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         'component_parents'
       );
 
-      Logger.debug('Parsed component_parents', { phase: 'merge' }, {
-        bundleId,
-        parentsCount: componentParents.length,
-        firstParent: componentParents[0] ? {
-          id: componentParents[0].id,
-          hasComponentReference: !!componentParents[0].component_reference,
-          hasComponentQuantities: !!componentParents[0].component_quantities,
-          hasPriceAdjustment: !!componentParents[0].price_adjustment,
-          priceAdjustment: componentParents[0].price_adjustment
-        } : null
-      });
-
-      if (componentParents.length === 0) {
-        Logger.error(
-          'Empty component_parents array - cart transform MERGE will fail',
-          { phase: 'merge' },
-          {
-            bundleId,
-            lineId: line.id,
-            variantId: line.merchandise.id,
-            productTitle: line.merchandise.product?.title,
-            error: 'EMPTY_COMPONENT_PARENTS_ARRAY',
-            resolution: 'Ensure component_parents metafield contains valid parent bundle data'
-          }
-        );
-        continue;
-      }
+      if (componentParents.length === 0) continue;
 
       // Get parent variant ID and pricing from first parent config
       const parent = componentParents[0];
       const parentVariantId = parent.id;
 
-      if (!parentVariantId) {
-        Logger.error('Missing parent variant ID in component_parents', { phase: 'merge' }, {
-          bundleId,
-          lineId: line.id
-        });
-        continue;
-      }
-
-      Logger.debug('Retrieved parent variant', { phase: 'merge' }, {
-        bundleId,
-        parentVariantId,
-        hasPriceAdjustment: !!parent.price_adjustment
-      });
+      if (!parentVariantId) continue;
 
       // Calculate bundle totals from ACTUAL selected component prices
-      const totalQuantity = bundleComponentLines.reduce((sum, l) => sum + l.quantity, 0);
-      const originalTotal = bundleComponentLines.reduce(
-        (sum, l) => sum + safeParseFloat(l.cost.totalAmount.amount),
-        0
-      );
+      let totalQuantity = 0;
+      let originalTotal = 0;
+      for (const l of bundleComponentLines) {
+        totalQuantity += l.quantity;
+        originalTotal += safeParseFloat(l.cost.totalAmount.amount);
+      }
 
       // Get price adjustment from component_parents
       let discountPercentage = 0;
       if (parent.price_adjustment) {
-        const priceAdjustment = parent.price_adjustment;
         discountPercentage = calculateDiscountPercentage(
-          priceAdjustment,
+          parent.price_adjustment,
           originalTotal,
           totalQuantity
         );
-
-        Logger.debug('Price adjustment calculated', { phase: 'merge' }, {
-          bundleId,
-          method: priceAdjustment.method,
-          value: priceAdjustment.value,
-          originalTotal,
-          totalQuantity,
-          discountPercentage
-        });
       }
 
       // Get bundle name and generate unique title to prevent Shopify consolidation
-      const baseBundleName = getBundleName(line);
+      const baseBundleName = getBundleName(bundleComponentLines[0]);
       const nameCount = (bundleNameCounts.get(baseBundleName) || 0) + 1;
       bundleNameCounts.set(baseBundleName, nameCount);
       // Append index only when there are multiple instances of the same bundle name
@@ -477,12 +377,9 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         return [title, l.quantity, retailCents, bundleCents, discountPercentage, retailCents - bundleCents];
       });
 
-      Logger.info('Creating merge operation', { phase: 'merge' }, {
-        bundleId,
+      Logger.info('Merge operation', { phase: 'merge', bundleId }, {
         parentVariantId,
-        componentLines: bundleComponentLines.length,
-        totalQuantity,
-        originalTotal,
+        components: bundleComponentLines.length,
         discount: discountPercentage
       });
 
@@ -518,15 +415,10 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       operations.push(mergeOp);
 
-      // Mark all component lines and bundle ID as processed
-      bundleComponentLines.forEach(l => processedLines.add(l.id));
-      processedBundleIds.add(bundleId);
-
-      Logger.info('Merge operation created', { phase: 'merge' }, {
-        bundleId,
-        parentVariantId,
-        componentLinesProcessed: bundleComponentLines.length
-      });
+      // Mark all component lines as processed
+      for (const l of bundleComponentLines) {
+        processedLines.add(l.id);
+      }
     }
 
     // ========================================================================
@@ -556,20 +448,7 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       if (componentReferences.length === 0 || componentQuantities.length === 0) continue;
 
-      if (componentReferences.length !== componentQuantities.length) {
-        Logger.warn('Mismatch between references and quantities', { phase: 'expand' }, {
-          lineId: line.id,
-          references: componentReferences.length,
-          quantities: componentQuantities.length
-        });
-        continue;
-      }
-
-      Logger.debug('Found bundle parent', { phase: 'expand' }, {
-        lineId: line.id,
-        variantId: line.merchandise.id,
-        componentCount: componentReferences.length
-      });
+      if (componentReferences.length !== componentQuantities.length) continue;
 
       // Parse component pricing metafield for expanded checkout display
       const componentPricingValue = line.merchandise.component_pricing?.value;
@@ -583,12 +462,6 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       const pricingMap = new Map<string, ComponentPricingItem>();
       componentPricing.forEach(item => {
         pricingMap.set(item.variantId, item);
-      });
-
-      Logger.debug('Component pricing loaded', { phase: 'expand' }, {
-        hasPricing: componentPricing.length > 0,
-        pricingCount: componentPricing.length,
-        componentCount: componentReferences.length
       });
 
       // Calculate bundle totals for discount calculation
@@ -612,13 +485,6 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           totalQuantity
         );
 
-        Logger.debug('Price adjustment calculated', { phase: 'expand' }, {
-          method: priceAdjustment.method,
-          value: priceAdjustment.value,
-          originalTotal,
-          totalQuantity,
-          discountPercentage
-        });
       }
 
       // ================================================================
@@ -656,11 +522,6 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           ]);
         } else {
           hasMissingPricing = true;
-          Logger.warn('Missing pricing for component variant', { phase: 'expand' }, {
-            variantId,
-            index,
-            componentCount: componentReferences.length
-          });
         }
       });
 
@@ -668,11 +529,6 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // The checkout UI will fall back to the simple "Bundle (N items)" view.
       // Showing partial/fabricated data is worse than showing nothing — 0% error tolerance.
       if (hasMissingPricing) {
-        Logger.warn('Incomplete pricing data — omitting component breakdown', { phase: 'expand' }, {
-          lineId: line.id,
-          totalComponents: componentReferences.length,
-          pricedComponents: componentDetails.length
-        });
         componentDetails.length = 0;
         totalRetailCents = 0;
         totalBundleCents = 0;
@@ -683,17 +539,6 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       // This matches the actual percentageDecrease charged by Shopify, avoiding
       // divergence between displayed and charged discount from rounding differences.
       const overallDiscountPercent = discountPercentage;
-
-      Logger.info('Creating Flex Bundles-style expand operation', { phase: 'expand' }, {
-        bundleVariantId: line.merchandise.id,
-        bundleName,
-        componentCount: componentReferences.length,
-        bundleQuantity: line.quantity,
-        totalRetailCents,
-        totalBundleCents,
-        totalSavingsCents,
-        overallDiscountPercent: overallDiscountPercent.toFixed(2)
-      });
 
       // Create expand operation that keeps bundle as SINGLE item
       // with all component data stored in attributes
@@ -729,19 +574,10 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       operations.push(expandOp);
       processedLines.add(line.id);
-
-      Logger.info('Flex Bundles expand operation created', { phase: 'expand' }, {
-        bundleVariantId: line.merchandise.id,
-        bundleName,
-        componentCount: componentDetails.length,
-        hasDiscount: discountPercentage > 0
-      });
     }
 
     Logger.info('Cart transform completed', { phase: 'complete' }, {
-      totalOperations: operations.length,
-      mergeOps: operations.filter(op => op.merge).length,
-      expandOps: operations.filter(op => op.expand).length
+      operations: operations.length
     });
 
     return { operations };
