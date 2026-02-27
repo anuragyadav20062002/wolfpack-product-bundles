@@ -924,11 +924,12 @@ class TemplateManager {
     // Extract rule data using nested structure
     const conditionType = ruleToUse.condition.type;
     const targetValue = ruleToUse.condition.value;
+    const conditionOperator = ruleToUse.condition.operator;
     const discountMethod = ruleToUse.discount.method;
     const rawDiscountValue = ruleToUse.discount.value;
 
     // Calculate condition-specific values
-    const conditionData = this.calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo);
+    const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
     // Calculate discount-specific values
     const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
@@ -976,7 +977,28 @@ class TemplateManager {
     return variables;
   }
 
-  static calculateConditionData(conditionType, targetValue, totalPrice, totalQuantity, currencyInfo) {
+  static formatOperatorText(operator, targetValue, unit) {
+    const normalizedOp = PricingCalculator.normalizeCondition(operator);
+    const label = targetValue === 1 ? unit : `${unit}s`;
+
+    switch (normalizedOp) {
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
+        return `more than ${targetValue} ${label}`;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
+        return `fewer than ${targetValue} ${label}`;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        return `${targetValue} or fewer ${label}`;
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+      default:
+        // "equal_to" acts as a threshold (>= N) in discount rules,
+        // and "greater_than_or_equal_to" is the most common default.
+        // Both render as plain "N items" for natural-sounding text.
+        return `${targetValue} ${label}`;
+    }
+  }
+
+  static calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo) {
     if (conditionType === 'amount') {
       // Amount-based condition - targetValue is already in cents
       const amountNeeded = Math.max(0, targetValue - totalPrice);
@@ -1002,12 +1024,23 @@ class TemplateManager {
       // Check if already qualified (amount needed is 0)
       const alreadyQualified = amountNeeded <= 0;
 
+      // Build operator-aware condition text for amount
+      const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
+      let conditionText;
+      if (alreadyQualified) {
+        conditionText = `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met`;
+      } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN) {
+        conditionText = `more than ${currencyInfo.display.symbol}${amountNeededFormatted}`;
+      } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN) {
+        conditionText = `less than ${currencyInfo.display.symbol}${amountNeededFormatted}`;
+      } else {
+        conditionText = `${currencyInfo.display.symbol}${amountNeededFormatted}`;
+      }
+
       return {
         amountNeeded: amountNeededFormatted,
         itemsNeeded: '0',
-        conditionText: alreadyQualified ?
-          `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met` :
-          `${currencyInfo.display.symbol}${amountNeededFormatted}`,
+        conditionText,
         alreadyQualified
       };
     } else {
@@ -1017,12 +1050,18 @@ class TemplateManager {
       // Check if already qualified (items needed is 0)
       const alreadyQualified = itemsNeeded <= 0;
 
+      // Build operator-aware condition text for quantity
+      let conditionText;
+      if (alreadyQualified) {
+        conditionText = `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met`;
+      } else {
+        conditionText = this.formatOperatorText(conditionOperator, itemsNeeded, 'item');
+      }
+
       return {
         amountNeeded: '0',
         itemsNeeded: itemsNeeded.toString(),
-        conditionText: alreadyQualified ?
-          `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met` :
-          `${itemsNeeded} ${itemsNeeded === 1 ? 'item' : 'items'}`,
+        conditionText,
         alreadyQualified
       };
     }
@@ -3640,17 +3679,21 @@ class BundleWidgetFullPage {
 
       // Build discount message based on best rule (using nested structure)
       const targetQty = bestRule.condition?.value || 0;
+      const conditionOperator = bestRule.condition?.operator;
       const discountMethod = bestRule.discount?.method;
       const discountValue = bestRule.discount?.value || 0;
 
+      // Build operator-aware quantity text
+      const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');
+
       if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
-        discountMessage = `Add ${targetQty} items and get ${discountValue}% off!`;
+        discountMessage = `Add ${qtyText} and get ${discountValue}% off!`;
       } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
         const formattedAmount = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
-        discountMessage = `Add ${targetQty} items and save ${formattedAmount}!`;
+        discountMessage = `Add ${qtyText} and save ${formattedAmount}!`;
       } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
         const formattedPrice = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
-        discountMessage = `Add ${targetQty} items for just ${formattedPrice}!`;
+        discountMessage = `Add ${qtyText} for just ${formattedPrice}!`;
       }
     }
 

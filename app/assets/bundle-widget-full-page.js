@@ -1315,17 +1315,21 @@ class BundleWidgetFullPage {
 
       // Build discount message based on best rule (using nested structure)
       const targetQty = bestRule.condition?.value || 0;
+      const conditionOperator = bestRule.condition?.operator;
       const discountMethod = bestRule.discount?.method;
       const discountValue = bestRule.discount?.value || 0;
 
+      // Build operator-aware quantity text
+      const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');
+
       if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
-        discountMessage = `Add ${targetQty} items and get ${discountValue}% off!`;
+        discountMessage = `Add ${qtyText} and get ${discountValue}% off!`;
       } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
         const formattedAmount = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
-        discountMessage = `Add ${targetQty} items and save ${formattedAmount}!`;
+        discountMessage = `Add ${qtyText} and save ${formattedAmount}!`;
       } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
         const formattedPrice = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
-        discountMessage = `Add ${targetQty} items for just ${formattedPrice}!`;
+        discountMessage = `Add ${qtyText} for just ${formattedPrice}!`;
       }
     }
 
