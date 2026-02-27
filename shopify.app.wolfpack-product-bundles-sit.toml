@@ -10,13 +10,13 @@ api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = [
-    "app_subscriptions/update",
-    "app_purchases_one_time/update",
-    "products/delete",
-    "products/update",
-    "app/uninstalled",
-    "app/scopes_update"
-  ]
+  "products/delete",
+  "products/update",
+  "app_purchases_one_time/update",
+  "app_subscriptions/update",
+  "app/uninstalled",
+  "app/scopes_update"
+]
   uri = "https://wolfpack-staging-pubsub-worker.onrender.com/webhooks"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
