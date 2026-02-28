@@ -1,10 +1,10 @@
 # Issue: Fix All Step Conditions in Full-Page Bundles
 
 **Issue ID:** step-conditions-full-fix-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-02-25
-**Last Updated:** 2026-02-25 10:30
+**Last Updated:** 2026-03-01 11:30
 
 ## Overview
 
@@ -63,4 +63,4 @@ In `ConditionValidator.canUpdateQuantity()`, when no explicit `conditionType/con
 - [x] Phase 2: Add updateStepTimeline() to BundleWidgetFullPage ✅
 - [x] Phase 3: Wire updateStepTimeline() into updateProductSelection() ✅
 - [x] Phase 4: Build widgets ✅
-- [ ] Phase 5: Commit
+- [x] Phase 5: Commit ✅ (changes confirmed in STAGING — absorbed into centralize-constants-phase2-1)
