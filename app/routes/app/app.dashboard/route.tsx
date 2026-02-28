@@ -123,8 +123,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       : bundle.shopifyPageHandle
   }));
 
-  // Get subscription info for upgrade prompt
-  const subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
+  // Get subscription info for upgrade prompt.
+  // Wrapped in try-catch: on fresh install afterAuth may not yet have created the shop
+  // record, so the DB query can fail. The upgrade banner is hidden gracefully on error.
+  let subscriptionInfo = null;
+  try {
+    subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
+  } catch (error) {
+    AppLogger.error("Failed to fetch subscription info", {
+      component: "app.dashboard",
+      operation: "get-subscription-info",
+    }, error);
+  }
 
   // Get API key for deep linking
   const apiKey = process.env.SHOPIFY_API_KEY || '';
