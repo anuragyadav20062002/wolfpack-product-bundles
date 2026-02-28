@@ -22,9 +22,6 @@ import { BundleType } from "../constants/bundle";
 // TYPES
 // ============================================
 
-/** Subset of BundleType values that have design settings */
-export type DesignBundleType = BundleType.PRODUCT_PAGE | BundleType.FULL_PAGE;
-
 export type { BundleType };
 
 /**
@@ -46,7 +43,7 @@ export interface DCPNavigationState {
 // DEFAULT VALUES
 // ============================================
 
-const getDefaultSettings = (bundleType: DesignBundleType): DesignSettings => {
+const getDefaultSettings = (bundleType: BundleType): DesignSettings => {
   const isFullPage = bundleType === BundleType.FULL_PAGE;
 
   return {
@@ -220,7 +217,7 @@ const getDefaultSettings = (bundleType: DesignBundleType): DesignSettings => {
 
 export function useDesignControlPanelState(loaderSettings: LoaderSettings) {
   // Bundle type selection
-  const [selectedBundleType, setSelectedBundleType] = useState<DesignBundleType>(BundleType.PRODUCT_PAGE);
+  const [selectedBundleType, setSelectedBundleType] = useState<BundleType>(BundleType.PRODUCT_PAGE);
 
   // Navigation state
   const [expandedSection, setExpandedSection] = useState<string | null>("productCard");
