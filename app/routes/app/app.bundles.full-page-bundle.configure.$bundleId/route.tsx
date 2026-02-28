@@ -22,6 +22,7 @@ import {
   DISCOUNT_CONDITION_TYPE_OPTIONS,
   DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
+import { ERROR_MESSAGES } from "../../../constants/errors";
 import {
   Page,
   Layout,
@@ -98,7 +99,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { bundleId } = params;
 
   if (!bundleId) {
-    throw new Response("Bundle ID is required", { status: 400 });
+    throw new Response(ERROR_MESSAGES.BUNDLE_ID_REQUIRED, { status: 400 });
   }
 
   // Fetch the bundle with all related data
@@ -119,7 +120,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   });
 
   if (!bundle) {
-    throw new Response("Bundle not found", { status: 404 });
+    throw new Response(ERROR_MESSAGES.BUNDLE_NOT_FOUND, { status: 404 });
   }
 
   AppLogger.debug('Bundle loaded from database', {
@@ -200,14 +201,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 
     if (!session?.shop) {
-      return json({ success: false, error: "Authentication required" }, { status: 401 });
+      return json({ success: false, error: ERROR_MESSAGES.AUTH_REQUIRED }, { status: 401 });
     }
 
     const formData = await request.formData();
     const intent = formData.get("intent");
 
     if (!bundleId) {
-      return json({ success: false, error: "Bundle ID is required" }, { status: 400 });
+      return json({ success: false, error: ERROR_MESSAGES.BUNDLE_ID_REQUIRED }, { status: 400 });
     }
 
     switch (intent) {
@@ -232,7 +233,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
       default:
-        return json({ success: false, error: "Unknown action" }, { status: 400 });
+        return json({ success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION }, { status: 400 });
     }
   } catch (error) {
     AppLogger.error("Action failed", {
@@ -885,7 +886,7 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select products", { isError: true, duration: 5000 });
+        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_PRODUCTS, { isError: true, duration: 5000 });
       }
     }
   }, [stepsState.steps, stepsState.setSteps, shopify]);
@@ -906,7 +907,7 @@ export default function ConfigureBundleFlow() {
       // Response will be handled by the existing useEffect
     } catch (error) {
       AppLogger.error("Product sync failed:", {}, error as any);
-      shopify.toast.show((error as Error).message || "Failed to sync product", { isError: true, duration: 5000 });
+      shopify.toast.show((error as Error).message || ERROR_MESSAGES.FAILED_TO_SYNC_PRODUCT, { isError: true, duration: 5000 });
     }
   }, [fetcher, shopify]);
 
@@ -940,7 +941,7 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select bundle product", { isError: true, duration: 5000 });
+        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_BUNDLE_PRODUCT, { isError: true, duration: 5000 });
       }
     }
   }, [shopify]);
@@ -967,7 +968,7 @@ export default function ConfigureBundleFlow() {
 
   const deleteStep = useCallback((stepId: string) => {
     if (stepsState.steps.length <= 1) {
-      shopify.toast.show("Cannot delete the last step", { isError: true, duration: 5000 });
+      shopify.toast.show(ERROR_MESSAGES.CANNOT_DELETE_LAST_STEP, { isError: true, duration: 5000 });
       return;
     }
 
@@ -1088,7 +1089,7 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select collections", { isError: true, duration: 5000 });
+        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_COLLECTIONS, { isError: true, duration: 5000 });
       }
     }
   }, [shopify, selectedCollections]);

@@ -37,6 +37,7 @@ import {
 } from "../../../../services/bundles/bundle-configure-handlers.server";
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
 import { SHOPIFY_REST_API_VERSION } from "../../../../constants/api";
+import { ERROR_MESSAGES } from "../../../../constants/errors";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -515,7 +516,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     });
 
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to save bundle configuration";
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_TO_SAVE_CONFIGURATION;
     AppLogger.error("[BUNDLE_CONFIG] Error saving bundle:", { component: "handlers.server", bundleId }, error);
     return json({ success: false, error: message }, { status: 500 });
   }
@@ -537,7 +538,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
   });
 
   if (!bundle) {
-    return json({ success: false, error: "Bundle not found" }, { status: 404 });
+    return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
   }
 
   let productId = bundle.shopifyProductId;
@@ -964,7 +965,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     if (!bundle) {
       return json({
         success: false,
-        error: "Bundle not found"
+        error: ERROR_MESSAGES.BUNDLE_NOT_FOUND
       }, { status: 404 });
     }
 

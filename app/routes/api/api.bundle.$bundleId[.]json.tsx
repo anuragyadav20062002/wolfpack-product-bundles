@@ -4,6 +4,7 @@ import { requireAppProxy } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { BundleStatus } from "../../constants/bundle";
+import { ERROR_MESSAGES } from "../../constants/errors";
 
 /**
  * Public API endpoint to fetch a single bundle by ID
@@ -121,7 +122,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
     if (!bundleId) {
       console.log('[APP_PROXY] ❌ No bundleId in params');
-      return json({ error: "Bundle ID is required" }, {
+      return json({ error: ERROR_MESSAGES.BUNDLE_ID_REQUIRED }, {
         status: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
@@ -141,7 +142,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
     if (!session?.shop) {
       console.log('[APP_PROXY] No shop in session');
-      return json({ error: "Shop not found" }, {
+      return json({ error: ERROR_MESSAGES.SHOP_NOT_FOUND }, {
         status: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
@@ -214,7 +215,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         console.error('[API_ERROR] Bundle does not exist for this shop');
       }
 
-      AppLogger.warn("Bundle not found", {
+      AppLogger.warn(ERROR_MESSAGES.BUNDLE_NOT_FOUND, {
         component: "apps.product-bundles.api.bundle",
         operation: "loader",
         bundleId,

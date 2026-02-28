@@ -10,7 +10,6 @@ export {
   FULL_PAGE_DEFAULTS,
   DEFAULT_SETTINGS,
   getDefaultSettings,
-  type BundleType,
 } from "./defaultSettings";
 
 // Settings merge utilities

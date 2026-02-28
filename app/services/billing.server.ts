@@ -13,6 +13,7 @@ import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 import type { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { PLANS } from "../constants/plans";
+import { ERROR_MESSAGES } from "../constants/errors";
 import { BundleStatus } from "../constants/bundle";
 
 export interface CreateSubscriptionParams {
@@ -287,7 +288,7 @@ export class BillingService {
       });
 
       if (!shop) {
-        return { success: false, error: "Shop not found" };
+        return { success: false, error: ERROR_MESSAGES.SHOP_NOT_FOUND };
       }
 
       // Find pending subscription

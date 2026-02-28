@@ -4,6 +4,7 @@ import { requireAppProxy } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { BundleStatus } from "../../constants/bundle";
+import { ERROR_MESSAGES } from "../../constants/errors";
 
 /**
  * Public API endpoint to fetch fresh bundle data
@@ -17,7 +18,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const { session } = await requireAppProxy(request);
 
     if (!session?.shop) {
-      return json({ error: "Shop not found" }, { status: 400 });
+      return json({ error: ERROR_MESSAGES.SHOP_NOT_FOUND }, { status: 400 });
     }
 
     AppLogger.info("Fetching fresh bundle data", { component: "apps.product-bundles.api.bundles.json", operation: "loader", shop: session.shop });

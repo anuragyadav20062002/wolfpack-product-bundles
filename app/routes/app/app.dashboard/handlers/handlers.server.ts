@@ -12,6 +12,7 @@ import { MetafieldCleanupService } from "../../../../services/metafield-cleanup.
 import { SubscriptionGuard } from "../../../../services/subscription-guard.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
+import { ERROR_MESSAGES } from "../../../../constants/errors";
 
 // GraphQL Mutations
 const CREATE_BUNDLE_PRODUCT = `
@@ -323,7 +324,7 @@ export async function handleDeleteBundle(
     });
 
     if (!bundle) {
-      return json({ success: false, error: "Bundle not found" }, { status: 404 });
+      return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
     }
 
     // Clean up metafields and set product to draft

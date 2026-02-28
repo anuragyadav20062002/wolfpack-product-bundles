@@ -11,6 +11,7 @@ import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { PLANS } from "../../../constants/plans";
 import { BundleStatus } from "../../../constants/bundle";
+import { ERROR_MESSAGES } from "../../../constants/errors";
 import type { SubscriptionStatus } from "@prisma/client";
 import type { ShopifySubscriptionStatus, WebhookProcessResult } from "../types";
 
@@ -69,7 +70,7 @@ export async function handleSubscriptionUpdate(
     if (!shop) {
       return {
         success: false,
-        message: "Shop not found",
+        message: ERROR_MESSAGES.SHOP_NOT_FOUND,
         error: `Shop ${shopDomain} not found in database`
       };
     }
@@ -272,7 +273,7 @@ export async function handleSubscriptionCancelled(
     if (!shop) {
       return {
         success: false,
-        message: "Shop not found",
+        message: ERROR_MESSAGES.SHOP_NOT_FOUND,
         error: `Shop ${shopDomain} not found in database`
       };
     }

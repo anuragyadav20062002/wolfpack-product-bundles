@@ -9,6 +9,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { ERROR_MESSAGES } from "../constants/errors";
 
 interface BundleStep {
   id: string;
@@ -156,7 +157,7 @@ export function useBundleSteps({ initialSteps, shopify, onStateChange }: UseBund
         error === null || error === undefined;
 
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select collections", { isError: true });
+        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_COLLECTIONS, { isError: true });
       }
     }
   }, [selectedCollections, shopify]);
