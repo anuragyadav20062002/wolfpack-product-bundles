@@ -4,9 +4,11 @@
  * Extracted from the main route file for better organization.
  */
 
+import type { BundleStatus, BundleType } from "../../../constants/bundle";
+
 export interface BundleActionsButtonsProps {
   bundleId: string;
-  bundleType: 'product_page' | 'full_page';
+  bundleType: BundleType;
   onEdit: (bundle: any) => void;
   onClone: (bundleId: string) => void;
   onDelete: (bundleId: string) => void;
@@ -17,8 +19,8 @@ export interface BundleActionsButtonsProps {
 export interface BundleWithPreview {
   id: string;
   name: string;
-  bundleType: 'product_page' | 'full_page';
-  status: 'active' | 'draft' | 'archived';
+  bundleType: BundleType;
+  status: BundleStatus;
   shopifyProductId: string | null;
   shopifyPageHandle: string | null;
   previewHandle: string | null;
@@ -53,7 +55,7 @@ export interface CloneBundleResponse extends ActionResponse {
 }
 
 export interface CreateBundleResponse extends ActionResponse {
-  bundleType?: 'product_page' | 'full_page';
+  bundleType?: BundleType;
 }
 
 export interface DeleteBundleResponse extends ActionResponse {

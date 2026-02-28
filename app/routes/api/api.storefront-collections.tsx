@@ -1,6 +1,7 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
+import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
@@ -83,7 +84,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     const storefrontAccessToken = session.storefrontAccessToken;
-    const storefrontUrl = `https://${shop}/api/2025-01/graphql.json`;
+    const storefrontUrl = `https://${shop}/api/${SHOPIFY_REST_API_VERSION}/graphql.json`;
 
     // Build query filter for handles
     const queryFilter = handles.map(h => `handle:${h}`).join(" OR ");

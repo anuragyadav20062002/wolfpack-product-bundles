@@ -2,6 +2,7 @@ import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
 import { createStorefrontAccessToken } from "../../services/storefront-token.server";
+import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
 /**
@@ -149,7 +150,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         // Create admin-like object that matches AdminApiContext type
         const admin = {
           graphql: async (query: string, options?: any) => {
-            const response = await fetch(`https://${shop}/admin/api/2025-01/graphql.json`, {
+            const response = await fetch(`https://${shop}/admin/api/${SHOPIFY_REST_API_VERSION}/graphql.json`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -184,7 +185,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     const storefrontAccessToken = session.storefrontAccessToken;
-    const storefrontUrl = `https://${shop}/api/2025-01/graphql.json`;
+    const storefrontUrl = `https://${shop}/api/${SHOPIFY_REST_API_VERSION}/graphql.json`;
 
     const response = await fetch(storefrontUrl, {
       method: 'POST',

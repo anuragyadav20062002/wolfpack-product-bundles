@@ -9,6 +9,7 @@
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import type { WebhookProcessResult } from "../types";
+import { BundleStatus } from "../../../constants/bundle";
 
 /**
  * Handle product update webhook
@@ -59,7 +60,7 @@ export async function handleProductUpdate(
     }
 
     // Check if product has critical changes
-    const isArchived = status === "archived" || status === "draft";
+    const isArchived = status === BundleStatus.ARCHIVED || status === BundleStatus.DRAFT;
     const hasNoVariants = variants.length === 0;
     const hasNoAvailableVariants = variants.every((v: any) =>
       v.inventory_policy === "deny" && v.inventory_quantity <= 0
@@ -73,7 +74,7 @@ export async function handleProductUpdate(
         ...new Set(
           stepsWithProduct
             .map(sp => sp.step.bundle)
-            .filter(bundle => bundle.status === "active")
+            .filter(bundle => bundle.status === BundleStatus.ACTIVE)
             .map(bundle => bundle.id)
         )
       ];
@@ -85,10 +86,10 @@ export async function handleProductUpdate(
             id: {
               in: affectedBundleIds
             },
-            status: "active"
+            status: BundleStatus.ACTIVE
           },
           data: {
-            status: "draft"
+            status: BundleStatus.DRAFT
           }
         });
 
@@ -213,7 +214,7 @@ export async function handleProductDelete(
               }
             }
           },
-          status: "active"
+          status: BundleStatus.ACTIVE
         },
         select: {
           id: true

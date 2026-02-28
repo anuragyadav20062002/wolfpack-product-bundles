@@ -10,6 +10,7 @@
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { PLANS } from "../../../constants/plans";
+import { BundleStatus } from "../../../constants/bundle";
 import type { SubscriptionStatus } from "@prisma/client";
 import type { ShopifySubscriptionStatus, WebhookProcessResult } from "../types";
 
@@ -132,7 +133,7 @@ export async function handleSubscriptionUpdate(
         where: {
           shopId: shop.id,
           plan: "free",
-          status: "active"
+          status: BundleStatus.ACTIVE
         }
       });
 
@@ -150,7 +151,7 @@ export async function handleSubscriptionUpdate(
           data: {
             shopId: shop.id,
             plan: "free",
-            status: "active",
+            status: BundleStatus.ACTIVE,
             name: PLANS.free.name,
             price: 0,
             currencyCode: "USD"
@@ -171,7 +172,7 @@ export async function handleSubscriptionUpdate(
         where: {
           shopId: shopDomain,
           status: {
-            in: ["active", "draft"]
+            in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
           }
         }
       });
@@ -189,7 +190,7 @@ export async function handleSubscriptionUpdate(
           where: {
             shopId: shopDomain,
             status: {
-              in: ["active", "draft"]
+              in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
             }
           },
           orderBy: {
@@ -307,7 +308,7 @@ export async function handleSubscriptionCancelled(
       where: {
         shopId: shop.id,
         plan: "free",
-        status: "active"
+        status: BundleStatus.ACTIVE
       }
     });
 
@@ -325,7 +326,7 @@ export async function handleSubscriptionCancelled(
         data: {
           shopId: shop.id,
           plan: "free",
-          status: "active",
+          status: BundleStatus.ACTIVE,
           name: PLANS.free.name,
           price: 0,
           currencyCode: "USD"
@@ -346,7 +347,7 @@ export async function handleSubscriptionCancelled(
       where: {
         shopId: shopDomain,
         status: {
-          in: ["active", "draft"]
+          in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
         }
       }
     });
@@ -364,7 +365,7 @@ export async function handleSubscriptionCancelled(
         where: {
           shopId: shopDomain,
           status: {
-            in: ["active", "draft"]
+            in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
           }
         },
         orderBy: {

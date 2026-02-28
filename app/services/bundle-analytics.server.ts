@@ -13,6 +13,7 @@
 
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
+import { BundleStatus, BundleType } from "../constants/bundle";
 
 export interface BundleStats {
   totalBundles: number;
@@ -67,10 +68,10 @@ export class BundleAnalyticsService {
       // Get all bundle counts by status
       const [totalBundles, activeBundles, draftBundles] = await Promise.all([
         db.bundle.count({
-          where: { shopId: shopDomain, status: { in: ['active', 'draft'] } }
+          where: { shopId: shopDomain, status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] } }
         }),
         db.bundle.count({
-          where: { shopId: shopDomain, status: 'active' }
+          where: { shopId: shopDomain, status: BundleStatus.ACTIVE }
         }),
         db.bundle.count({
           where: { shopId: shopDomain, status: 'draft' }
@@ -80,17 +81,17 @@ export class BundleAnalyticsService {
       // Get bundle type distribution
       const [productPageBundles, fullPageBundles] = await Promise.all([
         db.bundle.count({
-          where: { shopId: shopDomain, bundleType: 'product_page', status: { in: ['active', 'draft'] } }
+          where: { shopId: shopDomain, bundleType: BundleType.PRODUCT_PAGE, status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] } }
         }),
         db.bundle.count({
-          where: { shopId: shopDomain, bundleType: 'full_page', status: { in: ['active', 'draft'] } }
+          where: { shopId: shopDomain, bundleType: BundleType.FULL_PAGE, status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] } }
         }),
       ]);
 
       // Get total steps count
       const stepsResult = await db.bundleStep.aggregate({
         where: {
-          bundle: { shopId: shopDomain, status: { in: ['active', 'draft'] } }
+          bundle: { shopId: shopDomain, status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] } }
         },
         _count: { id: true }
       });
@@ -100,7 +101,7 @@ export class BundleAnalyticsService {
       const bundlesWithDiscounts = await db.bundle.count({
         where: {
           shopId: shopDomain,
-          status: { in: ['active', 'draft'] },
+          status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] },
           pricing: {
             enabled: true
           }
@@ -149,7 +150,7 @@ export class BundleAnalyticsService {
       const bundles = await db.bundle.findMany({
         where: {
           shopId: shopDomain,
-          status: { in: ['active', 'draft'] }
+          status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] }
         },
         include: {
           steps: {
@@ -302,18 +303,18 @@ export class BundleAnalyticsService {
     try {
       const [activeBundles, totalSteps, productPage, fullPage] = await Promise.all([
         db.bundle.count({
-          where: { shopId: shopDomain, status: 'active' }
+          where: { shopId: shopDomain, status: BundleStatus.ACTIVE }
         }),
         db.bundleStep.count({
           where: {
-            bundle: { shopId: shopDomain, status: { in: ['active', 'draft'] } }
+            bundle: { shopId: shopDomain, status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] } }
           }
         }),
         db.bundle.count({
-          where: { shopId: shopDomain, bundleType: 'product_page', status: { in: ['active', 'draft'] } }
+          where: { shopId: shopDomain, bundleType: BundleType.PRODUCT_PAGE, status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] } }
         }),
         db.bundle.count({
-          where: { shopId: shopDomain, bundleType: 'full_page', status: { in: ['active', 'draft'] } }
+          where: { shopId: shopDomain, bundleType: BundleType.FULL_PAGE, status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] } }
         }),
       ]);
 

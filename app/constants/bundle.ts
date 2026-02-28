@@ -24,6 +24,7 @@ export enum BundleStatus {
 export enum BundleType {
   PRODUCT_PAGE = "product_page",
   FULL_PAGE = "full_page",
+  CART_TRANSFORM = "cart_transform",
 }
 
 export enum FullPageLayout {

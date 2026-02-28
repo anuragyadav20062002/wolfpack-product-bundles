@@ -35,7 +35,8 @@ import {
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
 } from "../../../../services/bundles/bundle-configure-handlers.server";
-import { FullPageLayout } from "../../../../constants/bundle";
+import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
+import { SHOPIFY_REST_API_VERSION } from "../../../../constants/api";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -150,7 +151,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
 
     // Automatically set status to 'active' if bundle has configured steps
     let finalStatus = bundleStatus as any;
-    if (bundleStatus === 'draft' && stepsData && stepsData.length > 0) {
+    if (bundleStatus === BundleStatus.DRAFT && stepsData && stepsData.length > 0) {
       const hasConfiguredSteps = stepsData.some((step: any) =>
         (step.StepProduct && step.StepProduct.length > 0) ||
         (step.collections && step.collections.length > 0)
@@ -161,7 +162,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         stepsCount: stepsData.length
       });
       if (hasConfiguredSteps) {
-        finalStatus = 'active';
+        finalStatus = BundleStatus.ACTIVE;
         AppLogger.debug("[BUNDLE_CONFIG] Auto-activating bundle with configured steps");
       }
     }
@@ -674,7 +675,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           bundleId: bundle.id,
           name: bundle.name,
           templateName: bundle.templateName || null,
-          bundleType: bundle.bundleType || 'full_page',
+          bundleType: bundle.bundleType || BundleType.FULL_PAGE,
           type: "cart_transform",
           steps: optimizedSteps,
           pricing: {
@@ -834,7 +835,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       bundleId: bundle.id,
       name: bundle.name,
       templateName: bundle.templateName || null,
-      bundleType: bundle.bundleType || 'full_page',
+      bundleType: bundle.bundleType || BundleType.FULL_PAGE,
       type: "cart_transform",
       steps: optimizedSteps,
       pricing: {
@@ -907,7 +908,7 @@ export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: 
     const { accessToken, shop } = session;
 
     const assetsResponse = await fetch(
-      `https://${shop}/admin/api/2024-10/themes/${themeId}/assets.json`,
+      `https://${shop}/admin/api/${SHOPIFY_REST_API_VERSION}/themes/${themeId}/assets.json`,
       {
         method: 'GET',
         headers: {
@@ -1001,7 +1002,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
       data: {
         shopifyPageHandle: result.pageHandle,
         shopifyPageId: result.pageId,
-        status: 'active'  // CRITICAL: Activate bundle so widget can fetch it via API
+        status: BundleStatus.ACTIVE  // CRITICAL: Activate bundle so widget can fetch it via API
       }
     });
 

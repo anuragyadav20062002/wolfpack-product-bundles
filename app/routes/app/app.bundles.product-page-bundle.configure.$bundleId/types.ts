@@ -5,8 +5,7 @@
  */
 
 import type { PricingRule } from "../../../types/pricing";
-
-export type BundleStatus = 'active' | 'draft' | 'archived';
+export type { BundleStatus } from "../../../constants/bundle";
 
 export interface StepProduct {
   id: string;

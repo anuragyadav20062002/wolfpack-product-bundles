@@ -3,6 +3,7 @@ import type { LoaderFunction } from "@remix-run/node";
 import { requireAppProxy } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
+import { BundleStatus } from "../../constants/bundle";
 
 /**
  * Public API endpoint to fetch fresh bundle data
@@ -26,7 +27,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       where: {
         shopId: session.shop,
         // Note: bundleType filter removed - returning all active bundles regardless of display mode
-        status: 'active'
+        status: BundleStatus.ACTIVE
       },
       include: {
         steps: {

@@ -17,13 +17,13 @@ import { useBundleForm } from "./useBundleForm";
 import { useBundleSteps } from "./useBundleSteps";
 import { useBundleConditions } from "./useBundleConditions";
 import { useBundlePricing } from "./useBundlePricing";
-import { FullPageLayout } from "../constants/bundle";
+import { FullPageLayout, type BundleStatus } from "../constants/bundle";
 
 // ============================================
 // TYPES
 // ============================================
 
-export type BundleStatus = 'active' | 'draft' | 'archived';
+export type { BundleStatus };
 
 export interface BundleData {
   id: string;

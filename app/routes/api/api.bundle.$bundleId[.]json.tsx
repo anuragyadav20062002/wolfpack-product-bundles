@@ -3,6 +3,7 @@ import type { LoaderFunction } from "@remix-run/node";
 import { requireAppProxy } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
+import { BundleStatus } from "../../constants/bundle";
 
 /**
  * Public API endpoint to fetch a single bundle by ID
@@ -165,7 +166,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         shopId: session.shop,
         // Note: bundleType filter removed - not needed for single bundle lookup
         status: {
-          in: ['draft', 'active']
+          in: [BundleStatus.DRAFT, BundleStatus.ACTIVE]
         }
       },
       include: {

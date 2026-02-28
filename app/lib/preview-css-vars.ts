@@ -12,6 +12,7 @@
 import { generateCSSVariables, generateFullPageVariables } from './css-generators/css-variables-generator';
 import type { CSSDesignSettings, CSSGenerationContext } from './css-generators/types';
 import type { DesignSettings } from '../types/state.types';
+import { BundleType } from '../constants/bundle';
 
 export function settingsToCSSVarRecord(settings: DesignSettings): Record<string, string> {
   const globalPrimaryButton = settings.globalPrimaryButtonColor || '#000000';
@@ -29,7 +30,7 @@ export function settingsToCSSVarRecord(settings: DesignSettings): Record<string,
     globalSecondaryText,
     globalFooterBg,
     globalFooterText,
-    bundleType: 'full_page',
+    bundleType: BundleType.FULL_PAGE,
     customCss: '',
   };
 

@@ -27,6 +27,7 @@ import { useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
+import { BundleStatus, BundleType, FullPageLayout } from "../../../constants/bundle";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -49,7 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     where: {
       shopId: session.shop,
       status: {
-        in: ['active', 'draft']
+        in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
       }
     },
     select: {
@@ -75,7 +76,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 
   // Fetch product handles for product_page bundles that have shopifyProductId
-  const productPageBundles = bundles.filter(b => b.bundleType === 'product_page' && b.shopifyProductId);
+  const productPageBundles = bundles.filter(b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId);
   const productHandles: Record<string, string> = {};
 
   if (productPageBundles.length > 0) {
@@ -117,7 +118,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Enhance bundles with preview URLs
   const bundlesWithPreview = bundles.map(bundle => ({
     ...bundle,
-    previewHandle: bundle.bundleType === 'product_page'
+    previewHandle: bundle.bundleType === BundleType.PRODUCT_PAGE
       ? (bundle.shopifyProductId ? productHandles[bundle.shopifyProductId] : null)
       : bundle.shopifyPageHandle
   }));
@@ -284,7 +285,7 @@ export default function Dashboard() {
   };
 
   const handleEditBundle = (bundle: typeof bundles[number]) => {
-    const routeBase = bundle.bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+    const routeBase = bundle.bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
     navigate(`/app/bundles/${routeBase}/configure/${bundle.id}`);
   };
 
@@ -323,7 +324,7 @@ export default function Dashboard() {
     // Build preview URL based on bundle type using shop domain
     const previewBase = `https://${shop}`;
 
-    if (bundle.bundleType === 'product_page') {
+    if (bundle.bundleType === BundleType.PRODUCT_PAGE) {
       // Product page bundles use /products/{handle}
       window.open(`${previewBase}/products/${bundle.previewHandle}`, '_blank');
     } else {
@@ -410,8 +411,8 @@ export default function Dashboard() {
                 <div className={dashboardStyles.bundleTypeGrid}>
                   {/* Product Page Bundle */}
                   <div
-                    className={`${dashboardStyles.bundleTypeCard} ${bundleType[0] === 'product_page' ? dashboardStyles.bundleTypeCardSelected : ''}`}
-                    onClick={() => setBundleType(['product_page'])}
+                    className={`${dashboardStyles.bundleTypeCard} ${bundleType[0] === BundleType.PRODUCT_PAGE ? dashboardStyles.bundleTypeCardSelected : ''}`}
+                    onClick={() => setBundleType([BundleType.PRODUCT_PAGE])}
                   >
                     <BlockStack gap="200">
                       <a
@@ -445,8 +446,8 @@ export default function Dashboard() {
 
                   {/* Full Page Bundle */}
                   <div
-                    className={`${dashboardStyles.bundleTypeCard} ${bundleType[0] === 'full_page' ? dashboardStyles.bundleTypeCardSelected : ''}`}
-                    onClick={() => setBundleType(['full_page'])}
+                    className={`${dashboardStyles.bundleTypeCard} ${bundleType[0] === BundleType.FULL_PAGE ? dashboardStyles.bundleTypeCardSelected : ''}`}
+                    onClick={() => setBundleType([BundleType.FULL_PAGE])}
                   >
                     <BlockStack gap="200">
                       <a
@@ -481,7 +482,7 @@ export default function Dashboard() {
               </BlockStack>
 
               {/* Layout Selection — only for full-page bundles */}
-              {bundleType[0] === 'full_page' && (
+              {bundleType[0] === BundleType.FULL_PAGE && (
                 <BlockStack gap="200">
                   <Text variant="headingSm" as="h4">Page Layout</Text>
                   <Text variant="bodySm" as="p" tone="subdued">
@@ -490,8 +491,8 @@ export default function Dashboard() {
                   <div className={dashboardStyles.bundleTypeGrid}>
                     {/* Footer at Bottom */}
                     <div
-                      className={`${dashboardStyles.bundleTypeCard} ${fullPageLayout === 'footer_bottom' ? dashboardStyles.bundleTypeCardSelected : ''}`}
-                      onClick={() => setFullPageLayout('footer_bottom')}
+                      className={`${dashboardStyles.bundleTypeCard} ${fullPageLayout === FullPageLayout.FOOTER_BOTTOM ? dashboardStyles.bundleTypeCardSelected : ''}`}
+                      onClick={() => setFullPageLayout(FullPageLayout.FOOTER_BOTTOM)}
                     >
                       <BlockStack gap="200">
                         {/* Mini storefront illustration — bottom footer */}
@@ -598,7 +599,7 @@ export default function Dashboard() {
 
               {/* Hidden inputs to pass bundleType and layout to form */}
               <input type="hidden" name="bundleType" value={bundleType[0]} />
-              {bundleType[0] === 'full_page' && (
+              {bundleType[0] === BundleType.FULL_PAGE && (
                 <input type="hidden" name="fullPageLayout" value={fullPageLayout} />
               )}
 
@@ -751,7 +752,7 @@ export default function Dashboard() {
                       isClickable: bundles.length > 0,
                       onClick: () => {
                         if (bundles.length > 0) {
-                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          const routeBase = bundles[0].bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
                           navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
                         }
                       },
@@ -763,7 +764,7 @@ export default function Dashboard() {
                       isClickable: bundles.length > 0,
                       onClick: () => {
                         if (bundles.length > 0) {
-                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          const routeBase = bundles[0].bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
                           navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
                         }
                       },
@@ -775,7 +776,7 @@ export default function Dashboard() {
                       isClickable: bundles.length > 0,
                       onClick: () => {
                         if (bundles.length > 0) {
-                          const routeBase = bundles[0].bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+                          const routeBase = bundles[0].bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
                           navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
                         }
                       },

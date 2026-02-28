@@ -13,6 +13,8 @@ import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../lib/logger";
 import db from "../../db.server";
 import { ThemeTemplateService } from "../theme-template.server";
+import { BundleStatus, BundleType, FullPageLayout } from "../../constants/bundle";
+import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -338,7 +340,7 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
     const shop = session.shop;
     const accessToken = session.accessToken;
 
-    const assetsUrl = `https://${shop}/admin/api/2025-01/themes/${themeId}/assets.json`;
+    const assetsUrl = `https://${shop}/admin/api/${SHOPIFY_REST_API_VERSION}/themes/${themeId}/assets.json`;
 
     const assetsResponse = await fetch(assetsUrl, {
       headers: {
@@ -366,7 +368,7 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
       const activeBundles = await db.bundle.findMany({
         where: {
           shopId: session.shop,
-          status: 'active'
+          status: BundleStatus.ACTIVE
         },
         select: {
           id: true,
@@ -619,7 +621,7 @@ export async function handleEnsureBundleTemplates(admin: ShopifyAdmin, session: 
     const activeBundles = await db.bundle.findMany({
       where: {
         shopId: session.shop,
-        status: 'active'
+        status: BundleStatus.ACTIVE
       },
       select: {
         id: true,

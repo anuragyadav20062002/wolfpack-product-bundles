@@ -13,6 +13,7 @@ import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 import type { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { PLANS } from "../constants/plans";
+import { BundleStatus } from "../constants/bundle";
 
 export interface CreateSubscriptionParams {
   shopDomain: string;
@@ -203,7 +204,7 @@ export class BillingService {
         include: {
           subscriptions: {
             where: {
-              status: "active"
+              status: BundleStatus.ACTIVE
             },
             orderBy: {
               createdAt: "desc"
@@ -222,7 +223,7 @@ export class BillingService {
         where: {
           shopId: shopDomain,
           status: {
-            in: ["active", "draft"]
+            in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
           }
         }
       });
@@ -230,7 +231,7 @@ export class BillingService {
       // If no active subscription, user is on free plan
       const activeSubscription = shop.subscriptions[0];
       const plan = activeSubscription?.plan || "free";
-      const status = activeSubscription?.status || "active";
+      const status = activeSubscription?.status || BundleStatus.ACTIVE;
       const bundleLimit = PLANS[plan].bundleLimit;
 
       return {
@@ -239,7 +240,7 @@ export class BillingService {
         bundleLimit,
         currentBundleCount: bundleCount,
         canCreateBundle: bundleCount < bundleLimit,
-        isActive: status === "active"
+        isActive: status === BundleStatus.ACTIVE
       };
 
     } catch (error) {
@@ -354,7 +355,7 @@ export class BillingService {
       await db.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: "active",
+          status: BundleStatus.ACTIVE,
           currentPeriodStart: new Date(),
           currentPeriodEnd: currentPeriodEnd
         }
@@ -404,7 +405,7 @@ export class BillingService {
         where: { shopDomain },
         include: {
           subscriptions: {
-            where: { status: "active" },
+            where: { status: BundleStatus.ACTIVE },
             orderBy: { createdAt: "desc" },
             take: 1
           }
@@ -518,7 +519,7 @@ export class BillingService {
           subscriptions: {
             create: {
               plan: "free",
-              status: "active",
+              status: BundleStatus.ACTIVE,
               name: PLANS.free.name,
               price: 0,
               currencyCode: "USD"
@@ -569,7 +570,7 @@ export class BillingService {
       const bundles = await db.bundle.findMany({
         where: {
           shopId: shopDomain,
-          status: { in: ["active", "draft"] }
+          status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] }
         },
         orderBy: { createdAt: "asc" },
         select: { id: true, name: true, status: true }
@@ -606,7 +607,7 @@ export class BillingService {
           id: { in: archiveIds }
         },
         data: {
-          status: "archived"
+          status: BundleStatus.ARCHIVED
         }
       });
 

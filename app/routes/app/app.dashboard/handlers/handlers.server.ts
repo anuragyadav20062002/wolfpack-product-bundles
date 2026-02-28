@@ -11,7 +11,7 @@ import { AppLogger } from "../../../../lib/logger";
 import { MetafieldCleanupService } from "../../../../services/metafield-cleanup.server";
 import { SubscriptionGuard } from "../../../../services/subscription-guard.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
-import { FullPageLayout } from "../../../../constants/bundle";
+import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
 
 // GraphQL Mutations
 const CREATE_BUNDLE_PRODUCT = `
@@ -182,7 +182,7 @@ export async function handleCloneBundle(
     const clonedBundleName = `${originalBundle.name} (Copy)`;
 
     // Only create Shopify product for product_page bundles
-    if (originalBundle.bundleType === 'product_page') {
+    if (originalBundle.bundleType === BundleType.PRODUCT_PAGE) {
       const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
         variables: {
           input: {
@@ -227,7 +227,7 @@ export async function handleCloneBundle(
         description: originalBundle.description,
         shopId: session.shop,
         bundleType: originalBundle.bundleType,
-        status: 'draft',
+        status: BundleStatus.DRAFT,
         shopifyProductId: shopifyProductId,
         templateName: originalBundle.templateName,
       },
@@ -371,7 +371,7 @@ export async function handleCreateBundle(
 
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
-  const bundleType = (formData.get("bundleType") as string) || 'product_page';
+  const bundleType = (formData.get("bundleType") as string) || BundleType.PRODUCT_PAGE;
   const fullPageLayout = (formData.get("fullPageLayout") as string) || null;
 
   if (typeof bundleName !== 'string' || bundleName.length === 0) {
@@ -428,7 +428,7 @@ export async function handleCreateBundle(
       where: {
         shopId: session.shop,
         status: {
-          in: ['active', 'draft']
+          in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
         }
       }
     });
@@ -441,8 +441,8 @@ export async function handleCreateBundle(
         description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: session.shop,
         bundleType: bundleType as any,
-        fullPageLayout: bundleType === 'full_page' ? (fullPageLayout as any || FullPageLayout.FOOTER_BOTTOM) : null,
-        status: 'draft',
+        fullPageLayout: bundleType === BundleType.FULL_PAGE ? (fullPageLayout as any || FullPageLayout.FOOTER_BOTTOM) : null,
+        status: BundleStatus.DRAFT,
         shopifyProductId: shopifyProductId,
       },
     });
@@ -475,7 +475,7 @@ export async function handleCreateBundle(
     }
 
     // Build redirect URL based on bundle type
-    const routeBase = bundleType === 'full_page' ? 'full-page-bundle' : 'product-page-bundle';
+    const routeBase = bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
     const redirectUrl = `/app/bundles/${routeBase}/configure/${newBundle.id}`;
 
     return json({
