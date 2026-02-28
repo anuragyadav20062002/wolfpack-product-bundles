@@ -2,6 +2,7 @@ import { json } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
+import { BundleStatus } from "../../constants/bundle";
 
 export async function loader({ request }: any) {
   const { session } = await requireAdminSession(request);
@@ -38,7 +39,7 @@ export async function loader({ request }: any) {
     const bundleReport = {
       shop: session.shop,
       totalBundles: allBundles.length,
-      activeBundles: allBundles.filter(b => b.status === 'active').length,
+      activeBundles: allBundles.filter(b => b.status === BundleStatus.ACTIVE).length,
       bundlesWithPricing: allBundles.filter(b => b.pricing?.enabled).length,
       bundlesWithProducts: 0,
       bundles: allBundles.map(bundle => {

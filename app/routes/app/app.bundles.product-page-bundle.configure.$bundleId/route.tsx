@@ -15,6 +15,15 @@ import {
   amountToCents,
 } from "../../../types/pricing";
 import {
+  BUNDLE_STATUS_OPTIONS,
+  STEP_CONDITION_TYPE_OPTIONS,
+  STEP_CONDITION_OPERATOR_OPTIONS,
+  DISCOUNT_METHOD_OPTIONS,
+  DISCOUNT_CONDITION_TYPE_OPTIONS,
+  DISCOUNT_OPERATOR_OPTIONS,
+} from "../../../constants/bundle";
+import { ERROR_MESSAGES } from "../../../constants/errors";
+import {
   Page,
   Layout,
   Card,
@@ -95,7 +104,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { bundleId } = params;
 
   if (!bundleId) {
-    throw new Response("Bundle ID is required", { status: 400 });
+    throw new Response(ERROR_MESSAGES.BUNDLE_ID_REQUIRED, { status: 400 });
   }
 
   // Fetch the bundle with all related data
@@ -116,7 +125,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   });
 
   if (!bundle) {
-    throw new Response("Bundle not found", { status: 404 });
+    throw new Response(ERROR_MESSAGES.BUNDLE_NOT_FOUND, { status: 404 });
   }
 
   AppLogger.debug('Bundle loaded from database', {
@@ -197,14 +206,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 
     if (!session?.shop) {
-      return json({ success: false, error: "Authentication required" }, { status: 401 });
+      return json({ success: false, error: ERROR_MESSAGES.AUTH_REQUIRED }, { status: 401 });
     }
 
     const formData = await request.formData();
     const intent = formData.get("intent");
 
     if (!bundleId) {
-      return json({ success: false, error: "Bundle ID is required" }, { status: 400 });
+      return json({ success: false, error: ERROR_MESSAGES.BUNDLE_ID_REQUIRED }, { status: 400 });
     }
 
     switch (intent) {
@@ -227,7 +236,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
       default:
-        return json({ success: false, error: "Unknown action" }, { status: 400 });
+        return json({ success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION }, { status: 400 });
     }
   } catch (error) {
     AppLogger.error("Action failed", {
@@ -250,12 +259,8 @@ const bundleSetupItems = [
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
 ];
 
-// Static status options - moved outside component to prevent recreation on every render
-const statusOptions = [
-  { label: "Active", value: "active" },
-  { label: "Draft", value: "draft" },
-  { label: "Unlisted", value: "archived" },
-];
+// Static status options - imported from centralized constants
+const statusOptions = [...BUNDLE_STATUS_OPTIONS];
 
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
 const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
@@ -866,7 +871,7 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select products", { isError: true, duration: 5000 });
+        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_PRODUCTS, { isError: true, duration: 5000 });
       }
     }
   }, [stepsState.steps, stepsState.setSteps, shopify]);
@@ -887,7 +892,7 @@ export default function ConfigureBundleFlow() {
       // Response will be handled by the existing useEffect
     } catch (error) {
       AppLogger.error("Product sync failed:", {}, error as any);
-      shopify.toast.show((error as Error).message || "Failed to sync product", { isError: true, duration: 5000 });
+      shopify.toast.show((error as Error).message || ERROR_MESSAGES.FAILED_TO_SYNC_PRODUCT, { isError: true, duration: 5000 });
     }
   }, [fetcher, shopify]);
 
@@ -921,7 +926,7 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select bundle product", { isError: true, duration: 5000 });
+        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_BUNDLE_PRODUCT, { isError: true, duration: 5000 });
       }
     }
   }, [shopify]);
@@ -948,7 +953,7 @@ export default function ConfigureBundleFlow() {
 
   const deleteStep = useCallback((stepId: string) => {
     if (stepsState.steps.length <= 1) {
-      shopify.toast.show("Cannot delete the last step", { isError: true, duration: 5000 });
+      shopify.toast.show(ERROR_MESSAGES.CANNOT_DELETE_LAST_STEP, { isError: true, duration: 5000 });
       return;
     }
 
@@ -1069,7 +1074,7 @@ export default function ConfigureBundleFlow() {
 
       // Only show error toast for actual errors, not user cancellations
       if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show("Failed to select collections", { isError: true, duration: 5000 });
+        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_COLLECTIONS, { isError: true, duration: 5000 });
       }
     }
   }, [shopify, selectedCollections]);
@@ -1568,22 +1573,13 @@ export default function ConfigureBundleFlow() {
                                         <InlineStack gap="200" align="start">
                                           <Select
                                             label="Condition Type"
-                                            options={[
-                                              { label: 'Quantity', value: 'quantity' },
-                                              { label: 'Amount', value: 'amount' },
-                                            ]}
+                                            options={[...STEP_CONDITION_TYPE_OPTIONS]}
                                             value={rule.type}
                                             onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'type', value)}
                                           />
                                           <Select
                                             label="Operator"
-                                            options={[
-                                              { label: 'is equal to', value: 'equal_to' },
-                                              { label: 'is greater than', value: 'greater_than' },
-                                              { label: 'is less than', value: 'less_than' },
-                                              { label: 'is greater than or equal to', value: 'greater_than_or_equal_to' },
-                                              { label: 'is less than or equal to', value: 'less_than_or_equal_to' },
-                                            ]}
+                                            options={[...STEP_CONDITION_OPERATOR_OPTIONS]}
                                             value={rule.operator}
                                             onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', value)}
                                           />
@@ -1668,11 +1664,7 @@ export default function ConfigureBundleFlow() {
                       {/* Discount Type */}
                       <Select
                         label="Discount Type"
-                        options={[
-                          { label: 'Percentage Off', value: DiscountMethod.PERCENTAGE_OFF },
-                          { label: 'Fixed Amount Off', value: DiscountMethod.FIXED_AMOUNT_OFF },
-                          { label: 'Fixed Bundle Price', value: DiscountMethod.FIXED_BUNDLE_PRICE },
-                        ]}
+                        options={[...DISCOUNT_METHOD_OPTIONS]}
                         value={pricingState.discountType}
                         onChange={(value) => {
                           pricingState.setDiscountType(value as DiscountMethod);
@@ -1707,10 +1699,7 @@ export default function ConfigureBundleFlow() {
                                 <InlineStack gap="200" align="start">
                                   <Select
                                     label="Type"
-                                    options={[
-                                      { label: 'Quantity', value: ConditionType.QUANTITY },
-                                      { label: 'Amount', value: ConditionType.AMOUNT },
-                                    ]}
+                                    options={[...DISCOUNT_CONDITION_TYPE_OPTIONS]}
                                     value={rule.condition.type}
                                     onChange={(value) => pricingState.updateDiscountRule(rule.id, {
                                       condition: { ...rule.condition, type: value as any }
@@ -1718,13 +1707,7 @@ export default function ConfigureBundleFlow() {
                                   />
                                   <Select
                                     label="Operator"
-                                    options={[
-                                      { label: 'Greater than or equal (≥)', value: ConditionOperator.GTE },
-                                      { label: 'Greater than (>)', value: ConditionOperator.GT },
-                                      { label: 'Less than or equal (≤)', value: ConditionOperator.LTE },
-                                      { label: 'Less than (<)', value: ConditionOperator.LT },
-                                      { label: 'Equal to (=)', value: ConditionOperator.EQ },
-                                    ]}
+                                    options={[...DISCOUNT_OPERATOR_OPTIONS]}
                                     value={rule.condition.operator}
                                     onChange={(value) => pricingState.updateDiscountRule(rule.id, {
                                       condition: { ...rule.condition, operator: value as any }

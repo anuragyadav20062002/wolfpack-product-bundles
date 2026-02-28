@@ -66,6 +66,47 @@ const shopify = shopifyApp({
         console.error("[SHOPIFY] ℹ️ To enable storefront tokens, ensure app has 'unauthenticated_read_products' scope and reinstall.");
       }
 
+      // Sync $app:serverUrl metafield so the theme widget can read the app server URL.
+      // This runs on install/re-install; the URL is a static deploy-time value so
+      // syncing once is sufficient (previously done on every /app load in app._index.tsx,
+      // which caused a parallel-loader race condition with unstable_newEmbeddedAuthStrategy).
+      try {
+        const appUrl = process.env.SHOPIFY_APP_URL;
+        if (appUrl) {
+          console.log("[SHOPIFY] Syncing $app:serverUrl metafield...");
+          const shopIdResponse = await admin.graphql(`query { shop { id } }`);
+          if (shopIdResponse.ok) {
+            const shopIdData = await shopIdResponse.json();
+            const shopGlobalId = shopIdData.data?.shop?.id;
+            if (shopGlobalId) {
+              await admin.graphql(
+                `mutation UpdateAppUrlMetafield($metafields: [MetafieldsSetInput!]!) {
+                   metafieldsSet(metafields: $metafields) {
+                     metafields { id }
+                     userErrors { field message }
+                   }
+                 }`,
+                {
+                  variables: {
+                    metafields: [{
+                      ownerId: shopGlobalId,
+                      namespace: "$app",
+                      key: "serverUrl",
+                      type: "single_line_text_field",
+                      value: appUrl,
+                    }],
+                  },
+                },
+              );
+              console.log("[SHOPIFY] ✅ $app:serverUrl metafield synced");
+            }
+          }
+        }
+      } catch (error: any) {
+        console.error("[SHOPIFY] ⚠️ Failed to sync $app:serverUrl metafield:", error?.message || error);
+        console.error("[SHOPIFY] ℹ️ Widget API calls may use a stale server URL until next reinstall.");
+      }
+
       // Automatically activate cart transform for new installations
       try {
         console.log("[SHOPIFY] Setting up cart transform...");

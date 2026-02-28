@@ -14,6 +14,7 @@
 import { Text } from "@shopify/polaris";
 import { useState } from "react";
 import { HighlightBox } from "./HighlightBox";
+import { BundleType } from "../../../constants/bundle";
 
 // Real modal header tab HTML matching ComponentGenerator.renderTab() output.
 // Classes: .bundle-header-tab(.active|.completed)
@@ -68,13 +69,13 @@ function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: 
   return (
     <div style={{ marginBottom: "16px", display: "flex", gap: "8px", justifyContent: "center" }}>
       <button
-        onClick={() => onChange("product_page")}
+        onClick={() => onChange(BundleType.PRODUCT_PAGE)}
         style={{
           padding: "8px 16px",
-          border: `2px solid ${selected === "product_page" ? "#000" : "#ddd"}`,
+          border: `2px solid ${selected === BundleType.PRODUCT_PAGE ? "#000" : "#ddd"}`,
           borderRadius: "6px",
-          background: selected === "product_page" ? "#000" : "#fff",
-          color: selected === "product_page" ? "#fff" : "#333",
+          background: selected === BundleType.PRODUCT_PAGE ? "#000" : "#fff",
+          color: selected === BundleType.PRODUCT_PAGE ? "#fff" : "#333",
           cursor: "pointer",
           fontSize: "12px",
           fontWeight: 500,
@@ -83,13 +84,13 @@ function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: 
         Product Page
       </button>
       <button
-        onClick={() => onChange("full_page")}
+        onClick={() => onChange(BundleType.FULL_PAGE)}
         style={{
           padding: "8px 16px",
-          border: `2px solid ${selected === "full_page" ? "#000" : "#ddd"}`,
+          border: `2px solid ${selected === BundleType.FULL_PAGE ? "#000" : "#ddd"}`,
           borderRadius: "6px",
-          background: selected === "full_page" ? "#000" : "#fff",
-          color: selected === "full_page" ? "#fff" : "#333",
+          background: selected === BundleType.FULL_PAGE ? "#000" : "#fff",
+          color: selected === BundleType.FULL_PAGE ? "#fff" : "#333",
           cursor: "pointer",
           fontSize: "12px",
           fontWeight: 500,
@@ -106,7 +107,7 @@ interface BundleHeaderPreviewProps {
 }
 
 export function BundleHeaderPreview({ activeSubSection }: BundleHeaderPreviewProps) {
-  const [bundleType, setBundleType] = useState<string>("product_page");
+  const [bundleType, setBundleType] = useState<string>(BundleType.PRODUCT_PAGE);
 
   // Header Tabs sub-section
   if (activeSubSection === "headerTabs") {
@@ -129,7 +130,7 @@ export function BundleHeaderPreview({ activeSubSection }: BundleHeaderPreviewPro
           }}
         >
           <HighlightBox active>
-            {bundleType === "full_page" ? (
+            {bundleType === BundleType.FULL_PAGE ? (
               /* eslint-disable-next-line react/no-danger */
               <div dangerouslySetInnerHTML={{ __html: fullPageTabsHTML }} />
             ) : (
@@ -140,7 +141,7 @@ export function BundleHeaderPreview({ activeSubSection }: BundleHeaderPreviewPro
         </div>
         <div style={{ marginTop: "16px" }}>
           <Text as="p" variant="bodySm" tone="subdued">
-            {bundleType === "full_page" ? "Full-page bundle step tabs" : "Product-page modal header tabs"}
+            {bundleType === BundleType.FULL_PAGE ? "Full-page bundle step tabs" : "Product-page modal header tabs"}
           </Text>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import {
   AppProvider as PolarisAppProvider,
@@ -20,6 +21,18 @@ import { loginErrorMessage } from "./error.server";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  // Guard: if Shopify embedded-app params are present the request is coming from inside
+  // the Admin iframe. Redirect to /app so App Bridge can perform token exchange instead
+  // of rendering the login form inside the embedded window.
+  const url = new URL(request.url);
+  if (
+    url.searchParams.get("shop") ||
+    url.searchParams.get("host") ||
+    url.searchParams.get("id_token")
+  ) {
+    throw redirect(`/app?${url.searchParams.toString()}`);
+  }
+
   const errors = loginErrorMessage(await login(request));
 
   return { errors, polarisTranslations };

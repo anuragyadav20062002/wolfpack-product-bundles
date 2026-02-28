@@ -36,6 +36,7 @@ import type {
   Unsubscribe,
   StateAction,
 } from "../types/state.types";
+import { BundleType } from "../constants/bundle";
 
 // ============================================
 // DEFAULT STATE VALUES
@@ -62,7 +63,7 @@ const DEFAULT_UI_STATE: UIState = {
 const DEFAULT_DESIGN_SETTINGS_STATE: DesignSettingsState = {
   fullPage: null,
   productPage: null,
-  selectedBundleType: 'product_page',
+  selectedBundleType: BundleType.PRODUCT_PAGE,
   isDirty: false,
   isLoading: false,
 };

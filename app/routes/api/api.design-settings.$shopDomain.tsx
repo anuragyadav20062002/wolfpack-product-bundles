@@ -3,6 +3,7 @@ import { AppLogger } from "../../lib/logger";
 import { prisma } from "../../db.server";
 import { sanitizeCss } from "../../lib/css-sanitizer";
 import { generateCSSFromSettings } from "../../lib/css-generators";
+import { BundleType } from "../../constants/bundle";
 
 // auth: public — served via <link> tag in storefront theme; browser request, no session available.
 // Data is non-sensitive CSS design tokens (colors, fonts, spacing).
@@ -20,13 +21,13 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   try {
     const url = new URL(request.url);
-    const requestedBundleType = url.searchParams.get("bundleType") as "product_page" | "full_page" | null;
+    const requestedBundleType = url.searchParams.get("bundleType") as BundleType.PRODUCT_PAGE | BundleType.FULL_PAGE | null;
 
     // Unified CSS Strategy: Try product_page first, then full_page, then defaults
     // This allows merchants to use the same design for both bundle types
-    const bundleTypesToTry: ("product_page" | "full_page")[] = requestedBundleType
-      ? [requestedBundleType, requestedBundleType === "product_page" ? "full_page" : "product_page"]
-      : ["product_page", "full_page"];
+    const bundleTypesToTry: (BundleType.PRODUCT_PAGE | BundleType.FULL_PAGE)[] = requestedBundleType
+      ? [requestedBundleType, requestedBundleType === BundleType.PRODUCT_PAGE ? BundleType.FULL_PAGE : BundleType.PRODUCT_PAGE]
+      : [BundleType.PRODUCT_PAGE, BundleType.FULL_PAGE];
 
     AppLogger.info("Fetching design settings for CSS with fallback", {
       component: "api.design-settings.css",
@@ -197,7 +198,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     }
 
     // Use the bundle type that had settings, or default to product_page for CSS generation
-    const bundleTypeForCSS = usedBundleType || requestedBundleType || "product_page";
+    const bundleTypeForCSS = usedBundleType || requestedBundleType || BundleType.PRODUCT_PAGE;
 
     // Get custom CSS from design settings and sanitize it to prevent XSS attacks
     const rawCustomCss = designSettings?.customCss || "";

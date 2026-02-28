@@ -9,8 +9,7 @@
  */
 
 import { useState, useCallback } from "react";
-
-type BundleStatus = 'active' | 'draft' | 'archived';
+import type { BundleStatus } from "../constants/bundle";
 
 interface BundleFormData {
   name: string;

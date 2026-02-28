@@ -25,6 +25,7 @@ import { AppLogger } from "../../lib/logger";
 import { MetafieldCleanupService } from "../../services/metafield-cleanup.server";
 import { SubscriptionGuard } from "../../services/subscription-guard.server";
 import { BillingService } from "../../services/billing.server";
+import { BundleStatus, BundleType } from "../../constants/bundle";
 import { useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../components/UpgradePromptBanner";
@@ -102,7 +103,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       shopId: session.shop,
       // Note: bundleType filter removed - showing all bundle display types
       status: {
-        in: ['active', 'draft'] // Only show active and draft bundles, exclude archived
+        in: [BundleStatus.ACTIVE, BundleStatus.DRAFT] // Only show active and draft bundles, exclude archived
       }
     },
     include: {
@@ -219,8 +220,8 @@ export async function action({ request }: ActionFunctionArgs) {
           name: clonedBundleName,
           description: originalBundle.description,
           shopId: shop,
-          bundleType: 'product_page', // Default to product-page bundle
-          status: 'draft',
+          bundleType: BundleType.PRODUCT_PAGE, // Default to product-page bundle
+          status: BundleStatus.DRAFT,
           shopifyProductId: shopifyProductId,
           templateName: originalBundle.templateName,
         },
@@ -443,8 +444,8 @@ export async function action({ request }: ActionFunctionArgs) {
         name: bundleName,
         description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: shop,
-        bundleType: 'product_page', // Default to product-page bundle
-        status: 'draft',
+        bundleType: BundleType.PRODUCT_PAGE, // Default to product-page bundle
+        status: BundleStatus.DRAFT,
         shopifyProductId: shopifyProductId, // Link the Shopify product
       },
     });
@@ -546,7 +547,7 @@ export default function CartTransformBundles() {
 
   const bundleRows = bundles.map((bundle) => [
     bundle.name,
-    <Badge tone={bundle.status === "active" ? "success" : "info"} key={`status-${bundle.id}`}>
+    <Badge tone={bundle.status === BundleStatus.ACTIVE ? "success" : "info"} key={`status-${bundle.id}`}>
       {bundle.status}
     </Badge>,
     bundle.steps.length,

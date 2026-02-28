@@ -10,6 +10,7 @@ import { AppLogger } from "../../../../lib/logger";
 import { checkMetafieldSize } from "../utils/size-check";
 import { calculateComponentPricing } from "../utils/pricing";
 import type { PriceAdjustment, BundleUiConfig, ComponentPricing } from "../types";
+import { BundleStatus, BundleType } from "../../../../constants/bundle";
 
 /**
  * Updates bundle variant metafields with Shopify Standard structure (Approach 1: Hybrid)
@@ -167,8 +168,8 @@ export async function updateBundleProductMetafields(
     bundleId: bundleConfiguration.id || bundleConfiguration.bundleId, // Keep for backwards compatibility
     name: bundleConfiguration.name,
     description: bundleConfiguration.description || '',
-    status: bundleConfiguration.status || 'active', // Widget needs this for filtering
-    bundleType: bundleConfiguration.bundleType || 'product_page', // Widget needs this for selection
+    status: bundleConfiguration.status || BundleStatus.ACTIVE, // Widget needs this for filtering
+    bundleType: bundleConfiguration.bundleType || BundleType.PRODUCT_PAGE, // Widget needs this for selection
     shopifyProductId: bundleConfiguration.shopifyProductId || null, // Product ID for matching
     bundleVariantId: bundleVariantId, // Bundle parent variant ID for cart transform EXPAND operation
     steps: (bundleConfiguration.steps || []).map((step: any) => ({

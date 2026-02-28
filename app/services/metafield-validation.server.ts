@@ -3,6 +3,8 @@
 
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
+import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../constants/metafields";
+import { BundleStatus } from "../constants/bundle";
 
 export class MetafieldValidationService {
 
@@ -22,7 +24,7 @@ export class MetafieldValidationService {
       const activeBundles = await db.bundle.findMany({
         where: {
           shopId: shopId,
-          status: 'active'
+          status: BundleStatus.ACTIVE
         },
         include: {
           steps: {
@@ -134,8 +136,8 @@ export class MetafieldValidationService {
             variables: {
               metafields: [{
                 ownerId: shopGid,
-                namespace: "$app",
-                key: "all_bundles",
+                namespace: METAFIELD_NAMESPACE,
+                key: METAFIELD_KEYS.ALL_BUNDLES,
                 type: "json",
                 value: JSON.stringify(validBundles)
               }]
@@ -199,7 +201,7 @@ export class MetafieldValidationService {
       const activeBundles = await db.bundle.findMany({
         where: {
           shopId: shopId,
-          status: 'active'
+          status: BundleStatus.ACTIVE
         },
         include: {
           steps: {
@@ -406,7 +408,7 @@ export class MetafieldValidationService {
     try {
       // Get database state
       const activeBundles = await db.bundle.findMany({
-        where: { shopId: shopId, status: 'active' },
+        where: { shopId: shopId, status: BundleStatus.ACTIVE },
         include: { steps: { include: { StepProduct: true } } }
       });
 

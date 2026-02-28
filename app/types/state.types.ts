@@ -329,8 +329,7 @@ export interface UIState {
 // BUNDLE FORM STATE TYPES
 // ============================================
 
-export type BundleStatus = 'active' | 'draft' | 'archived';
-export type BundleType = 'full_page' | 'product_page' | 'cart_transform';
+export type { BundleStatus, BundleType } from "../constants/bundle";
 
 /**
  * Basic bundle form data

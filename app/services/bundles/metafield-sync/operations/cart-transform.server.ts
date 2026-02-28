@@ -5,6 +5,7 @@
  */
 
 import db from "../../../../db.server";
+import { BundleStatus } from "../../../../constants/bundle";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { safeJsonParse } from "../utils/size-check";
 import type { OptimizedBundleConfig, OptimizedStepConfig, OptimizedPricingConfig } from "../types";
@@ -50,7 +51,7 @@ export async function updateCartTransformMetafield(
     const allPublishedBundles = await db.bundle.findMany({
       where: {
         shopId: shopId,
-        status: 'active'
+        status: BundleStatus.ACTIVE
       },
       include: {
         steps: {

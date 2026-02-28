@@ -448,13 +448,8 @@ export const DEFAULT_SETTINGS = {
 } as const;
 
 /**
- * Type for bundle types
- */
-export type BundleType = keyof typeof DEFAULT_SETTINGS;
-
-/**
  * Get default settings for a specific bundle type
  */
-export function getDefaultSettings(bundleType: BundleType): DesignSettings {
+export function getDefaultSettings(bundleType: keyof typeof DEFAULT_SETTINGS): DesignSettings {
   return DEFAULT_SETTINGS[bundleType];
 }

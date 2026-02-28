@@ -22,6 +22,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { AppLogger } from "../../lib/logger";
+import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../../constants/metafields";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await requireAdminSession(request);
@@ -65,22 +66,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const metafieldsToDelete = [
       {
         ownerId: productId,
-        namespace: "$app",
-        key: "bundleConfig"
+        namespace: METAFIELD_NAMESPACE,
+        key: METAFIELD_KEYS.BUNDLE_CONFIG,
       },
       {
         ownerId: productId,
-        namespace: "$app",
-        key: "bundleProductType"
+        namespace: METAFIELD_NAMESPACE,
+        key: "bundleProductType",
       },
       {
         ownerId: productId,
-        namespace: "$app",
-        key: "ownsBundleId"
+        namespace: METAFIELD_NAMESPACE,
+        key: "ownsBundleId",
       },
       {
         ownerId: productId,
-        namespace: "$app",
+        namespace: METAFIELD_NAMESPACE,
         key: "isolationCreated"
       }
     ];

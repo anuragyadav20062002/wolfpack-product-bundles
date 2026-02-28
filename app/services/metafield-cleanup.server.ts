@@ -2,6 +2,7 @@
 // Handles comprehensive cleanup of all bundle-related metafields
 
 import { AppLogger } from "../lib/logger";
+import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../constants/metafields";
 
 export class MetafieldCleanupService {
 
@@ -62,30 +63,30 @@ export class MetafieldCleanupService {
       // Widget configuration metafield (defined in shopify.app.toml)
       {
         ownerId: productGid,
-        namespace: "$app",
-        key: "bundleConfig"
+        namespace: METAFIELD_NAMESPACE,
+        key: METAFIELD_KEYS.BUNDLE_CONFIG,
       },
       // Cart transform configuration metafield
       {
         ownerId: productGid,
-        namespace: "$app",
-        key: "cartTransformConfig"
+        namespace: METAFIELD_NAMESPACE,
+        key: "cartTransformConfig",
       },
       // Bundle isolation metafields
       {
         ownerId: productGid,
-        namespace: "$app",
-        key: "ownsBundleId"
+        namespace: METAFIELD_NAMESPACE,
+        key: "ownsBundleId",
       },
       {
         ownerId: productGid,
-        namespace: "$app",
-        key: "bundleProductType"
+        namespace: METAFIELD_NAMESPACE,
+        key: "bundleProductType",
       },
       {
         ownerId: productGid,
-        namespace: "$app",
-        key: "isolationCreated"
+        namespace: METAFIELD_NAMESPACE,
+        key: "isolationCreated",
       }
     ];
 
@@ -186,8 +187,8 @@ export class MetafieldCleanupService {
             variables: {
               metafields: [{
                 ownerId: shopGid,
-                namespace: "$app",
-                key: "bundleIndex",
+                namespace: METAFIELD_NAMESPACE,
+                key: METAFIELD_KEYS.BUNDLE_INDEX,
                 type: "json",
                 value: JSON.stringify({
                   bundles: filteredBundles,

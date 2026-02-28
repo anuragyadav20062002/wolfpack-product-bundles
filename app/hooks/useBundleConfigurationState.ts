@@ -17,12 +17,13 @@ import { useBundleForm } from "./useBundleForm";
 import { useBundleSteps } from "./useBundleSteps";
 import { useBundleConditions } from "./useBundleConditions";
 import { useBundlePricing } from "./useBundlePricing";
+import { FullPageLayout, type BundleStatus } from "../constants/bundle";
 
 // ============================================
 // TYPES
 // ============================================
 
-export type BundleStatus = 'active' | 'draft' | 'archived';
+export type { BundleStatus };
 
 export interface BundleData {
   id: string;
@@ -82,7 +83,7 @@ export function useBundleConfigurationState({
       description: bundle.description || "",
       status: bundle.status,
       templateName: bundle.templateName || "",
-      fullPageLayout: bundle.fullPageLayout || "footer_bottom",
+      fullPageLayout: bundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
     },
     onStateChange: markAsDirty
   });

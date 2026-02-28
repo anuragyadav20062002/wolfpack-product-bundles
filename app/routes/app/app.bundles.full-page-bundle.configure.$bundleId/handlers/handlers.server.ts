@@ -35,6 +35,9 @@ import {
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
 } from "../../../../services/bundles/bundle-configure-handlers.server";
+import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
+import { SHOPIFY_REST_API_VERSION } from "../../../../constants/api";
+import { ERROR_MESSAGES } from "../../../../constants/errors";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -72,7 +75,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleDescription = formData.get("bundleDescription") as string;
     const bundleStatus = formData.get("bundleStatus") as string;
     const templateName = formData.get("templateName") as string || null;
-    const fullPageLayout = formData.get("fullPageLayout") as string || "footer_bottom";
+    const fullPageLayout = formData.get("fullPageLayout") as string || FullPageLayout.FOOTER_BOTTOM;
     const promoBannerBgImageRaw = formData.get("promoBannerBgImage") as string;
     const promoBannerBgImage = promoBannerBgImageRaw || null;
     const promoBannerBgImageCropRaw = formData.get("promoBannerBgImageCrop") as string;
@@ -149,7 +152,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
 
     // Automatically set status to 'active' if bundle has configured steps
     let finalStatus = bundleStatus as any;
-    if (bundleStatus === 'draft' && stepsData && stepsData.length > 0) {
+    if (bundleStatus === BundleStatus.DRAFT && stepsData && stepsData.length > 0) {
       const hasConfiguredSteps = stepsData.some((step: any) =>
         (step.StepProduct && step.StepProduct.length > 0) ||
         (step.collections && step.collections.length > 0)
@@ -160,7 +163,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         stepsCount: stepsData.length
       });
       if (hasConfiguredSteps) {
-        finalStatus = 'active';
+        finalStatus = BundleStatus.ACTIVE;
         AppLogger.debug("[BUNDLE_CONFIG] Auto-activating bundle with configured steps");
       }
     }
@@ -379,7 +382,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         description: updatedBundle.description,
         status: updatedBundle.status,
         bundleType: updatedBundle.bundleType,
-        fullPageLayout: updatedBundle.fullPageLayout || "footer_bottom",
+        fullPageLayout: updatedBundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
         templateName: updatedBundle.templateName,
         steps: optimizedSteps,
         pricing: {
@@ -513,7 +516,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     });
 
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to save bundle configuration";
+    const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_TO_SAVE_CONFIGURATION;
     AppLogger.error("[BUNDLE_CONFIG] Error saving bundle:", { component: "handlers.server", bundleId }, error);
     return json({ success: false, error: message }, { status: 500 });
   }
@@ -535,7 +538,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
   });
 
   if (!bundle) {
-    return json({ success: false, error: "Bundle not found" }, { status: 404 });
+    return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
   }
 
   let productId = bundle.shopifyProductId;
@@ -673,7 +676,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           bundleId: bundle.id,
           name: bundle.name,
           templateName: bundle.templateName || null,
-          bundleType: bundle.bundleType || 'full_page',
+          bundleType: bundle.bundleType || BundleType.FULL_PAGE,
           type: "cart_transform",
           steps: optimizedSteps,
           pricing: {
@@ -833,7 +836,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       bundleId: bundle.id,
       name: bundle.name,
       templateName: bundle.templateName || null,
-      bundleType: bundle.bundleType || 'full_page',
+      bundleType: bundle.bundleType || BundleType.FULL_PAGE,
       type: "cart_transform",
       steps: optimizedSteps,
       pricing: {
@@ -906,7 +909,7 @@ export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: 
     const { accessToken, shop } = session;
 
     const assetsResponse = await fetch(
-      `https://${shop}/admin/api/2024-10/themes/${themeId}/assets.json`,
+      `https://${shop}/admin/api/${SHOPIFY_REST_API_VERSION}/themes/${themeId}/assets.json`,
       {
         method: 'GET',
         headers: {
@@ -962,7 +965,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     if (!bundle) {
       return json({
         success: false,
-        error: "Bundle not found"
+        error: ERROR_MESSAGES.BUNDLE_NOT_FOUND
       }, { status: 404 });
     }
 
@@ -1000,7 +1003,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
       data: {
         shopifyPageHandle: result.pageHandle,
         shopifyPageId: result.pageId,
-        status: 'active'  // CRITICAL: Activate bundle so widget can fetch it via API
+        status: BundleStatus.ACTIVE  // CRITICAL: Activate bundle so widget can fetch it via API
       }
     });
 
