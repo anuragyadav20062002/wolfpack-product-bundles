@@ -8,6 +8,7 @@ import { isUUID } from "../../../../utils/shopify-validators";
 import { getFirstVariantId, batchGetFirstVariants } from "../../../../utils/variant-lookup.server";
 import { AppLogger } from "../../../../lib/logger";
 import { checkMetafieldSize } from "../utils/size-check";
+import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../../../../constants/metafields";
 import type { PriceAdjustment, ComponentParentsData } from "../types";
 
 /**
@@ -192,8 +193,8 @@ export async function updateComponentProductMetafields(
           metafields: [
             {
               ownerId: variantId,
-              namespace: "$app",
-              key: "component_parents",
+              namespace: METAFIELD_NAMESPACE,
+              key: METAFIELD_KEYS.COMPONENT_PARENTS,
               value: JSON.stringify(componentParentsData),
               type: "json"
             }

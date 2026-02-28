@@ -16,12 +16,13 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { appState as appStateService } from "../services/app.state.service";
 import type { DesignSettings } from "../types/state.types";
+import { BundleType } from "../constants/bundle";
 
 // ============================================
 // TYPES
 // ============================================
 
-export type BundleType = "product_page" | "full_page";
+export type { BundleType };
 
 /**
  * LoaderSettings type - properties are optional because Remix's useLoaderData
@@ -43,7 +44,7 @@ export interface DCPNavigationState {
 // ============================================
 
 const getDefaultSettings = (bundleType: BundleType): DesignSettings => {
-  const isFullPage = bundleType === "full_page";
+  const isFullPage = bundleType === BundleType.FULL_PAGE;
 
   return {
     // Global Colors
@@ -216,7 +217,7 @@ const getDefaultSettings = (bundleType: BundleType): DesignSettings => {
 
 export function useDesignControlPanelState(loaderSettings: LoaderSettings) {
   // Bundle type selection
-  const [selectedBundleType, setSelectedBundleType] = useState<BundleType>("product_page");
+  const [selectedBundleType, setSelectedBundleType] = useState<BundleType>(BundleType.PRODUCT_PAGE);
 
   // Navigation state
   const [expandedSection, setExpandedSection] = useState<string | null>("productCard");
@@ -250,11 +251,11 @@ export function useDesignControlPanelState(loaderSettings: LoaderSettings) {
 
     // Also sync to state service
     appStateService.setDesignSettings(
-      selectedBundleType === "full_page" ? "full_page" : "product_page",
+      selectedBundleType === BundleType.FULL_PAGE ? BundleType.FULL_PAGE : BundleType.PRODUCT_PAGE,
       newSettings
     );
     appStateService.setSelectedBundleType(
-      selectedBundleType === "full_page" ? "full_page" : "product_page"
+      selectedBundleType === BundleType.FULL_PAGE ? BundleType.FULL_PAGE : BundleType.PRODUCT_PAGE
     );
   }, [selectedBundleType, loaderSettings]);
 
@@ -315,7 +316,7 @@ export function useDesignControlPanelState(loaderSettings: LoaderSettings) {
 
     // Also update state service
     appStateService.setDesignSettings(
-      selectedBundleType === "full_page" ? "full_page" : "product_page",
+      selectedBundleType === BundleType.FULL_PAGE ? BundleType.FULL_PAGE : BundleType.PRODUCT_PAGE,
       savedSettings
     );
     appStateService.setDesignSettingsDirty(false);

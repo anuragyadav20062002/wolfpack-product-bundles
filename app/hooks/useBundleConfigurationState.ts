@@ -17,6 +17,7 @@ import { useBundleForm } from "./useBundleForm";
 import { useBundleSteps } from "./useBundleSteps";
 import { useBundleConditions } from "./useBundleConditions";
 import { useBundlePricing } from "./useBundlePricing";
+import { FullPageLayout } from "../constants/bundle";
 
 // ============================================
 // TYPES
@@ -82,7 +83,7 @@ export function useBundleConfigurationState({
       description: bundle.description || "",
       status: bundle.status,
       templateName: bundle.templateName || "",
-      fullPageLayout: bundle.fullPageLayout || "footer_bottom",
+      fullPageLayout: bundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
     },
     onStateChange: markAsDirty
   });

@@ -1,6 +1,7 @@
 import { Text } from "@shopify/polaris";
 import { useState } from "react";
 import { ShoppingCartIcon } from "../icons";
+import { BundleType } from "../../../constants/bundle";
 
 const HIGHLIGHT_STYLE = {
   outline: "2px dashed #5C6AC4",
@@ -51,13 +52,13 @@ function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: 
   return (
     <div style={{ marginBottom: "16px", display: "flex", gap: "8px", justifyContent: "center" }}>
       <button
-        onClick={() => onChange("product_page")}
+        onClick={() => onChange(BundleType.PRODUCT_PAGE)}
         style={{
           padding: "8px 16px",
-          border: `2px solid ${selected === "product_page" ? "#000" : "#ddd"}`,
+          border: `2px solid ${selected === BundleType.PRODUCT_PAGE ? "#000" : "#ddd"}`,
           borderRadius: "6px",
-          background: selected === "product_page" ? "#000" : "#fff",
-          color: selected === "product_page" ? "#fff" : "#333",
+          background: selected === BundleType.PRODUCT_PAGE ? "#000" : "#fff",
+          color: selected === BundleType.PRODUCT_PAGE ? "#fff" : "#333",
           cursor: "pointer",
           fontSize: "12px",
           fontWeight: 500,
@@ -66,13 +67,13 @@ function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: 
         Product Page
       </button>
       <button
-        onClick={() => onChange("full_page")}
+        onClick={() => onChange(BundleType.FULL_PAGE)}
         style={{
           padding: "8px 16px",
-          border: `2px solid ${selected === "full_page" ? "#000" : "#ddd"}`,
+          border: `2px solid ${selected === BundleType.FULL_PAGE ? "#000" : "#ddd"}`,
           borderRadius: "6px",
-          background: selected === "full_page" ? "#000" : "#fff",
-          color: selected === "full_page" ? "#fff" : "#333",
+          background: selected === BundleType.FULL_PAGE ? "#000" : "#fff",
+          color: selected === BundleType.FULL_PAGE ? "#fff" : "#333",
           cursor: "pointer",
           fontSize: "12px",
           fontWeight: 500,
@@ -554,7 +555,7 @@ function ProductPageFooterLayout({
 }
 
 export function BundleFooterPreview(props: BundleFooterPreviewProps) {
-  const [bundleType, setBundleType] = useState<string>("product_page");
+  const [bundleType, setBundleType] = useState<string>(BundleType.PRODUCT_PAGE);
 
   const {
     activeSubSection,
@@ -646,7 +647,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
   };
 
   // For footerDiscountProgress, show dedicated discount/progress layout when product_page
-  if (activeSubSection === "footerDiscountProgress" && bundleType === "product_page") {
+  if (activeSubSection === "footerDiscountProgress" && bundleType === BundleType.PRODUCT_PAGE) {
     return (
       <div style={{ textAlign: "center", position: "relative" }}>
         <Text as="h3" variant="headingLg" fontWeight="semibold">
@@ -768,7 +769,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
         <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
       </div>
       <div style={{ marginTop: "24px", display: "inline-block", position: "relative" }}>
-        {bundleType === "full_page" ? (
+        {bundleType === BundleType.FULL_PAGE ? (
           <FullPageFooterLayout {...sharedFullPageProps} />
         ) : (
           <ProductPageFooterLayout {...sharedProductPageProps} />
@@ -776,7 +777,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
       </div>
       <div style={{ marginTop: "16px" }}>
         <Text as="p" variant="bodySm" tone="subdued">
-          {bundleType === "full_page" ? "Full-page bundle footer layout" : "Product-page bundle footer layout"}
+          {bundleType === BundleType.FULL_PAGE ? "Full-page bundle footer layout" : "Product-page bundle footer layout"}
         </Text>
       </div>
     </div>

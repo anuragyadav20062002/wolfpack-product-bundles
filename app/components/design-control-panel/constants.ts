@@ -1,8 +1,5 @@
-// Bundle type options for the selector
-export const BUNDLE_TYPE_OPTIONS = [
-  { label: "Product Page Bundle", value: "product_page" },
-  { label: "Full Page Bundle", value: "full_page" },
-];
+// Re-export from centralized constants
+export { BUNDLE_TYPE_OPTIONS } from "../../constants/bundle";
 
 export const IMAGE_FIT_OPTIONS = [
   { label: "Cover", value: "cover" },

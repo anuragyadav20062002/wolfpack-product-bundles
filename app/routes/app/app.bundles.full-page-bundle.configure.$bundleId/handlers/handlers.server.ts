@@ -35,6 +35,7 @@ import {
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
 } from "../../../../services/bundles/bundle-configure-handlers.server";
+import { FullPageLayout } from "../../../../constants/bundle";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -72,7 +73,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleDescription = formData.get("bundleDescription") as string;
     const bundleStatus = formData.get("bundleStatus") as string;
     const templateName = formData.get("templateName") as string || null;
-    const fullPageLayout = formData.get("fullPageLayout") as string || "footer_bottom";
+    const fullPageLayout = formData.get("fullPageLayout") as string || FullPageLayout.FOOTER_BOTTOM;
     const promoBannerBgImageRaw = formData.get("promoBannerBgImage") as string;
     const promoBannerBgImage = promoBannerBgImageRaw || null;
     const promoBannerBgImageCropRaw = formData.get("promoBannerBgImageCrop") as string;
@@ -379,7 +380,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         description: updatedBundle.description,
         status: updatedBundle.status,
         bundleType: updatedBundle.bundleType,
-        fullPageLayout: updatedBundle.fullPageLayout || "footer_bottom",
+        fullPageLayout: updatedBundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
         templateName: updatedBundle.templateName,
         steps: optimizedSteps,
         pricing: {

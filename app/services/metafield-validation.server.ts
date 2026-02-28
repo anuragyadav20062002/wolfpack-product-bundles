@@ -3,6 +3,7 @@
 
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
+import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../constants/metafields";
 
 export class MetafieldValidationService {
 
@@ -134,8 +135,8 @@ export class MetafieldValidationService {
             variables: {
               metafields: [{
                 ownerId: shopGid,
-                namespace: "$app",
-                key: "all_bundles",
+                namespace: METAFIELD_NAMESPACE,
+                key: METAFIELD_KEYS.ALL_BUNDLES,
                 type: "json",
                 value: JSON.stringify(validBundles)
               }]

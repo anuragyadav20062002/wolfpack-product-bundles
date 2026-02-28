@@ -26,6 +26,7 @@ import React, {
   useMemo,
   type ReactNode,
 } from "react";
+import { BundleType } from "../constants/bundle";
 import type {
   AppStateService} from "../services/app.state.service";
 import {
@@ -61,9 +62,9 @@ interface AppStateContextValue {
   dispatch: (action: StateAction) => void;
 
   // Design Settings Actions
-  setDesignSettings: (bundleType: 'full_page' | 'product_page', settings: DesignSettings) => void;
+  setDesignSettings: (bundleType: BundleType, settings: DesignSettings) => void;
   updateDesignSetting: <K extends keyof DesignSettings>(key: K, value: DesignSettings[K]) => void;
-  setSelectedBundleType: (bundleType: 'full_page' | 'product_page') => void;
+  setSelectedBundleType: (bundleType: BundleType) => void;
   setDesignSettingsDirty: (isDirty: boolean) => void;
 
   // UI Actions
@@ -153,11 +154,11 @@ export function AppStateProvider({ children, initialState }: AppStateProviderPro
     dispatch: (action: StateAction) => appStateService.dispatch(action),
 
     // Design Settings Actions
-    setDesignSettings: (bundleType: 'full_page' | 'product_page', settings: DesignSettings) =>
+    setDesignSettings: (bundleType: BundleType, settings: DesignSettings) =>
       appStateService.setDesignSettings(bundleType, settings),
     updateDesignSetting: <K extends keyof DesignSettings>(key: K, value: DesignSettings[K]) =>
       appStateService.updateDesignSetting(key, value),
-    setSelectedBundleType: (bundleType: 'full_page' | 'product_page') =>
+    setSelectedBundleType: (bundleType: BundleType) =>
       appStateService.setSelectedBundleType(bundleType),
     setDesignSettingsDirty: (isDirty: boolean) =>
       appStateService.setDesignSettingsDirty(isDirty),

@@ -11,6 +11,7 @@ import { AppLogger } from "../../../../lib/logger";
 import { MetafieldCleanupService } from "../../../../services/metafield-cleanup.server";
 import { SubscriptionGuard } from "../../../../services/subscription-guard.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
+import { FullPageLayout } from "../../../../constants/bundle";
 
 // GraphQL Mutations
 const CREATE_BUNDLE_PRODUCT = `
@@ -440,7 +441,7 @@ export async function handleCreateBundle(
         description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: session.shop,
         bundleType: bundleType as any,
-        fullPageLayout: bundleType === 'full_page' ? (fullPageLayout as any || 'footer_bottom') : null,
+        fullPageLayout: bundleType === 'full_page' ? (fullPageLayout as any || FullPageLayout.FOOTER_BOTTOM) : null,
         status: 'draft',
         shopifyProductId: shopifyProductId,
       },

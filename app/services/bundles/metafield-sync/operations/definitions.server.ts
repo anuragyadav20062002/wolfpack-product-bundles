@@ -4,6 +4,8 @@
  * Creates and ensures metafield definitions exist in Shopify
  */
 
+import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../../../../constants/metafields";
+
 /**
  * Ensures variant-level bundle metafield definitions exist in Shopify
  * (Shopify Standard - Approach 1: Hybrid)
@@ -49,8 +51,8 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
   const definitions = [
     {
       name: "Bundle Component Variants",
-      namespace: "$app",
-      key: "component_reference",
+      namespace: METAFIELD_NAMESPACE,
+      key: METAFIELD_KEYS.COMPONENT_REFERENCE,
       description: "Product variants included in this bundle (Shopify standard)",
       type: "list.variant_reference",
       ownerType: "PRODUCTVARIANT",
@@ -61,8 +63,8 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
     },
     {
       name: "Component Quantities",
-      namespace: "$app",
-      key: "component_quantities",
+      namespace: METAFIELD_NAMESPACE,
+      key: METAFIELD_KEYS.COMPONENT_QUANTITIES,
       description: "Quantity of each component in the bundle (Shopify standard)",
       type: "list.number_integer",
       ownerType: "PRODUCTVARIANT",
@@ -83,7 +85,7 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
     },
     {
       name: "Bundle Price Adjustment",
-      namespace: "$app",
+      namespace: METAFIELD_NAMESPACE,
       key: "price_adjustment",
       description: "Discount configuration for cart transform (method, value, conditions)",
       type: "json",
@@ -95,8 +97,8 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
     },
     {
       name: "Bundle Widget Configuration",
-      namespace: "$app",
-      key: "bundle_ui_config",
+      namespace: METAFIELD_NAMESPACE,
+      key: METAFIELD_KEYS.BUNDLE_UI_CONFIG,
       description: "UI configuration for storefront widget (steps, messaging, display settings)",
       type: "json",
       ownerType: "PRODUCTVARIANT",
@@ -107,8 +109,8 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
     },
     {
       name: "Component Parent Bundles",
-      namespace: "$app",
-      key: "component_parents",
+      namespace: METAFIELD_NAMESPACE,
+      key: METAFIELD_KEYS.COMPONENT_PARENTS,
       description: "Parent bundles this component belongs to (Shopify standard)",
       type: "json",
       ownerType: "PRODUCTVARIANT",
@@ -119,8 +121,8 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
     },
     {
       name: "Component Pricing",
-      namespace: "$app",
-      key: "component_pricing",
+      namespace: METAFIELD_NAMESPACE,
+      key: METAFIELD_KEYS.COMPONENT_PRICING,
       description: "Per-component pricing breakdown for expanded bundle checkout display (cents)",
       type: "json",
       ownerType: "PRODUCTVARIANT",
