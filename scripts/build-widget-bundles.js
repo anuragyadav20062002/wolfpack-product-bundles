@@ -21,6 +21,23 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
+// ---------------------------------------------------------------------------
+// WIDGET VERSION
+// ---------------------------------------------------------------------------
+// Increment this before building when you intend to deploy widget changes.
+// Use semantic versioning (MAJOR.MINOR.PATCH):
+//   PATCH  — bug fix
+//   MINOR  — new storefront feature (backwards-compatible)
+//   MAJOR  — breaking change requiring merchant theme update
+//
+// After incrementing, run:  npm run build:widgets
+// Then deploy:              shopify app deploy
+//
+// Verify live version in browser DevTools on the storefront:
+//   console.log(window.__BUNDLE_WIDGET_VERSION__)
+// ---------------------------------------------------------------------------
+const WIDGET_VERSION = '1.2.0';
+
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/shared/condition-validator.js'),
@@ -46,6 +63,25 @@ const OUTPUTS = {
   fullPage: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js'),
   productPage: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js'),
 };
+
+/**
+ * Build a header banner injected at the top of every bundle.
+ * window.__BUNDLE_WIDGET_VERSION__ lets developers verify which build is running
+ * in browser DevTools: console.log(window.__BUNDLE_WIDGET_VERSION__)
+ */
+function buildBanner(widgetType) {
+  const buildDate = new Date().toISOString().split('T')[0];
+  return `/*!
+ * Wolfpack Bundle Widget — ${widgetType}
+ * Version : ${WIDGET_VERSION}
+ * Built   : ${buildDate}
+ *
+ * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
+ * After deploying, allow 2-10 minutes for propagation before testing.
+ * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
+ */
+window.__BUNDLE_WIDGET_VERSION__ = '${WIDGET_VERSION}';`;
+}
 
 /**
  * Read a file and return its contents
@@ -121,7 +157,8 @@ function buildFullPageBundle() {
   const processedWidget = removeUseStrict(removeModuleStatements(widgetCode));
 
   // Combine into a single IIFE
-  const bundledCode = `(function() {
+  const bundledCode = `${buildBanner('Full Page')}
+(function() {
   'use strict';
 
   // ============================================================================
@@ -168,7 +205,8 @@ function buildProductPageBundle() {
   const processedWidget = removeUseStrict(removeModuleStatements(widgetCode));
 
   // Combine into a single IIFE
-  const bundledCode = `(function() {
+  const bundledCode = `${buildBanner('Product Page')}
+(function() {
   'use strict';
 
   // ============================================================================

@@ -333,10 +333,58 @@ extensions/bundle-builder/assets/
 ```bash
 # After making widget JS changes:
 1. Edit source files in app/assets/
-2. Run: npm run build:widgets
-3. Test changes in storefront
-4. Commit BOTH source files AND bundled files
+2. Increment WIDGET_VERSION in scripts/build-widget-bundles.js  ← SEE VERSION RULE BELOW
+3. Run: npm run build:widgets
+4. Test changes in storefront
+5. Commit BOTH source files AND bundled files
 ```
+
+---
+
+## 🔢 Widget Version Rule
+
+### MANDATORY: Increment `WIDGET_VERSION` before every widget deploy
+
+`WIDGET_VERSION` lives at the top of `scripts/build-widget-bundles.js`.
+It is embedded in every bundled JS file as `window.__BUNDLE_WIDGET_VERSION__`.
+
+**When to increment (semantic versioning):**
+
+| Change type                                  | Version bump |
+|----------------------------------------------|--------------|
+| Bug fix (broken behaviour, logic error)      | PATCH x.y.Z  |
+| New storefront feature (backwards-compatible)| MINOR x.Y.z  |
+| Breaking change / widget redesign            | MAJOR X.y.z  |
+
+**Mandatory steps before every widget deploy:**
+
+```
+1. Open scripts/build-widget-bundles.js
+2. Increment WIDGET_VERSION (e.g. '1.0.0' → '1.0.1')
+3. Run: npm run build:widgets
+4. Commit source + bundled files
+5. Run: shopify app deploy  (per the Shopify Deploy Rule above)
+6. Wait 2-10 min for Shopify CDN cache to propagate — this is expected
+```
+
+**How Shopify CDN cache-busting works (why this matters):**
+
+Shopify serves extension JS from its CDN. The `asset_url` Liquid filter appends a
+`?v=HASH` parameter automatically. This hash only changes when you run
+`shopify app deploy` — it is tied to the app-version snapshot, NOT the file content.
+Custom query parameters (e.g. `?timestamp=`) are NOT on the CDN allowlist and will NOT
+bust the cache.
+
+Summary: **build → increment version → deploy → wait ~5 min → verify.**
+
+**Verify the live version** in browser DevTools on any storefront page with the widget:
+
+```javascript
+// Paste in DevTools console:
+console.log(window.__BUNDLE_WIDGET_VERSION__)
+```
+
+Expected output: the version string you set before the last deploy (e.g. `"1.0.1"`).
 
 ## 📁 File Structure
 
