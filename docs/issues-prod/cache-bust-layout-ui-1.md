@@ -18,10 +18,13 @@ Two fixes:
 
 ### 2026-03-01 15:00 - Completed Both Fixes
 
-#### Cache-Busting Fix
-- Added `?v=${Date.now()}` to the API fetch URL in `bundle-widget-full-page.js`
-- Every page load now busts both browser and CDN caches
-- API endpoint cache headers left unchanged (still useful for non-widget consumers)
+#### Cache Strategy Fix
+- Reverted `?v=${Date.now()}` (defeated caching entirely, excessive server load)
+- Reduced API cache headers from `max-age=300, s-maxage=600` (5min/10min) to
+  `max-age=10, s-maxage=30, stale-while-revalidate=300` (10s/30s + 5min SWR)
+- Changes now appear within ~30s; CDN still absorbs traffic efficiently
+- `stale-while-revalidate` means visitors never see slow responses — CDN serves
+  stale data instantly while fetching fresh data in the background
 
 #### Page Layout UI Fix
 - Increased card padding from `12px` to `20px 16px`
