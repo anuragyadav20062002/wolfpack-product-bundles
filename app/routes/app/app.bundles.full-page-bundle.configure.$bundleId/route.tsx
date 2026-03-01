@@ -1468,7 +1468,7 @@ export default function ConfigureBundleFlow() {
                     <Text variant="bodySm" as="p" tone="subdued">
                       Choose where the bundle summary and navigation appears
                     </Text>
-                    <InlineStack gap="300" wrap={false}>
+                    <InlineStack gap="400" wrap={false}>
                       {/* Footer Bottom Option */}
                       <div
                         onClick={() => formState.setFullPageLayout("footer_bottom")}
@@ -1477,8 +1477,8 @@ export default function ConfigureBundleFlow() {
                           border: formState.fullPageLayout === "footer_bottom"
                             ? "2px solid var(--p-color-border-interactive)"
                             : "1px solid var(--p-color-border-secondary)",
-                          borderRadius: "8px",
-                          padding: "12px",
+                          borderRadius: "12px",
+                          padding: "20px 16px",
                           cursor: "pointer",
                           background: formState.fullPageLayout === "footer_bottom"
                             ? "var(--p-color-bg-surface-selected)"
@@ -1486,26 +1486,26 @@ export default function ConfigureBundleFlow() {
                           transition: "border 0.15s, background 0.15s",
                         }}
                       >
-                        <BlockStack gap="200" inlineAlign="center">
+                        <BlockStack gap="300" inlineAlign="center">
                           {/* SVG Illustration — Footer Bottom */}
-                          <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="1" y="1" width="118" height="78" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                          <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
                             {/* Product grid area */}
-                            <rect x="10" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
-                            <rect x="36" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
-                            <rect x="62" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
-                            <rect x="88" y="8" width="22" height="18" rx="2" fill="#E5E7EB" />
-                            <rect x="10" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
-                            <rect x="36" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
-                            <rect x="62" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
-                            <rect x="88" y="30" width="22" height="18" rx="2" fill="#E5E7EB" />
+                            <rect x="12" y="10" width="24" height="20" rx="2" fill="#E5E7EB" />
+                            <rect x="42" y="10" width="24" height="20" rx="2" fill="#E5E7EB" />
+                            <rect x="72" y="10" width="24" height="20" rx="2" fill="#E5E7EB" />
+                            <rect x="102" y="10" width="24" height="20" rx="2" fill="#E5E7EB" />
+                            <rect x="12" y="36" width="24" height="20" rx="2" fill="#E5E7EB" />
+                            <rect x="42" y="36" width="24" height="20" rx="2" fill="#E5E7EB" />
+                            <rect x="72" y="36" width="24" height="20" rx="2" fill="#E5E7EB" />
+                            <rect x="102" y="36" width="24" height="20" rx="2" fill="#E5E7EB" />
                             {/* Bottom footer bar */}
-                            <rect x="1" y="56" width="118" height="22" rx="0" fill="#7C3AED" opacity="0.85" />
-                            <rect x="10" y="62" width="40" height="4" rx="2" fill="white" opacity="0.8" />
-                            <rect x="10" y="69" width="25" height="3" rx="1.5" fill="white" opacity="0.5" />
-                            <rect x="80" y="61" width="30" height="12" rx="3" fill="white" opacity="0.7" />
+                            <rect x="1" y="68" width="138" height="26" rx="0" fill="#7C3AED" opacity="0.85" />
+                            <rect x="12" y="75" width="44" height="4" rx="2" fill="white" opacity="0.8" />
+                            <rect x="12" y="82" width="28" height="3" rx="1.5" fill="white" opacity="0.5" />
+                            <rect x="96" y="74" width="32" height="14" rx="3" fill="white" opacity="0.7" />
                           </svg>
-                          <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
+                          <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
                             Footer at bottom
                           </Text>
                           <Text variant="bodySm" as="p" tone="subdued" alignment="center">
@@ -1522,8 +1522,8 @@ export default function ConfigureBundleFlow() {
                           border: formState.fullPageLayout === "footer_side"
                             ? "2px solid var(--p-color-border-interactive)"
                             : "1px solid var(--p-color-border-secondary)",
-                          borderRadius: "8px",
-                          padding: "12px",
+                          borderRadius: "12px",
+                          padding: "20px 16px",
                           cursor: "pointer",
                           background: formState.fullPageLayout === "footer_side"
                             ? "var(--p-color-bg-surface-selected)"
@@ -1531,29 +1531,29 @@ export default function ConfigureBundleFlow() {
                           transition: "border 0.15s, background 0.15s",
                         }}
                       >
-                        <BlockStack gap="200" inlineAlign="center">
+                        <BlockStack gap="300" inlineAlign="center">
                           {/* SVG Illustration — Sidebar */}
-                          <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="1" y="1" width="118" height="78" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                          <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
                             {/* Product grid area (left) */}
-                            <rect x="8" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
-                            <rect x="29" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
-                            <rect x="50" y="8" width="18" height="14" rx="2" fill="#E5E7EB" />
-                            <rect x="8" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
-                            <rect x="29" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
-                            <rect x="50" y="26" width="18" height="14" rx="2" fill="#E5E7EB" />
-                            <rect x="8" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
-                            <rect x="29" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
-                            <rect x="50" y="44" width="18" height="14" rx="2" fill="#E5E7EB" />
+                            <rect x="10" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                            <rect x="36" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                            <rect x="62" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                            <rect x="10" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                            <rect x="36" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                            <rect x="62" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                            <rect x="10" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
+                            <rect x="36" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
+                            <rect x="62" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
                             {/* Side panel (right) */}
-                            <rect x="74" y="1" width="45" height="78" rx="0" fill="#7C3AED" opacity="0.85" />
-                            <rect x="80" y="10" width="32" height="4" rx="2" fill="white" opacity="0.8" />
-                            <rect x="80" y="20" width="32" height="8" rx="2" fill="white" opacity="0.15" />
-                            <rect x="80" y="32" width="32" height="8" rx="2" fill="white" opacity="0.15" />
-                            <rect x="80" y="44" width="32" height="8" rx="2" fill="white" opacity="0.15" />
-                            <rect x="80" y="60" width="32" height="12" rx="3" fill="white" opacity="0.7" />
+                            <rect x="90" y="1" width="49" height="94" rx="0" fill="#7C3AED" opacity="0.85" />
+                            <rect x="97" y="12" width="34" height="4" rx="2" fill="white" opacity="0.8" />
+                            <rect x="97" y="24" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                            <rect x="97" y="40" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                            <rect x="97" y="56" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                            <rect x="97" y="74" width="34" height="14" rx="3" fill="white" opacity="0.7" />
                           </svg>
-                          <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
+                          <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
                             Sidebar panel
                           </Text>
                           <Text variant="bodySm" as="p" tone="subdued" alignment="center">

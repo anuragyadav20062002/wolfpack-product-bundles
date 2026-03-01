@@ -295,7 +295,6 @@ class BundleWidgetFullPage {
         // CRITICAL: URL-encode bundle ID to handle special characters in cuid() format
         const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
 
-
         const response = await fetch(apiUrl);
 
 
