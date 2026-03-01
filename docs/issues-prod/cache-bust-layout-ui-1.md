@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-01
-**Last Updated:** 2026-03-01 15:00
+**Last Updated:** 2026-03-01 17:00
 
 ## Overview
 
@@ -40,9 +40,19 @@ Two fixes:
 - `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` — Rebuilt bundle
 - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx` — Layout card UI improvements
 
+### 2026-03-01 17:00 - Fixed Layout Cards Mobile Responsiveness
+
+- Changed `InlineStack wrap={false}` to `wrap` (true) so cards stack on narrow viewports
+- Changed `flex: 1` to `flex: "1 1 240px"` with `minWidth: "240px"` on both cards
+- Cards now wrap to a vertical stack when the container is narrower than ~500px
+
+### Files Modified
+- `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx` — Layout card responsive wrapping
+
 ## Phases Checklist
 - [x] Add cache-busting to widget API fetch
 - [x] Fix Page Layout card padding/margins
 - [x] Rebuild widget bundle
+- [x] Fix layout cards cut off on narrow viewports
 - [x] Lint
 - [x] Commit

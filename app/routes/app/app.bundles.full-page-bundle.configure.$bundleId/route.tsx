@@ -1468,12 +1468,11 @@ export default function ConfigureBundleFlow() {
                     <Text variant="bodySm" as="p" tone="subdued">
                       Choose where the bundle summary and navigation appears
                     </Text>
-                    <InlineStack gap="400" wrap={false}>
+                    <BlockStack gap="400">
                       {/* Footer Bottom Option */}
                       <div
                         onClick={() => formState.setFullPageLayout("footer_bottom")}
                         style={{
-                          flex: 1,
                           border: formState.fullPageLayout === "footer_bottom"
                             ? "2px solid var(--p-color-border-interactive)"
                             : "1px solid var(--p-color-border-secondary)",
@@ -1518,7 +1517,6 @@ export default function ConfigureBundleFlow() {
                       <div
                         onClick={() => formState.setFullPageLayout("footer_side")}
                         style={{
-                          flex: 1,
                           border: formState.fullPageLayout === "footer_side"
                             ? "2px solid var(--p-color-border-interactive)"
                             : "1px solid var(--p-color-border-secondary)",
@@ -1561,7 +1559,7 @@ export default function ConfigureBundleFlow() {
                           </Text>
                         </BlockStack>
                       </div>
-                    </InlineStack>
+                    </BlockStack>
                   </BlockStack>
                 </Card>
               )}
