@@ -1,0 +1,27 @@
+# Learn more about configuring your checkout UI extension:
+# https://shopify.dev/docs/api/checkout-ui-extensions/latest/configuration
+
+# The version of APIs your extension will receive. Learn more:
+# https://shopify.dev/docs/api/usage/versioning
+api_version = "2026-01"
+
+# =============================================================================
+# Checkout Page - Cart Line Item
+# Static target that auto-renders after each cart line in checkout
+# =============================================================================
+[[extensions]]
+uid = "feb2dedd-7b8a-5fa3-1766-e04fa7aebc8abbe9ecbf"
+type = "ui_extension"
+name = "Bundle Pricing - Checkout"
+handle = "bundle-checkout-ui"
+
+  [[extensions.targeting]]
+  module = "./src/index.tsx"
+  target = "purchase.checkout.cart-line-item.render-after"
+
+  [[extensions.targeting]]
+  module = "./src/index.tsx"
+  target = "purchase.thank-you.cart-line-item.render-after"
+
+  [extensions.capabilities]
+  api_access = true

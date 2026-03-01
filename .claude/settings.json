@@ -1,0 +1,30 @@
+{
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "terminal-notifier -title \"🔔 Claude Code: request\" -message \"Claude needs your input\" -sender com.anthropic.claudefordesktop"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "terminal-notifier -title \"✅ Claude Code: done\" -message \"Task completed\" -sender com.anthropic.claudefordesktop"
+          }
+        ]
+      }
+    ]
+  }
+}

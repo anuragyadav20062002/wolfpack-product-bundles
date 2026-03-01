@@ -2,31 +2,79 @@
 
 client_id = "a383172f42c2ab283901a663d485a03d"
 name = "Wolfpack: Product Bundles"
-handle = "wolfpack-product-bundles-4"
-application_url = "https://wolfpack-product-bundles-1.onrender.com"
+application_url = "https://wolfpack-product-bundle-app.onrender.com"
 embedded = true
-
-[build]
-include_config_on_deploy = true
-automatically_update_urls_on_dev = true
+handle = "wolfpack-product-bundles-4"
 
 [webhooks]
-api_version = "2025-04"
+api_version = "2025-10"
 
   [[webhooks.subscriptions]]
-  uri = "pubsub://light-quest-455608-i3:wolfpack-only-bundles"
+  topics = [
+  "app/uninstalled",
+  "products/update",
+  "products/delete",
+  "app_subscriptions/update",
+  "app/scopes_update",
+  "app_purchases_one_time/update"
+]
+  uri = "https://wolfpack-production-webhook-processor.onrender.com/webhooks"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_products"
+scopes = "read_product_listings,read_products,read_publications,read_themes,unauthenticated_read_content,unauthenticated_read_product_listings,write_app_proxy,write_cart_transforms,write_content,write_discounts,write_products,write_publications,write_themes"
 
 [auth]
 redirect_urls = [
-  "https://wolfpack-product-bundles-1.onrender.com/auth/callback",
-  "https://wolfpack-product-bundles-1.onrender.com/auth/shopify/callback",
-  "https://wolfpack-product-bundles-1.onrender.com/api/auth/callback"
+  "https://wolfpack-product-bundle-app.onrender.com/auth/callback",
+  "https://wolfpack-product-bundle-app.onrender.com/auth/shopify/callback",
+  "https://wolfpack-product-bundle-app.onrender.com/api/auth/callback"
 ]
+
+[app_proxy]
+url = "https://wolfpack-product-bundle-app.onrender.com"
+subpath = "product-bundles"
+prefix = "apps"
 
 [pos]
 embedded = false
+
+[metafields]
+api_version = "2025-10"
+
+[shop.metafields.app.serverUrl]
+type = "single_line_text_field"
+name = "App Server URL"
+description = "URL of the app server for widget API calls"
+
+  [shop.metafields.app.serverUrl.access]
+  admin = "merchant_read_write"
+  storefront = "public_read"
+
+[shop.metafields.app.lastSync]
+type = "single_line_text_field"
+name = "Last Sync Timestamp"
+description = "ISO timestamp of last successful sync with app server"
+
+  [shop.metafields.app.lastSync.access]
+  admin = "merchant_read"
+  storefront = "none"
+
+[shop.metafields.app.productPageWidgetInstalled]
+type = "boolean"
+name = "Product Page Widget Installed"
+description = "Indicates if the product page bundle widget has been installed in the theme"
+
+  [shop.metafields.app.productPageWidgetInstalled.access]
+  admin = "merchant_read_write"
+  storefront = "none"
+
+[shop.metafields.app.fullPageWidgetInstalled]
+type = "boolean"
+name = "Full Page Widget Installed"
+description = "Indicates if the full-page bundle widget has been installed in the theme"
+
+  [shop.metafields.app.fullPageWidgetInstalled.access]
+  admin = "merchant_read_write"
+  storefront = "none"

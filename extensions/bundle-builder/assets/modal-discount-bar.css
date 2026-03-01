@@ -1,0 +1,306 @@
+/**
+ * Modern Discount Card - Elegant Design with Pills & Rounded Shapes
+ * Clean, professional, and visually appealing
+ */
+
+/* Main Card Container - Modern Bundle App Design */
+.modal-discount-card {
+  display: none;
+  margin: 16px 20px 12px;
+  background: linear-gradient(135deg, #f8f7ff 0%, #ffffff 100%);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(113, 50, 255, 0.08);
+  border: 1.5px solid rgba(113, 50, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-discount-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #7132FF 0%, #9b6bff 100%);
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+/* Success State - Enhanced Styling */
+.modal-discount-card.success {
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
+  border-color: rgba(40, 167, 69, 0.3);
+  box-shadow: 0 3px 12px rgba(40, 167, 69, 0.12);
+}
+
+.modal-discount-card.success::before {
+  background: linear-gradient(90deg, #28a745 0%, #34ce57 100%);
+  opacity: 1;
+}
+
+/* Content Layout */
+.discount-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Icon Wrapper with Pill Background */
+.discount-icon-wrapper {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #ede7ff 0%, #f3f0ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-discount-card.success .discount-icon-wrapper {
+  background: linear-gradient(135deg, #28a745 0%, #34ce57 100%);
+  transform: scale(1.05);
+}
+
+.discount-icon {
+  width: 24px;
+  height: 24px;
+  color: #7132FF;
+  transition: color 0.3s ease;
+}
+
+.modal-discount-card.success .discount-icon {
+  color: #ffffff;
+}
+
+/* Text Content Wrapper */
+.discount-text-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Message Text */
+.discount-message {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #2d3748;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+.modal-discount-card.success .discount-message {
+  color: #1e7e34;
+}
+
+/* Progress Wrapper */
+.discount-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Modern Progress Bar */
+.discount-progress-bar {
+  flex: 1;
+  height: 7px;
+  background: rgba(113, 50, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.discount-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7132FF 0%, #9b6bff 100%);
+  border-radius: 10px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.modal-discount-card.success .discount-progress-fill {
+  background: linear-gradient(90deg, #28a745 0%, #34ce57 100%);
+}
+
+/* Shimmer Effect on Progress */
+.progress-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  animation: shimmer-slide 2s infinite;
+}
+
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+/* Progress Percentage Text */
+.discount-progress-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #7132FF;
+  white-space: nowrap;
+  min-width: 42px;
+  text-align: right;
+  transition: color 0.3s ease;
+}
+
+.modal-discount-card.success .discount-progress-text {
+  color: #28a745;
+}
+
+/* Savings Pill Badge */
+.discount-savings-pill {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 50px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  animation: pill-bounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  position: relative;
+  overflow: hidden;
+}
+
+.discount-savings-pill::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.discount-savings-pill:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+@keyframes pill-bounce {
+  0% {
+    transform: scale(0.5) translateY(10px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Success Pulse Animation */
+.modal-discount-card.qualified {
+  animation: success-pulse 0.6s ease-out;
+}
+
+@keyframes success-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .modal-discount-card {
+    margin: 16px 16px 12px;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .discount-content {
+    gap: 12px;
+  }
+
+  .discount-icon-wrapper {
+    width: 40px;
+    height: 40px;
+  }
+
+  .discount-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .discount-message {
+    font-size: 14px;
+  }
+
+  .discount-progress-bar {
+    height: 6px;
+  }
+
+  .discount-progress-text {
+    font-size: 11px;
+    min-width: 30px;
+  }
+
+  .discount-savings-pill {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .discount-content {
+    flex-wrap: wrap;
+  }
+
+  .discount-savings-pill {
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
+}
+
+/* Footer messaging is managed by bundle-widget.css */
+
+/* Loading State */
+.modal-discount-card.loading .discount-progress-fill {
+  background: linear-gradient(90deg, #e0e0e0 0%, #f5f5f5 100%);
+  animation: pulse-loading 1.5s infinite;
+}
+
+@keyframes pulse-loading {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

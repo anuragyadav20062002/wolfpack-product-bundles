@@ -47,8 +47,11 @@ export default defineConfig({
     hmr: hmrConfig,
     fs: {
       // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
-      allow: ["app", "node_modules"],
+      allow: ["app", "node_modules", "extensions"],
     },
+  },
+  css: {
+    postcss: './postcss.config.js',
   },
   plugins: [
     remix({
@@ -66,6 +69,37 @@ export default defineConfig({
   ],
   build: {
     assetsInlineLimit: 0,
+    rollupOptions: {
+      output: {
+        chunkFileNames: (chunkInfo) => {
+          // Don't generate chunks for routes with minimal content
+          if (chunkInfo.name && (
+            chunkInfo.name.includes('api.create-bundle-discount') ||
+            chunkInfo.name.includes('api.get-function-id') ||
+            chunkInfo.name.includes('api.check-bundles') ||
+            chunkInfo.name.includes('auth._')
+          )) {
+            return 'assets/minimal-routes-[hash].js';
+          }
+          return 'assets/[name]-[hash].js';
+        }
+      },
+      onwarn: (warning, warn) => {
+        // Suppress empty chunk warnings for known minimal routes
+        if (warning.code === 'EMPTY_BUNDLE') {
+          const knownEmptyRoutes = [
+            'api.create-bundle-discount',
+            'api.get-function-id',
+            'api.check-bundles',
+            'auth._'
+          ];
+          if (knownEmptyRoutes.some(route => warning.message?.includes(route))) {
+            return; // Don't warn about these
+          }
+        }
+        warn(warning);
+      }
+    }
   },
   optimizeDeps: {
     include: ["@shopify/app-bridge-react", "@shopify/polaris"],

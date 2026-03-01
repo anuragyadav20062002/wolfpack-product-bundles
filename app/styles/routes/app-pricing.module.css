@@ -1,0 +1,14 @@
+/* Plan cards grid layout */
+.planCardsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+/* Mobile: single column */
+@media (max-width: 768px) {
+  .planCardsGrid {
+    grid-template-columns: 1fr;
+  }
+}
