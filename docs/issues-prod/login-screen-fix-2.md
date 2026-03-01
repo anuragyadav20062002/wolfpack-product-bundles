@@ -1,7 +1,7 @@
 # Issue: Fix Login Screen — Server-Side Redirect Breaks Token Exchange
 
 **Issue ID:** login-screen-fix-2
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-01
 **Last Updated:** 2026-03-01 14:00
@@ -61,10 +61,32 @@ Changed `app._index.tsx` from a server-side `throw redirect("/app/dashboard")` t
 - ✅ TypeScript: no new errors
 - Next: Deploy to SIT and verify
 
+### 2026-03-01 16:00 - Client-side redirect didn't work, new approach
+
+Render logs showed the smoking gun:
+```
+06:51:20 - Authenticating admin request | {shop: wolfpack-store-test-1.myshopify.com}  ← token exchange ✓
+06:51:21 - Authenticating admin request | {shop: null}  ← client redirect, no auth ✗
+06:51:27+ - Many more {shop: null} failures
+```
+
+Client-side redirect fires before App Bridge initializes the Authorization header.
+
+New approach — eliminate the parallel race entirely:
+- **Remove `authenticate.admin()` from `app.tsx` layout** — layout just returns apiKey
+- **`app._index.tsx`**: call `authenticate.admin()` exclusively (no race), then
+  `return redirect("/app/dashboard?shop=...&host=...")` with embedded params preserved
+- Dashboard's `authenticate.admin()` detects embedded context + has shop param → exit-iframe bounce → App Bridge loads → proper auth
+
+Files modified:
+- `app/routes/app/app.tsx` — Removed authenticate.admin() from layout loader
+- `app/routes/app/app._index.tsx` — authenticate.admin() + redirect with preserved params
+
 ## Phases Checklist
 
 - [x] Diagnose root cause from Render logs
-- [x] Implement client-side redirect fix
+- [x] Attempt 1: client-side redirect (failed — App Bridge not ready)
+- [x] Attempt 2: remove auth from layout + server redirect with preserved params
 - [x] Lint and type-check
 - [x] Commit
 - [ ] Deploy to SIT and verify

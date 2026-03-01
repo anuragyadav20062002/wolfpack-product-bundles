@@ -1,17 +1,17 @@
-import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
+import type { HeadersFunction } from "@remix-run/node";
 import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 
-import { authenticate } from "../../shopify.server";
-
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-
+// Auth is NOT called here. Remix runs layout and child loaders in parallel.
+// With unstable_newEmbeddedAuthStrategy, calling authenticate.admin() here
+// races with the child loader (app._index.tsx) for the same one-shot id_token.
+// Each child route calls authenticate.admin() in its own loader instead.
+export const loader = async () => {
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
 };
 
