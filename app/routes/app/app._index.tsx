@@ -1,32 +1,33 @@
-import { json } from "@remix-run/node";
-import { useEffect } from "react";
-import { useNavigate } from "@remix-run/react";
+import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
+import { authenticate } from "../../shopify.server";
 
-// This route redirects /app → /app/dashboard using CLIENT-SIDE navigation.
+// This route handles /app → authenticates → redirects to /app/dashboard.
 //
-// Why not a server-side redirect (throw redirect)?
-// With unstable_newEmbeddedAuthStrategy, the parent layout (app.tsx) exchanges
-// the one-shot id_token for an access token via authenticate.admin(). Remix runs
-// layout and child loaders in parallel. A synchronous `throw redirect()` here
-// short-circuits Promise.all before the parent's token exchange completes, so no
-// session is stored. The subsequent request to /app/dashboard has no id_token,
-// no Authorization header, and no session — causing a redirect to /auth/login.
-//
-// By returning from the loader and redirecting on the client, we ensure:
-// 1. Parent's authenticate.admin() completes the token exchange
-// 2. React renders → App Bridge initializes
-// 3. Client-side navigation adds the Authorization header via App Bridge
-// 4. Dashboard loader's authenticate.admin() finds the stored session
-export function loader() {
-  return json(null);
+// Auth strategy:
+// - The layout (app.tsx) does NOT call authenticate.admin() because Remix
+//   runs layout and child loaders in parallel, causing a race for the
+//   one-shot id_token with unstable_newEmbeddedAuthStrategy.
+// - Instead, THIS route is the sole auth entry point for /app.
+// - After token exchange, we redirect to /app/dashboard with `shop` and
+//   `host` params preserved so the dashboard's authenticate.admin() can
+//   identify the shop and perform the exit-iframe bounce if needed.
+export async function loader({ request }: LoaderFunctionArgs) {
+  const { session } = await authenticate.admin(request);
+
+  // Preserve embedded context params for the redirect target.
+  // Without shop/host, authenticate.admin() at /app/dashboard can't identify
+  // the shop and falls back to /auth/login (the {shop: null} problem).
+  const url = new URL(request.url);
+  const host = url.searchParams.get("host") || "";
+
+  const params = new URLSearchParams();
+  params.set("shop", session.shop);
+  if (host) params.set("host", host);
+
+  return redirect(`/app/dashboard?${params.toString()}`);
 }
 
+// This component never renders — the loader always redirects.
 export default function AppIndex() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    navigate("/app/dashboard", { replace: true });
-  }, [navigate]);
-
   return null;
 }
