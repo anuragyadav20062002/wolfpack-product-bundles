@@ -293,8 +293,7 @@ class BundleWidgetFullPage {
         // Use Shopify app proxy path - Shopify automatically adds signature and auth params
         // App proxy config: /apps/product-bundles -> https://wolfpack-product-bundle-app.onrender.com
         // CRITICAL: URL-encode bundle ID to handle special characters in cuid() format
-        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
-
+        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json?v=${Date.now()}`;
 
         const response = await fetch(apiUrl);
 

@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 1.2.0
- * Built   : 2026-02-28
+ * Built   : 2026-03-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -2667,8 +2667,7 @@ class BundleWidgetFullPage {
         // Use Shopify app proxy path - Shopify automatically adds signature and auth params
         // App proxy config: /apps/product-bundles -> https://wolfpack-product-bundle-app.onrender.com
         // CRITICAL: URL-encode bundle ID to handle special characters in cuid() format
-        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
-
+        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json?v=${Date.now()}`;
 
         const response = await fetch(apiUrl);
 
