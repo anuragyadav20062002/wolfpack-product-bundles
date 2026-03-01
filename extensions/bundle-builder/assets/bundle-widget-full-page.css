@@ -3539,6 +3539,17 @@ body.modal-open {
   padding: 20px 40px;
 }
 
+/* Sidebar layout: use flexible column widths at desktop so cards never overflow
+   the narrowed content area (sidebar steals 360px + content has 80px side padding).
+   Fixed-px column widths from the base grid rule cause cards to be clipped. */
+@media (min-width: 1024px) {
+  .sidebar-content .full-page-product-grid {
+    grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), minmax(0, 1fr));
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 /* ---- Side Panel ---- */
 
 .full-page-side-panel {
