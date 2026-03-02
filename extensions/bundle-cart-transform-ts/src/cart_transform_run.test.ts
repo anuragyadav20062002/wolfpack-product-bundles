@@ -351,6 +351,76 @@ describe("cartTransformRun", () => {
     expect(discount).toBeCloseTo(16.67, 1);
   });
 
+  it("treats eq quantity condition as threshold (>=) for pricing rules", () => {
+    const parentV = "gid://shopify/ProductVariant/eqBundle";
+    const refs = ["gid://shopify/ProductVariant/e1", "gid://shopify/ProductVariant/e2"];
+    const priceAdj = {
+      method: "percentage_off",
+      value: 10,
+      conditions: { type: "quantity", operator: "eq", value: 3 },
+    };
+
+    const input = {
+      cart: {
+        lines: [
+          makeMergeLine({
+            id: "line1", quantity: 2,
+            variantId: refs[0], bundleId: "b-eq", bundleName: "EQ Bundle",
+            parentVariantId: parentV, componentRefs: refs, componentQtys: [2, 2],
+            priceAdjustment: priceAdj,
+            amountPerQuantity: "10.00", totalAmount: "20.00", productTitle: "Product 1",
+          }),
+          makeMergeLine({
+            id: "line2", quantity: 2,
+            variantId: refs[1], bundleId: "b-eq", bundleName: "EQ Bundle",
+            parentVariantId: parentV, componentRefs: refs, componentQtys: [2, 2],
+            priceAdjustment: priceAdj,
+            amountPerQuantity: "10.00", totalAmount: "20.00", productTitle: "Product 2",
+          }),
+        ],
+      },
+    };
+
+    const result = cartTransformRun(input as any);
+    expect(result.operations).toHaveLength(1);
+    expect(result.operations[0].merge?.price?.percentageDecrease.value).toBe("10.00");
+  });
+
+  it("supports long-form operator names in cart transform conditions", () => {
+    const parentV = "gid://shopify/ProductVariant/longOpBundle";
+    const refs = ["gid://shopify/ProductVariant/l1", "gid://shopify/ProductVariant/l2"];
+    const priceAdj = {
+      method: "percentage_off",
+      value: 15,
+      conditions: { type: "quantity", operator: "greater_than_or_equal_to", value: 3 },
+    };
+
+    const input = {
+      cart: {
+        lines: [
+          makeMergeLine({
+            id: "line1", quantity: 2,
+            variantId: refs[0], bundleId: "b-long", bundleName: "Long Operator Bundle",
+            parentVariantId: parentV, componentRefs: refs, componentQtys: [2, 1],
+            priceAdjustment: priceAdj,
+            amountPerQuantity: "10.00", totalAmount: "20.00", productTitle: "Product 1",
+          }),
+          makeMergeLine({
+            id: "line2", quantity: 1,
+            variantId: refs[1], bundleId: "b-long", bundleName: "Long Operator Bundle",
+            parentVariantId: parentV, componentRefs: refs, componentQtys: [2, 1],
+            priceAdjustment: priceAdj,
+            amountPerQuantity: "20.00", totalAmount: "20.00", productTitle: "Product 2",
+          }),
+        ],
+      },
+    };
+
+    const result = cartTransformRun(input as any);
+    expect(result.operations).toHaveLength(1);
+    expect(result.operations[0].merge?.price?.percentageDecrease.value).toBe("15.00");
+  });
+
   it("handles amount-based conditions correctly", () => {
     const parentV = "gid://shopify/ProductVariant/amtBundle";
     const refs = ["gid://shopify/ProductVariant/a1", "gid://shopify/ProductVariant/a2"];

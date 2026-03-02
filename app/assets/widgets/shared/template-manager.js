@@ -14,6 +14,24 @@ import { CurrencyManager } from './currency-manager.js';
 import { PricingCalculator } from './pricing-calculator.js';
 
 export class TemplateManager {
+  static getQualificationGap(currentValue, targetValue, operator, unitStep = 1) {
+    const normalizedOp = PricingCalculator.normalizeCondition(operator);
+
+    switch (normalizedOp) {
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
+        return Math.max(0, (targetValue + unitStep) - currentValue);
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
+        return Math.max(0, currentValue - (targetValue - unitStep));
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        return Math.max(0, currentValue - targetValue);
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+      default:
+        // For pricing rules, equal_to is treated as a threshold (>= target).
+        return Math.max(0, targetValue - currentValue);
+    }
+  }
+
   static replaceVariables(template, variables) {
     if (!template) return '';
 
@@ -124,7 +142,9 @@ export class TemplateManager {
   static calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo) {
     if (conditionType === 'amount') {
       // Amount-based condition - targetValue is already in cents
-      const amountNeeded = Math.max(0, targetValue - totalPrice);
+      const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
+      const alreadyQualified = PricingCalculator.checkCondition(totalPrice, conditionOperator, targetValue);
+      const amountNeeded = this.getQualificationGap(totalPrice, targetValue, conditionOperator, 1);
 
       // Convert for display if needed
       const convertedAmountNeeded = CurrencyManager.convertCurrency(
@@ -144,20 +164,24 @@ export class TemplateManager {
       );
       const targetValueFormattedDecimal = (targetValueFormatted / 100).toFixed(2);
 
-      // Check if already qualified (amount needed is 0)
-      const alreadyQualified = amountNeeded <= 0;
-
       // Build operator-aware condition text for amount
-      const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
       let conditionText;
       if (alreadyQualified) {
-        conditionText = `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met`;
+        if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN) {
+          conditionText = `less than ${currencyInfo.display.symbol}${targetValueFormattedDecimal} met`;
+        } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO) {
+          conditionText = `at most ${currencyInfo.display.symbol}${targetValueFormattedDecimal} met`;
+        } else {
+          conditionText = `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met`;
+        }
       } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN) {
-        conditionText = `more than ${currencyInfo.display.symbol}${amountNeededFormatted}`;
+        conditionText = `${currencyInfo.display.symbol}${amountNeededFormatted} more`;
       } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN) {
-        conditionText = `less than ${currencyInfo.display.symbol}${amountNeededFormatted}`;
+        conditionText = `less than ${currencyInfo.display.symbol}${targetValueFormattedDecimal}`;
+      } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO) {
+        conditionText = `at most ${currencyInfo.display.symbol}${targetValueFormattedDecimal}`;
       } else {
-        conditionText = `${currencyInfo.display.symbol}${amountNeededFormatted}`;
+        conditionText = `${currencyInfo.display.symbol}${amountNeededFormatted} more`;
       }
 
       return {
@@ -168,17 +192,29 @@ export class TemplateManager {
       };
     } else {
       // Quantity-based condition
-      const itemsNeeded = Math.max(0, targetValue - totalQuantity);
-
-      // Check if already qualified (items needed is 0)
-      const alreadyQualified = itemsNeeded <= 0;
+      const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
+      const alreadyQualified = PricingCalculator.checkCondition(totalQuantity, conditionOperator, targetValue);
+      const itemsNeeded = this.getQualificationGap(totalQuantity, targetValue, conditionOperator, 1);
 
       // Build operator-aware condition text for quantity
       let conditionText;
       if (alreadyQualified) {
-        conditionText = `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met`;
+        if (
+          normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN ||
+          normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO
+        ) {
+          conditionText = `${this.formatOperatorText(conditionOperator, targetValue, 'item')} met`;
+        } else {
+          conditionText = `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met`;
+        }
+      } else if (
+        normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN ||
+        normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO ||
+        normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO
+      ) {
+        conditionText = `${itemsNeeded} more ${itemsNeeded === 1 ? 'item' : 'items'}`;
       } else {
-        conditionText = this.formatOperatorText(conditionOperator, itemsNeeded, 'item');
+        conditionText = this.formatOperatorText(conditionOperator, targetValue, 'item');
       }
 
       return {
