@@ -109,7 +109,8 @@ interface PriceAdjustmentConfig {
   value: number;
   conditions?: {
     type: 'quantity' | 'amount';
-    operator: 'gte' | 'lte' | 'eq' | 'gt' | 'lt';
+    operator: 'gte' | 'lte' | 'eq' | 'gt' | 'lt' |
+      'greater_than_or_equal_to' | 'less_than_or_equal_to' | 'equal_to' | 'greater_than' | 'less_than';
     value: number;
   };
 }
@@ -179,9 +180,10 @@ function calculateDiscountPercentage(
   if (conditions) {
     const actualValue = conditions.type === 'amount' ? originalTotal : totalQuantity;
     const conditionValue = conditions.type === 'amount' ? conditions.value / 100 : conditions.value;
+    const normalizedOperator = normalizeConditionOperator(conditions.operator);
 
     let meetsCondition = false;
-    switch (conditions.operator) {
+    switch (normalizedOperator) {
       case 'gte':
         meetsCondition = actualValue >= conditionValue;
         break;
@@ -195,7 +197,9 @@ function calculateDiscountPercentage(
         meetsCondition = actualValue < conditionValue;
         break;
       case 'eq':
-        meetsCondition = actualValue === conditionValue;
+        // Keep pricing-rule semantics aligned with storefront:
+        // equal_to behaves as a threshold once reached.
+        meetsCondition = actualValue >= conditionValue;
         break;
       default:
         meetsCondition = actualValue >= conditionValue;
@@ -237,6 +241,31 @@ function calculateDiscountPercentage(
   // Clamp to valid 0-100 range. NaN must be caught explicitly —
   // Math.max(0, Math.min(100, NaN)) returns NaN, not 0.
   return Number.isFinite(result) ? Math.max(0, Math.min(100, result)) : 0;
+}
+
+function normalizeConditionOperator(
+  operator: string | undefined,
+): 'gte' | 'gt' | 'lte' | 'lt' | 'eq' {
+  switch (operator) {
+    case 'greater_than_or_equal_to':
+      return 'gte';
+    case 'greater_than':
+      return 'gt';
+    case 'less_than_or_equal_to':
+      return 'lte';
+    case 'less_than':
+      return 'lt';
+    case 'equal_to':
+      return 'eq';
+    case 'gt':
+    case 'lt':
+    case 'gte':
+    case 'lte':
+    case 'eq':
+      return operator;
+    default:
+      return 'gte';
+  }
 }
 
 /**

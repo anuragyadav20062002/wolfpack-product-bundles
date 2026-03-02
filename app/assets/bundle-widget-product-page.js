@@ -656,7 +656,11 @@ class BundleWidgetProductPage {
     // Add remaining count text
     const selectionCount = document.createElement('div');
     selectionCount.className = 'step-selection-count';
-    const requiredCount = step.conditionValue || 1;
+    const operator = step.conditionOperator;
+    const rawRequired = step.conditionValue || 1;
+    const requiredCount = operator === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN
+      ? rawRequired + 1
+      : rawRequired;
     const remaining = requiredCount - currentCount;
     if (remaining > 0) {
       selectionCount.textContent = `Add ${remaining} more`;
@@ -2096,4 +2100,3 @@ function initializeProductPageWidget() {
     }
   });
 }
-
