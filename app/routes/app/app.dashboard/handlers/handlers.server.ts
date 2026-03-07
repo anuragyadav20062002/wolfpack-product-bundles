@@ -415,6 +415,7 @@ export async function handleCreateBundle(
     }
 
     const shopifyProductId = productData.data?.productCreate?.product?.id;
+    const shopifyProductHandle = productData.data?.productCreate?.product?.handle;
 
     if (!shopifyProductId) {
       AppLogger.error("No product ID returned from Shopify", { component: "app.dashboard", operation: "create-bundle" });
@@ -445,6 +446,7 @@ export async function handleCreateBundle(
         fullPageLayout: bundleType === BundleType.FULL_PAGE ? (fullPageLayout as any || FullPageLayout.FOOTER_BOTTOM) : null,
         status: BundleStatus.DRAFT,
         shopifyProductId: shopifyProductId,
+        shopifyProductHandle: shopifyProductHandle || null,
       },
     });
 

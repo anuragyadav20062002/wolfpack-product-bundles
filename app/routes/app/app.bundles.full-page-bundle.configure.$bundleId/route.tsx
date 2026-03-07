@@ -680,57 +680,50 @@ export default function ConfigureBundleFlow() {
     }
 
     // FOR PRODUCT-PAGE BUNDLES: Use product URL
-    if (!bundleProduct) {
-      shopify.toast.show("Bundle product not found. Please select a bundle product first.", {
-        isError: true,
-        duration: 4000
-      });
-      return;
-    }
-
-    // Try different URL construction methods
     let productUrl = null;
+    const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
 
-    AppLogger.debug('Bundle product data for preview:', {
-      id: bundleProduct.id,
-      handle: bundleProduct.handle,
-      status: bundleProduct.status,
-      publishedOnCurrentPublication: bundleProduct.status === 'ACTIVE',
-      onlineStoreUrl: bundleProduct.onlineStoreUrl,
-      onlineStorePreviewUrl: bundleProduct.onlineStorePreviewUrl,
-      shop: shop
-    });
+    if (bundleProduct) {
+      AppLogger.debug('Bundle product data for preview:', {
+        id: bundleProduct.id,
+        handle: bundleProduct.handle,
+        status: bundleProduct.status,
+        publishedOnCurrentPublication: bundleProduct.status === 'ACTIVE',
+        onlineStoreUrl: bundleProduct.onlineStoreUrl,
+        onlineStorePreviewUrl: bundleProduct.onlineStorePreviewUrl,
+        shop: shop
+      });
 
-    // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
-    if (bundleProduct.onlineStorePreviewUrl) {
-      productUrl = bundleProduct.onlineStorePreviewUrl;
+      // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
+      if (bundleProduct.onlineStorePreviewUrl) {
+        productUrl = bundleProduct.onlineStorePreviewUrl;
+      }
+      // Method 2: Fallback to onlineStoreUrl if preview URL not available
+      else if (bundleProduct.onlineStoreUrl) {
+        productUrl = bundleProduct.onlineStoreUrl;
+      }
     }
-    // Method 2: Fallback to onlineStoreUrl if preview URL not available
-    else if (bundleProduct.onlineStoreUrl) {
-      productUrl = bundleProduct.onlineStoreUrl;
-    }
-    // Method 3: Construct URL based on shop type (development vs live store)
-    else if (bundleProduct.handle) {
+
+    // Method 3: Construct URL from handle (GraphQL product handle or DB-stored handle)
+    if (!productUrl && productHandle) {
       if (shop.includes('shopifypreview.com')) {
-        // For development stores with shopifypreview.com domain
-        productUrl = `https://${shop}/products/${bundleProduct.handle}`;
+        productUrl = `https://${shop}/products/${productHandle}`;
       } else {
-        // For live stores or development stores with myshopify.com
         const shopDomain = shop.includes('.myshopify.com')
           ? shop.replace('.myshopify.com', '')
           : shop;
-        productUrl = `https://${shopDomain}.myshopify.com/products/${bundleProduct.handle}`;
+        productUrl = `https://${shopDomain}.myshopify.com/products/${productHandle}`;
       }
     }
     // Method 4: Fallback - Extract ID and use admin URL
-    else if (bundleProduct.id) {
+    else if (!productUrl && bundleProduct?.id) {
       const productId = bundleProduct.id.includes('gid://shopify/Product/')
         ? bundleProduct.id.split('/').pop()
         : bundleProduct.id;
 
       const shopDomain = shop.includes('.myshopify.com')
         ? shop.replace('.myshopify.com', '')
-        : shop.split('.')[0]; // Extract first part of domain
+        : shop.split('.')[0];
 
       productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
     }
@@ -738,8 +731,7 @@ export default function ConfigureBundleFlow() {
     if (productUrl) {
       open(productUrl, '_blank');
 
-      // Show appropriate success message based on the URL type used
-      const isPreviewUrl = productUrl === bundleProduct.onlineStorePreviewUrl;
+      const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
       const message = isPreviewUrl
         ? "Bundle product preview opened in new tab"
         : "Bundle product opened in new tab";
