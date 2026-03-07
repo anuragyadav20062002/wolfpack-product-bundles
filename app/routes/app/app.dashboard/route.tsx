@@ -60,6 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       bundleType: true,
       createdAt: true,
       shopifyProductId: true, // For product page preview URL
+      shopifyProductHandle: true, // For product page preview URL (stored in DB)
       shopifyPageHandle: true, // For full page preview URL
       pricing: {
         select: {
@@ -75,14 +76,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     orderBy: { createdAt: "desc" },
   });
 
-  // Fetch product handles for product_page bundles that have shopifyProductId
-  const productPageBundles = bundles.filter(b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId);
-  const productHandles: Record<string, string> = {};
+  // Backfill: fetch + persist product handles for legacy bundles missing shopifyProductHandle
+  const bundlesNeedingBackfill = bundles.filter(
+    b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
+  );
 
-  if (productPageBundles.length > 0) {
+  if (bundlesNeedingBackfill.length > 0) {
     try {
-      // Batch fetch product handles using GraphQL
-      const productIds = productPageBundles.map(b => b.shopifyProductId).filter(Boolean);
+      const productIds = bundlesNeedingBackfill.map(b => b.shopifyProductId).filter(Boolean);
       const GET_PRODUCTS = `
         query GetProductHandles($ids: [ID!]!) {
           nodes(ids: $ids) {
@@ -102,24 +103,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       if (data.data?.nodes) {
         for (const node of data.data.nodes) {
           if (node?.id && node?.handle) {
-            productHandles[node.id] = node.handle;
+            // Persist handle to DB so future loads skip GraphQL
+            const bundleToUpdate = bundlesNeedingBackfill.find(b => b.shopifyProductId === node.id);
+            if (bundleToUpdate) {
+              bundleToUpdate.shopifyProductHandle = node.handle;
+              await db.bundle.update({
+                where: { id: bundleToUpdate.id },
+                data: { shopifyProductHandle: node.handle }
+              });
+            }
           }
         }
       }
     } catch (error) {
-      // Log error but continue - preview will just not work for these bundles
-      AppLogger.error("Failed to fetch product handles", {
+      AppLogger.error("Failed to backfill product handles", {
         component: "app.dashboard",
-        operation: "fetch-product-handles"
+        operation: "backfill-product-handles"
       }, error);
     }
   }
 
-  // Enhance bundles with preview URLs
+  // Enhance bundles with preview URLs — now purely from DB fields
   const bundlesWithPreview = bundles.map(bundle => ({
     ...bundle,
     previewHandle: bundle.bundleType === BundleType.PRODUCT_PAGE
-      ? (bundle.shopifyProductId ? productHandles[bundle.shopifyProductId] : null)
+      ? bundle.shopifyProductHandle
       : bundle.shopifyPageHandle
   }));
 

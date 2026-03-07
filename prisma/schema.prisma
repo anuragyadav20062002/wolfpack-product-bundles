@@ -86,7 +86,8 @@ model Bundle {
   name             String
   description      String?
   shopId           String
-  shopifyProductId String? // Shopify Product ID (GID) for product-page bundles
+  shopifyProductId     String? // Shopify Product ID (GID) for product-page bundles
+  shopifyProductHandle String? // Shopify Product handle for preview URLs (e.g., "summer-bundle")
   shopifyPageHandle String? // Shopify Page handle for full-page bundles (e.g., "build-your-bundle")
   shopifyPageId    String? // Shopify Page ID (GID) for full-page bundles
   templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
