@@ -147,6 +147,47 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get API key for deep linking
   const apiKey = process.env.SHOPIFY_API_KEY || '';
 
+  // Ensure UTM web pixel is activated for this shop (fire-and-forget, non-blocking).
+  // This handles shops that were installed before the pixel extension was deployed
+  // or before the write_pixels scope was granted, so they never got the pixel via afterAuth.
+  const appUrl = process.env.SHOPIFY_APP_URL;
+  if (appUrl) {
+    void (async () => {
+      try {
+        const pixelSettings = JSON.stringify({ app_server_url: appUrl });
+        const existingPixelRes = await admin.graphql(`query { webPixel { id } }`);
+        const existingPixelData = await existingPixelRes.json();
+
+        if (!existingPixelData.data?.webPixel?.id) {
+          const createRes = await admin.graphql(
+            `mutation webPixelCreate($webPixel: WebPixelInput!) {
+               webPixelCreate(webPixel: $webPixel) {
+                 userErrors { field message code }
+                 webPixel { id }
+               }
+             }`,
+            { variables: { webPixel: { settings: pixelSettings } } },
+          );
+          const createData = await createRes.json();
+          const errs = createData.data?.webPixelCreate?.userErrors || [];
+          if (errs.length > 0) {
+            AppLogger.warn("UTM pixel creation had errors on dashboard load", {
+              component: "app.dashboard",
+              operation: "ensure-web-pixel",
+            }, errs);
+          } else {
+            AppLogger.info("UTM pixel activated on dashboard load", {
+              component: "app.dashboard",
+              operation: "ensure-web-pixel",
+            }, { pixelId: createData.data?.webPixelCreate?.webPixel?.id });
+          }
+        }
+      } catch (_err) {
+        // Non-critical — pixel may already exist or scope may not yet be granted
+      }
+    })();
+  }
+
   return json({
     bundles: bundlesWithPreview,
     shop: session.shop,
