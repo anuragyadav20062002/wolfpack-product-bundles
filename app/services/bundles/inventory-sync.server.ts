@@ -276,6 +276,50 @@ export async function syncBundleInventory(
           quantity: sp.minQuantity || 1,
         });
       }
+
+      // Also include products from collections stored as JSON
+      const stepCollections: Array<{ handle?: string }> = Array.isArray(step.collections)
+        ? (step.collections as Array<{ handle?: string }>)
+        : [];
+
+      for (const collection of stepCollections) {
+        if (!collection.handle) continue;
+
+        try {
+          const collResponse = await admin.graphql(`
+            query getCollectionProductIds($handle: String!) {
+              collection(handle: $handle) {
+                products(first: 250) {
+                  edges {
+                    node { id }
+                  }
+                }
+              }
+            }
+          `, { variables: { handle: collection.handle } });
+
+          const collData = await collResponse.json();
+          const edges = collData.data?.collection?.products?.edges || [];
+
+          for (const edge of edges) {
+            const productId = edge.node?.id;
+            if (productId) {
+              const alreadyAdded = componentProducts.some(cp => cp.productId === productId);
+              if (!alreadyAdded) {
+                componentProducts.push({
+                  productId,
+                  quantity: step.minQuantity || 1,
+                });
+              }
+            }
+          }
+        } catch (_err) {
+          AppLogger.warn("Could not fetch collection products for inventory sync", {
+            component: "inventory-sync",
+            operation: "syncBundleInventory",
+          }, { handle: collection.handle });
+        }
+      }
     }
 
     if (componentProducts.length === 0) {
