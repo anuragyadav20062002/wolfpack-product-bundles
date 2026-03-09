@@ -61,7 +61,7 @@ const CREATE_BUNDLE_PRODUCT_WITH_MEDIA = `
 
 const GET_PUBLICATIONS = `
   query {
-    publications(first: 10) {
+    publications(first: 50) {
       edges {
         node {
           id
@@ -103,44 +103,67 @@ const UPDATE_PRODUCT_STATUS = `
   }
 `;
 
+/** Channel names that correspond to ad-related sales channels */
+const AD_CHANNEL_NAMES = ['Google & YouTube', 'Facebook & Instagram', 'TikTok'];
+
 /**
- * Publish a product to Online Store sales channel
+ * Discover all available sales channel publication IDs for a shop.
+ * Returns publication IDs grouped by channel name.
  */
-async function publishToOnlineStore(admin: any, shopifyProductId: string, operation: string) {
+export async function discoverSalesChannels(admin: any): Promise<Array<{ id: string; name: string }>> {
   try {
     const publicationsResponse = await admin.graphql(GET_PUBLICATIONS);
     const publicationsData = await publicationsResponse.json();
+    const edges = publicationsData.data?.publications?.edges || [];
+    return edges.map((edge: any) => ({ id: edge.node.id, name: edge.node.name }));
+  } catch (error) {
+    AppLogger.error('Failed to discover sales channels', { component: 'app.dashboard' }, error);
+    return [];
+  }
+}
 
-    const onlineStorePublication = publicationsData.data?.publications?.edges?.find(
-      (edge: any) => edge.node.name === 'Online Store'
-    );
+/**
+ * Publish a product to all available sales channels (Online Store + ad channels).
+ * Falls back gracefully if any channel publication fails.
+ */
+async function publishToSalesChannels(admin: any, shopifyProductId: string, operation: string) {
+  try {
+    const channels = await discoverSalesChannels(admin);
 
-    if (onlineStorePublication) {
-      const publishResponse = await admin.graphql(PUBLISH_PRODUCT, {
-        variables: {
-          id: shopifyProductId,
-          input: [{ publicationId: onlineStorePublication.node.id }]
-        }
-      });
+    if (channels.length === 0) {
+      AppLogger.warn('No sales channels found', { component: 'app.dashboard', operation });
+      return;
+    }
 
-      const publishData = await publishResponse.json();
+    // Publish to all discovered channels at once
+    const input = channels.map(ch => ({ publicationId: ch.id }));
 
-      if (publishData.data?.publishablePublish?.userErrors?.length > 0) {
-        AppLogger.warn('Product publish had errors', {
-          component: 'app.dashboard',
-          operation,
-          errors: publishData.data.publishablePublish.userErrors
-        });
-      } else {
-        AppLogger.info('Product published to Online Store', {
-          component: 'app.dashboard',
-          operation,
-          productId: shopifyProductId
-        });
+    const publishResponse = await admin.graphql(PUBLISH_PRODUCT, {
+      variables: {
+        id: shopifyProductId,
+        input
       }
+    });
+
+    const publishData = await publishResponse.json();
+
+    if (publishData.data?.publishablePublish?.userErrors?.length > 0) {
+      AppLogger.warn('Product publish had errors', {
+        component: 'app.dashboard',
+        operation,
+        errors: publishData.data.publishablePublish.userErrors
+      });
+    } else {
+      const channelNames = channels.map(ch => ch.name).join(', ');
+      AppLogger.info(`Product published to: ${channelNames}`, {
+        component: 'app.dashboard',
+        operation,
+        productId: shopifyProductId,
+        channelCount: channels.length
+      });
     }
   } catch (publishError) {
-    AppLogger.error('Failed to publish product to Online Store', {
+    AppLogger.error('Failed to publish product to sales channels', {
       component: 'app.dashboard',
       operation
     }, publishError);
@@ -228,8 +251,8 @@ export async function handleCloneBundle(
 
       shopifyProductId = productData.data?.productCreate?.product?.id;
 
-      // Publish to Online Store
-      await publishToOnlineStore(admin, shopifyProductId, 'clone-bundle');
+      // Publish to all available sales channels
+      await publishToSalesChannels(admin, shopifyProductId, 'clone-bundle');
     }
 
     // Clone the bundle
@@ -461,15 +484,15 @@ export async function handleCreateBundle(
       }
     }
 
-    // Publish to Online Store
-    await publishToOnlineStore(admin, shopifyProductId, 'create-bundle');
+    // Publish to all available sales channels
+    await publishToSalesChannels(admin, shopifyProductId, 'create-bundle');
 
     // Check if this is the first bundle (for auto-placement)
     const existingBundleCount = await db.bundle.count({
       where: {
         shopId: session.shop,
         status: {
-          in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
+          in: [BundleStatus.ACTIVE, BundleStatus.DRAFT, BundleStatus.UNLISTED]
         }
       }
     });

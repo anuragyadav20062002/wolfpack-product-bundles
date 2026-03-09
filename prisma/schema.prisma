@@ -20,6 +20,7 @@ enum BundleStatus {
   draft
   active
   archived
+  unlisted
 }
 
 enum JobStatus {
@@ -396,4 +397,33 @@ model WebhookEvent {
   @@index([topic])
   @@index([processed])
   @@index([createdAt])
+}
+
+// ==============================================================================
+// UTM ATTRIBUTION MODEL (Phase 3)
+// ==============================================================================
+
+model OrderAttribution {
+  id          String   @id @default(uuid())
+  shopId      String
+  bundleId    String?  // nullable - may track non-bundle orders too
+  orderId     String   // Shopify order GID
+  orderNumber String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+  landingPage String?  // The URL customer landed on
+  revenue     Int      // cents
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+
+  @@index([shopId])
+  @@index([bundleId])
+  @@index([orderId])
+  @@index([utmSource])
+  @@index([utmCampaign])
+  @@index([shopId, createdAt])
+  @@index([bundleId, createdAt])
 }

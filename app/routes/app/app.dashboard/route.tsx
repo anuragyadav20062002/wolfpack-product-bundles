@@ -50,7 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     where: {
       shopId: session.shop,
       status: {
-        in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
+        in: [BundleStatus.ACTIVE, BundleStatus.DRAFT, BundleStatus.UNLISTED]
       }
     },
     select: {
@@ -185,6 +185,7 @@ const STATUS_BADGES = {
   active: <Badge tone="success">active</Badge>,
   draft: <Badge tone="info">draft</Badge>,
   archived: <Badge tone="critical">archived</Badge>,
+  unlisted: <Badge tone="warning">unlisted</Badge>,
 } as const;
 
 // Bundle type badge component

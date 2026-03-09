@@ -107,6 +107,64 @@ const shopify = shopifyApp({
         console.error("[SHOPIFY] ℹ️ Widget API calls may use a stale server URL until next reinstall.");
       }
 
+      // Activate the Wolfpack UTM Attribution web pixel
+      // This creates/updates the pixel record so it starts capturing UTM parameters
+      try {
+        const appUrl = process.env.SHOPIFY_APP_URL;
+        if (appUrl) {
+          console.log("[SHOPIFY] Activating UTM attribution web pixel...");
+          const pixelSettings = JSON.stringify({ app_server_url: appUrl });
+
+          // Check if pixel already exists
+          const existingPixelResponse = await admin.graphql(`query { webPixel { id settings } }`);
+          const existingPixelData = await existingPixelResponse.json();
+
+          if (existingPixelData.data?.webPixel?.id) {
+            // Update existing pixel settings
+            await admin.graphql(
+              `mutation webPixelUpdate($id: ID!, $webPixel: WebPixelInput!) {
+                webPixelUpdate(id: $id, webPixel: $webPixel) {
+                  userErrors { field message code }
+                  webPixel { id settings }
+                }
+              }`,
+              {
+                variables: {
+                  id: existingPixelData.data.webPixel.id,
+                  webPixel: { settings: pixelSettings },
+                },
+              },
+            );
+            console.log("[SHOPIFY] ✅ UTM pixel updated with current server URL");
+          } else {
+            // Create new pixel
+            const createResponse = await admin.graphql(
+              `mutation webPixelCreate($webPixel: WebPixelInput!) {
+                webPixelCreate(webPixel: $webPixel) {
+                  userErrors { field message code }
+                  webPixel { id settings }
+                }
+              }`,
+              {
+                variables: {
+                  webPixel: { settings: pixelSettings },
+                },
+              },
+            );
+            const createData = await createResponse.json();
+            const pixelErrors = createData.data?.webPixelCreate?.userErrors || [];
+            if (pixelErrors.length > 0) {
+              console.warn("[SHOPIFY] ⚠️ UTM pixel creation had errors:", pixelErrors);
+            } else {
+              console.log("[SHOPIFY] ✅ UTM pixel activated:", createData.data?.webPixelCreate?.webPixel?.id);
+            }
+          }
+        }
+      } catch (error: any) {
+        console.error("[SHOPIFY] ⚠️ Failed to activate UTM pixel:", error?.message || error);
+        console.error("[SHOPIFY] ℹ️ UTM attribution will not work until pixel is activated. This is non-critical.");
+      }
+
       // Automatically activate cart transform for new installations
       try {
         console.log("[SHOPIFY] Setting up cart transform...");

@@ -39,6 +39,9 @@ import {
 import {
   handleInventoryUpdate,
 } from "./handlers/inventory.server";
+import {
+  handleOrderCreate,
+} from "./handlers/orders.server";
 
 /**
  * Main webhook processor entry point
@@ -164,6 +167,11 @@ export class WebhookProcessor {
         case "inventory_levels/update":
         case "INVENTORY_LEVELS_UPDATE":
           result = await handleInventoryUpdate(shopDomain, payload);
+          break;
+
+        case "orders/create":
+        case "ORDERS_CREATE":
+          result = await handleOrderCreate(shopDomain, payload);
           break;
 
         default:
