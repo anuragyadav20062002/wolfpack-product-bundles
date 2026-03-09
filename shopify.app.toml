@@ -16,14 +16,15 @@ api_version = "2025-10"
   "products/delete",
   "app_subscriptions/update",
   "app/scopes_update",
-  "app_purchases_one_time/update"
+  "app_purchases_one_time/update",
+  "inventory_levels/update"
 ]
   uri = "https://wolfpack-production-webhook-processor.onrender.com/webhooks"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_product_listings,read_products,read_publications,read_themes,unauthenticated_read_content,unauthenticated_read_product_listings,write_app_proxy,write_cart_transforms,write_content,write_discounts,write_products,write_publications,write_themes"
+scopes = "read_product_listings,read_products,read_publications,read_themes,unauthenticated_read_content,unauthenticated_read_product_listings,write_app_proxy,write_cart_transforms,write_content,write_discounts,write_products,write_publications,write_themes,read_inventory,write_inventory,read_orders"
 
 [auth]
 redirect_urls = [

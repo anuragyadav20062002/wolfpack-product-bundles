@@ -13,6 +13,7 @@ import { SubscriptionGuard } from "../../../../services/subscription-guard.serve
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
+import { calculateBundlePrice } from "../../../../services/bundles/pricing-calculation.server";
 
 // GraphQL Mutations
 const CREATE_BUNDLE_PRODUCT = `
@@ -184,6 +185,16 @@ export async function handleCloneBundle(
 
     // Only create Shopify product for product_page bundles
     if (originalBundle.bundleType === BundleType.PRODUCT_PAGE) {
+      // Calculate bundle price from component products (average per step * discount)
+      let bundlePrice = "1.00";
+      try {
+        bundlePrice = await calculateBundlePrice(admin, originalBundle);
+      } catch (priceError) {
+        AppLogger.warn("Failed to calculate bundle price for clone, using fallback", {
+          component: "app.dashboard", operation: "clone-bundle"
+        }, priceError);
+      }
+
       const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
         variables: {
           input: {
@@ -195,9 +206,9 @@ export async function handleCloneBundle(
             tags: ["bundle", "Wolfpack: Product Bundles"],
             variants: [
               {
-                price: "0.00",
+                price: bundlePrice,
                 inventoryPolicy: "DENY",
-                inventoryManagement: null,
+                inventoryManagement: "SHOPIFY",
                 requiresShipping: true,
                 taxable: true,
                 weight: 0,
@@ -416,10 +427,38 @@ export async function handleCreateBundle(
 
     const shopifyProductId = productData.data?.productCreate?.product?.id;
     const shopifyProductHandle = productData.data?.productCreate?.product?.handle;
+    const defaultVariantId = productData.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
 
     if (!shopifyProductId) {
       AppLogger.error("No product ID returned from Shopify", { component: "app.dashboard", operation: "create-bundle" });
       return json({ error: 'Failed to get product ID from Shopify' }, { status: 500 });
+    }
+
+    // Update the default variant to enable inventory management
+    // Price will be updated later when products are added via calculateBundlePrice
+    if (defaultVariantId) {
+      try {
+        const UPDATE_VARIANT = `
+          mutation updateVariantInventory($input: ProductVariantInput!) {
+            productVariantUpdate(input: $input) {
+              productVariant { id }
+              userErrors { field message }
+            }
+          }
+        `;
+        await admin.graphql(UPDATE_VARIANT, {
+          variables: {
+            input: {
+              id: defaultVariantId,
+              inventoryManagement: "SHOPIFY",
+            }
+          }
+        });
+      } catch (variantError) {
+        AppLogger.warn("Failed to enable inventory management on bundle variant", {
+          component: "app.dashboard", operation: "create-bundle"
+        }, variantError);
+      }
     }
 
     // Publish to Online Store

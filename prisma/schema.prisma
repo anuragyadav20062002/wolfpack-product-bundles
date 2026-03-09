@@ -97,6 +97,8 @@ model Bundle {
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)
+  inventorySyncedAt DateTime?        // Last successful inventory sync timestamp
+  inventoryStaleAt  DateTime?        // Set when webhook indicates component inventory changed
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   steps            BundleStep[]

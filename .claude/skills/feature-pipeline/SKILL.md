@@ -187,7 +187,32 @@ Rationale for the chosen approach.
 
 ## Migration / Backward Compatibility Strategy
 
-## Testing Approach
+## Testing Strategy
+
+### Test Files to Create
+| Test File | Category | What It Covers |
+|-----------|----------|----------------|
+| `tests/unit/lib/...` | Unit | New helpers/utilities |
+| `tests/unit/services/...` | Unit | New service functions |
+| `tests/unit/routes/...` | Unit | Route action/loader logic |
+| `tests/unit/extensions/...` | Unit | Cart transform / checkout logic |
+| `tests/integration/...` | Integration | Multi-layer flows |
+| `tests/e2e/...` | E2E | Full request lifecycle |
+
+### Behaviors to Test
+(Derived from PO acceptance criteria — each "Given/When/Then" becomes at least one test case)
+
+### Mock Strategy
+- **Mock:** Prisma DB client, Shopify GraphQL/Admin API client, session/auth
+- **Do NOT mock:** Pure utility functions, data transformations, pricing calculations
+- **Do NOT test:** Polaris UI component rendering (too coupled to Remix/React)
+
+### TDD Exceptions (no tests required)
+- CSS/style-only changes
+- Documentation changes
+- One-line config changes
+- Widget storefront JS (tested separately via `tests/unit/assets/`)
+- Shopify extension TOML config
 ```
 
 **Handoff note:** Attach BR + PO + Architecture documents when presenting Stage 4.
@@ -201,9 +226,13 @@ Rationale for the chosen approach.
 **Inputs:** BR + PO + Architecture documents
 
 **Actions:**
-1. Read all three documents
-2. Write a detailed implementation plan with phases
-3. **Execute the implementation** — write the actual code
+1. Read all three documents (including the Architecture testing strategy)
+2. Write a detailed implementation plan with phases — each phase pairs test files with implementation files
+3. **Execute each phase using TDD:**
+   a. Write failing tests first (Red)
+   b. Implement the minimum code to pass (Green)
+   c. Refactor while keeping tests green
+   d. Run `npm test` to confirm all tests pass before moving to next phase
 4. Run diagnostics / build checks
 5. Create the issue file per CLAUDE.md and commit
 
@@ -216,13 +245,31 @@ Rationale for the chosen approach.
 ## Overview
 What this plan covers, what files will change.
 
+## Test Plan
+(Derived from Architecture testing strategy)
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `tests/unit/lib/feature.test.ts` | Pure logic, edge cases | Pending |
+| `tests/unit/services/feature-service.test.ts` | Service layer with mocked DB | Pending |
+| `tests/unit/routes/api.feature.test.ts` | Action/loader happy + error paths | Pending |
+| `tests/integration/feature-flow.test.ts` | End-to-end service flow | Pending |
+
 ## Phase 1: [Name]
+**Tests (Red):**
+- `tests/unit/lib/feature.test.ts` — describe expected behavior
+
+**Implementation (Green):**
 - Step 1.1: [action] → `path/to/file.ts`
 - Step 1.2: [action] → `path/to/file.ts`
+
+**Refactor:** Clean up while tests stay green
 
 ## Phase N: ...
 
 ## Build & Verification Checklist
+- [ ] All new tests pass (`npm test`)
+- [ ] No regressions in existing tests
 - [ ] TypeScript compiles without new errors
 - [ ] Widget rebuilt (if widget files changed)
 - [ ] Backward-compatible with existing data
@@ -232,10 +279,19 @@ What this plan covers, what files will change.
 How to revert if needed.
 ```
 
+**TDD exceptions** (implement without tests):
+- CSS/style-only changes
+- Documentation changes
+- One-line config changes
+- Widget storefront JS (covered by `tests/unit/assets/`)
+- Shopify extension TOML config
+- Polaris UI component rendering
+
 **Then implement:**
 - Follow CLAUDE.md issue tracking: create `docs/issues-prod/{feature-name}-{N}.md`
 - Commit format: `[{issue-id}] type: description`
 - Update issue file before and after each commit
+- Include test files in each commit alongside the code they validate
 
 ---
 
@@ -246,7 +302,7 @@ How to revert if needed.
 | BR | Research Analyst | `docs/{feature}/00-BR.md` | PO |
 | PO | Product Owner | `docs/{feature}/02-PO-requirements.md` | Architect |
 | Architect | Senior Architect | `docs/{feature}/03-architecture.md` | SDE |
-| SDE | Senior Engineer | `docs/{feature}/04-SDE-implementation.md` + code | Done |
+| SDE | Senior Engineer | `docs/{feature}/04-SDE-implementation.md` + tests + code | Done |
 
 ---
 
@@ -269,5 +325,6 @@ The i18n discount messaging feature was built using this exact pipeline:
 
 - All stages are executed **sequentially** — never skip a stage
 - Present each stage's output to the user before proceeding to the next (unless user says "continue when ready")
-- The SDE stage **writes actual code** — not just a plan
+- The SDE stage **writes tests first, then actual code** — following TDD (Red/Green/Refactor)
 - Always follow the project's `CLAUDE.md` issue tracking rules during Stage 4
+- Run `npm test` after each phase to verify no regressions
