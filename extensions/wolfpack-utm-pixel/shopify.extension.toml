@@ -1,19 +1,19 @@
-api_version = "2025-10"
-
-[[extensions]]
+type = "web_pixel_extension"
 name = "Wolfpack UTM Attribution Pixel"
 handle = "wolfpack-utm-pixel"
-type = "web_pixel_extension"
+runtime_context = "strict"
 
-[extensions.settings]
-
-[[extensions.settings.fields]]
-key = "app_server_url"
-type = "single_line_text_field"
-name = "App Server URL"
-description = "The URL of the Wolfpack app server for attribution tracking"
-
-[extensions.privacy]
+[customer_privacy]
 analytics = true
 marketing = true
-sale_of_data = false
+preferences = false
+sale_of_data = "disabled"
+
+[settings]
+type = "object"
+
+[settings.fields.app_server_url]
+name = "App Server URL"
+description = "The URL of the Wolfpack app server for attribution tracking"
+type = "single_line_text_field"
+validations = [{ name = "min", value = "1" }]
