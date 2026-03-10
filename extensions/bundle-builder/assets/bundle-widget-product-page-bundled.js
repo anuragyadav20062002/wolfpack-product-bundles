@@ -1759,6 +1759,7 @@ class BundleWidgetProductPage {
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
+    this._stepFetchFailed = {};
   }
 
   /**
@@ -2417,8 +2418,8 @@ class BundleWidgetProductPage {
       return;
     }
 
-
     let allProducts = [];
+    let fetchFailed = false;
 
     // Process explicit products - fetch using Storefront API via our backend
     if (step.products && Array.isArray(step.products) && step.products.length > 0) {
@@ -2429,22 +2430,20 @@ class BundleWidgetProductPage {
       const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
 
-
       try {
         const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`);
 
         if (!response.ok) {
-          const errorText = await response.text();
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data.products && data.products.length > 0) {
-          allProducts = allProducts.concat(data.products);
+          fetchFailed = true;
+          // Do NOT return — continue to check StepProduct and collections sources
         } else {
+          const data = await response.json();
+          if (data.products && data.products.length > 0) {
+            allProducts = allProducts.concat(data.products);
+          }
         }
       } catch (error) {
+        fetchFailed = true;
       }
     }
 
@@ -2496,16 +2495,16 @@ class BundleWidgetProductPage {
               allProducts = allProducts.concat(data.products);
             }
           } else {
+            fetchFailed = true;
           }
         } catch (error) {
+          fetchFailed = true;
         }
       }
     }
 
     // Process and normalize product data
-
     const processedProducts = this.processProductsForStep(allProducts, step);
-
 
     // Remove duplicates
     const seen = new Set();
@@ -2518,6 +2517,9 @@ class BundleWidgetProductPage {
       return true;
     });
 
+    // Store fetch failure state so renderModalProducts can show a proper error
+    if (!this._stepFetchFailed) this._stepFetchFailed = {};
+    this._stepFetchFailed[stepIndex] = fetchFailed && this.stepProductData[stepIndex].length === 0;
   }
 
   processProductsForStep(products, step) {
@@ -2735,22 +2737,29 @@ class BundleWidgetProductPage {
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
     if (products.length === 0) {
-      // Show empty state cards like in DCP preview
-      const currentStep = this.selectedBundle.steps[stepIndex];
-      const stepName = currentStep?.name || `Step ${stepIndex + 1}`;
-      const labelText = `Select ${stepName}`;
-
-      const emptyStateCards = Array(3).fill(0).map((_, index) => `
-        <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-          <p class="empty-state-card-text">${labelText}</p>
-        </div>
-      `).join('');
-
-      productGrid.innerHTML = emptyStateCards;
+      // Show error state if the fetch failed, otherwise a neutral "no products" message
+      if (this._stepFetchFailed && this._stepFetchFailed[stepIndex]) {
+        productGrid.innerHTML = `
+          <div class="modal-fetch-error">
+            <p>Could not load products. Please check your connection and try again.</p>
+            <button class="modal-retry-btn">Retry</button>
+          </div>
+        `;
+        const retryBtn = productGrid.querySelector('.modal-retry-btn');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', () => {
+            // Clear cached failure so loadStepProducts re-fetches
+            this._stepFetchFailed[stepIndex] = false;
+            this.stepProductData[stepIndex] = [];
+            this.renderModalProductsLoading(stepIndex);
+            this.loadStepProducts(stepIndex).then(() => {
+              this.renderModalProducts(stepIndex);
+            });
+          });
+        }
+      } else {
+        productGrid.innerHTML = `<p class="no-products-message">No products are configured for this step.</p>`;
+      }
       return;
     }
 
