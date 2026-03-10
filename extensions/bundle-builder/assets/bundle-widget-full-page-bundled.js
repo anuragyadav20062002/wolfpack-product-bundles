@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 1.2.0
+ * Version : 1.2.1
  * Built   : 2026-03-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.2.0';
+window.__BUNDLE_WIDGET_VERSION__ = '1.2.1';
 (function() {
   'use strict';
 
@@ -3400,6 +3400,8 @@ class BundleWidgetFullPage {
       if (isLastStep) {
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
         this.currentStepIndex++;
         this.renderFullPageLayoutWithSidebar();
       } else {
@@ -3413,6 +3415,8 @@ class BundleWidgetFullPage {
     if (this.currentStepIndex === 0) backBtn.disabled = true;
     backBtn.addEventListener('click', () => {
       if (this.currentStepIndex > 0) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
         this.currentStepIndex--;
         this.renderFullPageLayoutWithSidebar();
       }
@@ -3536,6 +3540,7 @@ class BundleWidgetFullPage {
           }
           this.currentStepIndex = index;
           this.searchQuery = ''; // Clear search when changing steps
+          this.activeCollectionId = null; // Clear collection filter when changing steps
           this.reRenderFullPage();
         });
       }
@@ -3874,8 +3879,13 @@ class BundleWidgetFullPage {
         const collectionProductIds = this.stepCollectionProductIds[membershipKey];
         if (collectionProductIds && collectionProductIds.length > 0) {
           products = products.filter(p => {
-            const pid = p.id || p.variantId || '';
-            return collectionProductIds.some(cid => pid.includes(cid.replace('gid://shopify/Product/', '')) || cid.includes(pid));
+            // parentProductId is numeric product ID (set when displayVariantsAsIndividual is true)
+            // p.id is numeric product ID otherwise
+            const numericPid = p.parentProductId || p.id || '';
+            return collectionProductIds.some(cid => {
+              const numericCid = this.extractId(cid) || cid;
+              return numericPid === numericCid;
+            });
           });
         }
       }
@@ -4250,6 +4260,8 @@ class BundleWidgetFullPage {
 
     backBtn.addEventListener('click', () => {
       if (this.currentStepIndex > 0) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
         this.currentStepIndex--;
         this.renderFullPageLayout();
       }
@@ -4278,6 +4290,8 @@ class BundleWidgetFullPage {
       if (isLastStep) {
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
         this.currentStepIndex++;
         this.renderFullPageLayout();
       } else {
@@ -5514,7 +5528,7 @@ class BundleWidgetFullPage {
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
     // Update quantity display without full re-render
-    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+    const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
     if (!productCard) return;
 
     const contentWrapper = productCard.querySelector('.product-content-wrapper');
@@ -6006,24 +6020,20 @@ class BundleWidgetFullPage {
     const newStepIndex = this.currentStepIndex + direction;
 
     if (direction < 0 && newStepIndex >= 0) {
-      // Previous step
-      if (this.validateStep(this.currentStepIndex)) {
-        this.currentStepIndex = newStepIndex;
+      // Previous step — no validation required, user must be free to correct mistakes
+      this.currentStepIndex = newStepIndex;
 
-        // Update modal header
-        const headerText = this.getFormattedHeaderText();
-        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+      // Update modal header
+      const headerText = this.getFormattedHeaderText();
+      this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-        // Load products for this step
-        await this.loadStepProducts(newStepIndex);
+      // Load products for this step
+      await this.loadStepProducts(newStepIndex);
 
-        this.renderModalTabs();
-        this.renderModalProducts(this.currentStepIndex);
-        this.updateModalNavigation();
-        this.updateModalFooterMessaging();
-      } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before going back.');
-      }
+      this.renderModalTabs();
+      this.renderModalProducts(this.currentStepIndex);
+      this.updateModalNavigation();
+      this.updateModalFooterMessaging();
     } else if (direction > 0) {
       if (newStepIndex < this.selectedBundle.steps.length) {
         // Next step
