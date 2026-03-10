@@ -148,25 +148,46 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const apiKey = process.env.SHOPIFY_API_KEY || '';
 
   // Ensure UTM web pixel is activated for this shop (fire-and-forget, non-blocking).
-  // This handles shops that were installed before the pixel extension was deployed
-  // or before the write_pixels scope was granted, so they never got the pixel via afterAuth.
+  // Handles shops installed before the pixel extension was deployed.
+  // Settings must be a plain object in variables — NOT JSON.stringify (causes validation failure).
   const appUrl = process.env.SHOPIFY_APP_URL;
   if (appUrl) {
     void (async () => {
       try {
-        const pixelSettings = JSON.stringify({ app_server_url: appUrl });
-        const existingPixelRes = await admin.graphql(`query { webPixel { id } }`);
+        const existingPixelRes = await admin.graphql(`query { webPixel { id settings } }`);
         const existingPixelData = await existingPixelRes.json();
+        const existingId = existingPixelData.data?.webPixel?.id;
 
-        if (!existingPixelData.data?.webPixel?.id) {
+        if (existingId) {
+          // Pixel exists — update settings to ensure correct server URL.
+          // Uses plain object (not JSON.stringify) for correct API validation.
+          const updateRes = await admin.graphql(
+            `mutation webPixelUpdate($id: ID!, $webPixel: WebPixelInput!) {
+               webPixelUpdate(id: $id, webPixel: $webPixel) {
+                 userErrors { field message code }
+                 webPixel { id settings }
+               }
+             }`,
+            { variables: { id: existingId, webPixel: { settings: { app_server_url: appUrl } } } },
+          );
+          const updateData = await updateRes.json();
+          const errs = updateData.data?.webPixelUpdate?.userErrors || [];
+          if (errs.length > 0) {
+            AppLogger.warn("UTM pixel update had errors on dashboard load", {
+              component: "app.dashboard",
+              operation: "ensure-web-pixel",
+            }, errs);
+          }
+        } else {
+          // Pixel doesn't exist — create it.
           const createRes = await admin.graphql(
             `mutation webPixelCreate($webPixel: WebPixelInput!) {
                webPixelCreate(webPixel: $webPixel) {
                  userErrors { field message code }
-                 webPixel { id }
+                 webPixel { id settings }
                }
              }`,
-            { variables: { webPixel: { settings: pixelSettings } } },
+            { variables: { webPixel: { settings: { app_server_url: appUrl } } } },
           );
           const createData = await createRes.json();
           const errs = createData.data?.webPixelCreate?.userErrors || [];
@@ -183,7 +204,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           }
         }
       } catch (_err) {
-        // Non-critical — pixel may already exist or scope may not yet be granted
+        // Non-critical — scope may not yet be granted
       }
     })();
   }
