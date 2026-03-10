@@ -55,8 +55,30 @@ Fix: always delete+recreate in afterAuth to freshly bind to the current deployed
 - ✅ Dashboard fire-and-forget now updates settings if pixel exists
 - Files: app/shopify.server.ts, app/routes/app/app.dashboard/route.tsx
 
+### Root Cause 3: analytics=true + marketing=true blocks pixel on first visit
+
+With both set to `true`, Shopify's pixel manager only loads the pixel after the visitor
+explicitly consents to both analytics AND marketing purposes. UTM params are in the URL
+on the VERY FIRST page view — before any consent banner interaction. Result: UTMs are
+silently lost for every visitor who hasn't yet consented. The pixel shows "Connected" in
+admin but never fires in practice for most visitors.
+
+Fix: set both to `false` (strictly necessary / no consent required). Justified because:
+- Reads URL params only (already public)
+- Stores in sessionStorage (no third-party cookies)
+- Sends only to merchant's own server at checkout
+
+### Fix 3 applied: `extensions/wolfpack-utm-pixel/shopify.extension.toml`
+- Changed `analytics = true` → `analytics = false`
+- Changed `marketing = true` → `marketing = false`
+
 ## Next Steps
 After deploying and reinstalling (or triggering afterAuth):
-1. Run `shopify app deploy`
+1. Run `shopify app deploy` (needed to push TOML privacy settings + extension code)
 2. Reinstall the app on the test store (triggers afterAuth → delete+recreate pixel)
 3. Check Settings → Customer Events — should show "Connected"
+4. Verify pixel fires: visit a storefront URL with `?utm_source=test`, open DevTools Network tab, complete a test checkout, check for POST to `/apps/product-bundles/api/attribution`
+
+Note: If using a development store, disable "Development store preview" in admin
+settings — a known Shopify quirk where pixel code doesn't update to newly deployed
+versions when preview mode is enabled.
