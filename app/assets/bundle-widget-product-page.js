@@ -72,6 +72,8 @@ import {
   TemplateManager,
   ComponentGenerator
 } from './bundle-widget-components.js';
+import { ConditionValidator } from './widgets/shared/condition-validator.js';
+import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
 
 
 class BundleWidgetProductPage {
@@ -906,16 +908,21 @@ class BundleWidgetProductPage {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
+    // Capture stepIndex so async callback doesn't render stale step if user navigates away
+    const capturedStepIndex = stepIndex;
+
     // Load products asynchronously and update
     this.loadStepProducts(stepIndex).then(() => {
-      this.renderModalProducts(stepIndex);
+      if (this.currentStepIndex !== capturedStepIndex) return; // user navigated away
+      this.renderModalProducts(capturedStepIndex);
       this.updateModalFooterMessaging();
 
       // PRELOAD NEXT STEP
       this.preloadNextStep();
-    }).catch(error => {
+    }).catch(() => {
+      if (this.currentStepIndex !== capturedStepIndex) return;
       const productGrid = this.elements.modal.querySelector('.product-grid');
-      productGrid.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+      if (productGrid) productGrid.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
       ToastManager.show('Failed to load products for this step');
     });
   }
@@ -1541,7 +1548,10 @@ class BundleWidgetProductPage {
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
     // Update quantity display without full re-render
-    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+    const scope = this.elements.modal?.style.display === 'block'
+      ? this.elements.modal
+      : this.container;
+    const productCard = scope.querySelector(`[data-product-id="${productId}"]`);
     if (productCard) {
       const quantityDisplay = productCard.querySelector('.qty-display');
       const addBtn = productCard.querySelector('.product-add-btn');
@@ -1866,7 +1876,7 @@ class BundleWidgetProductPage {
 
 
             const cartItem = {
-              id: parseInt(variantId),
+              id: parseInt(this.extractId(variantId)),
               quantity: quantity,
               properties: {
                 '_bundle_id': bundleInstanceId,
