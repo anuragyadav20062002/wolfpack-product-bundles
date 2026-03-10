@@ -941,83 +941,42 @@ class BundleWidgetProductPage {
     let allProducts = [];
     let fetchFailed = false;
 
-    // Process explicit products - fetch using Storefront API via our backend
+    const shop = window.Shopify?.shop || window.location.host;
+    const apiBaseUrl = window.__BUNDLE_APP_URL__ || window.location.origin;
+
+    // Source 1: product-based step — step.products contains GIDs from StepProduct entries
     if (step.products && Array.isArray(step.products) && step.products.length > 0) {
-      const productIds = step.products.map(p => p.id); // Keep full GID format
-      const shop = window.Shopify?.shop || window.location.host;
-
-      // Get app URL from widget data attribute or window global
-      const appUrl = window.__BUNDLE_APP_URL__ || '';
-      const apiBaseUrl = appUrl || window.location.origin;
-
+      const productIds = step.products.map(p => p.id);
       try {
-        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`);
-
-        if (!response.ok) {
-          fetchFailed = true;
-          // Do NOT return — continue to check StepProduct and collections sources
-        } else {
+        const response = await fetch(
+          `${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`
+        );
+        if (response.ok) {
           const data = await response.json();
-          if (data.products && data.products.length > 0) {
-            allProducts = allProducts.concat(data.products);
-          }
+          if (data.products?.length > 0) allProducts = allProducts.concat(data.products);
+        } else {
+          fetchFailed = true;
         }
-      } catch (error) {
+      } catch (_e) {
         fetchFailed = true;
       }
     }
 
-    if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-      const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
-      const shop = window.Shopify?.shop || window.location.host;
-
-      if (productGids.length > 0) {
-
-        // Get app URL (same as above)
-        const appUrl = window.__BUNDLE_APP_URL__ || '';
-        const apiBaseUrl = appUrl || window.location.origin;
-
-        try {
-          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
-
-          if (!response.ok) {
-          } else {
-            const data = await response.json();
-            if (data.products && data.products.length > 0) {
-              allProducts = allProducts.concat(data.products);
-            }
-          }
-        } catch (error) {
-        }
-      }
-    }
-
-    // Process collection products using Storefront API (not legacy REST endpoint)
+    // Source 2: collection-based step — step.collections contains { handle, id, title }
     if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-      const collectionHandles = step.collections
-        .map(c => c.handle)
-        .filter(Boolean);
-
-      if (collectionHandles.length > 0) {
-        const shop = window.Shopify?.shop || window.location.host;
-        const appUrl = window.__BUNDLE_APP_URL__ || '';
-        const apiBaseUrl = appUrl || window.location.origin;
-
-
+      const handles = step.collections.map(c => c.handle).filter(Boolean);
+      if (handles.length > 0) {
         try {
           const response = await fetch(
-            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
+            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(handles.join(','))}&shop=${encodeURIComponent(shop)}`
           );
-
           if (response.ok) {
             const data = await response.json();
-            if (data.products && data.products.length > 0) {
-              allProducts = allProducts.concat(data.products);
-            }
+            if (data.products?.length > 0) allProducts = allProducts.concat(data.products);
           } else {
             fetchFailed = true;
           }
-        } catch (error) {
+        } catch (_e) {
           fetchFailed = true;
         }
       }
