@@ -55,16 +55,14 @@ describe('Cart Transform Bundle Utils', () => {
       expect(extractProductIdFromVariantGid(productGid)).toBe(productGid);
     });
 
-    it('should warn about variant GID without product data', () => {
+    it('should return variant GID as-is when no product data available', () => {
       const variantGid = 'gid://shopify/ProductVariant/456';
-      const consoleSpy = jest.spyOn(console, 'log');
-      
+
       const result = extractProductIdFromVariantGid(variantGid);
-      
+
+      // The function returns the variant GID unchanged and logs a warning
+      // via CartTransformLogger (not console.log), so we just verify the return value
       expect(result).toBe(variantGid);
-      expect(consoleSpy).toHaveBeenCalled();
-      
-      consoleSpy.mockRestore();
     });
   });
 
@@ -137,7 +135,9 @@ describe('Cart Transform Bundle Utils', () => {
       expect(bundles[0].componentReferences).toEqual(['gid://shopify/ProductVariant/2', 'gid://shopify/ProductVariant/3']);
     });
 
-    it('should detect bundle from legacy product metafield', () => {
+    it('should not detect bundle from legacy product metafield (no longer supported)', () => {
+      // Legacy product-level metafield detection was removed.
+      // Only componentReference and bundleConfig on the variant are supported.
       const cart = {
         lines: [
           {
@@ -163,12 +163,13 @@ describe('Cart Transform Bundle Utils', () => {
       const shop = {};
       const bundles = getAllBundleDataFromCart(cart, shop);
 
-      expect(bundles).toHaveLength(1);
-      expect(bundles[0].id).toBe('legacy-bundle');
-      expect(bundles[0].name).toBe('Legacy Bundle');
+      expect(bundles).toHaveLength(0);
     });
 
-    it('should detect bundle from cart line attributes', () => {
+    it('should not detect bundle from cart line attributes alone (requires metafields)', () => {
+      // Cart line attribute detection without componentReference/bundleConfig
+      // on the variant is no longer supported. The source only checks variant
+      // metafields (componentReference, bundleConfig).
       const cart = {
         lines: [
           {
@@ -205,9 +206,7 @@ describe('Cart Transform Bundle Utils', () => {
 
       const bundles = getAllBundleDataFromCart(cart, shop);
 
-      expect(bundles).toHaveLength(1);
-      expect(bundles[0].id).toBe('widget-bundle-1');
-      expect(bundles[0].name).toBe('Widget Bundle');
+      expect(bundles).toHaveLength(0);
     });
 
     it('should handle empty cart gracefully', () => {

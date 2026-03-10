@@ -439,10 +439,11 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         throw new Error("Please add at least one step to your bundle before saving");
       }
 
-      // Validate at least one step has products
+      // Validate at least one step has products (or collections that resolve to products)
       const hasProducts = fullBundleConfig.steps.some((step: any) =>
         (step.StepProduct && step.StepProduct.length > 0) ||
-        (step.products && step.products.length > 0)
+        (step.products && step.products.length > 0) ||
+        (Array.isArray(step.collections) && step.collections.length > 0)
       );
 
       if (!hasProducts) {

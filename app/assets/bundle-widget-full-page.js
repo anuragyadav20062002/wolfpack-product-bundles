@@ -85,6 +85,7 @@ class BundleWidgetFullPage {
     this.selectedBundle = null;
     this.selectedProducts = [];
     this.stepProductData = [];
+    this.stepCollectionProductIds = {}; // { `${stepIndex}:${collectionHandle}`: [productId, ...] }
     this.currentStepIndex = 0;
     this.isInitialized = false;
     this.config = {};
@@ -1453,8 +1454,15 @@ class BundleWidgetFullPage {
     // Filter by active collection if selected
     if (this.activeCollectionId && step.collections) {
       const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
-      if (activeCollection && activeCollection.products) {
-        products = activeCollection.products;
+      if (activeCollection && activeCollection.handle) {
+        const membershipKey = `${stepIndex}:${activeCollection.handle}`;
+        const collectionProductIds = this.stepCollectionProductIds[membershipKey];
+        if (collectionProductIds && collectionProductIds.length > 0) {
+          products = products.filter(p => {
+            const pid = p.id || p.variantId || '';
+            return collectionProductIds.some(cid => pid.includes(cid.replace('gid://shopify/Product/', '')) || cid.includes(pid));
+          });
+        }
       }
     }
 
@@ -2668,6 +2676,12 @@ class BundleWidgetFullPage {
             const data = await response.json();
             if (data.products && data.products.length > 0) {
               allProducts = allProducts.concat(data.products);
+            }
+            // Store per-collection product ID membership for tab filtering
+            if (data.byCollection) {
+              for (const [handle, productIds] of Object.entries(data.byCollection)) {
+                this.stepCollectionProductIds[`${stepIndex}:${handle}`] = productIds;
+              }
             }
           } else {
           }

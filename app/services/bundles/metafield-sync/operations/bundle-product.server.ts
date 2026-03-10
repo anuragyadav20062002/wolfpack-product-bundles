@@ -77,7 +77,60 @@ export async function updateBundleProductMetafields(
           }
         }
       } else {
-        console.warn(`⚠️ [METAFIELD] Step "${step.name}" has no products defined`);
+        console.warn(`⚠️ [METAFIELD] Step "${step.name}" has no StepProduct entries`);
+      }
+
+      // COLLECTION FIX: Also fetch products from collection handles
+      // Collections are stored as JSON array of { id, handle, title } in step.collections
+      const stepCollections = Array.isArray(step.collections)
+        ? step.collections
+        : [];
+
+      if (stepCollections.length > 0) {
+        for (const collection of stepCollections) {
+          const handle = collection.handle;
+          if (!handle) continue;
+
+          try {
+            const collResponse = await admin.graphql(`
+              query getCollectionProductIds($handle: String!) {
+                collection(handle: $handle) {
+                  products(first: 250) {
+                    edges {
+                      node { id }
+                    }
+                  }
+                }
+              }
+            `, { variables: { handle } });
+
+            const collData = await collResponse.json();
+            const collProductEdges = collData.data?.collection?.products?.edges || [];
+
+            for (const edge of collProductEdges) {
+              const productId = edge.node?.id;
+              if (productId && !isUUID(productId)) {
+                // Avoid duplicates already added from StepProduct
+                const alreadyAdded = productIdMap.some(item => item.productId === productId);
+                if (!alreadyAdded) {
+                  productIdMap.push({
+                    productId,
+                    stepMinQuantity: step.minQuantity || 1,
+                    source: `collection:${handle}`
+                  });
+                }
+              }
+            }
+
+            console.log(`✅ [METAFIELD] Fetched ${collProductEdges.length} products from collection "${handle}"`);
+          } catch (collError) {
+            AppLogger.warn("Could not fetch products from collection", {
+              component: "metafield-sync",
+              operation: "updateBundleProductMetafields",
+              handle,
+            });
+          }
+        }
       }
     }
   }
@@ -179,6 +232,7 @@ export async function updateBundleProductMetafields(
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
       products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter((p: { id: string }) => p.id),
+      collections: Array.isArray(step.collections) ? step.collections : [],
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue,
