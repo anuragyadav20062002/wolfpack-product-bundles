@@ -30,6 +30,7 @@ export default function App() {
           Dashboard
         </a>
         <a href="/app/design-control-panel">Design Control Panel</a>
+        <a href="/app/attribution">Analytics</a>
         <a href="/app/pricing">Pricing</a>
       </NavMenu>
       <Outlet />
