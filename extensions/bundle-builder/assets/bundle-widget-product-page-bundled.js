@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 1.2.0
+ * Version : 1.2.1
  * Built   : 2026-03-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.2.0';
+window.__BUNDLE_WIDGET_VERSION__ = '1.2.1';
 (function() {
   'use strict';
 
@@ -1554,6 +1554,8 @@ function createDefaultLoadingAnimation() {
 
 // Import shared components and utilities
 
+
+
 class BundleWidgetProductPage {
 
   constructor(containerElement) {
@@ -1759,6 +1761,7 @@ class BundleWidgetProductPage {
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
+    this._stepFetchFailed = {};
   }
 
   /**
@@ -2385,16 +2388,21 @@ class BundleWidgetProductPage {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
+    // Capture stepIndex so async callback doesn't render stale step if user navigates away
+    const capturedStepIndex = stepIndex;
+
     // Load products asynchronously and update
     this.loadStepProducts(stepIndex).then(() => {
-      this.renderModalProducts(stepIndex);
+      if (this.currentStepIndex !== capturedStepIndex) return; // user navigated away
+      this.renderModalProducts(capturedStepIndex);
       this.updateModalFooterMessaging();
 
       // PRELOAD NEXT STEP
       this.preloadNextStep();
-    }).catch(error => {
+    }).catch(() => {
+      if (this.currentStepIndex !== capturedStepIndex) return;
       const productGrid = this.elements.modal.querySelector('.product-grid');
-      productGrid.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+      if (productGrid) productGrid.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
       ToastManager.show('Failed to load products for this step');
     });
   }
@@ -2417,95 +2425,52 @@ class BundleWidgetProductPage {
       return;
     }
 
-
     let allProducts = [];
+    let fetchFailed = false;
 
-    // Process explicit products - fetch using Storefront API via our backend
+    const shop = window.Shopify?.shop || window.location.host;
+    const apiBaseUrl = window.__BUNDLE_APP_URL__ || window.location.origin;
+
+    // Source 1: product-based step — step.products contains GIDs from StepProduct entries
     if (step.products && Array.isArray(step.products) && step.products.length > 0) {
-      const productIds = step.products.map(p => p.id); // Keep full GID format
-      const shop = window.Shopify?.shop || window.location.host;
-
-      // Get app URL from widget data attribute or window global
-      const appUrl = window.__BUNDLE_APP_URL__ || '';
-      const apiBaseUrl = appUrl || window.location.origin;
-
-
+      const productIds = step.products.map(p => p.id);
       try {
-        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data.products && data.products.length > 0) {
-          allProducts = allProducts.concat(data.products);
+        const response = await fetch(
+          `${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.products?.length > 0) allProducts = allProducts.concat(data.products);
         } else {
+          fetchFailed = true;
         }
-      } catch (error) {
+      } catch (_e) {
+        fetchFailed = true;
       }
     }
 
-    if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-      const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
-      const shop = window.Shopify?.shop || window.location.host;
-
-      if (productGids.length > 0) {
-
-        // Get app URL (same as above)
-        const appUrl = window.__BUNDLE_APP_URL__ || '';
-        const apiBaseUrl = appUrl || window.location.origin;
-
-        try {
-          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
-
-          if (!response.ok) {
-          } else {
-            const data = await response.json();
-            if (data.products && data.products.length > 0) {
-              allProducts = allProducts.concat(data.products);
-            }
-          }
-        } catch (error) {
-        }
-      }
-    }
-
-    // Process collection products using Storefront API (not legacy REST endpoint)
+    // Source 2: collection-based step — step.collections contains { handle, id, title }
     if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-      const collectionHandles = step.collections
-        .map(c => c.handle)
-        .filter(Boolean);
-
-      if (collectionHandles.length > 0) {
-        const shop = window.Shopify?.shop || window.location.host;
-        const appUrl = window.__BUNDLE_APP_URL__ || '';
-        const apiBaseUrl = appUrl || window.location.origin;
-
-
+      const handles = step.collections.map(c => c.handle).filter(Boolean);
+      if (handles.length > 0) {
         try {
           const response = await fetch(
-            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
+            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(handles.join(','))}&shop=${encodeURIComponent(shop)}`
           );
-
           if (response.ok) {
             const data = await response.json();
-            if (data.products && data.products.length > 0) {
-              allProducts = allProducts.concat(data.products);
-            }
+            if (data.products?.length > 0) allProducts = allProducts.concat(data.products);
           } else {
+            fetchFailed = true;
           }
-        } catch (error) {
+        } catch (_e) {
+          fetchFailed = true;
         }
       }
     }
 
     // Process and normalize product data
-
     const processedProducts = this.processProductsForStep(allProducts, step);
-
 
     // Remove duplicates
     const seen = new Set();
@@ -2518,6 +2483,9 @@ class BundleWidgetProductPage {
       return true;
     });
 
+    // Store fetch failure state so renderModalProducts can show a proper error
+    if (!this._stepFetchFailed) this._stepFetchFailed = {};
+    this._stepFetchFailed[stepIndex] = fetchFailed && this.stepProductData[stepIndex].length === 0;
   }
 
   processProductsForStep(products, step) {
@@ -2735,22 +2703,29 @@ class BundleWidgetProductPage {
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
     if (products.length === 0) {
-      // Show empty state cards like in DCP preview
-      const currentStep = this.selectedBundle.steps[stepIndex];
-      const stepName = currentStep?.name || `Step ${stepIndex + 1}`;
-      const labelText = `Select ${stepName}`;
-
-      const emptyStateCards = Array(3).fill(0).map((_, index) => `
-        <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-          <p class="empty-state-card-text">${labelText}</p>
-        </div>
-      `).join('');
-
-      productGrid.innerHTML = emptyStateCards;
+      // Show error state if the fetch failed, otherwise a neutral "no products" message
+      if (this._stepFetchFailed && this._stepFetchFailed[stepIndex]) {
+        productGrid.innerHTML = `
+          <div class="modal-fetch-error">
+            <p>Could not load products. Please check your connection and try again.</p>
+            <button class="modal-retry-btn">Retry</button>
+          </div>
+        `;
+        const retryBtn = productGrid.querySelector('.modal-retry-btn');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', () => {
+            // Clear cached failure so loadStepProducts re-fetches
+            this._stepFetchFailed[stepIndex] = false;
+            this.stepProductData[stepIndex] = [];
+            this.renderModalProductsLoading(stepIndex);
+            this.loadStepProducts(stepIndex).then(() => {
+              this.renderModalProducts(stepIndex);
+            });
+          });
+        }
+      } else {
+        productGrid.innerHTML = `<p class="no-products-message">No products are configured for this step.</p>`;
+      }
       return;
     }
 
@@ -3053,7 +3028,10 @@ class BundleWidgetProductPage {
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
     // Update quantity display without full re-render
-    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+    const scope = this.elements.modal?.style.display === 'block'
+      ? this.elements.modal
+      : this.container;
+    const productCard = scope.querySelector(`[data-product-id="${productId}"]`);
     if (productCard) {
       const quantityDisplay = productCard.querySelector('.qty-display');
       const addBtn = productCard.querySelector('.product-add-btn');
@@ -3378,7 +3356,7 @@ class BundleWidgetProductPage {
 
 
             const cartItem = {
-              id: parseInt(variantId),
+              id: parseInt(this.extractId(variantId)),
               quantity: quantity,
               properties: {
                 '_bundle_id': bundleInstanceId,
