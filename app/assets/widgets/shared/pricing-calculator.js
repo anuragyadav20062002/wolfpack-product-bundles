@@ -72,6 +72,9 @@ export class PricingCalculator {
 
     // Find the best applicable rule using nested structure
     for (const rule of rules) {
+      // Skip rules with no condition (can happen if saved without one)
+      if (!rule.condition) continue;
+
       // Access nested condition structure
       const conditionType = rule.condition.type; // 'quantity' or 'amount'
       const conditionOperator = rule.condition.operator; // 'gte', 'gt', 'lte', 'lt', 'eq'
@@ -196,6 +199,8 @@ export class PricingCalculator {
     const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
 
     for (const rule of rules) {
+      if (!rule.condition) continue;
+
       const conditionType = rule.condition.type;
       const conditionOperator = rule.condition.operator;
       const conditionValue = rule.condition.value;
