@@ -1608,28 +1608,29 @@ class BundleWidgetFullPage {
     `;
   }
 
-  // Preload next step's products in the background
-  preloadNextStep() {
-    const nextStepIndex = this.currentStepIndex + 1;
+  // Preload ALL remaining steps' products in the background (parallel).
+  // Called after step 0 renders so subsequent step transitions feel instant.
+  // loadStepProducts() is a no-op when data is already cached, so this is safe to call
+  // at any step without re-fetching.
+  preloadAllSteps() {
+    const steps = this.selectedBundle?.steps;
+    if (!steps) return;
 
-    // Check if there is a next step
-    if (nextStepIndex >= this.selectedBundle.steps.length) {
-      return;
-    }
+    steps.forEach((_, index) => {
+      // Skip the step already on screen — it's been loaded synchronously
+      if (index === this.currentStepIndex) return;
+      // Skip steps already cached
+      if (this.stepProductData[index]?.length > 0) return;
 
-    // Check if next step products are already loaded
-    if (this.stepProductData[nextStepIndex]?.length > 0) {
-      return;
-    }
-
-
-    // Load in background (don't await)
-    this.loadStepProducts(nextStepIndex)
-      .then(() => {
-      })
-      .catch(error => {
-        // Don't show error to user - preloading is optimization only
+      this.loadStepProducts(index).catch(() => {
+        // Silent — background prefetch; errors here don't affect the user
       });
+    });
+  }
+
+  // Keep legacy alias so any call sites that still say preloadNextStep() keep working
+  preloadNextStep() {
+    this.preloadAllSteps();
   }
 
   // Create a product card DOM element for full-page layout

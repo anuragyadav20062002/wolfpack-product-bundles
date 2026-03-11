@@ -1,14 +1,402 @@
-/* Welcome page container */
-.welcomeContainer {
+/* ── Landing Page ─────────────────────────────────────────── */
+
+/* Outer wrapper fills the app chrome */
+.page {
+  min-height: 100vh;
+  background: #f6f6f7;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  padding: 56px 40px 52px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(92, 106, 196, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(156, 106, 222, 0.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.heroInner {
+  position: relative;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.brandRow {
+  display: flex;
   align-items: center;
-  min-height: 70vh;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.wolfIcon {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #5c6ac4, #9c6ade);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(92, 106, 196, 0.4);
+}
+
+.brandName {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.heroTitle {
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.15;
+  margin-bottom: 14px;
+  letter-spacing: -0.02em;
+}
+
+.heroTitle span {
+  background: linear-gradient(90deg, #9c6ade, #5c6ac4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.heroSubtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.6;
+  margin-bottom: 36px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ctaRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #5c6ac4, #9c6ade);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 13px 28px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.15s;
+  box-shadow: 0 4px 16px rgba(92, 106, 196, 0.4);
+  letter-spacing: 0.01em;
+}
+
+.btnPrimary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 13px 22px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+  backdrop-filter: blur(4px);
+}
+
+.btnSecondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* ── Feature Grid ─────────────────────────────────────────── */
+.featuresSection {
+  padding: 40px 32px 48px;
+  max-width: 1000px;
+  margin: 0 auto;
   width: 100%;
 }
 
-/* Content wrapper */
-.contentWrapper {
-  width: 100%;
-  max-width: 700px;
+.sectionLabel {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8c9196;
+  margin-bottom: 24px;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .featuresGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .heroTitle {
+    font-size: 26px;
+  }
+  .hero {
+    padding: 40px 20px 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.featureCard {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.featureCard:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  transform: translateY(-2px);
+}
+
+.featureIconWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.featureTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #202223;
+  line-height: 1.3;
+}
+
+.featureDesc {
+  font-size: 13px;
+  color: #6d7175;
+  line-height: 1.5;
+}
+
+/* Colour accents for icons */
+.iconPurple  { background: linear-gradient(135deg, #f0ecff, #e4d9ff); }
+.iconTeal    { background: linear-gradient(135deg, #e4f7f7, #ccf5f5); }
+.iconOrange  { background: linear-gradient(135deg, #fff5e6, #ffe8cc); }
+.iconGreen   { background: linear-gradient(135deg, #e6f9ee, #ccf0da); }
+.iconBlue    { background: linear-gradient(135deg, #e6f0ff, #cce0ff); }
+.iconPink    { background: linear-gradient(135deg, #fff0f7, #ffdaf0); }
+
+/* ── Footer strip ─────────────────────────────────────────── */
+.footerStrip {
+  border-top: 1px solid #e1e3e5;
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  background: #ffffff;
+}
+
+.footerLink {
+  font-size: 13px;
+  color: #5c6ac4;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.footerLink:hover {
+  text-decoration: underline;
+}
+
+.footerDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #c4cdd0;
+  flex-shrink: 0;
+}
+
+/* ── Onboarding page styles ───────────────────────────────── */
+
+.onboardingHero {
+  background: linear-gradient(135deg, #1a1a2e, #0f3460);
+  border-radius: 14px;
+  padding: 32px 36px;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+  color: #ffffff;
+}
+
+.onboardingHero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 70% at 90% 50%, rgba(156, 106, 222, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.onboardingHeroInner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.onboardingHeroText h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.onboardingHeroText p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+/* Step number badge */
+.stepBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c6ac4, #9c6ade);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.stepBadgeComplete {
+  background: linear-gradient(135deg, #00848e, #00a0ac);
+}
+
+/* Feature badge chips shown in onboarding steps */
+.featureBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0f4ff;
+  color: #5c6ac4;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid #d4d9f5;
+}
+
+.featureBadgeGreen {
+  background: #e6f9ee;
+  color: #00848e;
+  border-color: #b3e8d4;
+}
+
+.featureBadgeOrange {
+  background: #fff5e6;
+  color: #c05717;
+  border-color: #f5d0a9;
+}
+
+/* Bundle type selector cards */
+.bundleTypeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.bundleTypeCard {
+  border: 2px solid #e1e3e5;
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.bundleTypeCard:hover {
+  border-color: #9c6ade;
+  background: #faf8ff;
+}
+
+.bundleTypeCardActive {
+  border-color: #5c6ac4;
+  background: #f0ecff;
+}
+
+.bundleTypeCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #202223;
+  margin-bottom: 4px;
+}
+
+.bundleTypeCardDesc {
+  font-size: 12px;
+  color: #6d7175;
+  line-height: 1.4;
+}
+
+/* Recommended badge */
+.recommendedBadge {
+  display: inline-block;
+  background: linear-gradient(135deg, #5c6ac4, #9c6ade);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: 8px;
 }
