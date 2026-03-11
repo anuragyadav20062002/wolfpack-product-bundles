@@ -214,16 +214,33 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
     const css = generateCSSFromSettings(finalSettings, bundleTypeForCSS, customCss);
 
+    // Build a stable ETag from the design settings last-modified time.
+    // Browsers send If-None-Match on repeat visits; we respond with 304 when unchanged.
+    // This allows long max-age caching without stale CSS after a merchant saves settings.
+    const settingsUpdatedAt = designSettings?.updatedAt?.getTime() ?? 0;
+    const etag = `"ds-${shopDomain}-${bundleTypeForCSS}-${settingsUpdatedAt}"`;
+
+    const ifNoneMatch = request.headers.get("If-None-Match");
+    if (ifNoneMatch === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          "ETag": etag,
+        },
+      });
+    }
+
     return new Response(css, {
       status: 200,
       headers: {
         "Content-Type": "text/css; charset=utf-8",
-        // Cache for 5 minutes (300 seconds) - allows design changes to propagate quickly
-        // Combined with timestamp cache-busting in Liquid templates for immediate updates
-        // stale-while-revalidate allows serving stale content while fetching fresh
-        "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+        // Long cache: browser caches for 1 hour, then revalidates via ETag.
+        // When a merchant saves settings the ETag changes → browser fetches fresh CSS.
+        // stale-while-revalidate allows serving stale while fetching in background.
+        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        "ETag": etag,
         "Access-Control-Allow-Origin": "*",
-        // Help CDNs cache efficiently
         "Vary": "Origin",
       },
     });

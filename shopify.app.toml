@@ -11,14 +11,14 @@ api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = [
-  "app/scopes_update",
-  "app/uninstalled",
   "app_purchases_one_time/update",
+  "products/update",
   "app_subscriptions/update",
+  "products/delete",
+  "app/uninstalled",
+  "app/scopes_update",
   "inventory_levels/update",
   "orders/create",
-  "products/delete",
-  "products/update"
 ]
   uri = "https://wolfpack-production-webhook-processor.onrender.com/webhooks"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]

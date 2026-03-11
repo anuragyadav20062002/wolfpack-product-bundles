@@ -1,0 +1,346 @@
+/* ── Empty State ───────────────────────────────────────────── */
+.emptyWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  gap: 0;
+}
+
+.emptyIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 32px;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #202223;
+  margin-bottom: 8px;
+}
+
+.emptySubtitle {
+  font-size: 14px;
+  color: #6d7175;
+  max-width: 360px;
+  line-height: 1.5;
+  margin-bottom: 28px;
+}
+
+.emptySteps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  background: #f6f6f7;
+  border-radius: 12px;
+  padding: 20px 24px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.emptyStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13px;
+  color: #3d4045;
+  line-height: 1.5;
+}
+
+.stepNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #c9cccf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5c5f62;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Header row ────────────────────────────────────────────── */
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.pageTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #202223;
+}
+
+.datePickerWrap {
+  min-width: 160px;
+}
+
+/* ── Stat cards ────────────────────────────────────────────── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.statCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 12px 12px 0 0;
+}
+
+.statCard.accent1::before { background: linear-gradient(90deg, #5c6ac4, #9c6ade); }
+.statCard.accent2::before { background: linear-gradient(90deg, #00848e, #00a0ac); }
+.statCard.accent3::before { background: linear-gradient(90deg, #f49342, #f26419); }
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8c9196;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #202223;
+  line-height: 1.1;
+}
+
+.statSub {
+  font-size: 12px;
+  color: #8c9196;
+  margin-top: 2px;
+}
+
+/* ── Section card ──────────────────────────────────────────── */
+.sectionCard {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #f1f2f3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #202223;
+}
+
+.sectionCount {
+  font-size: 12px;
+  color: #8c9196;
+  background: #f6f6f7;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+/* ── Platform table ────────────────────────────────────────── */
+.platformTable {
+  width: 100%;
+}
+
+.platformRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  border-bottom: 1px solid #f1f2f3;
+}
+
+.platformRow:last-child {
+  border-bottom: none;
+}
+
+.platformRow.tableHead {
+  background: #fafbfb;
+  border-bottom: 1px solid #e1e3e5;
+}
+
+.platformRow.tableHead .colLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8c9196;
+}
+
+.platformName {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.platformDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.platformLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202223;
+  text-transform: capitalize;
+}
+
+.colLabel {
+  font-size: 13px;
+  color: #3d4045;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.revenueBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 120px;
+}
+
+.barTrack {
+  flex: 1;
+  height: 6px;
+  background: #f1f2f3;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #5c6ac4, #9c6ade);
+  transition: width 0.4s ease;
+}
+
+.revenueAmt {
+  font-size: 13px;
+  font-weight: 600;
+  color: #202223;
+  min-width: 68px;
+  text-align: right;
+}
+
+/* ── Campaign / Bundle tables ──────────────────────────────── */
+.dataTable {
+  width: 100%;
+}
+
+.dataRow {
+  display: grid;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid #f1f2f3;
+}
+
+.dataRow:last-child {
+  border-bottom: none;
+}
+
+.dataRow.headRow {
+  background: #fafbfb;
+  border-bottom: 1px solid #e1e3e5;
+}
+
+.dataRow.headRow .dataCell {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8c9196;
+}
+
+/* campaign: name / source / orders / revenue */
+.campaignRow {
+  grid-template-columns: 1fr 100px 72px 100px;
+}
+
+/* bundle: name / orders / revenue */
+.bundleRow {
+  grid-template-columns: 1fr 72px 100px;
+}
+
+.dataCell {
+  font-size: 13px;
+  color: #3d4045;
+}
+
+.dataCell.primary {
+  font-weight: 500;
+  color: #202223;
+}
+
+.dataCell.right {
+  text-align: right;
+}
+
+.sourceTag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #f0f4ff;
+  color: #5c6ac4;
+  text-transform: capitalize;
+}
+
+/* colour palette for platform dots */
+.dot0 { background: #5c6ac4; }
+.dot1 { background: #00848e; }
+.dot2 { background: #f49342; }
+.dot3 { background: #de3618; }
+.dot4 { background: #50b83c; }
+.dot5 { background: #9c6ade; }
+.dotDefault { background: #c4cdd0; }

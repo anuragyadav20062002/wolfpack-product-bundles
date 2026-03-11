@@ -669,71 +669,42 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
               ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
             }}
           >
-            {/* Discount Text */}
+            {/* Progress State — shown when discount threshold not yet reached */}
             {footerDiscountTextVisibility && (
               <div
                 style={{
                   textAlign: "center",
-                  marginBottom: "16px",
                   fontSize: "14px",
                   fontWeight: 500,
                   color: "#374151",
-                  position: "relative",
+                  padding: "4px 0",
                 }}
               >
                 Add 2 more items to get <strong>10% off</strong>
               </div>
             )}
 
-            {/* Progress Bar Container */}
-            <div style={{ position: "relative" }}>
-              {/* Progress Bar */}
-              <div
-                style={{
-                  width: "100%",
-                  height: "8px",
-                  backgroundColor: footerProgressBarEmptyColor,
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                  marginBottom: "8px",
-                  position: "relative",
-                }}
-              >
-                {/* Progress Fill */}
-                <div
-                  style={{
-                    width: "50%",
-                    height: "100%",
-                    backgroundColor: footerProgressBarFilledColor,
-                    borderRadius: "4px",
-                    transition: "width 0.3s ease",
-                  }}
-                />
-              </div>
-
-              {/* Progress Details */}
-              <div
-                style={{
-                  textAlign: "center",
-                  fontSize: "12px",
-                  color: "#6B7280",
-                  fontWeight: 500,
-                  position: "relative",
-                }}
-              >
-                <span style={{ color: "#374151", fontWeight: 600 }}>2</span> / <span style={{ color: "#374151", fontWeight: 600 }}>4</span> items
-              </div>
-            </div>
-
-            {/* Success Message Preview */}
+            {/* Divider between states */}
             <div
               style={{
-                marginTop: "16px",
+                margin: "12px 0",
+                fontSize: "11px",
+                color: "#9CA3AF",
+                textAlign: "center",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              — when qualified —
+            </div>
+
+            {/* Success State — shown when discount threshold is reached */}
+            <div
+              style={{
                 padding: "12px 16px",
                 backgroundColor: successMessageBgColor,
                 borderRadius: "8px",
                 textAlign: "center",
-                position: "relative",
               }}
             >
               <div
