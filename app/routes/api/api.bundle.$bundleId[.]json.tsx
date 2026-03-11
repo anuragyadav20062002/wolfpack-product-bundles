@@ -555,7 +555,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
       return json(filteredResponse, {
         headers: {
-          'Cache-Control': 'public, max-age=10, s-maxage=30, stale-while-revalidate=300',
+          'Cache-Control': 'public, max-age=10, s-maxage=30, must-revalidate',
           'Vary': 'Accept-Encoding',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -572,7 +572,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       timestamp: new Date().toISOString()
     }, {
       headers: {
-        'Cache-Control': 'public, max-age=10, s-maxage=30, stale-while-revalidate=300',
+        'Cache-Control': 'public, max-age=10, s-maxage=30, must-revalidate',
         'Vary': 'Accept-Encoding',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',

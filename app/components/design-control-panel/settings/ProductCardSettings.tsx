@@ -90,6 +90,36 @@ export function ProductCardSettings({ settings, onUpdate }: SettingsComponentPro
           </Button>
         </ButtonGroup>
       </BlockStack>
+
+      <Divider />
+
+      <Text as="p" variant="headingSm" fontWeight="semibold">
+        Hover & Animation
+      </Text>
+
+      <RangeSlider
+        label="Hover Lift (translate Y)"
+        helpText="How many pixels the card rises on hover. 0 = no lift."
+        value={settings.productCardHoverTranslateY}
+        onChange={(value) => onUpdate("productCardHoverTranslateY", value as number)}
+        min={0}
+        max={12}
+        step={1}
+        output
+        suffix={`${settings.productCardHoverTranslateY}px`}
+      />
+
+      <RangeSlider
+        label="Transition Duration"
+        helpText="Speed of hover animations in milliseconds."
+        value={settings.productCardTransitionDuration}
+        onChange={(value) => onUpdate("productCardTransitionDuration", value as number)}
+        min={0}
+        max={600}
+        step={50}
+        output
+        suffix={`${settings.productCardTransitionDuration}ms`}
+      />
     </BlockStack>
   );
 }

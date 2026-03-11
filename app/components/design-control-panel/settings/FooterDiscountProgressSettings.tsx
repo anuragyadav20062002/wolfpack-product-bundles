@@ -88,6 +88,34 @@ export function FooterDiscountProgressSettings({ settings, onUpdate }: SettingsC
         value={settings.successMessageBgColor}
         onChange={(value) => onUpdate("successMessageBgColor", value)}
       />
+
+      <Divider />
+
+      <Text as="p" variant="headingSm" fontWeight="semibold">
+        Progress Bar Shape
+      </Text>
+
+      <RangeSlider
+        label="Bar Height"
+        value={settings.progressBarHeight}
+        onChange={(value) => onUpdate("progressBarHeight", value as number)}
+        min={2}
+        max={12}
+        step={1}
+        output
+        suffix={`${settings.progressBarHeight}px`}
+      />
+
+      <RangeSlider
+        label="Bar Border Radius"
+        value={settings.progressBarBorderRadius}
+        onChange={(value) => onUpdate("progressBarBorderRadius", value as number)}
+        min={0}
+        max={12}
+        step={1}
+        output
+        suffix={`${settings.progressBarBorderRadius}px`}
+      />
     </BlockStack>
   );
 }

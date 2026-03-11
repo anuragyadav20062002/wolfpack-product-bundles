@@ -909,7 +909,7 @@
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--bundle-card-transition-duration, 200ms) ease, box-shadow var(--bundle-card-transition-duration, 200ms) ease, border-color var(--bundle-card-transition-duration, 200ms) ease;
   border: 2px solid var(--bundle-product-card-border-color, #E5E7EB);
   position: relative;
   overflow: hidden;
@@ -939,7 +939,7 @@
 /* Hover effects only on devices that support hover (non-touch) */
 @media (hover: hover) and (pointer: fine) {
   .product-card:hover {
-    transform: translateY(-4px);
+    transform: var(--bundle-card-hover-translate-y, translateY(-2px));
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     border-color: var(--bundle-product-card-hover-border-color, #9CA3AF);
   }
@@ -1228,10 +1228,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--bundle-card-transition-duration, 300ms) cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  letter-spacing: var(--bundle-button-letter-spacing, 0.5px);
+  text-transform: var(--bundle-button-text-transform, uppercase);
   font-family: inherit;
   margin-top: auto; /* Push button to bottom of card */
 }
@@ -1648,8 +1648,8 @@
 .footer-progress-bar-container {
   position: relative;
   width: 100%;
-  height: 6px;
-  border-radius: 20px;
+  height: var(--bundle-progress-bar-height, 6px);
+  border-radius: var(--bundle-progress-bar-radius, 20px);
   overflow: hidden;
 }
 
@@ -2116,8 +2116,8 @@
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
-  background: var(--bundle-primary-color, #4CAF50);
-  color: var(--bundle-primary-text-color, #ffffff);
+  background: var(--bundle-tile-badge-bg, var(--bundle-global-primary-button, #4CAF50));
+  color: var(--bundle-tile-badge-text, #ffffff);
   border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
@@ -3545,9 +3545,17 @@ body.modal-open {
 @media (min-width: 1024px) {
   .sidebar-content .full-page-product-grid {
     grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), minmax(0, 1fr));
+    justify-content: stretch; /* prevent centering gaps with 1fr columns */
     padding-left: 0;
     padding-right: 0;
+    margin-top: 0; /* remove extra top margin — content already has padding-top via sidebar-content */
   }
+}
+
+/* Hide promo banner in sidebar layout — it takes up too much vertical space
+   and the bundle title is already shown in the side panel header */
+.layout-sidebar .promo-banner {
+  display: none !important;
 }
 
 /* ---- Side Panel ---- */
@@ -3839,4 +3847,17 @@ body.modal-open {
   .sidebar-layout-wrapper .sidebar-content {
     padding: 20px 16px;
   }
+}
+
+/* ============================================================================
+   FOCUS / ACCESSIBILITY
+   ============================================================================ */
+.bundle-widget-full-page .product-add-btn:focus-visible,
+.bundle-widget-full-page .step-search-input:focus-visible,
+.bundle-widget-full-page .variant-selector:focus-visible,
+.bundle-widget-full-page .quantity-input:focus-visible,
+.bundle-widget-full-page .footer-btn:focus-visible,
+.bundle-widget-full-page button:focus-visible {
+  outline: var(--bundle-focus-outline-width, 2px) solid var(--bundle-focus-outline-color, #5C6AC4);
+  outline-offset: 2px;
 }

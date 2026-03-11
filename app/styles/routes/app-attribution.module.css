@@ -153,6 +153,28 @@
   margin-top: 2px;
 }
 
+.growthPos {
+  font-size: 11px;
+  font-weight: 600;
+  color: #008060;
+  background: #f0faf7;
+  border-radius: 4px;
+  padding: 2px 6px;
+  display: inline-block;
+  margin-bottom: 2px;
+}
+
+.growthNeg {
+  font-size: 11px;
+  font-weight: 600;
+  color: #d82c0d;
+  background: #fff5f5;
+  border-radius: 4px;
+  padding: 2px 6px;
+  display: inline-block;
+  margin-bottom: 2px;
+}
+
 /* ── Section card ──────────────────────────────────────────── */
 .sectionCard {
   background: #ffffff;
@@ -311,6 +333,16 @@
   grid-template-columns: 1fr 72px 100px;
 }
 
+/* medium: medium / orders / revenue / aov */
+.mediumRow {
+  grid-template-columns: 1fr 72px 100px 80px;
+}
+
+/* landing page: page / orders / revenue */
+.landingRow {
+  grid-template-columns: 1fr 72px 100px;
+}
+
 .dataCell {
   font-size: 13px;
   color: #3d4045;
@@ -334,6 +366,27 @@
   background: #f0f4ff;
   color: #5c6ac4;
   text-transform: capitalize;
+}
+
+.mediumTag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #f0fdf4;
+  color: #008060;
+  text-transform: capitalize;
+}
+
+.pageUrl {
+  font-family: monospace;
+  font-size: 12px;
+  color: #3d4045;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360px;
 }
 
 /* colour palette for platform dots */
