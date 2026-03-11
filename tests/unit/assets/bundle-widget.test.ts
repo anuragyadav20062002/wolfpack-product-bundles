@@ -611,11 +611,11 @@ describe('Bundle Widget JavaScript', () => {
       };
 
       showModal();
-      expect(mockModal).toHaveStyle({display:'block'});
+      expect(mockModal.style.display).toBe('block');
       expect(mockModal.classList.add).toHaveBeenCalledWith('show');
 
       hideModal();
-      expect(mockModal).toHaveStyle({display:'none'});
+      expect(mockModal.style.display).toBe('none');
       expect(mockModal.classList.remove).toHaveBeenCalledWith('show');
     });
   });

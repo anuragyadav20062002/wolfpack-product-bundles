@@ -94,7 +94,11 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
   // SYNC_PRODUCT_STATUS: Sync bundle status to Shopify product
   if (updatedBundle.shopifyProductId) {
     try {
-      const shopifyStatus = status.toUpperCase();
+      // Map Wolfpack status to Shopify product status
+      // "unlisted" → Shopify "ACTIVE" first, then set to "UNLISTED" (API 2025-10+)
+      // "archived" → Shopify "ARCHIVED"
+      // Other statuses map directly via toUpperCase()
+      const shopifyStatus = status === "unlisted" ? "ACTIVE" : status.toUpperCase();
       AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
 
       const UPDATE_PRODUCT_STATUS = `
@@ -133,6 +137,32 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
           component: "handlers.server",
           productId: updatedBundle.shopifyProductId,
         }, statusUserErrors);
+      }
+
+      // For UNLISTED campaign bundles: product must be ACTIVE first, then set to UNLISTED
+      // UNLISTED hides from storefront search/collections/sitemap but keeps direct URL + channel feeds
+      if (status === "unlisted" && statusUserErrors.length === 0) {
+        AppLogger.debug(`[PRODUCT_SYNC] Setting product to UNLISTED for campaign bundle`);
+        const unlistedResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
+          variables: {
+            input: {
+              id: updatedBundle.shopifyProductId,
+              status: "UNLISTED"
+            }
+          }
+        });
+        const unlistedData = await unlistedResponse.json() as { data: Record<string, any>; errors?: unknown[] };
+        const unlistedErrors = unlistedData.data?.productUpdate?.userErrors ?? [];
+        if (unlistedErrors.length > 0) {
+          AppLogger.warn("[PRODUCT_SYNC] Shopify rejected UNLISTED status:", {
+            component: "handlers.server",
+            productId: updatedBundle.shopifyProductId,
+          }, unlistedErrors);
+        } else {
+          AppLogger.info("[PRODUCT_SYNC] Product set to UNLISTED for campaign bundle", {
+            productId: updatedBundle.shopifyProductId,
+          });
+        }
       }
     } catch (error) {
       AppLogger.error("[PRODUCT_SYNC] Failed to sync product status:", {}, error as any);

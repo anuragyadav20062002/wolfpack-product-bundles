@@ -20,6 +20,7 @@ enum BundleStatus {
   draft
   active
   archived
+  unlisted
 }
 
 enum JobStatus {
@@ -86,7 +87,8 @@ model Bundle {
   name             String
   description      String?
   shopId           String
-  shopifyProductId String? // Shopify Product ID (GID) for product-page bundles
+  shopifyProductId     String? // Shopify Product ID (GID) for product-page bundles
+  shopifyProductHandle String? // Shopify Product handle for preview URLs (e.g., "summer-bundle")
   shopifyPageHandle String? // Shopify Page handle for full-page bundles (e.g., "build-your-bundle")
   shopifyPageId    String? // Shopify Page ID (GID) for full-page bundles
   templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
@@ -96,6 +98,8 @@ model Bundle {
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)
+  inventorySyncedAt DateTime?        // Last successful inventory sync timestamp
+  inventoryStaleAt  DateTime?        // Set when webhook indicates component inventory changed
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   steps            BundleStep[]
@@ -393,4 +397,33 @@ model WebhookEvent {
   @@index([topic])
   @@index([processed])
   @@index([createdAt])
+}
+
+// ==============================================================================
+// UTM ATTRIBUTION MODEL (Phase 3)
+// ==============================================================================
+
+model OrderAttribution {
+  id          String   @id @default(uuid())
+  shopId      String
+  bundleId    String?  // nullable - may track non-bundle orders too
+  orderId     String   // Shopify order GID
+  orderNumber String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+  landingPage String?  // The URL customer landed on
+  revenue     Int      // cents
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+
+  @@index([shopId])
+  @@index([bundleId])
+  @@index([orderId])
+  @@index([utmSource])
+  @@index([utmCampaign])
+  @@index([shopId, createdAt])
+  @@index([bundleId, createdAt])
 }

@@ -3,11 +3,16 @@
  * Tests metafield validation, cleanup, and consistency checking
  */
 
-import { MetafieldValidationService } from '../../../app/services/metafield-validation.server';
 import { mockShopifyAdmin, mockPrismaClient, createMockGraphQLResponse, createMockBundle } from '../../setup';
+import { MetafieldValidationService } from '../../../app/services/metafield-validation.server';
 
-// Mock the database
-jest.mock('../../../app/db.server', () => mockPrismaClient);
+// Mock the database — jest.mock is hoisted above imports by Jest, so this
+// runs before the MetafieldValidationService import despite appearing after it.
+jest.mock('../../../app/db.server', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { mockPrismaClient: client } = require('../../setup');
+  return client;
+});
 
 describe('MetafieldValidationService', () => {
   beforeEach(() => {

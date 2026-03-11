@@ -27,7 +27,7 @@ import { useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
-import { BundleStatus, BundleType, FullPageLayout } from "../../../constants/bundle";
+import { BundleStatus, BundleType } from "../../../constants/bundle";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -50,7 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     where: {
       shopId: session.shop,
       status: {
-        in: [BundleStatus.ACTIVE, BundleStatus.DRAFT]
+        in: [BundleStatus.ACTIVE, BundleStatus.DRAFT, BundleStatus.UNLISTED]
       }
     },
     select: {
@@ -60,6 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       bundleType: true,
       createdAt: true,
       shopifyProductId: true, // For product page preview URL
+      shopifyProductHandle: true, // For product page preview URL (stored in DB)
       shopifyPageHandle: true, // For full page preview URL
       pricing: {
         select: {
@@ -75,14 +76,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     orderBy: { createdAt: "desc" },
   });
 
-  // Fetch product handles for product_page bundles that have shopifyProductId
-  const productPageBundles = bundles.filter(b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId);
-  const productHandles: Record<string, string> = {};
+  // Backfill: fetch + persist product handles for legacy bundles missing shopifyProductHandle
+  const bundlesNeedingBackfill = bundles.filter(
+    b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
+  );
 
-  if (productPageBundles.length > 0) {
+  if (bundlesNeedingBackfill.length > 0) {
     try {
-      // Batch fetch product handles using GraphQL
-      const productIds = productPageBundles.map(b => b.shopifyProductId).filter(Boolean);
+      const productIds = bundlesNeedingBackfill.map(b => b.shopifyProductId).filter(Boolean);
       const GET_PRODUCTS = `
         query GetProductHandles($ids: [ID!]!) {
           nodes(ids: $ids) {
@@ -102,24 +103,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       if (data.data?.nodes) {
         for (const node of data.data.nodes) {
           if (node?.id && node?.handle) {
-            productHandles[node.id] = node.handle;
+            // Persist handle to DB so future loads skip GraphQL
+            const bundleToUpdate = bundlesNeedingBackfill.find(b => b.shopifyProductId === node.id);
+            if (bundleToUpdate) {
+              bundleToUpdate.shopifyProductHandle = node.handle;
+              await db.bundle.update({
+                where: { id: bundleToUpdate.id },
+                data: { shopifyProductHandle: node.handle }
+              });
+            }
           }
         }
       }
     } catch (error) {
-      // Log error but continue - preview will just not work for these bundles
-      AppLogger.error("Failed to fetch product handles", {
+      AppLogger.error("Failed to backfill product handles", {
         component: "app.dashboard",
-        operation: "fetch-product-handles"
+        operation: "backfill-product-handles"
       }, error);
     }
   }
 
-  // Enhance bundles with preview URLs
+  // Enhance bundles with preview URLs — now purely from DB fields
   const bundlesWithPreview = bundles.map(bundle => ({
     ...bundle,
     previewHandle: bundle.bundleType === BundleType.PRODUCT_PAGE
-      ? (bundle.shopifyProductId ? productHandles[bundle.shopifyProductId] : null)
+      ? bundle.shopifyProductHandle
       : bundle.shopifyPageHandle
   }));
 
@@ -138,6 +146,68 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Get API key for deep linking
   const apiKey = process.env.SHOPIFY_API_KEY || '';
+
+  // Ensure UTM web pixel is activated for this shop (fire-and-forget, non-blocking).
+  // Handles shops installed before the pixel extension was deployed.
+  // Settings must be a plain object in variables — NOT JSON.stringify (causes validation failure).
+  const appUrl = process.env.SHOPIFY_APP_URL;
+  if (appUrl) {
+    void (async () => {
+      try {
+        const existingPixelRes = await admin.graphql(`query { webPixel { id settings } }`);
+        const existingPixelData = await existingPixelRes.json();
+        const existingId = existingPixelData.data?.webPixel?.id;
+
+        if (existingId) {
+          // Pixel exists — update settings to ensure correct server URL.
+          // Uses plain object (not JSON.stringify) for correct API validation.
+          const updateRes = await admin.graphql(
+            `mutation webPixelUpdate($id: ID!, $webPixel: WebPixelInput!) {
+               webPixelUpdate(id: $id, webPixel: $webPixel) {
+                 userErrors { field message code }
+                 webPixel { id settings }
+               }
+             }`,
+            { variables: { id: existingId, webPixel: { settings: { app_server_url: appUrl } } } },
+          );
+          const updateData = await updateRes.json();
+          const errs = updateData.data?.webPixelUpdate?.userErrors || [];
+          if (errs.length > 0) {
+            AppLogger.warn("UTM pixel update had errors on dashboard load", {
+              component: "app.dashboard",
+              operation: "ensure-web-pixel",
+            }, errs);
+          }
+        } else {
+          // Pixel doesn't exist — create it.
+          const createRes = await admin.graphql(
+            `mutation webPixelCreate($webPixel: WebPixelInput!) {
+               webPixelCreate(webPixel: $webPixel) {
+                 userErrors { field message code }
+                 webPixel { id settings }
+               }
+             }`,
+            { variables: { webPixel: { settings: { app_server_url: appUrl } } } },
+          );
+          const createData = await createRes.json();
+          const errs = createData.data?.webPixelCreate?.userErrors || [];
+          if (errs.length > 0) {
+            AppLogger.warn("UTM pixel creation had errors on dashboard load", {
+              component: "app.dashboard",
+              operation: "ensure-web-pixel",
+            }, errs);
+          } else {
+            AppLogger.info("UTM pixel activated on dashboard load", {
+              component: "app.dashboard",
+              operation: "ensure-web-pixel",
+            }, { pixelId: createData.data?.webPixelCreate?.webPixel?.id });
+          }
+        }
+      } catch (_err) {
+        // Non-critical — scope may not yet be granted
+      }
+    })();
+  }
 
   return json({
     bundles: bundlesWithPreview,
@@ -177,6 +247,7 @@ const STATUS_BADGES = {
   active: <Badge tone="success">active</Badge>,
   draft: <Badge tone="info">draft</Badge>,
   archived: <Badge tone="critical">archived</Badge>,
+  unlisted: <Badge tone="warning">unlisted</Badge>,
 } as const;
 
 // Bundle type badge component
@@ -253,8 +324,6 @@ export default function Dashboard() {
     setDescription,
     bundleType,
     setBundleType,
-    fullPageLayout,
-    setFullPageLayout,
     resetForm,
     deleteModalOpen,
     bundleToDelete,
@@ -491,127 +560,8 @@ export default function Dashboard() {
                 </div>
               </BlockStack>
 
-              {/* Layout Selection — only for full-page bundles */}
-              {bundleType[0] === BundleType.FULL_PAGE && (
-                <BlockStack gap="200">
-                  <Text variant="headingSm" as="h4">Page Layout</Text>
-                  <Text variant="bodySm" as="p" tone="subdued">
-                    Choose how the bundle summary is displayed on the storefront
-                  </Text>
-                  <div className={dashboardStyles.bundleTypeGrid}>
-                    {/* Footer at Bottom */}
-                    <div
-                      className={`${dashboardStyles.bundleTypeCard} ${fullPageLayout === FullPageLayout.FOOTER_BOTTOM ? dashboardStyles.bundleTypeCardSelected : ''}`}
-                      onClick={() => setFullPageLayout(FullPageLayout.FOOTER_BOTTOM)}
-                    >
-                      <BlockStack gap="200">
-                        {/* Mini storefront illustration — bottom footer */}
-                        <div className={dashboardStyles.layoutIllustration}>
-                          {/* Step tabs */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2C2C2C' }} />
-                            <div style={{ width: 20, height: 2, background: '#ccc' }} />
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ccc' }} />
-                            <div style={{ width: 20, height: 2, background: '#ccc' }} />
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ccc' }} />
-                          </div>
-                          {/* Product cards row */}
-                          <div style={{ display: 'flex', gap: 4, flex: 1 }}>
-                            {[0, 1, 2].map(i => (
-                              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
-                                <div style={{ flex: 1, background: '#E8E8E8', borderRadius: 3 }} />
-                                <div style={{ height: 4, background: '#D0D0D0', borderRadius: 2, width: '60%' }} />
-                                <div style={{ height: 8, background: '#2C2C2C', borderRadius: 2 }} />
-                              </div>
-                            ))}
-                          </div>
-                          {/* Bottom footer bar */}
-                          <div style={{ height: 14, background: '#2C2C2C', borderRadius: 3, marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px' }}>
-                            <div style={{ display: 'flex', gap: 2 }}>
-                              {[0, 1].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />)}
-                            </div>
-                            <div style={{ width: 20, height: 6, borderRadius: 2, background: 'rgba(255,255,255,0.5)' }} />
-                          </div>
-                        </div>
-                        <BlockStack gap="100">
-                          <Text variant="bodyMd" as="p" fontWeight="semibold">Footer at Bottom</Text>
-                          <Text variant="bodySm" as="p" tone="subdued">
-                            Sticky footer bar at the bottom with product tiles and navigation
-                          </Text>
-                        </BlockStack>
-                      </BlockStack>
-                    </div>
-
-                    {/* Footer at Side */}
-                    <div
-                      className={`${dashboardStyles.bundleTypeCard} ${fullPageLayout === 'footer_side' ? dashboardStyles.bundleTypeCardSelected : ''}`}
-                      onClick={() => setFullPageLayout('footer_side')}
-                    >
-                      <BlockStack gap="200">
-                        {/* Mini storefront illustration — side panel */}
-                        <div className={dashboardStyles.layoutIllustration} style={{ display: 'flex', gap: 0 }}>
-                          {/* Left: product grid area */}
-                          <div style={{ flex: 2, display: 'flex', flexDirection: 'column' as const, padding: '0 4px 0 0', gap: 4 }}>
-                            {/* Step tabs */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2C2C2C' }} />
-                              <div style={{ width: 16, height: 2, background: '#ccc' }} />
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ccc' }} />
-                            </div>
-                            {/* Product cards */}
-                            <div style={{ display: 'flex', gap: 3, flex: 1 }}>
-                              {[0, 1].map(i => (
-                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
-                                  <div style={{ flex: 1, background: '#E8E8E8', borderRadius: 3 }} />
-                                  <div style={{ height: 4, background: '#D0D0D0', borderRadius: 2, width: '60%' }} />
-                                  <div style={{ height: 7, background: '#2C2C2C', borderRadius: 2 }} />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          {/* Right: sidebar panel */}
-                          <div style={{ flex: 1, borderLeft: '1px solid #D0D0D0', paddingLeft: 4, display: 'flex', flexDirection: 'column' as const, gap: 3 }}>
-                            <div style={{ fontSize: 5, fontWeight: 700, color: '#2C2C2C', lineHeight: 1 }}>Your Bundle</div>
-                            {/* Tier pill */}
-                            <div style={{ display: 'flex', gap: 2 }}>
-                              <div style={{ height: 6, width: 28, borderRadius: 3, background: '#2C2C2C' }} />
-                              <div style={{ height: 6, width: 28, borderRadius: 3, background: '#E8E8E8' }} />
-                            </div>
-                            {/* Progress bar */}
-                            <div style={{ height: 3, background: '#E8E8E8', borderRadius: 2 }}>
-                              <div style={{ height: '100%', width: '40%', background: '#2C2C2C', borderRadius: 2 }} />
-                            </div>
-                            {/* Product slots */}
-                            <div style={{ display: 'flex', gap: 2, flex: 1 }}>
-                              <div style={{ flex: 1, background: '#D0D0D0', borderRadius: 2 }} />
-                              <div style={{ flex: 1, border: '1px dashed #ccc', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <span style={{ fontSize: 8, color: '#aaa' }}>+</span>
-                              </div>
-                            </div>
-                            {/* Total + nav */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ fontSize: 5, color: '#2C2C2C', fontWeight: 600, lineHeight: 1 }}>$0.00</div>
-                              <div style={{ height: 7, width: 20, background: '#2C2C2C', borderRadius: 2 }} />
-                            </div>
-                          </div>
-                        </div>
-                        <BlockStack gap="100">
-                          <Text variant="bodyMd" as="p" fontWeight="semibold">Footer at Side</Text>
-                          <Text variant="bodySm" as="p" tone="subdued">
-                            Sidebar panel with bundle summary, discount tiers, and selected products
-                          </Text>
-                        </BlockStack>
-                      </BlockStack>
-                    </div>
-                  </div>
-                </BlockStack>
-              )}
-
-              {/* Hidden inputs to pass bundleType and layout to form */}
+              {/* Hidden input to pass bundleType to form */}
               <input type="hidden" name="bundleType" value={bundleType[0]} />
-              {bundleType[0] === BundleType.FULL_PAGE && (
-                <input type="hidden" name="fullPageLayout" value={fullPageLayout} />
-              )}
 
               <button
                 ref={submitButtonRef}

@@ -112,7 +112,11 @@ describe('CartTransformService', () => {
     });
 
     it('should handle network errors gracefully', async () => {
-      mockShopifyAdmin.graphql.mockRejectedValueOnce(new Error('Network error'));
+      // checkExistingCartTransform catches errors internally and returns {exists: false},
+      // so we must reject on both calls to trigger the outer catch.
+      mockShopifyAdmin.graphql
+        .mockRejectedValueOnce(new Error('Network error'))  // checkExisting (caught internally)
+        .mockRejectedValueOnce(new Error('Network error')); // createCartTransform
 
       const result = await CartTransformService.activateForNewInstallation(
         mockShopifyAdmin,
@@ -221,6 +225,15 @@ describe('CartTransformService', () => {
     });
 
     it('should handle empty shop domain', async () => {
+      // With empty domain, the method still runs — checkExisting will fail
+      // because no graphql mock is set up, and createCartTransform will also fail.
+      // The error propagates from the graphql call returning undefined (no json method).
+      mockShopifyAdmin.graphql
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransforms: { edges: [] }
+        }))
+        .mockRejectedValueOnce(new Error('Unknown error'));
+
       const result = await CartTransformService.activateForNewInstallation(
         mockShopifyAdmin,
         ''

@@ -36,6 +36,12 @@ import {
   handleAppUninstalled,
   handleScopesUpdate,
 } from "./handlers/lifecycle.server";
+import {
+  handleInventoryUpdate,
+} from "./handlers/inventory.server";
+import {
+  handleOrderCreate,
+} from "./handlers/orders.server";
 
 /**
  * Main webhook processor entry point
@@ -156,6 +162,16 @@ export class WebhookProcessor {
         case "app/scopes_update":
         case "APP_SCOPES_UPDATE":
           result = await handleScopesUpdate(shopDomain, payload);
+          break;
+
+        case "inventory_levels/update":
+        case "INVENTORY_LEVELS_UPDATE":
+          result = await handleInventoryUpdate(shopDomain, payload);
+          break;
+
+        case "orders/create":
+        case "ORDERS_CREATE":
+          result = await handleOrderCreate(shopDomain, payload);
           break;
 
         default:

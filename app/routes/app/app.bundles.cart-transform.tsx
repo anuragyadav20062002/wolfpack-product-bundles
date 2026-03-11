@@ -181,6 +181,18 @@ export async function action({ request }: ActionFunctionArgs) {
       `;
 
       const clonedBundleName = `${originalBundle.name} (Copy)`;
+
+      // Calculate bundle price from component products
+      let bundlePrice = "1.00";
+      try {
+        const { calculateBundlePrice } = await import("../../services/bundles/pricing-calculation.server");
+        bundlePrice = await calculateBundlePrice(admin, originalBundle);
+      } catch (priceError) {
+        AppLogger.warn("Failed to calculate bundle price for clone, using fallback", {
+          component: "app.bundles.cart-transform", operation: "clone-bundle"
+        }, priceError);
+      }
+
       const productResponse = await admin.graphql(CREATE_BUNDLE_PRODUCT, {
         variables: {
           input: {
@@ -192,9 +204,9 @@ export async function action({ request }: ActionFunctionArgs) {
             tags: ["bundle", "cart-transform"],
             variants: [
               {
-                price: "0.00",
+                price: bundlePrice,
                 inventoryPolicy: "DENY",
-                inventoryManagement: null,
+                inventoryManagement: "SHOPIFY",
                 requiresShipping: true,
                 taxable: true,
                 weight: 0,

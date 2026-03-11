@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 1.2.0
- * Built   : 2026-03-01
+ * Version : 1.2.1
+ * Built   : 2026-03-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.2.0';
+window.__BUNDLE_WIDGET_VERSION__ = '1.2.1';
 (function() {
   'use strict';
 
@@ -631,6 +631,9 @@ class PricingCalculator {
 
     // Find the best applicable rule using nested structure
     for (const rule of rules) {
+      // Skip rules with no condition (can happen if saved without one)
+      if (!rule.condition) continue;
+
       // Access nested condition structure
       const conditionType = rule.condition.type; // 'quantity' or 'amount'
       const conditionOperator = rule.condition.operator; // 'gte', 'gt', 'lte', 'lt', 'eq'
@@ -755,6 +758,8 @@ class PricingCalculator {
     const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
 
     for (const rule of rules) {
+      if (!rule.condition) continue;
+
       const conditionType = rule.condition.type;
       const conditionOperator = rule.condition.operator;
       const conditionValue = rule.condition.value;
@@ -901,6 +906,24 @@ class ToastManager {
 
 
 class TemplateManager {
+  static getQualificationGap(currentValue, targetValue, operator, unitStep = 1) {
+    const normalizedOp = PricingCalculator.normalizeCondition(operator);
+
+    switch (normalizedOp) {
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
+        return Math.max(0, (targetValue + unitStep) - currentValue);
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN:
+        return Math.max(0, currentValue - (targetValue - unitStep));
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        return Math.max(0, currentValue - targetValue);
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
+      case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+      default:
+        // For pricing rules, equal_to is treated as a threshold (>= target).
+        return Math.max(0, targetValue - currentValue);
+    }
+  }
+
   static replaceVariables(template, variables) {
     if (!template) return '';
 
@@ -1011,7 +1034,9 @@ class TemplateManager {
   static calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo) {
     if (conditionType === 'amount') {
       // Amount-based condition - targetValue is already in cents
-      const amountNeeded = Math.max(0, targetValue - totalPrice);
+      const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
+      const alreadyQualified = PricingCalculator.checkCondition(totalPrice, conditionOperator, targetValue);
+      const amountNeeded = this.getQualificationGap(totalPrice, targetValue, conditionOperator, 1);
 
       // Convert for display if needed
       const convertedAmountNeeded = CurrencyManager.convertCurrency(
@@ -1031,20 +1056,24 @@ class TemplateManager {
       );
       const targetValueFormattedDecimal = (targetValueFormatted / 100).toFixed(2);
 
-      // Check if already qualified (amount needed is 0)
-      const alreadyQualified = amountNeeded <= 0;
-
       // Build operator-aware condition text for amount
-      const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
       let conditionText;
       if (alreadyQualified) {
-        conditionText = `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met`;
+        if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN) {
+          conditionText = `less than ${currencyInfo.display.symbol}${targetValueFormattedDecimal} met`;
+        } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO) {
+          conditionText = `at most ${currencyInfo.display.symbol}${targetValueFormattedDecimal} met`;
+        } else {
+          conditionText = `${currencyInfo.display.symbol}${targetValueFormattedDecimal} minimum met`;
+        }
       } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN) {
-        conditionText = `more than ${currencyInfo.display.symbol}${amountNeededFormatted}`;
+        conditionText = `${currencyInfo.display.symbol}${amountNeededFormatted} more`;
       } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN) {
-        conditionText = `less than ${currencyInfo.display.symbol}${amountNeededFormatted}`;
+        conditionText = `less than ${currencyInfo.display.symbol}${targetValueFormattedDecimal}`;
+      } else if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO) {
+        conditionText = `at most ${currencyInfo.display.symbol}${targetValueFormattedDecimal}`;
       } else {
-        conditionText = `${currencyInfo.display.symbol}${amountNeededFormatted}`;
+        conditionText = `${currencyInfo.display.symbol}${amountNeededFormatted} more`;
       }
 
       return {
@@ -1055,17 +1084,29 @@ class TemplateManager {
       };
     } else {
       // Quantity-based condition
-      const itemsNeeded = Math.max(0, targetValue - totalQuantity);
-
-      // Check if already qualified (items needed is 0)
-      const alreadyQualified = itemsNeeded <= 0;
+      const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
+      const alreadyQualified = PricingCalculator.checkCondition(totalQuantity, conditionOperator, targetValue);
+      const itemsNeeded = this.getQualificationGap(totalQuantity, targetValue, conditionOperator, 1);
 
       // Build operator-aware condition text for quantity
       let conditionText;
       if (alreadyQualified) {
-        conditionText = `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met`;
+        if (
+          normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN ||
+          normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO
+        ) {
+          conditionText = `${this.formatOperatorText(conditionOperator, targetValue, 'item')} met`;
+        } else {
+          conditionText = `${targetValue} ${targetValue === 1 ? 'item' : 'items'} minimum met`;
+        }
+      } else if (
+        normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN ||
+        normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO ||
+        normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO
+      ) {
+        conditionText = `${itemsNeeded} more ${itemsNeeded === 1 ? 'item' : 'items'}`;
       } else {
-        conditionText = this.formatOperatorText(conditionOperator, itemsNeeded, 'item');
+        conditionText = this.formatOperatorText(conditionOperator, targetValue, 'item');
       }
 
       return {
@@ -2459,6 +2500,7 @@ class BundleWidgetFullPage {
     this.selectedBundle = null;
     this.selectedProducts = [];
     this.stepProductData = [];
+    this.stepCollectionProductIds = {}; // { `${stepIndex}:${collectionHandle}`: [productId, ...] }
     this.currentStepIndex = 0;
     this.isInitialized = false;
     this.config = {};
@@ -3358,6 +3400,8 @@ class BundleWidgetFullPage {
       if (isLastStep) {
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
         this.currentStepIndex++;
         this.renderFullPageLayoutWithSidebar();
       } else {
@@ -3371,6 +3415,8 @@ class BundleWidgetFullPage {
     if (this.currentStepIndex === 0) backBtn.disabled = true;
     backBtn.addEventListener('click', () => {
       if (this.currentStepIndex > 0) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
         this.currentStepIndex--;
         this.renderFullPageLayoutWithSidebar();
       }
@@ -3494,6 +3540,7 @@ class BundleWidgetFullPage {
           }
           this.currentStepIndex = index;
           this.searchQuery = ''; // Clear search when changing steps
+          this.activeCollectionId = null; // Clear collection filter when changing steps
           this.reRenderFullPage();
         });
       }
@@ -3827,8 +3874,20 @@ class BundleWidgetFullPage {
     // Filter by active collection if selected
     if (this.activeCollectionId && step.collections) {
       const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
-      if (activeCollection && activeCollection.products) {
-        products = activeCollection.products;
+      if (activeCollection && activeCollection.handle) {
+        const membershipKey = `${stepIndex}:${activeCollection.handle}`;
+        const collectionProductIds = this.stepCollectionProductIds[membershipKey];
+        if (collectionProductIds && collectionProductIds.length > 0) {
+          products = products.filter(p => {
+            // parentProductId is numeric product ID (set when displayVariantsAsIndividual is true)
+            // p.id is numeric product ID otherwise
+            const numericPid = p.parentProductId || p.id || '';
+            return collectionProductIds.some(cid => {
+              const numericCid = this.extractId(cid) || cid;
+              return numericPid === numericCid;
+            });
+          });
+        }
       }
     }
 
@@ -4201,6 +4260,8 @@ class BundleWidgetFullPage {
 
     backBtn.addEventListener('click', () => {
       if (this.currentStepIndex > 0) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
         this.currentStepIndex--;
         this.renderFullPageLayout();
       }
@@ -4229,6 +4290,8 @@ class BundleWidgetFullPage {
       if (isLastStep) {
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
         this.currentStepIndex++;
         this.renderFullPageLayout();
       } else {
@@ -5043,6 +5106,12 @@ class BundleWidgetFullPage {
             if (data.products && data.products.length > 0) {
               allProducts = allProducts.concat(data.products);
             }
+            // Store per-collection product ID membership for tab filtering
+            if (data.byCollection) {
+              for (const [handle, productIds] of Object.entries(data.byCollection)) {
+                this.stepCollectionProductIds[`${stepIndex}:${handle}`] = productIds;
+              }
+            }
           } else {
           }
         } catch (error) {
@@ -5459,7 +5528,7 @@ class BundleWidgetFullPage {
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
     // Update quantity display without full re-render
-    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+    const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
     if (!productCard) return;
 
     const contentWrapper = productCard.querySelector('.product-content-wrapper');
@@ -5951,24 +6020,20 @@ class BundleWidgetFullPage {
     const newStepIndex = this.currentStepIndex + direction;
 
     if (direction < 0 && newStepIndex >= 0) {
-      // Previous step
-      if (this.validateStep(this.currentStepIndex)) {
-        this.currentStepIndex = newStepIndex;
+      // Previous step — no validation required, user must be free to correct mistakes
+      this.currentStepIndex = newStepIndex;
 
-        // Update modal header
-        const headerText = this.getFormattedHeaderText();
-        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+      // Update modal header
+      const headerText = this.getFormattedHeaderText();
+      this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-        // Load products for this step
-        await this.loadStepProducts(newStepIndex);
+      // Load products for this step
+      await this.loadStepProducts(newStepIndex);
 
-        this.renderModalTabs();
-        this.renderModalProducts(this.currentStepIndex);
-        this.updateModalNavigation();
-        this.updateModalFooterMessaging();
-      } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before going back.');
-      }
+      this.renderModalTabs();
+      this.renderModalProducts(this.currentStepIndex);
+      this.updateModalNavigation();
+      this.updateModalFooterMessaging();
     } else if (direction > 0) {
       if (newStepIndex < this.selectedBundle.steps.length) {
         // Next step

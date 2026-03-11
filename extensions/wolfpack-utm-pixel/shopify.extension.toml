@@ -1,0 +1,28 @@
+name = "wolfpack-utm-pixel"
+type = "web_pixel_extension"
+uid = "9c39afc7-f730-af5d-e507-823597e5186693eb73cf"
+
+runtime_context = "strict"
+
+# analytics = false, marketing = false → pixel runs without requiring explicit consent.
+# This is correct for a first-party UTM attribution pixel: it reads URL params from
+# the landing URL (already public), stores them in sessionStorage (no third-party cookies),
+# and sends them to the merchant's own server only at checkout. Setting either to true
+# would block the pixel until the customer explicitly opts in — meaning UTMs captured on
+# the first page view (when they're present in the URL) would be silently lost.
+[customer_privacy]
+analytics = false
+marketing = false
+preferences = false
+sale_of_data = "disabled"
+
+[settings]
+type = "object"
+
+[settings.fields.app_server_url]
+name = "App Server URL"
+description = "The URL of the Wolfpack app server for attribution tracking"
+type = "single_line_text_field"
+validations = [
+  { name = "min", value = "1" }
+]

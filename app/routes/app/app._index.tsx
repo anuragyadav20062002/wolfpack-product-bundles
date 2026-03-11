@@ -24,7 +24,7 @@ export default function AppIndex() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate("/app/dashboard", { replace: true });
+    navigate("/app/onboarding", { replace: true });
   }, [navigate]);
 
   return null;

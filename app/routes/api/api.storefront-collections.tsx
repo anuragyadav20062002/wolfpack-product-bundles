@@ -113,15 +113,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ error: "GraphQL errors", details: data.errors }, { status: 500 });
     }
 
-    // Flatten all products from all collections
+    // Flatten all products from all collections, tracking per-collection membership
     const allProducts: any[] = [];
+    const byCollection: Record<string, string[]> = {};
     const collections = data.data?.collections?.edges || [];
 
     collections.forEach((collectionEdge: any) => {
+      const collectionHandle = collectionEdge.node?.handle;
       const products = collectionEdge.node?.products?.edges || [];
+      const collectionProductIds: string[] = [];
+
       products.forEach((productEdge: any) => {
         const product = productEdge.node;
         if (product) {
+          collectionProductIds.push(product.id);
           allProducts.push({
             id: product.id,
             title: product.title,
@@ -137,6 +142,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
           });
         }
       });
+
+      if (collectionHandle) {
+        byCollection[collectionHandle] = collectionProductIds;
+      }
     });
 
     // Remove duplicates (product might be in multiple collections)
@@ -148,6 +157,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     return json({
       products: uniqueProducts,
+      byCollection,
       count: uniqueProducts.length
     }, {
       headers: {

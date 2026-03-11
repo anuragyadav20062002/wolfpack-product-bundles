@@ -19,6 +19,7 @@ export enum BundleStatus {
   ACTIVE = "active",
   DRAFT = "draft",
   ARCHIVED = "archived",
+  UNLISTED = "unlisted",
 }
 
 export enum BundleType {
@@ -39,7 +40,8 @@ export enum FullPageLayout {
 export const BUNDLE_STATUS_OPTIONS = [
   { label: "Active", value: BundleStatus.ACTIVE },
   { label: "Draft", value: BundleStatus.DRAFT },
-  { label: "Unlisted", value: BundleStatus.ARCHIVED },
+  { label: "Archived", value: BundleStatus.ARCHIVED },
+  { label: "Unlisted (Ad Campaigns)", value: BundleStatus.UNLISTED },
 ] as const;
 
 /** Bundle type options for the DCP selector */
