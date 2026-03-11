@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 1.2.1
- * Built   : 2026-03-10
+ * Version : 1.3.0
+ * Built   : 2026-03-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.2.1';
+window.__BUNDLE_WIDGET_VERSION__ = '1.3.0';
 (function() {
   'use strict';
 
@@ -2256,7 +2256,7 @@ class BundleWidgetProductPage {
 
     // Add visual indicator that this is a full-page bundle
     const indicator = document.createElement('div');
-    indicator.style.cssText = 'padding: 8px; background: #e3f2fd; border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: #1976d2;';
+    indicator.style.cssText = 'padding: 8px; background: var(--bundle-loading-overlay-bg, #e3f2fd); border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: var(--bundle-loading-overlay-text, #1976d2);';
     indicator.textContent = 'Full-Page Bundle Mode (Custom layout will be applied)';
     this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }

@@ -192,7 +192,53 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-conditions-text-color: ${s.conditionsTextColor || globalPrimaryText};
   --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
   --bundle-discount-text-color: ${s.discountTextColor || globalPrimaryText};
-  --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;`;
+  --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
+
+  /* SEARCH INPUT — names match what bundle-widget-full-page.css references */
+  --bundle-search-bg: ${s.searchInputBgColor || '#F8F8F8'};
+  --bundle-search-border: ${s.searchInputBorderColor || '#E0E0E0'};
+  --bundle-search-focus-border: ${s.searchInputFocusBorderColor || globalPrimaryButton};
+  --bundle-search-text-color: ${s.searchInputTextColor || '#333333'};
+  --bundle-search-placeholder-color: ${s.searchInputPlaceholderColor || '#999999'};
+  --bundle-search-icon-color: ${s.searchClearButtonColor || '#666666'};
+  --bundle-search-clear-bg: ${s.searchClearButtonBgColor || 'rgba(0,0,0,0.08)'};
+  --bundle-search-clear-color: ${s.searchClearButtonColor || '#666666'};
+  --bundle-search-clear-hover-bg: ${s.searchClearButtonBgColor ? s.searchClearButtonBgColor.replace('0.08', '0.15') : 'rgba(0,0,0,0.15)'};
+  --bundle-search-clear-hover-color: ${s.searchInputTextColor || '#333333'};
+
+  /* SKELETON LOADING */
+  --bundle-skeleton-base-bg: ${s.skeletonBaseBgColor || '#F0F0F0'};
+  --bundle-skeleton-shimmer: ${s.skeletonShimmerColor || '#E8E8E8'};
+  --bundle-skeleton-highlight: ${s.skeletonHighlightColor || '#FFFFFF'};
+
+  /* CARD HOVER & TRANSITIONS */
+  --bundle-card-transition-duration: ${s.productCardTransitionDuration || 200}ms;
+  --bundle-card-hover-translate-y: translateY(-${s.productCardHoverTranslateY ?? 2}px);
+
+  /* TILE QUANTITY BADGE */
+  --bundle-tile-badge-bg: ${s.tileQuantityBadgeBgColor || globalPrimaryButton};
+  --bundle-tile-badge-text: ${s.tileQuantityBadgeTextColor || '#FFFFFF'};
+
+  /* MODAL CLOSE BUTTON */
+  --bundle-modal-close-color: ${s.modalCloseButtonColor || '#777777'};
+  --bundle-modal-close-bg: ${s.modalCloseButtonBgColor || 'rgba(255,255,255,0.9)'};
+  --bundle-modal-close-hover: ${s.modalCloseButtonHoverColor || '#333333'};
+
+  /* LOADING OVERLAY */
+  --bundle-loading-overlay-bg: ${s.loadingOverlayBgColor || '#E3F2FD'};
+  --bundle-loading-overlay-text: ${s.loadingOverlayTextColor || '#1976D2'};
+
+  /* TYPOGRAPHY */
+  --bundle-button-text-transform: ${s.buttonTextTransform || 'none'};
+  --bundle-button-letter-spacing: ${(s.buttonLetterSpacing ?? 0) / 100}em;
+
+  /* PROGRESS BAR SHAPE */
+  --bundle-progress-bar-height: ${s.progressBarHeight || 4}px;
+  --bundle-progress-bar-radius: ${s.progressBarBorderRadius || 2}px;
+
+  /* FOCUS / ACCESSIBILITY */
+  --bundle-focus-outline-color: ${s.focusOutlineColor || globalPrimaryButton};
+  --bundle-focus-outline-width: ${s.focusOutlineWidth || 2}px;`;
 }
 
 /**

@@ -87,6 +87,27 @@ export function NavigationSidebar({
           onClick={() => onSubSectionClick("quantityVariantSelector")}
           isActive={activeSubSection === "quantityVariantSelector"}
         />
+        <NavigationItem
+          label="Search Input"
+          sectionKey="searchInput"
+          isChild
+          onClick={() => onSubSectionClick("searchInput")}
+          isActive={activeSubSection === "searchInput"}
+        />
+        <NavigationItem
+          label="Skeleton Loading"
+          sectionKey="skeletonLoading"
+          isChild
+          onClick={() => onSubSectionClick("skeletonLoading")}
+          isActive={activeSubSection === "skeletonLoading"}
+        />
+        <NavigationItem
+          label="Typography"
+          sectionKey="typography"
+          isChild
+          onClick={() => onSubSectionClick("typography")}
+          isActive={activeSubSection === "typography"}
+        />
       </Collapsible>
 
       {/* Bundle Footer Section */}
@@ -126,6 +147,13 @@ export function NavigationSidebar({
           isChild
           onClick={() => onSubSectionClick("footerDiscountProgress")}
           isActive={activeSubSection === "footerDiscountProgress"}
+        />
+        <NavigationItem
+          label="Quantity Badge"
+          sectionKey="quantityBadge"
+          isChild
+          onClick={() => onSubSectionClick("quantityBadge")}
+          isActive={activeSubSection === "quantityBadge"}
         />
       </Collapsible>
 
@@ -185,6 +213,27 @@ export function NavigationSidebar({
           isChild
           onClick={() => onSubSectionClick("toasts")}
           isActive={activeSubSection === "toasts"}
+        />
+        <NavigationItem
+          label="Loading State"
+          sectionKey="loadingState"
+          isChild
+          onClick={() => onSubSectionClick("loadingState")}
+          isActive={activeSubSection === "loadingState"}
+        />
+        <NavigationItem
+          label="Modal Close Button"
+          sectionKey="modalCloseButton"
+          isChild
+          onClick={() => onSubSectionClick("modalCloseButton")}
+          isActive={activeSubSection === "modalCloseButton"}
+        />
+        <NavigationItem
+          label="Accessibility"
+          sectionKey="accessibility"
+          isChild
+          onClick={() => onSubSectionClick("accessibility")}
+          isActive={activeSubSection === "accessibility"}
         />
       </Collapsible>
 

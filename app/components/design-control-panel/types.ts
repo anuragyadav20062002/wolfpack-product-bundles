@@ -81,6 +81,49 @@ export interface DesignSettings {
   discountTextColor: string;
   discountTextFontSize: number;
 
+  // Search Input (full-page widget)
+  searchInputBgColor: string;
+  searchInputBorderColor: string;
+  searchInputFocusBorderColor: string;
+  searchInputTextColor: string;
+  searchInputPlaceholderColor: string;
+  searchClearButtonBgColor: string;
+  searchClearButtonColor: string;
+
+  // Skeleton Loading
+  skeletonBaseBgColor: string;
+  skeletonShimmerColor: string;
+  skeletonHighlightColor: string;
+
+  // Card Hover & Transitions
+  productCardHoverTranslateY: number;
+  productCardTransitionDuration: number;
+
+  // Tile Quantity Badge
+  tileQuantityBadgeBgColor: string;
+  tileQuantityBadgeTextColor: string;
+
+  // Modal Close Button
+  modalCloseButtonColor: string;
+  modalCloseButtonBgColor: string;
+  modalCloseButtonHoverColor: string;
+
+  // Loading Overlay
+  loadingOverlayBgColor: string;
+  loadingOverlayTextColor: string;
+
+  // Typography
+  buttonTextTransform: string;
+  buttonLetterSpacing: number;
+
+  // Progress Bar Shape
+  progressBarHeight: number;
+  progressBarBorderRadius: number;
+
+  // Focus / Accessibility
+  focusOutlineColor: string;
+  focusOutlineWidth: number;
+
   // Additional fields
   [key: string]: string | number | boolean;
 }

@@ -219,6 +219,49 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   promoBannerBorderRadius: 12,
   promoBannerPadding: 24,
 
+  // Search Input
+  searchInputBgColor: "#F8F8F8",
+  searchInputBorderColor: "#E0E0E0",
+  searchInputFocusBorderColor: "#5C6AC4",
+  searchInputTextColor: "#333333",
+  searchInputPlaceholderColor: "#999999",
+  searchClearButtonBgColor: "rgba(0,0,0,0.08)",
+  searchClearButtonColor: "#666666",
+
+  // Skeleton Loading
+  skeletonBaseBgColor: "#F0F0F0",
+  skeletonShimmerColor: "#E8E8E8",
+  skeletonHighlightColor: "#FFFFFF",
+
+  // Card Hover & Transitions
+  productCardHoverTranslateY: 2,
+  productCardTransitionDuration: 200,
+
+  // Tile Quantity Badge
+  tileQuantityBadgeBgColor: "#000000",
+  tileQuantityBadgeTextColor: "#FFFFFF",
+
+  // Modal Close Button
+  modalCloseButtonColor: "#777777",
+  modalCloseButtonBgColor: "rgba(255,255,255,0.9)",
+  modalCloseButtonHoverColor: "#333333",
+
+  // Loading Overlay
+  loadingOverlayBgColor: "#E3F2FD",
+  loadingOverlayTextColor: "#1976D2",
+
+  // Typography
+  buttonTextTransform: "none",
+  buttonLetterSpacing: 0,
+
+  // Progress Bar Shape
+  progressBarHeight: 4,
+  progressBarBorderRadius: 2,
+
+  // Focus / Accessibility
+  focusOutlineColor: "#5C6AC4",
+  focusOutlineWidth: 2,
+
   // Custom CSS (empty by default)
   customCss: "",
 };
@@ -434,6 +477,49 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   promoBannerNoteFontSize: 14,
   promoBannerBorderRadius: 16,
   promoBannerPadding: 32,
+
+  // Search Input
+  searchInputBgColor: "#F8F8F8",
+  searchInputBorderColor: "#E0E0E0",
+  searchInputFocusBorderColor: "#7132FF",
+  searchInputTextColor: "#333333",
+  searchInputPlaceholderColor: "#999999",
+  searchClearButtonBgColor: "rgba(0,0,0,0.08)",
+  searchClearButtonColor: "#666666",
+
+  // Skeleton Loading
+  skeletonBaseBgColor: "#F0F0F0",
+  skeletonShimmerColor: "#E8E8E8",
+  skeletonHighlightColor: "#FFFFFF",
+
+  // Card Hover & Transitions
+  productCardHoverTranslateY: 2,
+  productCardTransitionDuration: 200,
+
+  // Tile Quantity Badge
+  tileQuantityBadgeBgColor: "#7132FF",
+  tileQuantityBadgeTextColor: "#FFFFFF",
+
+  // Modal Close Button
+  modalCloseButtonColor: "#777777",
+  modalCloseButtonBgColor: "rgba(255,255,255,0.9)",
+  modalCloseButtonHoverColor: "#333333",
+
+  // Loading Overlay
+  loadingOverlayBgColor: "#E3F2FD",
+  loadingOverlayTextColor: "#1976D2",
+
+  // Typography
+  buttonTextTransform: "none",
+  buttonLetterSpacing: 0,
+
+  // Progress Bar Shape
+  progressBarHeight: 4,
+  progressBarBorderRadius: 2,
+
+  // Focus / Accessibility
+  focusOutlineColor: "#7132FF",
+  focusOutlineWidth: 2,
 
   // Custom CSS (empty by default)
   customCss: "",
