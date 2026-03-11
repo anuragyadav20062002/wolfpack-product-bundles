@@ -7,7 +7,6 @@
 
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
-import { unauthenticated } from "../../../shopify.server";
 import { syncBundleInventory } from "../../bundles/inventory-sync.server";
 import type { WebhookProcessResult } from "../types";
 
@@ -84,7 +83,9 @@ export async function handleInventoryUpdate(
       data: { inventoryStaleAt: new Date() },
     });
 
-    // Get admin client via offline session
+    // Lazy-load shopify.server to avoid triggering shopifyApp() initialization
+    // at module load time (the webhook worker doesn't set SHOPIFY_API_KEY)
+    const { unauthenticated } = await import("../../../shopify.server");
     const { admin } = await unauthenticated.admin(shopDomain);
 
     // Sync each bundle (syncBundleInventory handles debounce internally)

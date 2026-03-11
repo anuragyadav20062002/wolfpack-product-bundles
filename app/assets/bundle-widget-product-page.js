@@ -776,7 +776,7 @@ class BundleWidgetProductPage {
 
     // Add visual indicator that this is a full-page bundle
     const indicator = document.createElement('div');
-    indicator.style.cssText = 'padding: 8px; background: #e3f2fd; border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: #1976d2;';
+    indicator.style.cssText = 'padding: 8px; background: var(--bundle-loading-overlay-bg, #e3f2fd); border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: var(--bundle-loading-overlay-text, #1976d2);';
     indicator.textContent = 'Full-Page Bundle Mode (Custom layout will be applied)';
     this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }
@@ -857,6 +857,24 @@ class BundleWidgetProductPage {
 
       button.disabled = false;
       button.classList.remove('disabled');
+    }
+
+    // Update the modal footer total pill
+    const totalPillFinal = this.elements.modal?.querySelector('.total-price-final');
+    const totalPillStrike = this.elements.modal?.querySelector('.total-price-strike');
+    if (totalPillFinal) {
+      if (totalQuantity > 0) {
+        const currencyInfo = CurrencyManager.getCurrencyInfo();
+        totalPillFinal.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+        if (discountInfo.hasDiscount && totalPillStrike) {
+          totalPillStrike.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+        } else if (totalPillStrike) {
+          totalPillStrike.textContent = '';
+        }
+      } else {
+        totalPillFinal.textContent = '';
+        if (totalPillStrike) totalPillStrike.textContent = '';
+      }
     }
   }
 

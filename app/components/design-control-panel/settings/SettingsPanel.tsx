@@ -22,6 +22,13 @@ import { AddToCartButtonSettings } from "./AddToCartButtonSettings";
 import { ToastsSettings } from "./ToastsSettings";
 import { CustomCssSettings } from "./CustomCssSettings";
 import { PromoBannerSettings } from "./PromoBannerSettings";
+import { SearchInputSettings } from "./SearchInputSettings";
+import { SkeletonSettings } from "./SkeletonSettings";
+import { QuantityBadgeSettings } from "./QuantityBadgeSettings";
+import { LoadingStateSettings } from "./LoadingStateSettings";
+import { TypographySettings } from "./TypographySettings";
+import { AccessibilitySettings } from "./AccessibilitySettings";
+import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
 
 /**
  * SettingsPanel - Orchestrator component that renders the appropriate
@@ -92,6 +99,27 @@ export function SettingsPanel({
 
     case "promoBanner":
       return <PromoBannerSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "searchInput":
+      return <SearchInputSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "skeletonLoading":
+      return <SkeletonSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "quantityBadge":
+      return <QuantityBadgeSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "loadingState":
+      return <LoadingStateSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "typography":
+      return <TypographySettings settings={settings} onUpdate={onUpdate} />;
+
+    case "accessibility":
+      return <AccessibilitySettings settings={settings} onUpdate={onUpdate} />;
+
+    case "modalCloseButton":
+      return <ModalCloseButtonSettings settings={settings} onUpdate={onUpdate} />;
 
     case "customCss":
       return (

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 1.2.2
+ * Version : 1.3.0
  * Built   : 2026-03-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.2.2';
+window.__BUNDLE_WIDGET_VERSION__ = '1.3.0';
 (function() {
   'use strict';
 
@@ -3983,7 +3983,7 @@ class BundleWidgetFullPage {
           position: relative;
           overflow: hidden;
           min-height: 320px;
-          background: #f5f5f5;
+          background: var(--bundle-skeleton-base-bg, #f5f5f5);
           border-radius: 12px;
         }
 
@@ -4001,11 +4001,11 @@ class BundleWidgetFullPage {
           bottom: 0;
           background: linear-gradient(
             110deg,
-            #f0f0f0 0%,
-            #f0f0f0 40%,
-            #e0e0e0 50%,
-            #f0f0f0 60%,
-            #f0f0f0 100%
+            var(--bundle-skeleton-shimmer, #f0f0f0) 0%,
+            var(--bundle-skeleton-shimmer, #f0f0f0) 40%,
+            var(--bundle-skeleton-highlight, #e0e0e0) 50%,
+            var(--bundle-skeleton-shimmer, #f0f0f0) 60%,
+            var(--bundle-skeleton-shimmer, #f0f0f0) 100%
           );
           background-size: 200% 100%;
           animation: skeleton-pulse 1.5s ease-in-out infinite;

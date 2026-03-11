@@ -274,6 +274,49 @@ model DesignSettings {
   // Promo Banner Section (Full Page)
   promoBannerSettings         Json?
 
+  // Search Input Styling
+  searchInputBgColor          String? @default("#F8F8F8")
+  searchInputBorderColor      String? @default("#E0E0E0")
+  searchInputFocusBorderColor String? @default("#5C6AC4")
+  searchInputTextColor        String? @default("#333333")
+  searchInputPlaceholderColor String? @default("#999999")
+  searchClearButtonBgColor    String? @default("rgba(0,0,0,0.08)")
+  searchClearButtonColor      String? @default("#666666")
+
+  // Skeleton Loading
+  skeletonBaseBgColor         String? @default("#F0F0F0")
+  skeletonShimmerColor        String? @default("#E8E8E8")
+  skeletonHighlightColor      String? @default("#FFFFFF")
+
+  // Card Hover & Transitions
+  productCardHoverTranslateY  Int?    @default(2)
+  productCardTransitionDuration Int?  @default(200)
+
+  // Tile Quantity Badge
+  tileQuantityBadgeBgColor    String? @default("#000000")
+  tileQuantityBadgeTextColor  String? @default("#FFFFFF")
+
+  // Modal Close Button
+  modalCloseButtonColor       String? @default("#777777")
+  modalCloseButtonBgColor     String? @default("rgba(255,255,255,0.9)")
+  modalCloseButtonHoverColor  String? @default("#333333")
+
+  // Loading Overlay
+  loadingOverlayBgColor       String? @default("#E3F2FD")
+  loadingOverlayTextColor     String? @default("#1976D2")
+
+  // Typography
+  buttonTextTransform         String? @default("none")
+  buttonLetterSpacing         Int?    @default(0)
+
+  // Progress Bar Shape
+  progressBarHeight           Int?    @default(4)
+  progressBarBorderRadius     Int?    @default(2)
+
+  // Focus / Accessibility
+  focusOutlineColor           String? @default("#5C6AC4")
+  focusOutlineWidth           Int?    @default(2)
+
   // Advanced Settings - Custom CSS
   customCss                   String?
 

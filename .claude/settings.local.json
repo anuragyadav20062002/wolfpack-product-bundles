@@ -134,7 +134,9 @@
       "mcp__figma__get_design_context",
       "Bash(tail:*)",
       "mcp__shopify-dev-mcp__validate_component_codeblocks",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm view:*)",
+      "Bash(npm audit:*)"
     ],
     "deny": []
   }

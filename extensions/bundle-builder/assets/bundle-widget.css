@@ -356,7 +356,9 @@
   gap: 8px;
   margin: var(--button-spacing, 16px) auto;
   padding: 0 20px;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color var(--bundle-card-transition-duration, 200ms) ease, transform var(--bundle-card-transition-duration, 200ms) ease;
+  text-transform: var(--bundle-button-text-transform, none);
+  letter-spacing: var(--bundle-button-letter-spacing, 0);
 }
 
 .add-bundle-to-cart:hover {
@@ -737,7 +739,7 @@
 }
 
 .close-button {
-  color: #777;
+  color: var(--bundle-modal-close-color, #777);
   font-size: 24px;
   font-weight: normal;
   cursor: pointer;
@@ -745,19 +747,19 @@
   top: 12px;
   right: 16px;
   z-index: 1000001; /* Above modal content */
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bundle-modal-close-bg, rgba(255, 255, 255, 0.9));
   width: 32px;
   height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all var(--bundle-card-transition-duration, 200ms) ease;
 }
 
 .close-button:hover,
 .close-button:focus {
-  color: #333;
+  color: var(--bundle-modal-close-hover, #333);
 }
 
 .modal-current-step-info {
@@ -871,7 +873,7 @@
 }
 
 .modal-body .product-card:hover {
-  transform: translateY(-4px);
+  transform: var(--bundle-card-hover-translate-y, translateY(-2px));
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   border-color: #d1d5db;
   z-index: 10;
@@ -1158,7 +1160,8 @@
 .product-card:hover {
   border-color: #c0c0c0; /* Subtle hover border */
   box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Slightly more prominent shadow on hover */
-  transform: translateY(-1px); /* Slight lift on hover */
+  transform: var(--bundle-card-hover-translate-y, translateY(-1px)); /* DCP-controlled lift on hover */
+  transition: transform var(--bundle-card-transition-duration, 200ms) ease, box-shadow var(--bundle-card-transition-duration, 200ms) ease;
 }
 
 .product-card.selected {
@@ -1388,9 +1391,9 @@
 
 .modal-footer-progress-bar {
   width: 100%;
-  height: 8px;
+  height: var(--bundle-progress-bar-height, 8px);
   background-color: var(--bundle-footer-progress-empty, #E3E3E3);
-  border-radius: 4px;
+  border-radius: var(--bundle-progress-bar-radius, 4px);
   overflow: hidden;
   margin-bottom: 8px;
 }
@@ -2471,4 +2474,15 @@
   width: auto;
   height: auto;
   display: block;
+}
+
+/* ============================================================================
+   FOCUS / ACCESSIBILITY
+   ============================================================================ */
+.add-bundle-to-cart:focus-visible,
+.modal-body button:focus-visible,
+.product-card button:focus-visible,
+.step-box:focus-visible {
+  outline: var(--bundle-focus-outline-width, 2px) solid var(--bundle-focus-outline-color, #5C6AC4);
+  outline-offset: 2px;
 }
