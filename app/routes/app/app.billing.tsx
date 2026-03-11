@@ -238,7 +238,7 @@ export default function BillingPage() {
     <Page
       title="Subscription & Billing"
       subtitle="Manage your subscription plan and billing settings"
-      backAction={{ content: "Back", onAction: () => navigate(-1) }}
+      backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
     >
       <Layout>
         {/* Success Celebration Banner */}

@@ -1,8 +1,10 @@
 import { json } from "@remix-run/node";
 import { useNavigate } from "@remix-run/react";
+import { useState, useEffect } from "react";
 import styles from "../../styles/routes/app-index.module.css";
 
-// This route handles /app → shows the Welcome landing screen for all users.
+// This route handles /app → shows the Welcome landing screen for intentional visits,
+// and silently redirects to the dashboard when Shopify's auth flow lands here.
 //
 // Auth strategy:
 // - The layout (app.tsx) calls authenticate.admin() and handles token exchange
@@ -11,8 +13,13 @@ import styles from "../../styles/routes/app-index.module.css";
 // - This route must NOT call authenticate.admin() — Remix runs layout and child
 //   loaders in parallel, and a second authenticate.admin() would race for the
 //   same one-time id_token, causing token exchange failures.
-// - Client-side navigation (useNavigate) works because App Bridge's fetch
-//   interceptor adds the Authorization header to Remix data requests.
+// - Server-side redirects must not be used here — they lose auth context.
+//
+// Landing page flash fix:
+// - showLanding starts false on both server and client (no SSR flash).
+// - On mount, we check for Shopify auth params (shop/host/id_token).
+//   • Auth params present  → Shopify's auth flow landed here → redirect to dashboard.
+//   • No auth params       → intentional navigation → show the landing page.
 export const loader = async () => {
   return json(null);
 };
@@ -58,6 +65,25 @@ const FEATURES = [
 
 export default function AppIndex() {
   const navigate = useNavigate();
+  // Start false so the server renders nothing (no SSR flash during auth bounces).
+  // The useEffect below flips this to true only for intentional /app visits.
+  const [showLanding, setShowLanding] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    // Shopify's auth flow redirects to /app with one or more of these params.
+    // When they're present we're mid-auth — silently move on to the dashboard.
+    const isAuthFlow =
+      params.has("id_token") || params.has("host") || params.has("shop");
+
+    if (isAuthFlow) {
+      navigate("/app/dashboard", { replace: true });
+    } else {
+      setShowLanding(true);
+    }
+  }, [navigate]);
+
+  if (!showLanding) return null;
 
   return (
     <div className={styles.page}>
@@ -115,12 +141,15 @@ export default function AppIndex() {
 
       {/* ── Footer strip ── */}
       <div className={styles.footerStrip}>
-        <a
+        <button
           className={styles.footerLink}
-          href="mailto:support@wolfpack-bundles.com"
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          onClick={() => {
+            if (window.$crisp) window.$crisp.push(["do", "chat:open"]);
+          }}
         >
           Contact Support
-        </a>
+        </button>
         <span className={styles.footerDot} />
         <a
           className={styles.footerLink}
@@ -141,4 +170,10 @@ export default function AppIndex() {
       </div>
     </div>
   );
+}
+
+declare global {
+  interface Window {
+    $crisp?: any[];
+  }
 }

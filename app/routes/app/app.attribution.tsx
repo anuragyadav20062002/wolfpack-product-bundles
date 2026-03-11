@@ -132,7 +132,7 @@ export default function AttributionDashboard() {
       <Page
         title="Analytics"
         subtitle="UTM attribution & bundle revenue"
-        backAction={{ content: "Dashboard", onAction: () => navigate(-1) }}
+        backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
       >
         <div style={{ maxWidth: 680, margin: "0 auto" }}>
           <div style={{
@@ -174,7 +174,7 @@ export default function AttributionDashboard() {
     <Page
       title="Analytics"
       subtitle="UTM attribution & bundle revenue"
-      backAction={{ content: "Dashboard", onAction: () => navigate(-1) }}
+      backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
