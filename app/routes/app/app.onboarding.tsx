@@ -544,10 +544,13 @@ export default function Onboarding() {
               </Text>
               <InlineStack gap="200" wrap>
                 <Button
-                  url="mailto:support@wolfpack-bundles.com"
-                  external
+                  onClick={() => {
+                    if (window.$crisp) {
+                      window.$crisp.push(["do", "chat:open"]);
+                    }
+                  }}
                 >
-                  Email Support
+                  Chat with Support
                 </Button>
                 <Button
                   url="https://docs.wolfpack-bundles.com"
@@ -567,4 +570,11 @@ export default function Onboarding() {
       </Layout>
     </Page>
   );
+}
+
+
+declare global {
+  interface Window {
+    $crisp?: any[];
+  }
 }
