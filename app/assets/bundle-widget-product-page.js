@@ -858,6 +858,24 @@ class BundleWidgetProductPage {
       button.disabled = false;
       button.classList.remove('disabled');
     }
+
+    // Update the modal footer total pill
+    const totalPillFinal = this.elements.modal?.querySelector('.total-price-final');
+    const totalPillStrike = this.elements.modal?.querySelector('.total-price-strike');
+    if (totalPillFinal) {
+      if (totalQuantity > 0) {
+        const currencyInfo = CurrencyManager.getCurrencyInfo();
+        totalPillFinal.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+        if (discountInfo.hasDiscount && totalPillStrike) {
+          totalPillStrike.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+        } else if (totalPillStrike) {
+          totalPillStrike.textContent = '';
+        }
+      } else {
+        totalPillFinal.textContent = '';
+        if (totalPillStrike) totalPillStrike.textContent = '';
+      }
+    }
   }
 
   // Update or create the discount pill in the top-right of the widget

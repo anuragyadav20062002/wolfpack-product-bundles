@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 1.3.0
+ * Version : 1.3.1
  * Built   : 2026-03-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.3.0';
+window.__BUNDLE_WIDGET_VERSION__ = '1.3.1';
 (function() {
   'use strict';
 
@@ -2337,6 +2337,24 @@ class BundleWidgetProductPage {
 
       button.disabled = false;
       button.classList.remove('disabled');
+    }
+
+    // Update the modal footer total pill
+    const totalPillFinal = this.elements.modal?.querySelector('.total-price-final');
+    const totalPillStrike = this.elements.modal?.querySelector('.total-price-strike');
+    if (totalPillFinal) {
+      if (totalQuantity > 0) {
+        const currencyInfo = CurrencyManager.getCurrencyInfo();
+        totalPillFinal.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+        if (discountInfo.hasDiscount && totalPillStrike) {
+          totalPillStrike.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+        } else if (totalPillStrike) {
+          totalPillStrike.textContent = '';
+        }
+      } else {
+        totalPillFinal.textContent = '';
+        if (totalPillStrike) totalPillStrike.textContent = '';
+      }
     }
   }
 

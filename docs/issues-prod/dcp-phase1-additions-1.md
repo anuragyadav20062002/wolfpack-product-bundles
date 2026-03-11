@@ -86,3 +86,10 @@ All new settings extend the existing CSS variable pipeline:
 - [x] Build widgets
 - [x] ESLint check
 - [x] Issue file & commit
+
+### 2026-03-12 - Hotfix: modal-footer-total-pill shows $0.00
+- Bug: `.total-price-final` and `.total-price-strike` spans never updated after product selection
+- Root cause: `updateFooterMessaging()` was a stub (just `return;`)
+- Fix: Added total pill update at end of `updateAddToCartButton()` in `bundle-widget-product-page.js`
+- WIDGET_VERSION bumped: 1.3.0 → 1.3.1 (PATCH)
+- Files changed: `app/assets/bundle-widget-product-page.js`, `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js`, `scripts/build-widget-bundles.js`
