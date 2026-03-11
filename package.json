@@ -79,7 +79,7 @@
     "@types/react-dom": "^18.2.14",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "eslint": "^8.42.0",
+    "eslint": "^8.56.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-import-resolver-typescript": "^3.10.1",
     "eslint-plugin-prisma": "^1.0.1",
@@ -104,13 +104,25 @@
     "@graphql-tools/url-loader": "8.0.16",
     "@graphql-codegen/client-preset": "4.7.0",
     "@graphql-codegen/typescript-operations": "4.5.0",
-    "minimatch": "9.0.5"
+    "minimatch": "9.0.9",
+    "tar": "7.5.11",
+    "undici": "6.23.0",
+    "valibot": "1.2.0",
+    "rollup": "4.59.0",
+    "esbuild": "0.25.0",
+    "estree-util-value-to-estree": "3.5.0"
   },
   "overrides": {
     "@graphql-tools/url-loader": "8.0.16",
     "@graphql-codegen/client-preset": "4.7.0",
     "@graphql-codegen/typescript-operations": "4.5.0",
-    "minimatch": "9.0.5"
+    "minimatch": "9.0.9",
+    "tar": "7.5.11",
+    "undici": "6.23.0",
+    "valibot": "1.2.0",
+    "rollup": "4.59.0",
+    "esbuild": "0.25.0",
+    "estree-util-value-to-estree": "3.5.0"
   },
   "author": "Anurag"
 }
