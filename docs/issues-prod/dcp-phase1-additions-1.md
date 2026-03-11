@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-12 12:00
+**Last Updated:** 2026-03-12 15:00
 
 ## Overview
 
@@ -86,6 +86,15 @@ All new settings extend the existing CSS variable pipeline:
 - [x] Build widgets
 - [x] ESLint check
 - [x] Issue file & commit
+- [x] DCP Preview components for new Phase 1 settings
+
+### 2026-03-12 15:00 - Completed DCP Preview Components
+- ✅ ProductCardPreview.tsx: Added searchInput (default + focused states), skeletonLoading (animated skeleton cards), typography (button with CSS vars)
+- ✅ GeneralPreview.tsx: Added loadingState (inline overlay indicator), modalCloseButton (.close-button class in modal header), accessibility (focused button + input with focus ring)
+- ✅ BundleFooterPreview.tsx: Added quantityBadge (footer tiles with real .tile-quantity-badge class), added progress bar visual to footerDiscountProgress panel using .modal-footer-progress-bar class
+- ✅ PreviewPanel.tsx: Added quantityBadge to footer group, added loadingState/modalCloseButton/accessibility to general group
+- All previews use real widget CSS class names so CSS variables from PreviewScope apply automatically
+- ESLint: 0 errors (2 pre-existing warnings in BundleFooterPreview unrelated to changes)
 
 ### 2026-03-12 - Hotfix: modal-footer-total-pill shows $0.00
 - Bug: `.total-price-final` and `.total-price-strike` spans never updated after product selection

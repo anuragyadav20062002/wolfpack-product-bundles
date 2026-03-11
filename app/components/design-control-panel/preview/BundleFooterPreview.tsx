@@ -2,6 +2,7 @@ import { Text } from "@shopify/polaris";
 import { useState } from "react";
 import { ShoppingCartIcon } from "../icons";
 import { BundleType } from "../../../constants/bundle";
+import { HighlightBox } from "./HighlightBox";
 
 const HIGHLIGHT_STYLE = {
   outline: "2px dashed #5C6AC4",
@@ -638,6 +639,78 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerProgressBarEmptyColor,
   };
 
+  // quantityBadge — show a footer tile with the quantity badge highlighted
+  if (activeSubSection === "quantityBadge") {
+    return (
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Quantity Badge
+        </Text>
+        <div style={{ marginTop: "60px", display: "inline-block" }}>
+          <HighlightBox active>
+            <div style={{ display: "flex", gap: "16px", padding: "16px", background: "#f8f9fa", borderRadius: "12px" }}>
+              {SAMPLE_PRODUCTS.slice(0, 2).map((product, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "8px 12px",
+                    background: "#ffffff",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    borderRadius: "8px",
+                    minWidth: "140px",
+                    position: "relative",
+                  }}
+                >
+                  {/* Image + Badge */}
+                  <div style={{ position: "relative", flexShrink: 0, width: "44px", height: "44px" }}>
+                    <div
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        borderRadius: "6px",
+                        background: "#E5E7EB",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <div style={{ width: "28px", height: "28px", backgroundColor: "#D1D5DB", borderRadius: "4px" }} />
+                    </div>
+                    {/* Real tile-quantity-badge class — uses --bundle-tile-badge-bg/text CSS vars */}
+                    {/* eslint-disable-next-line react/no-danger */}
+                    <div dangerouslySetInnerHTML={{
+                      __html: `<span class="footer-product-tile tile-quantity-badge" style="position:absolute;top:-6px;right:-6px;z-index:1;">${product.qty}</span>`,
+                    }} />
+                  </div>
+                  {/* Info */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0, flex: 1 }}>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: "#333", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {product.name}
+                    </span>
+                    {product.variant && (
+                      <span style={{ fontSize: "11px", color: "#666", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {product.variant}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Badge shows quantity on each footer tile
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
   // Subsection title mapping
   const titles: Record<string, string> = {
     footer: "Footer",
@@ -716,6 +789,20 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
               >
                 Congratulations! You got 10% off!
               </div>
+            </div>
+
+            {/* Progress Bar Shape — height + border-radius preview using real CSS vars */}
+            <div style={{ marginTop: "20px" }}>
+              <div style={{ fontSize: "11px", color: "#9CA3AF", textAlign: "center", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
+                — progress bar shape —
+              </div>
+              {/* eslint-disable-next-line react/no-danger */}
+              <div dangerouslySetInnerHTML={{ __html: `
+                <div style="position:relative;width:100%;margin:0 auto;">
+                  <div class="modal-footer-progress-bar" style="background:var(--bundle-footer-progress-empty,#E5E7EB);width:100%;"></div>
+                  <div class="modal-footer-progress-bar" style="background:var(--bundle-footer-progress-filled,#4CAF50);position:absolute;top:0;left:0;width:60%;"></div>
+                </div>
+              ` }} />
             </div>
           </div>
 
