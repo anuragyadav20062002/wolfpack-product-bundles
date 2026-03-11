@@ -93,3 +93,12 @@ All new settings extend the existing CSS variable pipeline:
 - Fix: Added total pill update at end of `updateAddToCartButton()` in `bundle-widget-product-page.js`
 - WIDGET_VERSION bumped: 1.3.0 → 1.3.1 (PATCH)
 - Files changed: `app/assets/bundle-widget-product-page.js`, `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js`, `scripts/build-widget-bundles.js`
+
+### 2026-03-12 - Fix: Sidebar layout spacing issues
+- Bug 1: Large gray promo banner rendered at top of sidebar layout content
+  - Fix: `.layout-sidebar .promo-banner { display: none !important; }` in bundle-widget-full-page.css
+- Bug 2: Card spacing messed up in sidebar layout
+  - Fix: Added `justify-content: stretch` and `margin-top: 0` to the sidebar grid override
+  - `justify-content: center` from base rule was causing centering gaps with 1fr columns
+  - `margin-top: 0` removes redundant top margin (sidebar-content padding already handles spacing)
+- Files changed: `extensions/bundle-builder/assets/bundle-widget-full-page.css` (CSS-only, no rebuild needed)

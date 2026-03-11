@@ -3545,9 +3545,17 @@ body.modal-open {
 @media (min-width: 1024px) {
   .sidebar-content .full-page-product-grid {
     grid-template-columns: repeat(var(--bundle-product-cards-per-row, 3), minmax(0, 1fr));
+    justify-content: stretch; /* prevent centering gaps with 1fr columns */
     padding-left: 0;
     padding-right: 0;
+    margin-top: 0; /* remove extra top margin — content already has padding-top via sidebar-content */
   }
+}
+
+/* Hide promo banner in sidebar layout — it takes up too much vertical space
+   and the bundle title is already shown in the side panel header */
+.layout-sidebar .promo-banner {
+  display: none !important;
 }
 
 /* ---- Side Panel ---- */
