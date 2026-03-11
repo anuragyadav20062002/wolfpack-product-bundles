@@ -107,62 +107,69 @@ const shopify = shopifyApp({
         console.error("[SHOPIFY] ℹ️ Widget API calls may use a stale server URL until next reinstall.");
       }
 
-      // Activate the Wolfpack UTM Attribution web pixel
-      // This creates/updates the pixel record so it starts capturing UTM parameters
+      // Activate the Wolfpack UTM Attribution web pixel.
+      // Strategy: always delete-then-recreate on install/reinstall.
+      // This ensures the pixel record binds to the CURRENT deployed extension,
+      // not a stale one from a previous extension generation (handle → uid migration).
+      //
+      // Root cause of "Disconnected" bug: settings must be passed as a plain JSON object
+      // (not JSON.stringify'd string) when using GraphQL variables. The JSON scalar in the
+      // Admin API expects { app_server_url: "..." }, not "{\"app_server_url\":\"...\"}".
       try {
         const appUrl = process.env.SHOPIFY_APP_URL;
         if (appUrl) {
           console.log("[SHOPIFY] Activating UTM attribution web pixel...");
-          const pixelSettings = JSON.stringify({ app_server_url: appUrl });
 
-          // Check if pixel already exists
-          const existingPixelResponse = await admin.graphql(`query { webPixel { id settings } }`);
+          // Step 1: Delete existing pixel if any (ensures fresh bind to current extension)
+          const existingPixelResponse = await admin.graphql(`query { webPixel { id } }`);
           const existingPixelData = await existingPixelResponse.json();
+          const existingPixelId = existingPixelData.data?.webPixel?.id;
 
-          if (existingPixelData.data?.webPixel?.id) {
-            // Update existing pixel settings
-            await admin.graphql(
-              `mutation webPixelUpdate($id: ID!, $webPixel: WebPixelInput!) {
-                webPixelUpdate(id: $id, webPixel: $webPixel) {
+          if (existingPixelId) {
+            const deleteResponse = await admin.graphql(
+              `mutation webPixelDelete($id: ID!) {
+                webPixelDelete(id: $id) {
                   userErrors { field message code }
-                  webPixel { id settings }
+                  deletedWebPixelId
                 }
               }`,
-              {
-                variables: {
-                  id: existingPixelData.data.webPixel.id,
-                  webPixel: { settings: pixelSettings },
-                },
-              },
+              { variables: { id: existingPixelId } },
             );
-            console.log("[SHOPIFY] ✅ UTM pixel updated with current server URL");
-          } else {
-            // Create new pixel
-            const createResponse = await admin.graphql(
-              `mutation webPixelCreate($webPixel: WebPixelInput!) {
-                webPixelCreate(webPixel: $webPixel) {
-                  userErrors { field message code }
-                  webPixel { id settings }
-                }
-              }`,
-              {
-                variables: {
-                  webPixel: { settings: pixelSettings },
-                },
-              },
-            );
-            const createData = await createResponse.json();
-            const pixelErrors = createData.data?.webPixelCreate?.userErrors || [];
-            if (pixelErrors.length > 0) {
-              console.warn("[SHOPIFY] ⚠️ UTM pixel creation had errors:", pixelErrors);
+            const deleteData = await deleteResponse.json();
+            const deleteErrors = deleteData.data?.webPixelDelete?.userErrors || [];
+            if (deleteErrors.length > 0) {
+              console.warn("[SHOPIFY] ⚠️ UTM pixel delete had errors:", JSON.stringify(deleteErrors));
             } else {
-              console.log("[SHOPIFY] ✅ UTM pixel activated:", createData.data?.webPixelCreate?.webPixel?.id);
+              console.log("[SHOPIFY] ✅ Deleted stale UTM pixel:", existingPixelId);
             }
+          }
+
+          // Step 2: Create fresh pixel.
+          // IMPORTANT: settings must be a plain object, NOT JSON.stringify'd string.
+          // The Admin API JSON scalar requires the actual object in variables.
+          const createResponse = await admin.graphql(
+            `mutation webPixelCreate($webPixel: WebPixelInput!) {
+              webPixelCreate(webPixel: $webPixel) {
+                userErrors { field message code }
+                webPixel { id settings }
+              }
+            }`,
+            {
+              variables: {
+                webPixel: { settings: { app_server_url: appUrl } },
+              },
+            },
+          );
+          const createData = await createResponse.json();
+          const pixelErrors = createData.data?.webPixelCreate?.userErrors || [];
+          if (pixelErrors.length > 0) {
+            console.warn("[SHOPIFY] ⚠️ UTM pixel creation had errors:", JSON.stringify(pixelErrors));
+          } else {
+            console.log("[SHOPIFY] ✅ UTM pixel activated:", createData.data?.webPixelCreate?.webPixel?.id);
           }
         }
       } catch (error: any) {
         console.error("[SHOPIFY] ⚠️ Failed to activate UTM pixel:", error?.message || error);
-        console.error("[SHOPIFY] ℹ️ UTM attribution will not work until pixel is activated. This is non-critical.");
       }
 
       // Automatically activate cart transform for new installations
