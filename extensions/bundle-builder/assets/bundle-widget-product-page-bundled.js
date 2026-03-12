@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 1.3.2
+ * Version : 1.3.3
  * Built   : 2026-03-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.3.2';
+window.__BUNDLE_WIDGET_VERSION__ = '1.3.3';
 (function() {
   'use strict';
 
@@ -3274,7 +3274,14 @@ class BundleWidgetProductPage {
     }
 
     this.container.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+    // Force a synchronous reflow so the browser applies the initial opacity:0
+    // before we add 'is-visible'. Using offsetHeight instead of requestAnimationFrame
+    // avoids a race condition where hideLoadingOverlay() is called before the rAF
+    // fires (which happens when loadBundleData() resolves synchronously from the
+    // dataset attribute — microtasks settle before animation frames).
+    // eslint-disable-next-line no-unused-expressions
+    overlay.offsetHeight;
+    overlay.classList.add('is-visible');
   }
 
   hideLoadingOverlay() {
