@@ -5,10 +5,11 @@
  * UTM medium breakdown, and landing page performance analysis.
  */
 
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate } from "@remix-run/react";
-import { Page, Select } from "@shopify/polaris";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
+import { Badge, BlockStack, Box, Button, Card, InlineStack, Page, Select, Text } from "@shopify/polaris";
 import { authenticate } from "../../shopify.server";
+import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
 import db from "../../db.server";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import {
@@ -64,12 +65,55 @@ function platformDotClass(i: number) {
 
 // ─── Loader ──────────────────────────────────────────────────
 
+// ─── Action ──────────────────────────────────────────────────
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const intent = formData.get("intent") as string;
+
+  if (intent === "enable") {
+    const appUrl = process.env.SHOPIFY_APP_URL;
+    if (!appUrl) {
+      return json({ success: false, pixelActive: false, error: "App URL not configured." });
+    }
+    const result = await activateUtmPixel(admin, appUrl);
+    if (result.success) {
+      return json({ success: true, pixelActive: true, message: "UTM tracking enabled successfully" });
+    }
+    const isNotDeployed =
+      typeof result.error === "string" && result.error.toLowerCase().includes("not found");
+    return json({
+      success: false,
+      pixelActive: false,
+      error: isNotDeployed
+        ? "Tracking could not be enabled. Deploy the app extension first via Shopify CLI."
+        : "Failed to enable tracking. Please try again.",
+    });
+  }
+
+  if (intent === "disable") {
+    const result = await deactivateUtmPixel(admin);
+    if (result.success) {
+      return json({ success: true, pixelActive: false, message: "UTM tracking disabled" });
+    }
+    return json({ success: false, pixelActive: true, error: "Failed to disable tracking. Please try again." });
+  }
+
+  return json({ error: "Unknown intent" }, { status: 400 });
+};
+
+// ─── Loader ──────────────────────────────────────────────────
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shopId = session.shop;
 
   const url = new URL(request.url);
   const days = parseInt(url.searchParams.get("days") || "30", 10);
+
+  // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
+  const pixelStatus = await getPixelStatus(admin);
 
   // Current period
   const since = new Date();
@@ -214,6 +258,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   return json({
     days,
+    pixelActive: pixelStatus.active,
     summary: {
       totalRevenue, totalOrders, bundleOrders, aov,
       prevTotalRevenue, prevTotalOrders, prevAov,
@@ -229,10 +274,74 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 // ─── Component ───────────────────────────────────────────────
 
+// ─── Pixel Status Card ────────────────────────────────────────
+
+function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
+  const fetcher = useFetcher<typeof action>();
+  const isSubmitting = fetcher.state !== "idle";
+
+  // Track live pixel state — seed from loader, update from action response
+  const [active, setActive] = useState(pixelActive);
+
+  useEffect(() => {
+    if (!fetcher.data) return;
+    const data = fetcher.data as { success: boolean; pixelActive?: boolean; message?: string; error?: string };
+    if (data.success && data.pixelActive !== undefined) {
+      setActive(data.pixelActive);
+      shopify.toast.show(data.message ?? "Done", { isError: false });
+    } else if (!data.success && data.error) {
+      shopify.toast.show(data.error, { isError: true, duration: 6000 });
+    }
+  }, [fetcher.data]);
+
+  const handleToggle = useCallback(() => {
+    fetcher.submit(
+      { intent: active ? "disable" : "enable" },
+      { method: "POST" }
+    );
+  }, [fetcher, active]);
+
+  return (
+    <Card>
+      <Box padding="400">
+        <InlineStack align="space-between" blockAlign="center" wrap={false}>
+          <BlockStack gap="100">
+            <InlineStack gap="200" blockAlign="center">
+              <Text as="h2" variant="headingMd">UTM Pixel Tracking</Text>
+              {active
+                ? <Badge tone="success">Active</Badge>
+                : <Badge tone="new">Not active</Badge>
+              }
+            </InlineStack>
+            <Text as="p" variant="bodyMd" tone="subdued">
+              {active
+                ? "Tracking is active. UTM parameters are captured and attributed to orders at checkout."
+                : "Enable tracking to capture UTM parameters from visitor sessions and attribute orders to campaigns."
+              }
+            </Text>
+          </BlockStack>
+          <Button
+            onClick={handleToggle}
+            loading={isSubmitting}
+            disabled={isSubmitting}
+            tone={active ? "critical" : undefined}
+            variant={active ? "secondary" : "primary"}
+          >
+            {active ? "Disable tracking" : "Enable tracking"}
+          </Button>
+        </InlineStack>
+      </Box>
+    </Card>
+  );
+}
+
+// ─── Component ───────────────────────────────────────────────
+
 export default function AttributionDashboard() {
   const {
     days, summary, timeSeries,
     byPlatform, byMedium, byCampaign, byBundle, byLandingPage,
+    pixelActive,
   } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [selectedDays, setSelectedDays] = useState(days.toString());
@@ -275,7 +384,9 @@ export default function AttributionDashboard() {
         subtitle="UTM attribution & bundle revenue"
         backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
       >
-        <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        <BlockStack gap="400">
+          <PixelStatusCard pixelActive={pixelActive} />
+          <div style={{ maxWidth: 680, margin: "0 auto", width: "100%" }}>
           <div style={{ background: "#fff", border: "1px solid #e1e3e5", borderRadius: 12 }}>
             <div className={styles.emptyWrapper}>
               <div className={styles.emptyIcon}>📊</div>
@@ -309,7 +420,8 @@ export default function AttributionDashboard() {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </BlockStack>
       </Page>
     );
   }
@@ -323,6 +435,9 @@ export default function AttributionDashboard() {
       backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+        {/* Pixel tracking toggle */}
+        <PixelStatusCard pixelActive={pixelActive} />
 
         {/* Date range selector */}
         <div className={styles.headerRow}>

@@ -11,7 +11,6 @@ import { createStorefrontAccessToken } from "./services/storefront-token.server"
 import { CartTransformService } from "./services/cart-transform-service.server";
 import { BillingService } from "./services/billing.server";
 import { ensureVariantBundleMetafieldDefinitions, ensurePageBundleIdMetafieldDefinition } from "./services/bundles/metafield-sync.server";
-import { activateUtmPixel } from "./services/pixel-activation.server";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -109,19 +108,8 @@ const shopify = shopifyApp({
         console.error("[SHOPIFY] ℹ️ Widget API calls may use a stale server URL until next reinstall.");
       }
 
-      // Activate the Wolfpack UTM Attribution web pixel.
-      // Strategy: always delete-then-recreate on install/reinstall.
-      // This ensures the pixel record binds to the CURRENT deployed extension.
-      // See services/pixel-activation.server.ts for full implementation.
-      try {
-        const appUrl = process.env.SHOPIFY_APP_URL;
-        if (appUrl) {
-          console.log("[SHOPIFY] Activating UTM attribution web pixel...");
-          await activateUtmPixel(admin, appUrl);
-        }
-      } catch (error: unknown) {
-        console.error("[SHOPIFY] ⚠️ Failed to activate UTM pixel:", (error as Error)?.message || error);
-      }
+      // UTM pixel is NOT activated automatically on install.
+      // Merchants enable it explicitly via the toggle on the Analytics page.
 
       // Automatically activate cart transform for new installations
       try {
