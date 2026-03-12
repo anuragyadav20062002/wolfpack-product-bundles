@@ -1,10 +1,10 @@
 # Issue: Web Pixel "Disconnected" Fix
 
 **Issue ID:** web-pixel-disconnected-fix-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-11
-**Last Updated:** 2026-03-11
+**Last Updated:** 2026-03-13
 
 ## Overview
 Web pixel extension shows as "Disconnected" in Settings → Customer Events despite
@@ -71,6 +71,13 @@ Fix: set both to `false` (strictly necessary / no consent required). Justified b
 ### Fix 3 applied: `extensions/wolfpack-utm-pixel/shopify.extension.toml`
 - Changed `analytics = true` → `analytics = false`
 - Changed `marketing = true` → `marketing = false`
+
+### 2026-03-13 - Fix: Defensive error handling for "No web pixel was found"
+
+- Root cause: `admin.graphql()` throws a `GraphqlQueryError` when Shopify returns `{"errors": [...]}` at the transport level. The `webPixel { id }` query returns a GraphQL execution error (not `null`) when no pixel exists yet (fresh install / extension not deployed). This error propagated to the outer catch and logged as "Failed to activate UTM pixel: No web pixel was found for this app."
+- ✅ Wrapped `webPixel { id }` query in its own try-catch — treats "no pixel found" as no existing pixel to delete (safe to skip delete step)
+- ✅ Wrapped `webPixelCreate` mutation in its own try-catch — treats "extension not deployed" error as a non-fatal warning instead of crashing
+- Files: `app/shopify.server.ts`
 
 ## Next Steps
 After deploying and reinstalling (or triggering afterAuth):

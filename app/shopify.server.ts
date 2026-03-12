@@ -122,9 +122,16 @@ const shopify = shopifyApp({
           console.log("[SHOPIFY] Activating UTM attribution web pixel...");
 
           // Step 1: Delete existing pixel if any (ensures fresh bind to current extension)
-          const existingPixelResponse = await admin.graphql(`query { webPixel { id } }`);
-          const existingPixelData = await existingPixelResponse.json();
-          const existingPixelId = existingPixelData.data?.webPixel?.id;
+          // NOTE: Shopify throws a GraphQL execution error (not null) when no pixel exists yet.
+          // We catch that here and treat it as "no existing pixel" — safe to skip delete.
+          let existingPixelId: string | null = null;
+          try {
+            const existingPixelResponse = await admin.graphql(`query { webPixel { id } }`);
+            const existingPixelData = await existingPixelResponse.json();
+            existingPixelId = existingPixelData.data?.webPixel?.id ?? null;
+          } catch (queryError: any) {
+            console.log("[SHOPIFY] No existing UTM pixel found (first install or extension not yet deployed):", queryError?.message);
+          }
 
           if (existingPixelId) {
             const deleteResponse = await admin.graphql(
@@ -148,25 +155,31 @@ const shopify = shopifyApp({
           // Step 2: Create fresh pixel.
           // IMPORTANT: settings must be a plain object, NOT JSON.stringify'd string.
           // The Admin API JSON scalar requires the actual object in variables.
-          const createResponse = await admin.graphql(
-            `mutation webPixelCreate($webPixel: WebPixelInput!) {
-              webPixelCreate(webPixel: $webPixel) {
-                userErrors { field message code }
-                webPixel { id settings }
-              }
-            }`,
-            {
-              variables: {
-                webPixel: { settings: { app_server_url: appUrl } },
+          // NOTE: If the web pixel extension has never been deployed, Shopify will
+          // throw "No web pixel was found for this app" — caught below, non-fatal.
+          try {
+            const createResponse = await admin.graphql(
+              `mutation webPixelCreate($webPixel: WebPixelInput!) {
+                webPixelCreate(webPixel: $webPixel) {
+                  userErrors { field message code }
+                  webPixel { id settings }
+                }
+              }`,
+              {
+                variables: {
+                  webPixel: { settings: { app_server_url: appUrl } },
+                },
               },
-            },
-          );
-          const createData = await createResponse.json();
-          const pixelErrors = createData.data?.webPixelCreate?.userErrors || [];
-          if (pixelErrors.length > 0) {
-            console.warn("[SHOPIFY] ⚠️ UTM pixel creation had errors:", JSON.stringify(pixelErrors));
-          } else {
-            console.log("[SHOPIFY] ✅ UTM pixel activated:", createData.data?.webPixelCreate?.webPixel?.id);
+            );
+            const createData = await createResponse.json();
+            const pixelErrors = createData.data?.webPixelCreate?.userErrors || [];
+            if (pixelErrors.length > 0) {
+              console.warn("[SHOPIFY] ⚠️ UTM pixel creation had errors:", JSON.stringify(pixelErrors));
+            } else {
+              console.log("[SHOPIFY] ✅ UTM pixel activated:", createData.data?.webPixelCreate?.webPixel?.id);
+            }
+          } catch (createError: any) {
+            console.warn("[SHOPIFY] ⚠️ UTM pixel creation failed (extension may not be deployed yet):", createError?.message);
           }
         }
       } catch (error: any) {
