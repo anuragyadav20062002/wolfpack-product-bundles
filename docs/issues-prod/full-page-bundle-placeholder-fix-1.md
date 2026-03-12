@@ -48,7 +48,23 @@ The app created `$app:bundle_id` metafields on pages via `metafieldsSet`, but ne
 - [x] Phase 3: Also call in full-page bundle configure loader (fixes existing shops without re-auth)
 - [x] Phase 4: Fix TAKEN silent skip — update storefront access on existing definition
 - [x] Phase 5: Fix root causes — malformed extension UID + wrong settings variable in Liquid
-- [ ] Phase 6: shopify app deploy + verify on storefront
+- [x] Phase 6: Fix definitive root cause — extract bundle ID from page.handle
+- [ ] Phase 7: shopify app deploy + verify on storefront
+
+### 2026-03-13 - Phase 6: Definitive fix — page.handle extraction
+
+Previous fixes (MetafieldDefinition PUBLIC_READ, section.settings, extension UID) all still
+depended on Shopify's metafield system working correctly. The real definitive fix:
+
+**Page handles are deterministic**: App creates pages with handle `bundle-{bundleId}`.
+Bundle IDs are Prisma CUIDs (lowercase alphanumeric, no special chars). The
+`replace(/[^a-z0-9]+/g, '-')` transformation is a no-op for CUIDs, so the handle is
+always exactly `bundle-` + bundleId. Stripping the prefix in Liquid gives back the exact
+bundle ID — no metafield, no definition, no PUBLIC_READ access required.
+
+Fix: Added `page.handle | remove_first: 'bundle-'` as the PRIMARY source of bundle_id
+in bundle-full-page.liquid. Metafield and section.settings kept as fallbacks.
+Works immediately on all existing bundle pages without redeploy of server code.
 
 ### 2026-03-13 - Phase 5: Identified and fixed two root causes
 

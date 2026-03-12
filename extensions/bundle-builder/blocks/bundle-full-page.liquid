@@ -140,18 +140,42 @@
 {% endcomment %}
 
 {% comment %}
-  Try to get bundle ID from page metafield (automated) first.
-  Falls back to section.settings.bundle_id (manual theme editor input).
+  Resolve bundle ID from three sources in priority order:
 
-  NOTE: This extension has target="section" in the TOML, so settings
-  are accessed via section.settings (NOT block.settings).
+  1. page.handle  — MOST RELIABLE. App creates pages with handle "bundle-{bundleId}".
+                    Bundle IDs are CUIDs (lowercase alphanumeric, no special chars),
+                    so the handle is always "bundle-" + bundleId with no transformation.
+                    Stripping the prefix gives back the exact bundleId. Works on every
+                    app-created bundle page with zero metafield or deploy dependency.
+
+  2. page.metafields['$app'].bundle_id  — Set by metafieldsSet on page creation.
+                    Requires MetafieldDefinition with storefront: PUBLIC_READ. Used as
+                    primary automated path if handle extraction ever doesn't apply.
+
+  3. section.settings.bundle_id  — Manual fallback. Merchant enters bundle ID in the
+                    Shopify theme editor. NOTE: target="section" in TOML means settings
+                    are accessed via section.settings (NOT block.settings).
 {% endcomment %}
+
+{% comment %} Source 1: Extract bundle ID from the page handle {% endcomment %}
+{% if page.handle contains 'bundle-' %}
+  {% assign bundle_id_from_handle = page.handle | remove_first: 'bundle-' %}
+{% else %}
+  {% assign bundle_id_from_handle = nil %}
+{% endif %}
+
+{% comment %} Source 2: Page metafield (requires PUBLIC_READ definition) {% endcomment %}
 {% assign app_namespace = '$app' %}
 {% assign bundle_id_from_metafield = page.metafields[app_namespace].bundle_id %}
+
+{% comment %} Source 3: Section setting (manual theme editor input) {% endcomment %}
 {% assign bundle_id_from_setting = section.settings.bundle_id %}
 
-{% comment %} Priority: Page metafield (automated) > Section setting (manual) {% endcomment %}
-{% if bundle_id_from_metafield and bundle_id_from_metafield != blank %}
+{% comment %} Priority: handle > metafield > section setting {% endcomment %}
+{% if bundle_id_from_handle and bundle_id_from_handle != blank %}
+  {% assign bundle_id = bundle_id_from_handle %}
+  {% assign bundle_id_source = "page_handle" %}
+{% elsif bundle_id_from_metafield and bundle_id_from_metafield != blank %}
   {% assign bundle_id = bundle_id_from_metafield %}
   {% assign bundle_id_source = "page_metafield_automated" %}
 {% elsif bundle_id_from_setting and bundle_id_from_setting != blank %}
