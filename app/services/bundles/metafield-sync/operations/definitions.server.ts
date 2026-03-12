@@ -169,6 +169,9 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
  * if the metafield value has been set via metafieldsSet. Shopify requires a MetafieldDefinition
  * with storefront: PUBLIC_READ for the value to be readable in theme extensions.
  *
+ * If the definition already exists (TAKEN), this function also updates it to ensure
+ * storefront: PUBLIC_READ is set — in case it was originally created without that access.
+ *
  * Called during afterAuth and whenever a full-page bundle page is created.
  */
 export async function ensurePageBundleIdMetafieldDefinition(admin: any): Promise<boolean> {
@@ -177,10 +180,39 @@ export async function ensurePageBundleIdMetafieldDefinition(admin: any): Promise
       metafieldDefinitionCreate(definition: $definition) {
         createdDefinition {
           id
-          name
-          namespace
-          key
-          ownerType
+        }
+        userErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `;
+
+  const QUERY_METAFIELD_DEFINITION = `
+    query GetPageBundleIdDefinition {
+      metafieldDefinitions(ownerType: PAGE, namespace: "$app", key: "bundle_id", first: 1) {
+        edges {
+          node {
+            id
+            access {
+              storefront
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const UPDATE_METAFIELD_DEFINITION = `
+    mutation UpdatePageMetafieldDefinition($definition: MetafieldDefinitionUpdateInput!, $id: ID!) {
+      metafieldDefinitionUpdate(definition: $definition, id: $id) {
+        updatedDefinition {
+          id
+          access {
+            storefront
+          }
         }
         userErrors {
           field
@@ -215,7 +247,45 @@ export async function ensurePageBundleIdMetafieldDefinition(admin: any): Promise
     if (errors.length > 0) {
       const error = errors[0];
       if (error.code === "TAKEN") {
-        console.log("✓ [METAFIELD_DEF] PAGE bundle_id definition already exists");
+        // Definition already exists — query it and ensure storefront access is PUBLIC_READ.
+        // If it was originally created without PUBLIC_READ, Liquid will silently return null.
+        console.log("[METAFIELD_DEF] PAGE bundle_id definition already exists — verifying storefront access...");
+
+        const queryResponse = await admin.graphql(QUERY_METAFIELD_DEFINITION);
+        const queryData = await queryResponse.json();
+        const existingDef = queryData.data?.metafieldDefinitions?.edges?.[0]?.node;
+
+        if (!existingDef) {
+          console.warn("⚠️ [METAFIELD_DEF] Could not query existing PAGE bundle_id definition");
+          return true;
+        }
+
+        const currentStorefrontAccess = existingDef.access?.storefront;
+        if (currentStorefrontAccess === "PUBLIC_READ") {
+          console.log("✓ [METAFIELD_DEF] PAGE bundle_id definition already has PUBLIC_READ storefront access");
+          return true;
+        }
+
+        // Access is not PUBLIC_READ — update it
+        console.log(`[METAFIELD_DEF] PAGE bundle_id storefront access is '${currentStorefrontAccess}' — updating to PUBLIC_READ...`);
+        const updateResponse = await admin.graphql(UPDATE_METAFIELD_DEFINITION, {
+          variables: {
+            id: existingDef.id,
+            definition: {
+              access: {
+                admin: "MERCHANT_READ_WRITE",
+                storefront: "PUBLIC_READ"
+              }
+            }
+          }
+        });
+        const updateData = await updateResponse.json();
+        const updateErrors = updateData.data?.metafieldDefinitionUpdate?.userErrors ?? [];
+        if (updateErrors.length > 0) {
+          console.error("❌ [METAFIELD_DEF] Failed to update PAGE bundle_id storefront access:", updateErrors[0]);
+        } else {
+          console.log("✓ [METAFIELD_DEF] Updated PAGE bundle_id definition to PUBLIC_READ storefront access");
+        }
       } else {
         console.error("❌ [METAFIELD_DEF] Error creating PAGE bundle_id definition:", error);
       }
