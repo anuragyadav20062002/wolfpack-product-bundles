@@ -32,6 +32,9 @@ export interface DesignSettings {
   buttonBorderRadius: number;
   buttonHoverBgColor: string;
   buttonAddToCartText: string;
+  // Button — Added/Selected State
+  buttonAddedBgColor: string;
+  buttonAddedTextColor: string;
 
   // Quantity Selector
   quantitySelectorBgColor: string;

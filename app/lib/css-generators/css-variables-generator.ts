@@ -44,6 +44,8 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-button-font-weight: ${s.buttonFontWeight || 600};
   --bundle-button-border-radius: ${s.buttonBorderRadius || 8}px;
   --bundle-button-hover-bg: ${s.buttonHoverBgColor || s.buttonBgColor || globalPrimaryButton};
+  --bundle-button-added-bg: ${s.buttonAddedBgColor || '#10B981'};
+  --bundle-button-added-text: ${s.buttonAddedTextColor || '#FFFFFF'};
 
   /* VARIANT SELECTOR */
   --bundle-variant-selector-bg: ${s.variantSelectorBgColor || '#FFFFFF'};

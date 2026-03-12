@@ -47,6 +47,8 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   buttonBorderRadius: 8,
   buttonHoverBgColor: "#E68200",
   buttonAddToCartText: "Add to bundle",
+  buttonAddedBgColor: "#10B981",
+  buttonAddedTextColor: "#FFFFFF",
 
   // Quantity Selector
   quantitySelectorBgColor: "#5f5d5d",
@@ -296,6 +298,8 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   buttonBorderRadius: 12,
   buttonHoverBgColor: "#E68200",
   buttonAddToCartText: "Add to bundle",
+  buttonAddedBgColor: "#10B981",
+  buttonAddedTextColor: "#FFFFFF",
 
   // Quantity Selector
   quantitySelectorBgColor: "#5f5d5d",

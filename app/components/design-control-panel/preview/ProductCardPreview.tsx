@@ -76,6 +76,27 @@ const skeletonHTML = `
 </div>
 `.trim();
 
+// Added button state HTML — shows unselected vs added/selected button side-by-side
+// Wrapped in .modal-body .product-card so the existing CSS selectors match
+const addedButtonStateHTML = `
+<div class="modal-body" style="padding: 24px; background: #fff; border-radius: 8px;">
+  <div style="display: flex; gap: 32px; justify-content: center; align-items: flex-end;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <span style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em;">Before adding</span>
+      <div class="product-card" style="padding: 0; border: none; box-shadow: none; width: auto; background: transparent;">
+        <button class="product-add-btn" style="min-width: 160px;">Add to Bundle</button>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <span style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em;">After adding</span>
+      <div class="product-card" style="padding: 0; border: none; box-shadow: none; width: auto; background: transparent;">
+        <button class="product-add-btn added" style="min-width: 160px;">Added to Bundle</button>
+      </div>
+    </div>
+  </div>
+</div>
+`.trim();
+
 // Typography preview HTML — button using CSS vars for text-transform and letter-spacing
 const typographyHTML = `
 <div style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 16px;">
@@ -289,6 +310,28 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
         <div style={{ marginTop: "24px" }}>
           <Text as="p" variant="bodySm" tone="subdued">
             Preview updates as you customize
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Added button state sub-section — show unselected vs added button
+  if (activeSubSection === "addedButtonState") {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Added State
+        </Text>
+        <div style={{ marginTop: "24px", display: "inline-block" }}>
+          <HighlightBox active>
+            {/* eslint-disable-next-line react/no-danger */}
+            <div dangerouslySetInnerHTML={{ __html: addedButtonStateHTML }} />
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Left: default · Right: after product is added to bundle
           </Text>
         </div>
       </div>

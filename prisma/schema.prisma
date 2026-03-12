@@ -252,6 +252,8 @@ model DesignSettings {
   buttonBorderRadius          Int?    @default(8)
   buttonHoverBgColor          String? @default("#333333")
   buttonAddToCartText         String? @default("Add to cart")
+  buttonAddedBgColor          String? @default("#10B981")
+  buttonAddedTextColor        String? @default("#FFFFFF")
 
   // Quantity Selector Section
   quantitySelectorBgColor     String? @default("#000000")

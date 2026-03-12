@@ -1105,7 +1105,8 @@
 }
 
 .modal-body .product-card .product-add-btn.added {
-  background: #10B981;
+  background: var(--bundle-button-added-bg, #10B981);
+  color: var(--bundle-button-added-text, #FFFFFF);
   box-shadow: none;
 }
 

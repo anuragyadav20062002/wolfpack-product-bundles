@@ -81,6 +81,13 @@ export function NavigationSidebar({
           isActive={activeSubSection === "button"}
         />
         <NavigationItem
+          label="Added State"
+          sectionKey="addedButtonState"
+          isChild
+          onClick={() => onSubSectionClick("addedButtonState")}
+          isActive={activeSubSection === "addedButtonState"}
+        />
+        <NavigationItem
           label="Quantity & Variant Selector"
           sectionKey="quantityVariantSelector"
           isChild

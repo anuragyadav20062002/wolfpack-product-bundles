@@ -28,6 +28,7 @@ import { QuantityBadgeSettings } from "./QuantityBadgeSettings";
 import { TypographySettings } from "./TypographySettings";
 import { AccessibilitySettings } from "./AccessibilitySettings";
 import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
+import { AddedButtonStateSettings } from "./AddedButtonStateSettings";
 
 /**
  * SettingsPanel - Orchestrator component that renders the appropriate
@@ -53,6 +54,9 @@ export function SettingsPanel({
 
     case "button":
       return <ButtonSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "addedButtonState":
+      return <AddedButtonStateSettings settings={settings} onUpdate={onUpdate} />;
 
     case "quantityVariantSelector":
       return <QuantityVariantSettings settings={settings} onUpdate={onUpdate} />;
