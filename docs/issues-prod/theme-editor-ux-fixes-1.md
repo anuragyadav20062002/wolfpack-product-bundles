@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-12 18:35
+**Last Updated:** 2026-03-12 20:15
 
 ## Overview
 
@@ -39,8 +39,15 @@ Two theme editor UX issues:
   - `extensions/bundle-builder/blocks/bundle-product-page.liquid`
 - Next: shopify app deploy required for liquid schema change to take effect
 
+### 2026-03-12 20:15 - Fix: Restore required `target` field in liquid schema
+
+- ❌ Removing `"target": "section"` caused Shopify deploy validation error: "missing required key 'target'"
+- `target` is a required field in Shopify block schemas — it cannot be omitted
+- ✅ Restored `"target": "section"` in `bundle-product-page.liquid`
+- The `target=mainSection` deep link still attempts to place the block in the main product section for themes that support `@app` blocks (e.g. Dawn), which is the desired behaviour
+
 ## Phases Checklist
 
 - [x] Phase 1: Fix previewPath in theme editor URLs
-- [x] Phase 2: Change block from section-type to app block
+- [x] Phase 2: Keep block as section-type (target required by Shopify), use mainSection deep link
 - [ ] Phase 3: Deploy with shopify app deploy
