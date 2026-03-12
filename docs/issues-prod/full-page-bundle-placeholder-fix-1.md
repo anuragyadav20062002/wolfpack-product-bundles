@@ -1,7 +1,7 @@
 # Issue: Full-Page Bundle Shows "Please configure a Bundle ID" Placeholder
 
 **Issue ID:** full-page-bundle-placeholder-fix-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-12
 **Last Updated:** 2026-03-13
@@ -47,7 +47,29 @@ The app created `$app:bundle_id` metafields on pages via `metafieldsSet`, but ne
 - [x] Phase 2: Wire into afterAuth + bundle creation
 - [x] Phase 3: Also call in full-page bundle configure loader (fixes existing shops without re-auth)
 - [x] Phase 4: Fix TAKEN silent skip — update storefront access on existing definition
-- [ ] Phase 5: Deploy to Render + verify on storefront
+- [x] Phase 5: Fix root causes — malformed extension UID + wrong settings variable in Liquid
+- [ ] Phase 6: shopify app deploy + verify on storefront
+
+### 2026-03-13 - Phase 5: Identified and fixed two root causes
+
+Two definitive root causes found:
+
+**Root Cause A — Malformed UID in `extensions/bundle-builder/shopify.extension.toml`**
+`uid = "23b807f7-472d-4f93-e241-5a1e079d6b51548daaf2"` is 44 characters (standard UUID is 36).
+The last segment has 20 characters instead of 12 — two UUIDs were concatenated.
+This caused `shopify app deploy` to fail or misidentify the extension, meaning the
+bundle-builder extension was never properly deployed. Without a successful deploy:
+- The `$app` namespace ownership cannot be verified by Shopify for this extension
+- `page.metafields['$app'].bundle_id` returns null in Liquid regardless of definition access
+Fix: Removed the malformed UID — Shopify CLI will assign/reconcile the correct one on next deploy.
+
+**Root Cause B — Wrong Liquid settings variable for `target = "section"` extension**
+`bundle-full-page.liquid` used `block.settings.bundle_id` for the manual fallback.
+The extension has `target = "section"` in TOML, which means settings are accessed via
+`section.settings`, NOT `block.settings`. `block` refers to blocks WITHIN a section —
+for a section-target extension, `block.settings` is always nil/undefined.
+The manual configuration path (theme editor bundle_id setting) was therefore broken.
+Fix: Changed `block.settings.bundle_id` → `section.settings.bundle_id` in the Liquid.
 
 ### 2026-03-13 - Phase 4: Update existing definition's storefront access on TAKEN
 

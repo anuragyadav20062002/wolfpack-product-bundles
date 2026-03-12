@@ -139,18 +139,24 @@
   2. Falls back to manual block setting for backwards compatibility
 {% endcomment %}
 
-{% comment %} Try to get bundle ID from page metafield (automated) {% endcomment %}
+{% comment %}
+  Try to get bundle ID from page metafield (automated) first.
+  Falls back to section.settings.bundle_id (manual theme editor input).
+
+  NOTE: This extension has target="section" in the TOML, so settings
+  are accessed via section.settings (NOT block.settings).
+{% endcomment %}
 {% assign app_namespace = '$app' %}
 {% assign bundle_id_from_metafield = page.metafields[app_namespace].bundle_id %}
-{% assign bundle_id_from_setting = block.settings.bundle_id %}
+{% assign bundle_id_from_setting = section.settings.bundle_id %}
 
-{% comment %} Priority: Page metafield (automated) > Block setting (manual) {% endcomment %}
+{% comment %} Priority: Page metafield (automated) > Section setting (manual) {% endcomment %}
 {% if bundle_id_from_metafield and bundle_id_from_metafield != blank %}
   {% assign bundle_id = bundle_id_from_metafield %}
   {% assign bundle_id_source = "page_metafield_automated" %}
 {% elsif bundle_id_from_setting and bundle_id_from_setting != blank %}
   {% assign bundle_id = bundle_id_from_setting %}
-  {% assign bundle_id_source = "block_setting_manual" %}
+  {% assign bundle_id_source = "section_setting_manual" %}
 {% else %}
   {% assign bundle_id = nil %}
   {% assign bundle_id_source = "none" %}
