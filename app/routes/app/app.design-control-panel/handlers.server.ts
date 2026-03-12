@@ -33,8 +33,6 @@ function extractFooterSettings(settings: any) {
     footerNextButtonBorderColor: settings.footerNextButtonBorderColor,
     footerNextButtonBorderRadius: settings.footerNextButtonBorderRadius,
     footerDiscountTextVisibility: settings.footerDiscountTextVisibility,
-    footerProgressBarFilledColor: settings.footerProgressBarFilledColor,
-    footerProgressBarEmptyColor: settings.footerProgressBarEmptyColor,
   };
 }
 

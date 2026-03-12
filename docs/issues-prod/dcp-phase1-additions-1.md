@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-12 16:00
+**Last Updated:** 2026-03-12 17:00
 
 ## Overview
 
@@ -88,6 +88,15 @@ All new settings extend the existing CSS variable pipeline:
 - [x] Issue file & commit
 - [x] DCP Preview components for new Phase 1 settings
 - [x] Remove progress bar controls from DCP (no progress bar in widget)
+- [x] Remove progress bar DB columns, types, defaults, CSS vars
+
+### 2026-03-12 17:00 - Removing progress bar from DB and type system
+- DB: DROP progressBarHeight, progressBarBorderRadius columns (Prisma migration)
+- DB: footerProgressBarFilledColor/Empty stored in footerSettings JSON blob — remove from types/defaults/CSS vars only
+- Types: remove 4 fields from DesignSettings type
+- Defaults: remove from both PRODUCT_PAGE and FULL_PAGE default configs
+- CSS gen: remove --bundle-progress-bar-height/radius and --bundle-footer-progress-filled/empty vars
+- Widget CSS: remove var() references in bundle-widget.css and bundle-widget-full-page.css (revert to hardcoded fallback values)
 
 ### 2026-03-12 16:00 - Removing progress bar controls from DCP
 - Removing: footerProgressBarFilledColor, footerProgressBarEmptyColor color pickers

@@ -65,8 +65,6 @@ export interface DesignSettings {
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
   footerDiscountTextVisibility: boolean;
-  footerProgressBarFilledColor: string;
-  footerProgressBarEmptyColor: string;
 
   // Bundle Header - Tabs
   headerTabActiveBgColor: string;
@@ -115,10 +113,6 @@ export interface DesignSettings {
   // Typography
   buttonTextTransform: string;
   buttonLetterSpacing: number;
-
-  // Progress Bar Shape
-  progressBarHeight: number;
-  progressBarBorderRadius: number;
 
   // Focus / Accessibility
   focusOutlineColor: string;

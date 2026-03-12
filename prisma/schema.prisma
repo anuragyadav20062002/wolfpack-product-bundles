@@ -309,10 +309,6 @@ model DesignSettings {
   buttonTextTransform         String? @default("none")
   buttonLetterSpacing         Int?    @default(0)
 
-  // Progress Bar Shape
-  progressBarHeight           Int?    @default(4)
-  progressBarBorderRadius     Int?    @default(2)
-
   // Focus / Accessibility
   focusOutlineColor           String? @default("#5C6AC4")
   focusOutlineWidth           Int?    @default(2)

@@ -1648,8 +1648,8 @@
 .footer-progress-bar-container {
   position: relative;
   width: 100%;
-  height: var(--bundle-progress-bar-height, 6px);
-  border-radius: var(--bundle-progress-bar-radius, 20px);
+  height: 6px;
+  border-radius: 20px;
   overflow: hidden;
 }
 

@@ -117,8 +117,6 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-footer-next-button-border: ${s.footerNextButtonBorderColor || globalPrimaryButton};
   --bundle-footer-next-button-radius: ${s.footerNextButtonBorderRadius || 8}px;
   --bundle-footer-discount-display: ${s.footerDiscountTextVisibility !== false ? 'block' : 'none'};
-  --bundle-footer-progress-filled: ${s.footerProgressBarFilledColor || globalPrimaryButton};
-  --bundle-footer-progress-empty: ${s.footerProgressBarEmptyColor || '#E3E3E3'};
   --bundle-success-message-font-size: ${s.successMessageFontSize || 16}px;
   --bundle-success-message-font-weight: ${s.successMessageFontWeight || 600};
   --bundle-success-message-text-color: ${s.successMessageTextColor || '#065F46'};
@@ -231,10 +229,6 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   /* TYPOGRAPHY */
   --bundle-button-text-transform: ${s.buttonTextTransform || 'none'};
   --bundle-button-letter-spacing: ${(s.buttonLetterSpacing ?? 0) / 100}em;
-
-  /* PROGRESS BAR SHAPE */
-  --bundle-progress-bar-height: ${s.progressBarHeight || 4}px;
-  --bundle-progress-bar-radius: ${s.progressBarBorderRadius || 2}px;
 
   /* FOCUS / ACCESSIBILITY */
   --bundle-focus-outline-color: ${s.focusOutlineColor || globalPrimaryButton};

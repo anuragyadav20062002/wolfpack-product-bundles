@@ -97,10 +97,8 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   footerNextButtonBorderColor: "#000000",
   footerNextButtonBorderRadius: 8,
 
-  // Discount & Progress Bar
+  // Discount Text
   footerDiscountTextVisibility: true,
-  footerProgressBarFilledColor: "#000000",
-  footerProgressBarEmptyColor: "#E3E3E3",
 
   // Success Message Styling
   successMessageFontSize: 16,
@@ -254,10 +252,6 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   buttonTextTransform: "none",
   buttonLetterSpacing: 0,
 
-  // Progress Bar Shape
-  progressBarHeight: 4,
-  progressBarBorderRadius: 2,
-
   // Focus / Accessibility
   focusOutlineColor: "#5C6AC4",
   focusOutlineWidth: 2,
@@ -356,10 +350,8 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   footerNextButtonBorderColor: "#7132FF",
   footerNextButtonBorderRadius: 12,
 
-  // Discount & Progress Bar
+  // Discount Text
   footerDiscountTextVisibility: true,
-  footerProgressBarFilledColor: "#7132FF",
-  footerProgressBarEmptyColor: "#E5E7EB",
 
   // Success Message Styling
   successMessageFontSize: 16,
@@ -512,10 +504,6 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Typography
   buttonTextTransform: "none",
   buttonLetterSpacing: 0,
-
-  // Progress Bar Shape
-  progressBarHeight: 4,
-  progressBarBorderRadius: 2,
 
   // Focus / Accessibility
   focusOutlineColor: "#7132FF",
