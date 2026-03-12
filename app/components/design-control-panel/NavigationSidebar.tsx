@@ -81,6 +81,13 @@ export function NavigationSidebar({
           isActive={activeSubSection === "button"}
         />
         <NavigationItem
+          label="Added State"
+          sectionKey="addedButtonState"
+          isChild
+          onClick={() => onSubSectionClick("addedButtonState")}
+          isActive={activeSubSection === "addedButtonState"}
+        />
+        <NavigationItem
           label="Quantity & Variant Selector"
           sectionKey="quantityVariantSelector"
           isChild
@@ -142,7 +149,7 @@ export function NavigationSidebar({
           isActive={activeSubSection === "footerButton"}
         />
         <NavigationItem
-          label="Discount Text & Progress Bar"
+          label="Discount Text"
           sectionKey="footerDiscountProgress"
           isChild
           onClick={() => onSubSectionClick("footerDiscountProgress")}
@@ -213,13 +220,6 @@ export function NavigationSidebar({
           isChild
           onClick={() => onSubSectionClick("toasts")}
           isActive={activeSubSection === "toasts"}
-        />
-        <NavigationItem
-          label="Loading State"
-          sectionKey="loadingState"
-          isChild
-          onClick={() => onSubSectionClick("loadingState")}
-          isActive={activeSubSection === "loadingState"}
         />
         <NavigationItem
           label="Modal Close Button"

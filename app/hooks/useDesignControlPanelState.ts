@@ -348,8 +348,6 @@ export function createSettingSetters(
     setFooterNextButtonBorderColor: (v: string) => updateSetting("footerNextButtonBorderColor", v),
     setFooterNextButtonBorderRadius: (v: number) => updateSetting("footerNextButtonBorderRadius", v),
     setFooterDiscountTextVisibility: (v: boolean) => updateSetting("footerDiscountTextVisibility", v),
-    setFooterProgressBarFilledColor: (v: string) => updateSetting("footerProgressBarFilledColor", v),
-    setFooterProgressBarEmptyColor: (v: string) => updateSetting("footerProgressBarEmptyColor", v),
 
     // Success Message
     setSuccessMessageFontSize: (v: number) => updateSetting("successMessageFontSize", v),

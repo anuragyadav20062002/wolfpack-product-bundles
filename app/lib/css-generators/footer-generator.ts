@@ -96,15 +96,5 @@ export function generateFooterCSS(): string {
   letter-spacing: 0.5px;
 }
 
-.bundle-builder-modal .modal-footer-progress-fill,
-.bundle-builder-modal .progress-fill,
-#bundle-builder-app .progress-fill {
-  background-color: var(--bundle-footer-progress-filled);
-}
-
-.bundle-builder-modal .modal-footer-progress-bar,
-.bundle-builder-modal .progress-bar,
-#bundle-builder-app .progress-bar {
-  background-color: var(--bundle-footer-progress-empty);
-}`;
+`;
 }

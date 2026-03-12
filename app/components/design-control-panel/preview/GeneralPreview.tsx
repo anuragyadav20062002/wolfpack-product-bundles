@@ -110,6 +110,106 @@ export function GeneralPreview({
     );
   }
 
+  // Modal Close Button — uses .close-button CSS class + --bundle-modal-close-* vars
+  if (activeSubSection === "modalCloseButton") {
+    return (
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Modal Close Button
+        </Text>
+        <div style={{ marginTop: "80px", display: "inline-block" }}>
+          <HighlightBox active>
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "12px",
+                padding: "16px 32px",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "40px",
+                border: "1px solid #eee",
+                minWidth: "280px",
+              }}
+            >
+              <span style={{ fontSize: "16px", fontWeight: 600, color: "#333" }}>
+                Choose your products
+              </span>
+              {/* eslint-disable-next-line react/no-danger */}
+              <div dangerouslySetInnerHTML={{ __html: '<span class="close-button">&times;</span>' }} />
+            </div>
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "24px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Appears at the top-right of the bundle modal
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Accessibility — focus outline applied to interactive elements
+  if (activeSubSection === "accessibility") {
+    return (
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Focus &amp; Accessibility
+        </Text>
+        <div style={{ marginTop: "60px", display: "inline-block" }}>
+          <HighlightBox active>
+            <div style={{ display: "flex", gap: "24px", padding: "16px", background: "#fff", borderRadius: "12px", border: "1px solid #eee" }}>
+              {/* Simulated focused button */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "0.06em" }}>Button</span>
+                <button
+                  style={{
+                    padding: "10px 20px",
+                    background: "var(--bundle-global-primary-button, #4CAF50)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    outline: `var(--bundle-focus-outline-width, 2px) solid var(--bundle-focus-outline-color, #5C6AC4)`,
+                    outlineOffset: "3px",
+                  }}
+                >
+                  Add to Bundle
+                </button>
+              </div>
+              {/* Simulated focused input */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "0.06em" }}>Input</span>
+                <input
+                  type="text"
+                  defaultValue="Search…"
+                  style={{
+                    padding: "10px 14px",
+                    border: "1.5px solid #ddd",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    outline: `var(--bundle-focus-outline-width, 2px) solid var(--bundle-focus-outline-color, #5C6AC4)`,
+                    outlineOffset: "3px",
+                    width: "130px",
+                  }}
+                  readOnly
+                />
+              </div>
+            </div>
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "24px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Focus ring shown on keyboard-navigable elements
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
   // Toasts — uses --bundle-toast-bg / --bundle-toast-text vars
   if (activeSubSection === "toasts") {
     return (

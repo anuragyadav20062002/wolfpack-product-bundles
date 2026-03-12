@@ -157,29 +157,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         const existingPixelRes = await admin.graphql(`query { webPixel { id settings } }`);
         const existingPixelData = await existingPixelRes.json();
         const existingId = existingPixelData.data?.webPixel?.id;
+        const existingSettings = existingPixelData.data?.webPixel?.settings as Record<string, string> | null;
 
-        if (existingId) {
-          // Pixel exists — update settings to ensure correct server URL.
-          // Uses plain object (not JSON.stringify) for correct API validation.
-          const updateRes = await admin.graphql(
-            `mutation webPixelUpdate($id: ID!, $webPixel: WebPixelInput!) {
-               webPixelUpdate(id: $id, webPixel: $webPixel) {
-                 userErrors { field message code }
-                 webPixel { id settings }
-               }
-             }`,
-            { variables: { id: existingId, webPixel: { settings: { app_server_url: appUrl } } } },
-          );
-          const updateData = await updateRes.json();
-          const errs = updateData.data?.webPixelUpdate?.userErrors || [];
-          if (errs.length > 0) {
-            AppLogger.warn("UTM pixel update had errors on dashboard load", {
-              component: "app.dashboard",
-              operation: "ensure-web-pixel",
-            }, errs);
-          }
+        if (existingId && existingSettings?.app_server_url === appUrl) {
+          // Pixel exists with correct URL — nothing to do.
+          // Do NOT just update a pixel that already has correct settings: webPixelUpdate
+          // cannot recover a "Disconnected" pixel. If the pixel ever becomes disconnected
+          // the settings-match check will fail (settings become null/empty) and we fall
+          // through to the delete-then-create path below.
         } else {
-          // Pixel doesn't exist — create it.
+          // Pixel missing OR settings are stale/empty (includes the Disconnected case where
+          // Shopify clears settings). Delete the old record first so we can create a fresh
+          // one — webPixelCreate is the only operation that re-establishes the
+          // extension↔store link after a pixel becomes Disconnected.
+          if (existingId) {
+            await admin.graphql(
+              `mutation webPixelDelete($id: ID!) {
+                 webPixelDelete(id: $id) { deletedWebPixelId userErrors { field message } }
+               }`,
+              { variables: { id: existingId } },
+            );
+          }
+
           const createRes = await admin.graphql(
             `mutation webPixelCreate($webPixel: WebPixelInput!) {
                webPixelCreate(webPixel: $webPixel) {
@@ -192,12 +191,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           const createData = await createRes.json();
           const errs = createData.data?.webPixelCreate?.userErrors || [];
           if (errs.length > 0) {
-            AppLogger.warn("UTM pixel creation had errors on dashboard load", {
+            AppLogger.warn("UTM pixel create/reconnect had errors on dashboard load", {
               component: "app.dashboard",
               operation: "ensure-web-pixel",
             }, errs);
           } else {
-            AppLogger.info("UTM pixel activated on dashboard load", {
+            AppLogger.info("UTM pixel created/reconnected on dashboard load", {
               component: "app.dashboard",
               operation: "ensure-web-pixel",
             }, { pixelId: createData.data?.webPixelCreate?.webPixel?.id });

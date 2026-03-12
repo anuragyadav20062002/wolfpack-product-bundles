@@ -1246,7 +1246,8 @@
 }
 
 .product-add-btn.added {
-  background: linear-gradient(135deg, var(--bundle-full-page-added-button-gradient-start, #10B981) 0%, var(--bundle-full-page-added-button-gradient-end, #059669) 100%);
+  background: var(--bundle-button-added-bg, linear-gradient(135deg, var(--bundle-full-page-added-button-gradient-start, #10B981) 0%, var(--bundle-full-page-added-button-gradient-end, #059669) 100%));
+  color: var(--bundle-button-added-text, #FFFFFF);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
@@ -1648,8 +1649,8 @@
 .footer-progress-bar-container {
   position: relative;
   width: 100%;
-  height: var(--bundle-progress-bar-height, 6px);
-  border-radius: var(--bundle-progress-bar-radius, 20px);
+  height: 6px;
+  border-radius: 20px;
   overflow: hidden;
 }
 

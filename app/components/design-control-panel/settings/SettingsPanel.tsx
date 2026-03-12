@@ -25,10 +25,10 @@ import { PromoBannerSettings } from "./PromoBannerSettings";
 import { SearchInputSettings } from "./SearchInputSettings";
 import { SkeletonSettings } from "./SkeletonSettings";
 import { QuantityBadgeSettings } from "./QuantityBadgeSettings";
-import { LoadingStateSettings } from "./LoadingStateSettings";
 import { TypographySettings } from "./TypographySettings";
 import { AccessibilitySettings } from "./AccessibilitySettings";
 import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
+import { AddedButtonStateSettings } from "./AddedButtonStateSettings";
 
 /**
  * SettingsPanel - Orchestrator component that renders the appropriate
@@ -54,6 +54,9 @@ export function SettingsPanel({
 
     case "button":
       return <ButtonSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "addedButtonState":
+      return <AddedButtonStateSettings settings={settings} onUpdate={onUpdate} />;
 
     case "quantityVariantSelector":
       return <QuantityVariantSettings settings={settings} onUpdate={onUpdate} />;
@@ -108,9 +111,6 @@ export function SettingsPanel({
 
     case "quantityBadge":
       return <QuantityBadgeSettings settings={settings} onUpdate={onUpdate} />;
-
-    case "loadingState":
-      return <LoadingStateSettings settings={settings} onUpdate={onUpdate} />;
 
     case "typography":
       return <TypographySettings settings={settings} onUpdate={onUpdate} />;

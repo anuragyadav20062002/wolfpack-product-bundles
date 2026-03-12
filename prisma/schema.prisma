@@ -252,6 +252,8 @@ model DesignSettings {
   buttonBorderRadius          Int?    @default(8)
   buttonHoverBgColor          String? @default("#333333")
   buttonAddToCartText         String? @default("Add to cart")
+  buttonAddedBgColor          String? @default("#10B981")
+  buttonAddedTextColor        String? @default("#FFFFFF")
 
   // Quantity Selector Section
   quantitySelectorBgColor     String? @default("#000000")
@@ -301,17 +303,9 @@ model DesignSettings {
   modalCloseButtonBgColor     String? @default("rgba(255,255,255,0.9)")
   modalCloseButtonHoverColor  String? @default("#333333")
 
-  // Loading Overlay
-  loadingOverlayBgColor       String? @default("#E3F2FD")
-  loadingOverlayTextColor     String? @default("#1976D2")
-
   // Typography
   buttonTextTransform         String? @default("none")
   buttonLetterSpacing         Int?    @default(0)
-
-  // Progress Bar Shape
-  progressBarHeight           Int?    @default(4)
-  progressBarBorderRadius     Int?    @default(2)
 
   // Focus / Accessibility
   focusOutlineColor           String? @default("#5C6AC4")

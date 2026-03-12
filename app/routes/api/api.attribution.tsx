@@ -4,21 +4,40 @@
  * Receives UTM attribution data from the Wolfpack Web Pixel extension
  * when a checkout is completed. Creates OrderAttribution records in the database.
  *
- * This route is accessed via the app proxy: /apps/product-bundles/api/attribution
- * It does NOT require Shopify admin authentication (called from the storefront pixel).
+ * Called directly from the web pixel sandbox via fetch() to /api/attribution.
+ * The pixel sandbox runs with an opaque (null) origin so CORS headers are required
+ * on every response, and an OPTIONS preflight handler is required.
+ * It does NOT require Shopify admin authentication.
  */
 
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 
+// CORS headers required for cross-origin fetch() calls from the web pixel sandbox.
+// The sandbox runs in an isolated iframe with an opaque (null) origin, so we must
+// allow all origins. keepalive:true requests from the pixel also trigger CORS.
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+// Handle CORS preflight (OPTIONS) — browser sends this before the actual POST
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+  return new Response(null, { status: 405 });
+};
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   if (request.method !== "POST") {
-    return json({ error: "Method not allowed" }, { status: 405 });
+    return json({ error: "Method not allowed" }, { status: 405, headers: CORS_HEADERS });
   }
 
   try {
-    const payload = await request.json();
+    const payload = await request.json() as Record<string, unknown>;
 
     const {
       orderId,
@@ -37,7 +56,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     // Validate required fields
     if (!shopId || !utmSource) {
-      return json({ error: "Missing required fields: shopId and utmSource" }, { status: 400 });
+      return json({ error: "Missing required fields: shopId and utmSource" }, { status: 400, headers: CORS_HEADERS });
     }
 
     // Calculate revenue in cents
@@ -107,11 +126,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       bundleCount: bundleIds.length,
     });
 
-    return json({ success: true });
+    return json({ success: true }, { headers: CORS_HEADERS });
   } catch (error) {
     AppLogger.error("[ATTRIBUTION] Failed to record attribution", {
       component: "api.attribution",
     }, error);
-    return json({ error: "Failed to record attribution" }, { status: 500 });
+    return json({ error: "Failed to record attribution" }, { status: 500, headers: CORS_HEADERS });
   }
 };

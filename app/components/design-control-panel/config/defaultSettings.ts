@@ -47,6 +47,8 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   buttonBorderRadius: 8,
   buttonHoverBgColor: "#E68200",
   buttonAddToCartText: "Add to bundle",
+  buttonAddedBgColor: "#10B981",
+  buttonAddedTextColor: "#FFFFFF",
 
   // Quantity Selector
   quantitySelectorBgColor: "#5f5d5d",
@@ -97,10 +99,8 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   footerNextButtonBorderColor: "#000000",
   footerNextButtonBorderRadius: 8,
 
-  // Discount & Progress Bar
+  // Discount Text
   footerDiscountTextVisibility: true,
-  footerProgressBarFilledColor: "#000000",
-  footerProgressBarEmptyColor: "#E3E3E3",
 
   // Success Message Styling
   successMessageFontSize: 16,
@@ -246,17 +246,9 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   modalCloseButtonBgColor: "rgba(255,255,255,0.9)",
   modalCloseButtonHoverColor: "#333333",
 
-  // Loading Overlay
-  loadingOverlayBgColor: "#E3F2FD",
-  loadingOverlayTextColor: "#1976D2",
-
   // Typography
   buttonTextTransform: "none",
   buttonLetterSpacing: 0,
-
-  // Progress Bar Shape
-  progressBarHeight: 4,
-  progressBarBorderRadius: 2,
 
   // Focus / Accessibility
   focusOutlineColor: "#5C6AC4",
@@ -306,6 +298,8 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   buttonBorderRadius: 12,
   buttonHoverBgColor: "#E68200",
   buttonAddToCartText: "Add to bundle",
+  buttonAddedBgColor: "#10B981",
+  buttonAddedTextColor: "#FFFFFF",
 
   // Quantity Selector
   quantitySelectorBgColor: "#5f5d5d",
@@ -356,10 +350,8 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   footerNextButtonBorderColor: "#7132FF",
   footerNextButtonBorderRadius: 12,
 
-  // Discount & Progress Bar
+  // Discount Text
   footerDiscountTextVisibility: true,
-  footerProgressBarFilledColor: "#7132FF",
-  footerProgressBarEmptyColor: "#E5E7EB",
 
   // Success Message Styling
   successMessageFontSize: 16,
@@ -505,17 +497,9 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   modalCloseButtonBgColor: "rgba(255,255,255,0.9)",
   modalCloseButtonHoverColor: "#333333",
 
-  // Loading Overlay
-  loadingOverlayBgColor: "#E3F2FD",
-  loadingOverlayTextColor: "#1976D2",
-
   // Typography
   buttonTextTransform: "none",
   buttonLetterSpacing: 0,
-
-  // Progress Bar Shape
-  progressBarHeight: 4,
-  progressBarBorderRadius: 2,
 
   // Focus / Accessibility
   focusOutlineColor: "#7132FF",
