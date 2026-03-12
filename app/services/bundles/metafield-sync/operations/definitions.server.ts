@@ -161,3 +161,70 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
   console.log("✅ [METAFIELD_DEF] Finished ensuring variant metafield definitions");
   return true;
 }
+
+/**
+ * Ensures the PAGE-level bundle_id metafield definition exists with PUBLIC_READ storefront access.
+ *
+ * Without this definition, `page.metafields['$app'].bundle_id` returns null in Liquid even
+ * if the metafield value has been set via metafieldsSet. Shopify requires a MetafieldDefinition
+ * with storefront: PUBLIC_READ for the value to be readable in theme extensions.
+ *
+ * Called during afterAuth and whenever a full-page bundle page is created.
+ */
+export async function ensurePageBundleIdMetafieldDefinition(admin: any): Promise<boolean> {
+  const CREATE_METAFIELD_DEFINITION = `
+    mutation CreatePageMetafieldDefinition($definition: MetafieldDefinitionInput!) {
+      metafieldDefinitionCreate(definition: $definition) {
+        createdDefinition {
+          id
+          name
+          namespace
+          key
+          ownerType
+        }
+        userErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(CREATE_METAFIELD_DEFINITION, {
+      variables: {
+        definition: {
+          name: "Bundle ID",
+          namespace: "$app",
+          key: "bundle_id",
+          description: "Full-page bundle ID — links a Shopify page to a bundle in the app",
+          type: "single_line_text_field",
+          ownerType: "PAGE",
+          access: {
+            admin: "MERCHANT_READ_WRITE",
+            storefront: "PUBLIC_READ"  // CRITICAL: Required for Liquid to read page.metafields['$app'].bundle_id
+          }
+        }
+      }
+    });
+
+    const data = await response.json();
+    const errors = data.data?.metafieldDefinitionCreate?.userErrors ?? [];
+
+    if (errors.length > 0) {
+      const error = errors[0];
+      if (error.code === "TAKEN") {
+        console.log("✓ [METAFIELD_DEF] PAGE bundle_id definition already exists");
+      } else {
+        console.error("❌ [METAFIELD_DEF] Error creating PAGE bundle_id definition:", error);
+      }
+    } else {
+      console.log("✓ [METAFIELD_DEF] Created PAGE bundle_id definition with PUBLIC_READ storefront access");
+    }
+  } catch (error) {
+    console.error("❌ [METAFIELD_DEF] Failed to create PAGE bundle_id definition:", error);
+  }
+
+  return true;
+}

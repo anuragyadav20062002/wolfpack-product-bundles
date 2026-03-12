@@ -6,6 +6,7 @@
  */
 
 import { AppLogger } from "../../lib/logger";
+import { ensurePageBundleIdMetafieldDefinition } from "../bundles/metafield-sync.server";
 import type { FullPageBundleResult } from "./types";
 
 /**
@@ -144,7 +145,11 @@ export async function createFullPageBundle(
       });
     }
 
-    // Step 2: Add/update bundle ID as page metafield (metafieldsSet is idempotent)
+    // Step 2a: Ensure PAGE metafield definition exists with PUBLIC_READ storefront access
+    // Without this definition, page.metafields['$app'].bundle_id returns null in Liquid
+    await ensurePageBundleIdMetafieldDefinition(admin);
+
+    // Step 2b: Add/update bundle ID as page metafield (metafieldsSet is idempotent)
     const SET_METAFIELD = `
       mutation setPageMetafield($metafields: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafields) {

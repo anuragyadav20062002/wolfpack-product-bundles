@@ -10,7 +10,7 @@ import prisma from "./db.server";
 import { createStorefrontAccessToken } from "./services/storefront-token.server";
 import { CartTransformService } from "./services/cart-transform-service.server";
 import { BillingService } from "./services/billing.server";
-import { ensureVariantBundleMetafieldDefinitions } from "./services/bundles/metafield-sync.server";
+import { ensureVariantBundleMetafieldDefinitions, ensurePageBundleIdMetafieldDefinition } from "./services/bundles/metafield-sync.server";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -34,6 +34,7 @@ const shopify = shopifyApp({
       try {
         console.log("[SHOPIFY] Creating variant-level metafield definitions...");
         await ensureVariantBundleMetafieldDefinitions(admin);
+        await ensurePageBundleIdMetafieldDefinition(admin);
         console.log("[SHOPIFY] ✅ Metafield definitions created with storefront access");
       } catch (error: any) {
         console.error("[SHOPIFY] ⚠️ Failed to create metafield definitions:", error?.message || error);
