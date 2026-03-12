@@ -1,0 +1,46 @@
+# Issue: Theme Editor UX Fixes
+
+**Issue ID:** theme-editor-ux-fixes-1
+**Status:** In Progress
+**Priority:** 🟡 Medium
+**Created:** 2026-03-12
+**Last Updated:** 2026-03-12 18:35
+
+## Overview
+
+Two theme editor UX issues:
+1. **Wrong product in theme editor** — "Open in Theme Editor" button takes merchant to a random/default product instead of the configured bundle product.
+2. **Widget block position** — Bundle widget is currently a section-type block (appears as a standalone section below the product). Changing it to an app block allows embedding *inside* the product section (under the title/price area).
+
+## Root Cause
+
+**Issue 1:** Theme editor URL is missing the `previewPath` query parameter. Without it, Shopify opens the editor on a default product (usually the most recently viewed or a demo product). The correct parameter is `previewPath=/products/{productHandle}`.
+
+**Issue 2:** The liquid schema has `"target": "section"` making it a standalone section. App blocks (without `"target": "section"`) can be embedded within existing sections that declare `"type": "@app"` support (all modern Shopify themes support this in their product section).
+
+## Progress Log
+
+### 2026-03-12 18:31 - Starting implementation
+
+- Files to change:
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx` — add `previewPath` to secondary action URL and `handlePageSelection` URL
+  - `extensions/bundle-builder/blocks/bundle-product-page.liquid` — remove `"target": "section"` to enable app block embedding
+  - `extensions/bundle-builder/shopify.extension.toml` — confirm toml target stays `all`
+- Expected outcome: Theme editor opens on the correct bundle product; widget can be placed inside the product section near the title
+
+### 2026-03-12 18:35 - Completed implementation
+
+- ✅ Added `previewPath=/products/{productHandle}` to secondary action URL
+- ✅ Added `previewPath=/products/{productHandle}` to `handlePageSelection` URL
+- ✅ Changed deep link `target` from `newAppsSection` to `mainSection` (both URLs)
+- ✅ Removed `"target": "section"` from liquid schema — block is now an app block
+- Files modified:
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
+  - `extensions/bundle-builder/blocks/bundle-product-page.liquid`
+- Next: shopify app deploy required for liquid schema change to take effect
+
+## Phases Checklist
+
+- [x] Phase 1: Fix previewPath in theme editor URLs
+- [x] Phase 2: Change block from section-type to app block
+- [ ] Phase 3: Deploy with shopify app deploy
