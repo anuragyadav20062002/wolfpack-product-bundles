@@ -61,7 +61,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   /* PRODUCT CARD LAYOUT & DIMENSIONS (Phase 6) */
   --bundle-product-card-width: ${s.productCardWidth || 280}px;
   --bundle-product-card-height: ${s.productCardHeight || 420}px;
-  --bundle-product-card-spacing: ${s.productCardSpacing || 20}px;
+  --bundle-product-card-spacing: ${s.productCardSpacing || 12}px;
   --bundle-product-card-border-radius: ${s.productCardBorderRadius || 8}px;
   --bundle-product-card-padding: ${s.productCardPadding || 12}px;
   --bundle-product-card-border-width: ${s.productCardBorderWidth || 1}px;
