@@ -28,6 +28,8 @@ console.log(`  Port:               ${process.env.PORT ?? 3001}`);
 console.log(`  Database:           ${process.env.DATABASE_URL ? "Connected" : "Missing"}`);
 console.log(`  SHOPIFY_API_SECRET: ${process.env.SHOPIFY_API_SECRET ? "Loaded" : "Missing"}`);
 console.log(`  SHOPIFY_APP_URL:    ${process.env.SHOPIFY_APP_URL ? process.env.SHOPIFY_APP_URL : "MISSING — worker will fail to start"}`);
+console.log(`  INNGEST_EVENT_KEY:  ${process.env.INNGEST_EVENT_KEY ? "Loaded" : "Missing — events will not reach Inngest Cloud (ok for local dev with INNGEST_DEV=1)"}`);
+console.log(`  INNGEST_DEV:        ${process.env.INNGEST_DEV === "1" ? "1 (routing to local Dev Server at :8288)" : "unset (Inngest Cloud)"}`);
 console.log();
 console.log("=".repeat(60));
 console.log();

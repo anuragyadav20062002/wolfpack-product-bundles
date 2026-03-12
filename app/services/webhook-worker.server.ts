@@ -18,11 +18,11 @@
  *   DATABASE_URL       - Required by Prisma (already present on Render worker)
  */
 
-import { createServer, type IncomingHttpHeaders, type Server } from "node:http";
+import { createServer, type IncomingHttpHeaders, type IncomingMessage, type ServerResponse, type Server } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { WebhookProcessor } from "./webhook-processor.server";
 import { AppLogger } from "../lib/logger";
-import type { PubSubMessage } from "./webhooks/types";
+import { inngest } from "../inngest/client";
+import type { ShopifyWebhookEventData } from "../inngest/types";
 
 // ---------------------------------------------------------------------------
 // Environment validation — fail fast at import time so the process never binds
@@ -68,19 +68,19 @@ function validateHmac(rawBody: Buffer, hmacHeader: string, secret: string): bool
 // ---------------------------------------------------------------------------
 
 /**
- * Converts a raw Shopify HTTP webhook request into the existing PubSubMessage
- * format so WebhookProcessor.processPubSubMessage() can be called unchanged.
+ * Builds the Inngest event payload from the raw Shopify webhook body and headers.
  */
-function adaptShopifyWebhook(rawBody: Buffer, headers: IncomingHttpHeaders): PubSubMessage {
-  return {
-    data: rawBody.toString("base64"),
-    attributes: {
-      "X-Shopify-Topic":       headers["x-shopify-topic"]       as string,
-      "X-Shopify-Shop-Domain": headers["x-shopify-shop-domain"] as string,
-      "X-Shopify-Webhook-Id":  headers["x-shopify-webhook-id"]  as string | undefined,
-      "X-Shopify-API-Version": headers["x-shopify-api-version"] as string | undefined,
-    },
+function buildInngestPayload(rawBody: Buffer, headers: IncomingHttpHeaders): ShopifyWebhookEventData {
+  const payload: ShopifyWebhookEventData = {
+    rawPayload:  rawBody.toString("base64"),
+    topic:       headers["x-shopify-topic"]       as string,
+    shopDomain:  headers["x-shopify-shop-domain"] as string,
   };
+  const webhookId  = headers["x-shopify-webhook-id"]  as string | undefined;
+  const apiVersion = headers["x-shopify-api-version"] as string | undefined;
+  if (webhookId  !== undefined) payload.webhookId  = webhookId;
+  if (apiVersion !== undefined) payload.apiVersion = apiVersion;
+  return payload;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ function adaptShopifyWebhook(rawBody: Buffer, headers: IncomingHttpHeaders): Pub
  * Reads the full request body as a Buffer.
  * Required so we can HMAC-validate the raw bytes before any JSON parsing.
  */
-function readRawBody(req: import("node:http").IncomingMessage): Promise<Buffer> {
+function readRawBody(req: IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     req.on("data", (chunk: Buffer) => chunks.push(chunk));
@@ -107,6 +107,150 @@ function readRawBody(req: import("node:http").IncomingMessage): Promise<Buffer> 
 let httpServer: Server | null = null;
 
 // ---------------------------------------------------------------------------
+// Request handler (exported for unit testing)
+// ---------------------------------------------------------------------------
+
+/**
+ * Handles a single HTTP request. Exported so unit tests can exercise the
+ * full request lifecycle without starting the HTTP server.
+ */
+export async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const method = req.method ?? "GET";
+  const url    = req.url   ?? "/";
+
+  // -------------------------------------------------------------------------
+  // GET /health
+  // -------------------------------------------------------------------------
+  if (method === "GET" && url === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok" }));
+    return;
+  }
+
+  // -------------------------------------------------------------------------
+  // POST /webhooks
+  // -------------------------------------------------------------------------
+  if (method === "POST" && url === "/webhooks") {
+    let rawBody: Buffer;
+
+    try {
+      rawBody = await readRawBody(req);
+    } catch (error) {
+      AppLogger.error("Failed to read request body", {
+        component: "webhook-worker",
+        operation: "requestHandler",
+      }, error);
+      res.writeHead(500);
+      res.end();
+      return;
+    }
+
+    // Reject empty bodies
+    if (rawBody.length === 0) {
+      AppLogger.warn("Rejected webhook with empty body", {
+        component: "webhook-worker",
+        operation: "requestHandler",
+      });
+      res.writeHead(400);
+      res.end();
+      return;
+    }
+
+    // HMAC validation
+    const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string | undefined;
+
+    if (!hmacHeader) {
+      AppLogger.error("Rejected webhook: missing X-Shopify-Hmac-Sha256 header", {
+        component: "webhook-worker",
+        operation: "validateHmac",
+      }, {
+        topic:  req.headers["x-shopify-topic"],
+        shop:   req.headers["x-shopify-shop-domain"],
+        method,
+        url,
+      });
+      res.writeHead(401);
+      res.end();
+      return;
+    }
+
+    if (!validateHmac(rawBody, hmacHeader, SHOPIFY_API_SECRET!)) {
+      AppLogger.error("Rejected webhook: invalid HMAC signature", {
+        component: "webhook-worker",
+        operation: "validateHmac",
+      }, {
+        topic:  req.headers["x-shopify-topic"],
+        shop:   req.headers["x-shopify-shop-domain"],
+      });
+      res.writeHead(401);
+      res.end();
+      return;
+    }
+
+    // Required header validation
+    const topic      = req.headers["x-shopify-topic"]       as string | undefined;
+    const shopDomain = req.headers["x-shopify-shop-domain"] as string | undefined;
+
+    if (!topic || !shopDomain) {
+      AppLogger.warn("Rejected webhook: missing required headers", {
+        component: "webhook-worker",
+        operation: "requestHandler",
+      }, { topic, shop: shopDomain });
+      res.writeHead(400);
+      res.end();
+      return;
+    }
+
+    AppLogger.info("Received webhook", {
+      component: "webhook-worker",
+      operation: "requestHandler",
+    }, {
+      topic,
+      shop:      shopDomain,
+      webhookId: req.headers["x-shopify-webhook-id"],
+      bodyBytes: rawBody.length,
+    });
+
+    // Acknowledge Shopify immediately (must be within 5-second window).
+    // Inngest receives the event durably; retries are managed by Inngest Cloud.
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ received: true }));
+
+    // Enqueue to Inngest after the response is sent.
+    // If inngest.send() fails (e.g. Inngest Cloud unreachable), log and continue —
+    // Shopify has already received 200 so we must not crash the process.
+    inngest.send({
+      name: "shopify/webhook",
+      data: buildInngestPayload(rawBody, req.headers),
+    }).then(() => {
+      AppLogger.info("Webhook enqueued to Inngest", {
+        component: "webhook-worker",
+        operation: "requestHandler",
+      }, { topic, shop: shopDomain });
+    }).catch((error: unknown) => {
+      AppLogger.error("Failed to enqueue webhook to Inngest", {
+        component: "webhook-worker",
+        operation: "requestHandler",
+      }, error);
+    });
+
+    return;
+  }
+
+  // -------------------------------------------------------------------------
+  // 405 for wrong method on known paths, 404 for everything else
+  // -------------------------------------------------------------------------
+  if (url === "/webhooks" && method !== "POST") {
+    res.writeHead(405, { Allow: "POST" });
+    res.end();
+    return;
+  }
+
+  res.writeHead(404);
+  res.end();
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -115,7 +259,7 @@ let httpServer: Server | null = null;
  *
  * Binds to PORT (default 3001) and handles:
  *   GET  /health   → 200 {"status": "ok"}
- *   POST /webhooks → HMAC validate → adapt → process → 200
+ *   POST /webhooks → HMAC validate → inngest.send() → 200
  *   *              → 404
  *
  * Registers SIGTERM handler for graceful shutdown (waits up to 10 s for
@@ -130,148 +274,7 @@ export function startWebhookWorker(): void {
     return;
   }
 
-  httpServer = createServer(async (req, res) => {
-    const method = req.method ?? "GET";
-    const url    = req.url   ?? "/";
-
-    // -----------------------------------------------------------------------
-    // GET /health
-    // -----------------------------------------------------------------------
-    if (method === "GET" && url === "/health") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ status: "ok" }));
-      return;
-    }
-
-    // -----------------------------------------------------------------------
-    // POST /webhooks
-    // -----------------------------------------------------------------------
-    if (method === "POST" && url === "/webhooks") {
-      let rawBody: Buffer;
-
-      try {
-        rawBody = await readRawBody(req);
-      } catch (error) {
-        AppLogger.error("Failed to read request body", {
-          component: "webhook-worker",
-          operation: "requestHandler",
-        }, error);
-        res.writeHead(500);
-        res.end();
-        return;
-      }
-
-      // Reject empty bodies
-      if (rawBody.length === 0) {
-        AppLogger.warn("Rejected webhook with empty body", {
-          component: "webhook-worker",
-          operation: "requestHandler",
-        });
-        res.writeHead(400);
-        res.end();
-        return;
-      }
-
-      // HMAC validation
-      const hmacHeader = req.headers["x-shopify-hmac-sha256"] as string | undefined;
-
-      if (!hmacHeader) {
-        AppLogger.error("Rejected webhook: missing X-Shopify-Hmac-Sha256 header", {
-          component: "webhook-worker",
-          operation: "validateHmac",
-        }, {
-          topic:  req.headers["x-shopify-topic"],
-          shop:   req.headers["x-shopify-shop-domain"],
-          method,
-          url,
-        });
-        res.writeHead(401);
-        res.end();
-        return;
-      }
-
-      // Non-null assertion is safe: validated above
-      if (!validateHmac(rawBody, hmacHeader, SHOPIFY_API_SECRET!)) {
-        AppLogger.error("Rejected webhook: invalid HMAC signature", {
-          component: "webhook-worker",
-          operation: "validateHmac",
-        }, {
-          topic:  req.headers["x-shopify-topic"],
-          shop:   req.headers["x-shopify-shop-domain"],
-        });
-        res.writeHead(401);
-        res.end();
-        return;
-      }
-
-      // Required header validation
-      const topic      = req.headers["x-shopify-topic"]       as string | undefined;
-      const shopDomain = req.headers["x-shopify-shop-domain"] as string | undefined;
-
-      if (!topic || !shopDomain) {
-        AppLogger.warn("Rejected webhook: missing required headers", {
-          component: "webhook-worker",
-          operation: "requestHandler",
-        }, { topic, shop: shopDomain });
-        res.writeHead(400);
-        res.end();
-        return;
-      }
-
-      AppLogger.info("Received webhook", {
-        component: "webhook-worker",
-        operation: "requestHandler",
-      }, {
-        topic,
-        shop:      shopDomain,
-        webhookId: req.headers["x-shopify-webhook-id"],
-        bodyBytes: rawBody.length,
-      });
-
-      // Adapt to PubSubMessage and process — always respond 200 to avoid
-      // Shopify retry storms even when processor fails
-      const message = adaptShopifyWebhook(rawBody, req.headers);
-
-      // Return 200 immediately before awaiting processor, so Shopify gets its
-      // acknowledgement within the 5-second window
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ received: true }));
-
-      // Process asynchronously after the response has been sent
-      WebhookProcessor.processPubSubMessage(message).then((result) => {
-        if (result.success) {
-          AppLogger.info("Webhook processed successfully", {
-            component: "webhook-worker",
-            operation: "requestHandler",
-          }, { topic, shop: shopDomain });
-        } else {
-          AppLogger.error("Webhook processor returned failure", {
-            component: "webhook-worker",
-            operation: "requestHandler",
-          }, { topic, shop: shopDomain, error: result.error });
-        }
-      }).catch((error) => {
-        AppLogger.error("Unhandled error in webhook processor", {
-          component: "webhook-worker",
-          operation: "requestHandler",
-        }, error);
-      });
-
-      return;
-    }
-
-    // -----------------------------------------------------------------------
-    // 405 for wrong method on known paths, 404 for everything else
-    // -----------------------------------------------------------------------
-    if (url === "/webhooks" && method !== "POST") {
-      res.writeHead(405, { Allow: "POST" });
-      res.end();
-      return;
-    }
-
-    res.writeHead(404);
-    res.end();
-  });
+  httpServer = createServer(handleRequest);
 
   httpServer.listen(PORT, () => {
     AppLogger.info("Webhook worker HTTP server started", {
