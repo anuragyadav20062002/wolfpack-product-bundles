@@ -1185,7 +1185,10 @@ export default function ConfigureBundleFlow() {
       // the bundle_id setting in the theme editor, making setup seamless for merchants
       const pageProductHandle = template.bundleProduct?.handle || bundle.shopifyProductHandle;
       const pagePreviewParam = pageProductHandle ? `&previewPath=${encodeURIComponent(`/products/${pageProductHandle}`)}` : '';
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=mainSection&bundleId=${bundle.id}${pagePreviewParam}`;
+      // target=newAppsSection is correct for section-type blocks ("target":"section" in liquid schema).
+      // target=mainSection is only for app blocks embedded inside theme sections — using it
+      // with a section block causes Shopify to misroute and may open the wrong template/product.
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}${pagePreviewParam}`;
 
       AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
         template: template.handle,
@@ -1237,7 +1240,8 @@ export default function ConfigureBundleFlow() {
           onAction: () => {
             const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
             const previewParam = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
-            const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=mainSection${previewParam}`;
+            // target=newAppsSection is correct for section-type blocks.
+            const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
             window.open(themeEditorUrl, '_blank');
           },
         },
