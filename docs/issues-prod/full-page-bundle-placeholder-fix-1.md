@@ -1,7 +1,7 @@
 # Issue: Full-Page Bundle Shows "Please configure a Bundle ID" Placeholder
 
 **Issue ID:** full-page-bundle-placeholder-fix-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-12
 **Last Updated:** 2026-03-13
@@ -46,4 +46,11 @@ The app created `$app:bundle_id` metafields on pages via `metafieldsSet`, but ne
 - [x] Phase 1: Add PAGE metafield definition function
 - [x] Phase 2: Wire into afterAuth + bundle creation
 - [x] Phase 3: Also call in full-page bundle configure loader (fixes existing shops without re-auth)
-- [ ] Phase 4: Deploy to Render + verify on storefront
+- [x] Phase 4: Fix TAKEN silent skip — update storefront access on existing definition
+- [ ] Phase 5: Deploy to Render + verify on storefront
+
+### 2026-03-13 - Phase 4: Update existing definition's storefront access on TAKEN
+
+- Problem: Definition confirmed to exist (log: "✓ PAGE bundle_id definition already exists") but placeholder still shows. Root cause: definition may have been created originally without `PUBLIC_READ` access. When `TAKEN` is returned, the code silently skipped — never checked or updated the existing definition's storefront access.
+- Fix: When `TAKEN` is returned, now queries the existing definition via `metafieldDefinitions(ownerType: PAGE, namespace: "$app", key: "bundle_id")` to get its ID and current storefront access. If access is not `PUBLIC_READ`, calls `metafieldDefinitionUpdate` to update it.
+- File: `app/services/bundles/metafield-sync/operations/definitions.server.ts`
