@@ -215,13 +215,6 @@ export function NavigationSidebar({
           isActive={activeSubSection === "toasts"}
         />
         <NavigationItem
-          label="Loading State"
-          sectionKey="loadingState"
-          isChild
-          onClick={() => onSubSectionClick("loadingState")}
-          isActive={activeSubSection === "loadingState"}
-        />
-        <NavigationItem
           label="Modal Close Button"
           sectionKey="modalCloseButton"
           isChild

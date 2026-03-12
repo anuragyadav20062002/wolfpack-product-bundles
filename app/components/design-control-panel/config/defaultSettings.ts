@@ -244,10 +244,6 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   modalCloseButtonBgColor: "rgba(255,255,255,0.9)",
   modalCloseButtonHoverColor: "#333333",
 
-  // Loading Overlay
-  loadingOverlayBgColor: "#E3F2FD",
-  loadingOverlayTextColor: "#1976D2",
-
   // Typography
   buttonTextTransform: "none",
   buttonLetterSpacing: 0,
@@ -496,10 +492,6 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   modalCloseButtonColor: "#777777",
   modalCloseButtonBgColor: "rgba(255,255,255,0.9)",
   modalCloseButtonHoverColor: "#333333",
-
-  // Loading Overlay
-  loadingOverlayBgColor: "#E3F2FD",
-  loadingOverlayTextColor: "#1976D2",
 
   // Typography
   buttonTextTransform: "none",

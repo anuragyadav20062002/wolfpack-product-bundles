@@ -110,47 +110,6 @@ export function GeneralPreview({
     );
   }
 
-  // Loading State — uses --bundle-loading-overlay-bg / --bundle-loading-overlay-text vars
-  if (activeSubSection === "loadingState") {
-    return (
-      <div style={{ textAlign: "center", position: "relative" }}>
-        <Text as="h3" variant="headingLg" fontWeight="semibold">
-          Loading State
-        </Text>
-        <div style={{ marginTop: "80px", display: "inline-block" }}>
-          <HighlightBox active>
-            <div
-              style={{
-                padding: "16px 24px",
-                background: "var(--bundle-loading-overlay-bg, #E3F2FD)",
-                color: "var(--bundle-loading-overlay-text, #1976D2)",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: 500,
-                textAlign: "center",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                minWidth: "240px",
-                justifyContent: "center",
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-              Loading bundle…
-            </div>
-          </HighlightBox>
-        </div>
-        <div style={{ marginTop: "24px" }}>
-          <Text as="p" variant="bodySm" tone="subdued">
-            Shown while the bundle is processing
-          </Text>
-        </div>
-      </div>
-    );
-  }
-
   // Modal Close Button — uses .close-button CSS class + --bundle-modal-close-* vars
   if (activeSubSection === "modalCloseButton") {
     return (

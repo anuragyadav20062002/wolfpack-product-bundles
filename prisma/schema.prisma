@@ -301,10 +301,6 @@ model DesignSettings {
   modalCloseButtonBgColor     String? @default("rgba(255,255,255,0.9)")
   modalCloseButtonHoverColor  String? @default("#333333")
 
-  // Loading Overlay
-  loadingOverlayBgColor       String? @default("#E3F2FD")
-  loadingOverlayTextColor     String? @default("#1976D2")
-
   // Typography
   buttonTextTransform         String? @default("none")
   buttonLetterSpacing         Int?    @default(0)

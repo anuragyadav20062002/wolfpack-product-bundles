@@ -640,7 +640,8 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
         </Text>
         <div style={{ marginTop: "60px", display: "inline-block" }}>
           <HighlightBox active>
-            <div style={{ display: "flex", gap: "16px", padding: "16px", background: "#f8f9fa", borderRadius: "12px" }}>
+            {/* paddingTop gives room for the badge that overflows by 6px above the tile */}
+            <div style={{ display: "flex", gap: "16px", padding: "16px", paddingTop: "20px", background: "#f8f9fa", borderRadius: "12px" }}>
               {SAMPLE_PRODUCTS.slice(0, 2).map((product, i) => (
                 <div
                   key={i}
@@ -672,11 +673,28 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                     >
                       <div style={{ width: "28px", height: "28px", backgroundColor: "#D1D5DB", borderRadius: "4px" }} />
                     </div>
-                    {/* Real tile-quantity-badge class — uses --bundle-tile-badge-bg/text CSS vars */}
-                    {/* eslint-disable-next-line react/no-danger */}
-                    <div dangerouslySetInnerHTML={{
-                      __html: `<span class="footer-product-tile tile-quantity-badge" style="position:absolute;top:-6px;right:-6px;z-index:1;">${product.qty}</span>`,
-                    }} />
+                    {/* Pure React badge — reads CSS vars via inline style so DCP changes apply */}
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "-6px",
+                        right: "-6px",
+                        minWidth: "20px",
+                        height: "20px",
+                        padding: "0 5px",
+                        background: "var(--bundle-tile-badge-bg, #000000)",
+                        color: "var(--bundle-tile-badge-text, #ffffff)",
+                        borderRadius: "10px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+                      }}
+                    >
+                      {product.qty}
+                    </span>
                   </div>
                   {/* Info */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0, flex: 1 }}>

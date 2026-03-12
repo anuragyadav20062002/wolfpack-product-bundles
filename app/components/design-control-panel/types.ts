@@ -106,10 +106,6 @@ export interface DesignSettings {
   modalCloseButtonBgColor: string;
   modalCloseButtonHoverColor: string;
 
-  // Loading Overlay
-  loadingOverlayBgColor: string;
-  loadingOverlayTextColor: string;
-
   // Typography
   buttonTextTransform: string;
   buttonLetterSpacing: number;

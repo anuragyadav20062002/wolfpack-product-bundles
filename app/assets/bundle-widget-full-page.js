@@ -745,7 +745,11 @@ class BundleWidgetFullPage {
     this.renderFullPageFooter();
 
     // Load products asynchronously and update grid
-    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+    // Only show loading overlay when a custom GIF is configured — otherwise the
+    // skeleton loading state (already rendered above) is visible and sufficient.
+    if (this.selectedBundle?.loadingGif) {
+      this.showLoadingOverlay(this.selectedBundle.loadingGif);
+    }
     try {
       await this.loadStepProducts(this.currentStepIndex);
 
@@ -817,7 +821,10 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.appendChild(twoColWrapper);
 
     // Load products
-    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+    // Only show loading overlay when a custom GIF is configured.
+    if (this.selectedBundle?.loadingGif) {
+      this.showLoadingOverlay(this.selectedBundle.loadingGif);
+    }
     try {
       await this.loadStepProducts(this.currentStepIndex);
       const productGrid = this.createFullPageProductGrid(this.currentStepIndex);

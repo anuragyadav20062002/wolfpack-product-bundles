@@ -107,7 +107,7 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
   }
 
   // General subsections (emptyState, addToCartButton, toasts, and Phase 1 additions)
-  if (["emptyState", "addToCartButton", "toasts", "loadingState", "modalCloseButton", "accessibility"].includes(activeSubSection)) {
+  if (["emptyState", "addToCartButton", "toasts", "modalCloseButton", "accessibility"].includes(activeSubSection)) {
     return (
       <PreviewScope settings={settings}>
         <GeneralPreview

@@ -25,7 +25,6 @@ import { PromoBannerSettings } from "./PromoBannerSettings";
 import { SearchInputSettings } from "./SearchInputSettings";
 import { SkeletonSettings } from "./SkeletonSettings";
 import { QuantityBadgeSettings } from "./QuantityBadgeSettings";
-import { LoadingStateSettings } from "./LoadingStateSettings";
 import { TypographySettings } from "./TypographySettings";
 import { AccessibilitySettings } from "./AccessibilitySettings";
 import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
@@ -108,9 +107,6 @@ export function SettingsPanel({
 
     case "quantityBadge":
       return <QuantityBadgeSettings settings={settings} onUpdate={onUpdate} />;
-
-    case "loadingState":
-      return <LoadingStateSettings settings={settings} onUpdate={onUpdate} />;
 
     case "typography":
       return <TypographySettings settings={settings} onUpdate={onUpdate} />;

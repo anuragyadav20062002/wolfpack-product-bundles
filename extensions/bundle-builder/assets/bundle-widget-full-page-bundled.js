@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 1.3.0
- * Built   : 2026-03-11
+ * Version : 1.3.2
+ * Built   : 2026-03-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.3.0';
+window.__BUNDLE_WIDGET_VERSION__ = '1.3.2';
 (function() {
   'use strict';
 
@@ -3160,7 +3160,11 @@ class BundleWidgetFullPage {
     this.renderFullPageFooter();
 
     // Load products asynchronously and update grid
-    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+    // Only show loading overlay when a custom GIF is configured — otherwise the
+    // skeleton loading state (already rendered above) is visible and sufficient.
+    if (this.selectedBundle?.loadingGif) {
+      this.showLoadingOverlay(this.selectedBundle.loadingGif);
+    }
     try {
       await this.loadStepProducts(this.currentStepIndex);
 
@@ -3232,7 +3236,10 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.appendChild(twoColWrapper);
 
     // Load products
-    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+    // Only show loading overlay when a custom GIF is configured.
+    if (this.selectedBundle?.loadingGif) {
+      this.showLoadingOverlay(this.selectedBundle.loadingGif);
+    }
     try {
       await this.loadStepProducts(this.currentStepIndex);
       const productGrid = this.createFullPageProductGrid(this.currentStepIndex);

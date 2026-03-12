@@ -222,10 +222,6 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-modal-close-bg: ${s.modalCloseButtonBgColor || 'rgba(255,255,255,0.9)'};
   --bundle-modal-close-hover: ${s.modalCloseButtonHoverColor || '#333333'};
 
-  /* LOADING OVERLAY */
-  --bundle-loading-overlay-bg: ${s.loadingOverlayBgColor || '#E3F2FD'};
-  --bundle-loading-overlay-text: ${s.loadingOverlayTextColor || '#1976D2'};
-
   /* TYPOGRAPHY */
   --bundle-button-text-transform: ${s.buttonTextTransform || 'none'};
   --bundle-button-letter-spacing: ${(s.buttonLetterSpacing ?? 0) / 100}em;

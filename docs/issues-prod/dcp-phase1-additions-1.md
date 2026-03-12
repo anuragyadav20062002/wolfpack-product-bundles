@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-12 17:00
+**Last Updated:** 2026-03-12 19:00
 
 ## Overview
 
@@ -89,6 +89,27 @@ All new settings extend the existing CSS variable pipeline:
 - [x] DCP Preview components for new Phase 1 settings
 - [x] Remove progress bar controls from DCP (no progress bar in widget)
 - [x] Remove progress bar DB columns, types, defaults, CSS vars
+- [x] Fix quantity badge DCP preview (replace dangerouslySetInnerHTML with pure React inline styles)
+- [x] Fix skeleton loading hidden by loading overlay (only show overlay when custom GIF exists)
+- [x] Remove Loading State from DCP (handled via bundle config GIF upload instead)
+
+### 2026-03-12 19:00 - Fix quantity badge preview, skeleton loading, remove Loading State DCP panel
+
+**Fix 1: Quantity badge preview**
+- Replaced `dangerouslySetInnerHTML` badge (class-based, required widget CSS) with pure React `<span>` using `var(--bundle-tile-badge-bg/text)` CSS vars as inline style
+- Added `paddingTop: "16px"` to tile wrapper container to prevent `-6px` badge overflow from being clipped
+
+**Fix 2: Skeleton loading invisible on storefront**
+- `showLoadingOverlay()` was called unconditionally on every step load, covering the skeleton cards with an opaque overlay
+- Changed both call sites in `bundle-widget-full-page.js` (line 748, 820) to only call when a custom loading GIF is configured
+- WIDGET_VERSION bumped and widgets rebuilt
+
+**Fix 3: Remove Loading State DCP panel**
+- Loading overlay colors are now hardcoded (GIF upload handles the overlay via bundle config)
+- Removed from NavigationSidebar.tsx, SettingsPanel.tsx (case + import), GeneralPreview.tsx, PreviewPanel.tsx
+- Removed `loadingOverlayBgColor` and `loadingOverlayTextColor` from types.ts, defaultSettings.ts, css-variables-generator.ts
+- DROP COLUMN migration for Prisma schema
+- Replaced `var(--bundle-loading-overlay-bg/text)` in bundle-widget-product-page.js with hardcoded fallback values
 
 ### 2026-03-12 17:00 - Removing progress bar from DB and type system
 - DB: DROP progressBarHeight, progressBarBorderRadius columns (Prisma migration)
