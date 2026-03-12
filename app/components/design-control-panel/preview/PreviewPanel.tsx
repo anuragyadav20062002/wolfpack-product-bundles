@@ -79,8 +79,6 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
           footerNextButtonBorderColor={settings.footerNextButtonBorderColor}
           footerNextButtonBorderRadius={settings.footerNextButtonBorderRadius}
           footerDiscountTextVisibility={settings.footerDiscountTextVisibility}
-          footerProgressBarFilledColor={settings.footerProgressBarFilledColor}
-          footerProgressBarEmptyColor={settings.footerProgressBarEmptyColor}
           successMessageFontSize={settings.successMessageFontSize}
           successMessageFontWeight={settings.successMessageFontWeight}
           successMessageTextColor={settings.successMessageTextColor}

@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-12 15:00
+**Last Updated:** 2026-03-12 16:00
 
 ## Overview
 
@@ -87,6 +87,14 @@ All new settings extend the existing CSS variable pipeline:
 - [x] ESLint check
 - [x] Issue file & commit
 - [x] DCP Preview components for new Phase 1 settings
+- [x] Remove progress bar controls from DCP (no progress bar in widget)
+
+### 2026-03-12 16:00 - Removing progress bar controls from DCP
+- Removing: footerProgressBarFilledColor, footerProgressBarEmptyColor color pickers
+- Removing: progressBarHeight, progressBarBorderRadius sliders (Progress Bar Shape section)
+- Renaming section: "Discount Text & Progress Bar" → "Discount Text"
+- Removing progress bar shape preview from BundleFooterPreview
+- Removing stale props from PreviewPanel → BundleFooterPreview call
 
 ### 2026-03-12 15:00 - Completed DCP Preview Components
 - ✅ ProductCardPreview.tsx: Added searchInput (default + focused states), skeletonLoading (animated skeleton cards), typography (button with CSS vars)

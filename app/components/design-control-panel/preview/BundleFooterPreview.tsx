@@ -31,8 +31,6 @@ interface BundleFooterPreviewProps {
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
   footerDiscountTextVisibility: boolean;
-  footerProgressBarFilledColor: string;
-  footerProgressBarEmptyColor: string;
   successMessageFontSize: number;
   successMessageFontWeight: number;
   successMessageTextColor: string;
@@ -108,8 +106,6 @@ function FullPageFooterLayout({
   footerNextButtonBorderColor,
   footerNextButtonBorderRadius,
   footerDiscountTextVisibility,
-  footerProgressBarFilledColor,
-  footerProgressBarEmptyColor,
 }: Omit<BundleFooterPreviewProps, "activeSubSection" | "footerTotalBgColor" | "successMessageFontSize" | "successMessageFontWeight" | "successMessageTextColor" | "successMessageBgColor"> & { highlightTarget: HighlightTarget }) {
   return (
     <div
@@ -138,7 +134,7 @@ function FullPageFooterLayout({
             style={{
               fontSize: "15px",
               fontWeight: 600,
-              color: footerProgressBarFilledColor,
+              color: "#374151",
             }}
           >
             Add 1 more item to get <strong>10% off</strong>
@@ -580,8 +576,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
     footerDiscountTextVisibility,
-    footerProgressBarFilledColor,
-    footerProgressBarEmptyColor,
     successMessageFontSize,
     successMessageFontWeight,
     successMessageTextColor,
@@ -635,8 +629,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
     footerDiscountTextVisibility,
-    footerProgressBarFilledColor,
-    footerProgressBarEmptyColor,
   };
 
   // quantityBadge — show a footer tile with the quantity badge highlighted
@@ -791,19 +783,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
               </div>
             </div>
 
-            {/* Progress Bar Shape — height + border-radius preview using real CSS vars */}
-            <div style={{ marginTop: "20px" }}>
-              <div style={{ fontSize: "11px", color: "#9CA3AF", textAlign: "center", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "10px" }}>
-                — progress bar shape —
-              </div>
-              {/* eslint-disable-next-line react/no-danger */}
-              <div dangerouslySetInnerHTML={{ __html: `
-                <div style="position:relative;width:100%;margin:0 auto;">
-                  <div class="modal-footer-progress-bar" style="background:var(--bundle-footer-progress-empty,#E5E7EB);width:100%;"></div>
-                  <div class="modal-footer-progress-bar" style="background:var(--bundle-footer-progress-filled,#4CAF50);position:absolute;top:0;left:0;width:60%;"></div>
-                </div>
-              ` }} />
-            </div>
           </div>
 
           {/* Annotation Label */}

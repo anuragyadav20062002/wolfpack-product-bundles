@@ -142,7 +142,7 @@ export function NavigationSidebar({
           isActive={activeSubSection === "footerButton"}
         />
         <NavigationItem
-          label="Discount Text & Progress Bar"
+          label="Discount Text"
           sectionKey="footerDiscountProgress"
           isChild
           onClick={() => onSubSectionClick("footerDiscountProgress")}
