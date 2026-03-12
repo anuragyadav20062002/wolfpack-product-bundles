@@ -57,6 +57,7 @@ export default {
       },
       moduleNameMapper: {
         '^~/(.*)$': '<rootDir>/app/$1',
+        '\\.module\\.css$': '<rootDir>/tests/__mocks__/styleMock.js',
       },
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
     },
@@ -78,6 +79,7 @@ export default {
       },
       moduleNameMapper: {
         '^~/(.*)$': '<rootDir>/app/$1',
+        '\\.module\\.css$': '<rootDir>/tests/__mocks__/styleMock.js',
       },
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
     },
@@ -99,6 +101,7 @@ export default {
       },
       moduleNameMapper: {
         '^~/(.*)$': '<rootDir>/app/$1',
+        '\\.module\\.css$': '<rootDir>/tests/__mocks__/styleMock.js',
       },
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
     },
