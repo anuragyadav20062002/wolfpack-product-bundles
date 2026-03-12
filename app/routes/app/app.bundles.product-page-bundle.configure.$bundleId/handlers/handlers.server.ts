@@ -162,10 +162,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       }
     }
 
-    // Get existing bundle to preserve shopifyProductId if not provided
+    // Get existing bundle to preserve shopifyProductId/Handle if not provided
     const existingBundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
-      select: { shopifyProductId: true }
+      select: { shopifyProductId: true, shopifyProductHandle: true }
     });
 
     // Update bundle in database
@@ -179,8 +179,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         name: bundleName,
         description: bundleDescription,
         status: finalStatus,
-        // Preserve existing shopifyProductId if not provided in form
+        // Preserve existing shopifyProductId/Handle if not provided in form
         shopifyProductId: bundleProductData?.id || existingBundle?.shopifyProductId || null,
+        shopifyProductHandle: bundleProductData?.handle || existingBundle?.shopifyProductHandle || null,
         templateName: templateName,
         loadingGif: loadingGif,
         // Update steps if provided

@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-12 20:15
+**Last Updated:** 2026-03-13 10:00
 
 ## Overview
 
@@ -39,6 +39,14 @@ Two theme editor UX issues:
   - `extensions/bundle-builder/blocks/bundle-product-page.liquid`
 - Next: shopify app deploy required for liquid schema change to take effect
 
+### 2026-03-13 10:00 - Fix: Save shopifyProductHandle to DB + correct deep link target
+
+- Root cause identified: save handler only wrote `shopifyProductId` to DB, never `shopifyProductHandle`. When `bundleProduct` GraphQL fetch fails at loader time, `bundle.shopifyProductHandle` fallback was also null → `previewPath` param was empty → theme editor opened on wrong product
+- ✅ `handlers.server.ts` — now also selects and saves `shopifyProductHandle` alongside `shopifyProductId`
+- ✅ `route.tsx` — changed deep link from `target=mainSection` to `target=newAppsSection` (correct for section-type blocks with `"target": "section"`)
+- Files modified:
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
+
 ### 2026-03-12 20:15 - Fix: Restore required `target` field in liquid schema
 
 - ❌ Removing `"target": "section"` caused Shopify deploy validation error: "missing required key 'target'"
@@ -50,4 +58,5 @@ Two theme editor UX issues:
 
 - [x] Phase 1: Fix previewPath in theme editor URLs
 - [x] Phase 2: Keep block as section-type (target required by Shopify), use mainSection deep link
-- [ ] Phase 3: Deploy with shopify app deploy
+- [x] Phase 3: Fix — also changed deep link to `target=newAppsSection` (correct for section-type blocks); also save `shopifyProductHandle` to DB in save handler so previewPath fallback is always populated
+- [ ] Phase 4: Deploy with shopify app deploy
