@@ -181,7 +181,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   // Product Card Layout & Dimensions
   productCardWidth: 280,
   productCardHeight: 420,
-  productCardSpacing: 20,
+  productCardSpacing: 12,
   productCardBorderRadius: 8,
   productCardPadding: 0,
   productCardMargin: 0,
@@ -432,7 +432,7 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Product Card Layout & Dimensions
   productCardWidth: 280,
   productCardHeight: 420,
-  productCardSpacing: 20,
+  productCardSpacing: 12,
   productCardBorderRadius: 8,
   productCardPadding: 0,
   productCardMargin: 0,
