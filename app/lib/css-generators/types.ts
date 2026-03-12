@@ -116,8 +116,6 @@ export interface CSSDesignSettings {
   footerNextButtonBorderColor?: string;
   footerNextButtonBorderRadius?: number;
   footerDiscountTextVisibility?: boolean;
-  footerProgressBarFilledColor?: string;
-  footerProgressBarEmptyColor?: string;
   footerScrollBarColor?: string;
 
   // Success Message

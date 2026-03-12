@@ -15,6 +15,102 @@ import { HighlightBox } from "./HighlightBox";
 const PLACEHOLDER_IMG =
   "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png";
 
+// Search input HTML — class names match bundle-widget-full-page.css references
+const searchInputHTML = `
+<div style="padding: 16px; background: #fff; border-radius: 8px; min-width: 320px;">
+  <div class="step-search-input-wrapper">
+    <svg class="step-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input class="step-search-input" type="text" placeholder="Search products..." value="" />
+  </div>
+  <div style="margin-top: 12px;">
+    <div class="step-search-input-wrapper" style="border-color: var(--bundle-search-focus-border, #00BCD4); box-shadow: 0 0 0 3px rgba(0,188,212,0.1);">
+      <svg class="step-search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--bundle-search-focus-border, #00BCD4); opacity: 1;">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="step-search-input" type="text" value="Nike Air" style="color: var(--bundle-search-text-color, #333);" />
+      <button class="step-search-clear-btn" style="display: flex;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+`.trim();
+
+// Skeleton loading HTML — classes match what bundle-widget-full-page.js injects at runtime
+// The keyframe animation is injected inline (same as the widget does)
+const skeletonHTML = `
+<div style="display: flex; gap: 16px; padding: 8px;">
+  <style>
+    @keyframes dcp-skeleton-pulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .dcp-skeleton-card {
+      width: 140px;
+      height: 200px;
+      border-radius: 12px;
+      background: var(--bundle-skeleton-base-bg, #f0f0f0);
+      position: relative;
+      overflow: hidden;
+    }
+    .dcp-skeleton-card-content {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        110deg,
+        var(--bundle-skeleton-shimmer, #e8e8e8) 0%,
+        var(--bundle-skeleton-shimmer, #e8e8e8) 40%,
+        var(--bundle-skeleton-highlight, #ffffff) 50%,
+        var(--bundle-skeleton-shimmer, #e8e8e8) 60%,
+        var(--bundle-skeleton-shimmer, #e8e8e8) 100%
+      );
+      background-size: 200% 100%;
+      animation: dcp-skeleton-pulse 1.5s ease-in-out infinite;
+    }
+  </style>
+  <div class="dcp-skeleton-card"><div class="dcp-skeleton-card-content"></div></div>
+  <div class="dcp-skeleton-card" style="animation-delay: 0.2s;"><div class="dcp-skeleton-card-content"></div></div>
+  <div class="dcp-skeleton-card" style="animation-delay: 0.4s;"><div class="dcp-skeleton-card-content"></div></div>
+</div>
+`.trim();
+
+// Added button state HTML — shows unselected vs added/selected button side-by-side
+// Wrapped in .modal-body .product-card so the existing CSS selectors match
+const addedButtonStateHTML = `
+<div class="modal-body" style="padding: 24px; background: #fff; border-radius: 8px;">
+  <div style="display: flex; gap: 32px; justify-content: center; align-items: flex-end;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <span style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em;">Before adding</span>
+      <div class="product-card" style="padding: 0; border: none; box-shadow: none; width: auto; background: transparent;">
+        <button class="product-add-btn" style="min-width: 160px;">Add to Bundle</button>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <span style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em;">After adding</span>
+      <div class="product-card" style="padding: 0; border: none; box-shadow: none; width: auto; background: transparent;">
+        <button class="product-add-btn added" style="min-width: 160px;">Added to Bundle</button>
+      </div>
+    </div>
+  </div>
+</div>
+`.trim();
+
+// Typography preview HTML — button using CSS vars for text-transform and letter-spacing
+const typographyHTML = `
+<div style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 16px;">
+  <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+    <span style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em;">Add button</span>
+    <button class="product-add-btn" style="min-width: 180px;">Add to Bundle</button>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+    <span style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em;">Cart button</span>
+    <button class="bundle-add-to-cart-button" style="min-width: 220px; padding: 14px 24px;">Add Bundle to Cart</button>
+  </div>
+</div>
+`.trim();
+
 // Real product card HTML matching ComponentGenerator.renderProductCard() output
 const unselectedCardHTML = `
 <div class="product-card" data-product-id="preview-unselected">
@@ -132,6 +228,72 @@ interface ProductCardPreviewProps {
 }
 
 export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps) {
+  // Search Input sub-section — show normal + focused states
+  if (activeSubSection === "searchInput") {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Search Input
+        </Text>
+        <div style={{ marginTop: "24px", display: "inline-block" }}>
+          <HighlightBox active>
+            {/* eslint-disable-next-line react/no-danger */}
+            <div dangerouslySetInnerHTML={{ __html: searchInputHTML }} />
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Top: default · Bottom: focused state
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Skeleton Loading sub-section — animated pulsing skeleton cards
+  if (activeSubSection === "skeletonLoading") {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Skeleton Loading
+        </Text>
+        <div style={{ marginTop: "24px", display: "inline-block" }}>
+          <HighlightBox active>
+            {/* eslint-disable-next-line react/no-danger */}
+            <div dangerouslySetInnerHTML={{ __html: skeletonHTML }} />
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Shown while products are loading
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Typography sub-section — button text-transform and letter-spacing
+  if (activeSubSection === "typography") {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Button Typography
+        </Text>
+        <div style={{ marginTop: "24px", display: "inline-block" }}>
+          <HighlightBox active>
+            {/* eslint-disable-next-line react/no-danger */}
+            <div dangerouslySetInnerHTML={{ __html: typographyHTML }} />
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Text transform &amp; letter spacing applied to all buttons
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
   // Modal sub-section — show real modal-content structure
   if (activeSubSection === "productCardContent") {
     return (
@@ -148,6 +310,28 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
         <div style={{ marginTop: "24px" }}>
           <Text as="p" variant="bodySm" tone="subdued">
             Preview updates as you customize
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Added button state sub-section — show unselected vs added button
+  if (activeSubSection === "addedButtonState") {
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Added State
+        </Text>
+        <div style={{ marginTop: "24px", display: "inline-block" }}>
+          <HighlightBox active>
+            {/* eslint-disable-next-line react/no-danger */}
+            <div dangerouslySetInnerHTML={{ __html: addedButtonStateHTML }} />
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Left: default · Right: after product is added to bundle
           </Text>
         </div>
       </div>

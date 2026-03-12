@@ -32,6 +32,9 @@ export interface DesignSettings {
   buttonBorderRadius: number;
   buttonHoverBgColor: string;
   buttonAddToCartText: string;
+  // Button — Added/Selected State
+  buttonAddedBgColor: string;
+  buttonAddedTextColor: string;
 
   // Quantity Selector
   quantitySelectorBgColor: string;
@@ -65,8 +68,6 @@ export interface DesignSettings {
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
   footerDiscountTextVisibility: boolean;
-  footerProgressBarFilledColor: string;
-  footerProgressBarEmptyColor: string;
 
   // Bundle Header - Tabs
   headerTabActiveBgColor: string;
@@ -108,17 +109,9 @@ export interface DesignSettings {
   modalCloseButtonBgColor: string;
   modalCloseButtonHoverColor: string;
 
-  // Loading Overlay
-  loadingOverlayBgColor: string;
-  loadingOverlayTextColor: string;
-
   // Typography
   buttonTextTransform: string;
   buttonLetterSpacing: number;
-
-  // Progress Bar Shape
-  progressBarHeight: number;
-  progressBarBorderRadius: number;
 
   // Focus / Accessibility
   focusOutlineColor: string;

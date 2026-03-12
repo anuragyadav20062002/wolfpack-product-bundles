@@ -85,8 +85,11 @@ register(({ analytics, browser, settings }) => {
         landingPage: utmParams.landing_page ?? null,
       };
 
-      // POST to Wolfpack attribution endpoint via App Proxy
-      await fetch(`${appServerUrl}/apps/product-bundles/api/attribution`, {
+      // POST directly to the app server attribution endpoint.
+      // The Remix route is at /api/attribution on the server.
+      // Do NOT include /apps/product-bundles — that prefix is stripped by Shopify's
+      // App Proxy when forwarding storefront requests; the server itself never sees it.
+      await fetch(`${appServerUrl}/api/attribution`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

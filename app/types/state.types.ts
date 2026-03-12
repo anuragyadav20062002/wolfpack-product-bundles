@@ -138,10 +138,8 @@ export interface FooterSettings {
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
 
-  // Discount & Progress
+  // Discount Text
   footerDiscountTextVisibility: boolean;
-  footerProgressBarFilledColor: string;
-  footerProgressBarEmptyColor: string;
 }
 
 /**

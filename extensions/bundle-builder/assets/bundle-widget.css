@@ -1105,7 +1105,8 @@
 }
 
 .modal-body .product-card .product-add-btn.added {
-  background: #10B981;
+  background: var(--bundle-button-added-bg, #10B981);
+  color: var(--bundle-button-added-text, #FFFFFF);
   box-shadow: none;
 }
 
@@ -1391,9 +1392,9 @@
 
 .modal-footer-progress-bar {
   width: 100%;
-  height: var(--bundle-progress-bar-height, 8px);
-  background-color: var(--bundle-footer-progress-empty, #E3E3E3);
-  border-radius: var(--bundle-progress-bar-radius, 4px);
+  height: 8px;
+  background-color: #E3E3E3;
+  border-radius: 4px;
   overflow: hidden;
   margin-bottom: 8px;
 }
@@ -1401,7 +1402,7 @@
 .modal-footer-progress-fill {
   width: 0%;
   height: 100%;
-  background-color: var(--bundle-footer-progress-filled, #000000);
+  background-color: #000000;
   border-radius: 4px;
   transition: width 0.3s ease;
 }

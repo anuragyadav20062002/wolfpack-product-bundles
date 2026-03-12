@@ -44,6 +44,8 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-button-font-weight: ${s.buttonFontWeight || 600};
   --bundle-button-border-radius: ${s.buttonBorderRadius || 8}px;
   --bundle-button-hover-bg: ${s.buttonHoverBgColor || s.buttonBgColor || globalPrimaryButton};
+  --bundle-button-added-bg: ${s.buttonAddedBgColor || '#10B981'};
+  --bundle-button-added-text: ${s.buttonAddedTextColor || '#FFFFFF'};
 
   /* VARIANT SELECTOR */
   --bundle-variant-selector-bg: ${s.variantSelectorBgColor || '#FFFFFF'};
@@ -59,7 +61,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   /* PRODUCT CARD LAYOUT & DIMENSIONS (Phase 6) */
   --bundle-product-card-width: ${s.productCardWidth || 280}px;
   --bundle-product-card-height: ${s.productCardHeight || 420}px;
-  --bundle-product-card-spacing: ${s.productCardSpacing || 20}px;
+  --bundle-product-card-spacing: ${s.productCardSpacing || 12}px;
   --bundle-product-card-border-radius: ${s.productCardBorderRadius || 8}px;
   --bundle-product-card-padding: ${s.productCardPadding || 12}px;
   --bundle-product-card-border-width: ${s.productCardBorderWidth || 1}px;
@@ -117,8 +119,6 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-footer-next-button-border: ${s.footerNextButtonBorderColor || globalPrimaryButton};
   --bundle-footer-next-button-radius: ${s.footerNextButtonBorderRadius || 8}px;
   --bundle-footer-discount-display: ${s.footerDiscountTextVisibility !== false ? 'block' : 'none'};
-  --bundle-footer-progress-filled: ${s.footerProgressBarFilledColor || globalPrimaryButton};
-  --bundle-footer-progress-empty: ${s.footerProgressBarEmptyColor || '#E3E3E3'};
   --bundle-success-message-font-size: ${s.successMessageFontSize || 16}px;
   --bundle-success-message-font-weight: ${s.successMessageFontWeight || 600};
   --bundle-success-message-text-color: ${s.successMessageTextColor || '#065F46'};
@@ -224,17 +224,9 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-modal-close-bg: ${s.modalCloseButtonBgColor || 'rgba(255,255,255,0.9)'};
   --bundle-modal-close-hover: ${s.modalCloseButtonHoverColor || '#333333'};
 
-  /* LOADING OVERLAY */
-  --bundle-loading-overlay-bg: ${s.loadingOverlayBgColor || '#E3F2FD'};
-  --bundle-loading-overlay-text: ${s.loadingOverlayTextColor || '#1976D2'};
-
   /* TYPOGRAPHY */
   --bundle-button-text-transform: ${s.buttonTextTransform || 'none'};
   --bundle-button-letter-spacing: ${(s.buttonLetterSpacing ?? 0) / 100}em;
-
-  /* PROGRESS BAR SHAPE */
-  --bundle-progress-bar-height: ${s.progressBarHeight || 4}px;
-  --bundle-progress-bar-radius: ${s.progressBarBorderRadius || 2}px;
 
   /* FOCUS / ACCESSIBILITY */
   --bundle-focus-outline-color: ${s.focusOutlineColor || globalPrimaryButton};

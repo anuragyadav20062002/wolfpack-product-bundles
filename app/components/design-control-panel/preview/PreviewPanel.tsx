@@ -53,8 +53,8 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
     );
   }
 
-  // Bundle Footer subsections
-  if (["footer", "footerPrice", "footerButton", "footerDiscountProgress"].includes(activeSubSection)) {
+  // Bundle Footer subsections (including quantityBadge from Phase 1)
+  if (["footer", "footerPrice", "footerButton", "footerDiscountProgress", "quantityBadge"].includes(activeSubSection)) {
     return (
       <PreviewScope settings={settings}>
         <BundleFooterPreview
@@ -79,8 +79,6 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
           footerNextButtonBorderColor={settings.footerNextButtonBorderColor}
           footerNextButtonBorderRadius={settings.footerNextButtonBorderRadius}
           footerDiscountTextVisibility={settings.footerDiscountTextVisibility}
-          footerProgressBarFilledColor={settings.footerProgressBarFilledColor}
-          footerProgressBarEmptyColor={settings.footerProgressBarEmptyColor}
           successMessageFontSize={settings.successMessageFontSize}
           successMessageFontWeight={settings.successMessageFontWeight}
           successMessageTextColor={settings.successMessageTextColor}
@@ -108,8 +106,8 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
     );
   }
 
-  // General subsections (emptyState, addToCartButton, toasts)
-  if (["emptyState", "addToCartButton", "toasts"].includes(activeSubSection)) {
+  // General subsections (emptyState, addToCartButton, toasts, and Phase 1 additions)
+  if (["emptyState", "addToCartButton", "toasts", "modalCloseButton", "accessibility"].includes(activeSubSection)) {
     return (
       <PreviewScope settings={settings}>
         <GeneralPreview

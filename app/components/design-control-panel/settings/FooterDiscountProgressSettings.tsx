@@ -4,14 +4,14 @@ import { VisibilityToggle } from "../common/VisibilityToggle";
 import type { SettingsComponentProps } from "./types";
 
 /**
- * Footer Discount & Progress Bar Settings Panel
- * Controls the discount text and progress bar in the footer
+ * Footer Discount Text Settings Panel
+ * Controls the discount text visibility and success message styling in the footer
  */
 export function FooterDiscountProgressSettings({ settings, onUpdate }: SettingsComponentProps) {
   return (
     <BlockStack gap="400">
       <Text as="h2" variant="headingMd">
-        Discount Text & Progress Bar
+        Discount Text
       </Text>
       <Divider />
 
@@ -19,20 +19,6 @@ export function FooterDiscountProgressSettings({ settings, onUpdate }: SettingsC
         label="Discount Text"
         value={settings.footerDiscountTextVisibility}
         onChange={(value) => onUpdate("footerDiscountTextVisibility", value)}
-      />
-
-      <Divider />
-
-      <ColorPicker
-        label="Progress Bar Filled Color"
-        value={settings.footerProgressBarFilledColor}
-        onChange={(value) => onUpdate("footerProgressBarFilledColor", value)}
-      />
-
-      <ColorPicker
-        label="Progress Bar Empty Color"
-        value={settings.footerProgressBarEmptyColor}
-        onChange={(value) => onUpdate("footerProgressBarEmptyColor", value)}
       />
 
       <Divider />
@@ -87,34 +73,6 @@ export function FooterDiscountProgressSettings({ settings, onUpdate }: SettingsC
         label="Background Color"
         value={settings.successMessageBgColor}
         onChange={(value) => onUpdate("successMessageBgColor", value)}
-      />
-
-      <Divider />
-
-      <Text as="p" variant="headingSm" fontWeight="semibold">
-        Progress Bar Shape
-      </Text>
-
-      <RangeSlider
-        label="Bar Height"
-        value={settings.progressBarHeight}
-        onChange={(value) => onUpdate("progressBarHeight", value as number)}
-        min={2}
-        max={12}
-        step={1}
-        output
-        suffix={`${settings.progressBarHeight}px`}
-      />
-
-      <RangeSlider
-        label="Bar Border Radius"
-        value={settings.progressBarBorderRadius}
-        onChange={(value) => onUpdate("progressBarBorderRadius", value as number)}
-        min={0}
-        max={12}
-        step={1}
-        output
-        suffix={`${settings.progressBarBorderRadius}px`}
       />
     </BlockStack>
   );

@@ -776,7 +776,7 @@ class BundleWidgetProductPage {
 
     // Add visual indicator that this is a full-page bundle
     const indicator = document.createElement('div');
-    indicator.style.cssText = 'padding: 8px; background: var(--bundle-loading-overlay-bg, #e3f2fd); border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: var(--bundle-loading-overlay-text, #1976d2);';
+    indicator.style.cssText = 'padding: 8px; background: #e3f2fd; border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: #1976d2;';
     indicator.textContent = 'Full-Page Bundle Mode (Custom layout will be applied)';
     this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }
@@ -1794,7 +1794,14 @@ class BundleWidgetProductPage {
     }
 
     this.container.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+    // Force a synchronous reflow so the browser applies the initial opacity:0
+    // before we add 'is-visible'. Using offsetHeight instead of requestAnimationFrame
+    // avoids a race condition where hideLoadingOverlay() is called before the rAF
+    // fires (which happens when loadBundleData() resolves synchronously from the
+    // dataset attribute — microtasks settle before animation frames).
+    // eslint-disable-next-line no-unused-expressions
+    overlay.offsetHeight;
+    overlay.classList.add('is-visible');
   }
 
   hideLoadingOverlay() {

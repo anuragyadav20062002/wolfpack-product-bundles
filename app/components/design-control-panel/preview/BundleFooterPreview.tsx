@@ -2,6 +2,7 @@ import { Text } from "@shopify/polaris";
 import { useState } from "react";
 import { ShoppingCartIcon } from "../icons";
 import { BundleType } from "../../../constants/bundle";
+import { HighlightBox } from "./HighlightBox";
 
 const HIGHLIGHT_STYLE = {
   outline: "2px dashed #5C6AC4",
@@ -30,8 +31,6 @@ interface BundleFooterPreviewProps {
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
   footerDiscountTextVisibility: boolean;
-  footerProgressBarFilledColor: string;
-  footerProgressBarEmptyColor: string;
   successMessageFontSize: number;
   successMessageFontWeight: number;
   successMessageTextColor: string;
@@ -107,8 +106,6 @@ function FullPageFooterLayout({
   footerNextButtonBorderColor,
   footerNextButtonBorderRadius,
   footerDiscountTextVisibility,
-  footerProgressBarFilledColor,
-  footerProgressBarEmptyColor,
 }: Omit<BundleFooterPreviewProps, "activeSubSection" | "footerTotalBgColor" | "successMessageFontSize" | "successMessageFontWeight" | "successMessageTextColor" | "successMessageBgColor"> & { highlightTarget: HighlightTarget }) {
   return (
     <div
@@ -137,7 +134,7 @@ function FullPageFooterLayout({
             style={{
               fontSize: "15px",
               fontWeight: 600,
-              color: footerProgressBarFilledColor,
+              color: "#374151",
             }}
           >
             Add 1 more item to get <strong>10% off</strong>
@@ -579,8 +576,6 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
     footerDiscountTextVisibility,
-    footerProgressBarFilledColor,
-    footerProgressBarEmptyColor,
     successMessageFontSize,
     successMessageFontWeight,
     successMessageTextColor,
@@ -634,9 +629,97 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
     footerDiscountTextVisibility,
-    footerProgressBarFilledColor,
-    footerProgressBarEmptyColor,
   };
+
+  // quantityBadge — show a footer tile with the quantity badge highlighted
+  if (activeSubSection === "quantityBadge") {
+    return (
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Quantity Badge
+        </Text>
+        <div style={{ marginTop: "60px", display: "inline-block" }}>
+          <HighlightBox active>
+            {/* paddingTop gives room for the badge that overflows by 6px above the tile */}
+            <div style={{ display: "flex", gap: "16px", padding: "16px", paddingTop: "20px", background: "#f8f9fa", borderRadius: "12px" }}>
+              {SAMPLE_PRODUCTS.slice(0, 2).map((product, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "8px 12px",
+                    background: "#ffffff",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    borderRadius: "8px",
+                    minWidth: "140px",
+                    position: "relative",
+                  }}
+                >
+                  {/* Image + Badge */}
+                  <div style={{ position: "relative", flexShrink: 0, width: "44px", height: "44px" }}>
+                    <div
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        borderRadius: "6px",
+                        background: "#E5E7EB",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <div style={{ width: "28px", height: "28px", backgroundColor: "#D1D5DB", borderRadius: "4px" }} />
+                    </div>
+                    {/* Pure React badge — reads CSS vars via inline style so DCP changes apply */}
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "-6px",
+                        right: "-6px",
+                        minWidth: "20px",
+                        height: "20px",
+                        padding: "0 5px",
+                        background: "var(--bundle-tile-badge-bg, #000000)",
+                        color: "var(--bundle-tile-badge-text, #ffffff)",
+                        borderRadius: "10px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+                      }}
+                    >
+                      {product.qty}
+                    </span>
+                  </div>
+                  {/* Info */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0, flex: 1 }}>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: "#333", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {product.name}
+                    </span>
+                    {product.variant && (
+                      <span style={{ fontSize: "11px", color: "#666", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {product.variant}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Badge shows quantity on each footer tile
+          </Text>
+        </div>
+      </div>
+    );
+  }
 
   // Subsection title mapping
   const titles: Record<string, string> = {
@@ -717,6 +800,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
                 Congratulations! You got 10% off!
               </div>
             </div>
+
           </div>
 
           {/* Annotation Label */}
