@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-12 21:45
+**Last Updated:** 2026-03-13
 
 ## Overview
 
@@ -28,6 +28,12 @@ The app created `$app:bundle_id` metafields on pages via `metafieldsSet`, but ne
 
 ## Progress Log
 
+### 2026-03-13 - Phase 3: Ensure definition on full-page bundle configure page load
+
+- Problem: `afterAuth` and `createFullPageBundle()` only run on re-auth or new bundle creation. Existing shops that haven't re-authenticated since the fix never got the `MetafieldDefinition` created → placeholder still shows.
+- Fix: Added `ensurePageBundleIdMetafieldDefinition(admin)` fire-and-forget call in the full-page bundle configure route loader. Every time a merchant opens a full-page bundle in the admin, the definition is ensured for their shop. Idempotent — no-ops if already exists.
+- File: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
+
 ### 2026-03-12 21:45 - Fixed
 
 - ✅ `definitions.server.ts` — new function
@@ -39,4 +45,5 @@ The app created `$app:bundle_id` metafields on pages via `metafieldsSet`, but ne
 
 - [x] Phase 1: Add PAGE metafield definition function
 - [x] Phase 2: Wire into afterAuth + bundle creation
-- [ ] Phase 3: Deploy (definition created on next app login / bundle create)
+- [x] Phase 3: Also call in full-page bundle configure loader (fixes existing shops without re-auth)
+- [ ] Phase 4: Deploy to Render + verify on storefront
