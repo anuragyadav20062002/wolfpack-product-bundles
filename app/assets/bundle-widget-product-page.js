@@ -1794,7 +1794,14 @@ class BundleWidgetProductPage {
     }
 
     this.container.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+    // Force a synchronous reflow so the browser applies the initial opacity:0
+    // before we add 'is-visible'. Using offsetHeight instead of requestAnimationFrame
+    // avoids a race condition where hideLoadingOverlay() is called before the rAF
+    // fires (which happens when loadBundleData() resolves synchronously from the
+    // dataset attribute — microtasks settle before animation frames).
+    // eslint-disable-next-line no-unused-expressions
+    overlay.offsetHeight;
+    overlay.classList.add('is-visible');
   }
 
   hideLoadingOverlay() {
