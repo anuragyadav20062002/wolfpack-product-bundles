@@ -1,4 +1,4 @@
-import { Inngest } from "inngest";
+import { Inngest, EventSchemas } from "inngest";
 import type { ShopifyWebhookEvents } from "./types";
 
 /**
@@ -11,8 +11,9 @@ import type { ShopifyWebhookEvents } from "./types";
  * Dev mode: set INNGEST_DEV=1 to route events to the local Inngest Dev Server
  * (npx inngest-cli@latest dev) instead of Inngest Cloud. No signing key required.
  */
-export const inngest = new Inngest<ShopifyWebhookEvents>({
-  id: "wolfpack-bundles",
+export const inngest = new Inngest({
+  id: "wolfpack-product-bundles",
+  schemas: new EventSchemas().fromRecord<ShopifyWebhookEvents>(),
   ...(process.env.INNGEST_EVENT_KEY
     ? { eventKey: process.env.INNGEST_EVENT_KEY }
     : {}),

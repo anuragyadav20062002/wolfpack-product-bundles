@@ -17,11 +17,11 @@ describe("Inngest client", () => {
     process.env = ORIGINAL_ENV;
   });
 
-  it("exports an Inngest instance with id 'wolfpack-bundles'", async () => {
+  it("exports an Inngest instance with id 'wolfpack-product-bundles'", async () => {
     const { inngest } = await import("../../../app/inngest/client");
     expect(inngest).toBeDefined();
     // Inngest instances expose their id via the internal state
-    expect((inngest as any).id).toBe("wolfpack-bundles");
+    expect((inngest as any).id).toBe("wolfpack-product-bundles");
   });
 
   it("operates in cloud mode when INNGEST_DEV is not set", async () => {
