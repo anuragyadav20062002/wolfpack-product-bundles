@@ -6,7 +6,7 @@
  */
 
 import { AppLogger } from "../../lib/logger";
-import { ensurePageBundleIdMetafieldDefinition } from "../bundles/metafield-sync.server";
+import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition } from "../bundles/metafield-sync.server";
 import { ensureBundlePageTemplate } from "./widget-theme-template.server";
 import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
 import type { FullPageBundleResult } from "./types";
@@ -196,16 +196,20 @@ export async function createFullPageBundle(
       }
     }
 
-    // Step 2a: Ensure PAGE metafield definition exists with PUBLIC_READ storefront access
+    // Step 2a: Ensure PAGE metafield definitions exist with PUBLIC_READ storefront access
     await ensurePageBundleIdMetafieldDefinition(admin);
+    await ensureCustomPageBundleIdDefinition(admin);
 
-    // Step 2b: Add/update bundle ID as page metafield (metafieldsSet is idempotent)
+    // Step 2b: Set bundle ID on both custom and $app namespaces
+    // custom:bundle_id — PRIMARY: Liquid reads it as page.metafields.custom.bundle_id (reliable)
+    // $app:bundle_id   — LEGACY: kept for backwards compatibility
     const SET_METAFIELD = `
       mutation setPageMetafield($metafields: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafields) {
           metafields {
             id
             key
+            namespace
             value
           }
           userErrors {
@@ -218,29 +222,37 @@ export async function createFullPageBundle(
 
     const metafieldResponse = await admin.graphql(SET_METAFIELD, {
       variables: {
-        metafields: [{
-          ownerId: createdPage.id,
-          namespace: '$app',
-          key: 'bundle_id',
-          value: bundleId,
-          type: 'single_line_text_field'
-        }]
+        metafields: [
+          {
+            ownerId: createdPage.id,
+            namespace: 'custom',
+            key: 'bundle_id',
+            value: bundleId,
+            type: 'single_line_text_field'
+          },
+          {
+            ownerId: createdPage.id,
+            namespace: '$app',
+            key: 'bundle_id',
+            value: bundleId,
+            type: 'single_line_text_field'
+          }
+        ]
       }
     });
 
     const metafieldData = await metafieldResponse.json();
 
     if (metafieldData.data?.metafieldsSet?.userErrors?.length > 0) {
-      AppLogger.warn('Metafield update failed (non-critical)', {
+      AppLogger.warn('Metafield update had errors', {
         component: 'WidgetFullPageBundle',
         errors: metafieldData.data.metafieldsSet.userErrors
       });
     } else {
-      AppLogger.info('Bundle ID metafield set on page', {
+      AppLogger.info('Bundle ID metafields set on page (custom + $app)', {
         component: 'WidgetFullPageBundle',
         pageId: createdPage.id,
-        bundleId,
-        note: 'Metafield created or updated'
+        bundleId
       });
     }
 
