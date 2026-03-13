@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-13
-**Last Updated:** 2026-03-13 12:30
+**Last Updated:** 2026-03-13 14:00
 
 ## Overview
 
@@ -45,11 +45,28 @@ When a merchant creates a full-page bundle and clicks "Add to Storefront", the S
 - ✅ Lint: zero errors
 - Next: Commit and test
 
+### 2026-03-13 13:00 - Theme editor fallback + custom metafield
+- ✅ Added theme editor deep link fallback when block UUID not discoverable
+- ✅ Added `ensureCustomPageBundleIdDefinition()` for `custom` namespace metafield
+- ✅ Updated Liquid to use `page.metafields.custom.bundle_id` as primary source
+- ✅ Set BOTH `custom:bundle_id` AND `$app:bundle_id` metafields on pages
+- Result: Template renders block on dev store, but bundle ID still not resolving
+- Commits: 8773b35, 1d55014, 994ea48
+
+### 2026-03-13 14:00 - Phase 4: Diagnostic logging
+- ⏳ Added comprehensive console.log OUTSIDE `{% if should_show_widget %}` gate
+- Logs ALL 4 bundle ID sources + page handle + metafield namespaces
+- Purpose: Determine exactly which Liquid values resolve and which are nil
+- Modified: `extensions/bundle-builder/blocks/bundle-full-page.liquid`
+- Next: Deploy and check browser console for diagnostic output
+
 ## Phases Checklist
 - [x] Phase 1: Create `widget-theme-template.server.ts` service ✅
 - [x] Phase 2: Modify `widget-full-page-bundle.server.ts` to use template ✅
 - [x] Phase 3: Update handler and types ✅
-- [ ] Phase 4: Testing & verification
+- [ ] Phase 4: Diagnostic logging (bundle ID resolution)
+- [ ] Phase 5: Fix root cause based on diagnostics
+- [ ] Phase 6: Testing & verification
 
 ## Related Documentation
 - Plan: `.claude/plans/calm-chasing-penguin.md`
