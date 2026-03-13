@@ -287,5 +287,15 @@
   <div class="bundle-widget-placeholder" style="padding: 40px; text-align: center; background: #f0f3eb; border-radius: 8px;">
     <h3 style="margin: 0 0 10px;">Full-Page Bundle Widget</h3>
     <p style="margin: 0; color: #666;">Please configure a Bundle ID in the block settings to display the bundle builder.</p>
+    <!-- DEBUG: Remove after fixing -->
+    <p style="margin: 10px 0 0; color: #999; font-size: 12px;">
+      DEBUG: page.handle={{ page.handle | json }}
+      | contains_bundle={{ page.handle | json }}
+      | from_handle={{ bundle_id_from_handle | json }}
+      | from_metafield={{ bundle_id_from_metafield | json }}
+      | from_setting={{ bundle_id_from_setting | json }}
+      | final={{ bundle_id | json }}
+      | source={{ bundle_id_source | json }}
+    </p>
   </div>
 {% endif %}
