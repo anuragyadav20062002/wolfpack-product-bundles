@@ -8,6 +8,7 @@
 import { AppLogger } from "../../lib/logger";
 import { ensurePageBundleIdMetafieldDefinition } from "../bundles/metafield-sync.server";
 import { ensureBundlePageTemplate } from "./widget-theme-template.server";
+import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
 import type { FullPageBundleResult } from "./types";
 
 interface ShopSession {
@@ -255,6 +256,28 @@ export async function createFullPageBundle(
       pageUrl,
       templateApplied: useCustomTemplate
     });
+
+    // If template was not created (e.g. fresh install, no block UUID),
+    // return a theme editor deep link so the merchant can do a one-time setup
+    if (!useCustomTemplate) {
+      const deepLink = generateThemeEditorDeepLink(
+        shop,
+        apiKey,
+        'bundle-full-page',
+        bundleId,
+        'page',
+        'newAppsSection'
+      );
+
+      return {
+        success: true,
+        pageId: createdPage.id,
+        pageHandle: createdPage.handle,
+        pageUrl: pageUrl,
+        widgetInstallationRequired: true,
+        widgetInstallationLink: deepLink.url
+      };
+    }
 
     return {
       success: true,
