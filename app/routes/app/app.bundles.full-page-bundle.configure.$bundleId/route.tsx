@@ -69,7 +69,6 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
-import { ensurePageBundleIdMetafieldDefinition } from "../../../services/bundles/metafield-sync.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-configure.module.css";
 
@@ -102,13 +101,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   if (!bundleId) {
     throw new Response(ERROR_MESSAGES.BUNDLE_ID_REQUIRED, { status: 400 });
   }
-
-  // Ensure PAGE metafield definition exists with PUBLIC_READ storefront access.
-  // Without this definition, page.metafields['$app'].bundle_id is always null in Liquid.
-  // Fire-and-forget — do not block page load; idempotent if definition already exists.
-  ensurePageBundleIdMetafieldDefinition(admin).catch((err: unknown) => {
-    console.error("[full-page-bundle] Failed to ensure PAGE metafield definition:", err);
-  });
 
   // Fetch the bundle with all related data
   const bundle = await db.bundle.findUnique({
