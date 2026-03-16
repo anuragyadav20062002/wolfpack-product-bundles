@@ -972,15 +972,13 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
 
     // UPDATED: Single-click workflow for full-page bundles
     // This will:
-    // 1. Create page with bundle_id metafield immediately
-    // 2. Check if widget is installed in theme
-    // 3. If NOT installed: Return page info + installation link to specific page
-    // 4. If installed: Return storefront URL where bundle is live
-    // NO THEME MODIFICATIONS - App Store compliant
+    // 1. Ensures page.full-page-bundle.json template exists in theme
+    // 2. Creates page with bundle_id metafield and templateSuffix
+    // 3. Returns storefront URL where bundle is live
     const apiKey = process.env.SHOPIFY_API_KEY || '';
     const result = await WidgetInstallationService.createFullPageBundle(
       admin,
-      session.shop,
+      session,
       apiKey,
       bundleId,
       bundle.name
