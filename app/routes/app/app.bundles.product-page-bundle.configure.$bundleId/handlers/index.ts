@@ -5,6 +5,7 @@
 export {
   safeJsonParse,
   handleSaveBundle,
+  handleSyncBundle,
   handleUpdateBundleStatus,
   handleSyncProduct,
   handleUpdateBundleProduct,

@@ -50,7 +50,30 @@ The app created `$app:bundle_id` metafields on pages via `metafieldsSet`, but ne
 - [x] Phase 5: Fix root causes — malformed extension UID + wrong settings variable in Liquid
 - [x] Phase 6: Fix definitive root cause — extract bundle ID from page.handle
 - [x] Phase 8: Fix page templateSuffix — all bundle pages use shared 'full-page-bundle' template
+- [x] Phase 9: Remove junk code — correct Shopify auth syntax in bundle API route
 - [ ] Phase 7: shopify app deploy + verify on storefront
+
+### 2026-03-16 - Phase 9: Remove junk code, fix Shopify auth pattern in bundle API route
+
+**Root cause of broken product enrichment (separate from the 404):**
+The bundle API route (`api.bundle.$bundleId[.]json.tsx`) was calling `requireAppProxy(request)`
+TWICE. The `requireAppProxy` guard only returns `{ session }`, discarding the `admin` client.
+The second call tried `authResult.admin` which is always `undefined`. This made the
+`if (admin && ...)` condition always false — product enrichment via Shopify GraphQL
+was silently never running.
+
+**Correct Shopify syntax**: `authenticate.public.appProxy(request)` returns `{ session, admin, liquid }`
+in one call. The route now imports `authenticate` from `shopify.server` and destructures both
+`session` (for DB scoping) and `admin` (for Shopify API calls) directly.
+
+**Junk removed:**
+- All `console.log`/`console.error` debug statements from the API route (~40 statements)
+- Duplicate `requireAppProxy` call and broken `authResult.admin` extraction
+- `ensurePageBundleIdMetafieldDefinition` import and fire-and-forget call from configure route loader
+- `ensurePageBundleIdMetafieldDefinition` call from `createFullPageBundle` (metafield approach
+  superseded by `page.handle` extraction in Liquid)
+- `ensurePageBundleIdMetafieldDefinition` import from `shopify.server.ts` afterAuth hook
+- All `console.log` noise from `afterAuth` hook (replaced with `AppLogger`)
 
 ### 2026-03-16 - Phase 8: Fix page templateSuffix — all bundle pages use shared template
 
