@@ -178,74 +178,92 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     if (admin && allProductIds.size > 0) {
       const productIdsArray = Array.from(allProductIds);
       const BATCH_SIZE = 250;
+      // Shopify App Proxy timeout is 30s. Cap enrichment at 12s so we always
+      // return the bundle (without enrichment) rather than letting Shopify 504.
+      const ENRICHMENT_TIMEOUT_MS = 12000;
 
-      for (let i = 0; i < productIdsArray.length; i += BATCH_SIZE) {
-        const batch = productIdsArray.slice(i, i + BATCH_SIZE);
-
-        const PRODUCTS_QUERY = `
-          query getProducts($ids: [ID!]!) {
-            nodes(ids: $ids) {
-              ... on Product {
-                id
-                title
-                handle
-                featuredImage {
-                  url
-                  altText
+      const PRODUCTS_QUERY = `
+        query getProducts($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Product {
+              id
+              title
+              handle
+              featuredImage {
+                url
+                altText
+              }
+              priceRange {
+                minVariantPrice {
+                  amount
+                  currencyCode
                 }
-                priceRange {
-                  minVariantPrice {
-                    amount
-                    currencyCode
-                  }
+              }
+              compareAtPriceRange {
+                maxVariantCompareAtPrice {
+                  amount
+                  currencyCode
                 }
-                compareAtPriceRange {
-                  maxVariantCompareAtPrice {
-                    amount
-                    currencyCode
-                  }
-                }
-                variants(first: 100) {
-                  edges {
-                    node {
-                      id
-                      title
-                      price
-                      compareAtPrice
-                      image {
-                        url
-                        altText
-                      }
+              }
+              variants(first: 100) {
+                edges {
+                  node {
+                    id
+                    title
+                    price
+                    compareAtPrice
+                    image {
+                      url
+                      altText
                     }
                   }
                 }
               }
             }
           }
-        `;
+        }
+      `;
 
-        try {
-          const response = await admin.graphql(PRODUCTS_QUERY, {
-            variables: {
-              ids: batch.map(id => id.startsWith('gid://') ? id : `gid://shopify/Product/${id}`)
-            }
-          });
-          const data = await response.json();
-
-          if (data.data?.nodes) {
-            data.data.nodes.forEach((product: any) => {
-              if (product?.id) {
-                productDetailsMap.set(product.id, product);
+      const enrichProducts = async () => {
+        for (let i = 0; i < productIdsArray.length; i += BATCH_SIZE) {
+          const batch = productIdsArray.slice(i, i + BATCH_SIZE);
+          try {
+            const response = await admin.graphql(PRODUCTS_QUERY, {
+              variables: {
+                ids: batch.map((id: string) => id.startsWith('gid://') ? id : `gid://shopify/Product/${id}`)
               }
             });
+            const data = await response.json();
+            if (data.data?.nodes) {
+              data.data.nodes.forEach((product: any) => {
+                if (product?.id) {
+                  productDetailsMap.set(product.id, product);
+                }
+              });
+            }
+          } catch (error) {
+            AppLogger.error("Error fetching product details batch", {
+              component: "api.bundle",
+              operation: "loader",
+              batchSize: batch.length
+            }, error);
           }
-        } catch (error) {
-          AppLogger.error("Error fetching product details batch", {
-            component: "api.bundle",
-            operation: "loader",
-            batchSize: batch.length
-          }, error);
         }
+      };
+
+      try {
+        await Promise.race([
+          enrichProducts(),
+          new Promise<void>((_resolve, reject) =>
+            setTimeout(() => reject(new Error('Product enrichment timed out')), ENRICHMENT_TIMEOUT_MS)
+          )
+        ]);
+      } catch (error) {
+        AppLogger.warn("Product enrichment skipped (timeout or error) — returning bundle without enrichment", {
+          component: "api.bundle",
+          bundleId,
+          productCount: allProductIds.size
+        });
       }
     }
 
