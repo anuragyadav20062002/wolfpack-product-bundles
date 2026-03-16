@@ -1227,11 +1227,13 @@ export default function ConfigureBundleFlow() {
       // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
       // the bundle_id setting in the theme editor, making setup seamless for merchants
       //
-      // For Shopify pages, template format is: page.{handle}
+      // For full-page bundles: always use the shared 'page.full-page-bundle' template.
+      // All bundle pages are assigned this templateSuffix so the block only needs to be
+      // installed once. page.handle in Liquid identifies which bundle to render.
       // For product templates, template format is just: {handle}
-      const templateParam = template.isPage ? `page.${template.handle}` : template.handle;
+      const templateParam = template.isPage ? 'page.full-page-bundle' : template.handle;
 
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}`;
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection`;
 
       AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
         templateParam,

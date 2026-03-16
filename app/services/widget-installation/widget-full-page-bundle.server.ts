@@ -58,6 +58,7 @@ export async function createFullPageBundle(
               id
               title
               handle
+              templateSuffix
             }
           }
         }
@@ -86,6 +87,7 @@ export async function createFullPageBundle(
               id
               title
               handle
+              templateSuffix
             }
             userErrors {
               field
@@ -101,7 +103,8 @@ export async function createFullPageBundle(
             title: pageTitle,
             handle: pageHandle,
             body: '',
-            isPublished: true
+            isPublished: true,
+            templateSuffix: 'full-page-bundle'
           }
         }
       });
@@ -141,8 +144,36 @@ export async function createFullPageBundle(
         component: 'WidgetFullPageBundle',
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
+        templateSuffix: createdPage.templateSuffix,
         bundleId
       });
+
+      // Ensure existing page uses the shared full-page-bundle template
+      if (createdPage.templateSuffix !== 'full-page-bundle') {
+        const UPDATE_PAGE_TEMPLATE = `
+          mutation updatePageTemplate($id: ID!, $page: PageUpdateInput!) {
+            pageUpdate(id: $id, page: $page) {
+              page { id templateSuffix }
+              userErrors { field message }
+            }
+          }
+        `;
+        const updateResponse = await admin.graphql(UPDATE_PAGE_TEMPLATE, {
+          variables: { id: createdPage.id, page: { templateSuffix: 'full-page-bundle' } }
+        });
+        const updateData = await updateResponse.json();
+        if (updateData.data?.pageUpdate?.userErrors?.length > 0) {
+          AppLogger.warn('Could not update templateSuffix on existing page (non-critical)', {
+            component: 'WidgetFullPageBundle',
+            errors: updateData.data.pageUpdate.userErrors
+          });
+        } else {
+          AppLogger.info('Updated existing page templateSuffix to full-page-bundle', {
+            component: 'WidgetFullPageBundle',
+            pageId: createdPage.id
+          });
+        }
+      }
     }
 
     // Step 2a: Ensure PAGE metafield definition exists with PUBLIC_READ storefront access
