@@ -1,10 +1,10 @@
 # Issue: Full-Page Bundle Shows "Please configure a Bundle ID" Placeholder
 
 **Issue ID:** full-page-bundle-placeholder-fix-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-13
+**Last Updated:** 2026-03-16
 
 ## Overview
 
@@ -49,7 +49,34 @@ The app created `$app:bundle_id` metafields on pages via `metafieldsSet`, but ne
 - [x] Phase 4: Fix TAKEN silent skip — update storefront access on existing definition
 - [x] Phase 5: Fix root causes — malformed extension UID + wrong settings variable in Liquid
 - [x] Phase 6: Fix definitive root cause — extract bundle ID from page.handle
+- [x] Phase 8: Fix page templateSuffix — all bundle pages use shared 'full-page-bundle' template
 - [ ] Phase 7: shopify app deploy + verify on storefront
+
+### 2026-03-16 - Phase 8: Fix page templateSuffix — all bundle pages use shared template
+
+**Root Cause Found (Final):** Two compounding issues caused the persistent placeholder:
+
+1. **`shopify app deploy` was never run after Phase 6** — The `page.handle` Liquid fix exists in
+   the committed code but was never deployed to Shopify's CDN. The live storefront was still
+   running the old Liquid that only read from `page.metafields['$app'].bundle_id` (nil) and
+   `block.settings.bundle_id` (empty) → always showed placeholder.
+
+2. **Pages created without `templateSuffix`** — Bundle pages were created with no template
+   assignment so they use Shopify's default `templates/page.json`. The theme editor deep link
+   was opening a per-bundle custom template (`page.bundle-{bundleId}`). Even if the merchant
+   added the block to that custom template, the page still renders with `templates/page.json`
+   (which may not have the block). The block and the page were never connected.
+
+**Fix:**
+- `widget-full-page-bundle.server.ts`: New pages created with `templateSuffix: 'full-page-bundle'`.
+  Existing pages (when `createFullPageBundle` is called again) have their `templateSuffix` updated
+  via `pageUpdate` mutation.
+- `route.tsx`: Theme editor URL now always uses `template=page.full-page-bundle` for full-page
+  bundles instead of per-bundle `page.bundle-{bundleId}`. Merchant installs the block ONCE on
+  the shared `full-page-bundle` template; all bundle pages show their respective bundle via
+  `page.handle | remove_first: 'bundle-'` extraction already in the Liquid.
+
+**Next:** Run `shopify app deploy` to push Liquid changes to CDN.
 
 ### 2026-03-13 - Phase 6: Definitive fix — page.handle extraction
 

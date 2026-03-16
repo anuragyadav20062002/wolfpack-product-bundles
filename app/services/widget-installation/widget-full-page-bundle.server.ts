@@ -73,6 +73,7 @@ export async function createFullPageBundle(
               id
               title
               handle
+              templateSuffix
             }
           }
         }
@@ -102,6 +103,7 @@ export async function createFullPageBundle(
               id
               title
               handle
+              templateSuffix
             }
             userErrors {
               field
@@ -123,7 +125,15 @@ export async function createFullPageBundle(
       }
 
       const pageResponse = await admin.graphql(CREATE_PAGE, {
-        variables: { page: pageInput }
+        variables: {
+          page: {
+            title: pageTitle,
+            handle: pageHandle,
+            body: '',
+            isPublished: true,
+            templateSuffix: 'full-page-bundle'
+          }
+        }
       });
 
       const pageData = await pageResponse.json();
@@ -161,37 +171,34 @@ export async function createFullPageBundle(
         component: 'WidgetFullPageBundle',
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
+        templateSuffix: createdPage.templateSuffix,
         bundleId
       });
 
-      // Update existing page to use the custom template if available
-      if (templateSuffix) {
-        try {
-          const UPDATE_PAGE = `
-            mutation updatePage($id: ID!, $page: PageUpdateInput!) {
-              pageUpdate(id: $id, page: $page) {
-                page { id }
-                userErrors { field message }
-              }
+      // Ensure existing page uses the shared full-page-bundle template
+      if (createdPage.templateSuffix !== 'full-page-bundle') {
+        const UPDATE_PAGE_TEMPLATE = `
+          mutation updatePageTemplate($id: ID!, $page: PageUpdateInput!) {
+            pageUpdate(id: $id, page: $page) {
+              page { id templateSuffix }
+              userErrors { field message }
             }
-          `;
-
-          await admin.graphql(UPDATE_PAGE, {
-            variables: {
-              id: createdPage.id,
-              page: { templateSuffix }
-            }
-          });
-
-          AppLogger.info('Updated existing page with template suffix', {
+          }
+        `;
+        const updateResponse = await admin.graphql(UPDATE_PAGE_TEMPLATE, {
+          variables: { id: createdPage.id, page: { templateSuffix: 'full-page-bundle' } }
+        });
+        const updateData = await updateResponse.json();
+        if (updateData.data?.pageUpdate?.userErrors?.length > 0) {
+          AppLogger.warn('Could not update templateSuffix on existing page (non-critical)', {
             component: 'WidgetFullPageBundle',
-            pageId: createdPage.id,
-            templateSuffix
+            errors: updateData.data.pageUpdate.userErrors
           });
-        } catch (err) {
-          AppLogger.warn('Failed to update page template suffix (non-critical)', {
+        } else {
+          AppLogger.info('Updated existing page templateSuffix to full-page-bundle', {
             component: 'WidgetFullPageBundle',
-          }, err as Error);
+            pageId: createdPage.id
+          });
         }
       }
     }
