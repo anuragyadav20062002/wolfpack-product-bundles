@@ -107,7 +107,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     // Per Shopify docs: authenticate.public.appProxy(request) returns { session, admin, liquid }.
     // session.shop is the shop's myshopify.com domain (used for DB scoping).
     // admin is the Admin API client backed by the shop's offline token.
-    const { session, admin } = await authenticate.public.appProxy(request);
+    const { session } = await authenticate.public.appProxy(request);
 
     if (!session?.shop) {
       return json({ error: ERROR_MESSAGES.SHOP_NOT_FOUND }, { status: 400, headers: CORS_HEADERS });
@@ -164,110 +164,14 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       bundleName: bundle.name
     });
 
-    // Fetch full product details from Shopify Admin API for all bundle products.
-    // admin is available when the shop has an offline token (standard for installed apps).
-    const productDetailsMap = new Map<string, any>();
+    // Build product response from DB data (StepProduct records).
+    // StepProduct stores title, imageUrl, and variants (JSON) captured at save time.
+    // We do NOT call the Shopify Admin API here — that endpoint is public-facing
+    // (every storefront visitor triggers it) and Admin API calls are rate-limited.
+    // Calling Admin API from the hot path caused 504s when the leaky-bucket was
+    // depleted by concurrent save/sync/metafield operations.
 
-    const allProductIds = new Set<string>();
-    bundle.steps.forEach(step => {
-      step.StepProduct?.forEach(sp => {
-        if (sp.productId) allProductIds.add(sp.productId);
-      });
-    });
-
-    if (admin && allProductIds.size > 0) {
-      const productIdsArray = Array.from(allProductIds);
-      const BATCH_SIZE = 250;
-      // Shopify App Proxy timeout is 30s. Cap enrichment at 12s so we always
-      // return the bundle (without enrichment) rather than letting Shopify 504.
-      const ENRICHMENT_TIMEOUT_MS = 12000;
-
-      const PRODUCTS_QUERY = `
-        query getProducts($ids: [ID!]!) {
-          nodes(ids: $ids) {
-            ... on Product {
-              id
-              title
-              handle
-              featuredImage {
-                url
-                altText
-              }
-              priceRange {
-                minVariantPrice {
-                  amount
-                  currencyCode
-                }
-              }
-              compareAtPriceRange {
-                maxVariantCompareAtPrice {
-                  amount
-                  currencyCode
-                }
-              }
-              variants(first: 100) {
-                edges {
-                  node {
-                    id
-                    title
-                    price
-                    compareAtPrice
-                    image {
-                      url
-                      altText
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const enrichProducts = async () => {
-        for (let i = 0; i < productIdsArray.length; i += BATCH_SIZE) {
-          const batch = productIdsArray.slice(i, i + BATCH_SIZE);
-          try {
-            const response = await admin.graphql(PRODUCTS_QUERY, {
-              variables: {
-                ids: batch.map((id: string) => id.startsWith('gid://') ? id : `gid://shopify/Product/${id}`)
-              }
-            });
-            const data = await response.json();
-            if (data.data?.nodes) {
-              data.data.nodes.forEach((product: any) => {
-                if (product?.id) {
-                  productDetailsMap.set(product.id, product);
-                }
-              });
-            }
-          } catch (error) {
-            AppLogger.error("Error fetching product details batch", {
-              component: "api.bundle",
-              operation: "loader",
-              batchSize: batch.length
-            }, error);
-          }
-        }
-      };
-
-      try {
-        await Promise.race([
-          enrichProducts(),
-          new Promise<void>((_resolve, reject) =>
-            setTimeout(() => reject(new Error('Product enrichment timed out')), ENRICHMENT_TIMEOUT_MS)
-          )
-        ]);
-      } catch (error) {
-        AppLogger.warn("Product enrichment skipped (timeout or error) — returning bundle without enrichment", {
-          component: "api.bundle",
-          bundleId,
-          productCount: allProductIds.size
-        });
-      }
-    }
-
-    // Format bundle for the widget with enriched Shopify product data
+    // Convert a Shopify GID to its numeric ID for cart add operations.
     const extractNumericId = (gid: string) => {
       const match = gid.match(/\/(\d+)$/);
       return match ? match[1] : gid;
@@ -285,58 +189,41 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
       loadingGif: bundle.loadingGif ?? null,
       steps: bundle.steps.map(step => {
-        const enrichedStepProducts = step.StepProduct?.map(sp => {
-          const productId = sp.productId?.startsWith('gid://')
-            ? sp.productId
-            : `gid://shopify/Product/${sp.productId}`;
-          const productDetails = productDetailsMap.get(productId);
+        const stepProducts = step.StepProduct ?? [];
 
-          if (productDetails) {
-            const firstVariant = productDetails.variants?.edges?.[0]?.node;
-            return {
-              ...sp,
-              title: productDetails.title,
-              handle: productDetails.handle,
-              imageUrl: productDetails.featuredImage?.url || null,
-              price: firstVariant?.price || "0",
-              compareAtPrice: firstVariant?.compareAtPrice || null,
-              currencyCode: productDetails.priceRange?.minVariantPrice?.currencyCode || "INR",
-              variants: productDetails.variants?.edges?.map((edge: any) => ({
-                id: extractNumericId(edge.node.id),
-                gid: edge.node.id,
-                title: edge.node.title,
-                price: edge.node.price,
-                compareAtPrice: edge.node.compareAtPrice,
-                imageUrl: edge.node.image?.url || null
-              })) || []
-            };
-          }
+        // Variants are stored as JSON from the Shopify resource picker at save time.
+        // The resource picker returns GID-format variant IDs — convert to numeric here
+        // so the widget can use them for storefront cart add operations.
+        const productsArray = stepProducts.map(sp => {
+          const dbVariants = (sp.variants as any[]) ?? [];
+          const firstVariant = dbVariants[0];
 
-          return sp;
-        }) || [];
-
-        const productsArray = enrichedStepProducts.map(esp => ({
-          id: esp.productId,
-          title: esp.title,
-          handle: (esp as any).handle || '',
-          images: esp.imageUrl ? [{ url: esp.imageUrl }] : [],
-          featuredImage: esp.imageUrl ? { url: esp.imageUrl } : null,
-          price: Math.round(parseFloat((esp as any).price || "0") * 100),
-          compareAtPrice: (esp as any).compareAtPrice
-            ? Math.round(parseFloat((esp as any).compareAtPrice) * 100)
-            : null,
-          available: true,
-          variants: ((esp as any).variants as any[])?.map((v: any) => ({
-            id: v.id,
-            title: v.title,
-            price: Math.round(parseFloat(v.price || "0") * 100),
-            compareAtPrice: v.compareAtPrice
-              ? Math.round(parseFloat(v.compareAtPrice) * 100)
+          return {
+            id: sp.productId,
+            title: sp.title,
+            handle: '',
+            images: sp.imageUrl ? [{ url: sp.imageUrl }] : [],
+            featuredImage: sp.imageUrl ? { url: sp.imageUrl } : null,
+            price: firstVariant?.price
+              ? Math.round(parseFloat(firstVariant.price) * 100)
+              : 0,
+            compareAtPrice: firstVariant?.compareAtPrice
+              ? Math.round(parseFloat(firstVariant.compareAtPrice) * 100)
               : null,
-            image: v.imageUrl ? { url: v.imageUrl } : null,
-            available: true
-          })) || []
-        }));
+            available: true,
+            variants: dbVariants.map((v: any) => ({
+              id: extractNumericId(v.id ?? ''),
+              gid: v.id ?? '',
+              title: v.title ?? 'Default Title',
+              price: Math.round(parseFloat(v.price ?? '0') * 100),
+              compareAtPrice: v.compareAtPrice
+                ? Math.round(parseFloat(v.compareAtPrice) * 100)
+                : null,
+              image: v.imageUrl ? { url: v.imageUrl } : (v.image ?? null),
+              available: true,
+            })),
+          };
+        });
 
         return {
           id: step.id,
@@ -348,7 +235,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           displayVariantsAsIndividual: step.displayVariantsAsIndividual,
           products: productsArray,
           collections: step.collections || [],
-          StepProduct: enrichedStepProducts,
+          StepProduct: stepProducts,
           conditionType: step.conditionType,
           conditionOperator: step.conditionOperator,
           conditionValue: step.conditionValue,
