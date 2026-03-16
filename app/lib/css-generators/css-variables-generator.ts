@@ -22,7 +22,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-global-footer-text: ${globalFooterText};
 
   /* PRODUCT CARD */
-  --bundle-product-card-bg: ${s.productCardBgColor || '#FFFFFF'};
+  --bundle-product-card-bg: ${s.productCardBgColor || '#F8F8F8'};
   --bundle-product-card-font-color: ${s.productCardFontColor || globalPrimaryText};
   --bundle-product-card-font-size: ${s.productCardFontSize || 20}px;
   --bundle-product-card-font-weight: ${s.productCardFontWeight || 600};
@@ -38,11 +38,11 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-product-final-price-font-weight: ${s.productFinalPriceFontWeight || 700};
 
   /* BUTTON */
-  --bundle-button-bg: ${s.buttonBgColor || '#FF9000'};
+  --bundle-button-bg: ${s.buttonBgColor || '#111111'};
   --bundle-button-text-color: ${s.buttonTextColor || globalButtonText};
   --bundle-button-font-size: ${s.buttonFontSize || 16}px;
   --bundle-button-font-weight: ${s.buttonFontWeight || 600};
-  --bundle-button-border-radius: ${s.buttonBorderRadius || 8}px;
+  --bundle-button-border-radius: ${s.buttonBorderRadius || 50}px;
   --bundle-button-hover-bg: ${s.buttonHoverBgColor || s.buttonBgColor || globalPrimaryButton};
   --bundle-button-added-bg: ${s.buttonAddedBgColor || '#10B981'};
   --bundle-button-added-text: ${s.buttonAddedTextColor || '#FFFFFF'};
@@ -62,10 +62,10 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-product-card-width: ${s.productCardWidth || 280}px;
   --bundle-product-card-height: ${s.productCardHeight || 420}px;
   --bundle-product-card-spacing: ${s.productCardSpacing || 12}px;
-  --bundle-product-card-border-radius: ${s.productCardBorderRadius || 8}px;
+  --bundle-product-card-border-radius: ${s.productCardBorderRadius || 16}px;
   --bundle-product-card-padding: ${s.productCardPadding || 12}px;
   --bundle-product-card-border-width: ${s.productCardBorderWidth || 1}px;
-  --bundle-product-card-border-color: ${s.productCardBorderColor || 'rgba(0,0,0,0.08)'};
+  --bundle-product-card-border-color: ${s.productCardBorderColor || '#ECECEC'};
   --bundle-product-card-shadow: ${s.productCardShadow || '0 2px 8px rgba(0,0,0,0.04)'};
   --bundle-product-card-hover-shadow: ${s.productCardHoverShadow || '0 8px 24px rgba(0,0,0,0.12)'};
 
@@ -246,8 +246,8 @@ export function generateFullPageVariables(ctx: CSSGenerationContext): string {
      ======================================================================== */
 
   /* Full-Page Layout Colors */
-  --bundle-full-page-bg-color: ${s.fullPageBgColor || '#ECF4EC'};
-  --bundle-full-page-footer-bg-color: ${s.fullPageFooterBgColor || '#ECF4EC'};
+  --bundle-full-page-bg-color: ${s.fullPageBgColor || '#FFFFFF'};
+  --bundle-full-page-footer-bg-color: ${s.fullPageFooterBgColor || '#FFFFFF'};
   --bundle-full-page-footer-border-color: ${s.fullPageFooterBorderColor || 'rgba(0, 0, 0, 0.1)'};
 
   /* Step Timeline */
@@ -319,11 +319,11 @@ export function generateFullPageVariables(ctx: CSSGenerationContext): string {
   --bundle-full-page-footer-back-btn-color: ${s.footerBackButtonTextColor || s.fullPageFooterBackBtnColor || globalPrimaryText};
   --bundle-full-page-footer-back-btn-border: ${s.footerBackButtonBorderColor || '#E5E7EB'};
   --bundle-full-page-footer-back-btn-hover: ${s.fullPageFooterBackBtnHover || '#F3F4F6'};
-  --bundle-full-page-footer-next-btn-bg: ${s.footerNextButtonBgColor || s.fullPageFooterNextBtnBg || globalPrimaryButton};
-  --bundle-full-page-footer-next-btn-color: ${s.footerNextButtonTextColor || s.fullPageFooterNextBtnColor || globalButtonText};
-  --bundle-full-page-footer-next-btn-hover: ${s.fullPageFooterNextBtnHover || '#5F2DD8'};
+  --bundle-full-page-footer-next-btn-bg: ${s.footerNextButtonBgColor || s.fullPageFooterNextBtnBg || '#111111'};
+  --bundle-full-page-footer-next-btn-color: ${s.footerNextButtonTextColor || s.fullPageFooterNextBtnColor || '#FFFFFF'};
+  --bundle-full-page-footer-next-btn-hover: ${s.fullPageFooterNextBtnHover || '#333333'};
   --bundle-full-page-footer-nav-btn-font-size: ${s.fullPageFooterNavBtnFontSize || 14}px;
-  --bundle-full-page-footer-nav-btn-radius: ${s.footerBackButtonBorderRadius || s.footerNextButtonBorderRadius || s.fullPageFooterNavBtnRadius || 8}px;
+  --bundle-full-page-footer-nav-btn-radius: ${s.footerBackButtonBorderRadius || s.footerNextButtonBorderRadius || s.fullPageFooterNavBtnRadius || 50}px;
   --bundle-full-page-footer-no-selections-color: ${s.fullPageFooterNoSelectionsColor || '#808080'};
 
   /* Loading State */

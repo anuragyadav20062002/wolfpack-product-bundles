@@ -111,13 +111,13 @@ function FullPageFooterLayout({
     <div
       style={{
         backgroundColor: footerBgColor,
-        borderRadius: `${footerBorderRadius}px`,
+        borderRadius: "16px",
         padding: 0,
-        minWidth: "560px",
+        minWidth: "520px",
         maxWidth: "680px",
         display: "block",
-        borderTop: "1px solid rgba(0, 0, 0, 0.08)",
-        boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.08)",
+        border: "1px solid rgba(0, 0, 0, 0.08)",
+        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.18)",
         ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
       }}
     >
@@ -284,7 +284,7 @@ function FullPageFooterLayout({
           alignItems: "center",
           justifyContent: "center",
           gap: "16px",
-          padding: `0 40px ${footerPadding}px`,
+          padding: `12px 24px ${footerPadding}px`,
         }}
       >
         {/* Back Button */}
@@ -294,7 +294,7 @@ function FullPageFooterLayout({
               backgroundColor: footerBackButtonBgColor,
               color: footerBackButtonTextColor,
               border: `1px solid ${footerBackButtonBorderColor}`,
-              borderRadius: `${footerBackButtonBorderRadius}px`,
+              borderRadius: `${footerBackButtonBorderRadius || 50}px`,
               padding: "12px 28px",
               fontSize: "14px",
               fontWeight: 600,
@@ -352,7 +352,7 @@ function FullPageFooterLayout({
               backgroundColor: footerNextButtonBgColor,
               color: footerNextButtonTextColor,
               border: "none",
-              borderRadius: `${footerNextButtonBorderRadius}px`,
+              borderRadius: `${footerNextButtonBorderRadius || 50}px`,
               padding: "12px 28px",
               fontSize: "14px",
               fontWeight: 600,
