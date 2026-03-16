@@ -39,18 +39,41 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     let designSettings = null;
     let usedBundleType = null;
 
+    // Wrap all DB queries in a timeout so a cold DB connection never causes a 504.
+    // If the timeout fires we fall through to defaults — the widget still renders,
+    // just without custom DCP styling until the next page load (when DB is warm).
+    const DB_TIMEOUT_MS = 8000;
+    const dbTimeout = new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), DB_TIMEOUT_MS)
+    );
+
     // Try each bundle type in order until we find settings
     for (const bundleType of bundleTypesToTry) {
-      designSettings = await prisma.designSettings.findUnique({
-        where: {
-          shopId_bundleType: {
-            shopId: shopDomain,
-            bundleType,
+      const queryResult = await Promise.race([
+        prisma.designSettings.findUnique({
+          where: {
+            shopId_bundleType: {
+              shopId: shopDomain,
+              bundleType,
+            },
           },
-        },
-      });
+        }),
+        dbTimeout,
+      ]);
 
-      if (designSettings) {
+      if (queryResult === null && !designSettings) {
+        // Timeout fired — log and skip to defaults
+        AppLogger.warn("Design settings DB query timed out, using defaults", {
+          component: "api.design-settings.css",
+          shopDomain,
+          bundleType,
+          timeoutMs: DB_TIMEOUT_MS,
+        });
+        break;
+      }
+
+      if (queryResult) {
+        designSettings = queryResult;
         usedBundleType = bundleType;
         AppLogger.info("Design settings found", {
           component: "api.design-settings.css",
