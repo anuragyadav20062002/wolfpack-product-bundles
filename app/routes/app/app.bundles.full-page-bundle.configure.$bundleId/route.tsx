@@ -69,7 +69,6 @@ import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
-import { slugify, validateSlug } from "../../../lib/slug-utils";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-configure.module.css";
 
@@ -86,7 +85,6 @@ import {
   handleEnsureBundleTemplates,
   handleCheckFullPageTemplate,
   handleValidateWidgetPlacement,
-  handleRenamePageSlug,
 } from "./handlers";
 
 // Types - extracted to separate module for better organization
@@ -233,14 +231,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleEnsureBundleTemplates(admin, session);
       case "checkFullPageTemplate":
         return await handleCheckFullPageTemplate(admin, session);
-      case "validateWidgetPlacement": {
-        const desiredSlug = formData.get("pageSlug") as string | undefined || undefined;
-        return await handleValidateWidgetPlacement(admin, session, bundleId, desiredSlug);
-      }
-      case "renamePageSlug": {
-        const newSlug = formData.get("newSlug") as string;
-        return await handleRenamePageSlug(admin, session, bundleId, newSlug);
-      }
+      case "validateWidgetPlacement":
+        return await handleValidateWidgetPlacement(admin, session, bundleId);
       case "syncBundle":
         return await handleSyncBundle(admin, session, bundleId);
       default:
@@ -434,19 +426,6 @@ export default function ConfigureBundleFlow() {
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
-      // If bundle is placed and slug has changed, rename the page handle
-      if (
-        bundle.bundleType === 'full_page' &&
-        bundle.shopifyPageId &&
-        formState.pageSlug &&
-        formState.pageSlug !== bundle.shopifyPageHandle
-      ) {
-        const renameData = new FormData();
-        renameData.append("intent", "renamePageSlug");
-        renameData.append("newSlug", formState.pageSlug);
-        fetcher.submit(renameData, { method: "post" });
-      }
-
       // Submit to server action using fetcher
 
       fetcher.submit(formData, { method: "post" });
@@ -463,7 +442,6 @@ export default function ConfigureBundleFlow() {
     formState.bundleName,
     formState.bundleDescription,
     formState.templateName,
-    formState.pageSlug,
     stepsState.steps,
     pricingState.discountEnabled,
     pricingState.discountType,
@@ -611,40 +589,19 @@ export default function ConfigureBundleFlow() {
           setIsLoadingPages(false);
         } else if ('themeId' in result && result.themeId) {
           // This is a get current theme response - handled by individual callbacks
-        } else if ('newHandle' in result && result.newHandle) {
-          // Page handle rename response
-          const adjusted = (result as any).adjusted;
-          if (adjusted) {
-            shopify.toast.show(`URL was taken — page renamed to /${result.newHandle}`, { isError: false, duration: 6000 });
-          } else {
-            shopify.toast.show("Page URL updated successfully!", { isError: false });
-          }
-          revalidator.revalidate();
         } else if ('pageHandle' in result && result.pageHandle) {
           // Bundle page created successfully
           const pageUrl = (result as any).pageUrl;
           const installRequired = (result as any).widgetInstallationRequired;
           const installLink = (result as any).widgetInstallationLink;
-          const slugAdjusted = (result as any).slugAdjusted;
-          const adjustedHandle = (result as any).pageHandle;
-
-          if (slugAdjusted) {
-            shopify.toast.show(
-              `URL was taken — page created at /${adjustedHandle}`,
-              { isError: false, duration: 6000 }
-            );
-          }
 
           if (installRequired && installLink) {
-            // First-time setup: open theme editor so merchant can click Save to enable the widget
-            if (!slugAdjusted) {
-              shopify.toast.show(
-                "Page created! Click Save in the theme editor to activate the widget.",
-                { isError: false, duration: 8000 }
-              );
-            }
+            shopify.toast.show(
+              "Page created! Click Save in the theme editor to activate the widget.",
+              { isError: false, duration: 8000 }
+            );
             window.open(installLink, '_blank');
-          } else if (!slugAdjusted) {
+          } else {
             shopify.toast.show("Bundle page created successfully!", { isError: false });
             if (pageUrl) {
               window.open(pageUrl, '_blank');
@@ -1200,15 +1157,12 @@ export default function ConfigureBundleFlow() {
     try {
       const formData = new FormData();
       formData.append("intent", "validateWidgetPlacement");
-      if (formState.pageSlug) {
-        formData.append("pageSlug", formState.pageSlug);
-      }
       fetcher.submit(formData, { method: "post" });
     } catch (error) {
       AppLogger.error('Error creating bundle page:', {}, error as any);
       shopify.toast.show("Failed to create bundle page", { isError: true, duration: 5000 });
     }
-  }, [fetcher, shopify, formState.pageSlug]);
+  }, [fetcher, shopify]);
 
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
@@ -1351,7 +1305,7 @@ export default function ConfigureBundleFlow() {
               content: "Add to Storefront",
               onAction: () => { void handleAddToStorefront(); },
               loading: fetcher.state === 'submitting',
-              disabled: bundle.bundleType === 'full_page' && !!validateSlug(formState.pageSlug),
+              disabled: false,
             }
       }
       secondaryActions={[
@@ -1535,46 +1489,6 @@ export default function ConfigureBundleFlow() {
                     status={formState.bundleStatus}
                     onChange={formState.setBundleStatus}
                   />
-                </Card>
-              )}
-
-              {/* Storefront Page — slug + "View on Storefront" */}
-              {bundle.bundleType === 'full_page' && (
-                <Card>
-                  <BlockStack gap="300">
-                    <Text variant="headingSm" as="h3">Storefront Page</Text>
-                    <Text variant="bodySm" as="p" tone="subdued">
-                      Choose the URL where this bundle will appear on your store.
-                    </Text>
-                    <TextField
-                      label="Page URL slug"
-                      autoComplete="off"
-                      prefix={`${shop.replace('.myshopify.com', '')}.myshopify.com/pages/`}
-                      value={formState.pageSlug}
-                      onChange={(value) => formState.setPageSlug(value)}
-                      onBlur={() => {
-                        formState.setPageSlug(slugify(formState.pageSlug));
-                      }}
-                      helpText={`https://${shop.replace('.myshopify.com', '')}.myshopify.com/pages/${formState.pageSlug || ''}`}
-                      error={
-                        formState.pageSlug
-                          ? (validateSlug(formState.pageSlug) ?? undefined)
-                          : 'URL slug cannot be empty.'
-                      }
-                    />
-                    {bundle.shopifyPageHandle && (
-                      <InlineStack gap="200">
-                        <Button
-                          icon={ExternalIcon}
-                          url={`https://${shop.replace('.myshopify.com', '')}.myshopify.com/pages/${bundle.shopifyPageHandle}`}
-                          target="_blank"
-                          size="slim"
-                        >
-                          View on Storefront
-                        </Button>
-                      </InlineStack>
-                    )}
-                  </BlockStack>
                 </Card>
               )}
 

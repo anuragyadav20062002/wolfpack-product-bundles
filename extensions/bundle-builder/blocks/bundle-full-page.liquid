@@ -206,25 +206,6 @@
   {% endunless %}
 {% endif %}
 
-<!-- DIAGNOSTIC: Always runs regardless of bundle_id resolution -->
-<script>
-  console.log('🔍 [BUNDLE_DEBUG] Liquid Resolution (ALWAYS RUNS):', {
-    pageHandle: {{ page.handle | json }},
-    pageTitle: {{ page.title | json }},
-    customMetafield: {{ bundle_id_from_custom | json }},
-    handleExtraction: {{ bundle_id_from_handle | json }},
-    appMetafield: {{ bundle_id_from_app_metafield | json }},
-    blockSetting: {{ bundle_id_from_setting | json }},
-    finalBundleId: {{ bundle_id | json }},
-    source: {{ bundle_id_source | json }},
-    shouldShowWidget: {{ should_show_widget | json }},
-    isDesignMode: {{ request.design_mode | json }},
-    allPageMetafields: {{ page.metafields | json }},
-    customNamespace: {{ page.metafields.custom | json }},
-    appNamespace: {{ page.metafields['$app'] | json }}
-  });
-</script>
-
 {% if should_show_widget %}
   <div
     {{ block.shopify_attributes }}
@@ -252,16 +233,6 @@
   </div>
 
   <script>
-    console.log('🎯 [FULL_PAGE_BUNDLE] Widget Loading:', {
-      bundleId: {{ bundle_id | json }},
-      bundleIdSource: {{ bundle_id_source | json }},
-      bundleType: 'full_page',
-      pageHandle: {{ page.handle | json }},
-      pageTitle: {{ page.title | json }},
-      isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
-      automated: {{ bundle_id_source | json }} === 'page_metafield_automated'
-    });
-
     // Initialize Shopify context for full-page bundles
     if (!window.bundleWidgetContext) {
       window.shopCurrency = {{ shop.currency | json }};
