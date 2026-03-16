@@ -33,7 +33,7 @@ import type { FullPageBundleResult } from "./types";
 export async function createFullPageBundle(
   admin: any,
   shop: string,
-  apiKey: string,
+  _apiKey: string,
   bundleId: string,
   bundleName: string
 ): Promise<FullPageBundleResult> {
