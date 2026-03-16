@@ -84,7 +84,7 @@ function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: 
   );
 }
 
-// Full-page footer layout — matches storefront: Progress Message → Product Tiles → Back | Total | Next
+// Full-page footer layout — matches storefront: Success Banner → Progress Message → Product Tiles → Back | Total | Next
 function FullPageFooterLayout({
   highlightTarget,
   footerBgColor,
@@ -106,7 +106,12 @@ function FullPageFooterLayout({
   footerNextButtonBorderColor,
   footerNextButtonBorderRadius,
   footerDiscountTextVisibility,
-}: Omit<BundleFooterPreviewProps, "activeSubSection" | "footerTotalBgColor" | "successMessageFontSize" | "successMessageFontWeight" | "successMessageTextColor" | "successMessageBgColor"> & { highlightTarget: HighlightTarget }) {
+  successMessageFontSize,
+  successMessageFontWeight,
+  successMessageTextColor,
+  successMessageBgColor,
+  showSuccessBanner = false,
+}: Omit<BundleFooterPreviewProps, "activeSubSection" | "footerTotalBgColor"> & { highlightTarget: HighlightTarget; showSuccessBanner?: boolean }) {
   return (
     <div
       style={{
@@ -118,11 +123,32 @@ function FullPageFooterLayout({
         display: "block",
         border: "1px solid rgba(0, 0, 0, 0.08)",
         boxShadow: "0 10px 40px rgba(0, 0, 0, 0.18)",
+        overflow: "hidden",
         ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
       }}
     >
-      {/* SECTION 1: Progress / Discount Message */}
-      {footerDiscountTextVisibility && (
+      {/* SECTION 0: Success Banner (Beco-style — shown when discount unlocked) */}
+      {footerDiscountTextVisibility && showSuccessBanner && (
+        <div
+          style={{
+            width: "100%",
+            backgroundColor: successMessageBgColor,
+            color: successMessageTextColor,
+            textAlign: "center",
+            padding: "10px 16px",
+            fontSize: `${successMessageFontSize}px`,
+            fontWeight: successMessageFontWeight,
+            lineHeight: 1.4,
+            boxSizing: "border-box",
+            ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
+          }}
+        >
+          🎉 Best Deal Unlocked! You&apos;ve got <strong>10% off</strong>
+        </div>
+      )}
+
+      {/* SECTION 1: Progress / Discount Message (shown when discount not yet unlocked) */}
+      {footerDiscountTextVisibility && !showSuccessBanner && (
         <div
           style={{
             padding: "16px 40px 12px",
@@ -321,7 +347,7 @@ function FullPageFooterLayout({
             }}
           >
             <span style={{ fontSize: "20px", fontWeight: 550, color: "#333" }}>Total</span>
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "baseline", gap: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px" }}>
               <span
                 style={{
                   color: footerStrikePriceColor,
@@ -340,6 +366,23 @@ function FullPageFooterLayout({
                 }}
               >
                 $19.99
+              </span>
+              {/* Discount badge (Beco-style) */}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  backgroundColor: successMessageBgColor,
+                  color: successMessageTextColor,
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "3px 8px",
+                  borderRadius: "12px",
+                  whiteSpace: "nowrap",
+                  letterSpacing: "0.3px",
+                }}
+              >
+                20% OFF
               </span>
             </div>
           </div>
@@ -629,6 +672,10 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
     footerDiscountTextVisibility,
+    successMessageFontSize,
+    successMessageFontWeight,
+    successMessageTextColor,
+    successMessageBgColor,
   };
 
   // quantityBadge — show a footer tile with the quantity badge highlighted
@@ -809,6 +856,41 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
               Preview updates as you customize
             </Text>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // footerDiscountProgress + full-page: show both progress and success-banner states side by side
+  if (activeSubSection === "footerDiscountProgress" && bundleType === BundleType.FULL_PAGE) {
+    return (
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          {titles[activeSubSection]}
+        </Text>
+        <div style={{ marginTop: "24px" }}>
+          <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
+        </div>
+        <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "24px", alignItems: "center" }}>
+          {/* Progress state */}
+          <div>
+            <div style={{ marginBottom: "8px", fontSize: "11px", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              — In Progress —
+            </div>
+            <FullPageFooterLayout {...sharedFullPageProps} showSuccessBanner={false} />
+          </div>
+          {/* Success banner state */}
+          <div>
+            <div style={{ marginBottom: "8px", fontSize: "11px", color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              — When Discount Unlocked —
+            </div>
+            <FullPageFooterLayout {...sharedFullPageProps} showSuccessBanner={true} />
+          </div>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Top banner appears when the discount threshold is reached
+          </Text>
         </div>
       </div>
     );

@@ -525,17 +525,41 @@
   opacity: 0.6;
 }
 
-/* Mobile responsive */
+/* Mobile responsive — horizontal scroll (Beco-style) */
 @media (max-width: 600px) {
   .step-tabs-container {
-    flex-direction: column;
-    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    padding: 0 12px 4px;
+  }
+
+  .step-tabs-container::-webkit-scrollbar {
+    display: none;
   }
 
   .step-tab {
-    width: 100%;
-    min-width: unset;
+    flex-shrink: 0;
+    min-width: 100px;
   }
+}
+
+/* ============================================================================
+   STEP TAB QUANTITY HINT (e.g. "Pick 2" or "Pick 2–5")
+   ============================================================================ */
+
+.tab-quantity-hint {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.70;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+.step-tab.active .tab-quantity-hint {
+  opacity: 0.85;
 }
 
 /* ============================================================================
@@ -962,6 +986,15 @@
   /* Removed opacity to keep card vibrant - selection indicated by checkmark only */
   border: 2px solid var(--bundle-product-card-selected-border-color, #4CAF50);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Dimmed state — shown when step quota is full and this card is not selected (Beco-style) */
+.product-card.dimmed {
+  opacity: 0.42;
+  pointer-events: none;
+  filter: grayscale(15%);
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* Selected Overlay Badge */
@@ -1932,6 +1965,42 @@
   font-weight: 700;
   color: var(--bundle-full-page-footer-total-final, #E65100);
   font-family: inherit;
+}
+
+/* Discount % badge next to total (Beco-style "38% OFF") */
+.footer-discount-badge {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bundle-footer-discount-badge-bg, #10B981);
+  color: var(--bundle-footer-discount-badge-text, #FFFFFF);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin-left: 6px;
+  white-space: nowrap;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+
+/* "Best Deal Unlocked!" success banner — sits above the footer product tiles (Beco-style) */
+.footer-success-banner {
+  width: 100%;
+  background: var(--bundle-footer-success-banner-bg, #10B981);
+  color: var(--bundle-footer-success-banner-text, #FFFFFF);
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  border-radius: 0;
+  box-sizing: border-box;
+  animation: footer-banner-slide-in 0.3s ease-out;
+}
+
+@keyframes footer-banner-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Navigation Section - Back | Total | Next layout */

@@ -157,6 +157,23 @@ const selectedCardHTML = `
 </div>
 `.trim();
 
+// Dimmed state card — shown when step quota is full (Beco-style)
+const dimmedCardHTML = `
+<div class="product-card dimmed" data-product-id="preview-dimmed">
+  <div class="product-image">
+    <img src="${PLACEHOLDER_IMG}" alt="Another Product" loading="lazy">
+  </div>
+  <div class="product-content-wrapper">
+    <div class="product-title">Another Product</div>
+    <div class="product-price-row">
+      <span class="product-price">$9.99</span>
+    </div>
+    <div class="product-spacer"></div>
+    <button class="product-add-btn" data-product-id="preview-dimmed">Add to Bundle</button>
+  </div>
+</div>
+`.trim();
+
 // Real modal structure matching ComponentGenerator.createModalHTML()
 const modalHTML = `
 <div class="modal-content" style="position:relative;max-width:680px;margin:0 auto;">
@@ -338,7 +355,7 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
     );
   }
 
-  // All other product card sub-sections: show two cards side-by-side
+  // All other product card sub-sections: show three cards (unselected, selected, dimmed)
   return (
     <div style={{ textAlign: "center" }}>
       <Text as="h3" variant="headingLg" fontWeight="semibold">
@@ -370,11 +387,17 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
           {/* eslint-disable-next-line react/no-danger */}
           <div dangerouslySetInnerHTML={{ __html: selectedCardHTML }} />
         </HighlightBox>
+
+        {/* Dimmed card — when step quota is full */}
+        <HighlightBox active={false}>
+          {/* eslint-disable-next-line react/no-danger */}
+          <div dangerouslySetInnerHTML={{ __html: dimmedCardHTML }} />
+        </HighlightBox>
       </div>
 
       <div style={{ marginTop: "32px" }}>
         <Text as="p" variant="bodySm" tone="subdued">
-          Left: unselected · Right: selected with quantity controls
+          Left: unselected · Middle: selected · Right: dimmed (step quota full)
         </Text>
       </div>
     </div>

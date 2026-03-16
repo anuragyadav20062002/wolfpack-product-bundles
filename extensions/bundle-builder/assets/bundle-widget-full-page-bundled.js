@@ -3530,14 +3530,15 @@ class BundleWidgetFullPage {
           `;
         }
       } else {
-        // Empty step - show step number, name, and condition hint
-        // Get previous step name for locked tooltip
+        // Empty step - show step number, name, quantity hint, and optional lock
         const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
+        const quantityHint = this.getStepQuantityHint(step);
 
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
             <span class="tab-name">${escapedName}</span>
+            ${quantityHint ? `<span class="tab-quantity-hint">${quantityHint}</span>` : ''}
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">
@@ -3577,6 +3578,43 @@ class BundleWidgetFullPage {
     });
 
     return tabsContainer;
+  }
+
+  // Get a compact quantity hint string for a step tab (e.g. "Pick 2" or "Pick 2–5")
+  getStepQuantityHint(step) {
+    if (!step) return null;
+
+    const { conditionOperator, conditionValue, conditionOperator2, conditionValue2, minQuantity, maxQuantity } = step;
+    const OPERATORS = ConditionValidator.OPERATORS;
+
+    if (conditionOperator && conditionValue != null) {
+      const val = Number(conditionValue);
+
+      // Range condition: primary AND secondary
+      if (conditionOperator2 && conditionValue2 != null) {
+        const val2 = Number(conditionValue2);
+        const min = Math.min(val, val2);
+        const max = Math.max(val, val2);
+        return `Pick ${min}–${max}`;
+      }
+
+      switch (conditionOperator) {
+        case OPERATORS.EQUAL_TO:                  return `Pick ${val}`;
+        case OPERATORS.GREATER_THAN:              return `Pick ${val + 1}+`;
+        case OPERATORS.GREATER_THAN_OR_EQUAL_TO:  return `Pick ${val}+`;
+        case OPERATORS.LESS_THAN:                 return `Up to ${val - 1}`;
+        case OPERATORS.LESS_THAN_OR_EQUAL_TO:     return `Up to ${val}`;
+        default:                                  return null;
+      }
+    }
+
+    // Fallback to minQuantity / maxQuantity
+    const min = minQuantity != null ? Number(minQuantity) : null;
+    const max = maxQuantity != null ? Number(maxQuantity) : null;
+    if (min && max && min !== max) return `Pick ${min}–${max}`;
+    if (min && min > 1) return `Pick ${min}+`;
+    if (max && max > 1) return `Up to ${max}`;
+    return null;
   }
 
   // Get product images for a step (helper for tabs)
@@ -3943,9 +3981,21 @@ class BundleWidgetFullPage {
     }
 
 
+    // Check if step is at capacity (adding 1 more item would be blocked)
+    // When at capacity, unselected cards are dimmed (Beco-style UX)
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
+    const isStepAtCapacity = !capacityCheck.allowed;
+
     // Create product cards using ComponentGenerator
     expandedProducts.forEach(product => {
       const productCard = this.createProductCard(product, stepIndex);
+      const productId = product.variantId || product.id;
+      const currentQty = stepSelections[productId] || 0;
+      // Dim unselected cards when step quota is full
+      if (isStepAtCapacity && currentQty === 0) {
+        productCard.classList.add('dimmed');
+      }
       grid.appendChild(productCard);
     });
 
@@ -4265,9 +4315,19 @@ class BundleWidgetFullPage {
       }
     }
 
-    progressSection.innerHTML = `
-      ${discountMessage ? `<div class="footer-discount-message">${discountMessage}</div>` : ''}
-    `;
+    // For the progress section, only show the "in-progress" message (not the success — that gets its own banner)
+    if (!discountInfo.hasDiscount && discountMessage) {
+      progressSection.innerHTML = `<div class="footer-discount-message">${discountMessage}</div>`;
+    }
+
+    // === SECTION 1b: Success banner (Beco-style "🎉 Best Deal Unlocked!") ===
+    // Shown prominently above the product tiles when discount threshold is reached
+    let successBanner = null;
+    if (discountInfo.hasDiscount && discountMessage) {
+      successBanner = document.createElement('div');
+      successBanner.className = 'footer-success-banner';
+      successBanner.innerHTML = discountMessage;
+    }
 
     // === SECTION 2: Scrollable Product Tiles (centered above navigation) ===
     const productsSection = this.createFooterProductTiles(allSelectedProducts, currencyInfo);
@@ -4296,14 +4356,22 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Create Total section (between buttons)
+    // Create Total section (between buttons) — with optional discount % badge (Beco-style)
     const totalSection = document.createElement('div');
     totalSection.className = 'footer-total-section';
+    let discountBadgeHTML = '';
+    if (discountInfo.hasDiscount && totalPrice > 0 && finalPrice < totalPrice) {
+      const discountPct = Math.round((1 - finalPrice / totalPrice) * 100);
+      if (discountPct > 0) {
+        discountBadgeHTML = `<span class="footer-discount-badge">${discountPct}% OFF</span>`;
+      }
+    }
     totalSection.innerHTML = `
       <span class="total-label">Total</span>
       <div class="total-prices">
         ${discountInfo.hasDiscount ? `<span class="total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
         <span class="total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+        ${discountBadgeHTML}
       </div>
     `;
 
@@ -4333,7 +4401,10 @@ class BundleWidgetFullPage {
     navSection.appendChild(totalSection);
     navSection.appendChild(nextBtn);
 
-    // Assemble footer: Progress -> Products (centered) -> Navigation
+    // Assemble footer: [Success banner?] -> Progress -> Products (centered) -> Navigation
+    if (successBanner) {
+      this.elements.footer.appendChild(successBanner);
+    }
     this.elements.footer.appendChild(progressSection);
     this.elements.footer.appendChild(productsSection);
     this.elements.footer.appendChild(navSection);
