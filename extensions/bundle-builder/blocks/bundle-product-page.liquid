@@ -280,8 +280,8 @@
   {% endif %}
 {% endif %}
 
-{% comment %} THEME EDITOR: Allow manual bundle ID override for preview {% endcomment %}
-{% if request.design_mode and block.settings.bundle_id and block.settings.bundle_id != blank %}
+{% comment %} Allow manual bundle ID override via block settings (theme editor + storefront) {% endcomment %}
+{% if block.settings.bundle_id and block.settings.bundle_id != blank %}
   {% assign should_show_widget = true %}
   {% assign bundle_id = block.settings.bundle_id %}
 {% endif %}
