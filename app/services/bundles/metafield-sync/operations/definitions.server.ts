@@ -174,6 +174,92 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
  *
  * Called during afterAuth and whenever a full-page bundle page is created.
  */
+/**
+ * Ensure a PAGE metafield definition exists for custom:bundle_id with PUBLIC_READ access.
+ * The 'custom' namespace is readable in Liquid via page.metafields.custom.bundle_id
+ * (unlike '$app' which expands to an internal namespace and is unreliable in Liquid).
+ */
+export async function ensureCustomPageBundleIdDefinition(admin: any): Promise<boolean> {
+  const CREATE_DEF = `
+    mutation CreateCustomPageBundleIdDef($definition: MetafieldDefinitionInput!) {
+      metafieldDefinitionCreate(definition: $definition) {
+        createdDefinition { id }
+        userErrors { field message code }
+      }
+    }
+  `;
+
+  const QUERY_DEF = `
+    query GetCustomPageBundleIdDef {
+      metafieldDefinitions(ownerType: PAGE, namespace: "custom", key: "bundle_id", first: 1) {
+        edges { node { id access { storefront } } }
+      }
+    }
+  `;
+
+  const UPDATE_DEF = `
+    mutation UpdateCustomPageBundleIdDef($definition: MetafieldDefinitionUpdateInput!, $id: ID!) {
+      metafieldDefinitionUpdate(definition: $definition, id: $id) {
+        updatedDefinition { id access { storefront } }
+        userErrors { field message code }
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(CREATE_DEF, {
+      variables: {
+        definition: {
+          name: "Bundle ID",
+          namespace: "custom",
+          key: "bundle_id",
+          description: "Links a Shopify page to a full-page bundle in the app",
+          type: "single_line_text_field",
+          ownerType: "PAGE",
+          access: {
+            admin: "MERCHANT_READ_WRITE",
+            storefront: "PUBLIC_READ"
+          }
+        }
+      }
+    });
+
+    const data = await response.json();
+    const errors = data.data?.metafieldDefinitionCreate?.userErrors ?? [];
+
+    if (errors.length > 0) {
+      const error = errors[0];
+      if (error.code === "TAKEN") {
+        console.log("[METAFIELD_DEF] custom:bundle_id PAGE definition already exists — verifying storefront access...");
+
+        const queryResponse = await admin.graphql(QUERY_DEF);
+        const queryData = await queryResponse.json();
+        const existingDef = queryData.data?.metafieldDefinitions?.edges?.[0]?.node;
+
+        if (existingDef?.access?.storefront !== "PUBLIC_READ") {
+          console.log("[METAFIELD_DEF] Updating custom:bundle_id to PUBLIC_READ...");
+          await admin.graphql(UPDATE_DEF, {
+            variables: {
+              id: existingDef.id,
+              definition: { access: { admin: "MERCHANT_READ_WRITE", storefront: "PUBLIC_READ" } }
+            }
+          });
+        } else {
+          console.log("✓ [METAFIELD_DEF] custom:bundle_id already has PUBLIC_READ");
+        }
+      } else {
+        console.error("❌ [METAFIELD_DEF] Error creating custom:bundle_id definition:", error);
+      }
+    } else {
+      console.log("✓ [METAFIELD_DEF] Created custom:bundle_id PAGE definition with PUBLIC_READ");
+    }
+  } catch (error) {
+    console.error("❌ [METAFIELD_DEF] Failed to create custom:bundle_id definition:", error);
+  }
+
+  return true;
+}
+
 export async function ensurePageBundleIdMetafieldDefinition(admin: any): Promise<boolean> {
   const CREATE_METAFIELD_DEFINITION = `
     mutation CreatePageMetafieldDefinition($definition: MetafieldDefinitionInput!) {

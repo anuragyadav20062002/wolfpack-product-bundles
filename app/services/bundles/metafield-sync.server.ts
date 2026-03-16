@@ -45,6 +45,7 @@ export {
 export {
   ensureVariantBundleMetafieldDefinitions,
   ensurePageBundleIdMetafieldDefinition,
+  ensureCustomPageBundleIdDefinition,
   updateBundleProductMetafields,
   updateCartTransformMetafield,
   updateComponentProductMetafields
