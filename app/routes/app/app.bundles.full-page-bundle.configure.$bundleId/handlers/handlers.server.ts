@@ -873,6 +873,174 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
 }
 
 /**
+ * Handle hard-reset sync of a full-page bundle:
+ * Deletes the Shopify page and re-creates it, then re-runs all metafield operations
+ * from the current DB state. DB child records (steps, pricing) are preserved in place.
+ */
+export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bundleId: string) {
+  AppLogger.info('[SYNC_BUNDLE] Starting hard-reset sync for full-page bundle', { bundleId, shopId: session.shop });
+
+  try {
+    // 1. Load bundle + steps + pricing from DB
+    const bundle = await db.bundle.findUnique({
+      where: { id: bundleId, shopId: session.shop },
+      include: {
+        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        pricing: true,
+      },
+    });
+
+    if (!bundle) {
+      return json({ success: false, error: 'Bundle not found' }, { status: 404 });
+    }
+
+    if (!bundle.shopifyPageId) {
+      return json({
+        success: false,
+        error: 'Bundle has no Shopify page — save the bundle first to create a page',
+      }, { status: 400 });
+    }
+
+    // 2. Delete Shopify page
+    const DELETE_PAGE = `
+      mutation DeletePage($id: ID!) {
+        pageDelete(id: $id) {
+          deletedPageId
+          userErrors { field message }
+        }
+      }
+    `;
+
+    const deleteResponse = await admin.graphql(DELETE_PAGE, {
+      variables: { id: bundle.shopifyPageId },
+    });
+    const deleteData = await deleteResponse.json();
+
+    if (deleteData.data?.pageDelete?.userErrors?.length > 0) {
+      const err = deleteData.data.pageDelete.userErrors[0];
+      return json({ success: false, error: `Failed to delete Shopify page: ${err.message}` }, { status: 400 });
+    }
+
+    AppLogger.info('[SYNC_BUNDLE] Shopify page deleted', { bundleId, pageId: bundle.shopifyPageId });
+
+    // 3. Clear page reference from DB so createFullPageBundle will create a fresh page
+    await db.bundle.update({
+      where: { id: bundleId },
+      data: { shopifyPageId: null, shopifyPageHandle: null },
+    });
+
+    // 4. Re-create the Shopify page via WidgetInstallationService
+    const apiKey = process.env.SHOPIFY_API_KEY || '';
+    const result = await WidgetInstallationService.createFullPageBundle(
+      admin, session.shop, apiKey, bundleId, bundle.name,
+    );
+
+    if (!result.success) {
+      AppLogger.error('[SYNC_BUNDLE] Failed to re-create Shopify page', { bundleId }, result.error as any);
+      return json({
+        success: false,
+        error: result.error || 'Failed to re-create Shopify page',
+      }, { status: 500 });
+    }
+
+    AppLogger.info('[SYNC_BUNDLE] Shopify page re-created', { bundleId, pageId: result.pageId, pageHandle: result.pageHandle });
+
+    // 5. Update DB with new page ID and handle
+    await db.bundle.update({
+      where: { id: bundleId },
+      data: { shopifyPageId: result.pageId, shopifyPageHandle: result.pageHandle },
+    });
+
+    // 6. Re-run metafield operations from DB-authoritative state (if shopifyProductId exists)
+    const shopifyProductId = bundle.shopifyProductId;
+    if (shopifyProductId && bundle.pricing) {
+      const optimizedSteps = bundle.steps.map((step: any) => ({
+        id: step.id,
+        name: step.name,
+        minQuantity: step.minQuantity || 1,
+        maxQuantity: step.maxQuantity || 1,
+        enabled: step.enabled !== false,
+        conditionType: step.conditionType,
+        conditionOperator: step.conditionOperator,
+        conditionValue: step.conditionValue,
+        products: (step.StepProduct || []).map((product: any) => ({
+          id: product.productId,
+          title: product.title || 'Product',
+          imageUrl: product.imageUrl || null,
+        })),
+        collections: (step.collections || []).map((collection: any) => ({
+          id: collection.id,
+          title: collection.title || 'Collection',
+        })),
+      }));
+
+      const syncMsgs = safeJsonParse(bundle.pricing.messages, {});
+      const syncRuleMessages = syncMsgs.ruleMessages || {};
+      const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
+      const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
+
+      const bundleConfig = {
+        bundleId: bundle.id,
+        name: bundle.name,
+        templateName: bundle.templateName || null,
+        bundleType: bundle.bundleType || BundleType.FULL_PAGE,
+        type: 'cart_transform',
+        steps: optimizedSteps,
+        pricing: {
+          enabled: bundle.pricing.enabled,
+          method: bundle.pricing.method,
+          rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
+            id: rule.id,
+            conditionType: rule.type || 'quantity',
+            value: rule.value || 0,
+            discountValue: rule.discountValue || 0,
+            fixedBundlePrice: rule.fixedBundlePrice || 0,
+          })),
+          messages: {
+            progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
+            qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+            showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
+          },
+        },
+        updatedAt: new Date().toISOString(),
+      };
+
+      AppLogger.info('[SYNC_BUNDLE] Re-running metafield operations', { bundleId, shopifyProductId });
+
+      const [standardResult, componentResult, variantResult] = await Promise.allSettled([
+        (async () => {
+          const { metafields: standardMetafields } = await convertBundleToStandardMetafields(admin, bundleConfig);
+          if (Object.keys(standardMetafields).length > 0) {
+            await updateProductStandardMetafields(admin, shopifyProductId, standardMetafields);
+          }
+        })(),
+        updateComponentProductMetafields(admin, shopifyProductId, bundleConfig),
+        updateBundleProductMetafields(admin, shopifyProductId, bundleConfig),
+      ]);
+
+      if (standardResult.status === 'rejected') {
+        AppLogger.warn('[SYNC_BUNDLE] Standard metafields update failed (non-critical)', { bundleId }, standardResult.reason);
+      }
+      if (componentResult.status === 'rejected') {
+        throw new Error(`Failed to update component metafields: ${componentResult.reason}`);
+      }
+      if (variantResult.status === 'rejected') {
+        throw new Error(`Failed to update bundle variant metafields: ${variantResult.reason}`);
+      }
+
+      AppLogger.info('[SYNC_BUNDLE] All metafields re-synced successfully', { bundleId });
+    }
+
+    return json({ success: true, synced: true, message: 'Bundle synced successfully' });
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Sync failed';
+    AppLogger.error('[SYNC_BUNDLE] Error during sync:', { bundleId }, error as any);
+    return json({ success: false, error: `Sync failed: ${message}` }, { status: 500 });
+  }
+}
+
+/**
  * Check if full-page-bundle template exists in the theme
  */
 export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: Session) {

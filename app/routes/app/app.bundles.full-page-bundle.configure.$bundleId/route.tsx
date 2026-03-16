@@ -75,6 +75,7 @@ import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-config
 // Action handlers - extracted to separate module for better organization
 import {
   handleSaveBundle,
+  handleSyncBundle,
   handleUpdateBundleStatus,
   handleSyncProduct,
   handleUpdateBundleProduct,
@@ -232,6 +233,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleCheckFullPageTemplate(admin, session);
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
+      case "syncBundle":
+        return await handleSyncBundle(admin, session, bundleId);
       default:
         return json({ success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION }, { status: 400 });
     }
@@ -383,6 +386,9 @@ export default function ConfigureBundleFlow() {
   // Loading GIF state
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
   const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
+
+  // Sync Bundle modal state
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
@@ -590,6 +596,10 @@ export default function ConfigureBundleFlow() {
           if (pageUrl) {
             window.open(pageUrl, '_blank');
           }
+          revalidator.revalidate();
+        } else if ('synced' in result && result.synced) {
+          // Sync bundle response
+          shopify.toast.show(('message' in result ? result.message : null) || "Bundle synced successfully", { isError: false });
           revalidator.revalidate();
         } else {
           // Generic success response
@@ -902,6 +912,13 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show((error as Error).message || ERROR_MESSAGES.FAILED_TO_SYNC_PRODUCT, { isError: true, duration: 5000 });
     }
   }, [fetcher, shopify]);
+
+  const handleSyncBundleConfirm = useCallback(() => {
+    setIsSyncModalOpen(false);
+    const formData = new FormData();
+    formData.append("intent", "syncBundle");
+    fetcher.submit(formData, { method: "post" });
+  }, [fetcher]);
 
   const handleBundleProductSelect = useCallback(async () => {
     try {
@@ -1279,6 +1296,15 @@ export default function ConfigureBundleFlow() {
               loading: fetcher.state === 'submitting',
             }
       }
+      secondaryActions={[
+        {
+          content: "Sync Bundle",
+          icon: RefreshIcon,
+          destructive: true,
+          disabled: isDirty || fetcher.state !== 'idle',
+          onAction: () => setIsSyncModalOpen(true),
+        },
+      ]}
     >
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
@@ -2406,6 +2432,40 @@ export default function ConfigureBundleFlow() {
                 </BlockStack>
               );
             })()}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Sync Bundle Confirmation Modal */}
+      <Modal
+        open={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        title="Sync Bundle?"
+        primaryAction={{
+          content: "Sync Bundle",
+          destructive: true,
+          loading: fetcher.state === 'submitting',
+          onAction: handleSyncBundleConfirm,
+        }}
+        secondaryActions={[
+          {
+            content: "Cancel",
+            onAction: () => setIsSyncModalOpen(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <Text as="p" variant="bodyMd">
+              This will delete and re-create all Shopify data for this bundle:
+            </Text>
+            <List type="bullet">
+              <List.Item>The Shopify page will be deleted and re-created</List.Item>
+              <List.Item>All bundle and component metafields will be rewritten</List.Item>
+            </List>
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Bundle analytics are preserved. This action cannot be undone.
+            </Text>
           </BlockStack>
         </Modal.Section>
       </Modal>
