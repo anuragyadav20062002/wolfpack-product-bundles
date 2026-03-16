@@ -592,9 +592,21 @@ export default function ConfigureBundleFlow() {
         } else if ('pageHandle' in result && result.pageHandle) {
           // Bundle page created successfully
           const pageUrl = (result as any).pageUrl;
-          shopify.toast.show("Bundle page created successfully!", { isError: false });
-          if (pageUrl) {
-            window.open(pageUrl, '_blank');
+          const installRequired = (result as any).widgetInstallationRequired;
+          const installLink = (result as any).widgetInstallationLink;
+
+          if (installRequired && installLink) {
+            // First-time setup: open theme editor so merchant can click Save to enable the widget
+            shopify.toast.show(
+              "Page created! Click Save in the theme editor to activate the widget.",
+              { isError: false, duration: 8000 }
+            );
+            window.open(installLink, '_blank');
+          } else {
+            shopify.toast.show("Bundle page created successfully!", { isError: false });
+            if (pageUrl) {
+              window.open(pageUrl, '_blank');
+            }
           }
           revalidator.revalidate();
         } else if ('synced' in result && result.synced) {

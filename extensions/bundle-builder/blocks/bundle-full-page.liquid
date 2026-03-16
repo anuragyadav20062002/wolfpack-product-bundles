@@ -140,47 +140,49 @@
 {% endcomment %}
 
 {% comment %}
-  Resolve bundle ID from three sources in priority order:
+  Resolve bundle ID from four sources in priority order:
 
-  1. page.handle  — MOST RELIABLE (primary source).
-                    App creates bundle pages with handle "bundle-{bundleId}".
-                    Bundle IDs are Prisma CUIDs (lowercase alphanumeric, no special
-                    chars), so `remove_first: 'bundle-'` gives back the exact bundleId.
-                    Zero dependency on metafields, definitions, or deploy state.
+  1. page.metafields.custom.bundle_id  — MOST RELIABLE (primary source).
+     The 'custom' namespace is set by the backend and is always readable in
+     Liquid with PUBLIC_READ access. Unlike '$app' which expands to an
+     internal namespace, 'custom' works directly.
 
-  2. page.metafields['$app'].bundle_id  — NOTE: '$app' in the Admin API expands to
-                    'app--{app_id}' internally. The correct Liquid accessor would be
-                    page.metafields['app--{app_id}']['bundle_id'] but the app_id is not
-                    easily available at Liquid render time. This path is kept as a
-                    secondary fallback but may always return nil. Source 1 supersedes it.
+  2. page.handle  — SECONDARY. App creates pages with handle "bundle-{bundleId}".
+     Extracting the bundle ID from the handle is a zero-dependency fallback.
 
-  3. block.settings.bundle_id  — Manual fallback. Merchant enters bundle ID in the
-                    Shopify theme editor. Per Shopify docs, ALL theme app extension
-                    blocks (including target="section") access settings via block.settings,
-                    not section.settings.
+  3. page.metafields['$app'].bundle_id  — LEGACY. '$app' expands internally
+     and may not resolve in Liquid. Kept for backwards compatibility.
+
+  4. block.settings.bundle_id  — MANUAL. Merchant enters bundle ID in the
+     Shopify theme editor.
 {% endcomment %}
 
-{% comment %} Source 1: Extract bundle ID from page handle (primary — always works) {% endcomment %}
+{% comment %} Source 1: custom namespace metafield (most reliable) {% endcomment %}
+{% assign bundle_id_from_custom = page.metafields.custom.bundle_id %}
+
+{% comment %} Source 2: Extract bundle ID from page handle {% endcomment %}
 {% if page.handle contains 'bundle-' %}
   {% assign bundle_id_from_handle = page.handle | remove_first: 'bundle-' %}
 {% else %}
   {% assign bundle_id_from_handle = nil %}
 {% endif %}
 
-{% comment %} Source 2: Page metafield (may not resolve due to $app namespace expansion) {% endcomment %}
-{% assign app_namespace = '$app' %}
-{% assign bundle_id_from_metafield = page.metafields[app_namespace].bundle_id %}
+{% comment %} Source 3: $app namespace metafield (legacy, may not work) {% endcomment %}
+{% assign bundle_id_from_app_metafield = page.metafields['$app'].bundle_id %}
 
-{% comment %} Source 3: Block setting (manual theme editor input) {% endcomment %}
+{% comment %} Source 4: Block setting (manual theme editor input) {% endcomment %}
 {% assign bundle_id_from_setting = block.settings.bundle_id %}
 
-{% comment %} Priority: handle > metafield > block setting {% endcomment %}
-{% if bundle_id_from_handle and bundle_id_from_handle != blank %}
+{% comment %} Priority: custom metafield > handle > $app metafield > block setting {% endcomment %}
+{% if bundle_id_from_custom and bundle_id_from_custom != blank %}
+  {% assign bundle_id = bundle_id_from_custom %}
+  {% assign bundle_id_source = "custom_metafield" %}
+{% elsif bundle_id_from_handle and bundle_id_from_handle != blank %}
   {% assign bundle_id = bundle_id_from_handle %}
   {% assign bundle_id_source = "page_handle" %}
-{% elsif bundle_id_from_metafield and bundle_id_from_metafield != blank %}
-  {% assign bundle_id = bundle_id_from_metafield %}
-  {% assign bundle_id_source = "page_metafield_automated" %}
+{% elsif bundle_id_from_app_metafield and bundle_id_from_app_metafield != blank %}
+  {% assign bundle_id = bundle_id_from_app_metafield %}
+  {% assign bundle_id_source = "app_metafield" %}
 {% elsif bundle_id_from_setting and bundle_id_from_setting != blank %}
   {% assign bundle_id = bundle_id_from_setting %}
   {% assign bundle_id_source = "block_setting_manual" %}
@@ -203,6 +205,25 @@
     {% assign bundle_id = "preview" %}
   {% endunless %}
 {% endif %}
+
+<!-- DIAGNOSTIC: Always runs regardless of bundle_id resolution -->
+<script>
+  console.log('🔍 [BUNDLE_DEBUG] Liquid Resolution (ALWAYS RUNS):', {
+    pageHandle: {{ page.handle | json }},
+    pageTitle: {{ page.title | json }},
+    customMetafield: {{ bundle_id_from_custom | json }},
+    handleExtraction: {{ bundle_id_from_handle | json }},
+    appMetafield: {{ bundle_id_from_app_metafield | json }},
+    blockSetting: {{ bundle_id_from_setting | json }},
+    finalBundleId: {{ bundle_id | json }},
+    source: {{ bundle_id_source | json }},
+    shouldShowWidget: {{ should_show_widget | json }},
+    isDesignMode: {{ request.design_mode | json }},
+    allPageMetafields: {{ page.metafields | json }},
+    customNamespace: {{ page.metafields.custom | json }},
+    appNamespace: {{ page.metafields['$app'] | json }}
+  });
+</script>
 
 {% if should_show_widget %}
   <div

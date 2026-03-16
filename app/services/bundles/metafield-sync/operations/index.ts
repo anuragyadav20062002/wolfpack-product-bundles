@@ -4,7 +4,7 @@
  * Re-exports all metafield synchronization operations
  */
 
-export { ensureVariantBundleMetafieldDefinitions, ensurePageBundleIdMetafieldDefinition } from "./definitions.server";
+export { ensureVariantBundleMetafieldDefinitions, ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition } from "./definitions.server";
 
 export { updateBundleProductMetafields } from "./bundle-product.server";
 
