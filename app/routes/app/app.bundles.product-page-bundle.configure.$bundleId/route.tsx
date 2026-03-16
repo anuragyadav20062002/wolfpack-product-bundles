@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
+import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
 import { AppLogger } from "../../../lib/logger";
 
 // Note: Using Polaris Checkbox component for toggle functionality
@@ -74,6 +74,7 @@ import productPageBundleStyles from "../../../styles/routes/product-page-bundle-
 // Action handlers - extracted to separate module for better organization
 import {
   handleSaveBundle,
+  handleSyncBundle,
   handleUpdateBundleStatus,
   handleSyncProduct,
   handleUpdateBundleProduct,
@@ -235,6 +236,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleEnsureBundleTemplates(admin, session);
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
+      case "syncBundle":
+        return await handleSyncBundle(admin, session, bundleId);
       default:
         return json({ success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION }, { status: 400 });
     }
@@ -350,6 +353,7 @@ export default function ConfigureBundleFlow() {
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
+  const revalidator = useRevalidator();
 
   // ===== CENTRALIZED STATE MANAGEMENT =====
   // Use the unified bundle configuration state hook
@@ -438,6 +442,9 @@ export default function ConfigureBundleFlow() {
   // Loading GIF state
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
   const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
+
+  // Sync Bundle modal state
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
@@ -600,6 +607,10 @@ export default function ConfigureBundleFlow() {
           setIsLoadingPages(false);
         } else if ('themeId' in result && result.themeId) {
           // This is a get current theme response - handled by individual callbacks
+        } else if ('synced' in result && result.synced) {
+          // Sync bundle response
+          shopify.toast.show(('message' in result ? result.message : null) || "Bundle synced successfully", { isError: false });
+          revalidator.revalidate();
         } else {
           // Generic success response
           shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });
@@ -887,6 +898,13 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show((error as Error).message || ERROR_MESSAGES.FAILED_TO_SYNC_PRODUCT, { isError: true, duration: 5000 });
     }
   }, [fetcher, shopify]);
+
+  const handleSyncBundleConfirm = useCallback(() => {
+    setIsSyncModalOpen(false);
+    const formData = new FormData();
+    formData.append("intent", "syncBundle");
+    fetcher.submit(formData, { method: "post" });
+  }, [fetcher]);
 
   const handleBundleProductSelect = useCallback(async () => {
     try {
@@ -1244,6 +1262,13 @@ export default function ConfigureBundleFlow() {
             const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
             window.open(themeEditorUrl, '_blank');
           },
+        },
+        {
+          content: "Sync Bundle",
+          icon: RefreshIcon,
+          destructive: true,
+          disabled: isDirty || fetcher.state !== 'idle',
+          onAction: () => setIsSyncModalOpen(true),
         },
       ]}
     >
@@ -2162,6 +2187,40 @@ export default function ConfigureBundleFlow() {
                 </BlockStack>
               );
             })()}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
+      {/* Sync Bundle Confirmation Modal */}
+      <Modal
+        open={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        title="Sync Bundle?"
+        primaryAction={{
+          content: "Sync Bundle",
+          destructive: true,
+          loading: fetcher.state === 'submitting',
+          onAction: handleSyncBundleConfirm,
+        }}
+        secondaryActions={[
+          {
+            content: "Cancel",
+            onAction: () => setIsSyncModalOpen(false),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <Text as="p" variant="bodyMd">
+              This will delete and re-create all Shopify data for this bundle:
+            </Text>
+            <List type="bullet">
+              <List.Item>The Shopify product will be archived and deleted, then re-created</List.Item>
+              <List.Item>All bundle and component metafields will be rewritten</List.Item>
+            </List>
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Bundle analytics are preserved. This action cannot be undone.
+            </Text>
           </BlockStack>
         </Modal.Section>
       </Modal>
