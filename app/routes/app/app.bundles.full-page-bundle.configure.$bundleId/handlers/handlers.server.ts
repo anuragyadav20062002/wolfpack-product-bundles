@@ -11,6 +11,7 @@ import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
+import { renamePageHandle } from "../../../../services/widget-installation/widget-full-page-bundle.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -932,7 +933,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // 4. Re-create the Shopify page via WidgetInstallationService
     const apiKey = process.env.SHOPIFY_API_KEY || '';
     const result = await WidgetInstallationService.createFullPageBundle(
-      admin, session.shop, apiKey, bundleId, bundle.name,
+      admin, session, apiKey, bundleId, bundle.name,
     );
 
     if (!result.success) {
@@ -1122,7 +1123,7 @@ export async function handleCheckFullPageTemplate(admin: ShopifyAdmin, session: 
 /**
  * Handle widget placement validation with automated page creation
  */
-export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session: Session, bundleId: string) {
+export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session: Session, bundleId: string, desiredSlug?: string) {
   try {
     AppLogger.debug("[WIDGET_PLACEMENT] Validating widget placement (single-click flow)", { bundleId });
 
@@ -1149,7 +1150,8 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
       session,
       apiKey,
       bundleId,
-      bundle.name
+      bundle.name,
+      desiredSlug
     );
 
     if (!result.success) {
@@ -1188,6 +1190,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
       pageUrl: result.pageUrl,
       pageId: result.pageId,
       pageHandle: result.pageHandle,
+      slugAdjusted: result.slugAdjusted ?? false,
       widgetInstallationRequired: result.widgetInstallationRequired,
       widgetInstallationLink: result.widgetInstallationLink,
       message: result.widgetInstallationRequired
@@ -1200,6 +1203,70 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     return json({
       success: false,
       error: (error as Error).message || "Widget placement validation failed"
+    }, { status: 500 });
+  }
+}
+
+/**
+ * Handle renaming the Shopify page handle for an already-placed full-page bundle.
+ * Called when the merchant edits the slug and saves from the configure page.
+ */
+export async function handleRenamePageSlug(
+  admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+  newSlug: string
+) {
+  try {
+    const bundle = await db.bundle.findUnique({
+      where: { id: bundleId, shopId: session.shop },
+      select: { id: true, shopifyPageId: true, shopifyPageHandle: true }
+    });
+
+    if (!bundle) {
+      return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
+    }
+
+    if (!bundle.shopifyPageId) {
+      return json(
+        { success: false, error: "Bundle page has not been placed yet." },
+        { status: 400 }
+      );
+    }
+
+    const result = await renamePageHandle(
+      admin,
+      bundle.shopifyPageId,
+      newSlug,
+      bundle.shopifyPageHandle ?? ''
+    );
+
+    if (!result.success) {
+      return json({ success: false, error: result.error }, { status: 400 });
+    }
+
+    await db.bundle.update({
+      where: { id: bundleId, shopId: session.shop },
+      data: { shopifyPageHandle: result.newHandle }
+    });
+
+    AppLogger.info("[RENAME_PAGE_SLUG] Page handle renamed successfully", {
+      bundleId,
+      oldHandle: bundle.shopifyPageHandle,
+      newHandle: result.newHandle
+    });
+
+    return json({
+      success: true,
+      newHandle: result.newHandle,
+      adjusted: result.adjusted ?? false
+    });
+
+  } catch (error) {
+    AppLogger.error("[RENAME_PAGE_SLUG] Error renaming page slug:", {}, error as any);
+    return json({
+      success: false,
+      error: (error as Error).message || "Failed to rename page slug"
     }, { status: 500 });
   }
 }

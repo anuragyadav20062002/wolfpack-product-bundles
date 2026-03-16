@@ -24,6 +24,7 @@ export interface FullPageBundleResult {
   pageUrl?: string;
   widgetInstallationRequired?: boolean;
   widgetInstallationLink?: string;
+  slugAdjusted?: boolean;
   error?: string;
   errorType?: 'page_creation_failed' | 'metafield_failed' | 'widget_not_installed' | 'unknown';
 }

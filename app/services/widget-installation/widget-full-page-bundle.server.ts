@@ -9,6 +9,7 @@ import { AppLogger } from "../../lib/logger";
 import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition } from "../bundles/metafield-sync.server";
 import { ensureBundlePageTemplate } from "./widget-theme-template.server";
 import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
+import { slugify, resolveUniqueHandle } from "../../lib/slug-utils";
 import type { FullPageBundleResult } from "./types";
 
 interface ShopSession {
@@ -36,7 +37,8 @@ export async function createFullPageBundle(
   session: ShopSession,
   apiKey: string,
   bundleId: string,
-  bundleName: string
+  bundleName: string,
+  desiredSlug?: string
 ): Promise<FullPageBundleResult> {
   const shop = session.shop;
 
@@ -61,8 +63,9 @@ export async function createFullPageBundle(
     const useCustomTemplate = templateResult.success;
     const templateSuffix = useCustomTemplate ? 'full-page-bundle' : undefined;
 
-    // Step 1: Check if page already exists (prevents duplicate creation)
-    const pageHandle = `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
+    const rawSlug = desiredSlug?.trim() || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    const { handle: pageHandle, adjusted: slugAdjusted } = await resolveUniqueHandle(admin, rawSlug);
     const pageTitle = bundleName || `Bundle ${bundleId}`;
 
     const CHECK_PAGE_QUERY = `
@@ -293,6 +296,7 @@ export async function createFullPageBundle(
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
         pageUrl: pageUrl,
+        slugAdjusted,
         widgetInstallationRequired: true,
         widgetInstallationLink: deepLink.url
       };
@@ -302,7 +306,8 @@ export async function createFullPageBundle(
       success: true,
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
-      pageUrl: pageUrl
+      pageUrl: pageUrl,
+      slugAdjusted
     };
 
   } catch (error) {
@@ -317,5 +322,73 @@ export async function createFullPageBundle(
       error: `Failed to create page: ${(error as Error).message}`,
       errorType: 'unknown'
     };
+  }
+}
+
+/**
+ * Renames an existing Shopify page handle.
+ *
+ * Resolves uniqueness (skipping the page's own current handle) before calling pageUpdate.
+ *
+ * @param admin - Shopify Admin API client
+ * @param pageId - GID of the Shopify page to rename
+ * @param desiredSlug - New handle the merchant wants
+ * @param currentSlug - The page's current handle (to skip self in uniqueness check)
+ */
+export async function renamePageHandle(
+  admin: any,
+  pageId: string,
+  desiredSlug: string,
+  currentSlug: string
+): Promise<{ success: boolean; newHandle?: string; adjusted?: boolean; error?: string }> {
+  try {
+    const { handle: resolvedHandle, adjusted } = await resolveUniqueHandle(admin, desiredSlug, currentSlug);
+
+    const UPDATE_PAGE_HANDLE = `
+      mutation updatePageHandle($id: ID!, $page: PageUpdateInput!) {
+        pageUpdate(id: $id, page: $page) {
+          page {
+            id
+            handle
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(UPDATE_PAGE_HANDLE, {
+      variables: { id: pageId, page: { handle: resolvedHandle } }
+    });
+    const data = await response.json();
+
+    if (data?.data?.pageUpdate?.userErrors?.length > 0) {
+      const errors = data.data.pageUpdate.userErrors;
+      AppLogger.error('renamePageHandle: pageUpdate returned userErrors', {
+        component: 'WidgetFullPageBundle',
+        pageId,
+        desiredSlug,
+        errors
+      });
+      return { success: false, error: errors[0].message };
+    }
+
+    const newHandle = data?.data?.pageUpdate?.page?.handle ?? resolvedHandle;
+    AppLogger.info('renamePageHandle: page handle updated', {
+      component: 'WidgetFullPageBundle',
+      pageId,
+      oldHandle: currentSlug,
+      newHandle
+    });
+    return { success: true, newHandle, adjusted };
+
+  } catch (error) {
+    AppLogger.error('renamePageHandle: unexpected error', {
+      component: 'WidgetFullPageBundle',
+      pageId
+    }, error);
+    return { success: false, error: (error as Error).message };
   }
 }
