@@ -80,4 +80,5 @@ Transform the full-page bundle widget's visual design to match the Beco BYOB lay
   - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx` (SVG + description text)
   - `app/components/design-control-panel/preview/BundleFooterPreview.tsx` (floating card style)
 - ✅ ESLint: 0 errors on all modified files
-- Next: Commit
+- Commit: 321a884
+- **Status:** Completed ✅
