@@ -1518,29 +1518,34 @@ export default function ConfigureBundleFlow() {
                         }}
                       >
                         <BlockStack gap="300" inlineAlign="center">
-                          {/* SVG Illustration — Footer Bottom */}
+                          {/* SVG Illustration — Floating Footer Card */}
                           <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
                             {/* Product grid area */}
-                            <rect x="12" y="10" width="24" height="20" rx="2" fill="#E5E7EB" />
-                            <rect x="42" y="10" width="24" height="20" rx="2" fill="#E5E7EB" />
-                            <rect x="72" y="10" width="24" height="20" rx="2" fill="#E5E7EB" />
-                            <rect x="102" y="10" width="24" height="20" rx="2" fill="#E5E7EB" />
-                            <rect x="12" y="36" width="24" height="20" rx="2" fill="#E5E7EB" />
-                            <rect x="42" y="36" width="24" height="20" rx="2" fill="#E5E7EB" />
-                            <rect x="72" y="36" width="24" height="20" rx="2" fill="#E5E7EB" />
-                            <rect x="102" y="36" width="24" height="20" rx="2" fill="#E5E7EB" />
-                            {/* Bottom footer bar */}
-                            <rect x="1" y="68" width="138" height="26" rx="0" fill="#7C3AED" opacity="0.85" />
-                            <rect x="12" y="75" width="44" height="4" rx="2" fill="white" opacity="0.8" />
-                            <rect x="12" y="82" width="28" height="3" rx="1.5" fill="white" opacity="0.5" />
-                            <rect x="96" y="74" width="32" height="14" rx="3" fill="white" opacity="0.7" />
+                            <rect x="12" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                            <rect x="42" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                            <rect x="72" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                            <rect x="102" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                            <rect x="12" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                            <rect x="42" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                            <rect x="72" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                            <rect x="102" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                            {/* Floating card footer — centred, with shadow/rounded corners */}
+                            <rect x="16" y="64" width="108" height="26" rx="6" fill="white" stroke="#D1D5DB" strokeWidth="1" />
+                            <rect x="16" y="63" width="108" height="2" rx="1" fill="rgba(0,0,0,0.04)" />
+                            {/* Footer content: product thumb + total + next button */}
+                            <rect x="24" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                            <rect x="40" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                            <rect x="56" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                            <rect x="75" y="72" width="22" height="4" rx="2" fill="#D1D5DB" />
+                            <rect x="75" y="79" width="14" height="3" rx="1.5" fill="#E5E7EB" />
+                            <rect x="104" y="69" width="14" height="14" rx="4" fill="#111111" />
                           </svg>
                           <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
-                            Footer at bottom
+                            Floating cart card
                           </Text>
                           <Text variant="bodySm" as="p" tone="subdued" alignment="center">
-                            Sticky bar at the bottom with summary and navigation
+                            Floating card at the bottom centre with summary and navigation
                           </Text>
                         </BlockStack>
                       </div>
