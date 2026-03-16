@@ -932,7 +932,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // 4. Re-create the Shopify page via WidgetInstallationService
     const apiKey = process.env.SHOPIFY_API_KEY || '';
     const result = await WidgetInstallationService.createFullPageBundle(
-      admin, session.shop, apiKey, bundleId, bundle.name,
+      admin, session, apiKey, bundleId, bundle.name,
     );
 
     if (!result.success) {
