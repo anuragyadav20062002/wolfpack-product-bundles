@@ -57,6 +57,9 @@ export interface BundleUiConfig {
   promoBannerBgImage?: string | null;
   promoBannerBgImageCrop?: string | null;
   loadingGif?: string | null;
+  /** Widget style for product-page bundle (skai-lama-bottom-sheet-redesign).
+   *  Absent = 'classic' — backward-compatible default. */
+  widgetStyle?: 'classic' | 'bottom-sheet';
 }
 
 export interface BundleUiStep {
@@ -71,6 +74,14 @@ export interface BundleUiStep {
   conditionValue?: string;
   conditionOperator2?: string;
   conditionValue2?: string;
+  /** If true, this step is pre-filled and not shown in the bottom-sheet modal tabs. */
+  isDefault?: boolean;
+  /** Variant ID pre-selected for default steps. */
+  defaultVariantId?: string;
+  /** Badge label shown on the inline filled card (e.g. "FREE", "20% off"). */
+  discountBadgeLabel?: string;
+  /** URL for the category image shown in the empty slot card. */
+  categoryImageUrl?: string;
 }
 
 export interface BundleUiPricing {

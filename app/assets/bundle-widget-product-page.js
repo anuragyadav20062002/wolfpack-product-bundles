@@ -62,6 +62,30 @@
 
 'use strict';
 
+// ============================================================
+// BOTTOM-SHEET HELPER FUNCTIONS (pure — exposed for unit tests)
+// ============================================================
+
+/**
+ * Find the next incomplete non-default step after `fromIndex`.
+ * Returns -1 when all remaining non-default steps are complete.
+ */
+function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex) {
+  for (let i = fromIndex + 1; i < steps.length; i++) {
+    if (!steps[i].isDefault && !validateFn(i)) return i;
+  }
+  return -1;
+}
+
+function bsIsDefaultStep(step) { return !!step?.isDefault; }
+
+function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
+
+// Export for unit tests
+if (typeof window !== 'undefined') {
+  window.__bsHelpers = { bsFindNextIncompleteStep, bsIsDefaultStep, bsGetDiscountBadgeLabel };
+}
+
 // Import shared components and utilities
 import {
   BUNDLE_WIDGET,
@@ -251,6 +275,9 @@ class BundleWidgetProductPage {
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
 
+    // Determine widget style: 'bottom-sheet' or 'classic' (default for backward compat)
+    this.widgetStyle = this.selectedBundle?.widgetStyle ?? 'classic';
+
     // Update message templates from bundle pricing messages
     this.updateMessagesFromBundle();
   }
@@ -282,6 +309,16 @@ class BundleWidgetProductPage {
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
     this._stepFetchFailed = {};
+
+    // Pre-mark default steps as complete using a sentinel variant ID
+    // (default products are always included in the bundle — no user selection required)
+    if (this.widgetStyle === 'bottom-sheet') {
+      this.selectedBundle.steps.forEach((step, i) => {
+        if (step.isDefault && step.defaultVariantId) {
+          this.selectedProducts[i][step.defaultVariantId] = 1;
+        }
+      });
+    }
   }
 
   /**
@@ -345,13 +382,21 @@ class BundleWidgetProductPage {
   // ========================================================================
 
   setupDOMElements() {
+    // Determine which modal to use based on widget style
+    const modalEl = this.widgetStyle === 'bottom-sheet'
+      ? this.ensureBottomSheet()
+      : this.ensureModal();
+
     // Get or create main UI elements
     this.elements = {
       header: this.container.querySelector('.bundle-header') || this.createHeader(),
       stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
       footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
       addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
-      modal: this.ensureModal()
+      modal: modalEl,
+      bsOverlay: this.widgetStyle === 'bottom-sheet'
+        ? (document.getElementById('bw-bs-overlay') || this._createBottomSheetOverlay())
+        : null
     };
 
     // Append elements if they were created
@@ -364,6 +409,72 @@ class BundleWidgetProductPage {
     if (!this.container.querySelector('.add-bundle-to-cart')) {
       this.container.appendChild(this.elements.addToCartButton);
     }
+  }
+
+  _createBottomSheetOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'bw-bs-overlay';
+    overlay.className = 'bw-bs-overlay';
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  /**
+   * Creates the bottom-sheet panel using the SAME inner DOM structure as ensureModal()
+   * so all existing renderModalProducts / renderModalTabs / tab-arrow code works unchanged.
+   */
+  ensureBottomSheet() {
+    let panel = document.getElementById('bundle-builder-modal');
+
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'bundle-builder-modal';
+      panel.className = 'bw-bs-panel';
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+      panel.innerHTML = `
+        <div class="modal-header bw-bs-header">
+          <div class="modal-step-title bw-bs-title"></div>
+          <div class="modal-tabs-wrapper bw-bs-tabs-wrapper">
+            <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
+            <div class="modal-tabs bw-bs-tabs"></div>
+            <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
+          </div>
+          <button class="close-button bw-bs-close" aria-label="Close">
+            <span class="bw-bs-close-desktop">&times;</span>
+            <span class="bw-bs-close-mobile">&#8964;</span>
+          </button>
+        </div>
+        <div class="modal-body bw-bs-body">
+          <div class="product-grid bw-bs-product-grid"></div>
+        </div>
+        <div class="modal-footer bw-bs-footer">
+          <div class="modal-footer-grouped-content">
+            <div class="modal-footer-total-pill">
+              <span class="total-price-strike"></span>
+              <span class="total-price-final"></span>
+              <span class="price-cart-separator">|</span>
+              <span class="cart-badge-wrapper">
+                <span class="cart-badge-count">0</span>
+                <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                  <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+              </span>
+            </div>
+            <div class="modal-footer-discount-messaging">
+              <div class="footer-discount-text"></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(panel);
+      this.setupTabScrollArrows(panel);
+    }
+
+    return panel;
   }
 
   createHeader() {
@@ -562,22 +673,49 @@ class BundleWidgetProductPage {
   // Create an empty state card for a step (shown when no products selected)
   createEmptyStateCard(step, stepIndex) {
     const stepBox = document.createElement('div');
-    stepBox.className = 'step-box';
     stepBox.dataset.stepIndex = stepIndex;
 
-    // Plus icon for empty steps
-    const plusIcon = document.createElement('span');
-    plusIcon.className = 'plus-icon';
-    plusIcon.textContent = '+';
-    stepBox.appendChild(plusIcon);
+    if (this.widgetStyle === 'bottom-sheet') {
+      // Bottom-sheet mode: dashed-border slot card with category image
+      stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
 
-    // Add step name
-    const stepName = document.createElement('p');
-    stepName.className = 'step-name';
-    stepName.textContent = step.name || `Step ${stepIndex + 1}`;
-    stepBox.appendChild(stepName);
+      // Category image (from step's categoryImageUrl or first product image as fallback)
+      const imgUrl = step.categoryImageUrl || null;
+      if (imgUrl) {
+        const img = document.createElement('img');
+        img.src = imgUrl;
+        img.alt = step.name || '';
+        img.className = 'bw-slot-card__image';
+        stepBox.appendChild(img);
+      } else {
+        // Placeholder icon when no image configured yet
+        const placeholder = document.createElement('span');
+        placeholder.className = 'plus-icon bw-slot-card__placeholder';
+        placeholder.textContent = '+';
+        stepBox.appendChild(placeholder);
+      }
 
-    // Add click handler to open modal
+      // Step name label
+      const label = document.createElement('p');
+      label.className = 'step-name bw-slot-card__label';
+      label.textContent = step.name || `Step ${stepIndex + 1}`;
+      stepBox.appendChild(label);
+    } else {
+      // Classic mode: existing "+" icon behavior
+      stepBox.className = 'step-box';
+
+      const plusIcon = document.createElement('span');
+      plusIcon.className = 'plus-icon';
+      plusIcon.textContent = '+';
+      stepBox.appendChild(plusIcon);
+
+      const stepName = document.createElement('p');
+      stepName.className = 'step-name';
+      stepName.textContent = step.name || `Step ${stepIndex + 1}`;
+      stepBox.appendChild(stepName);
+    }
+
+    // Click handler to open modal
     stepBox.addEventListener('click', () => this.openModal(stepIndex));
 
     return stepBox;
@@ -680,27 +818,33 @@ class BundleWidgetProductPage {
   createSelectedProductCard(item, cardIndex) {
     const { product, stepIndex, step, variantId, instanceIndex } = item;
 
+    const isDefault = bsIsDefaultStep(step);
+    const badgeLabel = this.widgetStyle === 'bottom-sheet' ? bsGetDiscountBadgeLabel(step) : null;
+
     const stepBox = document.createElement('div');
-    stepBox.className = 'step-box step-completed product-card-state';
+    const extraClass = this.widgetStyle === 'bottom-sheet' ? ' bw-slot-card bw-slot-card--filled' : '';
+    stepBox.className = `step-box step-completed product-card-state${extraClass}`;
     stepBox.dataset.stepIndex = stepIndex;
     stepBox.dataset.variantId = variantId;
     stepBox.dataset.cardIndex = cardIndex;
 
-    // Add close icon badge to remove this specific product
-    const clearBadge = document.createElement('div');
-    clearBadge.className = 'step-clear-badge';
-    clearBadge.innerHTML = `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
-        <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `;
-    clearBadge.title = 'Remove this product';
-    clearBadge.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.removeProductFromSelection(stepIndex, variantId);
-    });
-    stepBox.appendChild(clearBadge);
+    // Remove button — hidden for default (non-removable) steps
+    if (!isDefault) {
+      const clearBadge = document.createElement('div');
+      clearBadge.className = 'step-clear-badge';
+      clearBadge.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
+          <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+      clearBadge.title = 'Remove this product';
+      clearBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeProductFromSelection(stepIndex, variantId);
+      });
+      stepBox.appendChild(clearBadge);
+    }
 
     // Product image container
     const imagesContainer = document.createElement('div');
@@ -713,6 +857,14 @@ class BundleWidgetProductPage {
     imagesContainer.appendChild(img);
 
     stepBox.appendChild(imagesContainer);
+
+    // Discount badge (bottom-sheet mode only, when step has a discountBadgeLabel)
+    if (badgeLabel) {
+      const badge = document.createElement('span');
+      badge.className = 'bw-slot-discount-badge';
+      badge.textContent = badgeLabel;
+      stepBox.appendChild(badge);
+    }
 
     // Product title at bottom
     const productTitle = document.createElement('p');
@@ -921,9 +1073,16 @@ class BundleWidgetProductPage {
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
 
-    // Show modal immediately
-    modal.style.display = 'block';
-    modal.classList.add('active');
+    // Show modal / bottom-sheet
+    if (this.widgetStyle === 'bottom-sheet') {
+      if (this.elements.bsOverlay) this.elements.bsOverlay.classList.add('bw-bs-overlay--open');
+      requestAnimationFrame(() => {
+        modal.classList.add('bw-bs-panel--open');
+      });
+    } else {
+      modal.style.display = 'block';
+      modal.classList.add('active');
+    }
     document.body.style.overflow = 'hidden';
 
     // Capture stepIndex so async callback doesn't render stale step if user navigates away
@@ -946,8 +1105,13 @@ class BundleWidgetProductPage {
   }
 
   closeModal() {
-    this.elements.modal.style.display = 'none';
-    this.elements.modal.classList.remove('active');
+    if (this.widgetStyle === 'bottom-sheet') {
+      this.elements.modal.classList.remove('bw-bs-panel--open');
+      if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
+    } else {
+      this.elements.modal.style.display = 'none';
+      this.elements.modal.classList.remove('active');
+    }
     document.body.style.overflow = '';
 
     // Update main UI
@@ -1562,6 +1726,52 @@ class BundleWidgetProductPage {
     this.updateModalFooterMessaging();
     this.updateAddToCartButton();
     this.updateFooterMessaging();
+
+    // Auto-step progression for bottom-sheet mode
+    if (this.widgetStyle === 'bottom-sheet') {
+      this._autoProgressBottomSheet(stepIndex);
+    }
+  }
+
+  /**
+   * Bottom-sheet auto-step progression.
+   * Called after every product selection update.
+   * If the current step's condition is now met, advances to the next incomplete step,
+   * or closes the modal if all steps are complete.
+   */
+  _autoProgressBottomSheet(stepIndex) {
+    if (!this.validateStep(stepIndex)) return; // current step not yet complete
+
+    const next = bsFindNextIncompleteStep(
+      this.selectedBundle.steps,
+      this.selectedProducts,
+      (i) => this.validateStep(i),
+      stepIndex
+    );
+
+    if (next === -1) {
+      // All steps complete — refresh tabs with checkmarks, then close
+      this.renderModalTabs();
+      setTimeout(() => this.closeModal(), 500);
+    } else {
+      // Advance to next incomplete step tab
+      this.renderModalTabs();
+      setTimeout(() => {
+        this.currentStepIndex = next;
+        const modal = this.elements.modal;
+        const headerText = this.getFormattedHeaderText();
+        modal.querySelector('.modal-step-title').innerHTML = headerText;
+        this.renderModalProductsLoading(next);
+        this.renderModalTabs();
+        this.updateModalNavigation();
+        this.loadStepProducts(next).then(() => {
+          if (this.currentStepIndex !== next) return;
+          this.renderModalProducts(next);
+          this.updateModalFooterMessaging();
+          this.preloadNextStep();
+        }).catch(() => {});
+      }, 300);
+    }
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
@@ -1957,7 +2167,6 @@ class BundleWidgetProductPage {
     // Modal close handlers
     const modal = this.elements.modal;
     const closeButton = modal.querySelector('.close-button');
-    const overlay = modal.querySelector('.modal-overlay');
     const prevButton = modal.querySelector('.prev-button');
     const nextButton = modal.querySelector('.next-button');
 
@@ -1965,23 +2174,35 @@ class BundleWidgetProductPage {
       closeButton.addEventListener('click', () => this.closeModal());
     }
 
-    if (overlay) {
-      overlay.addEventListener('click', () => this.closeModal());
+    if (this.widgetStyle === 'bottom-sheet') {
+      // Overlay is a separate element for bottom-sheet
+      if (this.elements.bsOverlay) {
+        this.elements.bsOverlay.addEventListener('click', () => this.closeModal());
+      }
+      // Hide Back/Next nav buttons — auto-progression and tabs handle navigation
+      if (prevButton) prevButton.style.display = 'none';
+      if (nextButton) nextButton.style.display = 'none';
+    } else {
+      // Classic mode: overlay is inside the modal
+      const overlay = modal.querySelector('.modal-overlay');
+      if (overlay) {
+        overlay.addEventListener('click', () => this.closeModal());
+      }
+      if (prevButton) {
+        prevButton.addEventListener('click', () => this.navigateModal(-1));
+      }
+      if (nextButton) {
+        nextButton.addEventListener('click', () => this.navigateModal(1));
+      }
     }
 
-    // Modal navigation
-    if (prevButton) {
-      prevButton.addEventListener('click', () => this.navigateModal(-1));
-    }
-
-    if (nextButton) {
-      nextButton.addEventListener('click', () => this.navigateModal(1));
-    }
-
-    // Keyboard handlers
+    // Keyboard: close on Escape
     document.addEventListener('keydown', (e) => {
-      if (modal.style.display === 'block' && e.key === 'Escape') {
-        this.closeModal();
+      if (e.key === 'Escape') {
+        const isOpen = this.widgetStyle === 'bottom-sheet'
+          ? modal.classList.contains('bw-bs-panel--open')
+          : modal.style.display === 'block';
+        if (isOpen) this.closeModal();
       }
     });
   }

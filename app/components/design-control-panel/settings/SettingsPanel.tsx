@@ -29,6 +29,7 @@ import { TypographySettings } from "./TypographySettings";
 import { AccessibilitySettings } from "./AccessibilitySettings";
 import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
 import { AddedButtonStateSettings } from "./AddedButtonStateSettings";
+import { WidgetStyleSettings } from "./WidgetStyleSettings";
 
 /**
  * SettingsPanel - Orchestrator component that renders the appropriate
@@ -117,6 +118,9 @@ export function SettingsPanel({
 
     case "accessibility":
       return <AccessibilitySettings settings={settings} onUpdate={onUpdate} />;
+
+    case "widgetStyle":
+      return <WidgetStyleSettings settings={settings} onUpdate={onUpdate} />;
 
     case "modalCloseButton":
       return <ModalCloseButtonSettings settings={settings} onUpdate={onUpdate} />;

@@ -117,8 +117,15 @@ export interface DesignSettings {
   focusOutlineColor: string;
   focusOutlineWidth: number;
 
+  // Bottom-Sheet Widget Style (skai-lama-bottom-sheet-redesign)
+  widgetStyle?: 'classic' | 'bottom-sheet';
+  bottomSheetOverlayOpacity?: number;    // 0–0.8, default 0.5
+  bottomSheetAnimationDuration?: number; // 200–600ms, default 400
+  emptySlotBorderStyle?: 'dashed' | 'solid'; // default 'dashed'
+  emptySlotBorderColor?: string;         // default = primary button color
+
   // Additional fields
-  [key: string]: string | number | boolean;
+  [key: string]: string | number | boolean | undefined;
 }
 
 export interface NavigationItemProps {
