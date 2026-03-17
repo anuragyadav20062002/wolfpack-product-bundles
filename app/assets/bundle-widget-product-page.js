@@ -434,44 +434,54 @@ class BundleWidgetProductPage {
       panel.setAttribute('aria-modal', 'true');
       panel.innerHTML = `
         <div class="modal-header bw-bs-header">
-          <div class="modal-step-title bw-bs-title"></div>
-          <div class="modal-tabs-wrapper bw-bs-tabs-wrapper">
-            <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
-            <div class="modal-tabs bw-bs-tabs"></div>
-            <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
-          </div>
-          <button class="close-button bw-bs-close" aria-label="Close">
-            <span class="bw-bs-close-desktop">&times;</span>
-            <span class="bw-bs-close-mobile">&#8964;</span>
+          <!-- Desktop close: × absolute top-right -->
+          <button class="close-button bw-bs-close-desktop" aria-label="Close">
+            <svg viewBox="0 0 20 20" width="20" height="20" focusable="false" aria-hidden="true" fill="currentColor">
+              <path d="M13.97 15.03a.75.75 0 1 0 1.06-1.06l-3.97-3.97 3.97-3.97a.75.75 0 0 0-1.06-1.06l-3.97 3.97-3.97-3.97a.75.75 0 0 0-1.06 1.06l3.97 3.97-3.97 3.97a.75.75 0 1 0 1.06 1.06l3.97-3.97 3.97 3.97Z"/>
+            </svg>
           </button>
+          <!-- Mobile close: chevron-down absolute top-center -->
+          <button class="close-button bw-bs-close-mobile" aria-label="Close">
+            <svg width="40" height="24" viewBox="0 0 70 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M20.0188 8.6438C21.044 7.6187 22.706 7.6187 23.7312 8.6438L35.875 20.7877L48.0188 8.6438C49.044 7.6187 50.706 7.6187 51.7312 8.6438C52.7563 9.669 52.7563 11.331 51.7312 12.3562L37.7312 26.3562C36.706 27.3813 35.044 27.3813 34.0188 26.3562L20.0188 12.3562C18.9937 11.331 18.9937 9.669 20.0188 8.6438Z" fill="#4A4A4A"/>
+            </svg>
+          </button>
+          <!-- Category tabs — grid layout, equal columns -->
+          <div class="modal-tabs-wrapper bw-bs-tabs-wrapper">
+            <div class="modal-tabs bw-bs-tabs"></div>
+          </div>
+          <!-- "Choose X" step title -->
+          <div class="modal-step-title bw-bs-choose-title"></div>
+          <!-- Discount / progress messaging -->
+          <div class="bw-bs-discount-bar footer-discount-text"></div>
         </div>
         <div class="modal-body bw-bs-body">
           <div class="product-grid bw-bs-product-grid"></div>
         </div>
         <div class="modal-footer bw-bs-footer">
-          <div class="modal-footer-grouped-content">
-            <div class="modal-footer-total-pill">
-              <span class="total-price-strike"></span>
-              <span class="total-price-final"></span>
-              <span class="price-cart-separator">|</span>
-              <span class="cart-badge-wrapper">
-                <span class="cart-badge-count">0</span>
-                <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                  <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                </svg>
-              </span>
-            </div>
-            <div class="modal-footer-discount-messaging">
-              <div class="footer-discount-text"></div>
-            </div>
+          <!-- Cart count pill (white, floats above nav pill) -->
+          <div class="bw-bs-cart-pill">
+            <span class="cart-badge-count">0</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M3 4.5C3 4.22386 3.22386 4 3.5 4H5.5C5.73 4 5.93 4.16 5.98 4.385L6.52 7H20.5C20.76 7 20.99 7.14 21.1 7.37C21.21 7.6 21.18 7.88 21.02 8.08L17.02 13.08C16.85 13.29 16.6 13.41 16.33 13.41H8.66L8.07 16H19.5C19.78 16 20 16.22 20 16.5C20 16.78 19.78 17 19.5 17H7.5C7.27 17 7.07 16.84 7.02 16.615L5.02 7.615L4.5 5H3.5C3.22 5 3 4.78 3 4.5ZM8 19.5C8 20.33 7.33 21 6.5 21C5.67 21 5 20.33 5 19.5C5 18.67 5.67 18 6.5 18C7.33 18 8 18.67 8 19.5ZM19 19.5C19 20.33 18.33 21 17.5 21C16.67 21 16 20.33 16 19.5C16 18.67 16.67 18 17.5 18C18.33 18 19 18.67 19 19.5Z" fill="#333"/>
+            </svg>
+          </div>
+          <!-- PREV/NEXT nav pill (navy blue) -->
+          <div class="bw-bs-nav-pill">
+            <button class="modal-nav-button prev-button bw-bs-nav-btn" aria-label="Previous step">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              PREV
+            </button>
+            <button class="modal-nav-button next-button bw-bs-nav-btn" aria-label="Next step">
+              NEXT
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </div>
       `;
 
       document.body.appendChild(panel);
-      this.setupTabScrollArrows(panel);
+      // No tab scroll arrows needed — tabs use CSS grid layout
     }
 
     return panel;
@@ -676,26 +686,30 @@ class BundleWidgetProductPage {
     stepBox.dataset.stepIndex = stepIndex;
 
     if (this.widgetStyle === 'bottom-sheet') {
-      // Bottom-sheet mode: dashed-border slot card with category image
+      // Bottom-sheet mode: dashed-border slot card matching Skai Lama pattern
       stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
 
-      // Category image (from step's categoryImageUrl or first product image as fallback)
+      // Category image as CSS background-image (Skai Lama pattern: image fills background, icon overlaid)
       const imgUrl = step.categoryImageUrl || null;
       if (imgUrl) {
-        const img = document.createElement('img');
-        img.src = imgUrl;
-        img.alt = step.name || '';
-        img.className = 'bw-slot-card__image';
-        stepBox.appendChild(img);
-      } else {
-        // Placeholder icon when no image configured yet
-        const placeholder = document.createElement('span');
-        placeholder.className = 'plus-icon bw-slot-card__placeholder';
-        placeholder.textContent = '+';
-        stepBox.appendChild(placeholder);
+        stepBox.style.backgroundImage = `url('${imgUrl}')`;
+        stepBox.style.backgroundSize = 'contain';
+        stepBox.style.backgroundRepeat = 'no-repeat';
+        stepBox.style.backgroundPosition = 'center';
       }
 
-      // Step name label
+      // + icon SVG always shown on top of the background image
+      const iconWrapper = document.createElement('div');
+      iconWrapper.className = 'bw-slot-card__plus-icon';
+      iconWrapper.innerHTML = `<svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
+      </svg>`;
+      iconWrapper.style.color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--bundle-global-primary-button') || '#1e3a8a';
+      iconWrapper.style.opacity = '0.5';
+      stepBox.appendChild(iconWrapper);
+
+      // Step name label below icon
       const label = document.createElement('p');
       label.className = 'step-name bw-slot-card__label';
       label.textContent = step.name || `Step ${stepIndex + 1}`;
@@ -1342,6 +1356,10 @@ class BundleWidgetProductPage {
   renderModalTabs() {
     const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
     tabsContainer.innerHTML = '';
+
+    // Set CSS variable for equal-column grid (bottom-sheet mode)
+    const stepCount = this.selectedBundle.steps.length;
+    tabsContainer.style.setProperty('--bw-tab-count', stepCount.toString());
 
     this.selectedBundle.steps.forEach((step, index) => {
       const isAccessible = this.isStepAccessible(index);
@@ -2175,13 +2193,13 @@ class BundleWidgetProductPage {
     }
 
     if (this.widgetStyle === 'bottom-sheet') {
-      // Overlay is a separate element for bottom-sheet
+      // Overlay closes modal
       if (this.elements.bsOverlay) {
         this.elements.bsOverlay.addEventListener('click', () => this.closeModal());
       }
-      // Hide Back/Next nav buttons — auto-progression and tabs handle navigation
-      if (prevButton) prevButton.style.display = 'none';
-      if (nextButton) nextButton.style.display = 'none';
+      // PREV/NEXT enabled in bottom-sheet — styled as pill buttons in footer
+      if (prevButton) prevButton.addEventListener('click', () => this.navigateModal(-1));
+      if (nextButton) nextButton.addEventListener('click', () => this.navigateModal(1));
     } else {
       // Classic mode: overlay is inside the modal
       const overlay = modal.querySelector('.modal-overlay');

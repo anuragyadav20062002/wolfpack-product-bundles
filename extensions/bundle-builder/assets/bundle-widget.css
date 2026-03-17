@@ -2490,7 +2490,7 @@
 
 
 /* ============================================================
-   BOTTOM-SHEET WIDGET — Overlay + Panel + Slot Cards
+   BOTTOM-SHEET WIDGET — Styled to match Skai Lama Easy Bundle Builder
    ============================================================ */
 
 /* ---- Overlay ---- */
@@ -2517,13 +2517,12 @@
   right: 0;
   height: 0;
   overflow: hidden;
-  background: var(--bundle-modal-bg-color, #ffffff);
+  background: var(--bundle-bs-panel-bg, rgb(244, 249, 249));
   border-radius: var(--bundle-modal-border-radius, 15px) var(--bundle-modal-border-radius, 15px) 0 0;
   transition: height var(--bundle-bottom-sheet-animation-duration, 400ms) ease-in-out;
   z-index: 9999999;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
 }
 
 .bw-bs-panel--open {
@@ -2539,80 +2538,42 @@
 /* ---- Panel header ---- */
 .bw-bs-header {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding: 16px 20px 12px;
-  border-bottom: 1px solid #f0f0f0;
-  gap: 12px;
+  position: relative;
+  padding: 12px 20px 6px;
 }
 
-.bw-bs-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--bundle-global-primary-text, #111);
-  min-width: 0;
-  flex-shrink: 0;
-}
-
-.bw-bs-tabs-wrapper {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.bw-bs-tabs {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 2px 0;
-}
-
-.bw-bs-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-/* Override default modal tab style inside bottom-sheet */
-.bw-bs-panel .bundle-header-tab {
-  flex-shrink: 0;
-  border-radius: var(--bundle-header-tab-radius, 8px);
-  padding: 8px 20px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  border: 1px solid var(--bundle-header-tab-inactive-bg, var(--bundle-global-primary-button, #007AFF));
-  background: var(--bundle-header-tab-inactive-bg, #ffffff);
-  color: var(--bundle-header-tab-inactive-text, var(--bundle-global-primary-button, #007AFF));
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
-}
-
-.bw-bs-panel .bundle-header-tab.active {
-  background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #007AFF));
-  color: var(--bundle-header-tab-active-text, #ffffff);
-  border-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #007AFF));
-}
-
-/* ---- Close button ---- */
-.bw-bs-close {
-  flex-shrink: 0;
+/* ---- Close button — desktop × (absolute top-right) ---- */
+.bw-bs-close-desktop {
+  position: absolute;
+  top: 10px;
+  right: 10px;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 22px;
-  line-height: 1;
+  padding: 2px;
   color: var(--bundle-global-primary-text, #333);
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background 0.15s;
+  display: block;
+  line-height: 0;
+  z-index: 1;
 }
 
-.bw-bs-close:hover {
-  background: #f5f5f5;
+.bw-bs-close-desktop:hover {
+  opacity: 0.7;
 }
 
+/* ---- Close button — mobile chevron-down (absolute top-center) ---- */
 .bw-bs-close-mobile {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
   display: none;
+  line-height: 0;
+  z-index: 1;
 }
 
 @media (max-width: 767px) {
@@ -2620,44 +2581,228 @@
     display: none;
   }
   .bw-bs-close-mobile {
-    display: inline;
-    font-size: 28px;
+    display: block;
   }
+}
+
+/* ---- Tabs container — equal-width grid ---- */
+.bw-bs-tabs-wrapper {
+  margin-bottom: 0;
+}
+
+.bw-bs-tabs {
+  display: grid;
+  grid-template-columns: repeat(var(--bw-tab-count, 3), 1fr);
+  gap: 12px;
+  padding: 0 1px;
+}
+
+/* Tab buttons inside bottom-sheet */
+.bw-bs-panel .bundle-header-tab {
+  border-radius: var(--bundle-header-tab-radius, 8px);
+  padding: 10px 30px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+  background: #ffffff;
+  color: var(--bundle-header-tab-inactive-text, var(--bundle-global-primary-button, #1e3a8a));
+  white-space: nowrap;
+  text-align: center;
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+}
+
+.bw-bs-panel .bundle-header-tab.active {
+  background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+  color: var(--bundle-header-tab-active-text, #ffffff);
+  border-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+}
+
+/* ---- "Choose X" step title (below tabs) ---- */
+.bw-bs-choose-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #000000;
+  text-align: center;
+  padding: 8px 15px 0;
+  display: block;
+  line-height: 1.3;
+}
+
+/* ---- Discount / progress messaging (below title) ---- */
+.bw-bs-discount-bar {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgb(68, 68, 68);
+  text-align: center;
+  padding: 4px 16px 6px;
+  display: block;
+  min-height: 26px;
 }
 
 /* ---- Panel body (scrollable product grid) ---- */
 .bw-bs-body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px;
+  padding: 0 20px;
 }
 
 .bw-bs-product-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  gap: 30px;
+  padding: 16px 0 120px;
 }
 
 @media (max-width: 1023px) {
   .bw-bs-product-grid {
     grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
   }
 }
 
 @media (max-width: 767px) {
   .bw-bs-product-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 }
 
-/* ---- Panel footer ---- */
-.bw-bs-footer {
-  flex-shrink: 0;
-  padding: 12px 20px;
-  border-top: 1px solid #f0f0f0;
+/* ---- Product cards inside bottom-sheet panel ---- */
+.bw-bs-panel .modal-body .product-card {
+  border-radius: 12px;
+  border: 1px solid rgb(227, 227, 227);
+  padding: 12px;
+  background: #ffffff;
+  box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px 0px, rgba(0, 0, 0, 0.24) 0px 1px 2px 0px;
+  display: grid;
+  overflow: visible;
 }
 
-/* ---- Inline slot cards — bottom-sheet empty state ---- */
+.bw-bs-panel .modal-body .product-card:hover {
+  transform: none;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 6px 0px, rgba(0, 0, 0, 0.3) 0px 2px 4px 0px;
+}
+
+.bw-bs-panel .modal-body .product-card .product-image {
+  width: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.bw-bs-panel .modal-body .product-card .product-image img {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  display: block;
+  border-radius: 0;
+}
+
+.bw-bs-panel .modal-body .product-card .product-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgb(30, 30, 30);
+  margin: 8px 0 4px;
+  line-height: 1.3;
+}
+
+.bw-bs-panel .modal-body .product-card .product-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000000;
+}
+
+.bw-bs-panel .modal-body .product-card .product-add-btn {
+  background: var(--bundle-global-primary-button, #1e3a8a);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  height: 42px;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+
+.bw-bs-panel .modal-body .product-card .product-add-btn:hover {
+  opacity: 0.9;
+}
+
+.bw-bs-panel .modal-body .product-card .product-add-btn.added {
+  opacity: 0.7;
+}
+
+/* ---- Panel footer (holds nav pill + cart count pill) ---- */
+.bw-bs-footer {
+  flex-shrink: 0;
+  position: relative;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Cart count pill (white, floats above nav pill) ---- */
+.bw-bs-cart-pill {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border-radius: 50px;
+  padding: 8px 16px;
+  box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 8px 0px;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* ---- PREV/NEXT nav pill (navy blue, centered) ---- */
+.bw-bs-nav-pill {
+  display: flex;
+  align-items: center;
+  background: var(--bundle-global-primary-button, rgb(30, 58, 138));
+  border-radius: 50px;
+  padding: 14px 25px;
+  gap: 40px;
+  box-shadow: rgba(30, 58, 138, 0.35) 0px 8px 20px 0px;
+}
+
+.bw-bs-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0;
+}
+
+.bw-bs-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---- Inline slot cards (empty state in product page) ---- */
 .bw-slot-card {
   border-radius: var(--bundle-state-card-border-radius, 12px);
   overflow: hidden;
@@ -2673,18 +2818,31 @@
 }
 
 .bw-slot-card--empty {
-  border: var(--bundle-state-card-border-width, 2px) var(--bundle-empty-slot-border-style, dashed) var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #007AFF));
+  border: var(--bundle-state-card-border-width, 2px) var(--bundle-empty-slot-border-style, dashed) var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #1e3a8a));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 160px;
-  padding: 12px 8px;
+  height: 200px;
   text-align: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .bw-slot-card--filled {
-  border: var(--bundle-state-card-border-width, 2px) solid var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #007AFF));
+  border: var(--bundle-state-card-border-width, 2px) solid var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #1e3a8a));
+  height: 200px;
+}
+
+/* Plus icon overlay on empty slot card */
+.bw-slot-card__plus-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 8px;
 }
 
 .bw-slot-card__image {
@@ -2694,17 +2852,10 @@
   display: block;
 }
 
-.bw-slot-card__placeholder {
-  font-size: 3em;
-  font-weight: 300;
-  color: var(--bundle-empty-state-text, #d1d5db);
-  margin-bottom: 8px;
-  line-height: 1;
-}
-
 .bw-slot-card__label {
-  font-size: 12px;
-  color: var(--bundle-empty-state-text, #666);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bundle-global-primary-button, #1e3a8a);
   text-align: center;
   margin: 6px 0 0;
   padding: 0 4px;

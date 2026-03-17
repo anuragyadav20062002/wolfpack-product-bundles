@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-17
-**Last Updated:** 2026-03-17 22:00
+**Last Updated:** 2026-03-17 23:30
 
 ## Overview
 
@@ -78,3 +78,40 @@ Transform the product-page bundle widget from a vertical accordion to a Skai Lam
 - ✅ 3 net-new CSS variables only; ~10 existing variables reused
 
 **Status:** Ready for testing and review
+
+### 2026-03-17 23:30 - Visual Redesign Pass — Skai Lama Pixel-Accurate UI
+
+Applied a second-pass redesign to bring the bottom-sheet widget visually in line with Skai Lama Easy Bundle Builder screenshots.
+
+#### Files modified:
+- `extensions/bundle-builder/assets/bundle-widget.css` — replaced entire bottom-sheet CSS section (lines 2492–end)
+- `app/assets/bundle-widget-product-page.js` — 4 targeted changes
+
+#### CSS changes (`bundle-widget.css`):
+- Panel background changed from `#ffffff` to `rgb(244, 249, 249)` (light teal wash)
+- Removed `box-shadow` from panel (Skai Lama has no panel shadow)
+- Header changed from `display:flex` row to `position:relative` block layout with absolute-positioned close buttons
+- Added `.bw-bs-close-desktop` (SVG × icon, absolute top-right) and `.bw-bs-close-mobile` (SVG chevron-down, absolute top-center) as separate elements
+- Tabs changed from horizontal scroll flex to equal-column CSS grid (`repeat(var(--bw-tab-count,3), 1fr)`); tabs now have 2px border, `#ffffff` inactive background
+- Added `.bw-bs-choose-title` (24px centered "Choose X" heading below tabs)
+- Added `.bw-bs-discount-bar` (16px centered discount/progress message below title)
+- Body padding changed to `0 20px` with grid `padding: 16px 0 120px` (leaves room for floating footer)
+- Product grid gap increased to 30px; product card scoped styles added for image height (170px), title/price sizing, and ADD button styling
+- Footer changed to `position:relative; height:80px; justify-content:center` (pill layout)
+- Added `.bw-bs-cart-pill` (white pill, floats `bottom:56px` above nav pill)
+- Added `.bw-bs-nav-pill` (navy blue pill, centered, contains PREV/NEXT buttons)
+- Added `.bw-bs-nav-btn` (white text, uppercase, flex row with SVG arrows)
+- Slot card `.bw-slot-card--empty` changed from `min-height:160px` to fixed `height:200px` with background-image support
+- `.bw-slot-card__placeholder` removed; replaced by `.bw-slot-card__plus-icon` (32×32 wrapper div)
+- `.bw-slot-card__label` updated to 13px bold with primary button color
+
+#### JS changes (`bundle-widget-product-page.js`):
+1. `ensureBottomSheet()` — Rewrote HTML template: separate `.bw-bs-close-desktop` and `.bw-bs-close-mobile` button elements (both have `close-button` class so existing event listener still works); removed tab scroll arrows; added `.bw-bs-choose-title` and `.bw-bs-discount-bar` divs in header; footer now has `.bw-bs-cart-pill` + `.bw-bs-nav-pill` with PREV/NEXT buttons replacing the old total-pill layout
+2. `createEmptyStateCard()` bottom-sheet branch — Category image applied as CSS `background-image` instead of `<img>` child; always renders SVG plus-icon overlay (`.bw-slot-card__plus-icon`) in primary button color at 50% opacity; removed `.bw-slot-card__placeholder` span
+3. `renderModalTabs()` — Sets `--bw-tab-count` CSS custom property on the tabs container for equal-column grid
+4. `attachEventListeners()` — PREV/NEXT buttons now wired to `navigateModal(-1)` / `navigateModal(1)` instead of being hidden; both buttons have class `modal-nav-button prev-button` / `next-button` matching existing JS selectors
+
+#### Build + Lint:
+- ✅ `npm run build:widgets` — success (product-page: 138.9 KB, full-page: 222.3 KB)
+- ✅ ESLint — 0 errors on modified files
+- Next: Commit source + bundled files, then `shopify app deploy`
