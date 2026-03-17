@@ -3624,13 +3624,8 @@ class BundleWidgetProductPage {
             }
 
 
-            // For expanded multi-variant cards product.variantId is the selected variant.
-            // For single-variant products product.variantId is unset — fall back to the
-            // first (and only) entry in product.variants so we always send a variant ID,
-            // never a product ID, to /cart/add.js.
-            const actualVariantId = product.variantId
-              || (product.variants && product.variants.length > 0 ? product.variants[0]?.id : null)
-              || variantId;
+            // Use selected variant ID; fall back to first variant for single-variant products.
+            const actualVariantId = product.variantId || product.variants?.[0]?.id || variantId;
 
             const cartItem = {
               id: parseInt(this.extractId(actualVariantId)),
