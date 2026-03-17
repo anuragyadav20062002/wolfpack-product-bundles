@@ -134,6 +134,10 @@ model BundleStep {
   conditionValue              Int?
   conditionOperator2          String?
   conditionValue2             Int?
+  isFreeGift                  Boolean       @default(false)
+  freeGiftName                String?
+  isDefault                   Boolean       @default(false)
+  defaultVariantId            String?
   bundleId                    String
   bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]

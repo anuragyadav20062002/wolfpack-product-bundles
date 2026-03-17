@@ -242,7 +242,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
           conditionOperator: step.conditionOperator,
           conditionValue: step.conditionValue,
           conditionOperator2: step.conditionOperator2,
-          conditionValue2: step.conditionValue2
+          conditionValue2: step.conditionValue2,
+          isFreeGift: step.isFreeGift ?? false,
+          freeGiftName: step.freeGiftName ?? null,
+          isDefault: step.isDefault ?? false,
+          defaultVariantId: step.defaultVariantId ?? null,
         };
       }),
       pricing: bundle.pricing ? {

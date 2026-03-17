@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 1.7.1
+ * Version : 1.8.0
  * Built   : 2026-03-17
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.7.1';
+window.__BUNDLE_WIDGET_VERSION__ = '1.8.0';
 (function() {
   'use strict';
 
@@ -2866,6 +2866,9 @@ class BundleWidgetFullPage {
     // Initialize selected products array (one object per step)
     this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
 
+    // Pre-populate default products (mandatory items like Gift Box)
+    this._initDefaultProducts();
+
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
   }
@@ -3261,6 +3264,15 @@ class BundleWidgetFullPage {
       if (categoryTabs) contentSection.appendChild(categoryTabs);
     }
 
+    // Free gift step custom heading
+    const currentStep = (this.selectedBundle?.steps || [])[this.currentStepIndex];
+    if (currentStep?.isFreeGift) {
+      const freeHeading = document.createElement('div');
+      freeHeading.className = 'fpb-step-free-heading';
+      freeHeading.textContent = `Complete the look and get a ${currentStep.freeGiftName || 'gift'} free!`;
+      contentSection.appendChild(freeHeading);
+    }
+
     const productGridContainer = document.createElement('div');
     productGridContainer.className = 'full-page-product-grid-container';
     productGridContainer.innerHTML = this.createProductGridLoadingState();
@@ -3289,10 +3301,94 @@ class BundleWidgetFullPage {
       this.renderSidePanel(sidePanel);
       this.hideLoadingOverlay();
       this.preloadNextStep();
+      this._renderMobileBottomBar();
     } catch (error) {
       this.hideLoadingOverlay();
       productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+      this._renderMobileBottomBar();
     }
+  }
+
+  // Mobile sticky bottom bar + slide-up sheet (replaces sidebar on < 768px)
+  _renderMobileBottomBar() {
+    document.querySelector('.fpb-mobile-bottom-bar')?.remove();
+    document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
+    document.querySelector('.fpb-mobile-backdrop')?.remove();
+
+    const { totalPrice } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice,
+      Object.values(this.selectedProducts || {}).reduce((sum, s) =>
+        sum + Object.values(s || {}).reduce((n, p) => n + (p.quantity || p || 1), 0), 0)
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const selectedCount = this.getAllSelectedProductsData().filter(p => !p.isDefault).length;
+    const isLastStep = this.currentStepIndex === (this.selectedBundle?.steps?.length || 1) - 1;
+    const isComplete = this.areBundleConditionsMet();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'fpb-mobile-backdrop';
+
+    const sheet = document.createElement('div');
+    sheet.className = 'fpb-mobile-bottom-sheet';
+    this._populateMobileSheet(sheet);
+
+    const bar = document.createElement('div');
+    bar.className = 'fpb-mobile-bottom-bar';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'fpb-mobile-toggle-btn';
+    toggleBtn.setAttribute('aria-label', 'View bundle summary');
+    toggleBtn.innerHTML = `<span class="fpb-caret">&#9650;</span><span class="fpb-mobile-toggle-count">${selectedCount}</span>`;
+    toggleBtn.addEventListener('click', () => {
+      const open = sheet.classList.toggle('is-open');
+      backdrop.classList.toggle('is-open', open);
+      toggleBtn.querySelector('.fpb-caret').innerHTML = open ? '&#9660;' : '&#9650;';
+    });
+    backdrop.addEventListener('click', () => {
+      sheet.classList.remove('is-open');
+      backdrop.classList.remove('is-open');
+      toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9650;';
+    });
+
+    const totalEl = document.createElement('div');
+    totalEl.className = 'fpb-mobile-total';
+    totalEl.textContent = CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format);
+
+    const ctaBtn = document.createElement('button');
+    ctaBtn.className = 'fpb-mobile-cta-btn';
+    ctaBtn.textContent = (isLastStep && isComplete) ? 'Add to Cart' : 'Next';
+    if (isLastStep && !isComplete) ctaBtn.disabled = true;
+    ctaBtn.addEventListener('click', () => {
+      if (isLastStep && isComplete) {
+        this.addBundleToCart();
+      } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex++;
+        this.renderFullPageLayoutWithSidebar();
+      } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
+        ToastManager.show(`Complete all steps to unlock the free ${this.freeGiftStep?.freeGiftName || 'gift'}!`);
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      }
+    });
+
+    bar.appendChild(toggleBtn);
+    bar.appendChild(totalEl);
+    bar.appendChild(ctaBtn);
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(sheet);
+    document.body.appendChild(bar);
+  }
+
+  _populateMobileSheet(sheet) {
+    sheet.innerHTML = '';
+    this.renderSidePanel(sheet);
   }
 
   // Render the sidebar panel content (used by footer_side layout)
@@ -3386,6 +3482,11 @@ class BundleWidgetFullPage {
         const imgSrc = item.image || item.imageUrl || '';
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
+        const isFreeGiftItem = item.isFreeGift === true;
+        const priceHtml = isFreeGiftItem
+          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>`
+          : `<span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>`;
+
         row.innerHTML = `
           <div class="side-panel-product-img-wrap">
             ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
@@ -3395,24 +3496,38 @@ class BundleWidgetFullPage {
             <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
             ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
           </div>
-          <span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>
+          ${priceHtml}
         `;
 
-        // Remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'side-panel-product-remove';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.addEventListener('click', () => {
-          const stepIndex = item.stepIndex ?? this.currentStepIndex;
-          const productId = item.variantId || item.productId || item.id;
-          this.updateProductSelection(stepIndex, productId, 0);
-        });
-        row.appendChild(removeBtn);
+        // Remove button — hidden for default (mandatory) products
+        if (!item.isDefault) {
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'side-panel-product-remove';
+          removeBtn.innerHTML = '&times;';
+          removeBtn.addEventListener('click', () => {
+            const stepIndex = item.stepIndex ?? this.currentStepIndex;
+            const productId = item.variantId || item.productId || item.id;
+            this.updateProductSelection(stepIndex, productId, 0);
+          });
+          row.appendChild(removeBtn);
+        }
 
         productsContainer.appendChild(row);
       });
     }
     panel.appendChild(productsContainer);
+
+    // Skeleton slots for unfilled paid step positions
+    const skeletonContainer = document.createElement('div');
+    skeletonContainer.className = 'side-panel-skeleton-slots';
+    const paidStepCount = this.paidSteps.reduce((sum, s) =>
+      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
+    const filledPaidCount = allSelectedProducts.filter(p => !p.isFreeGift && !p.isDefault).length;
+    this._renderSkeletonSlots(skeletonContainer, filledPaidCount, paidStepCount);
+    panel.appendChild(skeletonContainer);
+
+    // Free gift section (locked or unlocked)
+    this._renderFreeGiftSection(panel);
 
     // Divider
     const divider = document.createElement('div');
@@ -3447,6 +3562,9 @@ class BundleWidgetFullPage {
     nextBtn.addEventListener('click', () => {
       if (isLastStep) {
         this.addBundleToCart();
+      } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
+        const giftName = this.freeGiftStep?.freeGiftName || 'gift';
+        ToastManager.show(`Complete all steps to unlock the free ${giftName}!`);
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
         this.searchQuery = '';
@@ -4176,6 +4294,24 @@ class BundleWidgetFullPage {
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
 
+    // Free gift step: add "Free" badge and override price display to $0.00
+    const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
+    if (currentStepData?.isFreeGift) {
+      const imgEl = cardElement.querySelector('.product-image, .product-img, img');
+      if (imgEl && imgEl.parentElement) {
+        imgEl.parentElement.classList.add('fpb-card-image-wrapper');
+        const badge = document.createElement('span');
+        badge.className = 'fpb-free-badge';
+        badge.textContent = 'Free';
+        imgEl.parentElement.appendChild(badge);
+      }
+      const priceEl = cardElement.querySelector('.product-price, .price');
+      if (priceEl) {
+        const originalPriceText = priceEl.textContent;
+        priceEl.innerHTML = `$0.00 <span class="side-panel-product-original-price">${originalPriceText}</span>`;
+      }
+    }
+
     // Attach event listeners for full-page specific interactions
     this.attachProductCardListeners(cardElement, product, stepIndex);
 
@@ -4684,7 +4820,9 @@ class BundleWidgetFullPage {
               variantTitle: variantTitle,
               imageUrl: imageUrl,
               image: imageUrl,
-              price: price
+              price: price,
+              isDefault: step.isDefault ?? false,
+              isFreeGift: step.isFreeGift ?? false,
             });
           } else {
           }
@@ -4843,7 +4981,124 @@ class BundleWidgetFullPage {
 
   // Helper: Check if all bundle conditions are met
   areBundleConditionsMet() {
-    return this.selectedBundle.steps.every((step, index) => this.isStepCompleted(index));
+    return this.selectedBundle.steps.every((step, index) => {
+      if (step.isFreeGift) return true; // free gift is optional for cart eligibility
+      return this.isStepCompleted(index);
+    });
+  }
+
+  // Free gift helpers
+
+  get freeGiftStep() {
+    return (this.selectedBundle?.steps || []).find(s => s.isFreeGift) ?? null;
+  }
+
+  get freeGiftStepIndex() {
+    return (this.selectedBundle?.steps || []).findIndex(s => s.isFreeGift);
+  }
+
+  get paidSteps() {
+    return (this.selectedBundle?.steps || []).filter(s => !s.isFreeGift && !s.isDefault);
+  }
+
+  get isFreeGiftUnlocked() {
+    if (!this.freeGiftStep) return false;
+    const steps = this.selectedBundle?.steps || [];
+    return this.paidSteps.every(paidStep => {
+      const globalIndex = steps.indexOf(paidStep);
+      return this.isStepCompleted(globalIndex);
+    });
+  }
+
+  canNavigateToStep(targetStepIndex) {
+    const targetStep = (this.selectedBundle?.steps || [])[targetStepIndex];
+    if (targetStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
+    return true;
+  }
+
+  _getFreeGiftRemainingCount() {
+    const steps = this.selectedBundle?.steps || [];
+    const total = this.paidSteps.reduce((sum, s) =>
+      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
+    const selected = this.paidSteps.reduce((sum, paidStep) => {
+      const globalIndex = steps.indexOf(paidStep);
+      const stepSel = this.selectedProducts[globalIndex] ?? {};
+      return sum + Object.values(stepSel).reduce((s, p) => s + (p.quantity || 1), 0);
+    }, 0);
+    return Math.max(0, total - selected);
+  }
+
+  _initDefaultProducts() {
+    const steps = this.selectedBundle?.steps || [];
+    steps.forEach((step, stepIndex) => {
+      if (!step.isDefault || !step.defaultVariantId) return;
+      const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
+      const product = allProducts.find(p =>
+        p.variantId === step.defaultVariantId ||
+        p.id === step.defaultVariantId ||
+        p.gid === step.defaultVariantId ||
+        (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+      );
+      if (product) {
+        if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
+        this.selectedProducts[stepIndex][step.defaultVariantId] = {
+          ...product,
+          variantId: step.defaultVariantId,
+          quantity: 1,
+          isDefault: true,
+        };
+      }
+    });
+  }
+
+  // Re-lock free gift if paid items no longer satisfy the unlock condition
+  _syncFreeGiftLock() {
+    if (!this.freeGiftStep || this.freeGiftStepIndex < 0) return;
+    if (!this.isFreeGiftUnlocked) {
+      this.selectedProducts[this.freeGiftStepIndex] = {};
+    }
+  }
+
+  // Render the free gift locked/unlocked section in a given container
+  _renderFreeGiftSection(container) {
+    const step = this.freeGiftStep;
+    if (!step) return;
+
+    const section = document.createElement('div');
+    const giftName = this._escapeHTML(step.freeGiftName || 'gift');
+
+    if (this.isFreeGiftUnlocked) {
+      section.className = 'side-panel-free-gift unlocked';
+      section.innerHTML = `
+        <span class="side-panel-free-gift-icon">✅</span>
+        <span class="side-panel-free-gift-text">Congrats! You're eligible for a FREE ${giftName}!</span>
+      `;
+    } else {
+      const remaining = this._getFreeGiftRemainingCount();
+      section.className = 'side-panel-free-gift';
+      section.innerHTML = `
+        <span class="side-panel-free-gift-icon">🔒</span>
+        <span class="side-panel-free-gift-text">Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!</span>
+      `;
+    }
+    container.appendChild(section);
+  }
+
+  // Render shimmer skeleton slots for unfilled positions
+  _renderSkeletonSlots(container, filledCount, totalRequired) {
+    const remaining = Math.max(0, totalRequired - filledCount);
+    for (let i = 0; i < remaining; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-skeleton-slot';
+      slot.innerHTML = `
+        <div class="side-panel-skeleton-thumb"></div>
+        <div class="side-panel-skeleton-lines">
+          <div class="side-panel-skeleton-line line-name"></div>
+          <div class="side-panel-skeleton-line line-price"></div>
+        </div>
+      `;
+      container.appendChild(slot);
+    }
   }
 
   // Add bundle to cart
@@ -5713,6 +5968,9 @@ class BundleWidgetFullPage {
       delete this.selectedProducts[stepIndex][productId];
     }
 
+    // Re-lock free gift if a paid item was just removed and conditions no longer met
+    this._syncFreeGiftLock();
+
     // Update UI without re-rendering the entire modal (prevents event listener duplication)
     this.updateProductQuantityDisplay(stepIndex, productId, quantity);
     this.renderModalTabs();
@@ -5875,11 +6133,13 @@ class BundleWidgetFullPage {
   }
 
   isStepAccessible(stepIndex) {
+    // Free gift step is only accessible when all paid steps are complete
+    if (!this.canNavigateToStep(stepIndex)) return false;
     // Check if all previous steps are completed
     for (let i = 0; i < stepIndex; i++) {
-      if (!this.validateStep(i)) {
-        return false;
-      }
+      const step = this.selectedBundle?.steps[i];
+      if (step?.isFreeGift || step?.isDefault) continue; // skip non-blocking steps
+      if (!this.validateStep(i)) return false;
     }
     return true;
   }

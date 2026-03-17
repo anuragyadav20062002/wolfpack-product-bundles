@@ -74,6 +74,10 @@ export interface BundleUiStep {
   conditionValue?: string;
   conditionOperator2?: string;
   conditionValue2?: string;
+  /** If true, this step is a free gift step — unlocks after all paid steps complete. */
+  isFreeGift?: boolean;
+  /** Display name for the free gift (e.g. "cap", "greeting card"). */
+  freeGiftName?: string;
   /** If true, this step is pre-filled and not shown in the bottom-sheet modal tabs. */
   isDefault?: boolean;
   /** Variant ID pre-selected for default steps. */
