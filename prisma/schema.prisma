@@ -95,6 +95,7 @@ model Bundle {
   promoBannerBgImage String? // URL of the promo banner background image (full-page bundles only)
   promoBannerBgImageCrop String? // JSON {x,y,width} percentages defining the visible crop region
   loadingGif       String? // URL of the loading GIF shown during bundle load, step transitions, and add-to-cart
+  tierConfig       Json?   // Pricing tier pills config: [{ label, linkedBundleId }] (full-page bundles only)
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)

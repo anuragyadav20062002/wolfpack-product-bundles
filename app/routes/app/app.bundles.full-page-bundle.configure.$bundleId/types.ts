@@ -48,6 +48,7 @@ export interface BundleData {
 export interface LoaderData {
   bundle: BundleData;
   bundleProduct?: any;
+  availableBundles: { id: string; name: string }[];
   shop: string;
   apiKey: string;
   blockHandle: string;

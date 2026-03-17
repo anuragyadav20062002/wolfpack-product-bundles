@@ -65,6 +65,7 @@ import {
   LockIcon,
 } from "@shopify/polaris-icons";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
+import { PricingTiersSection } from "../../../components/PricingTiersSection";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../../../shopify.server";
@@ -178,6 +179,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     }
   }
 
+  // Fetch all full-page bundles for the shop (used in pricing tiers selector)
+  const availableBundles = await db.bundle.findMany({
+    where: {
+      shopId: session.shop,
+      bundleType: 'full_page',
+      status: { in: ['draft', 'active'] },
+    },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+
   // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
   // Per Shopify docs: addAppBlockId={api_key}/{handle}
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
@@ -189,6 +201,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return json({
     bundle,
     bundleProduct,
+    availableBundles,
     shop: session.shop,
     apiKey,
     blockHandle,
@@ -253,6 +266,7 @@ const bundleSetupItems = [
   { id: "step_setup",       label: "Step Setup",          icon: ListNumberedIcon, fullPageOnly: false },
   { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
   { id: "images_gifs",      label: "Images & GIFs",       icon: ImageIcon,        fullPageOnly: true  },
+  { id: "pricing_tiers",    label: "Pricing Tiers",       icon: DiscountIcon,     fullPageOnly: true  },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
@@ -279,7 +293,7 @@ const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps
 BundleStatusSection.displayName = 'BundleStatusSection';
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle } = useLoaderData<LoaderData>();
+  const { bundle, bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle } = useLoaderData<LoaderData>();
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -387,6 +401,11 @@ export default function ConfigureBundleFlow() {
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
   const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
 
+  // Pricing tier config state (full-page bundles)
+  const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
+    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+  );
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
@@ -423,6 +442,7 @@ export default function ConfigureBundleFlow() {
       formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
       formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
       formData.append("loadingGif", loadingGif ?? "");
+      formData.append("tierConfigData", tierConfig.length > 0 ? JSON.stringify(tierConfig) : "");
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
@@ -2241,6 +2261,32 @@ export default function ConfigureBundleFlow() {
                     />
                   </BlockStack>
                 </Card>
+              </BlockStack>
+            )}
+
+            {activeSection === "pricing_tiers" && bundle.bundleType === "full_page" && (
+              <BlockStack gap="400">
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={DiscountIcon} tone="subdued" />
+                    <BlockStack gap="0">
+                      <Text variant="headingSm" fontWeight="semibold" as="p">Pricing Tiers</Text>
+                      <Text variant="bodyXs" tone="subdued" as="p">
+                        Let shoppers switch between different bundle price points on the same page.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+                </Box>
+
+                <PricingTiersSection
+                  tiers={tierConfig}
+                  availableBundles={availableBundles}
+                  currentBundleId={bundle.id}
+                  onChange={(tiers) => {
+                    setTierConfig(tiers);
+                    markAsDirty();
+                  }}
+                />
               </BlockStack>
             )}
           </Layout.Section>
