@@ -1,10 +1,10 @@
 # Issue: FPB Sidebar Panel Redesign + Free Gift + Default Product
 
 **Issue ID:** fpb-sidebar-free-gift-1
-**Status:** In Progress
+**Status:** In Progress — Admin UI + DCP polish complete, awaiting storefront deploy
 **Priority:** 🔴 High
 **Created:** 2026-03-17
-**Last Updated:** 2026-03-17 18:30
+**Last Updated:** 2026-03-17 19:15
 
 ## Overview
 Revamp the full-page bundle widget sidebar panel to match Skai Lama's design quality. Implements:

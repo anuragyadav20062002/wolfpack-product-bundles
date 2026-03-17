@@ -127,7 +127,7 @@ export function TierPillSettings({ settings, onUpdate }: SettingsComponentProps)
         </Text>
         <ButtonGroup variant="segmented">
           <Button
-            pressed={settings.tierPillFontWeight === 400}
+            pressed={(settings.tierPillFontWeight ?? 600) === 400}
             onClick={() => onUpdate("tierPillFontWeight", 400)}
           >
             Normal
@@ -139,7 +139,7 @@ export function TierPillSettings({ settings, onUpdate }: SettingsComponentProps)
             Semi-Bold
           </Button>
           <Button
-            pressed={settings.tierPillFontWeight === 700}
+            pressed={(settings.tierPillFontWeight ?? 600) === 700}
             onClick={() => onUpdate("tierPillFontWeight", 700)}
           >
             Bold

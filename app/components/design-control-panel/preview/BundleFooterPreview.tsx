@@ -49,37 +49,29 @@ const SAMPLE_PRODUCTS = [
 // Bundle type toggle component for preview
 function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: (value: string) => void }) {
   return (
-    <div style={{ marginBottom: "16px", display: "flex", gap: "8px", justifyContent: "center" }}>
-      <button
-        onClick={() => onChange(BundleType.PRODUCT_PAGE)}
-        style={{
-          padding: "8px 16px",
-          border: `2px solid ${selected === BundleType.PRODUCT_PAGE ? "#000" : "#ddd"}`,
-          borderRadius: "6px",
-          background: selected === BundleType.PRODUCT_PAGE ? "#000" : "#fff",
-          color: selected === BundleType.PRODUCT_PAGE ? "#fff" : "#333",
-          cursor: "pointer",
-          fontSize: "12px",
-          fontWeight: 500,
-        }}
-      >
-        Product Page
-      </button>
-      <button
-        onClick={() => onChange(BundleType.FULL_PAGE)}
-        style={{
-          padding: "8px 16px",
-          border: `2px solid ${selected === BundleType.FULL_PAGE ? "#000" : "#ddd"}`,
-          borderRadius: "6px",
-          background: selected === BundleType.FULL_PAGE ? "#000" : "#fff",
-          color: selected === BundleType.FULL_PAGE ? "#fff" : "#333",
-          cursor: "pointer",
-          fontSize: "12px",
-          fontWeight: 500,
-        }}
-      >
-        Full Page
-      </button>
+    <div style={{ marginBottom: "16px", display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
+      {[
+        { value: BundleType.PRODUCT_PAGE, label: "Product Page" },
+        { value: BundleType.FULL_PAGE, label: "Full Page · Floating" },
+        { value: "full_page_sidebar", label: "Full Page · Sidebar" },
+      ].map(({ value, label }) => (
+        <button
+          key={value}
+          onClick={() => onChange(value)}
+          style={{
+            padding: "8px 16px",
+            border: `2px solid ${selected === value ? "#000" : "#ddd"}`,
+            borderRadius: "6px",
+            background: selected === value ? "#000" : "#fff",
+            color: selected === value ? "#fff" : "#333",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontWeight: 500,
+          }}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -594,6 +586,204 @@ function ProductPageFooterLayout({
   );
 }
 
+// Sidebar layout preview — right-hand panel with selected items list, total, and nav buttons
+function SidebarFooterLayout({
+  highlightTarget,
+  footerBgColor,
+  footerStrikePriceColor,
+  footerStrikeFontSize,
+  footerStrikeFontWeight,
+  footerFinalPriceColor,
+  footerFinalPriceFontSize,
+  footerFinalPriceFontWeight,
+  footerPriceVisibility,
+  footerBackButtonBgColor,
+  footerBackButtonTextColor,
+  footerBackButtonBorderColor,
+  footerBackButtonBorderRadius,
+  footerNextButtonBgColor,
+  footerNextButtonTextColor,
+  footerNextButtonBorderColor,
+  footerNextButtonBorderRadius,
+  footerDiscountTextVisibility,
+  successMessageBgColor,
+  successMessageTextColor,
+  successMessageFontSize,
+  successMessageFontWeight,
+}: Omit<BundleFooterPreviewProps, "activeSubSection" | "footerTotalBgColor"> & { highlightTarget: HighlightTarget }) {
+  return (
+    <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", justifyContent: "center" }}>
+      {/* Left: mock product grid area */}
+      <div
+        style={{
+          flex: 1,
+          minWidth: "260px",
+          maxWidth: "320px",
+          background: "#f8f9fa",
+          borderRadius: "12px",
+          padding: "16px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "8px",
+        }}
+      >
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            style={{
+              background: "#e5e7eb",
+              borderRadius: "8px",
+              height: "80px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div style={{ width: "32px", height: "32px", background: "#d1d5db", borderRadius: "4px" }} />
+          </div>
+        ))}
+      </div>
+
+      {/* Right: sidebar panel */}
+      <div
+        style={{
+          width: "220px",
+          background: footerBgColor,
+          border: "1px solid rgba(0,0,0,0.1)",
+          borderRadius: "12px",
+          overflow: "hidden",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: "12px 14px 8px", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Your Bundle</span>
+          <span style={{ fontSize: "11px", color: "#999", cursor: "pointer" }}>Clear all</span>
+        </div>
+
+        {/* Discount message */}
+        {footerDiscountTextVisibility && (
+          <div
+            style={{
+              padding: "8px 14px",
+              backgroundColor: successMessageBgColor,
+              color: successMessageTextColor,
+              fontSize: `${successMessageFontSize}px`,
+              fontWeight: successMessageFontWeight,
+              textAlign: "center",
+              ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
+            }}
+          >
+            🎉 10% off unlocked!
+          </div>
+        )}
+
+        {/* Selected items */}
+        <div style={{ padding: "8px 14px" }}>
+          {SAMPLE_PRODUCTS.map((product, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "6px 0",
+                borderBottom: i < SAMPLE_PRODUCTS.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none",
+              }}
+            >
+              <div style={{ width: "32px", height: "32px", background: "#e5e7eb", borderRadius: "4px", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: "11px", fontWeight: 500, color: "#333", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {product.name}
+                </div>
+                {product.variant && (
+                  <div style={{ fontSize: "10px", color: "#888" }}>{product.variant}</div>
+                )}
+              </div>
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: footerFinalPriceColor,
+                  fontWeight: footerFinalPriceFontWeight,
+                  ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
+                }}
+              >
+                $9.99
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Total row */}
+        {footerPriceVisibility && (
+          <div
+            style={{
+              padding: "8px 14px",
+              borderTop: "1px solid rgba(0,0,0,0.07)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
+            }}
+          >
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Total</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+              <span style={{ fontSize: `${footerStrikeFontSize}px`, fontWeight: footerStrikeFontWeight, color: footerStrikePriceColor, textDecoration: "line-through" }}>
+                $29.97
+              </span>
+              <span style={{ fontSize: `${footerFinalPriceFontSize}px`, fontWeight: footerFinalPriceFontWeight, color: footerFinalPriceColor }}>
+                $26.97
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Nav buttons */}
+        <div
+          style={{
+            padding: "10px 14px",
+            display: "flex",
+            gap: "8px",
+            ...(highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}),
+          }}
+        >
+          <button
+            style={{
+              flex: 1,
+              backgroundColor: footerBackButtonBgColor,
+              color: footerBackButtonTextColor,
+              border: `1px solid ${footerBackButtonBorderColor}`,
+              borderRadius: `${footerBackButtonBorderRadius}px`,
+              padding: "8px",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Back
+          </button>
+          <button
+            style={{
+              flex: 2,
+              backgroundColor: footerNextButtonBgColor,
+              color: footerNextButtonTextColor,
+              border: `1px solid ${footerNextButtonBorderColor}`,
+              borderRadius: `${footerNextButtonBorderRadius}px`,
+              padding: "8px",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Next Step
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function BundleFooterPreview(props: BundleFooterPreviewProps) {
   const [bundleType, setBundleType] = useState<string>(BundleType.PRODUCT_PAGE);
 
@@ -861,6 +1051,52 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     );
   }
 
+  // footerDiscountProgress + sidebar: show the sidebar with discount message highlighted
+  if (activeSubSection === "footerDiscountProgress" && bundleType === "full_page_sidebar") {
+    const sidebarProps = {
+      highlightTarget,
+      footerBgColor,
+      footerStrikePriceColor,
+      footerStrikeFontSize,
+      footerStrikeFontWeight,
+      footerFinalPriceColor,
+      footerFinalPriceFontSize,
+      footerFinalPriceFontWeight,
+      footerPriceVisibility,
+      footerBackButtonBgColor,
+      footerBackButtonTextColor,
+      footerBackButtonBorderColor,
+      footerBackButtonBorderRadius,
+      footerNextButtonBgColor,
+      footerNextButtonTextColor,
+      footerNextButtonBorderColor,
+      footerNextButtonBorderRadius,
+      footerDiscountTextVisibility,
+      successMessageFontSize,
+      successMessageFontWeight,
+      successMessageTextColor,
+      successMessageBgColor,
+    };
+    return (
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          {titles[activeSubSection]}
+        </Text>
+        <div style={{ marginTop: "24px" }}>
+          <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
+        </div>
+        <div style={{ marginTop: "24px" }}>
+          <SidebarFooterLayout {...sidebarProps} />
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Discount message shown in the sidebar header when threshold is reached
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
   // footerDiscountProgress + full-page: show both progress and success-banner states side by side
   if (activeSubSection === "footerDiscountProgress" && bundleType === BundleType.FULL_PAGE) {
     return (
@@ -896,6 +1132,38 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     );
   }
 
+  // Shared sidebar props (subset of sharedFullPageProps)
+  const sharedSidebarProps = {
+    highlightTarget,
+    footerBgColor,
+    footerStrikePriceColor,
+    footerStrikeFontSize,
+    footerStrikeFontWeight,
+    footerFinalPriceColor,
+    footerFinalPriceFontSize,
+    footerFinalPriceFontWeight,
+    footerPriceVisibility,
+    footerBackButtonBgColor,
+    footerBackButtonTextColor,
+    footerBackButtonBorderColor,
+    footerBackButtonBorderRadius,
+    footerNextButtonBgColor,
+    footerNextButtonTextColor,
+    footerNextButtonBorderColor,
+    footerNextButtonBorderRadius,
+    footerDiscountTextVisibility,
+    successMessageFontSize,
+    successMessageFontWeight,
+    successMessageTextColor,
+    successMessageBgColor,
+  };
+
+  const layoutLabels: Record<string, string> = {
+    [BundleType.PRODUCT_PAGE]: "Product-page bundle (modal) footer",
+    [BundleType.FULL_PAGE]: "Full-page bundle — floating footer layout",
+    "full_page_sidebar": "Full-page bundle — sidebar panel layout",
+  };
+
   // All other subsections: show toggle + shared footer layout
   return (
     <div style={{ textAlign: "center", position: "relative" }}>
@@ -908,13 +1176,15 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
       <div style={{ marginTop: "24px", display: "inline-block", position: "relative" }}>
         {bundleType === BundleType.FULL_PAGE ? (
           <FullPageFooterLayout {...sharedFullPageProps} />
+        ) : bundleType === "full_page_sidebar" ? (
+          <SidebarFooterLayout {...sharedSidebarProps} />
         ) : (
           <ProductPageFooterLayout {...sharedProductPageProps} />
         )}
       </div>
       <div style={{ marginTop: "16px" }}>
         <Text as="p" variant="bodySm" tone="subdued">
-          {bundleType === BundleType.FULL_PAGE ? "Full-page bundle footer layout" : "Product-page bundle footer layout"}
+          {layoutLabels[bundleType] ?? ""}
         </Text>
       </div>
     </div>
