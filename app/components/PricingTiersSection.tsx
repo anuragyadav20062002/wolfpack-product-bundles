@@ -19,12 +19,14 @@ import {
   InlineStack,
   TextField,
   Select,
-  Badge,
   EmptyState,
   Checkbox,
 } from "@shopify/polaris";
 import { DeleteIcon, PlusIcon } from "@shopify/polaris-icons";
 import type { TierConfigEntry } from "../types/tier-config";
+
+const TIERS_EMPTY_SVG =
+  "data:image/svg+xml,%3Csvg viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='8' y='10' width='44' height='11' rx='4' fill='%23C9CCCF'/%3E%3Crect x='8' y='25' width='32' height='11' rx='4' fill='%23C9CCCF'/%3E%3Crect x='8' y='40' width='20' height='11' rx='4' fill='%23C9CCCF'/%3E%3C/svg%3E";
 
 interface PricingTiersSectionProps {
   tiers: TierConfigEntry[];
@@ -97,12 +99,9 @@ export function PricingTiersSection({
         <BlockStack gap="400">
           <InlineStack align="space-between" blockAlign="center">
             <BlockStack gap="100">
-              <InlineStack gap="200" blockAlign="center">
-                <Text variant="headingSm" fontWeight="semibold" as="p">
-                  Pricing Tiers
-                </Text>
-                <Badge tone="info">Full-page only</Badge>
-              </InlineStack>
+              <Text variant="headingSm" fontWeight="semibold" as="p">
+                Pricing Tiers
+              </Text>
               <Text variant="bodyXs" tone="subdued" as="p">
                 Show 2–4 pricing tier pills at the top of the bundle page. Each tier links to a separate Bundle record.
                 Requires at least 2 tiers to appear on the storefront.
@@ -115,8 +114,7 @@ export function PricingTiersSection({
           {tiers.length === 0 ? (
             <EmptyState
               heading="No pricing tiers configured"
-              image=""
-              action={{ content: "Add first tier", onAction: addTier }}
+              image={TIERS_EMPTY_SVG}
             >
               <Text as="p" variant="bodySm" tone="subdued">
                 Add at least 2 tiers to enable the tier pill selector on this bundle page.

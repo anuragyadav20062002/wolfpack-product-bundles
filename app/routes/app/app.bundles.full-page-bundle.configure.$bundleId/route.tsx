@@ -405,10 +405,16 @@ export default function ConfigureBundleFlow() {
   const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
     Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
   );
+  const originalTierConfigRef = useRef<{ label: string; linkedBundleId: string }[]>(
+    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+  );
 
   // Admin-controlled step timeline visibility (null = defer to theme editor)
   const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
     (bundle as any).showStepTimeline !== false  // default true; only false when explicitly saved as false
+  );
+  const originalShowStepTimelineRef = useRef<boolean>(
+    (bundle as any).showStepTimeline !== false
   );
 
   // Warning modal state: steps + tiers conflict
@@ -664,12 +670,14 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Discard handler - resets hook state and local image/crop/gif state
+  // Discard handler - resets hook state and all local state
   const handleDiscard = useCallback(() => {
     hookHandleDiscard();
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
     setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
     setLoadingGif(originalLoadingGifRef.current);
+    setTierConfig(originalTierConfigRef.current);
+    setShowStepTimeline(originalShowStepTimelineRef.current);
   }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
@@ -2202,11 +2210,11 @@ export default function ConfigureBundleFlow() {
                       <InlineStack gap="600">
                         <BlockStack gap="100">
                           <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
-                          <Text variant="bodySm" as="p">JPG, PNG, WebP</Text>
+                          <Text variant="bodySm" as="p">JPG, PNG, WebP, GIF, SVG, AVIF</Text>
                         </BlockStack>
                         <BlockStack gap="100">
                           <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
-                          <Text variant="bodySm" as="p">1600 × 280 px · 16:3 ratio</Text>
+                          <Text variant="bodySm" as="p">1600 × 400 px · 4:1 ratio</Text>
                         </BlockStack>
                       </InlineStack>
                     </Box>

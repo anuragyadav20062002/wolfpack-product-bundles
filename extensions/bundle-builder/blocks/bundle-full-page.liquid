@@ -57,13 +57,6 @@
     },
     {
       "type": "checkbox",
-      "id": "show_step_timeline",
-      "label": "t:bundle_full_page.settings.show_step_timeline_label",
-      "info": "t:bundle_full_page.settings.show_step_timeline_info",
-      "default": true
-    },
-    {
-      "type": "checkbox",
       "id": "show_category_tabs",
       "label": "t:bundle_full_page.settings.show_category_tabs_label",
       "info": "t:bundle_full_page.settings.show_category_tabs_info",
@@ -254,7 +247,6 @@
     data-app-url="{{ block.settings.app_url | default: '' }}"
     data-show-title="{{ block.settings.show_bundle_title }}"
     data-show-description="{{ block.settings.show_bundle_description }}"
-    data-show-step-timeline="{{ block.settings.show_step_timeline }}"
     data-show-category-tabs="{{ block.settings.show_category_tabs }}"
     data-custom-title="{{ block.settings.custom_title | escape }}"
     data-custom-description="{{ block.settings.custom_description | escape }}"
