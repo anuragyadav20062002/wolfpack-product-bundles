@@ -124,6 +124,55 @@
       "label": "Banner note (no discount)",
       "info": "Note text shown when no discount is configured",
       "default": "Mix & Match Your Favorites"
+    },
+    {
+      "type": "header",
+      "content": "Pricing Tiers (Optional)"
+    },
+    {
+      "type": "paragraph",
+      "content": "Configure up to 4 pricing tiers. Enter a label (e.g. 'Buy 2 @499 ›') and the Bundle ID for each tier. Tier pills are shown only when 2 or more tiers are configured."
+    },
+    {
+      "type": "text",
+      "id": "tier_1_label",
+      "label": "Tier 1 label"
+    },
+    {
+      "type": "text",
+      "id": "tier_1_bundle_id",
+      "label": "Tier 1 bundle ID",
+      "info": "Leave blank to use the primary Bundle ID above"
+    },
+    {
+      "type": "text",
+      "id": "tier_2_label",
+      "label": "Tier 2 label"
+    },
+    {
+      "type": "text",
+      "id": "tier_2_bundle_id",
+      "label": "Tier 2 bundle ID"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_label",
+      "label": "Tier 3 label (optional)"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_bundle_id",
+      "label": "Tier 3 bundle ID (optional)"
+    },
+    {
+      "type": "text",
+      "id": "tier_4_label",
+      "label": "Tier 4 label (optional)"
+    },
+    {
+      "type": "text",
+      "id": "tier_4_bundle_id",
+      "label": "Tier 4 bundle ID (optional)"
     }
   ]
 }
@@ -207,6 +256,27 @@
 {% endif %}
 
 {% if should_show_widget %}
+  {% comment %} Build tier config JSON for the widget {% endcomment %}
+  {% assign tier_config_json = '[' %}
+  {% assign tier_json_first = true %}
+  {% for i in (1..4) %}
+    {% assign t_label_key = 'tier_' | append: i | append: '_label' %}
+    {% assign t_id_key    = 'tier_' | append: i | append: '_bundle_id' %}
+    {% assign t_label     = block.settings[t_label_key] %}
+    {% assign t_bundle_id = block.settings[t_id_key] %}
+    {% if i == 1 and t_bundle_id == blank %}
+      {% assign t_bundle_id = bundle_id %}
+    {% endif %}
+    {% if t_label != blank and t_bundle_id != blank %}
+      {% unless tier_json_first %}
+        {% assign tier_config_json = tier_config_json | append: ',' %}
+      {% endunless %}
+      {% assign tier_json_first = false %}
+      {% assign tier_config_json = tier_config_json | append: '{"label":' | append: t_label | json | append: ',"bundleId":' | append: t_bundle_id | json | append: '}' %}
+    {% endif %}
+  {% endfor %}
+  {% assign tier_config_json = tier_config_json | append: ']' %}
+
   <div
     {{ block.shopify_attributes }}
     id="bundle-builder-app"
@@ -225,6 +295,7 @@
     data-promo-banner-subtitle="{{ block.settings.promo_banner_subtitle | default: 'Mix & Match' | escape }}"
     data-promo-banner-tagline="{{ block.settings.promo_banner_tagline | default: 'Create Your Perfect Bundle' | escape }}"
     data-promo-banner-note="{{ block.settings.promo_banner_note | default: 'Mix & Match Your Favorites' | escape }}"
+    data-tier-config="{{ tier_config_json | escape }}"
     class="bundle-widget-container bundle-widget-full-page"
   >
     <div class="bundle-loading">

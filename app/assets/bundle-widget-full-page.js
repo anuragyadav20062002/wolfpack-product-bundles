@@ -95,6 +95,10 @@ class BundleWidgetFullPage {
     this.searchQuery = '';
     this.searchDebounceTimer = null;
 
+    // Tier pill state
+    this.tierConfig = [];
+    this.activeTierIndex = 0;
+
     // Initialize product modal (if BundleProductModal is available)
     this.productModal = null;
     if (window.BundleProductModal) {
@@ -131,6 +135,9 @@ class BundleWidgetFullPage {
       if (bundleType === 'full_page') {
         this.hidePageTitle();
       }
+
+      // Render tier pills before async work (no loading state needed — pills are static)
+      this.initTierPills(this.tierConfig);
 
       // Show spinner overlay immediately (no gif url yet — bundle data not loaded)
       this.showLoadingOverlay(null);
@@ -260,8 +267,11 @@ class BundleWidgetFullPage {
       successMessageTemplate: 'Congratulations! You got {discountText}!',
       currentProductId: window.currentProductId,
       currentProductHandle: window.currentProductHandle,
-      currentProductCollections: window.currentProductCollections
+      currentProductCollections: window.currentProductCollections,
+      tierConfig: this.parseTierConfig(dataset.tierConfig || '[]'),
     };
+
+    this.tierConfig = this.config.tierConfig;
 
     // Apply card layout settings as CSS variables
     this.applyCardLayoutSettings();
@@ -3668,7 +3678,142 @@ class BundleWidgetFullPage {
   // EVENT HANDLERS
   // ========================================================================
 
+  // ========================================================================
+  // TIER PILL SELECTION
+  // ========================================================================
+
+  /**
+   * Parses the JSON string from data-tier-config into a TierConfig array.
+   * Returns [] on any error — pill bar is simply not shown.
+   */
+  parseTierConfig(rawJson) {
+    try {
+      const parsed = JSON.parse(rawJson);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(t => typeof t?.label === 'string' && typeof t?.bundleId === 'string')
+        .map(t => ({ label: t.label.trim(), bundleId: t.bundleId.trim() }))
+        .filter(t => t.label !== '' && t.bundleId !== '')
+        .slice(0, 4);
+    } catch {
+      return [];
+    }
+  }
+
+  /** Returns true if the given tier index is the currently active one. */
+  isTierActive(tierIndex) {
+    return tierIndex === this.activeTierIndex;
+  }
+
+  /**
+   * Inserts the tier pill bar as the first child of the container.
+   * No-op when fewer than 2 tiers are configured (backward-compatible).
+   */
+  initTierPills(tiers) {
+    if (tiers.length < 2) return;
+
+    const bar = document.createElement('div');
+    bar.className = 'bundle-tier-pill-bar';
+    bar.setAttribute('role', 'group');
+    bar.setAttribute('aria-label', 'Bundle pricing tiers');
+
+    tiers.forEach((tier, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bundle-tier-pill' + (i === 0 ? ' bundle-tier-pill--active' : '');
+      btn.dataset.tierIndex = String(i);
+      btn.dataset.bundleId = tier.bundleId;
+      btn.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+      btn.textContent = tier.label;
+      bar.appendChild(btn);
+    });
+
+    this.container.insertBefore(bar, this.container.firstChild);
+    this.elements.tierPillBar = bar;
+  }
+
+  /** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
+  updatePillActiveStates() {
+    if (!this.elements.tierPillBar) return;
+    this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
+      const idx = parseInt(pill.dataset.tierIndex, 10);
+      const active = idx === this.activeTierIndex;
+      pill.classList.toggle('bundle-tier-pill--active', active);
+      pill.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  /** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
+  async switchTier(bundleId, tierIndex) {
+    if (tierIndex === this.activeTierIndex) return;
+
+    const pills = this.elements.tierPillBar
+      ? [...this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill')]
+      : [];
+
+    // Disable all pills while loading
+    pills.forEach(p => p.classList.add('bundle-tier-pill--disabled'));
+    if (pills[tierIndex]) pills[tierIndex].classList.add('bundle-tier-pill--loading');
+
+    this.showLoadingOverlay(null);
+
+    try {
+      // Reset mutable widget state
+      this.selectedProducts = [];
+      this.stepProductData = [];
+      this.currentStepIndex = 0;
+      this.stepCollectionProductIds = {};
+      this.searchQuery = '';
+
+      // Swap bundle ID and fetch new data
+      this.config.bundleId = bundleId;
+      await this.loadBundleData();
+      this.selectBundle();
+
+      if (!this.selectedBundle) {
+        throw new Error('Bundle not found for this tier.');
+      }
+
+      this.initializeDataStructures();
+
+      // Clear existing step content and re-render
+      if (this.elements.stepsContainer) {
+        this.elements.stepsContainer.innerHTML = '';
+      }
+      await this.renderUI();
+
+      this.activeTierIndex = tierIndex;
+      this.updatePillActiveStates();
+    } catch (err) {
+      ToastManager.show(`Failed to load tier: ${err.message}`);
+      // Restore previous active state styling
+      this.updatePillActiveStates();
+    } finally {
+      this.hideLoadingOverlay();
+      pills.forEach(p => {
+        p.classList.remove('bundle-tier-pill--disabled', 'bundle-tier-pill--loading');
+      });
+    }
+  }
+
   attachEventListeners() {
+    // Tier pill click handler
+    if (this.elements.tierPillBar) {
+      this.elements.tierPillBar.addEventListener('click', e => {
+        const pill = e.target.closest('.bundle-tier-pill');
+        if (!pill) return;
+        this.switchTier(pill.dataset.bundleId, parseInt(pill.dataset.tierIndex, 10));
+      });
+      this.elements.tierPillBar.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          const pill = e.target.closest('.bundle-tier-pill');
+          if (!pill) return;
+          e.preventDefault();
+          pill.click();
+        }
+      });
+    }
+
     // Modal close handlers
     const modal = this.elements.modal;
     const closeButton = modal.querySelector('.close-button');

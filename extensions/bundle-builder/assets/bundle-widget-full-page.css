@@ -22,6 +22,69 @@
 }
 
 /* ============================================================================
+   TIER PILL BAR — Beco-style pricing tier selector
+   ============================================================================ */
+
+.bundle-tier-pill-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: var(--bundle-tier-pill-gap, 12px);
+  padding: 16px 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bundle-tier-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--bundle-tier-pill-height, 52px);
+  padding: var(--bundle-tier-pill-padding, 0 24px);
+  background: var(--bundle-tier-pill-inactive-bg, rgb(242, 250, 238));
+  color: var(--bundle-tier-pill-inactive-text, #333333);
+  border: var(--bundle-tier-pill-border, 1px solid #000000);
+  border-radius: var(--bundle-tier-pill-border-radius, 8px);
+  font-size: var(--bundle-tier-pill-font-size, 14px);
+  font-weight: var(--bundle-tier-pill-font-weight, 600);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  flex: 1;
+  max-width: 340px;
+}
+
+.bundle-tier-pill--active {
+  background: var(--bundle-tier-pill-active-bg, var(--bundle-global-primary-button, #111111));
+  color: var(--bundle-tier-pill-active-text, #ffffff);
+}
+
+.bundle-tier-pill:not(.bundle-tier-pill--active):hover {
+  background: var(--bundle-tier-pill-hover-bg, rgb(220, 245, 210));
+}
+
+.bundle-tier-pill--disabled,
+.bundle-tier-pill--loading {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .bundle-tier-pill-bar {
+    overflow-x: auto;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 16px;
+  }
+
+  .bundle-tier-pill {
+    flex: 0 0 auto;
+    max-width: none;
+  }
+}
+
+/* ============================================================================
    FULL PAGE LAYOUT WRAPPER - VERTICAL LAYOUT
    ============================================================================ */
 
