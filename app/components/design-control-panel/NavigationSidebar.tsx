@@ -247,6 +247,15 @@ export function NavigationSidebar({
         isExpanded={expandedSection === "promoBanner"}
         isActive={activeSubSection === "promoBanner"}
       />
+
+      {/* Pricing Tier Pills (Full-Page Bundles) */}
+      <NavigationItem
+        label="Pricing Tier Pills"
+        sectionKey="tierPills"
+        onClick={() => onSubSectionClick("tierPills")}
+        isExpanded={expandedSection === "tierPills"}
+        isActive={activeSubSection === "tierPills"}
+      />
     </div>
   );
 }

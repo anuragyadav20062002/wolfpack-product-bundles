@@ -505,6 +505,19 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   focusOutlineColor: "#7132FF",
   focusOutlineWidth: 2,
 
+  // Pricing Tier Pills (Full-Page Bundles)
+  tierPillActiveBgColor: "#111111",
+  tierPillActiveTextColor: "#FFFFFF",
+  tierPillInactiveBgColor: "#F2FAE6",
+  tierPillInactiveTextColor: "#333333",
+  tierPillHoverBgColor: "#DCF5D2",
+  tierPillBorderColor: "#000000",
+  tierPillBorderRadius: 8,
+  tierPillHeight: 52,
+  tierPillFontSize: 14,
+  tierPillFontWeight: 600,
+  tierPillGap: 12,
+
   // Custom CSS (empty by default)
   customCss: "",
 };

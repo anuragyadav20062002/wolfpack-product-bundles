@@ -2145,7 +2145,7 @@ class BundleWidgetProductPage {
 
 
             // Use selected variant ID; fall back to first variant for single-variant products.
-            const actualVariantId = product.variantId || product.variants?.[0]?.id || variantId;
+            const actualVariantId = product.variantId ?? product.variants?.[0]?.id;
 
             const cartItem = {
               id: parseInt(this.extractId(actualVariantId)),

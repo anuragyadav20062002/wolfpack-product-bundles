@@ -230,7 +230,20 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
 
   /* FOCUS / ACCESSIBILITY */
   --bundle-focus-outline-color: ${s.focusOutlineColor || globalPrimaryButton};
-  --bundle-focus-outline-width: ${s.focusOutlineWidth || 2}px;`;
+  --bundle-focus-outline-width: ${s.focusOutlineWidth || 2}px;
+
+  /* PRICING TIER PILLS (Full-Page Bundles) */
+  --bundle-tier-pill-active-bg: ${s.tierPillActiveBgColor || globalPrimaryButton};
+  --bundle-tier-pill-active-text: ${s.tierPillActiveTextColor || globalButtonText};
+  --bundle-tier-pill-inactive-bg: ${s.tierPillInactiveBgColor || 'rgb(242, 250, 238)'};
+  --bundle-tier-pill-inactive-text: ${s.tierPillInactiveTextColor || '#333333'};
+  --bundle-tier-pill-hover-bg: ${s.tierPillHoverBgColor || 'rgb(220, 245, 210)'};
+  --bundle-tier-pill-border: 1px solid ${s.tierPillBorderColor || '#000000'};
+  --bundle-tier-pill-border-radius: ${s.tierPillBorderRadius ?? 8}px;
+  --bundle-tier-pill-height: ${s.tierPillHeight ?? 52}px;
+  --bundle-tier-pill-font-size: ${s.tierPillFontSize ?? 14}px;
+  --bundle-tier-pill-font-weight: ${s.tierPillFontWeight ?? 600};
+  --bundle-tier-pill-gap: ${s.tierPillGap ?? 12}px;`;
 }
 
 /**

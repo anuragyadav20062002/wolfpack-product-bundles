@@ -189,55 +189,28 @@
 {% endcomment %}
 
 {% comment %}
-  Resolve bundle ID from four sources in priority order:
+  Resolve bundle ID from two authoritative sources:
 
-  1. page.metafields.custom.bundle_id  — MOST RELIABLE (primary source).
-     The 'custom' namespace is set by the backend and is always readable in
-     Liquid with PUBLIC_READ access. Unlike '$app' which expands to an
-     internal namespace, 'custom' works directly.
+  1. page.metafields.custom.bundle_id  — PRIMARY. Always set by the app when
+     "Place Widget Now" is used. The 'custom' namespace has PUBLIC_READ access
+     and is reliably readable in Liquid.
 
-  2. page.handle  — SECONDARY. App creates pages with handle "bundle-{bundleId}".
-     Extracting the bundle ID from the handle is a zero-dependency fallback.
-
-  3. page.metafields['$app'].bundle_id  — LEGACY. '$app' expands internally
-     and may not resolve in Liquid. Kept for backwards compatibility.
-
-  4. block.settings.bundle_id  — MANUAL. Merchant enters bundle ID in the
-     Shopify theme editor.
+  2. block.settings.bundle_id  — FALLBACK for merchants who manually entered
+     the bundle ID in the Shopify Theme Editor (backwards compatibility).
 {% endcomment %}
 
-{% comment %} Source 1: custom namespace metafield (most reliable) {% endcomment %}
+{% comment %} Source 1: custom namespace metafield (app-set, always reliable) {% endcomment %}
 {% assign bundle_id_from_custom = page.metafields.custom.bundle_id %}
 
-{% comment %} Source 2: Extract bundle ID from page handle {% endcomment %}
-{% if page.handle contains 'bundle-' %}
-  {% assign bundle_id_from_handle = page.handle | remove_first: 'bundle-' %}
-{% else %}
-  {% assign bundle_id_from_handle = nil %}
-{% endif %}
-
-{% comment %} Source 3: $app namespace metafield (legacy, may not work) {% endcomment %}
-{% assign bundle_id_from_app_metafield = page.metafields['$app'].bundle_id %}
-
-{% comment %} Source 4: Block setting (manual theme editor input) {% endcomment %}
+{% comment %} Source 2: Block setting (manual theme editor input) {% endcomment %}
 {% assign bundle_id_from_setting = block.settings.bundle_id %}
 
-{% comment %} Priority: custom metafield > handle > $app metafield > block setting {% endcomment %}
 {% if bundle_id_from_custom and bundle_id_from_custom != blank %}
   {% assign bundle_id = bundle_id_from_custom %}
-  {% assign bundle_id_source = "custom_metafield" %}
-{% elsif bundle_id_from_handle and bundle_id_from_handle != blank %}
-  {% assign bundle_id = bundle_id_from_handle %}
-  {% assign bundle_id_source = "page_handle" %}
-{% elsif bundle_id_from_app_metafield and bundle_id_from_app_metafield != blank %}
-  {% assign bundle_id = bundle_id_from_app_metafield %}
-  {% assign bundle_id_source = "app_metafield" %}
 {% elsif bundle_id_from_setting and bundle_id_from_setting != blank %}
   {% assign bundle_id = bundle_id_from_setting %}
-  {% assign bundle_id_source = "block_setting_manual" %}
 {% else %}
   {% assign bundle_id = nil %}
-  {% assign bundle_id_source = "none" %}
 {% endif %}
 
 {% assign should_show_widget = false %}

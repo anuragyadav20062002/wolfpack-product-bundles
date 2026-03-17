@@ -124,6 +124,19 @@ export interface DesignSettings {
   emptySlotBorderStyle?: 'dashed' | 'solid'; // default 'dashed'
   emptySlotBorderColor?: string;         // default = primary button color
 
+  // Pricing Tier Pills (Full-Page Bundles — fpb-tier-selection-1)
+  tierPillActiveBgColor?: string;        // active pill background
+  tierPillActiveTextColor?: string;      // active pill text
+  tierPillInactiveBgColor?: string;      // inactive pill background
+  tierPillInactiveTextColor?: string;    // inactive pill text
+  tierPillHoverBgColor?: string;         // hover background for inactive pills
+  tierPillBorderColor?: string;          // pill border color
+  tierPillBorderRadius?: number;         // 0–50px
+  tierPillHeight?: number;               // 32–80px
+  tierPillFontSize?: number;             // 12–24px
+  tierPillFontWeight?: number;           // 400 | 600 | 700
+  tierPillGap?: number;                  // 4–32px gap between pills
+
   // Additional fields
   [key: string]: string | number | boolean | undefined;
 }

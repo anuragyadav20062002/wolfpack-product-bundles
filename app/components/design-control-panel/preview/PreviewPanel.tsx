@@ -6,6 +6,7 @@ import { GeneralPreview } from "./GeneralPreview";
 import { StepBarPreview } from "./StepBarPreview";
 import { PromoBannerPreview } from "./PromoBannerPreview";
 import { GlobalColorsPreview } from "./GlobalColorsPreview";
+import { TierPillPreview } from "./TierPillPreview";
 import { PreviewScope } from "./PreviewScope";
 
 interface PreviewPanelProps {
@@ -38,6 +39,15 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
         globalFooterBgColor={settings.globalFooterBgColor}
         globalFooterTextColor={settings.globalFooterTextColor}
       />
+    );
+  }
+
+  // Tier Pills subsection (Full-page bundles only)
+  if (activeSubSection === "tierPills") {
+    return (
+      <PreviewScope settings={settings}>
+        <TierPillPreview />
+      </PreviewScope>
     );
   }
 

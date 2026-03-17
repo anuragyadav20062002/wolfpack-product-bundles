@@ -30,6 +30,7 @@ import { AccessibilitySettings } from "./AccessibilitySettings";
 import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
 import { AddedButtonStateSettings } from "./AddedButtonStateSettings";
 import { WidgetStyleSettings } from "./WidgetStyleSettings";
+import { TierPillSettings } from "./TierPillSettings";
 
 /**
  * SettingsPanel - Orchestrator component that renders the appropriate
@@ -121,6 +122,9 @@ export function SettingsPanel({
 
     case "widgetStyle":
       return <WidgetStyleSettings settings={settings} onUpdate={onUpdate} />;
+
+    case "tierPills":
+      return <TierPillSettings settings={settings} onUpdate={onUpdate} />;
 
     case "modalCloseButton":
       return <ModalCloseButtonSettings settings={settings} onUpdate={onUpdate} />;
