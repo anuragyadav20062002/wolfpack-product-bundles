@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 1.6.0
+ * Version : 1.7.0
  * Built   : 2026-03-17
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.6.0';
+window.__BUNDLE_WIDGET_VERSION__ = '1.7.0';
 (function() {
   'use strict';
 
@@ -4265,7 +4265,7 @@ class BundleWidgetFullPage {
     existing.parentNode.replaceChild(fresh, existing);
   }
 
-  // Render fixed footer with selected products and navigation (Competitor-Inspired Design)
+  // Render fixed footer with selected products and navigation (Beco BYOB expandable style)
   renderFullPageFooter() {
     if (!this.elements.footer) {
       return;
@@ -4278,89 +4278,147 @@ class BundleWidgetFullPage {
       return;
     }
 
+    const allSelectedProducts = this.getAllSelectedProductsData();
+
+    // Hide footer when nothing is selected yet
+    if (allSelectedProducts.length === 0) {
+      this.elements.footer.style.display = 'none';
+      return;
+    }
+
+    // Preserve open state across re-renders
+    const wasOpen = this.elements.footer.classList.contains('is-open');
+
     this.elements.footer.innerHTML = '';
-    this.elements.footer.className = 'full-page-footer redesigned';
+    this.elements.footer.className = 'full-page-footer beco-style';
+    if (wasOpen) this.elements.footer.classList.add('is-open');
     this.elements.footer.style.display = 'block';
 
-    // Calculate pricing data
+    // Pricing data
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
     );
-
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
       totalQuantity
     );
-
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
-    const allSelectedProducts = this.getAllSelectedProductsData();
 
-    // Calculate progress for discount (if applicable)
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
-    const progressPercent = this.calculateDiscountProgress(totalQuantity);
-
-    // === SECTION 1: Progress Bar with Discount Messaging ===
-    const progressSection = document.createElement('div');
-    progressSection.className = 'footer-progress-section';
-
-    // Build discount messaging using configured templates (same pattern as product-page footer)
-    let discountMessage = '';
-    if (this.selectedBundle?.pricing?.enabled) {
+    // Callout banner text (shown in expanded panel when discount unlocked)
+    let calloutMessage = '';
+    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle,
-        totalPrice,
-        totalQuantity,
-        discountInfo,
-        currencyInfo
+        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
       );
-      if (discountInfo.hasDiscount) {
-        discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          variables
-        );
-      } else if (nextRule) {
-        discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-          variables
-        );
-      }
+      calloutMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+        variables
+      );
     }
 
-    // For the progress section, only show the "in-progress" message (not the success — that gets its own banner)
-    if (!discountInfo.hasDiscount && discountMessage) {
-      progressSection.innerHTML = `<div class="footer-discount-message">${discountMessage}</div>`;
-    }
-
-    // === SECTION 1b: Success banner (Beco-style "🎉 Best Deal Unlocked!") ===
-    // Shown prominently above the product tiles when discount threshold is reached
-    let successBanner = null;
-    if (discountInfo.hasDiscount && discountMessage) {
-      successBanner = document.createElement('div');
-      successBanner.className = 'footer-success-banner';
-      successBanner.innerHTML = discountMessage;
-    }
-
-    // === SECTION 2: Scrollable Product Tiles (centered above navigation) ===
-    const productsSection = this.createFooterProductTiles(allSelectedProducts, currencyInfo);
-
-    // === SECTION 3: Navigation with Total between buttons ===
-    const navSection = document.createElement('div');
-    navSection.className = 'footer-nav-section';
+    // Total required quantity across all steps
+    const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
+      return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
+    }, 0);
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-    const canProceed = this.canProceedToNextStep();
 
-    // Create Back button
-    const backBtn = document.createElement('button');
-    backBtn.className = 'footer-btn footer-btn-back';
-    backBtn.textContent = 'Back';
-    if (this.currentStepIndex === 0) {
-      backBtn.disabled = true;
+    // Build the three parts of the footer
+    const panel = this._createBecoPanel(allSelectedProducts, currencyInfo, discountInfo, calloutMessage);
+    const backdrop = document.createElement('button');
+    backdrop.className = 'footer-backdrop';
+    backdrop.setAttribute('type', 'button');
+    backdrop.setAttribute('aria-label', 'Close product list');
+    backdrop.addEventListener('click', () => {
+      this.elements.footer.classList.remove('is-open');
+    });
+    const bar = this._createBecoBar(
+      allSelectedProducts, totalQuantity, totalRequired,
+      totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
+    );
+
+    // Stack: panel (opens upward) → backdrop → bar (always visible at bottom)
+    this.elements.footer.appendChild(panel);
+    this.elements.footer.appendChild(backdrop);
+    this.elements.footer.appendChild(bar);
+  }
+
+  // Creates the upward-expanding product-list panel
+  _createBecoPanel(allSelectedProducts, currencyInfo, discountInfo, calloutMessage) {
+    const panel = document.createElement('div');
+    panel.className = 'footer-panel';
+
+    // Deal callout banner (shown when discount is active)
+    if (discountInfo.hasDiscount && calloutMessage) {
+      const callout = document.createElement('div');
+      callout.className = 'footer-callout-banner';
+      callout.innerHTML = calloutMessage;
+      panel.appendChild(callout);
     }
 
+    // Product list
+    const list = document.createElement('ul');
+    list.className = 'footer-panel-list';
+
+    allSelectedProducts.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'footer-panel-item';
+
+      const formattedPrice = CurrencyManager.formatMoney(item.price || 0, currencyInfo.display.format);
+      const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
+
+      li.innerHTML = `
+        <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
+             alt="${ComponentGenerator.escapeHtml(item.title)}"
+             class="footer-panel-thumb">
+        <div class="footer-panel-info">
+          <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
+          <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
+        </div>
+        <button class="footer-panel-remove" type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">
+          <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
+            <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </button>
+      `;
+
+      const removeBtn = li.querySelector('.footer-panel-remove');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
+        this.updateProductSelection(item.stepIndex, item.variantId, 0);
+        const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
+        ToastManager.showWithUndo(
+          `Removed "${truncated}"`,
+          () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+          5000
+        );
+      });
+
+      list.appendChild(li);
+    });
+
+    panel.appendChild(list);
+    return panel;
+  }
+
+  // Creates the always-visible footer bar
+  _createBecoBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep) {
+    const bar = document.createElement('div');
+    bar.className = 'footer-bar';
+
+    // ── Left: Back button ──
+    const backBtn = document.createElement('button');
+    backBtn.className = 'footer-back-btn';
+    backBtn.setAttribute('type', 'button');
+    backBtn.innerHTML = `<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4l-6 6 6 6"/></svg>`;
+    backBtn.setAttribute('aria-label', 'Back');
+    if (this.currentStepIndex === 0) {
+      backBtn.style.visibility = 'hidden';
+    }
     backBtn.addEventListener('click', () => {
       if (this.currentStepIndex > 0) {
         this.activeCollectionId = null;
@@ -4370,9 +4428,49 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Create Total section (between buttons) — with optional discount % badge (Beco-style)
-    const totalSection = document.createElement('div');
-    totalSection.className = 'footer-total-section';
+    // ── Centre-left: Thumbnail strip + toggle ──
+    const centreLeft = document.createElement('div');
+    centreLeft.className = 'footer-centre-left';
+
+    // Thumbnail strip
+    const thumbStrip = document.createElement('div');
+    thumbStrip.className = 'footer-thumbstrip';
+    const maxThumbs = 3;
+    allSelectedProducts.slice(0, maxThumbs).forEach(item => {
+      const img = document.createElement('img');
+      img.src = item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+      img.alt = item.title || '';
+      img.className = 'footer-thumbstrip-img';
+      thumbStrip.appendChild(img);
+    });
+    if (allSelectedProducts.length > maxThumbs) {
+      const overflow = document.createElement('span');
+      overflow.className = 'footer-thumbstrip-overflow';
+      overflow.textContent = `+${allSelectedProducts.length - maxThumbs}`;
+      thumbStrip.appendChild(overflow);
+    }
+
+    // Toggle button
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'footer-toggle';
+    toggleBtn.setAttribute('type', 'button');
+    toggleBtn.innerHTML = `
+      <span class="footer-toggle-text">${totalQuantity}/${totalRequired} Products</span>
+      <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M5 8l5 5 5-5"/>
+      </svg>
+    `;
+    toggleBtn.addEventListener('click', () => {
+      this.elements.footer.classList.toggle('is-open');
+    });
+
+    centreLeft.appendChild(thumbStrip);
+    centreLeft.appendChild(toggleBtn);
+
+    // ── Centre-right: Total + discount badge ──
+    const totalArea = document.createElement('div');
+    totalArea.className = 'footer-total-area';
+
     let discountBadgeHTML = '';
     if (discountInfo.hasDiscount && totalPrice > 0 && finalPrice < totalPrice) {
       const discountPct = Math.round((1 - finalPrice / totalPrice) * 100);
@@ -4380,24 +4478,24 @@ class BundleWidgetFullPage {
         discountBadgeHTML = `<span class="footer-discount-badge">${discountPct}% OFF</span>`;
       }
     }
-    totalSection.innerHTML = `
-      <span class="total-label">Total</span>
-      <div class="total-prices">
-        ${discountInfo.hasDiscount ? `<span class="total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
-        <span class="total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+    totalArea.innerHTML = `
+      <span class="footer-total-label">Total:</span>
+      <div class="footer-total-prices">
+        ${discountInfo.hasDiscount && finalPrice < totalPrice ? `<span class="footer-total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
+        <span class="footer-total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
         ${discountBadgeHTML}
       </div>
     `;
 
-    // Create Next button
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'footer-btn footer-btn-next';
-    nextBtn.textContent = isLastStep ? 'Add to Cart' : 'Next';
-    if (isLastStep ? !this.areBundleConditionsMet() : !canProceed) {
-      nextBtn.disabled = true;
+    // ── Right: CTA button ──
+    const ctaBtn = document.createElement('button');
+    ctaBtn.className = 'footer-cta-btn';
+    ctaBtn.setAttribute('type', 'button');
+    ctaBtn.textContent = isLastStep ? (this.config.addToCartText || 'Add to Cart') : 'Next';
+    if (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep()) {
+      ctaBtn.disabled = true;
     }
-
-    nextBtn.addEventListener('click', () => {
+    ctaBtn.addEventListener('click', () => {
       if (isLastStep) {
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
@@ -4410,18 +4508,11 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Assemble nav section: Back | Total | Next
-    navSection.appendChild(backBtn);
-    navSection.appendChild(totalSection);
-    navSection.appendChild(nextBtn);
-
-    // Assemble footer: [Success banner?] -> Progress -> Products (centered) -> Navigation
-    if (successBanner) {
-      this.elements.footer.appendChild(successBanner);
-    }
-    this.elements.footer.appendChild(progressSection);
-    this.elements.footer.appendChild(productsSection);
-    this.elements.footer.appendChild(navSection);
+    bar.appendChild(backBtn);
+    bar.appendChild(centreLeft);
+    bar.appendChild(totalArea);
+    bar.appendChild(ctaBtn);
+    return bar;
   }
 
   // Create scrollable product tiles component for footer
