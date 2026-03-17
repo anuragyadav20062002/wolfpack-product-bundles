@@ -406,6 +406,17 @@ export default function ConfigureBundleFlow() {
     Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
   );
 
+  // Admin-controlled step timeline visibility (null = defer to theme editor)
+  const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
+    (bundle as any).showStepTimeline !== false  // default true; only false when explicitly saved as false
+  );
+
+  // Warning modal state: steps + tiers conflict
+  const [stepsTiersWarning, setStepsTiersWarning] = useState<{
+    open: boolean;
+    onConfirm: (() => void) | null;
+  }>({ open: false, onConfirm: null });
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
@@ -443,6 +454,10 @@ export default function ConfigureBundleFlow() {
       formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
       formData.append("loadingGif", loadingGif ?? "");
       formData.append("tierConfigData", tierConfig.length > 0 ? JSON.stringify(tierConfig) : "");
+      // Only send showStepTimeline when >= 2 tiers are configured (server will reset to null otherwise)
+      if (tierConfig.length >= 2) {
+        formData.append("showStepTimeline", String(showStepTimeline));
+      }
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
@@ -2282,6 +2297,15 @@ export default function ConfigureBundleFlow() {
                   tiers={tierConfig}
                   availableBundles={availableBundles}
                   currentBundleId={bundle.id}
+                  showStepTimeline={showStepTimeline}
+                  onShowStepTimelineChange={(val) => {
+                    setShowStepTimeline(val);
+                    markAsDirty();
+                  }}
+                  stepsCount={stepsState.steps.length}
+                  onStepsTiersConflictWarning={(onConfirm) => {
+                    setStepsTiersWarning({ open: true, onConfirm });
+                  }}
                   onChange={(tiers) => {
                     setTierConfig(tiers);
                     markAsDirty();
@@ -2292,6 +2316,39 @@ export default function ConfigureBundleFlow() {
           </Layout.Section>
         </Layout>
       </form>
+
+      {/* Steps + Tiers Conflict Warning Modal */}
+      <Modal
+        open={stepsTiersWarning.open}
+        onClose={() => setStepsTiersWarning({ open: false, onConfirm: null })}
+        title="Steps and Pricing Tiers conflict"
+        primaryAction={{
+          content: "Continue anyway",
+          onAction: () => {
+            stepsTiersWarning.onConfirm?.();
+            setStepsTiersWarning({ open: false, onConfirm: null });
+          },
+        }}
+        secondaryActions={[{
+          content: "Cancel",
+          onAction: () => setStepsTiersWarning({ open: false, onConfirm: null }),
+        }]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <Text as="p" variant="bodyMd">
+              <strong>Using both steps and pricing tiers creates a confusing experience for shoppers.</strong>
+            </Text>
+            <Text as="p" variant="bodyMd">
+              Pricing tier pills work best with a <strong>single-step flat-grid bundle</strong> (e.g. pick any 3 products).
+              Your bundle has <strong>{stepsState.steps.length} steps</strong> configured, which guides shoppers through a sequential flow.
+            </Text>
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Continuing will configure tiers alongside steps. Consider reducing to 1 step for the best flat-grid BYOB experience.
+            </Text>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
 
       {/* Page Selection Modal */}
       <Modal

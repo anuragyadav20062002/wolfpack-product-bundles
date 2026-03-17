@@ -4,6 +4,10 @@
  * Admin UI for configuring up to 4 pricing tier pills on a full-page bundle.
  * Each tier has a text label and a linked bundle (selected from existing bundles
  * in the shop). Shown in the Full-Page Bundle configure route.
+ *
+ * When >= 2 tiers are configured, also shows a "Show step timeline" checkbox so
+ * merchants can hide the step timeline directly from the Admin UI instead of the
+ * Theme Editor — the typical setup for a flat-grid BYOB bundle.
  */
 
 import {
@@ -17,6 +21,7 @@ import {
   Select,
   Badge,
   EmptyState,
+  Checkbox,
 } from "@shopify/polaris";
 import { DeleteIcon, PlusIcon } from "@shopify/polaris-icons";
 import type { TierConfigEntry } from "../types/tier-config";
@@ -26,6 +31,17 @@ interface PricingTiersSectionProps {
   availableBundles: { id: string; name: string }[];
   currentBundleId: string;
   onChange: (tiers: TierConfigEntry[]) => void;
+  /** Admin-controlled step timeline visibility (only relevant when >= 2 tiers). */
+  showStepTimeline: boolean;
+  onShowStepTimelineChange: (val: boolean) => void;
+  /** Number of steps on this bundle — used to trigger the conflict warning. */
+  stepsCount: number;
+  /**
+   * Called when adding a tier would create a steps+tiers conflict.
+   * The parent shows a warning modal; if confirmed, it calls onConfirm() to
+   * proceed with the add.
+   */
+  onStepsTiersConflictWarning: (onConfirm: () => void) => void;
 }
 
 const MAX_TIERS = 4;
@@ -35,6 +51,10 @@ export function PricingTiersSection({
   availableBundles,
   currentBundleId,
   onChange,
+  showStepTimeline,
+  onShowStepTimelineChange,
+  stepsCount,
+  onStepsTiersConflictWarning,
 }: PricingTiersSectionProps) {
   const bundleOptions = [
     { label: "— Select a bundle —", value: "" },
@@ -44,9 +64,20 @@ export function PricingTiersSection({
     })),
   ];
 
+  function doAddTier() {
+    onChange([...tiers, { label: "", linkedBundleId: "" }]);
+  }
+
   function addTier() {
     if (tiers.length >= MAX_TIERS) return;
-    onChange([...tiers, { label: "", linkedBundleId: "" }]);
+    // Adding this tier would activate the pill bar (going from 1 → 2 tiers)
+    // AND the bundle has more than 1 step → warn about the conflict.
+    const wouldActivatePills = tiers.length + 1 >= 2;
+    if (wouldActivatePills && stepsCount > 1) {
+      onStepsTiersConflictWarning(doAddTier);
+      return;
+    }
+    doAddTier();
   }
 
   function removeTier(index: number) {
@@ -57,6 +88,8 @@ export function PricingTiersSection({
     const updated = tiers.map((t, i) => (i === index ? { ...t, [field]: value } : t));
     onChange(updated);
   }
+
+  const pillsActive = tiers.length >= 2;
 
   return (
     <BlockStack gap="400">
@@ -140,10 +173,23 @@ export function PricingTiersSection({
             </Button>
           )}
 
-          {tiers.length >= 2 && (
-            <Text as="p" variant="bodySm" tone="subdued">
-              {tiers.length} tier{tiers.length > 1 ? "s" : ""} configured — pill bar will be visible on the storefront.
-            </Text>
+          {pillsActive && (
+            <BlockStack gap="300">
+              <Text as="p" variant="bodySm" tone="subdued">
+                {tiers.length} tier{tiers.length > 1 ? "s" : ""} configured — pill bar will be visible on the storefront.
+              </Text>
+
+              <Divider />
+
+              <BlockStack gap="100">
+                <Checkbox
+                  label="Show step timeline"
+                  helpText="Uncheck to hide the step progress bar — recommended for flat-grid BYOB bundles using pricing tiers."
+                  checked={showStepTimeline}
+                  onChange={onShowStepTimelineChange}
+                />
+              </BlockStack>
+            </BlockStack>
           )}
         </BlockStack>
       </Card>

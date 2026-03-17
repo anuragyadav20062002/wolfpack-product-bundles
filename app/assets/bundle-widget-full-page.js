@@ -161,6 +161,12 @@ class BundleWidgetFullPage {
       );
       this.initTierPills(this.tierConfig);
 
+      // Resolve showStepTimeline — prefer admin-saved (API) over Theme Editor data attribute
+      this.config.showStepTimeline = this.resolveShowStepTimeline(
+        this.selectedBundle.showStepTimeline ?? null,
+        this.config.showStepTimeline
+      );
+
       // Initialize data structures
       this.initializeDataStructures();
 
@@ -3826,6 +3832,19 @@ class BundleWidgetFullPage {
     return mapped.length >= 2 ? mapped : [];
   }
 
+  /**
+   * Resolves whether to show the step timeline.
+   * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
+   *
+   * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
+   * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
+   * @returns {boolean}
+   */
+  resolveShowStepTimeline(apiValue, dataAttrValue) {
+    if (apiValue !== null && apiValue !== undefined) return apiValue;
+    return dataAttrValue;
+  }
+
   /** Returns true if the given tier index is the currently active one. */
   isTierActive(tierIndex) {
     return tierIndex === this.activeTierIndex;
@@ -3899,6 +3918,12 @@ class BundleWidgetFullPage {
       if (!this.selectedBundle) {
         throw new Error('Bundle not found for this tier.');
       }
+
+      // Re-resolve showStepTimeline from the newly loaded tier bundle's API value
+      this.config.showStepTimeline = this.resolveShowStepTimeline(
+        this.selectedBundle.showStepTimeline ?? null,
+        this.config.showStepTimeline
+      );
 
       this.initializeDataStructures();
 

@@ -86,6 +86,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const loadingGif = loadingGifRaw || null;
     const tierConfigRaw = formData.get("tierConfigData") as string | null;
     const tierConfigParsed = tierConfigRaw ? JSON.parse(tierConfigRaw) : null;
+    const showStepTimelineRaw = formData.get("showStepTimeline") as string | null;
+    // Parse: "true" → true, "false" → false, null/missing → null
+    const showStepTimelineParsed: boolean | null =
+      showStepTimelineRaw === "true" ? true : showStepTimelineRaw === "false" ? false : null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -178,6 +182,12 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       select: { shopifyProductId: true }
     });
 
+    // Reset showStepTimeline to null when < 2 tiers are active (no pills shown),
+    // so the theme editor data attribute regains control (backward compat).
+    const activeTierCount = Array.isArray(tierConfigParsed) ? tierConfigParsed.length : 0;
+    const showStepTimelineForSave: boolean | null =
+      activeTierCount >= 2 ? showStepTimelineParsed : null;
+
     // Update bundle in database
     AppLogger.debug("[BUNDLE_CONFIG] Updating bundle in database");
     const updatedBundle = await db.bundle.update({
@@ -199,6 +209,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         tierConfig: tierConfigParsed
           ? await validateTierConfig(tierConfigParsed, session.shop, db)
           : null,
+        showStepTimeline: showStepTimelineForSave,
         // Update steps if provided
         ...(stepsData && {
           steps: {

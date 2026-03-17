@@ -189,6 +189,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
       loadingGif: bundle.loadingGif ?? null,
       tierConfig: bundle.tierConfig ?? null,
+      showStepTimeline: bundle.showStepTimeline ?? null,
       steps: bundle.steps.map(step => {
         const stepProducts = step.StepProduct ?? [];
 
