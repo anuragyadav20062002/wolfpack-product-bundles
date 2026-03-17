@@ -2077,12 +2077,28 @@ class BundleWidgetProductPage {
         body: JSON.stringify({ items: cartItems })
       });
 
+      // Read body as text first — Shopify can return HTML on password-protected stores
+      // or on certain error conditions. JSON.parse on HTML would surface a confusing error.
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Cart add failed: ${response.status}`);
+        let errorMessage = `Cart add failed (${response.status})`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.message || errorData.description || errorMessage;
+        } catch {
+          // Response wasn't JSON (e.g., HTML login/password page) — use status-code message
+        }
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        // Successful HTTP status but non-JSON body — store may be password-protected
+        throw new Error('Cart add failed: Store may be password protected or temporarily unavailable.');
+      }
 
       // Show success message and redirect
       ToastManager.show('Bundle added to cart successfully!');
@@ -2128,8 +2144,16 @@ class BundleWidgetProductPage {
             }
 
 
+            // For expanded multi-variant cards product.variantId is the selected variant.
+            // For single-variant products product.variantId is unset — fall back to the
+            // first (and only) entry in product.variants so we always send a variant ID,
+            // never a product ID, to /cart/add.js.
+            const actualVariantId = product.variantId
+              || (product.variants && product.variants.length > 0 ? product.variants[0]?.id : null)
+              || variantId;
+
             const cartItem = {
-              id: parseInt(this.extractId(variantId)),
+              id: parseInt(this.extractId(actualVariantId)),
               quantity: quantity,
               properties: {
                 '_bundle_id': bundleInstanceId,
