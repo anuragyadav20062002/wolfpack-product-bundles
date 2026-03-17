@@ -136,9 +136,6 @@ class BundleWidgetFullPage {
         this.hidePageTitle();
       }
 
-      // Render tier pills before async work (no loading state needed — pills are static)
-      this.initTierPills(this.tierConfig);
-
       // Show spinner overlay immediately (no gif url yet — bundle data not loaded)
       this.showLoadingOverlay(null);
 
@@ -156,6 +153,13 @@ class BundleWidgetFullPage {
         this.showFallbackUI();
         return;
       }
+
+      // Resolve tier config — prefer admin-saved (API) over legacy Theme Editor (data attribute)
+      this.tierConfig = this.resolveTierConfig(
+        this.selectedBundle.tierConfig ?? null,
+        this.tierConfig
+      );
+      this.initTierPills(this.tierConfig);
 
       // Initialize data structures
       this.initializeDataStructures();
@@ -3698,6 +3702,37 @@ class BundleWidgetFullPage {
     } catch {
       return [];
     }
+  }
+
+  /**
+   * Resolves which tier config array to use for pill rendering.
+   *
+   * Preference order:
+   *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
+   *     tiers in the admin UI (>= 2 valid entries after mapping).
+   *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
+   *     source, used as fallback when apiTierConfig is null/undefined.
+   *
+   * apiTierConfig entries use { label, linkedBundleId } (DB schema).
+   * Widget pill entries use { label, bundleId } — this method performs the mapping.
+   *
+   * Returns [] when fewer than 2 valid tiers exist after filtering.
+   */
+  resolveTierConfig(apiTierConfig, dataTierConfig) {
+    if (apiTierConfig == null) return dataTierConfig;
+
+    const mapped = (Array.isArray(apiTierConfig) ? apiTierConfig : [])
+      .filter(
+        t =>
+          typeof t?.label === 'string' &&
+          typeof t?.linkedBundleId === 'string' &&
+          t.label.trim() !== '' &&
+          t.linkedBundleId.trim() !== ''
+      )
+      .map(t => ({ label: t.label.trim(), bundleId: t.linkedBundleId.trim() }))
+      .slice(0, 4);
+
+    return mapped.length >= 2 ? mapped : [];
   }
 
   /** Returns true if the given tier index is the currently active one. */

@@ -5,19 +5,18 @@
  * input before writing to Bundle.tierConfig in the database.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { validateTierConfig } from "../../../app/lib/tier-config-validator.server";
 
 // ---------------------------------------------------------------------------
 // Mock Prisma client — only bundle.findMany is used by the validator.
 // ---------------------------------------------------------------------------
-const mockFindMany = vi.fn();
+const mockFindMany = jest.fn();
 const mockDb = {
   bundle: { findMany: mockFindMany },
 } as any;
 
 beforeEach(() => {
-  vi.resetAllMocks();
+  jest.resetAllMocks();
   // By default, return all requested IDs as valid bundles.
   mockFindMany.mockImplementation(({ where }: { where: { id: { in: string[] } } }) =>
     Promise.resolve(where.id.in.map((id: string) => ({ id })))
