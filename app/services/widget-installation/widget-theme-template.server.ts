@@ -6,6 +6,8 @@
  * bundle-full-page block so the widget renders automatically.
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 
@@ -25,6 +27,24 @@ interface ShopSession {
 const TEMPLATE_KEY = "templates/page.full-page-bundle.json";
 const BLOCK_HANDLE = "bundle-full-page";
 const COMPONENT = "WidgetThemeTemplate";
+
+/**
+ * Read the extension UID from extensions/bundle-builder/shopify.extension.toml.
+ * The uid field is assigned by Shopify at first deploy and is stable for the
+ * lifetime of the extension (changes only on shopify app deploy --reset).
+ *
+ * Returns null if the file cannot be read or the uid field is not found.
+ */
+function readExtensionUidFromToml(): string | null {
+  try {
+    const tomlPath = path.resolve(process.cwd(), "extensions/bundle-builder/shopify.extension.toml");
+    const content = fs.readFileSync(tomlPath, "utf-8");
+    const match = content.match(/^uid\s*=\s*"([^"]+)"/m);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Ensure `templates/page.full-page-bundle.json` exists in the active theme
@@ -55,12 +75,10 @@ export async function ensureBundlePageTemplate(
     // Step 3: Read the default page.json as base
     const baseTemplate = await readBasePageTemplate(session, themeId);
 
-    // Step 4: Discover block UUID from existing theme templates
-    const blockUuid = await discoverBlockUuid(session, themeId, apiKey);
-
+    // Step 4: Resolve block UUID from TOML uid (or env var override)
+    const blockUuid = resolveBlockUuid();
     if (!blockUuid) {
-      AppLogger.warn("[TEMPLATE] Could not discover block UUID — cannot create template with app block", { component: COMPONENT });
-      return { success: false, templateCreated: false, templateAlreadyExists: false, error: "Block UUID not found" };
+      return { success: false, templateCreated: false, templateAlreadyExists: false, error: "Block UUID not found — set SHOPIFY_BUNDLE_BLOCK_UUID or ensure extensions/bundle-builder/shopify.extension.toml has a uid field" };
     }
 
     // Step 5: Construct the bundle template
@@ -166,66 +184,36 @@ async function readBasePageTemplate(session: ShopSession, themeId: string): Prom
 }
 
 /**
- * Scan existing theme template files for the bundle-full-page block reference
- * to discover the block UUID assigned by Shopify during deployment.
+ * Resolve the block UUID for the bundle-full-page extension block.
  *
- * Block references in template JSON look like:
- *   shopify://apps/{apiKey}/blocks/bundle-full-page/{uuid}
+ * Resolution order:
+ *  1. SHOPIFY_BUNDLE_BLOCK_UUID env var — override for testing or re-deploys
+ *  2. uid field in extensions/bundle-builder/shopify.extension.toml — set by
+ *     Shopify at first deploy, stable for the extension's lifetime
+ *
+ * Returns null if neither source provides a value (prevents silent template corruption).
+ *
+ * The old approach of scanning theme templates is removed — it only worked if
+ * the merchant had already placed the block in Theme Editor, which is the exact
+ * situation we are trying to automate away.
  */
-async function discoverBlockUuid(
-  session: ShopSession,
-  themeId: string,
-  apiKey: string,
-): Promise<string | null> {
-  // First check env var (fastest path)
+function resolveBlockUuid(): string | null {
   const envUuid = process.env.SHOPIFY_BUNDLE_BLOCK_UUID;
   if (envUuid) {
     AppLogger.info("[TEMPLATE] Using block UUID from env var", { component: COMPONENT, uuid: envUuid });
     return envUuid;
   }
 
-  // Scan theme templates for existing block reference
-  try {
-    const response = await fetch(assetUrl(session, themeId), { headers: restHeaders(session) });
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const templateKeys: string[] = (data.assets || [])
-      .filter((a: any) => a.key.startsWith("templates/") && a.key.endsWith(".json"))
-      .map((a: any) => a.key);
-
-    // Also check config/settings_data.json which may contain block references from theme customizations
-    const configKeys = (data.assets || [])
-      .filter((a: any) => a.key === "config/settings_data.json")
-      .map((a: any) => a.key);
-
-    const keysToScan = [...templateKeys, ...configKeys];
-    const pattern = new RegExp(`shopify://apps/${escapeRegex(apiKey)}/blocks/${escapeRegex(BLOCK_HANDLE)}/([a-f0-9-]+)`);
-
-    for (const key of keysToScan) {
-      const content = await readThemeAsset(session, themeId, key);
-      if (!content) continue;
-
-      const match = content.match(pattern);
-      if (match) {
-        AppLogger.info("[TEMPLATE] Discovered block UUID from theme asset", {
-          component: COMPONENT,
-          sourceAsset: key,
-          uuid: match[1],
-        });
-        return match[1];
-      }
-    }
-  } catch (error) {
-    AppLogger.warn("[TEMPLATE] Error scanning theme templates for block UUID", { component: COMPONENT }, error as Error);
+  const tomlUid = readExtensionUidFromToml();
+  if (tomlUid) {
+    AppLogger.info("[TEMPLATE] Using block UUID from extension TOML", { component: COMPONENT, uuid: tomlUid });
+    return tomlUid;
   }
 
+  AppLogger.warn("[TEMPLATE] Could not resolve block UUID — TOML uid not found and SHOPIFY_BUNDLE_BLOCK_UUID not set", { component: COMPONENT });
   return null;
 }
 
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 function buildBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: string): any {
   // Deep-clone the base template
