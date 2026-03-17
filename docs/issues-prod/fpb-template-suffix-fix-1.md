@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-17
-**Last Updated:** 2026-03-17 19:00
+**Last Updated:** 2026-03-17 21:00
 
 ## Overview
 
@@ -51,3 +51,8 @@ directly instead of scanning theme templates.
 - ✅ Warning logs on Sync Bundle eliminated
 - ✅ Lint: zero errors
 - Commit: see git log
+
+### 2026-03-17 21:00 - Fix: Commit TOML uid field that was missing from production
+
+- ✅ `extensions/bundle-builder/shopify.extension.toml` — added `uid` field so `readExtensionUidFromToml()` resolves correctly in production (Render) where the TOML is read from committed code
+- Root cause: Shopify CLI adds `uid` locally after `shopify app deploy`, but those TOML changes were never staged/committed, so production was always hitting the "TOML uid not found" warning path
