@@ -26,6 +26,8 @@ interface ShopSession {
 
 const TEMPLATE_KEY = "templates/page.full-page-bundle.json";
 const BLOCK_HANDLE = "bundle-full-page";
+const PRODUCT_TEMPLATE_KEY = "templates/product.product-page-bundle.json";
+const PRODUCT_BLOCK_HANDLE = "bundle-product-page";
 const COMPONENT = "WidgetThemeTemplate";
 
 /**
@@ -72,14 +74,14 @@ export async function ensureBundlePageTemplate(
       return { success: true, templateCreated: false, templateAlreadyExists: true, themeId };
     }
 
-    // Step 3: Read the default page.json as base
-    const baseTemplate = await readBasePageTemplate(session, themeId);
-
-    // Step 4: Resolve block UUID from TOML uid (or env var override)
+    // Step 3: Resolve block UUID — fail fast before reading theme assets
     const blockUuid = resolveBlockUuid();
     if (!blockUuid) {
       return { success: false, templateCreated: false, templateAlreadyExists: false, error: "Block UUID not found — set SHOPIFY_BUNDLE_BLOCK_UUID or ensure extensions/bundle-builder/shopify.extension.toml has a uid field" };
     }
+
+    // Step 4: Read the default page.json as base
+    const baseTemplate = await readBasePageTemplate(session, themeId);
 
     // Step 5: Construct the bundle template
     const bundleTemplate = buildBundleTemplate(baseTemplate, apiKey, blockUuid);
@@ -96,6 +98,65 @@ export async function ensureBundlePageTemplate(
     return { success: true, templateCreated: true, templateAlreadyExists: false, themeId };
   } catch (error) {
     AppLogger.error("[TEMPLATE] Failed to ensure bundle page template", { component: COMPONENT }, error as Error);
+    return {
+      success: false,
+      templateCreated: false,
+      templateAlreadyExists: false,
+      error: (error as Error).message,
+    };
+  }
+}
+
+/**
+ * Ensure `templates/product.product-page-bundle.json` exists in the active theme
+ * with the bundle-product-page app block in an 'apps' section.
+ *
+ * Called on every product-page bundle save and sync. Idempotent — skips the
+ * write if the template already exists. Failure is non-fatal.
+ */
+export async function ensureProductBundleTemplate(
+  admin: any,
+  session: ShopSession,
+  apiKey: string,
+): Promise<TemplateEnsureResult> {
+  try {
+    // Step 1: Get the active (MAIN) theme
+    const themeId = await getActiveThemeId(admin);
+    if (!themeId) {
+      return { success: false, templateCreated: false, templateAlreadyExists: false, error: "No active theme found" };
+    }
+
+    // Step 2: Check if template already exists
+    const exists = await themeAssetExists(session, themeId, PRODUCT_TEMPLATE_KEY);
+    if (exists) {
+      AppLogger.info("[TEMPLATE] product.product-page-bundle.json already exists", { component: COMPONENT });
+      return { success: true, templateCreated: false, templateAlreadyExists: true, themeId };
+    }
+
+    // Step 3: Resolve block UUID from TOML uid (or env var override) — fail fast before reading theme assets
+    const blockUuid = resolveBlockUuid();
+    if (!blockUuid) {
+      return { success: false, templateCreated: false, templateAlreadyExists: false, error: "Block UUID not found — set SHOPIFY_BUNDLE_BLOCK_UUID or ensure extensions/bundle-builder/shopify.extension.toml has a uid field" };
+    }
+
+    // Step 4: Read the default product.json as base
+    const baseTemplate = await readBaseProductTemplate(session, themeId);
+
+    // Step 5: Construct the product bundle template
+    const productTemplate = buildProductBundleTemplate(baseTemplate, apiKey, blockUuid);
+
+    // Step 6: Write the template to the theme
+    await writeThemeAsset(session, themeId, PRODUCT_TEMPLATE_KEY, JSON.stringify(productTemplate, null, 2));
+
+    AppLogger.info("[TEMPLATE] Created product.product-page-bundle.json successfully", {
+      component: COMPONENT,
+      themeId,
+      blockUuid,
+    });
+
+    return { success: true, templateCreated: true, templateAlreadyExists: false, themeId };
+  } catch (error) {
+    AppLogger.error("[TEMPLATE] Failed to ensure product bundle template", { component: COMPONENT }, error as Error);
     return {
       success: false,
       templateCreated: false,
@@ -216,22 +277,28 @@ function resolveBlockUuid(): string | null {
 
 
 function buildBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: string): any {
-  // Deep-clone the base template
+  return appendBundleWidgetSection(baseTemplate, apiKey, BLOCK_HANDLE, blockUuid);
+}
+
+function buildProductBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: string): any {
+  return appendBundleWidgetSection(baseTemplate, apiKey, PRODUCT_BLOCK_HANDLE, blockUuid);
+}
+
+/** Deep-clones the base template and appends an 'apps' section with the given block. */
+function appendBundleWidgetSection(baseTemplate: any, apiKey: string, blockHandle: string, blockUuid: string): any {
   const template = JSON.parse(JSON.stringify(baseTemplate));
 
-  // Add the apps section with the bundle-full-page block
   template.sections["bundle_widget"] = {
     type: "apps",
     blocks: {
       bundle_block: {
-        type: `shopify://apps/${apiKey}/blocks/${BLOCK_HANDLE}/${blockUuid}`,
+        type: `shopify://apps/${apiKey}/blocks/${blockHandle}/${blockUuid}`,
       },
     },
     block_order: ["bundle_block"],
     settings: {},
   };
 
-  // Ensure section order includes the new section
   if (!template.order) {
     template.order = Object.keys(template.sections);
   } else if (!template.order.includes("bundle_widget")) {
@@ -239,4 +306,23 @@ function buildBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: strin
   }
 
   return template;
+}
+
+async function readBaseProductTemplate(session: ShopSession, themeId: string): Promise<any> {
+  const content = await readThemeAsset(session, themeId, "templates/product.json");
+  if (content) {
+    try {
+      return JSON.parse(content);
+    } catch {
+      AppLogger.warn("[TEMPLATE] Could not parse templates/product.json — using minimal fallback", { component: COMPONENT });
+    }
+  }
+
+  // Minimal fallback template
+  return {
+    sections: {
+      main: { type: "main-product", settings: {} },
+    },
+    order: ["main"],
+  };
 }

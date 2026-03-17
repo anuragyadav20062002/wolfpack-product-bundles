@@ -10,7 +10,7 @@ import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
-import { WidgetInstallationService } from "../../../../services/widget-installation.server";
+import { WidgetInstallationService, ensureProductBundleTemplate } from "../../../../services/widget-installation.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -273,17 +273,29 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
 
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
-      // SYNC_PRODUCT_STATUS: Sync bundle status to Shopify product
+      // TEMPLATE: Ensure product.product-page-bundle.json exists in active theme (non-fatal)
+      const apiKey = process.env.SHOPIFY_API_KEY ?? '';
+      const templateResult = await ensureProductBundleTemplate(admin, session, apiKey);
+      if (!templateResult.success) {
+        AppLogger.warn('[PRODUCT_TEMPLATE] Could not ensure product bundle template (non-fatal)', {
+          component: 'app.bundles.product-page.configure',
+          bundleId,
+          error: templateResult.error,
+        });
+      }
+
+      // SYNC_PRODUCT_STATUS + TEMPLATE_SUFFIX: Sync status and apply templateSuffix in one mutation
       try {
         const shopifyStatus = finalStatus.toUpperCase();
-        AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
+        AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' + templateSuffix to product ${updatedBundle.shopifyProductId}`);
 
         const UPDATE_PRODUCT_STATUS = `
-          mutation UpdateProductStatus($id: ID!, $status: ProductStatus!) {
-            productUpdate(input: {id: $id, status: $status}) {
+          mutation UpdateProductStatus($id: ID!, $status: ProductStatus!, $templateSuffix: String!) {
+            productUpdate(input: {id: $id, status: $status, templateSuffix: $templateSuffix}) {
               product {
                 id
                 status
+                templateSuffix
               }
               userErrors {
                 field
@@ -296,7 +308,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
           variables: {
             id: updatedBundle.shopifyProductId,
-            status: shopifyStatus
+            status: shopifyStatus,
+            templateSuffix: 'product-page-bundle',
           }
         });
 
@@ -322,11 +335,12 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
           }, { errors });
         } else {
           const actualStatus = responseData.data?.productUpdate?.product?.status;
-          AppLogger.info("[PRODUCT_SYNC] Successfully synced product status to Shopify", {
+          AppLogger.info("[PRODUCT_SYNC] Successfully synced product status + templateSuffix to Shopify", {
             component: "app.bundles.product-page.configure",
             productId: updatedBundle.shopifyProductId,
             requestedStatus: shopifyStatus,
-            actualStatus: actualStatus
+            actualStatus: actualStatus,
+            templateSuffix: 'product-page-bundle',
           });
         }
       } catch (error) {
@@ -983,7 +997,35 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
 
     AppLogger.info('[SYNC_BUNDLE] Shopify product re-created', { bundleId, newProductId });
 
-    // 6. Update DB with new product ID
+    // 6. Ensure product.product-page-bundle.json template + apply templateSuffix to new product (non-fatal)
+    try {
+      const apiKey = process.env.SHOPIFY_API_KEY ?? '';
+      const templateResult = await ensureProductBundleTemplate(admin, session, apiKey);
+      if (!templateResult.success) {
+        AppLogger.warn('[SYNC_BUNDLE] Could not ensure product bundle template (non-fatal)', {
+          bundleId, error: templateResult.error,
+        });
+      }
+
+      const APPLY_TEMPLATE_SUFFIX = `
+        mutation ApplyTemplateSuffix($id: ID!, $templateSuffix: String!) {
+          productUpdate(input: { id: $id, templateSuffix: $templateSuffix }) {
+            product { id templateSuffix }
+            userErrors { field message }
+          }
+        }
+      `;
+      await admin.graphql(APPLY_TEMPLATE_SUFFIX, {
+        variables: { id: newProductId, templateSuffix: 'product-page-bundle' },
+      });
+      AppLogger.info('[SYNC_BUNDLE] templateSuffix applied to re-created product', { bundleId, newProductId });
+    } catch (templateError) {
+      AppLogger.warn('[SYNC_BUNDLE] Could not apply templateSuffix to product (non-fatal)', {
+        bundleId, newProductId,
+      }, templateError as Error);
+    }
+
+    // 7. Update DB with new product ID
     await db.bundle.update({
       where: { id: bundleId },
       data: { shopifyProductId: newProductId },
