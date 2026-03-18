@@ -21,6 +21,12 @@ export class ToastManager {
       .replace(/'/g, '&#39;');
   }
 
+  static _isEnterFromBottom() {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue('--bundle-toast-enter-from-bottom')
+      .trim() === '1';
+  }
+
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -31,7 +37,10 @@ export class ToastManager {
     // Create toast element - uses DCP CSS variables
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
-    toast.className = `bundle-toast`;
+    toast.className = 'bundle-toast';
+    if (this._isEnterFromBottom()) {
+      toast.classList.add('bundle-toast-from-bottom');
+    }
     toast.innerHTML = `
       <span>${this._escapeHtml(message)}</span>
       <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
@@ -69,6 +78,9 @@ export class ToastManager {
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast bundle-toast-with-undo';
+    if (this._isEnterFromBottom()) {
+      toast.classList.add('bundle-toast-from-bottom');
+    }
     toast.innerHTML = `
       <span class="toast-message">${this._escapeHtml(message)}</span>
       <button class="toast-undo-btn" type="button">Undo</button>

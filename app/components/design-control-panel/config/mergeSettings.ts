@@ -113,6 +113,18 @@ export function mergeSettings(
     modalButtonTextColor: dbSettings.modalButtonTextColor || defaults.modalButtonTextColor,
     modalButtonBorderRadius: dbSettings.modalButtonBorderRadius || defaults.modalButtonBorderRadius,
 
+    // Toast extended settings (direct columns)
+    toastBorderRadius: dbSettings.toastBorderRadius ?? defaults.toastBorderRadius,
+    toastBorderColor: dbSettings.toastBorderColor ?? defaults.toastBorderColor,
+    toastBorderWidth: dbSettings.toastBorderWidth ?? defaults.toastBorderWidth,
+    toastFontSize: dbSettings.toastFontSize ?? defaults.toastFontSize,
+    toastFontWeight: dbSettings.toastFontWeight ?? defaults.toastFontWeight,
+    toastAnimationDuration: dbSettings.toastAnimationDuration ?? defaults.toastAnimationDuration,
+    toastBoxShadow: dbSettings.toastBoxShadow ?? defaults.toastBoxShadow,
+    toastEnterFromBottom: dbSettings.toastEnterFromBottom !== undefined && dbSettings.toastEnterFromBottom !== null
+      ? Boolean(dbSettings.toastEnterFromBottom)
+      : defaults.toastEnterFromBottom,
+
     // Spread JSON field settings last (they override any duplicates)
     ...globalColorsSettings,
     ...footerSettings,

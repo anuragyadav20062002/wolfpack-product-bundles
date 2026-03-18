@@ -222,6 +222,14 @@ export interface GeneralSettings {
   discountPillBorderRadius: number;
   toastBgColor: string;
   toastTextColor: string;
+  toastBorderRadius: number;
+  toastBorderColor: string;
+  toastBorderWidth: number;
+  toastFontSize: number;
+  toastFontWeight: number;
+  toastAnimationDuration: number;
+  toastBoxShadow: string;
+  toastEnterFromBottom: boolean;
   bundleBgColor: string;
   footerScrollBarColor: string;
   productPageTitleFontColor: string;

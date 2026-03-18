@@ -128,6 +128,14 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
           buttonAddToCartText={settings.buttonAddToCartText}
           toastBgColor={settings.toastBgColor}
           toastTextColor={settings.toastTextColor}
+          toastBorderRadius={settings.toastBorderRadius}
+          toastBorderColor={settings.toastBorderColor}
+          toastBorderWidth={settings.toastBorderWidth}
+          toastFontSize={settings.toastFontSize}
+          toastFontWeight={settings.toastFontWeight}
+          toastAnimationDuration={settings.toastAnimationDuration}
+          toastBoxShadow={settings.toastBoxShadow}
+          toastEnterFromBottom={settings.toastEnterFromBottom}
         />
       </PreviewScope>
     );

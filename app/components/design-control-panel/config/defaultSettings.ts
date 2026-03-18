@@ -159,6 +159,14 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   // Toasts
   toastBgColor: "#000000",
   toastTextColor: "#FFFFFF",
+  toastBorderRadius: 8,
+  toastBorderColor: "#FFFFFF",
+  toastBorderWidth: 0,
+  toastFontSize: 13,
+  toastFontWeight: 500,
+  toastAnimationDuration: 300,
+  toastBoxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+  toastEnterFromBottom: false,
 
   // Bundle Design
   bundleBgColor: "#FFFFFF",
@@ -410,6 +418,14 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Toasts
   toastBgColor: "#7132FF",
   toastTextColor: "#FFFFFF",
+  toastBorderRadius: 8,
+  toastBorderColor: "#FFFFFF",
+  toastBorderWidth: 0,
+  toastFontSize: 13,
+  toastFontWeight: 500,
+  toastAnimationDuration: 300,
+  toastBoxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+  toastEnterFromBottom: false,
 
   // Bundle Design
   bundleBgColor: "#F9FAFB",

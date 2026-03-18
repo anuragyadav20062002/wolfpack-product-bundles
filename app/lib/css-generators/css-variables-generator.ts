@@ -174,6 +174,14 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   /* Toasts */
   --bundle-toast-bg: ${s.toastBgColor || globalPrimaryButton};
   --bundle-toast-text: ${s.toastTextColor || globalButtonText};
+  --bundle-toast-border-radius: ${s.toastBorderRadius ?? 8}px;
+  --bundle-toast-border-color: ${s.toastBorderColor ?? '#FFFFFF'};
+  --bundle-toast-border-width: ${s.toastBorderWidth ?? 0}px;
+  --bundle-toast-font-size: ${s.toastFontSize ?? 13}px;
+  --bundle-toast-font-weight: ${s.toastFontWeight ?? 500};
+  --bundle-toast-animation-duration: ${s.toastAnimationDuration ?? 300}ms;
+  --bundle-toast-box-shadow: ${s.toastBoxShadow ?? '0 4px 12px rgba(0, 0, 0, 0.15)'};
+  --bundle-toast-enter-from-bottom: ${s.toastEnterFromBottom ? '1' : '0'};
   /* Bundle Design */
   --bundle-bg-color: ${s.bundleBgColor || '#FFFFFF'};
   --bundle-footer-scrollbar-color: ${s.footerScrollBarColor || globalPrimaryButton};

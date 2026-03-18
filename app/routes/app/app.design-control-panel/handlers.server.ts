@@ -94,6 +94,14 @@ function extractGeneralSettings(settings: any) {
     // Toasts
     toastBgColor: settings.toastBgColor,
     toastTextColor: settings.toastTextColor,
+    toastBorderRadius: settings.toastBorderRadius,
+    toastBorderColor: settings.toastBorderColor,
+    toastBorderWidth: settings.toastBorderWidth,
+    toastFontSize: settings.toastFontSize,
+    toastFontWeight: settings.toastFontWeight,
+    toastAnimationDuration: settings.toastAnimationDuration,
+    toastBoxShadow: settings.toastBoxShadow,
+    toastEnterFromBottom: settings.toastEnterFromBottom,
     // Bundle Design
     bundleBgColor: settings.bundleBgColor,
     footerScrollBarColor: settings.footerScrollBarColor,
@@ -195,6 +203,15 @@ function buildSettingsData(settings: any, groupedSettings: {
     modalButtonBgColor: settings.modalButtonBgColor,
     modalButtonTextColor: settings.modalButtonTextColor,
     modalButtonBorderRadius: settings.modalButtonBorderRadius,
+    // Toast extended (direct columns — not in JSON blob)
+    toastBorderRadius: settings.toastBorderRadius,
+    toastBorderColor: settings.toastBorderColor,
+    toastBorderWidth: settings.toastBorderWidth,
+    toastFontSize: settings.toastFontSize,
+    toastFontWeight: settings.toastFontWeight,
+    toastAnimationDuration: settings.toastAnimationDuration,
+    toastBoxShadow: settings.toastBoxShadow,
+    toastEnterFromBottom: settings.toastEnterFromBottom,
     ...groupedSettings,
   };
 }

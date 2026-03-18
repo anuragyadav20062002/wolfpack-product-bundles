@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 1.9.0
+ * Version : 2.0.0
  * Built   : 2026-03-18
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.9.0';
+window.__BUNDLE_WIDGET_VERSION__ = '2.0.0';
 (function() {
   'use strict';
 
@@ -805,6 +805,12 @@ class ToastManager {
       .replace(/'/g, '&#39;');
   }
 
+  static _isEnterFromBottom() {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue('--bundle-toast-enter-from-bottom')
+      .trim() === '1';
+  }
+
   static show(message, duration = 4000) {
     // Remove any existing toast
     const existingToast = document.getElementById('bundle-toast');
@@ -815,7 +821,10 @@ class ToastManager {
     // Create toast element - uses DCP CSS variables
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
-    toast.className = `bundle-toast`;
+    toast.className = 'bundle-toast';
+    if (this._isEnterFromBottom()) {
+      toast.classList.add('bundle-toast-from-bottom');
+    }
     toast.innerHTML = `
       <span>${this._escapeHtml(message)}</span>
       <svg class="toast-close" width="20" height="20" viewBox="0 0 24 24" fill="none" style="cursor: pointer;">
@@ -853,6 +862,9 @@ class ToastManager {
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast bundle-toast-with-undo';
+    if (this._isEnterFromBottom()) {
+      toast.classList.add('bundle-toast-from-bottom');
+    }
     toast.innerHTML = `
       <span class="toast-message">${this._escapeHtml(message)}</span>
       <button class="toast-undo-btn" type="button">Undo</button>

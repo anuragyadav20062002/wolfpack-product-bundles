@@ -1,125 +1,94 @@
 # Issue: Toast Notification — Full DCP Customization
 
 **Issue ID:** toast-dcp-full-customization-1
-**Status:** TODO
+**Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-19
+**Last Updated:** 2026-03-19 21:00
 
 ## Overview
-The bundle widget toast notifications (e.g. "Please select products before continuing") currently only expose two DCP settings: `toastBgColor` and `toastTextColor`. Merchants want complete visual control over the toast — border, roundness, opacity, animation speed, font size, and shadow.
+The bundle widget toast notifications (e.g. "Please select products before continuing") previously only exposed two DCP settings: `toastBgColor` and `toastTextColor`. Merchants now have complete visual control over the toast — border, roundness, animation speed, font size, shadow, and entry direction.
 
-## Current State (Audit)
+## Progress Log
 
-**Toast HTML structure:**
-```html
-<div id="bundle-toast" class="bundle-toast">
-  <span>Message</span>
-  <svg class="toast-close">...</svg>
-</div>
-<!-- With undo action: -->
-<div class="bundle-toast bundle-toast-with-undo">
-  <span class="toast-message">Message</span>
-  <button class="toast-undo-btn">Undo</button>
-  <svg class="toast-close">...</svg>
-</div>
-```
+### 2026-03-19 18:00 - Feature Pipeline Run
+- Ran full BR → PO → Architecture → SDE pipeline
+- Docs created: `docs/toast-dcp-customization/00-BR.md`, `02-PO-requirements.md`, `03-architecture.md`, `04-SDE-implementation.md`
 
-**CSS file locations:**
-- Product-page widget: `extensions/bundle-builder/assets/bundle-widget.css` (~line 1596)
-- Full-page widget: `extensions/bundle-builder/assets/bundle-widget-full-page.css` (~line 3307)
-- JS manager: `app/assets/widgets/shared/toast-manager.js`
+### 2026-03-19 19:00 - Implementation Complete
+- ✅ Prisma schema: added 8 new columns to `DesignSettings` with defaults
+- ✅ TypeScript type: added 8 fields to `DesignSettings` interface in `state.types.ts`
+- ✅ Default settings: added all 8 defaults to both `PRODUCT_PAGE_DEFAULTS` and `FULL_PAGE_DEFAULTS`
+- ✅ Merge settings: added direct column reads in `mergeSettings.ts`
+- ✅ CSS variable generator: added 8 new `--bundle-toast-*` variables
+- ✅ Widget CSS (`bundle-widget.css`): replaced hardcoded values with `var()` references; added `.bundle-toast-from-bottom` class + `@keyframes slideFromBottom`/`slideToBottom`
+- ✅ Widget CSS (`bundle-widget-full-page.css`): same changes as above
+- ✅ Widget JS (`toast-manager.js`): added `_isEnterFromBottom()` helper; both `show()` and `showWithUndo()` conditionally apply `.bundle-toast-from-bottom` class
+- ✅ `ToastsSettings.tsx`: full rewrite with Colors, Shape, Typography, Animation, Shadow sections
+- ✅ `GeneralPreview.tsx`: toast preview now mirrors all 8 settings with inline styles
+- ✅ `PreviewPanel.tsx`: updated to pass all 8 new toast props
+- ✅ API route (`api.design-settings.$shopDomain.tsx`): added 8 fields to default + merge
+- ✅ Handlers server (`handlers.server.ts`): added 8 fields to `buildSettingsData`
+- ✅ Widget rebuilt: version bumped to 2.0.0; full-page 244.7 KB, product-page 153.0 KB
+- ✅ Prisma DB: schema pushed to SIT (`prisma db push` — DB already in sync)
+- ✅ CSS file sizes: bundle-widget.css 68,306 B, bundle-widget-full-page.css 95,312 B (both under 100,000 B limit)
+- ✅ ESLint: 0 errors on all modified files
 
-**Currently hardcoded values (candidates for CSS variable migration):**
-| Property | Hardcoded Value | Desired Variable |
-|----------|----------------|-----------------|
-| border-radius | `8px` | `--bundle-toast-border-radius` |
-| box-shadow | `0 4px 12px rgba(0,0,0,0.15)` | `--bundle-toast-box-shadow` |
-| animation duration | `0.3s` | `--bundle-toast-animation-duration` |
-| entry animation | slideDown (top→0) | should be configurable (top vs bottom) |
-| font-size | `13px` | `--bundle-toast-font-size` |
-| font-weight | `500` | `--bundle-toast-font-weight` |
-| padding | `10px 20px` | `--bundle-toast-padding` |
-| border | none | `--bundle-toast-border-color`, `--bundle-toast-border-width` |
-| opacity (background) | 1 | (can be achieved via rgba in bg color) |
+### Files Modified
+- `prisma/schema.prisma`
+- `app/types/state.types.ts`
+- `app/components/design-control-panel/config/defaultSettings.ts`
+- `app/components/design-control-panel/config/mergeSettings.ts`
+- `app/lib/css-generators/css-variables-generator.ts`
+- `app/routes/api/api.design-settings.$shopDomain.tsx`
+- `app/routes/app/app.design-control-panel/handlers.server.ts`
+- `extensions/bundle-builder/assets/bundle-widget.css`
+- `extensions/bundle-builder/assets/bundle-widget-full-page.css`
+- `app/assets/widgets/shared/toast-manager.js`
+- `app/components/design-control-panel/settings/ToastsSettings.tsx`
+- `app/components/design-control-panel/preview/GeneralPreview.tsx`
+- `app/components/design-control-panel/preview/PreviewPanel.tsx`
+- `scripts/build-widget-bundles.js`
+- `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`
+- `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js`
 
-**Currently variable-driven:**
-- `--bundle-toast-bg` → `toastBgColor`
-- `--bundle-toast-text` → `toastTextColor`
+## New DCP Settings Added
 
-## Requested DCP Controls
-
-New settings to expose in `ToastsSettings.tsx`:
-1. **Background Color** (existing `toastBgColor`)
-2. **Text Color** (existing `toastTextColor`)
-3. **Border Radius** (new `toastBorderRadius` — integer px)
-4. **Border Color** (new `toastBorderColor`)
-5. **Border Width** (new `toastBorderWidth` — integer px)
-6. **Font Size** (new `toastFontSize` — integer px)
-7. **Font Weight** (new `toastFontWeight` — integer 400/500/600/700)
-8. **Animation Duration** (new `toastAnimationDuration` — integer ms, e.g. 200/300/400/500)
-9. **Box Shadow** (new `toastBoxShadow` — text input)
-10. **Enter from Bottom** (new `toastEnterFromBottom` — boolean toggle: default false = from top)
-    - Note: User observed the Skai Lama demo toast as coming from the bottom. Current code slides from top. This boolean would flip animation direction.
-
-## Implementation Scope
-
-This is a **multi-layer feature** requiring the full feature pipeline:
-
-### 1. Prisma Schema (new fields on `DesignSettings`)
-- `toastBorderRadius Int?` (default 8)
-- `toastBorderColor String?` (default "transparent")
-- `toastBorderWidth Int?` (default 0)
-- `toastFontSize Int?` (default 13)
-- `toastFontWeight Int?` (default 500)
-- `toastAnimationDuration Int?` (default 300) ← milliseconds
-- `toastBoxShadow String?` (default "0 4px 12px rgba(0,0,0,0.15)")
-- `toastEnterFromBottom Boolean` (default false)
-
-### 2. TypeScript Type (`DesignSettings` interface)
-Add all above fields with correct types.
-
-### 3. Default Settings
-Add to both `PRODUCT_PAGE_DEFAULTS` and `FULL_PAGE_DEFAULTS`.
-
-### 4. CSS Variable Generator (`css-variables-generator.ts`)
-```css
---bundle-toast-border-radius: ${s.toastBorderRadius ?? 8}px;
---bundle-toast-border-color: ${s.toastBorderColor ?? 'transparent'};
---bundle-toast-border-width: ${s.toastBorderWidth ?? 0}px;
---bundle-toast-font-size: ${s.toastFontSize ?? 13}px;
---bundle-toast-font-weight: ${s.toastFontWeight ?? 500};
---bundle-toast-animation-duration: ${s.toastAnimationDuration ?? 300}ms;
---bundle-toast-box-shadow: ${s.toastBoxShadow ?? '0 4px 12px rgba(0,0,0,0.15)'};
-```
-
-For `toastEnterFromBottom`: needs widget JS change — pass the variable to `ToastManager` or use a CSS class toggle.
-
-### 5. Widget CSS (both CSS files)
-Replace hardcoded values with `var(--bundle-toast-*)` references.
-
-### 6. ToastsSettings.tsx
-Add all new controls (ColorInputs, range sliders, toggles).
-
-### 7. Widget Rebuild + Deploy
-Run `npm run build:widgets`, increment `WIDGET_VERSION`, then `shopify app deploy`.
-
-## Notes / Observations
-- The user perceived the Skai Lama toast as "sliding in from the bottom". Current code shows `slideDown` (from top). The live Skai Lama store may have a custom override via Custom CSS. The `toastEnterFromBottom` boolean will address this.
-- Background opacity: Can be achieved by the merchant using an rgba value in the background color picker (e.g. `rgba(0,0,0,0.85)`). No separate opacity control needed.
-- The undo button styling (`.toast-undo-btn`) could also be exposed in a future iteration.
-
-## IMPORTANT: Run feature-pipeline BEFORE implementing
-Per CLAUDE.md, all new features must run through BR → PO → Architecture → SDE pipeline before any code changes.
+| Setting | Type | Default | CSS Variable |
+|---------|------|---------|--------------|
+| `toastBorderRadius` | Int | 8 | `--bundle-toast-border-radius` |
+| `toastBorderColor` | String | `#FFFFFF` | `--bundle-toast-border-color` |
+| `toastBorderWidth` | Int | 0 | `--bundle-toast-border-width` |
+| `toastFontSize` | Int | 13 | `--bundle-toast-font-size` |
+| `toastFontWeight` | Int | 500 | `--bundle-toast-font-weight` |
+| `toastAnimationDuration` | Int | 300 | `--bundle-toast-animation-duration` |
+| `toastBoxShadow` | String | `0 4px 12px rgba(0,0,0,0.15)` | `--bundle-toast-box-shadow` |
+| `toastEnterFromBottom` | Boolean | false | `--bundle-toast-enter-from-bottom` |
 
 ## Phases Checklist
-- [ ] Run feature-pipeline skill
-- [ ] Prisma migration: add new toast fields
-- [ ] TypeScript type: add fields to DesignSettings
-- [ ] Default settings: add defaults to both bundle types
-- [ ] CSS generator: add new --bundle-toast-* variables
-- [ ] Widget CSS: replace hardcoded values with var() references
-- [ ] ToastsSettings.tsx: add new controls
-- [ ] Widget rebuild + version bump
-- [ ] DCP preview update for toast (GeneralPreview.tsx, toasts section)
-- [ ] Deploy + verify
+- [x] Run feature-pipeline skill
+- [x] Prisma migration: add new toast fields
+- [x] TypeScript type: add fields to DesignSettings
+- [x] Default settings: add defaults to both bundle types
+- [x] CSS generator: add new --bundle-toast-* variables
+- [x] Widget CSS: replace hardcoded values with var() references
+- [x] ToastsSettings.tsx: add new controls
+- [x] Widget rebuild + version bump (2.0.0)
+- [x] DCP preview update for toast (GeneralPreview.tsx)
+- [ ] Deploy: run `shopify app deploy` (ACTION REQUIRED — manual step)
+
+## Deploy Instructions
+
+ACTION REQUIRED — Manual deploy needed.
+
+Run the following command in your terminal:
+
+```
+shopify app deploy
+```
+
+Reason: Widget JS updated (version 2.0.0) and CSS variables added for toast customization.
+After deploying, allow 2-10 minutes for CDN propagation, then verify:
+```javascript
+console.log(window.__BUNDLE_WIDGET_VERSION__) // should print "2.0.0"
+```

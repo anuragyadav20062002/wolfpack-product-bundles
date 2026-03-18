@@ -230,6 +230,27 @@ npm run test:coverage # coverage report
 7. **NEVER run `shopify app deploy` autonomously** — see Shopify Deploy Rule below ❌
 8. **Write tests BEFORE implementation for all new code** ✅
 9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
+10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
+
+## 🔄 No Backwards Compatibility Rule
+
+### NEVER add backwards-compatibility code or migration hacks
+
+This app has a **"Sync Bundle"** feature on all bundle configure pages. When new settings are added or the widget version increments, merchants can always re-sync an existing bundle to pick up the latest defaults. An in-app info banner or notice can be shown to prompt a sync when needed.
+
+**Because of this, you MUST NOT:**
+- Add fallback shims that read old JSON blob fields when new direct columns exist
+- Keep deprecated field mappings in `extractGeneralSettings` / `buildSettingsData` "just in case"
+- Write code that detects app version and adjusts behavior for old data
+- Add any `if (legacyField) use(legacyField) else use(newField)` patterns
+
+**Instead:**
+- Add new fields as direct Prisma columns with sensible defaults
+- Update the CSS generator, mergeSettings, and handlers to read the new field directly
+- If old data is in a JSON blob and needs to move to a direct column, drop the JSON blob key and let the direct column default take over — merchants re-sync to restore custom values
+- When a breaking change is released, bump `WIDGET_VERSION` and show a sync prompt banner
+
+**Why:** Backwards-compat code accumulates silently, creates hidden bugs when old and new paths diverge, and makes the codebase harder to reason about. The sync mechanism is the correct fix path for merchants with stale data.
 
 ## 🔍 Lint Before Commit Rule
 

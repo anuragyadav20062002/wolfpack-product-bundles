@@ -150,6 +150,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       globalSecondaryTextColor: "#6B7280",
       globalFooterBgColor: "#FFFFFF",
       globalFooterTextColor: "#000000",
+      // Toast extended
+      toastBorderRadius: 8,
+      toastBorderColor: "#FFFFFF",
+      toastBorderWidth: 0,
+      toastFontSize: 13,
+      toastFontWeight: 500,
+      toastAnimationDuration: 300,
+      toastBoxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+      toastEnterFromBottom: false,
     };
 
     let finalSettings = defaultSettings;
@@ -212,6 +221,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         modalButtonBgColor: designSettings.modalButtonBgColor || defaultSettings.modalButtonBgColor,
         modalButtonTextColor: designSettings.modalButtonTextColor || defaultSettings.modalButtonTextColor,
         modalButtonBorderRadius: designSettings.modalButtonBorderRadius || defaultSettings.modalButtonBorderRadius,
+        // Toast extended settings (direct columns)
+        toastBorderRadius: (designSettings as any).toastBorderRadius ?? defaultSettings.toastBorderRadius,
+        toastBorderColor: (designSettings as any).toastBorderColor ?? defaultSettings.toastBorderColor,
+        toastBorderWidth: (designSettings as any).toastBorderWidth ?? defaultSettings.toastBorderWidth,
+        toastFontSize: (designSettings as any).toastFontSize ?? defaultSettings.toastFontSize,
+        toastFontWeight: (designSettings as any).toastFontWeight ?? defaultSettings.toastFontWeight,
+        toastAnimationDuration: (designSettings as any).toastAnimationDuration ?? defaultSettings.toastAnimationDuration,
+        toastBoxShadow: (designSettings as any).toastBoxShadow ?? defaultSettings.toastBoxShadow,
+        toastEnterFromBottom: (designSettings as any).toastEnterFromBottom ?? defaultSettings.toastEnterFromBottom,
         ...globalColorsSettings,
         ...footerSettings,
         ...stepBarSettings,

@@ -49,6 +49,14 @@ interface GeneralPreviewProps {
   buttonAddToCartText: string;
   toastBgColor: string;
   toastTextColor: string;
+  toastBorderRadius?: number;
+  toastBorderColor?: string;
+  toastBorderWidth?: number;
+  toastFontSize?: number;
+  toastFontWeight?: number;
+  toastAnimationDuration?: number;
+  toastBoxShadow?: string;
+  toastEnterFromBottom?: boolean;
 }
 
 export function GeneralPreview({
@@ -59,6 +67,13 @@ export function GeneralPreview({
   buttonAddToCartText,
   toastBgColor,
   toastTextColor,
+  toastBorderRadius = 8,
+  toastBorderColor = "#FFFFFF",
+  toastBorderWidth = 0,
+  toastFontSize = 13,
+  toastFontWeight = 500,
+  toastBoxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)",
+  toastEnterFromBottom = false,
 }: GeneralPreviewProps) {
   // Empty State — real .empty-state-card structure
   if (activeSubSection === "emptyState") {
@@ -210,33 +225,60 @@ export function GeneralPreview({
     );
   }
 
-  // Toasts — uses --bundle-toast-bg / --bundle-toast-text vars
+  // Toasts — pixel-accurate preview using real .bundle-toast styles via CSS variables
   if (activeSubSection === "toasts") {
+    const toastClasses = toastEnterFromBottom
+      ? "bundle-toast bundle-toast-from-bottom"
+      : "bundle-toast";
+
+    // Static inline preview — mirrors what the storefront renders, but positioned
+    // relative inside the preview container instead of fixed to the viewport.
+    const toastStyle: React.CSSProperties = {
+      backgroundColor: toastBgColor,
+      color: toastTextColor,
+      padding: "10px 20px",
+      borderRadius: `${toastBorderRadius}px`,
+      border: toastBorderWidth > 0 ? `${toastBorderWidth}px solid ${toastBorderColor}` : "none",
+      boxShadow: toastBoxShadow,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "8px",
+      fontSize: `${toastFontSize}px`,
+      fontWeight: toastFontWeight,
+      maxWidth: "360px",
+      position: "relative",
+    };
+
     return (
       <div style={{ textAlign: "center", position: "relative" }}>
         <Text as="h3" variant="headingLg" fontWeight="semibold">
           Toasts
         </Text>
-        <div style={{ marginTop: "80px", display: "inline-block" }}>
+        <div style={{ marginTop: "40px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            {toastEnterFromBottom ? "Entering from bottom" : "Entering from top"}
+            {" · "}
+            Animation: {300}ms default (live on storefront)
+          </Text>
+        </div>
+        <div style={{ marginTop: "24px", display: "inline-block" }}>
           <HighlightBox active>
+            {/* eslint-disable-next-line react/no-danger */}
             <div
-              style={{
-                backgroundColor: toastBgColor,
-                color: toastTextColor,
-                width: "495px",
-                height: "81px",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-              }}
+              className={toastClasses}
+              style={toastStyle}
             >
-              <span style={{ fontSize: "24px", fontWeight: 400 }}>
-                Add at least 1 product on this step
-              </span>
+              <span>Add at least 1 product on this step</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.7, cursor: "pointer", flexShrink: 0 }}>
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
           </HighlightBox>
+        </div>
+        <div style={{ marginTop: "32px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Appears when a merchant skips a required bundle step.
+          </Text>
         </div>
       </div>
     );

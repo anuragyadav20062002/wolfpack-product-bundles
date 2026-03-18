@@ -317,6 +317,16 @@ model DesignSettings {
   focusOutlineColor           String? @default("#5C6AC4")
   focusOutlineWidth           Int?    @default(2)
 
+  // Toast Notifications (extended customization)
+  toastBorderRadius           Int?    @default(8)
+  toastBorderColor            String? @default("#FFFFFF")
+  toastBorderWidth            Int?    @default(0)
+  toastFontSize               Int?    @default(13)
+  toastFontWeight             Int?    @default(500)
+  toastAnimationDuration      Int?    @default(300)
+  toastBoxShadow              String? @default("0 4px 12px rgba(0, 0, 0, 0.15)")
+  toastEnterFromBottom        Boolean @default(false)
+
   // Advanced Settings - Custom CSS
   customCss                   String?
 
