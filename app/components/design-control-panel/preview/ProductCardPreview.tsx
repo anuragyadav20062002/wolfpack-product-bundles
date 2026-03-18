@@ -355,37 +355,28 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
     );
   }
 
-  // Widget Style sub-section — show bottom-sheet slot cards (empty + filled + badge)
+  // Widget Style sub-section — pixel-accurate slot card preview using real CSS classes
   if (activeSubSection === "widgetStyle") {
     const widgetStyleHTML = `
-<div style="display: flex; flex-direction: column; gap: 20px; padding: 16px; background: #f8f8f8; border-radius: 12px; min-width: 340px;">
-  <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.08em; text-align: center;">Inline slot cards (bottom-sheet mode)</div>
-  <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-    <div class="bw-slot-card bw-slot-card--empty" style="width: 100px; min-height: 140px; border: 2px var(--bundle-empty-slot-border-style, dashed) var(--bundle-empty-slot-border-color, var(--bundle-primary-btn-color, #007AFF)); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 8px; background: #fff;">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-slot-border-color, var(--bundle-primary-btn-color, #007AFF))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
-      <span style="font-size: 11px; color: #999; text-align: center;">T-Shirts</span>
+<div class="bundle-steps" style="grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 360px;">
+  <div class="bw-slot-card bw-slot-card--empty">
+    <div class="bw-slot-card__plus-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #1e3a8a))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
     </div>
-    <div class="bw-slot-card bw-slot-card--empty" style="width: 100px; min-height: 140px; border: 2px var(--bundle-empty-slot-border-style, dashed) var(--bundle-empty-slot-border-color, var(--bundle-primary-btn-color, #007AFF)); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 8px; background: #fff;">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-slot-border-color, var(--bundle-primary-btn-color, #007AFF))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
-      <span style="font-size: 11px; color: #999; text-align: center;">Pants</span>
-    </div>
-    <div class="bw-slot-card bw-slot-card--filled" style="width: 100px; min-height: 140px; border: 2px solid var(--bundle-primary-btn-color, #007AFF); border-radius: 12px; overflow: hidden; position: relative; background: #fff; cursor: default;">
-      <img src="${PLACEHOLDER_IMG}" alt="Selected product" style="width: 100%; height: 90px; object-fit: cover; display: block;">
-      <div style="padding: 4px 6px; font-size: 10px; color: #333; line-height: 1.3;">Sample Product</div>
-      <div style="position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--bundle-primary-btn-color, #007AFF); display: flex; align-items: center; justify-content: center;">
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
-      </div>
-    </div>
-    <div class="bw-slot-card bw-slot-card--filled" style="width: 100px; min-height: 140px; border: 2px solid var(--bundle-primary-btn-color, #007AFF); border-radius: 12px; overflow: hidden; position: relative; background: #fff; cursor: default;">
-      <img src="${PLACEHOLDER_IMG}" alt="Free gift" style="width: 100%; height: 90px; object-fit: cover; display: block;">
-      <div style="padding: 4px 6px; font-size: 10px; color: #333; line-height: 1.3;">Free Gift</div>
-      <div style="position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--bundle-primary-btn-color, #007AFF); display: flex; align-items: center; justify-content: center;">
-        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>
-      </div>
-      <div class="bw-slot-discount-badge" style="position: absolute; bottom: 28px; left: 4px; background: var(--bundle-discount-pill-bg, #FF3B30); color: var(--bundle-discount-pill-text, #fff); font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; line-height: 1.4;">FREE</div>
-    </div>
+    <span class="bw-slot-card__label">T-Shirts</span>
   </div>
-  <div style="font-size: 11px; color: #888; text-align: center;">Empty slots open the bottom-sheet modal when tapped</div>
+  <div class="bw-slot-card bw-slot-card--empty">
+    <div class="bw-slot-card__plus-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #1e3a8a))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+    </div>
+    <span class="bw-slot-card__label">Pants</span>
+  </div>
+  <div class="bw-slot-card bw-slot-card--filled">
+    <div class="bw-slot-card__image-wrapper">
+      <img src="${PLACEHOLDER_IMG}" alt="Selected product" loading="lazy">
+    </div>
+    <div style="padding: 6px 6px 8px; font-size: 11px; font-weight: 600; color: #111; line-height: 1.3;">Classic Tee</div>
+  </div>
 </div>`.trim();
 
     return (
@@ -393,7 +384,10 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
         <Text as="h3" variant="headingLg" fontWeight="semibold">
           Widget Style
         </Text>
-        <div style={{ marginTop: "24px", display: "inline-block" }}>
+        <Text as="p" variant="bodySm" tone="subdued">
+          Slot cards — bottom-sheet mode
+        </Text>
+        <div style={{ marginTop: "32px", display: "inline-block" }}>
           <HighlightBox active>
             {/* eslint-disable-next-line react/no-danger */}
             <div dangerouslySetInnerHTML={{ __html: widgetStyleHTML }} />
@@ -401,7 +395,7 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
         </div>
         <div style={{ marginTop: "16px" }}>
           <Text as="p" variant="bodySm" tone="subdued">
-            Empty: dashed border (tap to open sheet) · Filled: solid border + checkmark · Badge: free/discounted step
+            Empty slots open the product picker sheet when tapped
           </Text>
         </div>
       </div>
