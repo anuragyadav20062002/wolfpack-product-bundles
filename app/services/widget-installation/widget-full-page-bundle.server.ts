@@ -14,7 +14,7 @@ import type { FullPageBundleResult } from "./types";
 
 interface ShopSession {
   shop: string;
-  accessToken: string | null | undefined;
+  accessToken?: string | null;
 }
 
 /**

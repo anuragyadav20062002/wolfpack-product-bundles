@@ -1056,6 +1056,8 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     const sidebarProps = {
       highlightTarget,
       footerBgColor,
+      footerBorderRadius,
+      footerPadding,
       footerStrikePriceColor,
       footerStrikeFontSize,
       footerStrikeFontWeight,
@@ -1136,6 +1138,8 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
   const sharedSidebarProps = {
     highlightTarget,
     footerBgColor,
+    footerBorderRadius,
+    footerPadding,
     footerStrikePriceColor,
     footerStrikeFontSize,
     footerStrikeFontWeight,

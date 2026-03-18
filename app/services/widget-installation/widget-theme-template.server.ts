@@ -21,7 +21,7 @@ export interface TemplateEnsureResult {
 
 interface ShopSession {
   shop: string;
-  accessToken: string | null | undefined;
+  accessToken?: string | null;
 }
 
 const TEMPLATE_KEY = "templates/page.full-page-bundle.json";

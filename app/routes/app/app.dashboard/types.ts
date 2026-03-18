@@ -8,7 +8,7 @@ import type { BundleStatus, BundleType } from "../../../constants/bundle";
 
 export interface BundleActionsButtonsProps {
   bundleId: string;
-  bundleType: BundleType;
+  bundleType: BundleType | string;
   onEdit: (bundle: any) => void;
   onClone: (bundleId: string) => void;
   onDelete: (bundleId: string) => void;

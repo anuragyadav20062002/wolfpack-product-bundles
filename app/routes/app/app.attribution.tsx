@@ -8,6 +8,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { Badge, BlockStack, Box, Button, Card, InlineStack, Page, Select, Text } from "@shopify/polaris";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../../shopify.server";
 import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
 import db from "../../db.server";
@@ -277,6 +278,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 // ─── Pixel Status Card ────────────────────────────────────────
 
 function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
+  const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
   const isSubmitting = fetcher.state !== "idle";
 
@@ -368,9 +370,9 @@ export default function AttributionDashboard() {
   const ordersGrowth = formatGrowth(summary.totalOrders, summary.prevTotalOrders);
   const aovGrowth = formatGrowth(summary.aov, summary.prevAov);
 
-  const chartTooltipFormatter = useCallback((value: number, name: string) => {
-    if (name === "revenue") return [formatRevenue(value), "Revenue"];
-    return [value, "Orders"];
+  const chartTooltipFormatter = useCallback((value: any, name: any): [string | number, string] => {
+    if (name === "revenue") return [formatRevenue(value as number), "Revenue"];
+    return [value as number, "Orders"];
   }, []);
 
   const chartXFormatter = useCallback((dateKey: string) => formatDateKey(dateKey), []);

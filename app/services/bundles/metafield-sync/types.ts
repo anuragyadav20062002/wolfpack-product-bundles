@@ -110,6 +110,7 @@ export interface BundleUiMessaging {
   progressTemplate: string;
   successTemplate: string;
   showFooter: boolean;
+  showDiscountMessaging?: boolean;
 }
 
 /**

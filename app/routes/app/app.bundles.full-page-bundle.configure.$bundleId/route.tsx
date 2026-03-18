@@ -90,10 +90,10 @@ import {
 
 // Types - extracted to separate module for better organization
 import type {
-  BundleStatus,
   LoaderData,
   BundleStatusSectionProps,
 } from "./types";
+import type { BundleStatus } from "../../../constants/bundle";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -293,7 +293,14 @@ const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps
 BundleStatusSection.displayName = 'BundleStatusSection';
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle } = useLoaderData<LoaderData>();
+  const loaderData = useLoaderData<LoaderData>();
+  const bundle = loaderData.bundle as unknown as import("../../../hooks/useBundleConfigurationState").BundleData & {
+    promoBannerBgImage?: string | null;
+    promoBannerBgImageCrop?: string | null;
+    loadingGif?: string | null;
+    shopifyProductHandle?: string;
+  };
+  const { bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle } = loaderData;
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -573,6 +580,7 @@ export default function ConfigureBundleFlow() {
             name: formState.bundleName,
             description: formState.bundleDescription,
             templateName: formState.templateName,
+            fullPageLayout: formState.fullPageLayout,
             steps: JSON.stringify(stepsState.steps),
             discountEnabled: pricingState.discountEnabled,
             discountType: pricingState.discountType,
@@ -1503,7 +1511,7 @@ export default function ConfigureBundleFlow() {
                         label="Bundle Status"
                         options={statusOptions}
                         value={formState.bundleStatus}
-                        onChange={(selected: string) => formState.setBundleStatus(selected as 'active' | 'draft' | 'archived')}
+                        onChange={(selected: string) => formState.setBundleStatus(selected as BundleStatus)}
                         labelHidden
                       />
                     </BlockStack>

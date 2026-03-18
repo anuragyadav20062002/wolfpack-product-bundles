@@ -37,7 +37,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    const payload = await request.json() as Record<string, unknown>;
+    const payload = await request.json() as Record<string, any>;
 
     const {
       orderId,

@@ -87,11 +87,11 @@ import {
 
 // Types - extracted to separate module for better organization
 import type {
-  BundleStatus,
   LoaderData,
   BundleStatusSectionProps,
   BundleProductCardProps,
 } from "./types";
+import type { BundleStatus } from "../../../constants/bundle";
 
 declare global {
   interface Window {
@@ -340,7 +340,7 @@ const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps
       label="Bundle Status"
       options={statusOptions}
       value={status}
-      onChange={(selected: string) => onChange(selected as 'active' | 'draft' | 'archived')}
+      onChange={(selected: string) => onChange(selected as BundleStatus)}
       labelHidden
     />
   </BlockStack>
@@ -349,7 +349,12 @@ const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps
 BundleStatusSection.displayName = 'BundleStatusSection';
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle } = useLoaderData<LoaderData>();
+  const loaderData = useLoaderData<LoaderData>();
+  const bundle = loaderData.bundle as unknown as import("../../../hooks/useBundleConfigurationState").BundleData & {
+    loadingGif?: string | null;
+    shopifyProductHandle?: string;
+  };
+  const { bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle } = loaderData;
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();

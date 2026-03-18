@@ -327,6 +327,31 @@ model DesignSettings {
   toastBoxShadow              String? @default("0 4px 12px rgba(0, 0, 0, 0.15)")
   toastEnterFromBottom        Boolean @default(false)
 
+  // Pricing Tier Pills
+  tierPillActiveBgColor       String? @default("#111111")
+  tierPillActiveTextColor     String? @default("#FFFFFF")
+  tierPillInactiveBgColor     String? @default("#F2FAE6")
+  tierPillInactiveTextColor   String? @default("#333333")
+  tierPillHoverBgColor        String? @default("#DCF5D2")
+  tierPillBorderColor         String? @default("#000000")
+  tierPillBorderRadius        Int?    @default(8)
+  tierPillHeight              Int?    @default(52)
+  tierPillGap                 Int?    @default(12)
+  tierPillFontSize            Int?    @default(14)
+  tierPillFontWeight          Int?    @default(600)
+
+  // Loading Overlay
+  loadingOverlayBgColor       String? @default("rgba(255,255,255,0.85)")
+  loadingOverlayTextColor     String? @default("#333333")
+
+  // Widget Style & Bottom Sheet
+  widgetStyle                 String? @default("classic")
+  bottomSheetOverlayOpacity   Float?  @default(0.5)
+  bottomSheetAnimationDuration Int?   @default(400)
+  emptySlotBorderStyle        String? @default("dashed")
+  emptySlotBorderColor        String? @default("#007AFF")
+  freeGiftBadgeUrl            String? @default("")
+
   // Advanced Settings - Custom CSS
   customCss                   String?
 

@@ -56,7 +56,7 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
             max={80}
             step={5}
             output
-            onChange={(val) => onUpdate("bottomSheetOverlayOpacity", val / 100)}
+            onChange={(val) => onUpdate("bottomSheetOverlayOpacity", (val as number) / 100)}
             suffix={`${Math.round((settings.bottomSheetOverlayOpacity ?? 0.5) * 100)}%`}
           />
 
@@ -67,7 +67,7 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
             max={600}
             step={50}
             output
-            onChange={(val) => onUpdate("bottomSheetAnimationDuration", val)}
+            onChange={(val) => onUpdate("bottomSheetAnimationDuration", val as number)}
             suffix={`${settings.bottomSheetAnimationDuration ?? 400}ms`}
           />
 
