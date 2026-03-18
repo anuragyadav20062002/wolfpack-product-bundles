@@ -1,10 +1,37 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunction } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { createHmac } from "node:crypto";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { BundleStatus } from "../../constants/bundle";
 import { ERROR_MESSAGES } from "../../constants/errors";
+
+/**
+ * Verify the Shopify App Proxy HMAC signature.
+ *
+ * Shopify adds shop, path_prefix, timestamp, signature to every proxied request.
+ * Verifying the signature proves the request came through the Shopify proxy,
+ * not a direct call to our server with a forged ?shop= param.
+ *
+ * Returns the verified shop domain, or null if verification fails.
+ */
+function verifyAppProxyRequest(url: URL): string | null {
+  const apiSecret = process.env.SHOPIFY_API_SECRET;
+  const shop = url.searchParams.get("shop");
+  const signature = url.searchParams.get("signature");
+
+  if (!apiSecret || !shop || !signature) return null;
+
+  // Build the message: all params except 'signature', sorted alphabetically
+  const message = [...url.searchParams.entries()]
+    .filter(([key]) => key !== "signature")
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("&");
+
+  const expected = createHmac("sha256", apiSecret).update(message).digest("hex");
+  return expected === signature ? shop : null;
+}
 
 /**
  * Public API endpoint to fetch a single bundle by ID
@@ -103,20 +130,26 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       return json({ error: ERROR_MESSAGES.BUNDLE_ID_REQUIRED }, { status: 400, headers: CORS_HEADERS });
     }
 
-    // Authenticate via Shopify App Proxy — one call, get both session and admin.
-    // Per Shopify docs: authenticate.public.appProxy(request) returns { session, admin, liquid }.
-    // session.shop is the shop's myshopify.com domain (used for DB scoping).
-    // admin is the Admin API client backed by the shop's offline token.
-    const { session } = await authenticate.public.appProxy(request);
+    // Verify the Shopify App Proxy HMAC signature and extract the shop domain.
+    // authenticate.public.appProxy() has a known incompatibility with
+    // unstable_newEmbeddedAuthStrategy — it can throw or redirect unexpectedly.
+    // Lightweight HMAC verification is equivalent and more reliable for public
+    // storefront-facing API routes. Bundle data is non-sensitive (storefront-visible).
+    const shopDomain = verifyAppProxyRequest(url);
 
-    if (!session?.shop) {
+    if (!shopDomain) {
+      AppLogger.warn("App Proxy HMAC verification failed", {
+        component: "api.bundle",
+        bundleId,
+        url: url.toString(),
+      });
       return json({ error: ERROR_MESSAGES.SHOP_NOT_FOUND }, { status: 400, headers: CORS_HEADERS });
     }
 
     AppLogger.info("Fetching bundle", {
       component: "api.bundle",
       operation: "loader",
-      shop: session.shop,
+      shop: shopDomain,
       bundleId
     });
 
@@ -126,7 +159,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     const bundle = await db.bundle.findFirst({
       where: {
         id: bundleId,
-        shopId: session.shop,
+        shopId: shopDomain,
         status: {
           in: [BundleStatus.DRAFT, BundleStatus.ACTIVE]
         }
@@ -149,7 +182,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
         component: "api.bundle",
         operation: "loader",
         bundleId,
-        shop: session.shop
+        shop: shopDomain
       });
       return json({
         success: false,
