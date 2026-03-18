@@ -373,26 +373,6 @@
   transform: translateY(-1px);
 }
 
-/* Discount pill - positioned at top-right of widget */
-.bundle-discount-pill {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 10;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 20px;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-}
-
 /* Price display on button */
 .add-bundle-to-cart .button-price {
   display: inline-flex;

@@ -1250,29 +1250,12 @@ class BundleWidgetProductPage {
       }
       button.disabled = true;
       button.classList.add('disabled');
-      this.updateDiscountPill(null);
     } else {
       // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
       const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
 
-      if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
-        const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-
-        // Calculate discount percentage for the top-right pill
-        const discountPercentage = Math.round(((totalPrice - discountInfo.finalPrice) / totalPrice) * 100);
-        this.updateDiscountPill(discountPercentage > 0 ? discountPercentage : null);
-
-        button.innerHTML = `
-          <span class="button-price-wrapper">
-            <span class="button-price-strike">${originalPrice}</span>
-            <span class="button-price-final">Add Bundle to Cart &bull; ${formattedPrice}</span>
-          </span>
-        `;
-      } else {
-        button.textContent = `Add Bundle to Cart \u2022 ${formattedPrice}`;
-        this.updateDiscountPill(null);
-      }
+      button.textContent = `Add Bundle to Cart \u2022 ${formattedPrice}`;
 
       button.disabled = false;
       button.classList.remove('disabled');
@@ -1297,24 +1280,6 @@ class BundleWidgetProductPage {
     }
   }
 
-  // Update or create the discount pill in the top-right of the widget
-  updateDiscountPill(discountPercentage) {
-    let pill = this.container.querySelector('.bundle-discount-pill');
-
-    if (!discountPercentage) {
-      // Remove pill if no discount
-      if (pill) pill.remove();
-      return;
-    }
-
-    if (!pill) {
-      pill = document.createElement('span');
-      pill.className = 'bundle-discount-pill';
-      this.container.appendChild(pill);
-    }
-
-    pill.textContent = `${discountPercentage}% off`;
-  }
   // ========================================================================
   // MODAL FUNCTIONALITY
   // ========================================================================
