@@ -594,6 +594,13 @@ export default function ConfigureBundleFlow() {
             productStatus: productStatus,
           };
 
+          // Update discard baselines for fields managed outside originalValuesRef
+          originalPromoBannerBgImageRef.current = promoBannerBgImage;
+          originalPromoBannerBgImageCropRef.current = promoBannerBgImageCrop;
+          originalLoadingGifRef.current = loadingGif;
+          originalTierConfigRef.current = tierConfig;
+          originalShowStepTimelineRef.current = showStepTimeline;
+
           // Reset dirty flag after successful save
           setIsDirty(false);
 

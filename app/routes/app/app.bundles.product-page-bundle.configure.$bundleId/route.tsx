@@ -585,6 +585,8 @@ export default function ConfigureBundleFlow() {
         // Check if this was a save bundle action by looking for bundle data in response
         if ('bundle' in result && result.bundle) {
           // This is a save bundle response
+          // Update discard baseline for fields managed outside the hook
+          originalLoadingGifRef.current = loadingGif;
           // Mark state as saved (updates baseline ref and resets dirty flag)
           markAsSaved();
 
