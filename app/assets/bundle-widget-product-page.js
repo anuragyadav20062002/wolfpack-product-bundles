@@ -2129,17 +2129,12 @@ class BundleWidgetProductPage {
 
     if (!prevButton || !nextButton) return;
 
-    prevButton.disabled = this.currentStepIndex === 0;
+    // Buttons are never disabled — navigateModal handles invalid steps with a toast.
+    prevButton.disabled = false;
 
-    const isCurrentStepValid = this.validateStep(this.currentStepIndex);
-
-    if (this.currentStepIndex === this.selectedBundle.steps.length - 1) {
-      nextButton.textContent = 'Done';
-      nextButton.disabled = !isCurrentStepValid;
-    } else {
-      nextButton.textContent = 'Next';
-      nextButton.disabled = !isCurrentStepValid;
-    }
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+    nextButton.textContent = isLastStep ? 'Done' : 'Next';
+    nextButton.disabled = false;
   }
 
   updateModalFooterMessaging() {

@@ -23,4 +23,4 @@ Two UI issues on the PDP product-page widget:
 ## Phases Checklist
 - [x] Phase 1: Remove savings badge JS + CSS
 - [x] Phase 2: Fix ATC button to show only final price
-- [ ] Phase 3: Back/Next button toast-on-block (separate task)
+- [x] Phase 3: Back/Next buttons never disabled — toast fires on invalid navigation
