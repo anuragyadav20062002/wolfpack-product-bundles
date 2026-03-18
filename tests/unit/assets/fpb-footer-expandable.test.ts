@@ -13,6 +13,8 @@
  * DOM-toggle behaviour is tested via a minimal fake-DOM stub.
  */
 
+export {};
+
 // ============================================================
 // Pure helpers — mirror what will be in bundle-widget-full-page.js
 // ============================================================

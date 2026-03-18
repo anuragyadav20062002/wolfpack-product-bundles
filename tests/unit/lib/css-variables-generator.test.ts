@@ -6,7 +6,7 @@
  */
 
 import { generateCSSVariables } from '../../../app/lib/css-generators/css-variables-generator';
-import type { CSSGenerationContext } from '../../../app/lib/css-generators/css-variables-generator';
+import type { CSSGenerationContext } from '../../../app/lib/css-generators/types';
 
 // Minimal valid context
 function makeCtx(overrides: Partial<CSSGenerationContext['settings']> = {}): CSSGenerationContext {
@@ -28,6 +28,8 @@ function makeCtx(overrides: Partial<CSSGenerationContext['settings']> = {}): CSS
     globalSecondaryText: '#666666',
     globalFooterBg: '#FFFFFF',
     globalFooterText: '#111111',
+    bundleType: 'product_page',
+    customCss: '',
   };
 }
 

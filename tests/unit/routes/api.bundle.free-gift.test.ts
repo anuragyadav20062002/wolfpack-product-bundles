@@ -110,7 +110,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
   describe('isFreeGift field', () => {
     it('returns isFreeGift=false by default when not set on step', async () => {
       mockFindFirst().mockResolvedValue(makeBundle([makeBaseStep()]));
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
       expect(data.bundle.steps[0].isFreeGift).toBe(false);
     });
@@ -119,7 +119,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
       mockFindFirst().mockResolvedValue(
         makeBundle([makeBaseStep({ isFreeGift: true, freeGiftName: 'cap' })])
       );
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
       expect(data.bundle.steps[0].isFreeGift).toBe(true);
     });
@@ -128,7 +128,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
   describe('freeGiftName field', () => {
     it('returns freeGiftName=null when not set', async () => {
       mockFindFirst().mockResolvedValue(makeBundle([makeBaseStep()]));
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
       expect(data.bundle.steps[0].freeGiftName).toBeNull();
     });
@@ -137,7 +137,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
       mockFindFirst().mockResolvedValue(
         makeBundle([makeBaseStep({ isFreeGift: true, freeGiftName: 'greeting card' })])
       );
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
       expect(data.bundle.steps[0].freeGiftName).toBe('greeting card');
     });
@@ -146,7 +146,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
   describe('isDefault field', () => {
     it('returns isDefault=false by default', async () => {
       mockFindFirst().mockResolvedValue(makeBundle([makeBaseStep()]));
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
       expect(data.bundle.steps[0].isDefault).toBe(false);
     });
@@ -155,7 +155,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
       mockFindFirst().mockResolvedValue(
         makeBundle([makeBaseStep({ isDefault: true, defaultVariantId: 'gid://shopify/ProductVariant/123' })])
       );
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
       expect(data.bundle.steps[0].isDefault).toBe(true);
     });
@@ -164,7 +164,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
   describe('defaultVariantId field', () => {
     it('returns defaultVariantId=null when not set', async () => {
       mockFindFirst().mockResolvedValue(makeBundle([makeBaseStep()]));
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
       expect(data.bundle.steps[0].defaultVariantId).toBeNull();
     });
@@ -174,7 +174,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
       mockFindFirst().mockResolvedValue(
         makeBundle([makeBaseStep({ isDefault: true, defaultVariantId: variantId })])
       );
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
       expect(data.bundle.steps[0].defaultVariantId).toBe(variantId);
     });
@@ -188,7 +188,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
         makeBaseStep({ id: 'step-gift', isFreeGift: true, freeGiftName: 'cap', minQuantity: 0 }),
       ];
       mockFindFirst().mockResolvedValue(makeBundle(steps));
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
 
       expect(data.bundle.steps[0].isDefault).toBe(true);
@@ -221,7 +221,7 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
         // NOTE: new fields absent (simulating pre-migration row)
       };
       mockFindFirst().mockResolvedValue(makeBundle([oldStep as any]));
-      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} });
+      const res = await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
       const data = await res.json();
 
       expect(data.bundle.steps[0].isFreeGift).toBe(false);

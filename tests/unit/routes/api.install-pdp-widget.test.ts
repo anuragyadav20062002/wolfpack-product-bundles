@@ -63,7 +63,7 @@ describe('POST /api/install-pdp-widget', () => {
     });
     const response = await action({ request, params: {}, context: {} } as any);
     expect(response.status).toBe(405);
-    const body = await response.json();
+    const body: any = await response.json();
     expect(body.success).toBe(false);
   });
 
@@ -76,7 +76,7 @@ describe('POST /api/install-pdp-widget', () => {
 
     const request = makeRequest({ productHandle: 'my-bundle', bundleId: 'bundle-1' });
     const response = await action({ request, params: {}, context: {} } as any);
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
@@ -98,7 +98,7 @@ describe('POST /api/install-pdp-widget', () => {
 
     const request = makeRequest({ productHandle: 'my-bundle' });
     const response = await action({ request, params: {}, context: {} } as any);
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
@@ -113,7 +113,7 @@ describe('POST /api/install-pdp-widget', () => {
 
     const request = makeRequest({ productHandle: 'my-bundle' });
     const response = await action({ request, params: {}, context: {} } as any);
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(response.status).toBe(500);
     expect(body.success).toBe(false);
@@ -121,11 +121,11 @@ describe('POST /api/install-pdp-widget', () => {
   });
 
   it('returns 500 when SHOPIFY_API_KEY is not set', async () => {
-    delete process.env.SHOPIFY_API_KEY;
+    delete (process.env as Record<string, string | undefined>).SHOPIFY_API_KEY;
 
     const request = makeRequest({ productHandle: 'my-bundle' });
     const response = await action({ request, params: {}, context: {} } as any);
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(response.status).toBe(500);
     expect(body.success).toBe(false);
@@ -136,7 +136,7 @@ describe('POST /api/install-pdp-widget', () => {
 
     const request = makeRequest({ productHandle: 'my-bundle' });
     const response = await action({ request, params: {}, context: {} } as any);
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(response.status).toBe(500);
     expect(body.success).toBe(false);
@@ -152,7 +152,7 @@ describe('POST /api/install-pdp-widget', () => {
 
     const request = makeRequest({});
     const response = await action({ request, params: {}, context: {} } as any);
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);

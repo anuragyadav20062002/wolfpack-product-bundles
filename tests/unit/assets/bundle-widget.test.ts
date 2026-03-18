@@ -214,7 +214,7 @@ describe('Bundle Widget JavaScript', () => {
 
       // Mock bundle selection logic
       const selectBundle = (bundlesData: any, config: any) => {
-        const bundles = Object.values(bundlesData).filter((bundle: any) => 
+        const bundles: any[] = Object.values(bundlesData).filter((bundle: any) =>
           bundle.status === 'active'
         );
 
@@ -237,7 +237,7 @@ describe('Bundle Widget JavaScript', () => {
 
       const selectedBundle = selectBundle(bundlesData, config);
       expect(selectedBundle).toBeDefined();
-      expect(selectedBundle.id).toBe('bundle-1');
+      expect((selectedBundle as any).id).toBe('bundle-1');
     });
 
     it('should handle theme editor context detection', () => {
@@ -283,8 +283,8 @@ describe('Bundle Widget JavaScript', () => {
           const productsInStep = stepProductData[stepIndex] || [];
 
           Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-            const product = productsInStep.find(p => p.id === variantId);
-            if (product && quantity > 0) {
+            const product = productsInStep.find((p: any) => p.id === variantId);
+            if (product && (quantity as any) > 0) {
               const price = parseFloat(product.price) || 0;
               totalPrice += price * (quantity as number);
               totalQuantity += quantity as number;
@@ -467,11 +467,11 @@ describe('Bundle Widget JavaScript', () => {
           const productsInStep = stepProductData[stepIndex] || [];
 
           Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-            const product = productsInStep.find(p => p.id === variantId);
-            if (product && quantity > 0) {
+            const product = productsInStep.find((p: any) => p.id === variantId);
+            if (product && (quantity as any) > 0) {
               cartItems.push({
                 id: variantId,
-                quantity: quantity,
+                quantity: quantity as any,
                 properties: {
                   '_bundle_id': bundleId,
                   '_bundle_config': JSON.stringify({
@@ -630,7 +630,7 @@ describe('Bundle Widget JavaScript', () => {
           return { success: true };
         } catch (error) {
           mockWindow.console.error('Network error:', error);
-          return { success: false, error: error.message };
+          return { success: false, error: (error as Error).message };
         }
       };
 

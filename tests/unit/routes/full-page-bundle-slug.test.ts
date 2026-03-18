@@ -90,7 +90,7 @@ describe('handleValidateWidgetPlacement', () => {
     (getDb().bundle.update as jest.Mock).mockResolvedValue({});
 
     const response = await handleValidateWidgetPlacement(mockAdmin, mockSession, bundleId, 'custom-slug');
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(mockCreateFullPageBundle).toHaveBeenCalledWith(
       mockAdmin,
@@ -134,7 +134,7 @@ describe('handleValidateWidgetPlacement', () => {
     (getDb().bundle.update as jest.Mock).mockResolvedValue({});
 
     const response = await handleValidateWidgetPlacement(mockAdmin, mockSession, bundleId);
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(mockCreateFullPageBundle).toHaveBeenCalledWith(
       mockAdmin, mockSession, expect.any(String), bundleId, 'My Kit', undefined
@@ -167,7 +167,7 @@ describe('handleRenamePageSlug', () => {
     (getDb().bundle.update as jest.Mock).mockResolvedValue({});
 
     const response = await handleRenamePageSlug(mockAdmin, mockSession, bundleId, 'new-slug');
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(mockRenamePageHandle).toHaveBeenCalledWith(
       mockAdmin,
@@ -206,7 +206,7 @@ describe('handleRenamePageSlug', () => {
     });
 
     const response = await handleRenamePageSlug(mockAdmin, mockSession, bundleId, 'new-slug');
-    const body = await response.json();
+    const body: any = await response.json();
 
     expect(response.status).toBe(400);
     expect(body.error).toContain('Handle is already taken');
