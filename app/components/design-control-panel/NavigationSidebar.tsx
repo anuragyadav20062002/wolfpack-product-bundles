@@ -6,8 +6,10 @@
 
 import { Text, Divider, Collapsible } from "@shopify/polaris";
 import { NavigationItem } from "./NavigationItem";
+import { BundleType } from "../../constants/bundle";
 
 interface NavigationSidebarProps {
+  bundleType: BundleType;
   expandedSection: string | null;
   activeSubSection: string;
   onToggleSection: (section: string) => void;
@@ -15,11 +17,13 @@ interface NavigationSidebarProps {
 }
 
 export function NavigationSidebar({
+  bundleType,
   expandedSection,
   activeSubSection,
   onToggleSection,
   onSubSectionClick,
 }: NavigationSidebarProps) {
+  const isFullPage = bundleType === BundleType.FULL_PAGE;
   return (
     <div
       style={{
@@ -237,25 +241,29 @@ export function NavigationSidebar({
         />
       </Collapsible>
 
-      <Divider />
+      {isFullPage && <Divider />}
 
-      {/* Promo Banner Section (Full-Page Bundles) */}
-      <NavigationItem
-        label="Promo Banner"
-        sectionKey="promoBanner"
-        onClick={() => onSubSectionClick("promoBanner")}
-        isExpanded={expandedSection === "promoBanner"}
-        isActive={activeSubSection === "promoBanner"}
-      />
+      {/* Promo Banner Section (Full-Page Bundles only) */}
+      {isFullPage && (
+        <NavigationItem
+          label="Promo Banner"
+          sectionKey="promoBanner"
+          onClick={() => onSubSectionClick("promoBanner")}
+          isExpanded={expandedSection === "promoBanner"}
+          isActive={activeSubSection === "promoBanner"}
+        />
+      )}
 
-      {/* Pricing Tier Pills (Full-Page Bundles) */}
-      <NavigationItem
-        label="Pricing Tier Pills"
-        sectionKey="tierPills"
-        onClick={() => onSubSectionClick("tierPills")}
-        isExpanded={expandedSection === "tierPills"}
-        isActive={activeSubSection === "tierPills"}
-      />
+      {/* Pricing Tier Pills (Full-Page Bundles only) */}
+      {isFullPage && (
+        <NavigationItem
+          label="Pricing Tier Pills"
+          sectionKey="tierPills"
+          onClick={() => onSubSectionClick("tierPills")}
+          isExpanded={expandedSection === "tierPills"}
+          isActive={activeSubSection === "tierPills"}
+        />
+      )}
     </div>
   );
 }
