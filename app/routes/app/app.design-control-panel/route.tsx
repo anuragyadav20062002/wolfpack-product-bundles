@@ -437,8 +437,8 @@ export default function DesignControlPanel() {
         </Modal>
 
         {/* ── CSS Guide Modal ─────────────────────────────────────────────────── */}
-        <Modal id="css-guide-modal">
-          <div style={{ padding: "20px", overflowY: "auto", maxHeight: "80vh" }}>
+        <Modal id="css-guide-modal" variant="max">
+          <div style={{ padding: "20px" }}>
             <CssGuideContent />
           </div>
         </Modal>
