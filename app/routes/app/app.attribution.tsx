@@ -410,6 +410,14 @@ export default function AttributionDashboard() {
 
   const chartXFormatter = useCallback((dateKey: string) => formatDateKey(dateKey), []);
 
+  // Show ~6-8 evenly spaced ticks depending on timeframe
+  const xAxisInterval = useMemo(() => {
+    const count = timeSeries.length;
+    if (count <= 8) return 0;          // ≤8 points: every day
+    if (count <= 31) return 4;         // 30-day window: every 5th day
+    return Math.floor(count / 8);      // 90-day window: ~every 11 days
+  }, [timeSeries.length]);
+
   const hasNoData = summary.totalOrders === 0 && summary.prevTotalOrders === 0;
 
   return (
@@ -549,7 +557,7 @@ export default function AttributionDashboard() {
                     tick={{ fontSize: 11, fill: "#8c9196" }}
                     axisLine={false}
                     tickLine={false}
-                    interval="preserveStartEnd"
+                    interval={xAxisInterval}
                   />
                   <YAxis
                     tickFormatter={formatRevenueShort}
