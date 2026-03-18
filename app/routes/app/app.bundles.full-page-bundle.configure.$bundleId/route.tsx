@@ -1296,7 +1296,12 @@ export default function ConfigureBundleFlow() {
       // For product templates, template format is just: {handle}
       const templateParam = template.isPage ? 'page.full-page-bundle' : template.handle;
 
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection`;
+      // previewPath tells the theme editor which specific page to open for preview.
+      // Without it, Shopify defaults to whatever page happens to use the template suffix,
+      // which is the wrong page and causes a "bundle not found" 404 in the widget.
+      const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
+
+      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
 
       AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
         templateParam,
