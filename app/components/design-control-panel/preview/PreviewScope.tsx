@@ -15,7 +15,7 @@
  * do not overlap with Polaris class names, so no CSS scoping is needed.
  */
 
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import type { DesignSettings } from '../../../types/state.types';
 import { settingsToCSSVarRecord } from '../../../lib/preview-css-vars';
 // Vite ?raw imports — bundle both CSS files as strings at build time.
@@ -37,7 +37,9 @@ export function PreviewScope({ settings, children }: PreviewScopeProps) {
   // The style elements are shared across all sub-previews and never removed.
   // Both CSS files are needed: full-page has layout styles; bundle-widget.css has
   // component class styles (.bundle-header-tab, .empty-state-card, etc.).
-  useEffect(() => {
+  // useLayoutEffect fires synchronously after DOM mutation but before the browser paints,
+  // preventing a flash of unstyled content (FOUC) on first render.
+  useLayoutEffect(() => {
     if (!document.getElementById(STYLE_ID)) {
       const el = document.createElement('style');
       el.id = STYLE_ID;
