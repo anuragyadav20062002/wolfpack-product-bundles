@@ -19,14 +19,11 @@ import {
   InlineStack,
   TextField,
   Select,
-  EmptyState,
   Checkbox,
 } from "@shopify/polaris";
 import { DeleteIcon, PlusIcon } from "@shopify/polaris-icons";
 import type { TierConfigEntry } from "../types/tier-config";
 
-const TIERS_EMPTY_SVG =
-  "data:image/svg+xml,%3Csvg viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='8' y='10' width='44' height='11' rx='4' fill='%23C9CCCF'/%3E%3Crect x='8' y='25' width='32' height='11' rx='4' fill='%23C9CCCF'/%3E%3Crect x='8' y='40' width='20' height='11' rx='4' fill='%23C9CCCF'/%3E%3C/svg%3E";
 
 interface PricingTiersSectionProps {
   tiers: TierConfigEntry[];
@@ -112,14 +109,14 @@ export function PricingTiersSection({
           <Divider />
 
           {tiers.length === 0 ? (
-            <EmptyState
-              heading="No pricing tiers configured"
-              image={TIERS_EMPTY_SVG}
-            >
-              <Text as="p" variant="bodySm" tone="subdued">
+            <BlockStack gap="200" inlineAlign="center">
+              <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
+                No pricing tiers configured.
+              </Text>
+              <Text as="p" variant="bodySm" tone="subdued" alignment="center">
                 Add at least 2 tiers to enable the tier pill selector on this bundle page.
               </Text>
-            </EmptyState>
+            </BlockStack>
           ) : (
             <BlockStack gap="300">
               {tiers.map((tier, index) => (
