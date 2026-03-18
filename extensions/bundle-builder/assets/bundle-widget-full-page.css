@@ -3748,9 +3748,10 @@ body.modal-open {
 /* Floating card anchored above the bottom edge — matches the floating card layout. */
 .full-page-footer.floating-card {
   position: fixed !important;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 48px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: calc(100% - 32px);
   max-width: 800px;
   z-index: 1000;
@@ -4036,7 +4037,7 @@ body.modal-open {
 
 @media (max-width: 480px) {
   .full-page-footer.floating-card {
-    bottom: 12px;
+    bottom: 20px;
     width: calc(100% - 16px);
     border-radius: 14px;
   }

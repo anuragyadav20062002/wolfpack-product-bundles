@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-18
-**Last Updated:** 2026-03-18 01:00
+**Last Updated:** 2026-03-18 02:00
 
 ## Overview
 
@@ -48,3 +48,20 @@ Two changes:
 - `docs/fpb-auto-widget-install/00-BR.md` (created)
 - `docs/fpb-auto-widget-install/02-PO-requirements.md` (created)
 - `docs/fpb-auto-widget-install/03-architecture.md` (created)
+
+### 2026-03-18 02:00 - Phase 2 Bug Fix: Floating Card Positioning
+
+Inspected live Beco reference via Chrome DevTools and found two bugs in our implementation:
+
+**Bug 1 — Wrong `bottom` offset:**
+- We used `bottom: 24px`; Beco uses `bottom: 48px`
+- Fixed: `bottom: 24px` → `48px` (desktop), `12px` → `20px` (mobile <480px)
+
+**Bug 2 — `transform` breaks `position: fixed` backdrop (critical):**
+- We centered with `left: 50%; transform: translateX(-50%)`
+- CSS `transform` creates a new containing block for `position: fixed` descendants
+- This meant our backdrop (`position: fixed; inset: 0`) only covered the card area, not the full viewport
+- Clicking outside the card would NOT dismiss the expanded panel
+- Fixed: changed to `left: 0; right: 0; margin: 0 auto` (matches Beco's exact approach)
+
+- ✅ WIDGET_VERSION 1.8.1 → 1.8.2; bundle rebuilt (244.3 KB)
