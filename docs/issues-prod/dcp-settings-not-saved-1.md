@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-19 23:30
+**Last Updated:** 2026-03-20 00:15
 
 ## Overview
 `buildSettingsData()` in `handlers.server.ts` was never updated when new direct Prisma columns were added to `DesignSettings`. As a result, ~40 fields are tracked dirty in the DCP UI, appear to save (success toast shown), but are silently dropped — the DB upsert never writes them. On page reload, `mergeSettings` correctly reads the columns but they're still at their default values since they were never persisted.
@@ -24,7 +24,16 @@ Also: the configure page save effect does not update the discard baselines for 5
 - Phase 3: ESLint clean (0 errors), committed
 - Files changed: `app/routes/app/app.design-control-panel/handlers.server.ts`, `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
 
+### 2026-03-20 00:15 - DCP modal bundle-type filtering + Analytics improvements
+- NavigationSidebar: Bundle Header section now gated with `{isFullPage && ...}` — Tabs + Header Text hidden for product-page bundles
+- NavigationSidebar: Modal Close Button + Widget Style items now gated with `{!isFullPage && ...}` — hidden for full-page bundles
+- Analytics: Banner (UTM not enabled / no data) moved to top of page, above PixelStatusCard
+- Analytics: PixelStatusCard redesigned — colored status strip, pulsing dot indicator, cleaner layout, larger CTA button
+- Files: `NavigationSidebar.tsx`, `app.attribution.tsx`
+
 ## Phases Checklist
 - [x] Phase 1: Fix `buildSettingsData` — add all missing direct columns
 - [x] Phase 2: Fix configure route discard baseline refs after save
 - [x] Phase 3: ESLint, lint, commit
+- [x] Phase 4: DCP modal bundle-type settings filtering
+- [x] Phase 5: Analytics banner position + PixelStatusCard redesign

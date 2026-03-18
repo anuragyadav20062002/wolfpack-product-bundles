@@ -168,31 +168,35 @@ export function NavigationSidebar({
         />
       </Collapsible>
 
-      {/* Bundle Header Section */}
-      <NavigationItem
-        label="Bundle Header"
-        sectionKey="bundleHeader"
-        hasChildren
-        onClick={() => onToggleSection("bundleHeader")}
-        isExpanded={expandedSection === "bundleHeader"}
-        isActive={false}
-      />
-      <Collapsible open={expandedSection === "bundleHeader"} id="bundleHeader-collapsible">
-        <NavigationItem
-          label="Tabs"
-          sectionKey="headerTabs"
-          isChild
-          onClick={() => onSubSectionClick("headerTabs")}
-          isActive={activeSubSection === "headerTabs"}
-        />
-        <NavigationItem
-          label="Header Text"
-          sectionKey="headerText"
-          isChild
-          onClick={() => onSubSectionClick("headerText")}
-          isActive={activeSubSection === "headerText"}
-        />
-      </Collapsible>
+      {/* Bundle Header Section (Full-Page Bundles only) */}
+      {isFullPage && (
+        <>
+          <NavigationItem
+            label="Bundle Header"
+            sectionKey="bundleHeader"
+            hasChildren
+            onClick={() => onToggleSection("bundleHeader")}
+            isExpanded={expandedSection === "bundleHeader"}
+            isActive={false}
+          />
+          <Collapsible open={expandedSection === "bundleHeader"} id="bundleHeader-collapsible">
+            <NavigationItem
+              label="Tabs"
+              sectionKey="headerTabs"
+              isChild
+              onClick={() => onSubSectionClick("headerTabs")}
+              isActive={activeSubSection === "headerTabs"}
+            />
+            <NavigationItem
+              label="Header Text"
+              sectionKey="headerText"
+              isChild
+              onClick={() => onSubSectionClick("headerText")}
+              isActive={activeSubSection === "headerText"}
+            />
+          </Collapsible>
+        </>
+      )}
 
       {/* General Section */}
       <NavigationItem
@@ -225,13 +229,15 @@ export function NavigationSidebar({
           onClick={() => onSubSectionClick("toasts")}
           isActive={activeSubSection === "toasts"}
         />
-        <NavigationItem
-          label="Modal Close Button"
-          sectionKey="modalCloseButton"
-          isChild
-          onClick={() => onSubSectionClick("modalCloseButton")}
-          isActive={activeSubSection === "modalCloseButton"}
-        />
+        {!isFullPage && (
+          <NavigationItem
+            label="Modal Close Button"
+            sectionKey="modalCloseButton"
+            isChild
+            onClick={() => onSubSectionClick("modalCloseButton")}
+            isActive={activeSubSection === "modalCloseButton"}
+          />
+        )}
         <NavigationItem
           label="Accessibility"
           sectionKey="accessibility"
@@ -239,13 +245,15 @@ export function NavigationSidebar({
           onClick={() => onSubSectionClick("accessibility")}
           isActive={activeSubSection === "accessibility"}
         />
-        <NavigationItem
-          label="Widget Style"
-          sectionKey="widgetStyle"
-          isChild
-          onClick={() => onSubSectionClick("widgetStyle")}
-          isActive={activeSubSection === "widgetStyle"}
-        />
+        {!isFullPage && (
+          <NavigationItem
+            label="Widget Style"
+            sectionKey="widgetStyle"
+            isChild
+            onClick={() => onSubSectionClick("widgetStyle")}
+            isActive={activeSubSection === "widgetStyle"}
+          />
+        )}
       </Collapsible>
 
       {isFullPage && <Divider />}
