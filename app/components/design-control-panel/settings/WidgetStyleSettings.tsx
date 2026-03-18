@@ -1,5 +1,6 @@
-import { BlockStack, Text, Divider, Button, ButtonGroup, RangeSlider, TextField } from "@shopify/polaris";
+import { BlockStack, Text, Divider, Button, ButtonGroup, RangeSlider } from "@shopify/polaris";
 import { InlineColorInput } from "../common/InlineColorInput";
+import { FilePicker } from "./FilePicker";
 import type { SettingsComponentProps } from "./types";
 
 /**
@@ -8,6 +9,7 @@ import type { SettingsComponentProps } from "./types";
  * Controls whether the product-page bundle widget uses the classic
  * vertical-accordion layout or the new bottom-sheet modal UX.
  * All bottom-sheet sub-controls are shown only when bottom-sheet is selected.
+ * The Free Gift Badge picker is always visible (free gift slots exist in all modes).
  */
 export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentProps) {
   const widgetStyle = settings.widgetStyle ?? "classic";
@@ -97,25 +99,24 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
             value={settings.emptySlotBorderColor ?? settings.globalPrimaryButtonColor ?? "#007AFF"}
             onChange={(val) => onUpdate("emptySlotBorderColor", val)}
           />
-
-          <Divider />
-
-          <Text as="p" variant="bodyMd" fontWeight="medium">
-            Free Gift Badge Image
-          </Text>
-          <Text as="p" variant="bodySm" tone="subdued">
-            Upload a PNG or SVG to replace the default red gift ribbon on free-gift slots. Leave blank to use the built-in ribbon.
-          </Text>
-          <TextField
-            label="Badge image URL"
-            labelHidden
-            placeholder="https://cdn.shopify.com/…/badge.png"
-            value={settings.freeGiftBadgeUrl ?? ""}
-            onChange={(val) => onUpdate("freeGiftBadgeUrl", val)}
-            autoComplete="off"
-          />
         </>
       )}
+
+      {/* Free Gift Badge — visible in all widget style modes */}
+      <Divider />
+
+      <Text as="h3" variant="headingMd">
+        Free Gift Badge
+      </Text>
+      <Text as="p" variant="bodySm" tone="subdued">
+        Shown on locked gift-step slot cards. Leave blank to use the built-in ribbon.
+      </Text>
+      <FilePicker
+        value={settings.freeGiftBadgeUrl ?? ""}
+        onChange={(url) => onUpdate("freeGiftBadgeUrl", url ?? "")}
+        label="Free Gift Badge"
+        hideCropEditor
+      />
     </BlockStack>
   );
 }

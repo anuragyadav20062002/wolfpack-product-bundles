@@ -4176,6 +4176,13 @@ body.modal-open {
   pointer-events: none;
 }
 
+.fpb-free-badge-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 /* ---- Free Gift Step Heading ---- */
 .fpb-step-free-heading {
   font-size: 18px;

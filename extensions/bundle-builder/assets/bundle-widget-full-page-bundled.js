@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.0.0
+ * Version : 2.1.0
  * Built   : 2026-03-18
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.0.0';
+window.__BUNDLE_WIDGET_VERSION__ = '2.1.0';
 (function() {
   'use strict';
 
@@ -4314,7 +4314,21 @@ class BundleWidgetFullPage {
         imgEl.parentElement.classList.add('fpb-card-image-wrapper');
         const badge = document.createElement('span');
         badge.className = 'fpb-free-badge';
-        badge.textContent = 'Free';
+        const _badgeUrl = (() => {
+          const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-free-gift-badge-url').trim();
+          if (!v || v === 'none') return null;
+          const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
+          return m ? m[1] : null;
+        })();
+        if (_badgeUrl) {
+          const img = document.createElement('img');
+          img.src = _badgeUrl;
+          img.alt = 'Free gift';
+          img.className = 'fpb-free-badge-img';
+          badge.appendChild(img);
+        } else {
+          badge.textContent = 'Free';
+        }
         imgEl.parentElement.appendChild(badge);
       }
       const priceEl = cardElement.querySelector('.product-price, .price');

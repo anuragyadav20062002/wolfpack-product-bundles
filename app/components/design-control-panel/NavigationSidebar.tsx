@@ -239,6 +239,13 @@ export function NavigationSidebar({
           onClick={() => onSubSectionClick("accessibility")}
           isActive={activeSubSection === "accessibility"}
         />
+        <NavigationItem
+          label="Widget Style"
+          sectionKey="widgetStyle"
+          isChild
+          onClick={() => onSubSectionClick("widgetStyle")}
+          isActive={activeSubSection === "widgetStyle"}
+        />
       </Collapsible>
 
       {isFullPage && <Divider />}

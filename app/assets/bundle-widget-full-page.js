@@ -1887,7 +1887,21 @@ class BundleWidgetFullPage {
         imgEl.parentElement.classList.add('fpb-card-image-wrapper');
         const badge = document.createElement('span');
         badge.className = 'fpb-free-badge';
-        badge.textContent = 'Free';
+        const _badgeUrl = (() => {
+          const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-free-gift-badge-url').trim();
+          if (!v || v === 'none') return null;
+          const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
+          return m ? m[1] : null;
+        })();
+        if (_badgeUrl) {
+          const img = document.createElement('img');
+          img.src = _badgeUrl;
+          img.alt = 'Free gift';
+          img.className = 'fpb-free-badge-img';
+          badge.appendChild(img);
+        } else {
+          badge.textContent = 'Free';
+        }
         imgEl.parentElement.appendChild(badge);
       }
       const priceEl = cardElement.querySelector('.product-price, .price');
