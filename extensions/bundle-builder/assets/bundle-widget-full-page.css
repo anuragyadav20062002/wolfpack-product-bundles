@@ -3744,52 +3744,55 @@ body.modal-open {
   outline-offset: 2px;
 }
 
-.full-page-footer.beco-style {
+/* === Floating-Card Floating Footer Card === */
+/* Floating card anchored above the bottom edge — matches the floating card layout. */
+.full-page-footer.floating-card {
   position: fixed !important;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 800px;
   z-index: 1000;
-  background: transparent;
-  padding: 0;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
+  background: var(--bundle-footer-card-bg, #FFFFFF);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
-.full-page-footer.beco-style .footer-panel {
+/* Callout banner — always visible at top of card when a deal is active */
+.full-page-footer.floating-card .footer-callout-banner {
+  background: var(--bundle-footer-callout-bg, #22C55E);
+  color: #FFFFFF;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Panel — expandable product list, slides down between callout and bar */
+.full-page-footer.floating-card .footer-panel {
   background: var(--bundle-footer-panel-bg, #FFFFFF);
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px 12px 0 0;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 250ms ease-out, opacity 200ms ease-out;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  transition: max-height 280ms ease-out, opacity 220ms ease-out;
 }
 
-.full-page-footer.beco-style.is-open .footer-panel {
-  max-height: 60vh;
+.full-page-footer.floating-card.is-open .footer-panel {
+  max-height: 55vh;
   overflow-y: auto;
   opacity: 1;
 }
 
-.full-page-footer.beco-style .footer-callout-banner {
-  background: var(--bundle-footer-callout-bg, #22C55E);
-  color: #FFFFFF;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.full-page-footer.beco-style .footer-panel-list {
+.full-page-footer.floating-card .footer-panel-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.full-page-footer.beco-style .footer-panel-item {
+.full-page-footer.floating-card .footer-panel-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -3797,11 +3800,11 @@ body.modal-open {
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.full-page-footer.beco-style .footer-panel-item:last-child {
+.full-page-footer.floating-card .footer-panel-item:last-child {
   border-bottom: none;
 }
 
-.full-page-footer.beco-style .footer-panel-thumb {
+.full-page-footer.floating-card .footer-panel-thumb {
   width: 48px;
   height: 48px;
   object-fit: cover;
@@ -3810,7 +3813,7 @@ body.modal-open {
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.full-page-footer.beco-style .footer-panel-info {
+.full-page-footer.floating-card .footer-panel-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -3818,7 +3821,7 @@ body.modal-open {
   min-width: 0;
 }
 
-.full-page-footer.beco-style .footer-panel-name {
+.full-page-footer.floating-card .footer-panel-name {
   margin: 0;
   font-size: 13px;
   font-weight: 500;
@@ -3828,17 +3831,17 @@ body.modal-open {
   text-overflow: ellipsis;
 }
 
-.full-page-footer.beco-style .footer-panel-price {
+.full-page-footer.floating-card .footer-panel-price {
   margin: 0;
   font-size: 12px;
   color: var(--bundle-full-page-footer-text-color, #555555);
 }
 
-.full-page-footer.beco-style .footer-panel-qty {
+.full-page-footer.floating-card .footer-panel-qty {
   opacity: 0.6;
 }
 
-.full-page-footer.beco-style .footer-panel-remove {
+.full-page-footer.floating-card .footer-panel-remove {
   background: none;
   border: none;
   cursor: pointer;
@@ -3852,37 +3855,37 @@ body.modal-open {
   transition: color 150ms ease, background 150ms ease;
 }
 
-.full-page-footer.beco-style .footer-panel-remove:hover {
+.full-page-footer.floating-card .footer-panel-remove:hover {
   color: #EF4444;
   background: rgba(239, 68, 68, 0.08);
 }
 
-.full-page-footer.beco-style .footer-backdrop {
+.full-page-footer.floating-card .footer-backdrop {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: -1;
+  /* z-index below the card (1000) so the bar and panel remain clickable */
+  z-index: 999;
   background: transparent;
   border: none;
   cursor: default;
 }
 
-.full-page-footer.beco-style.is-open .footer-backdrop {
+.full-page-footer.floating-card.is-open .footer-backdrop {
   display: block;
 }
 
-.full-page-footer.beco-style .footer-bar {
+.full-page-footer.floating-card .footer-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px 0 8px;
-  height: 72px;
+  padding: 0 16px;
+  height: 76px;
+  /* Card handles background, shadow, and border-radius — bar is transparent */
   background: var(--bundle-full-page-footer-bg-color, #FFFFFF);
-  border-top: 1px solid var(--bundle-full-page-footer-border-color, rgba(0, 0, 0, 0.1));
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
 }
 
-.full-page-footer.beco-style .footer-back-btn {
+.full-page-footer.floating-card .footer-back-btn {
   background: none;
   border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 8px;
@@ -3896,11 +3899,11 @@ body.modal-open {
   transition: background 150ms ease;
 }
 
-.full-page-footer.beco-style .footer-back-btn:hover {
+.full-page-footer.floating-card .footer-back-btn:hover {
   background: rgba(0, 0, 0, 0.06);
 }
 
-.full-page-footer.beco-style .footer-centre-left {
+.full-page-footer.floating-card .footer-centre-left {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3908,12 +3911,12 @@ body.modal-open {
   min-width: 0;
 }
 
-.full-page-footer.beco-style .footer-thumbstrip {
+.full-page-footer.floating-card .footer-thumbstrip {
   display: flex;
   align-items: center;
 }
 
-.full-page-footer.beco-style .footer-thumbstrip-img {
+.full-page-footer.floating-card .footer-thumbstrip-img {
   width: 36px;
   height: 36px;
   object-fit: cover;
@@ -3923,11 +3926,11 @@ body.modal-open {
   flex-shrink: 0;
 }
 
-.full-page-footer.beco-style .footer-thumbstrip-img:first-child {
+.full-page-footer.floating-card .footer-thumbstrip-img:first-child {
   margin-left: 0;
 }
 
-.full-page-footer.beco-style .footer-thumbstrip-overflow {
+.full-page-footer.floating-card .footer-thumbstrip-overflow {
   width: 36px;
   height: 36px;
   border-radius: 6px;
@@ -3943,7 +3946,7 @@ body.modal-open {
   flex-shrink: 0;
 }
 
-.full-page-footer.beco-style .footer-toggle {
+.full-page-footer.floating-card .footer-toggle {
   background: none;
   border: none;
   cursor: pointer;
@@ -3958,47 +3961,47 @@ body.modal-open {
   flex-shrink: 0;
 }
 
-.full-page-footer.beco-style .footer-chevron {
+.full-page-footer.floating-card .footer-chevron {
   flex-shrink: 0;
   transition: transform 200ms ease;
 }
 
-.full-page-footer.beco-style.is-open .footer-chevron {
+.full-page-footer.floating-card.is-open .footer-chevron {
   transform: rotate(180deg);
 }
 
-.full-page-footer.beco-style .footer-total-area {
+.full-page-footer.floating-card .footer-total-area {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
 
-.full-page-footer.beco-style .footer-total-label {
+.full-page-footer.floating-card .footer-total-label {
   font-size: 12px;
   color: var(--bundle-full-page-footer-text-color, #666666);
 }
 
-.full-page-footer.beco-style .footer-total-prices {
+.full-page-footer.floating-card .footer-total-prices {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.full-page-footer.beco-style .footer-total-original {
+.full-page-footer.floating-card .footer-total-original {
   font-size: 11px;
   text-decoration: line-through;
   color: var(--bundle-full-page-footer-text-color, #999999);
   opacity: 0.6;
 }
 
-.full-page-footer.beco-style .footer-total-final {
+.full-page-footer.floating-card .footer-total-final {
   font-size: 15px;
   font-weight: 700;
   color: var(--bundle-full-page-footer-text-color, #1E1E1E);
 }
 
-.full-page-footer.beco-style .footer-discount-badge {
+.full-page-footer.floating-card .footer-discount-badge {
   background: var(--bundle-footer-callout-bg, #22C55E);
   color: #FFFFFF;
   font-size: 11px;
@@ -4007,7 +4010,7 @@ body.modal-open {
   border-radius: 100px;
 }
 
-.full-page-footer.beco-style .footer-cta-btn {
+.full-page-footer.floating-card .footer-cta-btn {
   background: var(--bundle-full-page-cta-bg-color, #000000);
   color: var(--bundle-full-page-cta-text-color, #FFFFFF);
   border: none;
@@ -4022,58 +4025,54 @@ body.modal-open {
   transition: opacity 150ms ease;
 }
 
-.full-page-footer.beco-style .footer-cta-btn:hover:not(:disabled) {
+.full-page-footer.floating-card .footer-cta-btn:hover:not(:disabled) {
   opacity: 0.88;
 }
 
-.full-page-footer.beco-style .footer-cta-btn:disabled {
+.full-page-footer.floating-card .footer-cta-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
 @media (max-width: 480px) {
-  .full-page-footer.beco-style .footer-bar {
-    height: 64px;
-    padding: 0 10px 0 6px;
+  .full-page-footer.floating-card {
+    bottom: 12px;
+    width: calc(100% - 16px);
+    border-radius: 14px;
+  }
+
+  .full-page-footer.floating-card .footer-bar {
+    height: 66px;
+    padding: 0 12px;
     gap: 6px;
   }
 
-  .full-page-footer.beco-style .footer-total-label {
+  .full-page-footer.floating-card .footer-total-label {
     display: none;
   }
 
-  .full-page-footer.beco-style .footer-total-original {
+  .full-page-footer.floating-card .footer-total-original {
     display: none;
   }
 
-  .full-page-footer.beco-style .footer-cta-btn {
+  .full-page-footer.floating-card .footer-cta-btn {
     padding: 0 14px;
     font-size: 13px;
     height: 44px;
   }
 
-  .full-page-footer.beco-style .footer-toggle {
+  .full-page-footer.floating-card .footer-toggle {
     font-size: 12px;
   }
 
-  .full-page-footer.beco-style.is-open .footer-panel {
-    max-height: 55vh;
+  .full-page-footer.floating-card.is-open .footer-panel {
+    max-height: 50vh;
   }
 }
 
 @media (min-width: 768px) {
-  .full-page-footer.beco-style .footer-bar {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-
-  .full-page-footer.beco-style .footer-bar {
-    max-width: 100%;
-  }
-
-  .full-page-footer.beco-style.is-open .footer-panel {
-    max-height: 50vh;
+  .full-page-footer.floating-card.is-open .footer-panel {
+    max-height: 45vh;
   }
 }
 

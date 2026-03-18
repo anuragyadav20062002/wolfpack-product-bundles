@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 1.8.0
- * Built   : 2026-03-17
+ * Version : 1.8.1
+ * Built   : 2026-03-18
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '1.8.0';
+window.__BUNDLE_WIDGET_VERSION__ = '1.8.1';
 (function() {
   'use strict';
 
@@ -4120,7 +4120,7 @@ class BundleWidgetFullPage {
 
 
     // Check if step is at capacity (adding 1 more item would be blocked)
-    // When at capacity, unselected cards are dimmed (Beco-style UX)
+    // When at capacity, unselected cards are dimmed
     const stepSelections = this.selectedProducts[stepIndex] || {};
     const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
     const isStepAtCapacity = !capacityCheck.allowed;
@@ -4407,7 +4407,7 @@ class BundleWidgetFullPage {
     existing.parentNode.replaceChild(fresh, existing);
   }
 
-  // Render fixed footer with selected products and navigation (Beco BYOB expandable style)
+  // Render floating footer card with selected products and navigation
   renderFullPageFooter() {
     if (!this.elements.footer) {
       return;
@@ -4432,7 +4432,7 @@ class BundleWidgetFullPage {
     const wasOpen = this.elements.footer.classList.contains('is-open');
 
     this.elements.footer.innerHTML = '';
-    this.elements.footer.className = 'full-page-footer beco-style';
+    this.elements.footer.className = 'full-page-footer floating-card';
     if (wasOpen) this.elements.footer.classList.add('is-open');
     this.elements.footer.style.display = 'block';
 
@@ -4468,8 +4468,16 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
-    // Build the three parts of the footer
-    const panel = this._createBecoPanel(allSelectedProducts, currencyInfo, discountInfo, calloutMessage);
+    // Callout banner — always visible at top of card when deal is active
+    if (discountInfo.hasDiscount && calloutMessage) {
+      const callout = document.createElement('div');
+      callout.className = 'footer-callout-banner';
+      callout.innerHTML = calloutMessage;
+      this.elements.footer.appendChild(callout);
+    }
+
+    // Expandable product list panel (no callout inside — it's now above the panel)
+    const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
     const backdrop = document.createElement('button');
     backdrop.className = 'footer-backdrop';
     backdrop.setAttribute('type', 'button');
@@ -4477,29 +4485,21 @@ class BundleWidgetFullPage {
     backdrop.addEventListener('click', () => {
       this.elements.footer.classList.remove('is-open');
     });
-    const bar = this._createBecoBar(
+    const bar = this._createFooterBar(
       allSelectedProducts, totalQuantity, totalRequired,
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    // Stack: panel (opens upward) → backdrop → bar (always visible at bottom)
+    // Stack: callout (top, always visible) → panel (slides open) → backdrop → bar (always visible)
     this.elements.footer.appendChild(panel);
     this.elements.footer.appendChild(backdrop);
     this.elements.footer.appendChild(bar);
   }
 
-  // Creates the upward-expanding product-list panel
-  _createBecoPanel(allSelectedProducts, currencyInfo, discountInfo, calloutMessage) {
+  // Creates the expandable product-list panel (callout banner is rendered separately above)
+  _createFooterPanel(allSelectedProducts, currencyInfo) {
     const panel = document.createElement('div');
     panel.className = 'footer-panel';
-
-    // Deal callout banner (shown when discount is active)
-    if (discountInfo.hasDiscount && calloutMessage) {
-      const callout = document.createElement('div');
-      callout.className = 'footer-callout-banner';
-      callout.innerHTML = calloutMessage;
-      panel.appendChild(callout);
-    }
 
     // Product list
     const list = document.createElement('ul');
@@ -4548,7 +4548,7 @@ class BundleWidgetFullPage {
   }
 
   // Creates the always-visible footer bar
-  _createBecoBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep) {
+  _createFooterBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep) {
     const bar = document.createElement('div');
     bar.className = 'footer-bar';
 

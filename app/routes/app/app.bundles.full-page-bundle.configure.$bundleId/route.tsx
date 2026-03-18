@@ -417,6 +417,9 @@ export default function ConfigureBundleFlow() {
     (bundle as any).showStepTimeline !== false
   );
 
+  // Widget install loading state
+  const [isInstallingWidget, setIsInstallingWidget] = useState(false);
+
   // Warning modal state: steps + tiers conflict
   const [stepsTiersWarning, setStepsTiersWarning] = useState<{
     open: boolean;
@@ -1219,113 +1222,91 @@ export default function ConfigureBundleFlow() {
   }, [loadAvailablePages, shopify]);
 
   const handlePageSelection = useCallback(async (template: any) => {
-    try {
-      if (!template || !template.handle) {
-        AppLogger.error('🚨 [THEME_EDITOR] Invalid template object:', {}, template);
-        shopify.toast.show("Template data is invalid", { isError: true, duration: 5000 });
-        return;
-      }
+    if (!template?.handle) {
+      shopify.toast.show("Template data is invalid", { isError: true, duration: 5000 });
+      return;
+    }
 
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop;
+    const shopDomain = shop.includes('.myshopify.com')
+      ? shop.replace('.myshopify.com', '')
+      : shop;
 
-      shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
-      AppLogger.debug(`🎯 [THEME_EDITOR] Starting widget placement for template: ${template.handle}`);
+    // Build theme editor deep link (used as fallback for non-page templates and on error)
+    const buildThemeEditorUrl = () => {
+      const appBlockId = `${apiKey}/${blockHandle}`;
+      const templateParam = template.isPage ? 'page.full-page-bundle' : template.handle;
+      const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
+      return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
+    };
 
-      // Create a theme template service instance
-      // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
-      // For now, we'll use the existing approach but add template creation via API call
+    // ── Full-page bundle: auto-install via Theme API (no theme editor needed) ──
+    if (template.isPage) {
+      setIsInstallingWidget(true);
+      try {
+        AppLogger.debug(`🚀 [INSTALL] Auto-installing FPB widget for page: ${template.handle}`);
 
-      // Check if this is a bundle-specific template that needs to be created
-      if (template.isBundleContainer && template.bundleProduct) {
-        AppLogger.debug(`🏗️ [THEME_EDITOR] Ensuring template exists for bundle product: ${template.bundleProduct.handle}`);
-
-        // Make API call to create template if needed
-        const createTemplateResponse = await fetch(`/api/ensure-product-template`, {
+        const response = await fetch('/api/install-fpb-widget', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            productHandle: template.bundleProduct.handle,
-            bundleId: bundle.id
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pageHandle: template.handle }),
         });
 
-        if (!createTemplateResponse.ok) {
-          AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
-          shopify.toast.show("Failed to prepare product template", { isError: true, duration: 5000 });
-          return;
-        }
+        const result = await response.json() as { success: boolean; templateCreated?: boolean; templateAlreadyExists?: boolean; error?: string };
 
-        const templateResult = await createTemplateResponse.json();
-        AppLogger.debug(`✅ [THEME_EDITOR] Template preparation result:`, templateResult);
-
-        if (templateResult.created) {
-          shopify.toast.show(`Created new template for ${template.bundleProduct.handle}`, { isError: false, duration: 4000 });
+        if (result.success) {
+          setSelectedPage(template);
+          closePageSelectionModal();
+          const msg = result.templateAlreadyExists
+            ? `Widget already installed — your bundle page is live.`
+            : `Widget installed! Your bundle page is live.`;
+          shopify.toast.show(msg, { isError: false, duration: 6000 });
+          AppLogger.debug(`✅ [INSTALL] Widget installed successfully`, result);
+        } else {
+          // Auto-install failed — fall back to theme editor
+          AppLogger.error(`🚨 [INSTALL] Auto-install failed, falling back to theme editor`, { error: result.error });
+          setSelectedPage(template);
+          closePageSelectionModal();
+          shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
+          window.open(buildThemeEditorUrl(), '_blank');
         }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        AppLogger.error(`🚨 [INSTALL] Unexpected error, falling back to theme editor`, { errorMessage });
+        setSelectedPage(template);
+        closePageSelectionModal();
+        shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
+        window.open(buildThemeEditorUrl(), '_blank');
+      } finally {
+        setIsInstallingWidget(false);
       }
+      return;
+    }
 
-      // Use app API key and block handle from loader data (passed from server)
-      // CRITICAL: Must use app's API key (client_id), not extension UUID
+    // ── Product-page / custom template: open theme editor (existing flow) ──
+    try {
       if (!apiKey || !blockHandle) {
-        AppLogger.error('🚨 [THEME_EDITOR] Missing app configuration');
         shopify.toast.show("App configuration missing. Please check app setup.", { isError: true, duration: 5000 });
         return;
       }
 
-      const appBlockId = `${apiKey}/${blockHandle}`;
-
-      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`, {
-        apiKey,
-        blockHandle,
-        bundleId: bundle.id
-      });
-
-      // Generate deep link following Shopify's official documentation with bundle ID
-      // Official format: template + addAppBlockId + target + bundleId (for auto-population)
-      // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
-      //
-      // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
-      // the bundle_id setting in the theme editor, making setup seamless for merchants
-      //
-      // For full-page bundles: always use the shared 'page.full-page-bundle' template.
-      // All bundle pages are assigned this templateSuffix so the block only needs to be
-      // installed once. page.handle in Liquid identifies which bundle to render.
-      // For product templates, template format is just: {handle}
-      const templateParam = template.isPage ? 'page.full-page-bundle' : template.handle;
-
-      // previewPath tells the theme editor which specific page to open for preview.
-      // Without it, Shopify defaults to whatever page happens to use the template suffix,
-      // which is the wrong page and causes a "bundle not found" 404 in the widget.
-      const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
-
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
-
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
-        templateParam,
-        isPage: template.isPage,
-        bundleId: bundle.id,
-        url: themeEditorUrl
-      });
+      if (template.isBundleContainer && template.bundleProduct) {
+        await fetch('/api/ensure-product-template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productHandle: template.bundleProduct.handle, bundleId: bundle.id }),
+        }).catch(() => { /* non-fatal */ });
+      }
 
       setSelectedPage(template);
       closePageSelectionModal();
-
-      // Open theme editor in a new tab to preserve embedded app session
-      shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
-      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor`);
-
-      // Open in new tab to preserve embedded app session (using _top would destroy iframe)
-      window.open(themeEditorUrl, '_blank');
-
+      shopify.toast.show(`Opening Theme Editor for "${template.title}"...`, { isError: false, duration: 5000 });
+      window.open(buildThemeEditorUrl(), '_blank');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
-      shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
+      shopify.toast.show(`Failed to open Theme Editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
-  }, [shop, shopify, bundle.id]);
+  }, [shop, shopify, bundle.id, apiKey, blockHandle]);
 
   return (
     <Page
@@ -2447,19 +2428,20 @@ export default function ConfigureBundleFlow() {
       {/* Page Selection Modal */}
       <Modal
         open={isPageSelectionModalOpen}
-        onClose={() => closePageSelectionModal()}
-        title="Place Widget"
+        onClose={() => !isInstallingWidget && closePageSelectionModal()}
+        title="Add to Storefront"
         primaryAction={{
           content: "Cancel",
           onAction: () => closePageSelectionModal(),
+          disabled: isInstallingWidget,
         }}
       >
         <Modal.Section>
           <BlockStack gap="300">
             <Text as="p" variant="bodySm" tone="subdued">
               {bundle.bundleType === 'full_page'
-                ? 'Select a page to open the theme editor with widget placement.'
-                : 'Select a template to open the theme editor with widget placement.'}
+                ? 'Select the bundle page — we\'ll install the widget automatically. No Theme Editor needed.'
+                : 'Select a template to open the Theme Editor with widget placement.'}
             </Text>
 
             {isLoadingPages ? (
@@ -2492,10 +2474,12 @@ export default function ConfigureBundleFlow() {
                       <Button
                         onClick={() => handlePageSelection(template)}
                         variant={template.recommended ? "primary" : "secondary"}
-                        icon={ExternalIcon}
+                        icon={template.isPage ? undefined : ExternalIcon}
                         size="slim"
+                        loading={isInstallingWidget}
+                        disabled={isInstallingWidget}
                       >
-                        Select
+                        {isInstallingWidget ? 'Installing…' : 'Select'}
                       </Button>
                     </InlineStack>
                   </Card>
