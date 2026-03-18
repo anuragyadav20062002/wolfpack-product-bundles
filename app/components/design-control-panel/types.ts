@@ -123,6 +123,7 @@ export interface DesignSettings {
   bottomSheetAnimationDuration?: number; // 200–600ms, default 400
   emptySlotBorderStyle?: 'dashed' | 'solid'; // default 'dashed'
   emptySlotBorderColor?: string;         // default = primary button color
+  freeGiftBadgeUrl?: string;             // optional merchant badge PNG/SVG; falls back to built-in ribbon SVG
 
   // Pricing Tier Pills (Full-Page Bundles — fpb-tier-selection-1)
   tierPillActiveBgColor?: string;        // active pill background

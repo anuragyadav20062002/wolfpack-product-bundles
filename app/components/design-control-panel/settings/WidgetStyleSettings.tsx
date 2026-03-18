@@ -1,4 +1,4 @@
-import { BlockStack, Text, Divider, Button, ButtonGroup, RangeSlider } from "@shopify/polaris";
+import { BlockStack, Text, Divider, Button, ButtonGroup, RangeSlider, TextField } from "@shopify/polaris";
 import { InlineColorInput } from "../common/InlineColorInput";
 import type { SettingsComponentProps } from "./types";
 
@@ -96,6 +96,23 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
             label="Empty slot border color"
             value={settings.emptySlotBorderColor ?? settings.globalPrimaryButtonColor ?? "#007AFF"}
             onChange={(val) => onUpdate("emptySlotBorderColor", val)}
+          />
+
+          <Divider />
+
+          <Text as="p" variant="bodyMd" fontWeight="medium">
+            Free Gift Badge Image
+          </Text>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Upload a PNG or SVG to replace the default red gift ribbon on free-gift slots. Leave blank to use the built-in ribbon.
+          </Text>
+          <TextField
+            label="Badge image URL"
+            labelHidden
+            placeholder="https://cdn.shopify.com/…/badge.png"
+            value={settings.freeGiftBadgeUrl ?? ""}
+            onChange={(val) => onUpdate("freeGiftBadgeUrl", val)}
+            autoComplete="off"
           />
         </>
       )}

@@ -446,6 +446,12 @@ export default function ConfigureBundleFlow() {
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
+  // Add to Storefront install state
+  const installFetcher = useFetcher<{ success: boolean; templateCreated?: boolean; templateAlreadyExists?: boolean; error?: string }>();
+  const isInstallingWidget = installFetcher.state !== 'idle';
+  // Treat as already installed if bundle already has a Shopify product (saved at least once)
+  const [widgetInstalled, setWidgetInstalled] = useState(!!bundle.shopifyProductId);
+
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
   // Save handler
@@ -627,6 +633,45 @@ export default function ConfigureBundleFlow() {
       }
     }
   }, [fetcher.data, fetcher.state]);
+
+  // Handle install widget response — on success, open the product page
+  useEffect(() => {
+    if (installFetcher.data && installFetcher.state === 'idle') {
+      const result = installFetcher.data;
+      if (result.success) {
+        setWidgetInstalled(true);
+        shopify.toast.show(
+          result.templateAlreadyExists
+            ? "Widget already installed on your product page."
+            : "Widget installed! Opening your bundle product page…",
+          { isError: false }
+        );
+        // Navigate to the product page after install
+        const productUrl = bundleProduct?.onlineStorePreviewUrl || bundleProduct?.onlineStoreUrl;
+        if (productUrl) {
+          const separator = productUrl.includes('?') ? '&' : '?';
+          const urlWithTemplate = formState.templateName
+            ? `${productUrl}${separator}view=${formState.templateName}`
+            : productUrl;
+          open(urlWithTemplate, '_blank');
+        }
+      } else {
+        shopify.toast.show(result.error || "Couldn't auto-install — opening Theme Editor instead.", { isError: true, duration: 5000 });
+        // Fallback: open theme editor
+        if (bundleProduct?.onlineStoreUrl) {
+          open(`${bundleProduct.onlineStoreUrl}`, '_blank');
+        }
+      }
+    }
+  }, [installFetcher.data, installFetcher.state]);
+
+  const handleAddToStorefront = useCallback(() => {
+    const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
+    installFetcher.submit(
+      JSON.stringify({ productHandle, bundleId: bundle.id }),
+      { method: 'POST', action: '/api/install-pdp-widget', encType: 'application/json' }
+    );
+  }, [bundle.id, bundle.shopifyProductHandle, bundleProduct?.handle, installFetcher]);
 
   // Discard handler - resets hook state and local gif state
   const handleDiscard = useCallback(() => {
@@ -1246,10 +1291,11 @@ export default function ConfigureBundleFlow() {
         onAction: handleBackClick,
       }}
       primaryAction={{
-        content: "Preview Bundle",
-        onAction: handlePreviewBundle,
-        icon: ViewIcon,
-        disabled: !bundleProduct || stepsState.steps.length === 0,
+        content: isInstallingWidget ? "Installing…" : widgetInstalled ? "Preview Bundle" : "Add to Storefront",
+        onAction: widgetInstalled ? handlePreviewBundle : handleAddToStorefront,
+        icon: widgetInstalled ? ViewIcon : ExternalIcon,
+        loading: isInstallingWidget,
+        disabled: !bundleProduct || stepsState.steps.length === 0 || isInstallingWidget || (!widgetInstalled && isDirty),
       }}
       secondaryActions={[
         {
@@ -1379,6 +1425,7 @@ export default function ConfigureBundleFlow() {
                   />
                 </BlockStack>
               </Card>
+
             </BlockStack>
           </Layout.Section>
 

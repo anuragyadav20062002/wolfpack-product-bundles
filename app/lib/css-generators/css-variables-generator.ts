@@ -193,6 +193,8 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
   --bundle-discount-text-color: ${s.discountTextColor || globalPrimaryText};
   --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
+  /* Free Gift Badge (Product Page) — merchant-uploadable badge image */
+  --bundle-free-gift-badge-url: ${s.freeGiftBadgeUrl ? `url("${s.freeGiftBadgeUrl}")` : 'none'};
 
   /* SEARCH INPUT — names match what bundle-widget-full-page.css references */
   --bundle-search-bg: ${s.searchInputBgColor || '#F8F8F8'};

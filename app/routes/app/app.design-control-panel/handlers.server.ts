@@ -113,6 +113,8 @@ function extractGeneralSettings(settings: any) {
     conditionsTextFontSize: settings.conditionsTextFontSize,
     discountTextColor: settings.discountTextColor,
     discountTextFontSize: settings.discountTextFontSize,
+    // Free Gift Badge (Product Page)
+    freeGiftBadgeUrl: settings.freeGiftBadgeUrl,
   };
 }
 
