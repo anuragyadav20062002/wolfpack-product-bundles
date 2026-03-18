@@ -4,12 +4,16 @@
  * Ensures a custom page template (page.full-page-bundle.json) exists in the
  * active theme. This template includes an 'apps' section with the
  * bundle-full-page block so the widget renders automatically.
+ *
+ * All Shopify API calls use Admin GraphQL (admin.graphql) — NOT the REST API.
+ * The app is configured with removeRest: true and unstable_newEmbeddedAuthStrategy,
+ * which means session.accessToken may not be populated. The admin GraphQL client
+ * handles token management internally and is always valid.
  */
 
 import * as fs from "fs";
 import * as path from "path";
 import { AppLogger } from "../../lib/logger";
-import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 
 export interface TemplateEnsureResult {
   success: boolean;
@@ -61,14 +65,15 @@ export async function ensureBundlePageTemplate(
   apiKey: string,
 ): Promise<TemplateEnsureResult> {
   try {
-    // Step 1: Get the active (MAIN) theme
-    const themeId = await getActiveThemeId(admin);
-    if (!themeId) {
+    // Step 1: Get the active (MAIN) theme GID
+    const themeGid = await getActiveThemeGid(admin);
+    if (!themeGid) {
       return { success: false, templateCreated: false, templateAlreadyExists: false, error: "No active theme found" };
     }
+    const themeId = themeGid.split("/").pop() as string;
 
     // Step 2: Check if template already exists
-    const exists = await themeAssetExists(session, themeId, TEMPLATE_KEY);
+    const exists = await themeAssetExists(admin, themeGid, TEMPLATE_KEY);
     if (exists) {
       AppLogger.info("[TEMPLATE] page.full-page-bundle.json already exists", { component: COMPONENT });
       return { success: true, templateCreated: false, templateAlreadyExists: true, themeId };
@@ -81,13 +86,13 @@ export async function ensureBundlePageTemplate(
     }
 
     // Step 4: Read the default page.json as base
-    const baseTemplate = await readBasePageTemplate(session, themeId);
+    const baseTemplate = await readBasePageTemplate(admin, themeGid);
 
     // Step 5: Construct the bundle template
     const bundleTemplate = buildBundleTemplate(baseTemplate, apiKey, blockUuid);
 
-    // Step 6: Write the template to the theme
-    await writeThemeAsset(session, themeId, TEMPLATE_KEY, JSON.stringify(bundleTemplate, null, 2));
+    // Step 6: Write the template to the theme via GraphQL mutation
+    await writeThemeAsset(admin, themeGid, TEMPLATE_KEY, JSON.stringify(bundleTemplate, null, 2));
 
     AppLogger.info("[TEMPLATE] Created page.full-page-bundle.json successfully", {
       component: COMPONENT,
@@ -120,14 +125,15 @@ export async function ensureProductBundleTemplate(
   apiKey: string,
 ): Promise<TemplateEnsureResult> {
   try {
-    // Step 1: Get the active (MAIN) theme
-    const themeId = await getActiveThemeId(admin);
-    if (!themeId) {
+    // Step 1: Get the active (MAIN) theme GID
+    const themeGid = await getActiveThemeGid(admin);
+    if (!themeGid) {
       return { success: false, templateCreated: false, templateAlreadyExists: false, error: "No active theme found" };
     }
+    const themeId = themeGid.split("/").pop() as string;
 
     // Step 2: Check if template already exists
-    const exists = await themeAssetExists(session, themeId, PRODUCT_TEMPLATE_KEY);
+    const exists = await themeAssetExists(admin, themeGid, PRODUCT_TEMPLATE_KEY);
     if (exists) {
       AppLogger.info("[TEMPLATE] product.product-page-bundle.json already exists", { component: COMPONENT });
       return { success: true, templateCreated: false, templateAlreadyExists: true, themeId };
@@ -140,13 +146,13 @@ export async function ensureProductBundleTemplate(
     }
 
     // Step 4: Read the default product.json as base
-    const baseTemplate = await readBaseProductTemplate(session, themeId);
+    const baseTemplate = await readBaseProductTemplate(admin, themeGid);
 
     // Step 5: Construct the product bundle template
     const productTemplate = buildProductBundleTemplate(baseTemplate, apiKey, blockUuid);
 
-    // Step 6: Write the template to the theme
-    await writeThemeAsset(session, themeId, PRODUCT_TEMPLATE_KEY, JSON.stringify(productTemplate, null, 2));
+    // Step 6: Write the template to the theme via GraphQL mutation
+    await writeThemeAsset(admin, themeGid, PRODUCT_TEMPLATE_KEY, JSON.stringify(productTemplate, null, 2));
 
     AppLogger.info("[TEMPLATE] Created product.product-page-bundle.json successfully", {
       component: COMPONENT,
@@ -167,10 +173,15 @@ export async function ensureProductBundleTemplate(
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Internal helpers — all use admin.graphql (not REST)
 // ---------------------------------------------------------------------------
 
-async function getActiveThemeId(admin: any): Promise<string | null> {
+/**
+ * Returns the full GID of the active (MAIN) theme, e.g.
+ * "gid://shopify/OnlineStoreTheme/12345678".
+ * Used for GraphQL mutations that require an ID input.
+ */
+async function getActiveThemeGid(admin: any): Promise<string | null> {
   const GET_THEME = `
     query getPublishedTheme {
       themes(first: 1, roles: [MAIN]) {
@@ -182,51 +193,73 @@ async function getActiveThemeId(admin: any): Promise<string | null> {
   const response = await admin.graphql(GET_THEME);
   const data = await response.json();
   const theme = data.data?.themes?.nodes?.[0];
-  if (!theme) return null;
-
-  // Extract numeric ID from GID for REST API
-  return theme.id.split("/").pop() as string;
+  return theme?.id ?? null;
 }
 
-function restHeaders(session: ShopSession) {
-  return {
-    "X-Shopify-Access-Token": session.accessToken ?? "",
-    "Content-Type": "application/json",
-  };
-}
-
-function assetUrl(session: ShopSession, themeId: string, key?: string): string {
-  const base = `https://${session.shop}/admin/api/${SHOPIFY_REST_API_VERSION}/themes/${themeId}/assets.json`;
-  return key ? `${base}?asset[key]=${encodeURIComponent(key)}` : base;
-}
-
-async function themeAssetExists(session: ShopSession, themeId: string, key: string): Promise<boolean> {
-  const response = await fetch(assetUrl(session, themeId, key), { headers: restHeaders(session) });
-  return response.ok;
-}
-
-async function readThemeAsset(session: ShopSession, themeId: string, key: string): Promise<string | null> {
-  const response = await fetch(assetUrl(session, themeId, key), { headers: restHeaders(session) });
-  if (!response.ok) return null;
+async function themeAssetExists(admin: any, themeGid: string, filename: string): Promise<boolean> {
+  const QUERY = `
+    query themeFileExists($themeId: ID!, $filenames: [String!]!) {
+      theme(id: $themeId) {
+        files(filenames: $filenames) {
+          nodes { filename }
+        }
+      }
+    }
+  `;
+  const response = await admin.graphql(QUERY, { variables: { themeId: themeGid, filenames: [filename] } });
   const data = await response.json();
-  return data.asset?.value ?? null;
+  const nodes = data.data?.theme?.files?.nodes ?? [];
+  return nodes.some((n: any) => n.filename === filename);
 }
 
-async function writeThemeAsset(session: ShopSession, themeId: string, key: string, value: string): Promise<void> {
-  const response = await fetch(assetUrl(session, themeId), {
-    method: "PUT",
-    headers: restHeaders(session),
-    body: JSON.stringify({ asset: { key, value } }),
-  });
+async function readThemeAsset(admin: any, themeGid: string, filename: string): Promise<string | null> {
+  const QUERY = `
+    query themeFileContent($themeId: ID!, $filenames: [String!]!) {
+      theme(id: $themeId) {
+        files(filenames: $filenames) {
+          nodes {
+            filename
+            body {
+              ... on OnlineStoreThemeFileBodyText {
+                content
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const response = await admin.graphql(QUERY, { variables: { themeId: themeGid, filenames: [filename] } });
+  const data = await response.json();
+  const nodes = data.data?.theme?.files?.nodes ?? [];
+  const file = nodes.find((n: any) => n.filename === filename);
+  return file?.body?.content ?? null;
+}
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to write theme asset ${key}: ${response.status} ${errorText}`);
+async function writeThemeAsset(admin: any, themeGid: string, filename: string, content: string): Promise<void> {
+  const MUTATION = `
+    mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFileBodyInput!]!) {
+      themeFilesUpsert(themeId: $themeId, files: $files) {
+        upsertedThemeFiles { filename }
+        userErrors { filename message }
+      }
+    }
+  `;
+  const response = await admin.graphql(MUTATION, {
+    variables: {
+      themeId: themeGid,
+      files: [{ filename, body: { asString: content } }],
+    },
+  });
+  const data = await response.json();
+  const userErrors = data.data?.themeFilesUpsert?.userErrors ?? [];
+  if (userErrors.length > 0) {
+    throw new Error(`Failed to write theme asset ${filename}: ${userErrors.map((e: any) => e.message).join(", ")}`);
   }
 }
 
-async function readBasePageTemplate(session: ShopSession, themeId: string): Promise<any> {
-  const content = await readThemeAsset(session, themeId, "templates/page.json");
+async function readBasePageTemplate(admin: any, themeGid: string): Promise<any> {
+  const content = await readThemeAsset(admin, themeGid, "templates/page.json");
   if (content) {
     try {
       return JSON.parse(content);
@@ -308,8 +341,8 @@ function appendBundleWidgetSection(baseTemplate: any, apiKey: string, blockHandl
   return template;
 }
 
-async function readBaseProductTemplate(session: ShopSession, themeId: string): Promise<any> {
-  const content = await readThemeAsset(session, themeId, "templates/product.json");
+async function readBaseProductTemplate(admin: any, themeGid: string): Promise<any> {
+  const content = await readThemeAsset(admin, themeGid, "templates/product.json");
   if (content) {
     try {
       return JSON.parse(content);
