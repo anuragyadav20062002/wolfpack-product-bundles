@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-03-20
-**Last Updated:** 2026-03-20 01:00
+**Last Updated:** 2026-03-20 02:00
 
 ## Overview
 Two UI issues on the PDP product-page widget:
@@ -24,3 +24,4 @@ Two UI issues on the PDP product-page widget:
 - [x] Phase 1: Remove savings badge JS + CSS
 - [x] Phase 2: Fix ATC button to show only final price
 - [x] Phase 3: Back/Next buttons never disabled — toast fires on invalid navigation
+- [x] Phase 4: Remove empty white header box — Liquid default changed to false, renderHeader() now populates title text when shown (2.2.1)

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.2.0
- * Built   : 2026-03-18
+ * Version : 2.2.1
+ * Built   : 2026-03-19
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.2.0';
+window.__BUNDLE_WIDGET_VERSION__ = '2.2.1';
 (function() {
   'use strict';
 
@@ -2195,6 +2195,20 @@ class BundleWidgetProductPage {
     if (!this.config.showTitle) {
       this.elements.header.style.display = 'none';
       return;
+    }
+
+    // Populate the title — the Liquid template pre-renders an empty <h2>,
+    // so we must fill it here after bundle data is loaded.
+    const titleEl = this.elements.header.querySelector('.bundle-title');
+    if (titleEl && this.selectedBundle?.name) {
+      titleEl.textContent = this.selectedBundle.name;
+    }
+    const descEl = this.elements.header.querySelector('.bundle-description');
+    if (!descEl && this.selectedBundle?.description) {
+      const p = document.createElement('p');
+      p.className = 'bundle-description';
+      p.textContent = this.selectedBundle.description;
+      this.elements.header.appendChild(p);
     }
 
     this.elements.header.style.display = 'block';

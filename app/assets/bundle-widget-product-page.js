@@ -705,6 +705,20 @@ class BundleWidgetProductPage {
       return;
     }
 
+    // Populate the title — the Liquid template pre-renders an empty <h2>,
+    // so we must fill it here after bundle data is loaded.
+    const titleEl = this.elements.header.querySelector('.bundle-title');
+    if (titleEl && this.selectedBundle?.name) {
+      titleEl.textContent = this.selectedBundle.name;
+    }
+    const descEl = this.elements.header.querySelector('.bundle-description');
+    if (!descEl && this.selectedBundle?.description) {
+      const p = document.createElement('p');
+      p.className = 'bundle-description';
+      p.textContent = this.selectedBundle.description;
+      this.elements.header.appendChild(p);
+    }
+
     this.elements.header.style.display = 'block';
   }
 
