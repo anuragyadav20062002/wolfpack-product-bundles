@@ -510,7 +510,7 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
         }}
       >
         {/* Unselected card */}
-        <HighlightBox active={activeSubSection === "productCard"}>
+        <HighlightBox active={activeSubSection === "productCard" || activeSubSection === "productCardTypography"}>
           {/* eslint-disable-next-line react/no-danger */}
           <div dangerouslySetInnerHTML={{ __html: unselectedCardHTML }} />
         </HighlightBox>
@@ -519,7 +519,8 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
         <HighlightBox
           active={
             activeSubSection === "quantityVariantSelector" ||
-            activeSubSection === "button"
+            activeSubSection === "button" ||
+            activeSubSection === "productCardTypography"
           }
         >
           {/* eslint-disable-next-line react/no-danger */}
@@ -527,7 +528,7 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
         </HighlightBox>
 
         {/* Dimmed card — when step quota is full */}
-        <HighlightBox active={false}>
+        <HighlightBox active={activeSubSection === "productCardTypography"}>
           {/* eslint-disable-next-line react/no-danger */}
           <div dangerouslySetInnerHTML={{ __html: dimmedCardHTML }} />
         </HighlightBox>

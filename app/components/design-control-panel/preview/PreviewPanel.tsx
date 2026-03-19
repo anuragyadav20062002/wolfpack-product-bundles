@@ -12,7 +12,7 @@ import { PreviewScope } from "./PreviewScope";
 interface PreviewPanelProps {
   activeSubSection: string;
   settings: DesignSettings;
-  bundleType?: BundleType;
+  bundleType: BundleType;
 }
 
 /**
@@ -24,11 +24,6 @@ interface PreviewPanelProps {
  * all --bundle-* CSS variables from the current settings.
  */
 export function PreviewPanel({ activeSubSection, settings, bundleType }: PreviewPanelProps) {
-  // Custom CSS - No preview needed
-  if (activeSubSection === "customCss") {
-    return null;
-  }
-
   // Global Colors - intentional simplified swatch palette, not a widget preview
   if (activeSubSection === "globalColors") {
     return (

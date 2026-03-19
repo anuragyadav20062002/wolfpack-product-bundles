@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-20
-**Last Updated:** 2026-03-20 01:00
+**Last Updated:** 2026-03-20 02:00
 
 ## Overview
 Fix all 8 bugs documented in `docs/dcp-settings-segregation/01-bugs-audit.md`.
@@ -25,6 +25,11 @@ Starting with dead code pruning, then working through the data-loss and visual b
 - ✅ BUG-06: generateFullPageVariables() guarded to only run for full_page bundles in index.ts
 - ✅ BUG-05: Confirmed ProductCardPreview already handles widgetStyle — no fix needed
 - ✅ Migration: 20260320020000_add_designsettings_product_title_and_variant_selector created + applied on SIT
+
+### 2026-03-20 02:00 - Completed preview audit fixes (PREV-01/02/03)
+- ✅ PREV-01: Removed dead `customCss` null guard from PreviewPanel (customCss not routable via DCP config)
+- ✅ PREV-02: productCardTypography now highlights all three cards in ProductCardPreview (was active={false})
+- ✅ PREV-03: bundleType made required in PreviewPanelProps — both callers already passed it
 
 ## Phases Checklist
 - [x] Phase 1: Dead code pruning + BUG-03/04
