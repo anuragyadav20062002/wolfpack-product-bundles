@@ -69,10 +69,10 @@ export function PricingTiersSection({
 
   function addTier() {
     if (tiers.length >= MAX_TIERS) return;
-    // Adding this tier would activate the pill bar (going from 1 → 2 tiers)
-    // AND the bundle has more than 1 step → warn about the conflict.
-    const wouldActivatePills = tiers.length + 1 >= 2;
-    if (wouldActivatePills && stepsCount > 1) {
+    // Only warn on the 1 → 2 transition (first time pills would activate).
+    // 3rd/4th tier additions don't need a repeat warning — conflict was already acknowledged.
+    const isActivatingPills = tiers.length === 1;
+    if (isActivatingPills && stepsCount > 1) {
       onStepsTiersConflictWarning(doAddTier);
       return;
     }

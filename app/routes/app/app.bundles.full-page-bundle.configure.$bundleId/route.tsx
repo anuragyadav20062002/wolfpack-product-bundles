@@ -1992,6 +1992,18 @@ export default function ConfigureBundleFlow() {
                         variant="primary"
                         icon={PlusIcon}
                         onClick={() => {
+                          // Warn if going from 1 → 2 steps while tiers are already active (≥ 2)
+                          const isActivatingMultiStep = stepsState.steps.length === 1;
+                          if (isActivatingMultiStep && tierConfig.length >= 2) {
+                            setStepsTiersWarning({
+                              open: true,
+                              onConfirm: () => {
+                                stepsState.addStep();
+                                setActiveTabIndex(stepsState.steps.length);
+                              },
+                            });
+                            return;
+                          }
                           stepsState.addStep();
                           setActiveTabIndex(stepsState.steps.length); // Switch to new tab
                         }}

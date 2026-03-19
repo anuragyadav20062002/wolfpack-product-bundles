@@ -238,7 +238,7 @@ async function readThemeAsset(admin: any, themeGid: string, filename: string): P
 
 async function writeThemeAsset(admin: any, themeGid: string, filename: string, content: string): Promise<void> {
   const MUTATION = `
-    mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFileBodyInput!]!) {
+    mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
       themeFilesUpsert(themeId: $themeId, files: $files) {
         upsertedThemeFiles { filename }
         userErrors { filename message }
