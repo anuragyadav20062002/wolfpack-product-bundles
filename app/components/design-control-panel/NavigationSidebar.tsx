@@ -98,13 +98,15 @@ export function NavigationSidebar({
           onClick={() => onSubSectionClick("quantityVariantSelector")}
           isActive={activeSubSection === "quantityVariantSelector"}
         />
-        <NavigationItem
-          label="Search Input"
-          sectionKey="searchInput"
-          isChild
-          onClick={() => onSubSectionClick("searchInput")}
-          isActive={activeSubSection === "searchInput"}
-        />
+        {isFullPage && (
+          <NavigationItem
+            label="Search Input"
+            sectionKey="searchInput"
+            isChild
+            onClick={() => onSubSectionClick("searchInput")}
+            isActive={activeSubSection === "searchInput"}
+          />
+        )}
         <NavigationItem
           label="Skeleton Loading"
           sectionKey="skeletonLoading"

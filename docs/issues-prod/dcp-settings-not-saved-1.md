@@ -38,3 +38,4 @@ Also: the configure page save effect does not update the discard baselines for 5
 - [x] Phase 4: DCP modal bundle-type settings filtering
 - [x] Phase 5: Analytics banner position + PixelStatusCard redesign
 - [x] Phase 6: BundleFooterPreview — toggle filtered by bundle type; product-page DCP no longer shows full-page footer layouts
+- [x] Phase 7: Search Input nav item gated with isFullPage — only shown for full-page bundles (product-page widget has no search functionality)
