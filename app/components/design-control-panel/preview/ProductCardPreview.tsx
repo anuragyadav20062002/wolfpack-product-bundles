@@ -479,7 +479,7 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
 </div>`.trim();
 
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", padding: "4px 0" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "520px", padding: "4px 0" }}>
         <div>
           <Text as="h3" variant="headingLg" fontWeight="semibold">
             Widget Style
