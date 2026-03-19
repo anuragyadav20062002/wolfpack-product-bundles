@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-20
-**Last Updated:** 2026-03-20 03:00
+**Last Updated:** 2026-03-20 04:00
 
 ## Overview
 Fix all 8 bugs documented in `docs/dcp-settings-segregation/01-bugs-audit.md`.
@@ -43,12 +43,19 @@ Starting with dead code pruning, then working through the data-loss and visual b
 - ✅ Added fetcherIntentRef + cloningBundleTypeRef to track which action is in-flight
 - ✅ DASH-BUG-03 (pricing incomplete): Confirmed false alarm — clone handler does its own full DB query
 
+### 2026-03-20 04:00 - Completed configure page audit fixes
+- ✅ CONF-BUG-01: Removed `activeSection` from `handleSectionChange` deps in PDP route (stale closure, caused unnecessary recreations)
+- ✅ CONF-DEAD-01: Removed unused `SettingsIcon` import from PDP route
+- ✅ CONF-DEAD-01/02: Removed unused `SettingsIcon` + `LockIcon` imports from FPB route
+- ✅ CONF-DEAD-03: Removed 32 `AppLogger.debug` calls from PDP route and 29 from FPB route (dev-time debug logs, not suitable for production)
+
 ## Phases Checklist
 - [x] Phase 1: Dead code pruning + BUG-03/04
 - [x] Phase 2: BUG-01 (productTitleVisibility not saved + no CSS var)
 - [x] Phase 3: BUG-02 (variantSelector* fields not saved)
 - [x] Phase 4: BUG-05 (widgetStyle wrong preview — confirmed no fix needed)
 - [x] Phase 5: BUG-06 (generateFullPageVariables guard for full_page only)
+- [x] Phase 6: Configure page audit — dead imports, stale dep, remove 61 debug logs
 
 ## Related Documentation
 - `docs/dcp-settings-segregation/01-bugs-audit.md`
