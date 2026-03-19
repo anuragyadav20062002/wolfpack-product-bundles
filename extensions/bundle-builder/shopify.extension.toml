@@ -21,3 +21,8 @@ liquid_path = "blocks/bundle-product-page.liquid"
 target = "section"
 liquid_path = "blocks/bundle-full-page.liquid"
 
+# App Embed: Hides underscore-prefixed bundle properties in cart
+[[extensions.blocks]]
+target = "body"
+liquid_path = "blocks/bundle-property-hider.liquid"
+
