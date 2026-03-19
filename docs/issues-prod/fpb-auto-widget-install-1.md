@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-18
-**Last Updated:** 2026-03-18 02:00
+**Last Updated:** 2026-03-20 04:00
 
 ## Overview
 
@@ -48,6 +48,23 @@ Two changes:
 - `docs/fpb-auto-widget-install/00-BR.md` (created)
 - `docs/fpb-auto-widget-install/02-PO-requirements.md` (created)
 - `docs/fpb-auto-widget-install/03-architecture.md` (created)
+
+### 2026-03-20 04:00 - Critical fix: themeFilesUpsert API type mismatch
+
+Root cause of persistent FPB widget creation failure identified from production logs:
+
+```
+GraphqlQueryError: Type mismatch on variable $files and argument files
+  ([OnlineStoreThemeFileBodyInput!]! / [OnlineStoreThemeFilesUpsertFileInput!]!)
+```
+
+Shopify renamed `OnlineStoreThemeFileBodyInput` → `OnlineStoreThemeFilesUpsertFileInput`
+in the `themeFilesUpsert` mutation (2024-04+ API). We were using API version 2025-10 but
+the old type name, causing every template write to fail with a GraphQL type error.
+
+- Fixed: mutation variable type in `writeThemeAsset()` updated to `OnlineStoreThemeFilesUpsertFileInput`
+- Variable values unchanged — `{ filename, body: { asString: content } }` is still correct
+- File: `app/services/widget-installation/widget-theme-template.server.ts`
 
 ### 2026-03-18 02:00 - Phase 2 Bug Fix: Floating Card Positioning
 
