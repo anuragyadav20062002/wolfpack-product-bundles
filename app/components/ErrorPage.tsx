@@ -4,214 +4,442 @@ interface ErrorPageProps {
   error: unknown;
 }
 
-const STATUS_COPY: Record<number, { title: string; description: string }> = {
+// ---------------------------------------------------------------------------
+// Status-specific copy
+// ---------------------------------------------------------------------------
+const STATUS_CONFIG: Record<
+  number,
+  { title: string; description: string; hint: string }
+> = {
   400: {
     title: "Bad Request",
-    description: "The request couldn't be understood. Please check the URL and try again.",
+    description:
+      "The request couldn't be understood. Please check the URL and try again.",
+    hint: "If this keeps happening, try clearing your browser cache.",
   },
   401: {
-    title: "Unauthorised",
+    title: "Not Authenticated",
     description: "You need to be signed in to access this page.",
+    hint: "Try refreshing the page to re-authenticate with Shopify.",
   },
   403: {
     title: "Access Denied",
     description: "You don't have permission to view this page.",
+    hint: "Contact your store owner if you believe this is a mistake.",
   },
   404: {
     title: "Page Not Found",
-    description: "The page you're looking for doesn't exist or has been moved.",
+    description:
+      "The page you're looking for doesn't exist or may have been moved.",
+    hint: "Check the URL for typos, or head back to the dashboard.",
   },
   422: {
-    title: "Unprocessable Request",
-    description: "The server couldn't process your request. Please try again.",
+    title: "Invalid Request",
+    description: "The server couldn't process your request as submitted.",
+    hint: "Try again with different parameters.",
   },
   429: {
     title: "Too Many Requests",
-    description: "You've made too many requests. Please wait a moment before trying again.",
+    description:
+      "You've sent too many requests in a short period. Please slow down.",
+    hint: "Wait a few seconds and try again.",
   },
 };
 
-const FALLBACK_4XX = {
-  title: "Something Went Wrong",
-  description: "An unexpected error occurred. Please try again or return to the dashboard.",
+const FALLBACK_5XX = {
+  title: "Unexpected Error",
+  description: "Something went wrong on our end. Our team has been notified.",
+  hint: "Try refreshing the page or returning to the dashboard.",
 };
 
+// ---------------------------------------------------------------------------
+// Illustrations
+// ---------------------------------------------------------------------------
+function IllustrationServer() {
+  return (
+    <svg width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Server stack */}
+      <rect x="30" y="20" width="100" height="22" rx="5" fill="#E8E8F0" stroke="#C9C9DE" strokeWidth="1.5"/>
+      <circle cx="46" cy="31" r="4" fill="#A0A0C0"/>
+      <rect x="56" y="28" width="24" height="6" rx="3" fill="#C9C9DE"/>
+      <circle cx="112" cy="31" r="3" fill="#86EFAC"/>
+
+      <rect x="30" y="48" width="100" height="22" rx="5" fill="#E8E8F0" stroke="#C9C9DE" strokeWidth="1.5"/>
+      <circle cx="46" cy="59" r="4" fill="#A0A0C0"/>
+      <rect x="56" y="56" width="24" height="6" rx="3" fill="#C9C9DE"/>
+      <circle cx="112" cy="59" r="3" fill="#FCA5A5"/>
+
+      {/* Lightning bolt — error indicator */}
+      <path d="M88 40 L78 58 L86 58 L76 78 L96 54 L88 54 Z" fill="#F59E0B" stroke="#D97706" strokeWidth="1" strokeLinejoin="round"/>
+
+      {/* Bottom decorative dots */}
+      <circle cx="50" cy="100" r="4" fill="#E8E8F0"/>
+      <circle cx="65" cy="108" r="3" fill="#E8E8F0"/>
+      <circle cx="80" cy="103" r="5" fill="#E8E8F0"/>
+      <circle cx="96" cy="107" r="3" fill="#E8E8F0"/>
+      <circle cx="110" cy="100" r="4" fill="#E8E8F0"/>
+    </svg>
+  );
+}
+
+function IllustrationNotFound() {
+  return (
+    <svg width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Magnifying glass */}
+      <circle cx="70" cy="55" r="28" stroke="#C9C9DE" strokeWidth="6" fill="#F4F4F8"/>
+      <line x1="90" y1="75" x2="115" y2="100" stroke="#C9C9DE" strokeWidth="7" strokeLinecap="round"/>
+      {/* X inside lens */}
+      <line x1="58" y1="43" x2="82" y2="67" stroke="#A0A0C0" strokeWidth="5" strokeLinecap="round"/>
+      <line x1="82" y1="43" x2="58" y2="67" stroke="#A0A0C0" strokeWidth="5" strokeLinecap="round"/>
+      {/* Dots */}
+      <circle cx="35" cy="100" r="4" fill="#E8E8F0"/>
+      <circle cx="130" cy="30" r="5" fill="#E8E8F0"/>
+      <circle cx="140" cy="90" r="3" fill="#E8E8F0"/>
+      <circle cx="25" cy="40" r="3" fill="#E8E8F0"/>
+    </svg>
+  );
+}
+
+function IllustrationLocked() {
+  return (
+    <svg width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Lock body */}
+      <rect x="48" y="58" width="64" height="46" rx="8" fill="#E8E8F0" stroke="#C9C9DE" strokeWidth="2"/>
+      {/* Shackle */}
+      <path d="M62 58 V42 Q62 22 80 22 Q98 22 98 42 V58" stroke="#C9C9DE" strokeWidth="6" strokeLinecap="round" fill="none"/>
+      {/* Keyhole */}
+      <circle cx="80" cy="78" r="8" fill="#A0A0C0"/>
+      <rect x="76" y="82" width="8" height="12" rx="2" fill="#A0A0C0"/>
+      {/* Dots */}
+      <circle cx="30" cy="90" r="4" fill="#E8E8F0"/>
+      <circle cx="130" cy="95" r="5" fill="#E8E8F0"/>
+      <circle cx="140" cy="30" r="3" fill="#E8E8F0"/>
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard URL helper — preserves Shopify shop/host params so auth works
+// ---------------------------------------------------------------------------
+function navigateToDashboard() {
+  if (typeof window === "undefined") return;
+  const params = new URLSearchParams(window.location.search);
+  const shop = params.get("shop");
+  const host = params.get("host");
+  const qs = new URLSearchParams();
+  if (shop) qs.set("shop", shop);
+  if (host) qs.set("host", host);
+  const query = qs.toString();
+  window.location.href = `/app/dashboard${query ? `?${query}` : ""}`;
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 export function ErrorPage({ error }: ErrorPageProps) {
   let status = 500;
-  let title = "Unexpected Error";
-  let description = "Something went wrong on our end. Please try again shortly.";
+  let title = FALLBACK_5XX.title;
+  let description = FALLBACK_5XX.description;
+  let hint = FALLBACK_5XX.hint;
   let detail: string | null = null;
 
   if (isRouteErrorResponse(error)) {
     status = error.status;
-    const copy = STATUS_COPY[status] ?? (status < 500 ? FALLBACK_4XX : null);
-    if (copy) {
-      title = copy.title;
-      description = copy.description;
+    const cfg = STATUS_CONFIG[status];
+    if (cfg) {
+      title = cfg.title;
+      description = cfg.description;
+      hint = cfg.hint;
+    } else if (status >= 400 && status < 500) {
+      title = "Something Went Wrong";
+      description = "An unexpected error occurred. Please try again or return to the dashboard.";
+      hint = "If this keeps happening, contact support.";
     }
   } else if (error instanceof Error) {
     detail = error.message;
   }
 
   const is4xx = status >= 400 && status < 500;
+  const isNotFound = status === 404;
+  const isAuth = status === 401 || status === 403;
+
+  // Pick illustration
+  let Illustration = IllustrationServer;
+  if (isNotFound) Illustration = IllustrationNotFound;
+  else if (isAuth) Illustration = IllustrationLocked;
+
+  // Badge colour
+  const badgeColor = is4xx ? { bg: "#EEF2FF", text: "#4338CA" } : { bg: "#FEF2F2", text: "#B91C1C" };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        {/* Brand mark */}
-        <div style={styles.brandMark}>
-          <span style={styles.brandText}>W</span>
+    <div style={styles.root}>
+      {/* Top bar */}
+      <div style={styles.topBar}>
+        <div style={styles.topBarInner}>
+          <div style={styles.logoMark}>
+            <span style={styles.logoText}>W</span>
+          </div>
+          <span style={styles.appName}>Wolfpack Bundles</span>
         </div>
+      </div>
 
-        {/* Status badge */}
-        <div style={is4xx ? styles.badgeClient : styles.badgeServer}>
-          {status}
-        </div>
+      {/* Main content */}
+      <div style={styles.main}>
+        <div style={styles.content}>
+          {/* Illustration */}
+          <div style={styles.illustration}>
+            <Illustration />
+          </div>
 
-        {/* Heading */}
-        <h1 style={styles.heading}>{title}</h1>
-
-        {/* Description */}
-        <p style={styles.description}>{description}</p>
-
-        {/* Technical detail (only in non-production or for non-4xx) */}
-        {detail && !is4xx && (
-          <pre style={styles.detail}>{detail}</pre>
-        )}
-
-        {/* Actions */}
-        <div style={styles.actions}>
-          <a href="/app" style={styles.btnPrimary}>
-            Go to Dashboard
-          </a>
-          <button
-            onClick={() => window.history.back()}
-            style={styles.btnSecondary}
-            type="button"
+          {/* Status badge */}
+          <div
+            style={{
+              ...styles.badge,
+              background: badgeColor.bg,
+              color: badgeColor.text,
+            }}
           >
-            Go Back
-          </button>
+            {status}
+          </div>
+
+          {/* Heading */}
+          <h1 style={styles.heading}>{title}</h1>
+
+          {/* Description */}
+          <p style={styles.description}>{description}</p>
+
+          {/* Hint */}
+          <p style={styles.hint}>{hint}</p>
+
+          {/* Technical detail */}
+          {detail && !is4xx && (
+            <details style={styles.detailWrapper}>
+              <summary style={styles.detailSummary}>Technical details</summary>
+              <pre style={styles.detailPre}>{detail}</pre>
+            </details>
+          )}
+
+          {/* Actions */}
+          <div style={styles.actions}>
+            <button
+              type="button"
+              onClick={navigateToDashboard}
+              style={styles.btnPrimary}
+            >
+              Go to Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              style={styles.btnSecondary}
+            >
+              Go Back
+            </button>
+          </div>
+
+          {/* Support link */}
+          <p style={styles.support}>
+            Need help?{" "}
+            <a
+              href="mailto:support@getwolfpack.io"
+              style={styles.supportLink}
+            >
+              Contact support
+            </a>
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
 const styles: Record<string, React.CSSProperties> = {
-  page: {
+  root: {
     minHeight: "100vh",
     display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "linear-gradient(135deg, #f8f8fb 0%, #f0f0f8 100%)",
+    flexDirection: "column",
+    background: "#F6F6F7",
     fontFamily:
       "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
-    padding: "24px",
-    boxSizing: "border-box",
   },
-  card: {
-    background: "#ffffff",
-    borderRadius: "16px",
-    boxShadow:
-      "0 4px 6px -1px rgba(0,0,0,0.07), 0 10px 40px -8px rgba(92,106,196,0.12)",
-    padding: "48px 40px 40px",
-    maxWidth: "480px",
-    width: "100%",
-    textAlign: "center",
+
+  // Top bar
+  topBar: {
+    background: "#1A1A2E",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
   },
-  brandMark: {
-    width: "52px",
-    height: "52px",
-    borderRadius: "14px",
-    background: "linear-gradient(135deg, #5c6ac4 0%, #9c6ade 100%)",
+  topBarInner: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "0 24px",
+    height: "56px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+  logoMark: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "8px",
+    background: "linear-gradient(135deg, #5C6AC4 0%, #9C6ADE 100%)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    margin: "0 auto 24px",
-    boxShadow: "0 4px 12px rgba(92,106,196,0.35)",
+    flexShrink: 0,
   },
-  brandText: {
-    color: "#ffffff",
-    fontSize: "22px",
+  logoText: {
+    color: "#FFFFFF",
+    fontSize: "15px",
     fontWeight: "700",
     lineHeight: 1,
   },
-  badgeClient: {
-    display: "inline-block",
-    padding: "3px 12px",
-    borderRadius: "100px",
-    background: "linear-gradient(135deg, #5c6ac4 0%, #9c6ade 100%)",
-    color: "#ffffff",
-    fontSize: "13px",
+  appName: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: "15px",
     fontWeight: "600",
-    letterSpacing: "0.04em",
-    marginBottom: "20px",
+    letterSpacing: "-0.01em",
   },
-  badgeServer: {
-    display: "inline-block",
-    padding: "3px 12px",
+
+  // Main area
+  main: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "48px 24px",
+  },
+  content: {
+    width: "100%",
+    maxWidth: "520px",
+    textAlign: "center",
+  },
+
+  // Illustration
+  illustration: {
+    display: "flex",
+    justifyContent: "center",
+    marginBottom: "32px",
+    opacity: 0.9,
+  },
+
+  // Badge
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "4px 14px",
     borderRadius: "100px",
-    background: "#fef2f2",
-    color: "#b91c1c",
-    fontSize: "13px",
-    fontWeight: "600",
-    letterSpacing: "0.04em",
-    marginBottom: "20px",
+    fontSize: "12px",
+    fontWeight: "700",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase" as const,
+    marginBottom: "16px",
   },
+
+  // Text
   heading: {
     margin: "0 0 12px",
-    fontSize: "24px",
+    fontSize: "28px",
     fontWeight: "700",
-    color: "#1a1a2e",
-    lineHeight: 1.25,
+    color: "#1A1A2E",
+    lineHeight: 1.2,
+    letterSpacing: "-0.02em",
   },
   description: {
-    margin: "0 0 32px",
-    fontSize: "15px",
-    color: "#6b7280",
+    margin: "0 0 8px",
+    fontSize: "16px",
+    color: "#4B5563",
     lineHeight: 1.6,
   },
-  detail: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    borderRadius: "8px",
+  hint: {
+    margin: "0 0 32px",
+    fontSize: "14px",
+    color: "#9CA3AF",
+    lineHeight: 1.5,
+  },
+
+  // Technical detail (collapsible)
+  detailWrapper: {
+    background: "#FFFFFF",
+    border: "1px solid #E5E7EB",
+    borderRadius: "10px",
+    padding: "0",
+    marginBottom: "28px",
+    textAlign: "left",
+    overflow: "hidden",
+  },
+  detailSummary: {
     padding: "12px 16px",
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#6B7280",
+    cursor: "pointer",
+    userSelect: "none" as const,
+    listStyle: "none",
+  },
+  detailPre: {
+    margin: 0,
+    padding: "12px 16px 16px",
+    borderTop: "1px solid #F3F4F6",
     fontSize: "12px",
     color: "#374151",
-    textAlign: "left",
     overflowX: "auto",
-    marginBottom: "24px",
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
+    whiteSpace: "pre-wrap" as const,
+    wordBreak: "break-word" as const,
+    background: "#FAFAFA",
+    lineHeight: 1.6,
   },
+
+  // Buttons
   actions: {
     display: "flex",
     gap: "12px",
     justifyContent: "center",
-    flexWrap: "wrap",
+    flexWrap: "wrap" as const,
+    marginBottom: "28px",
   },
   btnPrimary: {
-    display: "inline-block",
-    padding: "10px 24px",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "11px 28px",
     borderRadius: "8px",
-    background: "linear-gradient(135deg, #5c6ac4 0%, #9c6ade 100%)",
-    color: "#ffffff",
+    background: "linear-gradient(135deg, #5C6AC4 0%, #7B5BE6 100%)",
+    color: "#FFFFFF",
     fontSize: "14px",
     fontWeight: "600",
-    textDecoration: "none",
-    boxShadow: "0 2px 8px rgba(92,106,196,0.30)",
-    transition: "opacity 0.15s",
+    border: "none",
+    cursor: "pointer",
+    boxShadow: "0 1px 3px rgba(92,106,196,0.3), 0 4px 12px rgba(92,106,196,0.2)",
+    letterSpacing: "-0.01em",
   },
   btnSecondary: {
-    display: "inline-block",
-    padding: "10px 24px",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "11px 28px",
     borderRadius: "8px",
-    background: "transparent",
-    border: "1.5px solid #e5e7eb",
+    background: "#FFFFFF",
     color: "#374151",
     fontSize: "14px",
     fontWeight: "600",
+    border: "1.5px solid #E5E7EB",
     cursor: "pointer",
-    transition: "border-color 0.15s",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+    letterSpacing: "-0.01em",
+  },
+
+  // Support
+  support: {
+    margin: 0,
+    fontSize: "13px",
+    color: "#9CA3AF",
+  },
+  supportLink: {
+    color: "#5C6AC4",
+    textDecoration: "none",
+    fontWeight: "500",
   },
 };
