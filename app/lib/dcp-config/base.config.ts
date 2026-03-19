@@ -43,10 +43,4 @@ export const BASE_DCP_CONFIG: DCPGroup[] = [
       { key: 'accessibility', label: 'Accessibility' },
     ],
   },
-  {
-    key: 'customCss',
-    label: 'Custom CSS',
-    hasChildren: false,
-    sectionKey: 'customCss',
-  },
 ];

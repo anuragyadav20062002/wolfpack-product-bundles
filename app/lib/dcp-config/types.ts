@@ -6,12 +6,11 @@ export type DCPSectionKey =
   | 'headerTabs' | 'headerText'
   | 'emptyState' | 'addToCartButton' | 'toasts' | 'modalCloseButton'
   | 'accessibility' | 'widgetStyle'
-  | 'promoBanner' | 'tierPills'
-  | 'customCss';
+  | 'promoBanner' | 'tierPills';
 
 export type DCPGroupKey =
   | 'globalColors' | 'productCard' | 'bundleFooter' | 'bundleHeader'
-  | 'general' | 'promoBanner' | 'tierPills' | 'customCss';
+  | 'general' | 'promoBanner' | 'tierPills';
 
 export interface DCPSection {
   key: DCPSectionKey;
