@@ -369,19 +369,6 @@ export function createSettingSetters(
     setDiscountTextColor: (v: string) => updateSetting("discountTextColor", v),
     setDiscountTextFontSize: (v: number) => updateSetting("discountTextFontSize", v),
 
-    // Step Bar
-    setStepNameFontColor: (v: string) => updateSetting("stepNameFontColor", v),
-    setStepNameFontSize: (v: number) => updateSetting("stepNameFontSize", v),
-    setCompletedStepCheckMarkColor: (v: string) => updateSetting("completedStepCheckMarkColor", v),
-    setCompletedStepBgColor: (v: string) => updateSetting("completedStepBgColor", v),
-    setCompletedStepCircleBorderColor: (v: string) => updateSetting("completedStepCircleBorderColor", v),
-    setCompletedStepCircleBorderRadius: (v: number) => updateSetting("completedStepCircleBorderRadius", v),
-    setIncompleteStepBgColor: (v: string) => updateSetting("incompleteStepBgColor", v),
-    setIncompleteStepCircleStrokeColor: (v: string) => updateSetting("incompleteStepCircleStrokeColor", v),
-    setIncompleteStepCircleStrokeRadius: (v: number) => updateSetting("incompleteStepCircleStrokeRadius", v),
-    setStepBarProgressFilledColor: (v: string) => updateSetting("stepBarProgressFilledColor", v),
-    setStepBarProgressEmptyColor: (v: string) => updateSetting("stepBarProgressEmptyColor", v),
-
     // Tabs
     setTabsActiveBgColor: (v: string) => updateSetting("tabsActiveBgColor", v),
     setTabsActiveTextColor: (v: string) => updateSetting("tabsActiveTextColor", v),

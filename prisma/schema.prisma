@@ -215,6 +215,7 @@ model DesignSettings {
   productCardImageFit         String? @default("cover") // cover, contain, fill
   productCardsPerRow          Int?    @default(3)
   productPriceVisibility      Boolean @default(true)
+  productTitleVisibility      Boolean @default(true)
   productPriceBgColor         String? @default("#F0F8F0") // Background color for price section
   productStrikePriceColor     String? @default("#8D8D8D")
   productStrikeFontSize       Int?    @default(14)
@@ -260,6 +261,11 @@ model DesignSettings {
   buttonAddToCartText         String? @default("Add to cart")
   buttonAddedBgColor          String? @default("#10B981")
   buttonAddedTextColor        String? @default("#FFFFFF")
+
+  // Variant Selector
+  variantSelectorBgColor      String? @default("#FFFFFF")
+  variantSelectorTextColor    String? @default("#000000")
+  variantSelectorBorderRadius Int?    @default(8)
 
   // Quantity Selector Section
   quantitySelectorBgColor     String? @default("#000000")

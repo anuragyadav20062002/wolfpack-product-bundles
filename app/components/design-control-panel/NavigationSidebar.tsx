@@ -10,9 +10,9 @@ import { NavigationItem } from "./NavigationItem";
 import type { BundleType } from "../../constants/bundle";
 import { getDCPConfig } from "../../lib/dcp-config";
 
-// Base config has 5 groups (globalColors, productCard, bundleFooter, general, customCss).
-// Any groups beyond index 4 are bundle-type-specific extras (e.g. FPB bundleHeader, promoBanner, tierPills).
-const BASE_GROUP_COUNT = 5;
+// Base config has 4 groups (globalColors, productCard, bundleFooter, general).
+// Any groups beyond index 3 are bundle-type-specific extras (e.g. FPB bundleHeader, promoBanner, tierPills).
+const BASE_GROUP_COUNT = 4;
 
 interface NavigationSidebarProps {
   bundleType: BundleType;

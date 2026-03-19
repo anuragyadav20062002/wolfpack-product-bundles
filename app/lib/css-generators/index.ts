@@ -60,7 +60,7 @@ export function generateCSSFromSettings(
 
   // Generate CSS sections
   const cssVariables = generateCSSVariables(ctx);
-  const fullPageVariables = generateFullPageVariables(ctx);
+  const fullPageVariables = bundleType === 'full_page' ? generateFullPageVariables(ctx) : '';
   const productCardCSS = generateProductCardCSS();
   const buttonCSS = generateButtonCSS();
   const footerCSS = generateFooterCSS();

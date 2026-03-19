@@ -4,7 +4,6 @@ import { ProductCardPreview } from "./ProductCardPreview";
 import { BundleFooterPreview } from "./BundleFooterPreview";
 import { BundleHeaderPreview } from "./BundleHeaderPreview";
 import { GeneralPreview } from "./GeneralPreview";
-import { StepBarPreview } from "./StepBarPreview";
 import { PromoBannerPreview } from "./PromoBannerPreview";
 import { GlobalColorsPreview } from "./GlobalColorsPreview";
 import { TierPillPreview } from "./TierPillPreview";
@@ -106,15 +105,6 @@ export function PreviewPanel({ activeSubSection, settings, bundleType }: Preview
     return (
       <PreviewScope settings={settings}>
         <BundleHeaderPreview activeSubSection={activeSubSection} />
-      </PreviewScope>
-    );
-  }
-
-  // Bundle Step Bar subsections
-  if (["stepName", "completedStep", "incompleteStep", "stepBarProgressBar", "stepBarTabs"].includes(activeSubSection)) {
-    return (
-      <PreviewScope settings={settings}>
-        <StepBarPreview activeSubSection={activeSubSection} />
       </PreviewScope>
     );
   }
