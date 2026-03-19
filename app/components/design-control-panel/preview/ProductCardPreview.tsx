@@ -355,49 +355,138 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
     );
   }
 
-  // Widget Style sub-section — pixel-accurate slot card preview using real CSS classes
+  // Widget Style sub-section — mobile frame showing slot cards + bottom-sheet panel
   if (activeSubSection === "widgetStyle") {
     const widgetStyleHTML = `
-<div class="bundle-steps" style="grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 360px;">
-  <div class="bw-slot-card bw-slot-card--empty">
-    <div class="bw-slot-card__plus-icon">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #1e3a8a))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+<div style="width:300px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+
+  <!-- PDP product page simulation -->
+  <div style="background:#fff;border-radius:12px 12px 0 0;padding:14px 14px 0;border:1px solid #e8e8e8;border-bottom:none;">
+
+    <!-- Product title skeleton -->
+    <div style="height:10px;background:#111;border-radius:5px;width:50%;margin-bottom:5px;"></div>
+    <div style="height:8px;background:#e0e0e0;border-radius:5px;width:30%;margin-bottom:14px;"></div>
+
+    <!-- Slot cards row -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+
+      <!-- Empty slot 1 -->
+      <div class="bw-slot-card bw-slot-card--empty" style="flex:1;height:88px;min-width:0;">
+        <div class="bw-slot-card__plus-icon" style="margin-bottom:4px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-state-card-border,var(--bundle-global-primary-button,#1e3a8a))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+        </div>
+        <span class="bw-slot-card__label" style="font-size:9px;color:#555;text-align:center;line-height:1.2;">T-Shirts</span>
+      </div>
+
+      <!-- Empty slot 2 -->
+      <div class="bw-slot-card bw-slot-card--empty" style="flex:1;height:88px;min-width:0;">
+        <div class="bw-slot-card__plus-icon" style="margin-bottom:4px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-state-card-border,var(--bundle-global-primary-button,#1e3a8a))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+        </div>
+        <span class="bw-slot-card__label" style="font-size:9px;color:#555;text-align:center;line-height:1.2;">Pants</span>
+      </div>
+
+      <!-- Filled slot -->
+      <div class="bw-slot-card bw-slot-card--filled" style="flex:1;height:88px;min-width:0;position:relative;overflow:hidden;">
+        <div style="width:100%;height:62px;background:linear-gradient(145deg,#ddd6fe,#a78bfa);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" opacity="0.6"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H5v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10h1.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
+        </div>
+        <div style="padding:3px 5px 5px;font-size:9px;font-weight:600;color:#111;line-height:1.3;text-align:center;">Classic Tee</div>
+        <div style="position:absolute;top:5px;right:5px;width:16px;height:16px;background:var(--bundle-global-primary-button,#1e3a8a);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+    </div><!-- /slot cards row -->
+
+    <!-- ATC button -->
+    <div style="background:var(--bundle-global-primary-button,#1e3a8a);height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:0;">
+      <span style="color:var(--bundle-global-button-text,#fff);font-size:11px;font-weight:600;letter-spacing:0.02em;">Add Bundle to Cart · $49.99</span>
     </div>
-    <span class="bw-slot-card__label">T-Shirts</span>
+
+    <!-- Dim strip (overlay starts here) -->
+    <div style="height:10px;background:linear-gradient(to bottom,transparent,rgba(0,0,0,0.18));margin:0 -14px;"></div>
   </div>
-  <div class="bw-slot-card bw-slot-card--empty">
-    <div class="bw-slot-card__plus-icon">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #1e3a8a))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+
+  <!-- Scrim -->
+  <div style="background:rgba(0,0,0,0.32);height:28px;margin:0;"></div>
+
+  <!-- Bottom sheet panel -->
+  <div style="background:var(--bundle-footer-bg-color,#fff);border-radius:0;padding:12px 12px 14px;border:1px solid #e8e8e8;border-top:none;box-shadow:0 -6px 24px rgba(0,0,0,0.13);">
+    <!-- Drag handle -->
+    <div style="width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 10px;"></div>
+
+    <!-- Sheet header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <span style="font-size:11px;font-weight:700;color:#111;">Choose T-Shirts</span>
+      <div style="width:18px;height:18px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
     </div>
-    <span class="bw-slot-card__label">Pants</span>
-  </div>
-  <div class="bw-slot-card bw-slot-card--filled">
-    <div class="bw-slot-card__image-wrapper">
-      <img src="${PLACEHOLDER_IMG}" alt="Selected product" loading="lazy">
-    </div>
-    <div style="padding: 6px 6px 8px; font-size: 11px; font-weight: 600; color: #111; line-height: 1.3;">Classic Tee</div>
-  </div>
+
+    <!-- Mini product grid inside sheet -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+
+      <!-- Product 1 — selected -->
+      <div class="product-card selected" style="border-radius:8px;overflow:hidden;position:relative;padding:0;min-height:0;">
+        <div style="height:54px;background:linear-gradient(135deg,#d1fae5,#6ee7b7);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.5" opacity="0.7"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H5v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10h1.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
+        </div>
+        <div style="padding:4px 5px;">
+          <div style="font-size:8px;font-weight:600;color:#111;line-height:1.2;margin-bottom:2px;">Basic Tee</div>
+          <div style="font-size:8px;color:#555;">$24.99</div>
+        </div>
+        <div style="position:absolute;top:4px;right:4px;width:14px;height:14px;background:var(--bundle-global-primary-button,#1e3a8a);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+      <!-- Product 2 — unselected -->
+      <div class="product-card" style="border-radius:8px;overflow:hidden;padding:0;min-height:0;">
+        <div style="height:54px;background:linear-gradient(135deg,#fef3c7,#fcd34d);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="1.5" opacity="0.7"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H5v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10h1.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
+        </div>
+        <div style="padding:4px 5px;">
+          <div style="font-size:8px;font-weight:600;color:#111;line-height:1.2;margin-bottom:2px;">Premium Tee</div>
+          <div style="font-size:8px;color:#555;">$34.99</div>
+        </div>
+      </div>
+
+      <!-- Product 3 — unselected -->
+      <div class="product-card" style="border-radius:8px;overflow:hidden;padding:0;min-height:0;">
+        <div style="height:54px;background:linear-gradient(135deg,#fce7f3,#f9a8d4);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#be185d" stroke-width="1.5" opacity="0.7"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H5v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10h1.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
+        </div>
+        <div style="padding:4px 5px;">
+          <div style="font-size:8px;font-weight:600;color:#111;line-height:1.2;margin-bottom:2px;">Graphic Tee</div>
+          <div style="font-size:8px;color:#555;">$29.99</div>
+        </div>
+      </div>
+
+    </div><!-- /product grid -->
+  </div><!-- /bottom sheet -->
+
 </div>`.trim();
 
     return (
-      <div style={{ textAlign: "center" }}>
-        <Text as="h3" variant="headingLg" fontWeight="semibold">
-          Widget Style
-        </Text>
-        <Text as="p" variant="bodySm" tone="subdued">
-          Slot cards — bottom-sheet mode
-        </Text>
-        <div style={{ marginTop: "32px", display: "inline-block" }}>
-          <HighlightBox active>
-            {/* eslint-disable-next-line react/no-danger */}
-            <div dangerouslySetInnerHTML={{ __html: widgetStyleHTML }} />
-          </HighlightBox>
-        </div>
-        <div style={{ marginTop: "16px" }}>
-          <Text as="p" variant="bodySm" tone="subdued">
-            Empty slots open the product picker sheet when tapped
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+        <div>
+          <Text as="h3" variant="headingLg" fontWeight="semibold" alignment="center">
+            Widget Style
           </Text>
+          <div style={{ marginTop: "4px" }}>
+            <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+              Bottom-sheet mode — slot cards open a product picker
+            </Text>
+          </div>
         </div>
+        <div style={{ display: "inline-block" }}>
+          {/* eslint-disable-next-line react/no-danger */}
+          <div dangerouslySetInnerHTML={{ __html: widgetStyleHTML }} />
+        </div>
+        <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+          Border style &amp; color apply to the empty slot cards above
+        </Text>
       </div>
     );
   }
