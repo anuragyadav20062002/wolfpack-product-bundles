@@ -54,7 +54,7 @@ describe("action — enable intent", () => {
     mockActivate.mockResolvedValue({ success: true, pixelId: "gid://shopify/WebPixel/1" });
 
     const response = await action({ request: makeRequest("enable"), params: {}, context: {} });
-    const data = await response.json();
+    const data: any = await response.json();
 
     expect(data.success).toBe(true);
     expect(data.pixelActive).toBe(true);
@@ -65,7 +65,7 @@ describe("action — enable intent", () => {
     mockActivate.mockResolvedValue({ success: false, error: '[{"code":"INVALID"}]' });
 
     const response = await action({ request: makeRequest("enable"), params: {}, context: {} });
-    const data = await response.json();
+    const data: any = await response.json();
 
     expect(data.success).toBe(false);
     expect(data.pixelActive).toBe(false);
@@ -73,10 +73,10 @@ describe("action — enable intent", () => {
   });
 
   it("returns success:false when SHOPIFY_APP_URL env var is missing", async () => {
-    delete process.env.SHOPIFY_APP_URL;
+    delete (process.env as Record<string, string | undefined>).SHOPIFY_APP_URL;
 
     const response = await action({ request: makeRequest("enable"), params: {}, context: {} });
-    const data = await response.json();
+    const data: any = await response.json();
 
     expect(data.success).toBe(false);
     expect(data.pixelActive).toBe(false);
@@ -90,7 +90,7 @@ describe("action — disable intent", () => {
     mockDeactivate.mockResolvedValue({ success: true });
 
     const response = await action({ request: makeRequest("disable"), params: {}, context: {} });
-    const data = await response.json();
+    const data: any = await response.json();
 
     expect(data.success).toBe(true);
     expect(data.pixelActive).toBe(false);
@@ -101,7 +101,7 @@ describe("action — disable intent", () => {
     mockDeactivate.mockResolvedValue({ success: false, error: "Delete failed" });
 
     const response = await action({ request: makeRequest("disable"), params: {}, context: {} });
-    const data = await response.json();
+    const data: any = await response.json();
 
     expect(data.success).toBe(false);
     expect(data.pixelActive).toBe(true);

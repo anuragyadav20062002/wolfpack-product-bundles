@@ -22,6 +22,10 @@ export default {
     // Transform ES-module .js widget files (pricing-calculator, constants, etc.)
     '^.+\\.js$': ['babel-jest', { plugins: ['@babel/plugin-transform-modules-commonjs'] }],
   },
+  // Use V8 (Node built-in) coverage provider to avoid minimatch v9 incompatibility
+  // with babel-plugin-istanbul / test-exclude v6 (which calls minimatch as a function,
+  // but minimatch v9 exports an object).
+  coverageProvider: 'v8',
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
     'extensions/**/*.{ts,tsx}',

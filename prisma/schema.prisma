@@ -95,6 +95,8 @@ model Bundle {
   promoBannerBgImage String? // URL of the promo banner background image (full-page bundles only)
   promoBannerBgImageCrop String? // JSON {x,y,width} percentages defining the visible crop region
   loadingGif       String? // URL of the loading GIF shown during bundle load, step transitions, and add-to-cart
+  tierConfig       Json?   // Pricing tier pills config: [{ label, linkedBundleId }] (full-page bundles only)
+  showStepTimeline Boolean? // Admin UI override for step timeline visibility; null = defer to theme editor setting
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)
@@ -132,6 +134,10 @@ model BundleStep {
   conditionValue              Int?
   conditionOperator2          String?
   conditionValue2             Int?
+  isFreeGift                  Boolean       @default(false)
+  freeGiftName                String?
+  isDefault                   Boolean       @default(false)
+  defaultVariantId            String?
   bundleId                    String
   bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]
@@ -310,6 +316,41 @@ model DesignSettings {
   // Focus / Accessibility
   focusOutlineColor           String? @default("#5C6AC4")
   focusOutlineWidth           Int?    @default(2)
+
+  // Toast Notifications (extended customization)
+  toastBorderRadius           Int?    @default(8)
+  toastBorderColor            String? @default("#FFFFFF")
+  toastBorderWidth            Int?    @default(0)
+  toastFontSize               Int?    @default(13)
+  toastFontWeight             Int?    @default(500)
+  toastAnimationDuration      Int?    @default(300)
+  toastBoxShadow              String? @default("0 4px 12px rgba(0, 0, 0, 0.15)")
+  toastEnterFromBottom        Boolean @default(false)
+
+  // Pricing Tier Pills
+  tierPillActiveBgColor       String? @default("#111111")
+  tierPillActiveTextColor     String? @default("#FFFFFF")
+  tierPillInactiveBgColor     String? @default("#F2FAE6")
+  tierPillInactiveTextColor   String? @default("#333333")
+  tierPillHoverBgColor        String? @default("#DCF5D2")
+  tierPillBorderColor         String? @default("#000000")
+  tierPillBorderRadius        Int?    @default(8)
+  tierPillHeight              Int?    @default(52)
+  tierPillGap                 Int?    @default(12)
+  tierPillFontSize            Int?    @default(14)
+  tierPillFontWeight          Int?    @default(600)
+
+  // Loading Overlay
+  loadingOverlayBgColor       String? @default("rgba(255,255,255,0.85)")
+  loadingOverlayTextColor     String? @default("#333333")
+
+  // Widget Style & Bottom Sheet
+  widgetStyle                 String? @default("classic")
+  bottomSheetOverlayOpacity   Float?  @default(0.5)
+  bottomSheetAnimationDuration Int?   @default(400)
+  emptySlotBorderStyle        String? @default("dashed")
+  emptySlotBorderColor        String? @default("#007AFF")
+  freeGiftBadgeUrl            String? @default("")
 
   // Advanced Settings - Custom CSS
   customCss                   String?

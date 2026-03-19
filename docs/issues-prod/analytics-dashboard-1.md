@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-12
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-03-20
 
 ## Overview
 
@@ -46,3 +46,4 @@ Research findings (agent `a18bd128c09fb0ec9`) confirmed:
 - [x] Build new dashboard UI with recharts charts
 - [x] Update CSS module
 - [x] Lint + commit
+- [x] Fix X axis: compute numeric interval from timeSeries.length for optimal tick spacing (7d=every day, 30d=every 5th, 90d=every ~11th)

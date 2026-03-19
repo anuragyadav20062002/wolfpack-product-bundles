@@ -15,6 +15,8 @@
  * All price/amount values are in CENTS (e.g. $10.00 = 1000).
  */
 
+export {};
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PricingCalculator } = require('../../../app/assets/widgets/shared/pricing-calculator.js');
 

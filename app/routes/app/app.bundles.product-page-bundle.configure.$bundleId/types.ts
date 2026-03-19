@@ -5,7 +5,7 @@
  */
 
 import type { PricingRule } from "../../../types/pricing";
-export type { BundleStatus } from "../../../constants/bundle";
+import type { BundleStatus } from "../../../constants/bundle";
 
 export interface StepProduct {
   id: string;
@@ -35,9 +35,11 @@ export interface BundleData {
   description?: string;
   shopId: string;
   shopifyProductId?: string;
+  shopifyProductHandle?: string;
   bundleType: string;
   status: BundleStatus;
   templateName?: string;
+  loadingGif?: string | null;
   steps: BundleStep[];
   pricing?: BundlePricing;
 }

@@ -62,6 +62,30 @@
 
 'use strict';
 
+// ============================================================
+// BOTTOM-SHEET HELPER FUNCTIONS (pure — exposed for unit tests)
+// ============================================================
+
+/**
+ * Find the next incomplete non-default step after `fromIndex`.
+ * Returns -1 when all remaining non-default steps are complete.
+ */
+function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex) {
+  for (let i = fromIndex + 1; i < steps.length; i++) {
+    if (!steps[i].isDefault && !validateFn(i)) return i;
+  }
+  return -1;
+}
+
+function bsIsDefaultStep(step) { return !!step?.isDefault; }
+
+function bsGetDiscountBadgeLabel(step) { return step?.discountBadgeLabel || null; }
+
+// Export for unit tests
+if (typeof window !== 'undefined') {
+  window.__bsHelpers = { bsFindNextIncompleteStep, bsIsDefaultStep, bsGetDiscountBadgeLabel };
+}
+
 // Import shared components and utilities
 import {
   BUNDLE_WIDGET,
@@ -138,6 +162,9 @@ class BundleWidgetProductPage {
       // Initialize data structures
       this.initializeDataStructures();
 
+      // Pre-load product data for default steps so filled cards show real image/title
+      await this._preloadDefaultStepProducts();
+
       // Setup DOM elements
       this.setupDOMElements();
 
@@ -193,7 +220,6 @@ class BundleWidgetProductPage {
       isContainerProduct: dataset.isContainerProduct === 'true',
       containerBundleId: dataset.containerBundleId || null,
       hideDefaultButtons: dataset.hideDefaultButtons === 'true',
-      showTitle: dataset.showTitle !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       // Quantity selector visibility settings (default: show on card)
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
@@ -251,8 +277,47 @@ class BundleWidgetProductPage {
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
 
+    // Determine widget style: 'bottom-sheet' or 'classic' (default for backward compat)
+    this.widgetStyle = this.selectedBundle?.widgetStyle ?? 'classic';
+
     // Update message templates from bundle pricing messages
     this.updateMessagesFromBundle();
+  }
+
+  // ========================================================================
+  // STEP TYPE GETTERS
+  // ========================================================================
+
+  /** Steps that are neither free gift nor default — require user selection */
+  get paidSteps() {
+    return this.selectedBundle?.steps?.filter(s => !s.isFreeGift && !s.isDefault) ?? [];
+  }
+
+  /** The free gift step, if any */
+  get freeGiftStep() {
+    return this.selectedBundle?.steps?.find(s => s.isFreeGift) ?? null;
+  }
+
+  /** Index of the free gift step, or -1 */
+  get freeGiftStepIndex() {
+    return this.selectedBundle?.steps?.findIndex(s => s.isFreeGift) ?? -1;
+  }
+
+  /** Steps that are pre-filled with a compulsory product */
+  get defaultStepsList() {
+    return this.selectedBundle?.steps?.filter(s => s.isDefault) ?? [];
+  }
+
+  /**
+   * True when all paid (non-free-gift, non-default) steps are fully satisfied.
+   * Used to unlock the free gift slot.
+   */
+  get isFreeGiftUnlocked() {
+    if (!this.selectedBundle) return false;
+    return this.selectedBundle.steps.every((step, i) => {
+      if (step.isFreeGift || step.isDefault) return true; // skip these
+      return this.validateStep(i);
+    });
   }
 
   updateMessagesFromBundle() {
@@ -282,6 +347,45 @@ class BundleWidgetProductPage {
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
     this._stepFetchFailed = {};
+
+    // Pre-mark default steps as complete using a sentinel variant ID
+    // (default products are always included in the bundle — no user selection required)
+    if (this.widgetStyle === 'bottom-sheet') {
+      this.selectedBundle.steps.forEach((step, i) => {
+        if (step.isDefault && step.defaultVariantId) {
+          this.selectedProducts[i][step.defaultVariantId] = 1;
+        }
+      });
+    }
+  }
+
+  /**
+   * Pre-fetches product data for all steps marked isDefault so that
+   * the filled slot card can render with real image and title on first paint.
+   * Non-fatal — a failed fetch just leaves the card in a loading placeholder state.
+   */
+  async _preloadDefaultStepProducts() {
+    const promises = this.selectedBundle.steps.map((step, i) => {
+      if (step.isDefault && step.defaultVariantId) {
+        return this.loadStepProducts(i).catch(() => {});
+      }
+      return null;
+    }).filter(Boolean);
+    if (promises.length > 0) await Promise.all(promises);
+  }
+
+  /**
+   * Returns the product object for a default step from stepProductData,
+   * matched by defaultVariantId. Returns null when not yet loaded.
+   */
+  _getDefaultStepProduct(stepIndex) {
+    const step = this.selectedBundle.steps[stepIndex];
+    if (!step?.isDefault || !step.defaultVariantId) return null;
+    const products = this.stepProductData[stepIndex] || [];
+    const variantId = String(step.defaultVariantId);
+    return products.find(p =>
+      String(p.variantId || p.id) === variantId
+    ) || products[0] || null;
   }
 
   /**
@@ -345,19 +449,23 @@ class BundleWidgetProductPage {
   // ========================================================================
 
   setupDOMElements() {
+    // Determine which modal to use based on widget style
+    const modalEl = this.widgetStyle === 'bottom-sheet'
+      ? this.ensureBottomSheet()
+      : this.ensureModal();
+
     // Get or create main UI elements
     this.elements = {
-      header: this.container.querySelector('.bundle-header') || this.createHeader(),
       stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
       footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
       addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
-      modal: this.ensureModal()
+      modal: modalEl,
+      bsOverlay: this.widgetStyle === 'bottom-sheet'
+        ? (document.getElementById('bw-bs-overlay') || this._createBottomSheetOverlay())
+        : null
     };
 
     // Append elements if they were created
-    if (!this.container.querySelector('.bundle-header')) {
-      this.container.appendChild(this.elements.header);
-    }
     if (!this.container.querySelector('.bundle-steps')) {
       this.container.appendChild(this.elements.stepsContainer);
     }
@@ -366,14 +474,80 @@ class BundleWidgetProductPage {
     }
   }
 
-  createHeader() {
-    const header = document.createElement('div');
-    header.className = 'bundle-header';
-    header.innerHTML = `
-      <h2 class="bundle-title">${ComponentGenerator.escapeHtml(this.selectedBundle.name)}</h2>
-      ${this.selectedBundle.description ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(this.selectedBundle.description)}</p>` : ''}
-    `;
-    return header;
+  _createBottomSheetOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'bw-bs-overlay';
+    overlay.className = 'bw-bs-overlay';
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  /**
+   * Creates the bottom-sheet panel using the SAME inner DOM structure as ensureModal()
+   * so all existing renderModalProducts / renderModalTabs / tab-arrow code works unchanged.
+   */
+  ensureBottomSheet() {
+    let panel = document.getElementById('bundle-builder-modal');
+
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'bundle-builder-modal';
+      panel.className = 'bw-bs-panel';
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+      panel.innerHTML = `
+        <div class="modal-header bw-bs-header">
+          <!-- Desktop close: × absolute top-right -->
+          <button class="close-button bw-bs-close-desktop" aria-label="Close">
+            <svg viewBox="0 0 20 20" width="20" height="20" focusable="false" aria-hidden="true" fill="currentColor">
+              <path d="M13.97 15.03a.75.75 0 1 0 1.06-1.06l-3.97-3.97 3.97-3.97a.75.75 0 0 0-1.06-1.06l-3.97 3.97-3.97-3.97a.75.75 0 0 0-1.06 1.06l3.97 3.97-3.97 3.97a.75.75 0 1 0 1.06 1.06l3.97-3.97 3.97 3.97Z"/>
+            </svg>
+          </button>
+          <!-- Mobile close: chevron-down absolute top-center -->
+          <button class="close-button bw-bs-close-mobile" aria-label="Close">
+            <svg width="40" height="24" viewBox="0 0 70 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M20.0188 8.6438C21.044 7.6187 22.706 7.6187 23.7312 8.6438L35.875 20.7877L48.0188 8.6438C49.044 7.6187 50.706 7.6187 51.7312 8.6438C52.7563 9.669 52.7563 11.331 51.7312 12.3562L37.7312 26.3562C36.706 27.3813 35.044 27.3813 34.0188 26.3562L20.0188 12.3562C18.9937 11.331 18.9937 9.669 20.0188 8.6438Z" fill="#4A4A4A"/>
+            </svg>
+          </button>
+          <!-- Category tabs — grid layout, equal columns -->
+          <div class="modal-tabs-wrapper bw-bs-tabs-wrapper">
+            <div class="modal-tabs bw-bs-tabs"></div>
+          </div>
+          <!-- "Choose X" step title -->
+          <div class="modal-step-title bw-bs-choose-title"></div>
+          <!-- Discount / progress messaging -->
+          <div class="bw-bs-discount-bar footer-discount-text"></div>
+        </div>
+        <div class="modal-body bw-bs-body">
+          <div class="product-grid bw-bs-product-grid"></div>
+        </div>
+        <div class="modal-footer bw-bs-footer">
+          <!-- Cart count pill (white, floats above nav pill) -->
+          <div class="bw-bs-cart-pill">
+            <span class="cart-badge-count">0</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M3 4.5C3 4.22386 3.22386 4 3.5 4H5.5C5.73 4 5.93 4.16 5.98 4.385L6.52 7H20.5C20.76 7 20.99 7.14 21.1 7.37C21.21 7.6 21.18 7.88 21.02 8.08L17.02 13.08C16.85 13.29 16.6 13.41 16.33 13.41H8.66L8.07 16H19.5C19.78 16 20 16.22 20 16.5C20 16.78 19.78 17 19.5 17H7.5C7.27 17 7.07 16.84 7.02 16.615L5.02 7.615L4.5 5H3.5C3.22 5 3 4.78 3 4.5ZM8 19.5C8 20.33 7.33 21 6.5 21C5.67 21 5 20.33 5 19.5C5 18.67 5.67 18 6.5 18C7.33 18 8 18.67 8 19.5ZM19 19.5C19 20.33 18.33 21 17.5 21C16.67 21 16 20.33 16 19.5C16 18.67 16.67 18 17.5 18C18.33 18 19 18.67 19 19.5Z" fill="#333"/>
+            </svg>
+          </div>
+          <!-- PREV/NEXT nav pill (navy blue) -->
+          <div class="bw-bs-nav-pill">
+            <button class="modal-nav-button prev-button bw-bs-nav-btn" aria-label="Previous step">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              PREV
+            </button>
+            <button class="modal-nav-button next-button bw-bs-nav-btn" aria-label="Next step">
+              NEXT
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(panel);
+      // No tab scroll arrows needed — tabs use CSS grid layout
+    }
+
+    return panel;
   }
 
   createStepsContainer() {
@@ -504,19 +678,9 @@ class BundleWidgetProductPage {
   // ========================================================================
 
   renderUI() {
-    this.renderHeader();
     this.renderSteps();
     this.renderFooter();
     this.updateAddToCartButton();
-  }
-
-  renderHeader() {
-    if (!this.config.showTitle) {
-      this.elements.header.style.display = 'none';
-      return;
-    }
-
-    this.elements.header.style.display = 'block';
   }
 
   renderSteps() {
@@ -539,104 +703,122 @@ class BundleWidgetProductPage {
     }
   }
 
-  // Product-page bundle layout (vertical step boxes)
-  // New approach: Show one card per selected product instead of grouping by step
+  // Product-page bundle layout: always renders all steps at once.
+  // Each step gets the appropriate card variant based on its type and selection state.
   renderProductPageLayout() {
-    // Check if there are any selected products across all steps
-    const hasAnySelections = this.selectedProducts.some(stepSelections =>
-      Object.values(stepSelections || {}).some(qty => qty > 0)
-    );
+    this.selectedBundle.steps.forEach((step, stepIndex) => {
+      if (step.isDefault) {
+        // Default/compulsory slot — always pre-filled, not removable
+        const product = this._getDefaultStepProduct(stepIndex);
+        if (product) {
+          const card = this.createDefaultProductCard(step, stepIndex, product);
+          this.elements.stepsContainer.appendChild(card);
+        } else {
+          // Product data not yet loaded — show placeholder
+          const card = this._createDefaultLoadingCard(step, stepIndex);
+          this.elements.stepsContainer.appendChild(card);
+        }
+      } else if (step.isFreeGift) {
+        // Free gift slot — ribbon icon, locked until paid steps complete
+        const card = this.createFreeGiftSlotCard(step, stepIndex);
+        this.elements.stepsContainer.appendChild(card);
+      } else {
+        // Regular selectable step
+        const stepSelections = this.selectedProducts[stepIndex] || {};
+        const selectedEntries = Object.entries(stepSelections).filter(([, qty]) => qty > 0);
 
-    if (!hasAnySelections) {
-      // No selections yet - show empty state cards (one per step)
-      this.selectedBundle.steps.forEach((step, index) => {
-        const emptyCard = this.createEmptyStateCard(step, index);
-        this.elements.stepsContainer.appendChild(emptyCard);
-      });
-    } else {
-      // Has selections - show one card per selected product
-      this.renderSelectedProductCards();
-    }
+        if (selectedEntries.length > 0) {
+          const products = this.stepProductData[stepIndex] || [];
+          selectedEntries.forEach(([variantId, qty]) => {
+            const product = products.find(p => (p.variantId || p.id) === variantId);
+            if (product) {
+              for (let i = 0; i < qty; i++) {
+                const card = this.createSelectedProductCard(
+                  { product, stepIndex, step, variantId, instanceIndex: i },
+                  i
+                );
+                this.elements.stepsContainer.appendChild(card);
+              }
+            }
+          });
+          // Show "add more" card if step condition not yet met
+          if (!this.validateStep(stepIndex)) {
+            const totalQty = selectedEntries.reduce((sum, [, qty]) => sum + qty, 0);
+            this.elements.stepsContainer.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
+          }
+        } else {
+          // No selection yet — empty slot card
+          const card = this.createEmptyStateCard(step, stepIndex);
+          this.elements.stepsContainer.appendChild(card);
+        }
+      }
+    });
   }
 
   // Create an empty state card for a step (shown when no products selected)
   createEmptyStateCard(step, stepIndex) {
     const stepBox = document.createElement('div');
-    stepBox.className = 'step-box';
     stepBox.dataset.stepIndex = stepIndex;
 
-    // Plus icon for empty steps
-    const plusIcon = document.createElement('span');
-    plusIcon.className = 'plus-icon';
-    plusIcon.textContent = '+';
-    stepBox.appendChild(plusIcon);
+    if (this.widgetStyle === 'bottom-sheet') {
+      // Bottom-sheet mode: dashed-border slot card
+      stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
 
-    // Add step name
-    const stepName = document.createElement('p');
-    stepName.className = 'step-name';
-    stepName.textContent = step.name || `Step ${stepIndex + 1}`;
-    stepBox.appendChild(stepName);
+      // Category image as CSS background-image (fills background, icon overlaid on top)
+      const imgUrl = step.categoryImageUrl || null;
+      if (imgUrl) {
+        stepBox.style.backgroundImage = `url('${imgUrl}')`;
+        stepBox.style.backgroundSize = 'contain';
+        stepBox.style.backgroundRepeat = 'no-repeat';
+        stepBox.style.backgroundPosition = 'center';
+      }
 
-    // Add click handler to open modal
+      // Circular background wrapper for the plus icon (80×80px)
+      const iconWrapper = document.createElement('div');
+      iconWrapper.className = 'bw-slot-card__plus-icon';
+      iconWrapper.style.cssText = `
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(30, 58, 138, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+      `;
+      iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
+      </svg>`;
+      iconWrapper.style.color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+      stepBox.appendChild(iconWrapper);
+
+      // Step name label below icon
+      const label = document.createElement('p');
+      label.className = 'step-name bw-slot-card__label';
+      label.textContent = step.name || `Step ${stepIndex + 1}`;
+      stepBox.appendChild(label);
+    } else {
+      // Classic mode: existing "+" icon behavior
+      stepBox.className = 'step-box';
+
+      const plusIcon = document.createElement('span');
+      plusIcon.className = 'plus-icon';
+      plusIcon.textContent = '+';
+      stepBox.appendChild(plusIcon);
+
+      const stepName = document.createElement('p');
+      stepName.className = 'step-name';
+      stepName.textContent = step.name || `Step ${stepIndex + 1}`;
+      stepBox.appendChild(stepName);
+    }
+
+    // Click handler to open modal
     stepBox.addEventListener('click', () => this.openModal(stepIndex));
 
     return stepBox;
   }
 
-  // Render individual cards for each selected product
-  renderSelectedProductCards() {
-    // Collect all selected products with their step info
-    const allSelectedProducts = [];
-    const incompleteSteps = [];
-
-    this.selectedProducts.forEach((stepSelections, stepIndex) => {
-      const step = this.selectedBundle.steps[stepIndex];
-      const products = this.stepProductData[stepIndex] || [];
-
-      // Count total selected in this step
-      let stepTotalQuantity = 0;
-
-      Object.entries(stepSelections || {}).forEach(([variantId, quantity]) => {
-        if (quantity > 0) {
-          stepTotalQuantity += quantity;
-          const product = products.find(p => {
-            if ((p.variantId || p.id) === variantId) return true;
-            if (p.variants) return p.variants.some(v => String(v.id) === String(variantId));
-            return false;
-          });
-          if (product) {
-            // Add one entry per quantity unit
-            for (let i = 0; i < quantity; i++) {
-              allSelectedProducts.push({
-                product,
-                stepIndex,
-                step,
-                variantId,
-                instanceIndex: i
-              });
-            }
-          }
-        }
-      });
-
-      // Check if step is incomplete (needs more selections)
-      if (!this.validateStep(stepIndex)) {
-        incompleteSteps.push({ stepIndex, step, currentCount: stepTotalQuantity });
-      }
-    });
-
-    // Render a card for each selected product
-    allSelectedProducts.forEach((item, cardIndex) => {
-      const productCard = this.createSelectedProductCard(item, cardIndex);
-      this.elements.stepsContainer.appendChild(productCard);
-    });
-
-    // Render "add more" cards for incomplete steps
-    incompleteSteps.forEach(({ stepIndex, step, currentCount }) => {
-      const addMoreCard = this.createAddMoreCard(step, stepIndex, currentCount);
-      this.elements.stepsContainer.appendChild(addMoreCard);
-    });
-  }
 
   // Create an "add more" card for incomplete steps
   createAddMoreCard(step, stepIndex, currentCount) {
@@ -680,39 +862,61 @@ class BundleWidgetProductPage {
   createSelectedProductCard(item, cardIndex) {
     const { product, stepIndex, step, variantId, instanceIndex } = item;
 
+    const isDefault = bsIsDefaultStep(step);
+    const badgeLabel = this.widgetStyle === 'bottom-sheet' ? bsGetDiscountBadgeLabel(step) : null;
+
     const stepBox = document.createElement('div');
-    stepBox.className = 'step-box step-completed product-card-state';
+    const extraClass = this.widgetStyle === 'bottom-sheet' ? ' bw-slot-card bw-slot-card--filled' : '';
+    stepBox.className = `step-box step-completed product-card-state${extraClass}`;
     stepBox.dataset.stepIndex = stepIndex;
     stepBox.dataset.variantId = variantId;
     stepBox.dataset.cardIndex = cardIndex;
 
-    // Add close icon badge to remove this specific product
-    const clearBadge = document.createElement('div');
-    clearBadge.className = 'step-clear-badge';
-    clearBadge.innerHTML = `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
-        <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    `;
-    clearBadge.title = 'Remove this product';
-    clearBadge.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.removeProductFromSelection(stepIndex, variantId);
-    });
-    stepBox.appendChild(clearBadge);
+    // Remove button — hidden for default (non-removable) steps
+    if (!isDefault) {
+      const clearBadge = document.createElement('div');
+      clearBadge.className = 'step-clear-badge';
+      clearBadge.innerHTML = `
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
+          <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+      clearBadge.title = 'Remove this product';
+      clearBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeProductFromSelection(stepIndex, variantId);
+      });
+      stepBox.appendChild(clearBadge);
+    }
 
     // Product image container
     const imagesContainer = document.createElement('div');
-    imagesContainer.className = 'step-images single-image';
-
-    const img = document.createElement('img');
-    img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-    img.alt = product.title || '';
-    img.className = 'step-image';
-    imagesContainer.appendChild(img);
+    if (this.widgetStyle === 'bottom-sheet') {
+      imagesContainer.className = 'bw-slot-card__image-wrapper';
+      const img = document.createElement('img');
+      img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+      img.alt = product.title || '';
+      img.className = 'bw-slot-card__image';
+      imagesContainer.appendChild(img);
+    } else {
+      imagesContainer.className = 'step-images single-image';
+      const img = document.createElement('img');
+      img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+      img.alt = product.title || '';
+      img.className = 'step-image';
+      imagesContainer.appendChild(img);
+    }
 
     stepBox.appendChild(imagesContainer);
+
+    // Discount badge (bottom-sheet mode only, when step has a discountBadgeLabel)
+    if (badgeLabel) {
+      const badge = document.createElement('span');
+      badge.className = 'bw-slot-discount-badge';
+      badge.textContent = badgeLabel;
+      stepBox.appendChild(badge);
+    }
 
     // Product title at bottom
     const productTitle = document.createElement('p');
@@ -742,6 +946,186 @@ class BundleWidgetProductPage {
     });
 
     return stepBox;
+  }
+
+  /**
+   * Creates a slot card for a default/compulsory product step.
+   * Looks like a filled card but has no remove button and shows an "Included" badge.
+   */
+  createDefaultProductCard(step, stepIndex, product) {
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box bw-slot-card bw-slot-card--filled';
+    stepBox.dataset.stepIndex = stepIndex;
+    stepBox.dataset.variantId = step.defaultVariantId || '';
+    // Default cards are not clickable
+    stepBox.style.cursor = 'default';
+
+    // Product image
+    const imageWrapper = document.createElement('div');
+    imageWrapper.className = 'bw-slot-card__image-wrapper';
+    const img = document.createElement('img');
+    img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    img.alt = product.title || '';
+    img.className = 'bw-slot-card__image';
+    imageWrapper.appendChild(img);
+    stepBox.appendChild(imageWrapper);
+
+    // Product title
+    const productTitle = document.createElement('p');
+    productTitle.className = 'step-name bw-slot-card__label';
+    const displayTitle = product.title.length > 25
+      ? product.title.substring(0, 25) + '...'
+      : product.title;
+    productTitle.textContent = displayTitle;
+    productTitle.title = product.title;
+    stepBox.appendChild(productTitle);
+
+    // "Included" badge — bottom-left
+    const badge = document.createElement('span');
+    badge.className = 'bw-slot-card__included-badge';
+    badge.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Included`;
+    stepBox.appendChild(badge);
+
+    return stepBox;
+  }
+
+  /**
+   * Placeholder card for a default step while its product data is still loading.
+   */
+  _createDefaultLoadingCard(step, stepIndex) {
+    const stepBox = document.createElement('div');
+    stepBox.className = 'step-box bw-slot-card bw-slot-card--filled';
+    stepBox.dataset.stepIndex = stepIndex;
+    stepBox.style.cursor = 'default';
+    stepBox.style.opacity = '0.7';
+
+    const label = document.createElement('p');
+    label.className = 'step-name bw-slot-card__label';
+    label.textContent = step.name || `Step ${stepIndex + 1}`;
+    stepBox.appendChild(label);
+
+    const badge = document.createElement('span');
+    badge.className = 'bw-slot-card__included-badge';
+    badge.textContent = 'Included';
+    stepBox.appendChild(badge);
+
+    return stepBox;
+  }
+
+  /**
+   * Creates the free gift slot card.
+   * Shows a ribbon icon, "Free {name}" label.
+   * Non-clickable (locked) until all paid steps are complete.
+   */
+  createFreeGiftSlotCard(step, stepIndex) {
+    const unlocked = this.isFreeGiftUnlocked;
+    const stepBox = document.createElement('div');
+    stepBox.className = `step-box bw-slot-card bw-slot-card--empty${!unlocked ? ' bw-slot-card--locked' : ''}`;
+    stepBox.dataset.stepIndex = stepIndex;
+
+    // Check if free gift step already has a selection
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    const selectedEntries = Object.entries(stepSelections).filter(([, qty]) => qty > 0);
+
+    if (selectedEntries.length > 0 && unlocked) {
+      // Show selected product for free gift slot
+      const products = this.stepProductData[stepIndex] || [];
+      const [variantId] = selectedEntries[0];
+      const product = products.find(p => (p.variantId || p.id) === variantId);
+      if (product) {
+        // Show filled state for free gift
+        stepBox.className = 'step-box bw-slot-card bw-slot-card--filled';
+
+        const imageWrapper = document.createElement('div');
+        imageWrapper.className = 'bw-slot-card__image-wrapper';
+        const img = document.createElement('img');
+        img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+        img.alt = product.title || '';
+        img.className = 'bw-slot-card__image';
+        imageWrapper.appendChild(img);
+        stepBox.appendChild(imageWrapper);
+
+        // Remove button
+        const clearBadge = document.createElement('div');
+        clearBadge.className = 'step-clear-badge';
+        clearBadge.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#f3f4f6"/><path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        clearBadge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.removeProductFromSelection(stepIndex, variantId);
+        });
+        stepBox.appendChild(clearBadge);
+
+        const productTitle = document.createElement('p');
+        productTitle.className = 'step-name bw-slot-card__label';
+        const displayTitle = product.title.length > 25 ? product.title.substring(0, 25) + '...' : product.title;
+        productTitle.textContent = displayTitle;
+        stepBox.appendChild(productTitle);
+
+        // Ribbon overlay even in filled state
+        stepBox.appendChild(this._createRibbonSvg());
+        stepBox.addEventListener('click', () => this.openModal(stepIndex));
+        return stepBox;
+      }
+    }
+
+    // Empty / locked state
+    // Circular icon background
+    const iconWrapper = document.createElement('div');
+    iconWrapper.className = 'bw-slot-card__plus-icon';
+    iconWrapper.style.cssText = `
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(30, 58, 138, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    `;
+    iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
+    </svg>`;
+    iconWrapper.style.color = '#1e3a8a';
+    stepBox.appendChild(iconWrapper);
+
+    // Label: "Free {stepName}"
+    const label = document.createElement('p');
+    label.className = 'step-name bw-slot-card__label';
+    label.textContent = `Free ${step.name || `Step ${stepIndex + 1}`}`;
+    stepBox.appendChild(label);
+
+    // Red ribbon SVG overlay — top-right
+    stepBox.appendChild(this._createRibbonSvg());
+
+    if (unlocked) {
+      stepBox.addEventListener('click', () => this.openModal(stepIndex));
+    }
+
+    return stepBox;
+  }
+
+  /** Returns the red ribbon SVG element for free gift cards */
+  _createRibbonSvg() {
+    const ribbon = document.createElement('span');
+    ribbon.className = 'bw-slot-card__ribbon';
+    // Check for a merchant-configured badge image via DCP CSS variable
+    const badgeUrl = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bundle-free-gift-badge-url').trim();
+    const hasMerchantBadge = badgeUrl && badgeUrl !== 'none' && badgeUrl !== '';
+    if (hasMerchantBadge) {
+      // Strip the url("...") wrapper to get the raw URL
+      const rawUrl = badgeUrl.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+      const img = document.createElement('img');
+      img.src = rawUrl;
+      img.alt = 'Gift badge';
+      img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
+      ribbon.appendChild(img);
+    } else {
+      ribbon.innerHTML = `<svg viewBox="0 0 24 24" fill="#e53e3e" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M20 7h-1.586l1.293-1.293a1 1 0 0 0-1.414-1.414L16 6.586V5a1 1 0 0 0-2 0v1.586l-1.293-1.293a1 1 0 0 0-1.414 1.414L12.586 8H11a1 1 0 1 0 0 2h1v2h-2a1 1 0 1 0 0 2h2v7l3-1.5 3 1.5V14h2a1 1 0 1 0 0-2h-2v-2h2a1 1 0 1 0 0-2zm-4 2v2h-2V9h2z"/>
+      </svg>`;
+    }
+    return ribbon;
   }
 
   // Remove a specific product from selection (decrease quantity by 1)
@@ -818,42 +1202,35 @@ class BundleWidgetProductPage {
 
     const button = this.elements.addToCartButton;
 
-    // Check if all steps are complete (required)
-    const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+    // Check if all required steps are complete (free gift and default steps are not required)
+    const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+      if (step.isFreeGift || step.isDefault) return true;
+      return this.validateStep(index);
+    });
 
-    // Disable button if no products selected OR if not all steps are complete
-    if (totalQuantity === 0 || !allStepsValid) {
-      if (totalQuantity === 0) {
+    // Count only paid (non-free-gift, non-default) step selections for the total check
+    const paidTotalQuantity = this.selectedProducts.reduce((sum, stepSelections, i) => {
+      const step = this.selectedBundle.steps[i];
+      if (step.isFreeGift || step.isDefault) return sum;
+      return sum + Object.values(stepSelections || {}).reduce((s, qty) => s + qty, 0);
+    }, 0);
+
+    // Disable button if no paid products selected OR if not all required steps are complete
+    if (paidTotalQuantity === 0 || !allStepsValid) {
+      if (paidTotalQuantity === 0) {
         button.textContent = 'Add Bundle to Cart';
       } else {
-        // Some products selected but not all steps complete
+        // Some products selected but not all required steps complete
         button.textContent = 'Complete All Steps to Continue';
       }
       button.disabled = true;
       button.classList.add('disabled');
-      this.updateDiscountPill(null);
     } else {
       // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
       const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
 
-      if (discountInfo.hasDiscount && this.selectedBundle.pricing?.messages?.showDiscountDisplay !== false) {
-        const originalPrice = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
-
-        // Calculate discount percentage for the top-right pill
-        const discountPercentage = Math.round(((totalPrice - discountInfo.finalPrice) / totalPrice) * 100);
-        this.updateDiscountPill(discountPercentage > 0 ? discountPercentage : null);
-
-        button.innerHTML = `
-          <span class="button-price-wrapper">
-            <span class="button-price-strike">${originalPrice}</span>
-            <span class="button-price-final">Add Bundle to Cart &bull; ${formattedPrice}</span>
-          </span>
-        `;
-      } else {
-        button.textContent = `Add Bundle to Cart \u2022 ${formattedPrice}`;
-        this.updateDiscountPill(null);
-      }
+      button.textContent = `Add Bundle to Cart \u2022 ${formattedPrice}`;
 
       button.disabled = false;
       button.classList.remove('disabled');
@@ -878,24 +1255,6 @@ class BundleWidgetProductPage {
     }
   }
 
-  // Update or create the discount pill in the top-right of the widget
-  updateDiscountPill(discountPercentage) {
-    let pill = this.container.querySelector('.bundle-discount-pill');
-
-    if (!discountPercentage) {
-      // Remove pill if no discount
-      if (pill) pill.remove();
-      return;
-    }
-
-    if (!pill) {
-      pill = document.createElement('span');
-      pill.className = 'bundle-discount-pill';
-      this.container.appendChild(pill);
-    }
-
-    pill.textContent = `${discountPercentage}% off`;
-  }
   // ========================================================================
   // MODAL FUNCTIONALITY
   // ========================================================================
@@ -921,9 +1280,16 @@ class BundleWidgetProductPage {
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
 
-    // Show modal immediately
-    modal.style.display = 'block';
-    modal.classList.add('active');
+    // Show modal / bottom-sheet
+    if (this.widgetStyle === 'bottom-sheet') {
+      if (this.elements.bsOverlay) this.elements.bsOverlay.classList.add('bw-bs-overlay--open');
+      requestAnimationFrame(() => {
+        modal.classList.add('bw-bs-panel--open');
+      });
+    } else {
+      modal.style.display = 'block';
+      modal.classList.add('active');
+    }
     document.body.style.overflow = 'hidden';
 
     // Capture stepIndex so async callback doesn't render stale step if user navigates away
@@ -946,8 +1312,13 @@ class BundleWidgetProductPage {
   }
 
   closeModal() {
-    this.elements.modal.style.display = 'none';
-    this.elements.modal.classList.remove('active');
+    if (this.widgetStyle === 'bottom-sheet') {
+      this.elements.modal.classList.remove('bw-bs-panel--open');
+      if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
+    } else {
+      this.elements.modal.style.display = 'none';
+      this.elements.modal.classList.remove('active');
+    }
     document.body.style.overflow = '';
 
     // Update main UI
@@ -1179,13 +1550,21 @@ class BundleWidgetProductPage {
     const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
     tabsContainer.innerHTML = '';
 
+    // Set CSS variable for equal-column grid (bottom-sheet mode)
+    const stepCount = this.selectedBundle.steps.length;
+    tabsContainer.style.setProperty('--bw-tab-count', stepCount.toString());
+
     this.selectedBundle.steps.forEach((step, index) => {
       const isAccessible = this.isStepAccessible(index);
       const isActive = index === this.currentStepIndex;
+      const isFreeGift = !!step.isFreeGift;
+      // Free gift tab is only accessible when all paid steps are complete
+      const freeGiftAccessible = !isFreeGift || this.isFreeGiftUnlocked;
 
       // Create tab button
       const tabButton = document.createElement('button');
-      tabButton.className = `bundle-header-tab ${isActive ? 'active' : ''} ${!isAccessible ? 'locked' : ''}`;
+      const freeGiftClass = isFreeGift ? ' bw-free-gift-tab' : '';
+      tabButton.className = `bundle-header-tab${freeGiftClass} ${isActive ? 'active' : ''} ${(!isAccessible || !freeGiftAccessible) ? 'locked' : ''}`;
       tabButton.textContent = step.name || `Step ${index + 1}`;
       tabButton.dataset.stepIndex = index.toString();
 
@@ -1194,6 +1573,11 @@ class BundleWidgetProductPage {
         // Re-check accessibility at click time (not stale closure from render time)
         if (!this.isStepAccessible(index)) {
           ToastManager.show('Please complete the previous steps first.');
+          return;
+        }
+        // Free gift tab requires all paid steps complete
+        if (step.isFreeGift && !this.isFreeGiftUnlocked) {
+          ToastManager.show('Complete all required steps to unlock the free gift.');
           return;
         }
         // Block forward navigation if current step condition is not met
@@ -1239,6 +1623,27 @@ class BundleWidgetProductPage {
     const products = this.expandProductsByVariant(rawProducts);
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
+    const currentStep = this.selectedBundle?.steps?.[stepIndex];
+    const isFreeGiftStep = !!currentStep?.isFreeGift;
+
+    // Inject free gift promo heading above the grid
+    const bodyEl = this.elements.modal.querySelector('.bw-bs-body') || this.elements.modal.querySelector('.modal-body');
+    const existingPromo = bodyEl?.querySelector('.bw-bs-free-gift-promo');
+    if (existingPromo) existingPromo.remove();
+    if (isFreeGiftStep && bodyEl && this.widgetStyle === 'bottom-sheet') {
+      const promo = document.createElement('div');
+      promo.className = 'bw-bs-free-gift-promo';
+      const stepName = currentStep.name || 'gift';
+      const firstProduct = rawProducts?.[0];
+      const priceStr = firstProduct?.price
+        ? CurrencyManager.formatMoney(firstProduct.price, CurrencyManager.getCurrencyInfo().display.format)
+        : '';
+      promo.innerHTML = `
+        <p class="bw-bs-free-gift-heading">Get a ${ComponentGenerator.escapeHtml(stepName)} worth ${priceStr} absolutely free!</p>
+        <p class="bw-bs-free-gift-subheading">Add ${this.paidSteps.length} product(s) to get 1 of them at 100% off!</p>
+      `;
+      bodyEl.insertBefore(promo, productGrid);
+    }
 
     if (products.length === 0) {
       // Show error state if the fetch failed, otherwise a neutral "no products" message
@@ -1269,13 +1674,16 @@ class BundleWidgetProductPage {
 
     const showQuantitySelector = this.config.showQuantitySelectorOnCard;
 
+    // Free gift product cards use a different border (gray instead of gold)
+    const freeGiftCardClass = isFreeGiftStep ? ' bw-product-card--free-gift' : '';
+
     productGrid.innerHTML = products.map(product => {
       const selectionKey = product.variantId || product.id;
       const currentQuantity = selectedProducts[selectionKey] || 0;
       const currencyInfo = CurrencyManager.getCurrencyInfo();
 
       return `
-        <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
+        <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? `
             <div class="selected-overlay">✓</div>
           ` : ''}
@@ -1309,7 +1717,7 @@ class BundleWidgetProductPage {
             ` : ''}
 
             <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
-              ${currentQuantity > 0 ? 'Added to Bundle' : 'Add to Bundle'}
+              ${currentQuantity > 0 ? 'Selected ✓' : 'Add to Cart'}
             </button>
           </div>
         </div>
@@ -1562,6 +1970,52 @@ class BundleWidgetProductPage {
     this.updateModalFooterMessaging();
     this.updateAddToCartButton();
     this.updateFooterMessaging();
+
+    // Auto-step progression for bottom-sheet mode
+    if (this.widgetStyle === 'bottom-sheet') {
+      this._autoProgressBottomSheet(stepIndex);
+    }
+  }
+
+  /**
+   * Bottom-sheet auto-step progression.
+   * Called after every product selection update.
+   * If the current step's condition is now met, advances to the next incomplete step,
+   * or closes the modal if all steps are complete.
+   */
+  _autoProgressBottomSheet(stepIndex) {
+    if (!this.validateStep(stepIndex)) return; // current step not yet complete
+
+    const next = bsFindNextIncompleteStep(
+      this.selectedBundle.steps,
+      this.selectedProducts,
+      (i) => this.validateStep(i),
+      stepIndex
+    );
+
+    if (next === -1) {
+      // All steps complete — refresh tabs with checkmarks, then close
+      this.renderModalTabs();
+      setTimeout(() => this.closeModal(), 500);
+    } else {
+      // Advance to next incomplete step tab
+      this.renderModalTabs();
+      setTimeout(() => {
+        this.currentStepIndex = next;
+        const modal = this.elements.modal;
+        const headerText = this.getFormattedHeaderText();
+        modal.querySelector('.modal-step-title').innerHTML = headerText;
+        this.renderModalProductsLoading(next);
+        this.renderModalTabs();
+        this.updateModalNavigation();
+        this.loadStepProducts(next).then(() => {
+          if (this.currentStepIndex !== next) return;
+          this.renderModalProducts(next);
+          this.updateModalFooterMessaging();
+          this.preloadNextStep();
+        }).catch(() => {});
+      }, 300);
+    }
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
@@ -1581,10 +2035,10 @@ class BundleWidgetProductPage {
 
       if (addBtn) {
         if (quantity > 0) {
-          addBtn.textContent = 'Added to Bundle';
+          addBtn.textContent = 'Selected ✓';
           addBtn.classList.add('added');
         } else {
-          addBtn.textContent = 'Add to Bundle';
+          addBtn.textContent = 'Add to Cart';
           addBtn.classList.remove('added');
         }
       }
@@ -1650,17 +2104,12 @@ class BundleWidgetProductPage {
 
     if (!prevButton || !nextButton) return;
 
-    prevButton.disabled = this.currentStepIndex === 0;
+    // Buttons are never disabled — navigateModal handles invalid steps with a toast.
+    prevButton.disabled = false;
 
-    const isCurrentStepValid = this.validateStep(this.currentStepIndex);
-
-    if (this.currentStepIndex === this.selectedBundle.steps.length - 1) {
-      nextButton.textContent = 'Done';
-      nextButton.disabled = !isCurrentStepValid;
-    } else {
-      nextButton.textContent = 'Next';
-      nextButton.disabled = !isCurrentStepValid;
-    }
+    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+    nextButton.textContent = isLastStep ? 'Done' : 'Next';
+    nextButton.disabled = false;
   }
 
   updateModalFooterMessaging() {
@@ -1827,8 +2276,11 @@ class BundleWidgetProductPage {
         return;
       }
 
-      // Validate all steps
-      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+      // Validate all required steps (free gift and default steps are not required)
+      const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+        if (step.isFreeGift || step.isDefault) return true;
+        return this.validateStep(index);
+      });
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;
@@ -1849,12 +2301,28 @@ class BundleWidgetProductPage {
         body: JSON.stringify({ items: cartItems })
       });
 
+      // Read body as text first — Shopify can return HTML on password-protected stores
+      // or on certain error conditions. JSON.parse on HTML would surface a confusing error.
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Cart add failed: ${response.status}`);
+        let errorMessage = `Cart add failed (${response.status})`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.message || errorData.description || errorMessage;
+        } catch {
+          // Response wasn't JSON (e.g., HTML login/password page) — use status-code message
+        }
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        // Successful HTTP status but non-JSON body — store may be password-protected
+        throw new Error('Cart add failed: Store may be password protected or temporarily unavailable.');
+      }
 
       // Show success message and redirect
       ToastManager.show('Bundle added to cart successfully!');
@@ -1900,14 +2368,22 @@ class BundleWidgetProductPage {
             }
 
 
+            // Use selected variant ID; fall back to first variant for single-variant products.
+            const actualVariantId = product.variantId ?? product.variants?.[0]?.id;
+
+            const step = this.selectedBundle.steps[stepIndex];
+            const properties = {
+              '_bundle_id': bundleInstanceId,
+              '_bundle_name': this.selectedBundle.name,
+              '_step_index': stepIndex.toString()
+            };
+            if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
+            if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+
             const cartItem = {
-              id: parseInt(this.extractId(variantId)),
+              id: parseInt(this.extractId(actualVariantId)),
               quantity: quantity,
-              properties: {
-                '_bundle_id': bundleInstanceId,
-                '_bundle_name': this.selectedBundle.name,
-                '_step_index': stepIndex.toString()
-              }
+              properties
             };
 
             cartItems.push(cartItem);
@@ -1957,7 +2433,6 @@ class BundleWidgetProductPage {
     // Modal close handlers
     const modal = this.elements.modal;
     const closeButton = modal.querySelector('.close-button');
-    const overlay = modal.querySelector('.modal-overlay');
     const prevButton = modal.querySelector('.prev-button');
     const nextButton = modal.querySelector('.next-button');
 
@@ -1965,23 +2440,35 @@ class BundleWidgetProductPage {
       closeButton.addEventListener('click', () => this.closeModal());
     }
 
-    if (overlay) {
-      overlay.addEventListener('click', () => this.closeModal());
+    if (this.widgetStyle === 'bottom-sheet') {
+      // Overlay closes modal
+      if (this.elements.bsOverlay) {
+        this.elements.bsOverlay.addEventListener('click', () => this.closeModal());
+      }
+      // PREV/NEXT enabled in bottom-sheet — styled as pill buttons in footer
+      if (prevButton) prevButton.addEventListener('click', () => this.navigateModal(-1));
+      if (nextButton) nextButton.addEventListener('click', () => this.navigateModal(1));
+    } else {
+      // Classic mode: overlay is inside the modal
+      const overlay = modal.querySelector('.modal-overlay');
+      if (overlay) {
+        overlay.addEventListener('click', () => this.closeModal());
+      }
+      if (prevButton) {
+        prevButton.addEventListener('click', () => this.navigateModal(-1));
+      }
+      if (nextButton) {
+        nextButton.addEventListener('click', () => this.navigateModal(1));
+      }
     }
 
-    // Modal navigation
-    if (prevButton) {
-      prevButton.addEventListener('click', () => this.navigateModal(-1));
-    }
-
-    if (nextButton) {
-      nextButton.addEventListener('click', () => this.navigateModal(1));
-    }
-
-    // Keyboard handlers
+    // Keyboard: close on Escape
     document.addEventListener('keydown', (e) => {
-      if (modal.style.display === 'block' && e.key === 'Escape') {
-        this.closeModal();
+      if (e.key === 'Escape') {
+        const isOpen = this.widgetStyle === 'bottom-sheet'
+          ? modal.classList.contains('bw-bs-panel--open')
+          : modal.style.display === 'block';
+        if (isOpen) this.closeModal();
       }
     });
   }

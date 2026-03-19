@@ -113,6 +113,78 @@ export function mergeSettings(
     modalButtonTextColor: dbSettings.modalButtonTextColor || defaults.modalButtonTextColor,
     modalButtonBorderRadius: dbSettings.modalButtonBorderRadius || defaults.modalButtonBorderRadius,
 
+    // Toast extended settings (direct columns)
+    toastBorderRadius: dbSettings.toastBorderRadius ?? defaults.toastBorderRadius,
+    toastBorderColor: dbSettings.toastBorderColor ?? defaults.toastBorderColor,
+    toastBorderWidth: dbSettings.toastBorderWidth ?? defaults.toastBorderWidth,
+    toastFontSize: dbSettings.toastFontSize ?? defaults.toastFontSize,
+    toastFontWeight: dbSettings.toastFontWeight ?? defaults.toastFontWeight,
+    toastAnimationDuration: dbSettings.toastAnimationDuration ?? defaults.toastAnimationDuration,
+    toastBoxShadow: dbSettings.toastBoxShadow ?? defaults.toastBoxShadow,
+    toastEnterFromBottom: dbSettings.toastEnterFromBottom !== undefined && dbSettings.toastEnterFromBottom !== null
+      ? Boolean(dbSettings.toastEnterFromBottom)
+      : defaults.toastEnterFromBottom,
+
+    // Button added state & typography
+    buttonAddedBgColor: dbSettings.buttonAddedBgColor ?? defaults.buttonAddedBgColor,
+    buttonAddedTextColor: dbSettings.buttonAddedTextColor ?? defaults.buttonAddedTextColor,
+    buttonTextTransform: dbSettings.buttonTextTransform ?? defaults.buttonTextTransform,
+    buttonLetterSpacing: dbSettings.buttonLetterSpacing ?? defaults.buttonLetterSpacing,
+
+    // Product card hover & transitions
+    productCardHoverTranslateY: dbSettings.productCardHoverTranslateY ?? defaults.productCardHoverTranslateY,
+    productCardTransitionDuration: dbSettings.productCardTransitionDuration ?? defaults.productCardTransitionDuration,
+
+    // Modal close button
+    modalCloseButtonColor: dbSettings.modalCloseButtonColor ?? defaults.modalCloseButtonColor,
+    modalCloseButtonBgColor: dbSettings.modalCloseButtonBgColor ?? defaults.modalCloseButtonBgColor,
+    modalCloseButtonHoverColor: dbSettings.modalCloseButtonHoverColor ?? defaults.modalCloseButtonHoverColor,
+
+    // General — loading overlay & quantity badge
+    loadingOverlayBgColor: dbSettings.loadingOverlayBgColor ?? defaults.loadingOverlayBgColor,
+    loadingOverlayTextColor: dbSettings.loadingOverlayTextColor ?? defaults.loadingOverlayTextColor,
+    tileQuantityBadgeBgColor: dbSettings.tileQuantityBadgeBgColor ?? defaults.tileQuantityBadgeBgColor,
+    tileQuantityBadgeTextColor: dbSettings.tileQuantityBadgeTextColor ?? defaults.tileQuantityBadgeTextColor,
+
+    // Tier pill
+    tierPillActiveBgColor: dbSettings.tierPillActiveBgColor ?? defaults.tierPillActiveBgColor,
+    tierPillActiveTextColor: dbSettings.tierPillActiveTextColor ?? defaults.tierPillActiveTextColor,
+    tierPillInactiveBgColor: dbSettings.tierPillInactiveBgColor ?? defaults.tierPillInactiveBgColor,
+    tierPillInactiveTextColor: dbSettings.tierPillInactiveTextColor ?? defaults.tierPillInactiveTextColor,
+    tierPillHoverBgColor: dbSettings.tierPillHoverBgColor ?? defaults.tierPillHoverBgColor,
+    tierPillBorderColor: dbSettings.tierPillBorderColor ?? defaults.tierPillBorderColor,
+    tierPillBorderRadius: dbSettings.tierPillBorderRadius ?? defaults.tierPillBorderRadius,
+    tierPillHeight: dbSettings.tierPillHeight ?? defaults.tierPillHeight,
+    tierPillGap: dbSettings.tierPillGap ?? defaults.tierPillGap,
+    tierPillFontSize: dbSettings.tierPillFontSize ?? defaults.tierPillFontSize,
+    tierPillFontWeight: dbSettings.tierPillFontWeight ?? defaults.tierPillFontWeight,
+
+    // Accessibility
+    focusOutlineColor: dbSettings.focusOutlineColor ?? defaults.focusOutlineColor,
+    focusOutlineWidth: dbSettings.focusOutlineWidth ?? defaults.focusOutlineWidth,
+
+    // Search input
+    searchInputBgColor: dbSettings.searchInputBgColor ?? defaults.searchInputBgColor,
+    searchInputBorderColor: dbSettings.searchInputBorderColor ?? defaults.searchInputBorderColor,
+    searchInputFocusBorderColor: dbSettings.searchInputFocusBorderColor ?? defaults.searchInputFocusBorderColor,
+    searchInputTextColor: dbSettings.searchInputTextColor ?? defaults.searchInputTextColor,
+    searchInputPlaceholderColor: dbSettings.searchInputPlaceholderColor ?? defaults.searchInputPlaceholderColor,
+    searchClearButtonBgColor: dbSettings.searchClearButtonBgColor ?? defaults.searchClearButtonBgColor,
+    searchClearButtonColor: dbSettings.searchClearButtonColor ?? defaults.searchClearButtonColor,
+
+    // Skeleton
+    skeletonBaseBgColor: dbSettings.skeletonBaseBgColor ?? defaults.skeletonBaseBgColor,
+    skeletonShimmerColor: dbSettings.skeletonShimmerColor ?? defaults.skeletonShimmerColor,
+    skeletonHighlightColor: dbSettings.skeletonHighlightColor ?? defaults.skeletonHighlightColor,
+
+    // Widget style & bottom sheet
+    widgetStyle: dbSettings.widgetStyle ?? defaults.widgetStyle,
+    bottomSheetOverlayOpacity: dbSettings.bottomSheetOverlayOpacity ?? defaults.bottomSheetOverlayOpacity,
+    bottomSheetAnimationDuration: dbSettings.bottomSheetAnimationDuration ?? defaults.bottomSheetAnimationDuration,
+    emptySlotBorderStyle: dbSettings.emptySlotBorderStyle ?? defaults.emptySlotBorderStyle,
+    emptySlotBorderColor: dbSettings.emptySlotBorderColor ?? defaults.emptySlotBorderColor,
+    freeGiftBadgeUrl: dbSettings.freeGiftBadgeUrl ?? defaults.freeGiftBadgeUrl,
+
     // Spread JSON field settings last (they override any duplicates)
     ...globalColorsSettings,
     ...footerSettings,

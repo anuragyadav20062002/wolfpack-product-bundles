@@ -14,7 +14,7 @@ import type { FullPageBundleResult } from "./types";
 
 interface ShopSession {
   shop: string;
-  accessToken: string | null | undefined;
+  accessToken?: string | null;
 }
 
 /**
@@ -60,8 +60,12 @@ export async function createFullPageBundle(
       });
     }
 
-    const useCustomTemplate = templateResult.success;
-    const templateSuffix = useCustomTemplate ? 'full-page-bundle' : undefined;
+    // Always attach the templateSuffix regardless of whether the template file was
+    // just created or already existed. The suffix tells Shopify to serve this page
+    // using templates/page.full-page-bundle.json. Even if that template write failed
+    // above (unlikely now that UUID comes from EXTENSION_UID), the suffix ensures
+    // the page uses the right template as soon as the file exists in the theme.
+    const templateSuffix = 'full-page-bundle';
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
     const rawSlug = desiredSlug?.trim() || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -276,12 +280,12 @@ export async function createFullPageBundle(
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
       pageUrl,
-      templateApplied: useCustomTemplate
+      templateApplied: templateResult.success
     });
 
-    // If template was not created (e.g. fresh install, no block UUID),
-    // return a theme editor deep link so the merchant can do a one-time setup
-    if (!useCustomTemplate) {
+    // If template file write failed (e.g. theme API error), surface a deep link
+    // so the merchant can manually add the block via Theme Editor as a fallback.
+    if (!templateResult.success) {
       const deepLink = generateThemeEditorDeepLink(
         shop,
         apiKey,

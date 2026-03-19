@@ -5,6 +5,8 @@
  * It serves as the single source of truth for state types across the application.
  */
 
+import type { BundleStatus, BundleType } from "../constants/bundle";
+
 // ============================================
 // DESIGN SETTINGS TYPES
 // ============================================
@@ -60,6 +62,10 @@ export interface ProductCardSettings {
   productImageHeight: number;
   productImageBorderRadius: number;
   productImageBgColor: string;
+
+  // Hover & Transitions
+  productCardHoverTranslateY: number;
+  productCardTransitionDuration: number;
 }
 
 /**
@@ -73,6 +79,10 @@ export interface ButtonSettings {
   buttonBorderRadius: number;
   buttonHoverBgColor: string;
   buttonAddToCartText: string;
+  buttonAddedBgColor: string;
+  buttonAddedTextColor: string;
+  buttonTextTransform: string;
+  buttonLetterSpacing: number;
 }
 
 /**
@@ -107,6 +117,9 @@ export interface ModalSettings {
   modalButtonBgColor: string;
   modalButtonTextColor: string;
   modalButtonBorderRadius: number;
+  modalCloseButtonColor: string;
+  modalCloseButtonBgColor: string;
+  modalCloseButtonHoverColor: string;
 }
 
 /**
@@ -222,6 +235,14 @@ export interface GeneralSettings {
   discountPillBorderRadius: number;
   toastBgColor: string;
   toastTextColor: string;
+  toastBorderRadius: number;
+  toastBorderColor: string;
+  toastBorderWidth: number;
+  toastFontSize: number;
+  toastFontWeight: number;
+  toastAnimationDuration: number;
+  toastBoxShadow: string;
+  toastEnterFromBottom: boolean;
   bundleBgColor: string;
   footerScrollBarColor: string;
   productPageTitleFontColor: string;
@@ -232,6 +253,69 @@ export interface GeneralSettings {
   filterIconColor: string;
   filterBgColor: string;
   filterTextColor: string;
+  loadingOverlayBgColor: string;
+  loadingOverlayTextColor: string;
+  tileQuantityBadgeBgColor: string;
+  tileQuantityBadgeTextColor: string;
+}
+
+/**
+ * Pricing tier pill settings
+ */
+export interface TierPillSettingsType {
+  tierPillActiveBgColor: string;
+  tierPillActiveTextColor: string;
+  tierPillInactiveBgColor: string;
+  tierPillInactiveTextColor: string;
+  tierPillHoverBgColor: string;
+  tierPillBorderColor: string;
+  tierPillBorderRadius: number;
+  tierPillHeight: number;
+  tierPillGap: number;
+  tierPillFontSize: number;
+  tierPillFontWeight: number;
+}
+
+/**
+ * Accessibility / focus ring settings
+ */
+export interface AccessibilitySettingsType {
+  focusOutlineColor: string;
+  focusOutlineWidth: number;
+}
+
+/**
+ * Search input styling
+ */
+export interface SearchInputSettingsType {
+  searchInputBgColor: string;
+  searchInputBorderColor: string;
+  searchInputFocusBorderColor: string;
+  searchInputTextColor: string;
+  searchInputPlaceholderColor: string;
+  searchClearButtonBgColor: string;
+  searchClearButtonColor: string;
+}
+
+/**
+ * Skeleton loading styling
+ */
+export interface SkeletonSettingsType {
+  skeletonBaseBgColor: string;
+  skeletonShimmerColor: string;
+  skeletonHighlightColor: string;
+}
+
+/**
+ * Widget style and bottom-sheet settings
+ */
+export interface WidgetStyleSettingsType {
+  widgetStyle: string;
+  bottomSheetOverlayOpacity: number;
+  bottomSheetAnimationDuration: number;
+  emptySlotBorderStyle: string;
+  emptySlotBorderColor: string;
+  freeGiftBadgeUrl: string;
 }
 
 /**
@@ -268,7 +352,12 @@ export interface DesignSettings extends
   TabSettings,
   EmptyStateSettings,
   GeneralSettings,
-  PromoBannerSettings {
+  PromoBannerSettings,
+  TierPillSettingsType,
+  AccessibilitySettingsType,
+  SearchInputSettingsType,
+  SkeletonSettingsType,
+  WidgetStyleSettingsType {
   customCss: string;
 }
 
@@ -326,8 +415,6 @@ export interface UIState {
 // ============================================
 // BUNDLE FORM STATE TYPES
 // ============================================
-
-export type { BundleStatus, BundleType } from "../constants/bundle";
 
 /**
  * Basic bundle form data

@@ -4,10 +4,16 @@
  * Ensures a custom page template (page.full-page-bundle.json) exists in the
  * active theme. This template includes an 'apps' section with the
  * bundle-full-page block so the widget renders automatically.
+ *
+ * All Shopify API calls use Admin GraphQL (admin.graphql) — NOT the REST API.
+ * The app is configured with removeRest: true and unstable_newEmbeddedAuthStrategy,
+ * which means session.accessToken may not be populated. The admin GraphQL client
+ * handles token management internally and is always valid.
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import { AppLogger } from "../../lib/logger";
-import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 
 export interface TemplateEnsureResult {
   success: boolean;
@@ -19,12 +25,32 @@ export interface TemplateEnsureResult {
 
 interface ShopSession {
   shop: string;
-  accessToken: string | null | undefined;
+  accessToken?: string | null;
 }
 
 const TEMPLATE_KEY = "templates/page.full-page-bundle.json";
 const BLOCK_HANDLE = "bundle-full-page";
+const PRODUCT_TEMPLATE_KEY = "templates/product.product-page-bundle.json";
+const PRODUCT_BLOCK_HANDLE = "bundle-product-page";
 const COMPONENT = "WidgetThemeTemplate";
+
+/**
+ * Read the extension UID from extensions/bundle-builder/shopify.extension.toml.
+ * The uid field is assigned by Shopify at first deploy and is stable for the
+ * lifetime of the extension (changes only on shopify app deploy --reset).
+ *
+ * Returns null if the file cannot be read or the uid field is not found.
+ */
+function readExtensionUidFromToml(): string | null {
+  try {
+    const tomlPath = path.resolve(process.cwd(), "extensions/bundle-builder/shopify.extension.toml");
+    const content = fs.readFileSync(tomlPath, "utf-8");
+    const match = content.match(/^uid\s*=\s*"([^"]+)"/m);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Ensure `templates/page.full-page-bundle.json` exists in the active theme
@@ -39,35 +65,34 @@ export async function ensureBundlePageTemplate(
   apiKey: string,
 ): Promise<TemplateEnsureResult> {
   try {
-    // Step 1: Get the active (MAIN) theme
-    const themeId = await getActiveThemeId(admin);
-    if (!themeId) {
+    // Step 1: Get the active (MAIN) theme GID
+    const themeGid = await getActiveThemeGid(admin);
+    if (!themeGid) {
       return { success: false, templateCreated: false, templateAlreadyExists: false, error: "No active theme found" };
     }
+    const themeId = themeGid.split("/").pop() as string;
 
     // Step 2: Check if template already exists
-    const exists = await themeAssetExists(session, themeId, TEMPLATE_KEY);
+    const exists = await themeAssetExists(admin, themeGid, TEMPLATE_KEY);
     if (exists) {
       AppLogger.info("[TEMPLATE] page.full-page-bundle.json already exists", { component: COMPONENT });
       return { success: true, templateCreated: false, templateAlreadyExists: true, themeId };
     }
 
-    // Step 3: Read the default page.json as base
-    const baseTemplate = await readBasePageTemplate(session, themeId);
-
-    // Step 4: Discover block UUID from existing theme templates
-    const blockUuid = await discoverBlockUuid(session, themeId, apiKey);
-
+    // Step 3: Resolve block UUID — fail fast before reading theme assets
+    const blockUuid = resolveBlockUuid();
     if (!blockUuid) {
-      AppLogger.warn("[TEMPLATE] Could not discover block UUID — cannot create template with app block", { component: COMPONENT });
-      return { success: false, templateCreated: false, templateAlreadyExists: false, error: "Block UUID not found" };
+      return { success: false, templateCreated: false, templateAlreadyExists: false, error: "Block UUID not found — set SHOPIFY_BUNDLE_BLOCK_UUID or ensure extensions/bundle-builder/shopify.extension.toml has a uid field" };
     }
+
+    // Step 4: Read the default page.json as base
+    const baseTemplate = await readBasePageTemplate(admin, themeGid);
 
     // Step 5: Construct the bundle template
     const bundleTemplate = buildBundleTemplate(baseTemplate, apiKey, blockUuid);
 
-    // Step 6: Write the template to the theme
-    await writeThemeAsset(session, themeId, TEMPLATE_KEY, JSON.stringify(bundleTemplate, null, 2));
+    // Step 6: Write the template to the theme via GraphQL mutation
+    await writeThemeAsset(admin, themeGid, TEMPLATE_KEY, JSON.stringify(bundleTemplate, null, 2));
 
     AppLogger.info("[TEMPLATE] Created page.full-page-bundle.json successfully", {
       component: COMPONENT,
@@ -87,11 +112,76 @@ export async function ensureBundlePageTemplate(
   }
 }
 
+/**
+ * Ensure `templates/product.product-page-bundle.json` exists in the active theme
+ * with the bundle-product-page app block in an 'apps' section.
+ *
+ * Called on every product-page bundle save and sync. Idempotent — skips the
+ * write if the template already exists. Failure is non-fatal.
+ */
+export async function ensureProductBundleTemplate(
+  admin: any,
+  session: ShopSession,
+  apiKey: string,
+): Promise<TemplateEnsureResult> {
+  try {
+    // Step 1: Get the active (MAIN) theme GID
+    const themeGid = await getActiveThemeGid(admin);
+    if (!themeGid) {
+      return { success: false, templateCreated: false, templateAlreadyExists: false, error: "No active theme found" };
+    }
+    const themeId = themeGid.split("/").pop() as string;
+
+    // Step 2: Check if template already exists
+    const exists = await themeAssetExists(admin, themeGid, PRODUCT_TEMPLATE_KEY);
+    if (exists) {
+      AppLogger.info("[TEMPLATE] product.product-page-bundle.json already exists", { component: COMPONENT });
+      return { success: true, templateCreated: false, templateAlreadyExists: true, themeId };
+    }
+
+    // Step 3: Resolve block UUID from TOML uid (or env var override) — fail fast before reading theme assets
+    const blockUuid = resolveBlockUuid();
+    if (!blockUuid) {
+      return { success: false, templateCreated: false, templateAlreadyExists: false, error: "Block UUID not found — set SHOPIFY_BUNDLE_BLOCK_UUID or ensure extensions/bundle-builder/shopify.extension.toml has a uid field" };
+    }
+
+    // Step 4: Read the default product.json as base
+    const baseTemplate = await readBaseProductTemplate(admin, themeGid);
+
+    // Step 5: Construct the product bundle template
+    const productTemplate = buildProductBundleTemplate(baseTemplate, apiKey, blockUuid);
+
+    // Step 6: Write the template to the theme via GraphQL mutation
+    await writeThemeAsset(admin, themeGid, PRODUCT_TEMPLATE_KEY, JSON.stringify(productTemplate, null, 2));
+
+    AppLogger.info("[TEMPLATE] Created product.product-page-bundle.json successfully", {
+      component: COMPONENT,
+      themeId,
+      blockUuid,
+    });
+
+    return { success: true, templateCreated: true, templateAlreadyExists: false, themeId };
+  } catch (error) {
+    AppLogger.error("[TEMPLATE] Failed to ensure product bundle template", { component: COMPONENT }, error as Error);
+    return {
+      success: false,
+      templateCreated: false,
+      templateAlreadyExists: false,
+      error: (error as Error).message,
+    };
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Internal helpers — all use admin.graphql (not REST)
 // ---------------------------------------------------------------------------
 
-async function getActiveThemeId(admin: any): Promise<string | null> {
+/**
+ * Returns the full GID of the active (MAIN) theme, e.g.
+ * "gid://shopify/OnlineStoreTheme/12345678".
+ * Used for GraphQL mutations that require an ID input.
+ */
+async function getActiveThemeGid(admin: any): Promise<string | null> {
   const GET_THEME = `
     query getPublishedTheme {
       themes(first: 1, roles: [MAIN]) {
@@ -103,51 +193,73 @@ async function getActiveThemeId(admin: any): Promise<string | null> {
   const response = await admin.graphql(GET_THEME);
   const data = await response.json();
   const theme = data.data?.themes?.nodes?.[0];
-  if (!theme) return null;
-
-  // Extract numeric ID from GID for REST API
-  return theme.id.split("/").pop() as string;
+  return theme?.id ?? null;
 }
 
-function restHeaders(session: ShopSession) {
-  return {
-    "X-Shopify-Access-Token": session.accessToken ?? "",
-    "Content-Type": "application/json",
-  };
-}
-
-function assetUrl(session: ShopSession, themeId: string, key?: string): string {
-  const base = `https://${session.shop}/admin/api/${SHOPIFY_REST_API_VERSION}/themes/${themeId}/assets.json`;
-  return key ? `${base}?asset[key]=${encodeURIComponent(key)}` : base;
-}
-
-async function themeAssetExists(session: ShopSession, themeId: string, key: string): Promise<boolean> {
-  const response = await fetch(assetUrl(session, themeId, key), { headers: restHeaders(session) });
-  return response.ok;
-}
-
-async function readThemeAsset(session: ShopSession, themeId: string, key: string): Promise<string | null> {
-  const response = await fetch(assetUrl(session, themeId, key), { headers: restHeaders(session) });
-  if (!response.ok) return null;
+async function themeAssetExists(admin: any, themeGid: string, filename: string): Promise<boolean> {
+  const QUERY = `
+    query themeFileExists($themeId: ID!, $filenames: [String!]!) {
+      theme(id: $themeId) {
+        files(filenames: $filenames) {
+          nodes { filename }
+        }
+      }
+    }
+  `;
+  const response = await admin.graphql(QUERY, { variables: { themeId: themeGid, filenames: [filename] } });
   const data = await response.json();
-  return data.asset?.value ?? null;
+  const nodes = data.data?.theme?.files?.nodes ?? [];
+  return nodes.some((n: any) => n.filename === filename);
 }
 
-async function writeThemeAsset(session: ShopSession, themeId: string, key: string, value: string): Promise<void> {
-  const response = await fetch(assetUrl(session, themeId), {
-    method: "PUT",
-    headers: restHeaders(session),
-    body: JSON.stringify({ asset: { key, value } }),
-  });
+async function readThemeAsset(admin: any, themeGid: string, filename: string): Promise<string | null> {
+  const QUERY = `
+    query themeFileContent($themeId: ID!, $filenames: [String!]!) {
+      theme(id: $themeId) {
+        files(filenames: $filenames) {
+          nodes {
+            filename
+            body {
+              ... on OnlineStoreThemeFileBodyText {
+                content
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const response = await admin.graphql(QUERY, { variables: { themeId: themeGid, filenames: [filename] } });
+  const data = await response.json();
+  const nodes = data.data?.theme?.files?.nodes ?? [];
+  const file = nodes.find((n: any) => n.filename === filename);
+  return file?.body?.content ?? null;
+}
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to write theme asset ${key}: ${response.status} ${errorText}`);
+async function writeThemeAsset(admin: any, themeGid: string, filename: string, content: string): Promise<void> {
+  const MUTATION = `
+    mutation themeFilesUpsert($themeId: ID!, $files: [OnlineStoreThemeFileBodyInput!]!) {
+      themeFilesUpsert(themeId: $themeId, files: $files) {
+        upsertedThemeFiles { filename }
+        userErrors { filename message }
+      }
+    }
+  `;
+  const response = await admin.graphql(MUTATION, {
+    variables: {
+      themeId: themeGid,
+      files: [{ filename, body: { asString: content } }],
+    },
+  });
+  const data = await response.json();
+  const userErrors = data.data?.themeFilesUpsert?.userErrors ?? [];
+  if (userErrors.length > 0) {
+    throw new Error(`Failed to write theme asset ${filename}: ${userErrors.map((e: any) => e.message).join(", ")}`);
   }
 }
 
-async function readBasePageTemplate(session: ShopSession, themeId: string): Promise<any> {
-  const content = await readThemeAsset(session, themeId, "templates/page.json");
+async function readBasePageTemplate(admin: any, themeGid: string): Promise<any> {
+  const content = await readThemeAsset(admin, themeGid, "templates/page.json");
   if (content) {
     try {
       return JSON.parse(content);
@@ -166,84 +278,60 @@ async function readBasePageTemplate(session: ShopSession, themeId: string): Prom
 }
 
 /**
- * Scan existing theme template files for the bundle-full-page block reference
- * to discover the block UUID assigned by Shopify during deployment.
+ * Resolve the block UUID for the bundle-full-page extension block.
  *
- * Block references in template JSON look like:
- *   shopify://apps/{apiKey}/blocks/bundle-full-page/{uuid}
+ * Resolution order:
+ *  1. SHOPIFY_BUNDLE_BLOCK_UUID env var — override for testing or re-deploys
+ *  2. uid field in extensions/bundle-builder/shopify.extension.toml — set by
+ *     Shopify at first deploy, stable for the extension's lifetime
+ *
+ * Returns null if neither source provides a value (prevents silent template corruption).
+ *
+ * The old approach of scanning theme templates is removed — it only worked if
+ * the merchant had already placed the block in Theme Editor, which is the exact
+ * situation we are trying to automate away.
  */
-async function discoverBlockUuid(
-  session: ShopSession,
-  themeId: string,
-  apiKey: string,
-): Promise<string | null> {
-  // First check env var (fastest path)
+function resolveBlockUuid(): string | null {
   const envUuid = process.env.SHOPIFY_BUNDLE_BLOCK_UUID;
   if (envUuid) {
     AppLogger.info("[TEMPLATE] Using block UUID from env var", { component: COMPONENT, uuid: envUuid });
     return envUuid;
   }
 
-  // Scan theme templates for existing block reference
-  try {
-    const response = await fetch(assetUrl(session, themeId), { headers: restHeaders(session) });
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const templateKeys: string[] = (data.assets || [])
-      .filter((a: any) => a.key.startsWith("templates/") && a.key.endsWith(".json"))
-      .map((a: any) => a.key);
-
-    // Also check config/settings_data.json which may contain block references from theme customizations
-    const configKeys = (data.assets || [])
-      .filter((a: any) => a.key === "config/settings_data.json")
-      .map((a: any) => a.key);
-
-    const keysToScan = [...templateKeys, ...configKeys];
-    const pattern = new RegExp(`shopify://apps/${escapeRegex(apiKey)}/blocks/${escapeRegex(BLOCK_HANDLE)}/([a-f0-9-]+)`);
-
-    for (const key of keysToScan) {
-      const content = await readThemeAsset(session, themeId, key);
-      if (!content) continue;
-
-      const match = content.match(pattern);
-      if (match) {
-        AppLogger.info("[TEMPLATE] Discovered block UUID from theme asset", {
-          component: COMPONENT,
-          sourceAsset: key,
-          uuid: match[1],
-        });
-        return match[1];
-      }
-    }
-  } catch (error) {
-    AppLogger.warn("[TEMPLATE] Error scanning theme templates for block UUID", { component: COMPONENT }, error as Error);
+  const tomlUid = readExtensionUidFromToml();
+  if (tomlUid) {
+    AppLogger.info("[TEMPLATE] Using block UUID from extension TOML", { component: COMPONENT, uuid: tomlUid });
+    return tomlUid;
   }
 
+  AppLogger.warn("[TEMPLATE] Could not resolve block UUID — TOML uid not found and SHOPIFY_BUNDLE_BLOCK_UUID not set", { component: COMPONENT });
   return null;
 }
 
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 function buildBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: string): any {
-  // Deep-clone the base template
+  return appendBundleWidgetSection(baseTemplate, apiKey, BLOCK_HANDLE, blockUuid);
+}
+
+function buildProductBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: string): any {
+  return appendBundleWidgetSection(baseTemplate, apiKey, PRODUCT_BLOCK_HANDLE, blockUuid);
+}
+
+/** Deep-clones the base template and appends an 'apps' section with the given block. */
+function appendBundleWidgetSection(baseTemplate: any, apiKey: string, blockHandle: string, blockUuid: string): any {
   const template = JSON.parse(JSON.stringify(baseTemplate));
 
-  // Add the apps section with the bundle-full-page block
   template.sections["bundle_widget"] = {
     type: "apps",
     blocks: {
       bundle_block: {
-        type: `shopify://apps/${apiKey}/blocks/${BLOCK_HANDLE}/${blockUuid}`,
+        type: `shopify://apps/${apiKey}/blocks/${blockHandle}/${blockUuid}`,
       },
     },
     block_order: ["bundle_block"],
     settings: {},
   };
 
-  // Ensure section order includes the new section
   if (!template.order) {
     template.order = Object.keys(template.sections);
   } else if (!template.order.includes("bundle_widget")) {
@@ -251,4 +339,23 @@ function buildBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: strin
   }
 
   return template;
+}
+
+async function readBaseProductTemplate(admin: any, themeGid: string): Promise<any> {
+  const content = await readThemeAsset(admin, themeGid, "templates/product.json");
+  if (content) {
+    try {
+      return JSON.parse(content);
+    } catch {
+      AppLogger.warn("[TEMPLATE] Could not parse templates/product.json — using minimal fallback", { component: COMPONENT });
+    }
+  }
+
+  // Minimal fallback template
+  return {
+    sections: {
+      main: { type: "main-product", settings: {} },
+    },
+    order: ["main"],
+  };
 }

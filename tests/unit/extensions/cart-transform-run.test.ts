@@ -110,9 +110,9 @@ describe('Cart Transform Function', () => {
 
       expect(result.operations).toHaveLength(1);
       expect(result.operations[0].merge).toBeDefined();
-      expect(result.operations[0].merge.cartLines).toHaveLength(2);
-      expect(result.operations[0].merge.parentVariantId).toBe('gid://shopify/ProductVariant/999');
-      expect(result.operations[0].merge.title).toBe('Test Bundle');
+      expect(result.operations[0].merge!.cartLines).toHaveLength(2);
+      expect(result.operations[0].merge!.parentVariantId).toBe('gid://shopify/ProductVariant/999');
+      expect(result.operations[0].merge!.title).toBe('Test Bundle');
     });
 
     it('should apply percentage discount when conditions are met', () => {
@@ -168,8 +168,8 @@ describe('Cart Transform Function', () => {
       const result = cartTransformRun(input);
 
       expect(result.operations).toHaveLength(1);
-      expect(result.operations[0].merge.price).toBeDefined();
-      expect(result.operations[0].merge.price.percentageDecrease.value).toBe('15.00');
+      expect(result.operations[0].merge!.price).toBeDefined();
+      expect(result.operations[0].merge!.price!.percentageDecrease.value).toBe('15.00');
     });
 
     it('should apply fixed amount discount correctly', () => {
@@ -211,8 +211,8 @@ describe('Cart Transform Function', () => {
       const result = cartTransformRun(input);
 
       expect(result.operations).toHaveLength(1);
-      expect(result.operations[0].merge.price).toBeDefined();
-      expect(result.operations[0].merge.price.percentageDecrease.value).toBe('20.00');
+      expect(result.operations[0].merge!.price).toBeDefined();
+      expect(result.operations[0].merge!.price!.percentageDecrease.value).toBe('20.00');
     });
 
     it('should apply fixed bundle price correctly', () => {
@@ -254,8 +254,8 @@ describe('Cart Transform Function', () => {
       const result = cartTransformRun(input);
 
       expect(result.operations).toHaveLength(1);
-      expect(result.operations[0].merge.price).toBeDefined();
-      expect(result.operations[0].merge.price.percentageDecrease.value).toBe('25.00');
+      expect(result.operations[0].merge!.price).toBeDefined();
+      expect(result.operations[0].merge!.price!.percentageDecrease.value).toBe('25.00');
     });
 
     it('should handle multiple bundle instances separately', () => {
@@ -307,8 +307,8 @@ describe('Cart Transform Function', () => {
       const result = cartTransformRun(input);
 
       expect(result.operations).toHaveLength(2); // Two separate bundle instances
-      expect(result.operations[0].merge.cartLines).toHaveLength(1);
-      expect(result.operations[1].merge.cartLines).toHaveLength(1);
+      expect(result.operations[0].merge!.cartLines).toHaveLength(1);
+      expect(result.operations[1].merge!.cartLines).toHaveLength(1);
     });
 
     it('should handle missing bundle configuration gracefully', () => {
@@ -417,8 +417,8 @@ describe('Cart Transform Function', () => {
       const result = cartTransformRun(input);
 
       expect(result.operations).toHaveLength(1);
-      expect(result.operations[0].merge.price).toBeDefined();
-      expect(result.operations[0].merge.price.percentageDecrease.value).toBe('20.00');
+      expect(result.operations[0].merge!.price).toBeDefined();
+      expect(result.operations[0].merge!.price!.percentageDecrease.value).toBe('20.00');
     });
 
     it('should merge with zero discount when conditions are not met', () => {
@@ -462,8 +462,8 @@ describe('Cart Transform Function', () => {
 
       expect(result.operations).toHaveLength(1);
       // Source always includes price with percentageDecrease, but value is "0.00"
-      expect(result.operations[0].merge.price).toBeDefined();
-      expect(result.operations[0].merge.price.percentageDecrease.value).toBe('0.00');
+      expect(result.operations[0].merge!.price).toBeDefined();
+      expect(result.operations[0].merge!.price!.percentageDecrease.value).toBe('0.00');
     });
   });
 

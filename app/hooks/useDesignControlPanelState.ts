@@ -44,9 +44,12 @@ export interface DCPNavigationState {
 // HOOK IMPLEMENTATION
 // ============================================
 
-export function useDesignControlPanelState(loaderSettings: LoaderSettings) {
+export function useDesignControlPanelState(
+  loaderSettings: LoaderSettings,
+  initialBundleType: BundleType = BundleType.PRODUCT_PAGE
+) {
   // Bundle type selection
-  const [selectedBundleType, setSelectedBundleType] = useState<BundleType>(BundleType.PRODUCT_PAGE);
+  const [selectedBundleType, setSelectedBundleType] = useState<BundleType>(initialBundleType);
 
   // Navigation state
   const [expandedSection, setExpandedSection] = useState<string | null>("productCard");

@@ -9,6 +9,21 @@ import { BundleType } from "../../constants/bundle";
 // Data is non-sensitive CSS design tokens (colors, fonts, spacing).
 
 /**
+ * Shopify's App Proxy sometimes appends its auth params (e.g. ?oseid=VALUE) directly to the
+ * URL, which corrupts query param values like bundleType=product_page?oseid=VALUE.
+ * This helper strips the corruption and validates against known enum values.
+ */
+function sanitizeBundleType(raw: string | null): BundleType.PRODUCT_PAGE | BundleType.FULL_PAGE | null {
+  if (!raw) return null;
+  // Strip anything after the first '?' (proxy appends ?oseid=... directly to the value)
+  const stripped = raw.split("?")[0].split("&")[0].trim();
+  if (stripped === BundleType.PRODUCT_PAGE || stripped === BundleType.FULL_PAGE) {
+    return stripped;
+  }
+  return null;
+}
+
+/**
  * API endpoint that returns design settings as CSS variables
  * Usage: <link rel="stylesheet" href="https://your-app.com/api/design-settings/{shopDomain}.css" />
  */
@@ -21,7 +36,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
   try {
     const url = new URL(request.url);
-    const requestedBundleType = url.searchParams.get("bundleType") as BundleType.PRODUCT_PAGE | BundleType.FULL_PAGE | null;
+    const requestedBundleType = sanitizeBundleType(url.searchParams.get("bundleType"));
 
     // Unified CSS Strategy: Try product_page first, then full_page, then defaults
     // This allows merchants to use the same design for both bundle types
@@ -150,6 +165,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       globalSecondaryTextColor: "#6B7280",
       globalFooterBgColor: "#FFFFFF",
       globalFooterTextColor: "#000000",
+      // Toast extended
+      toastBorderRadius: 8,
+      toastBorderColor: "#FFFFFF",
+      toastBorderWidth: 0,
+      toastFontSize: 13,
+      toastFontWeight: 500,
+      toastAnimationDuration: 300,
+      toastBoxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+      toastEnterFromBottom: false,
     };
 
     let finalSettings = defaultSettings;
@@ -212,6 +236,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
         modalButtonBgColor: designSettings.modalButtonBgColor || defaultSettings.modalButtonBgColor,
         modalButtonTextColor: designSettings.modalButtonTextColor || defaultSettings.modalButtonTextColor,
         modalButtonBorderRadius: designSettings.modalButtonBorderRadius || defaultSettings.modalButtonBorderRadius,
+        // Toast extended settings (direct columns)
+        toastBorderRadius: (designSettings as any).toastBorderRadius ?? defaultSettings.toastBorderRadius,
+        toastBorderColor: (designSettings as any).toastBorderColor ?? defaultSettings.toastBorderColor,
+        toastBorderWidth: (designSettings as any).toastBorderWidth ?? defaultSettings.toastBorderWidth,
+        toastFontSize: (designSettings as any).toastFontSize ?? defaultSettings.toastFontSize,
+        toastFontWeight: (designSettings as any).toastFontWeight ?? defaultSettings.toastFontWeight,
+        toastAnimationDuration: (designSettings as any).toastAnimationDuration ?? defaultSettings.toastAnimationDuration,
+        toastBoxShadow: (designSettings as any).toastBoxShadow ?? defaultSettings.toastBoxShadow,
+        toastEnterFromBottom: (designSettings as any).toastEnterFromBottom ?? defaultSettings.toastEnterFromBottom,
         ...globalColorsSettings,
         ...footerSettings,
         ...stepBarSettings,

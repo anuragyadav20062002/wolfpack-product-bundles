@@ -57,13 +57,6 @@
     },
     {
       "type": "checkbox",
-      "id": "show_step_timeline",
-      "label": "t:bundle_full_page.settings.show_step_timeline_label",
-      "info": "t:bundle_full_page.settings.show_step_timeline_info",
-      "default": true
-    },
-    {
-      "type": "checkbox",
       "id": "show_category_tabs",
       "label": "t:bundle_full_page.settings.show_category_tabs_label",
       "info": "t:bundle_full_page.settings.show_category_tabs_info",
@@ -124,6 +117,51 @@
       "label": "Banner note (no discount)",
       "info": "Note text shown when no discount is configured",
       "default": "Mix & Match Your Favorites"
+    },
+    {
+      "type": "header",
+      "content": "Pricing Tiers (Optional)"
+    },
+    {
+      "type": "text",
+      "id": "tier_1_label",
+      "label": "Tier 1 label"
+    },
+    {
+      "type": "text",
+      "id": "tier_1_bundle_id",
+      "label": "Tier 1 bundle ID",
+      "info": "Leave blank to use the primary Bundle ID above"
+    },
+    {
+      "type": "text",
+      "id": "tier_2_label",
+      "label": "Tier 2 label"
+    },
+    {
+      "type": "text",
+      "id": "tier_2_bundle_id",
+      "label": "Tier 2 bundle ID"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_label",
+      "label": "Tier 3 label (optional)"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_bundle_id",
+      "label": "Tier 3 bundle ID (optional)"
+    },
+    {
+      "type": "text",
+      "id": "tier_4_label",
+      "label": "Tier 4 label (optional)"
+    },
+    {
+      "type": "text",
+      "id": "tier_4_bundle_id",
+      "label": "Tier 4 bundle ID (optional)"
     }
   ]
 }
@@ -140,55 +178,28 @@
 {% endcomment %}
 
 {% comment %}
-  Resolve bundle ID from four sources in priority order:
+  Resolve bundle ID from two authoritative sources:
 
-  1. page.metafields.custom.bundle_id  — MOST RELIABLE (primary source).
-     The 'custom' namespace is set by the backend and is always readable in
-     Liquid with PUBLIC_READ access. Unlike '$app' which expands to an
-     internal namespace, 'custom' works directly.
+  1. page.metafields.custom.bundle_id  — PRIMARY. Always set by the app when
+     "Place Widget Now" is used. The 'custom' namespace has PUBLIC_READ access
+     and is reliably readable in Liquid.
 
-  2. page.handle  — SECONDARY. App creates pages with handle "bundle-{bundleId}".
-     Extracting the bundle ID from the handle is a zero-dependency fallback.
-
-  3. page.metafields['$app'].bundle_id  — LEGACY. '$app' expands internally
-     and may not resolve in Liquid. Kept for backwards compatibility.
-
-  4. block.settings.bundle_id  — MANUAL. Merchant enters bundle ID in the
-     Shopify theme editor.
+  2. block.settings.bundle_id  — FALLBACK for merchants who manually entered
+     the bundle ID in the Shopify Theme Editor (backwards compatibility).
 {% endcomment %}
 
-{% comment %} Source 1: custom namespace metafield (most reliable) {% endcomment %}
+{% comment %} Source 1: custom namespace metafield (app-set, always reliable) {% endcomment %}
 {% assign bundle_id_from_custom = page.metafields.custom.bundle_id %}
 
-{% comment %} Source 2: Extract bundle ID from page handle {% endcomment %}
-{% if page.handle contains 'bundle-' %}
-  {% assign bundle_id_from_handle = page.handle | remove_first: 'bundle-' %}
-{% else %}
-  {% assign bundle_id_from_handle = nil %}
-{% endif %}
-
-{% comment %} Source 3: $app namespace metafield (legacy, may not work) {% endcomment %}
-{% assign bundle_id_from_app_metafield = page.metafields['$app'].bundle_id %}
-
-{% comment %} Source 4: Block setting (manual theme editor input) {% endcomment %}
+{% comment %} Source 2: Block setting (manual theme editor input) {% endcomment %}
 {% assign bundle_id_from_setting = block.settings.bundle_id %}
 
-{% comment %} Priority: custom metafield > handle > $app metafield > block setting {% endcomment %}
 {% if bundle_id_from_custom and bundle_id_from_custom != blank %}
   {% assign bundle_id = bundle_id_from_custom %}
-  {% assign bundle_id_source = "custom_metafield" %}
-{% elsif bundle_id_from_handle and bundle_id_from_handle != blank %}
-  {% assign bundle_id = bundle_id_from_handle %}
-  {% assign bundle_id_source = "page_handle" %}
-{% elsif bundle_id_from_app_metafield and bundle_id_from_app_metafield != blank %}
-  {% assign bundle_id = bundle_id_from_app_metafield %}
-  {% assign bundle_id_source = "app_metafield" %}
 {% elsif bundle_id_from_setting and bundle_id_from_setting != blank %}
   {% assign bundle_id = bundle_id_from_setting %}
-  {% assign bundle_id_source = "block_setting_manual" %}
 {% else %}
   {% assign bundle_id = nil %}
-  {% assign bundle_id_source = "none" %}
 {% endif %}
 
 {% assign should_show_widget = false %}
@@ -206,26 +217,28 @@
   {% endunless %}
 {% endif %}
 
-<!-- DIAGNOSTIC: Always runs regardless of bundle_id resolution -->
-<script>
-  console.log('🔍 [BUNDLE_DEBUG] Liquid Resolution (ALWAYS RUNS):', {
-    pageHandle: {{ page.handle | json }},
-    pageTitle: {{ page.title | json }},
-    customMetafield: {{ bundle_id_from_custom | json }},
-    handleExtraction: {{ bundle_id_from_handle | json }},
-    appMetafield: {{ bundle_id_from_app_metafield | json }},
-    blockSetting: {{ bundle_id_from_setting | json }},
-    finalBundleId: {{ bundle_id | json }},
-    source: {{ bundle_id_source | json }},
-    shouldShowWidget: {{ should_show_widget | json }},
-    isDesignMode: {{ request.design_mode | json }},
-    allPageMetafields: {{ page.metafields | json }},
-    customNamespace: {{ page.metafields.custom | json }},
-    appNamespace: {{ page.metafields['$app'] | json }}
-  });
-</script>
-
 {% if should_show_widget %}
+  {% comment %} Build tier config JSON for the widget {% endcomment %}
+  {% assign tier_config_json = '[' %}
+  {% assign tier_json_first = true %}
+  {% for i in (1..4) %}
+    {% assign t_label_key = 'tier_' | append: i | append: '_label' %}
+    {% assign t_id_key    = 'tier_' | append: i | append: '_bundle_id' %}
+    {% assign t_label     = block.settings[t_label_key] %}
+    {% assign t_bundle_id = block.settings[t_id_key] %}
+    {% if i == 1 and t_bundle_id == blank %}
+      {% assign t_bundle_id = bundle_id %}
+    {% endif %}
+    {% if t_label != blank and t_bundle_id != blank %}
+      {% unless tier_json_first %}
+        {% assign tier_config_json = tier_config_json | append: ',' %}
+      {% endunless %}
+      {% assign tier_json_first = false %}
+      {% assign tier_config_json = tier_config_json | append: '{"label":' | append: t_label | json | append: ',"bundleId":' | append: t_bundle_id | json | append: '}' %}
+    {% endif %}
+  {% endfor %}
+  {% assign tier_config_json = tier_config_json | append: ']' %}
+
   <div
     {{ block.shopify_attributes }}
     id="bundle-builder-app"
@@ -234,7 +247,6 @@
     data-app-url="{{ block.settings.app_url | default: '' }}"
     data-show-title="{{ block.settings.show_bundle_title }}"
     data-show-description="{{ block.settings.show_bundle_description }}"
-    data-show-step-timeline="{{ block.settings.show_step_timeline }}"
     data-show-category-tabs="{{ block.settings.show_category_tabs }}"
     data-custom-title="{{ block.settings.custom_title | escape }}"
     data-custom-description="{{ block.settings.custom_description | escape }}"
@@ -244,6 +256,7 @@
     data-promo-banner-subtitle="{{ block.settings.promo_banner_subtitle | default: 'Mix & Match' | escape }}"
     data-promo-banner-tagline="{{ block.settings.promo_banner_tagline | default: 'Create Your Perfect Bundle' | escape }}"
     data-promo-banner-note="{{ block.settings.promo_banner_note | default: 'Mix & Match Your Favorites' | escape }}"
+    data-tier-config="{{ tier_config_json | escape }}"
     class="bundle-widget-container bundle-widget-full-page"
   >
     <div class="bundle-loading">
@@ -252,16 +265,6 @@
   </div>
 
   <script>
-    console.log('🎯 [FULL_PAGE_BUNDLE] Widget Loading:', {
-      bundleId: {{ bundle_id | json }},
-      bundleIdSource: {{ bundle_id_source | json }},
-      bundleType: 'full_page',
-      pageHandle: {{ page.handle | json }},
-      pageTitle: {{ page.title | json }},
-      isThemeEditor: (window.Shopify && window.Shopify.designMode) || false,
-      automated: {{ bundle_id_source | json }} === 'page_metafield_automated'
-    });
-
     // Initialize Shopify context for full-page bundles
     if (!window.bundleWidgetContext) {
       window.shopCurrency = {{ shop.currency | json }};

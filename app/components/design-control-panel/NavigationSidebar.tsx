@@ -6,8 +6,10 @@
 
 import { Text, Divider, Collapsible } from "@shopify/polaris";
 import { NavigationItem } from "./NavigationItem";
+import { BundleType } from "../../constants/bundle";
 
 interface NavigationSidebarProps {
+  bundleType: BundleType;
   expandedSection: string | null;
   activeSubSection: string;
   onToggleSection: (section: string) => void;
@@ -15,11 +17,13 @@ interface NavigationSidebarProps {
 }
 
 export function NavigationSidebar({
+  bundleType,
   expandedSection,
   activeSubSection,
   onToggleSection,
   onSubSectionClick,
 }: NavigationSidebarProps) {
+  const isFullPage = bundleType === BundleType.FULL_PAGE;
   return (
     <div
       style={{
@@ -94,13 +98,15 @@ export function NavigationSidebar({
           onClick={() => onSubSectionClick("quantityVariantSelector")}
           isActive={activeSubSection === "quantityVariantSelector"}
         />
-        <NavigationItem
-          label="Search Input"
-          sectionKey="searchInput"
-          isChild
-          onClick={() => onSubSectionClick("searchInput")}
-          isActive={activeSubSection === "searchInput"}
-        />
+        {isFullPage && (
+          <NavigationItem
+            label="Search Input"
+            sectionKey="searchInput"
+            isChild
+            onClick={() => onSubSectionClick("searchInput")}
+            isActive={activeSubSection === "searchInput"}
+          />
+        )}
         <NavigationItem
           label="Skeleton Loading"
           sectionKey="skeletonLoading"
@@ -164,31 +170,35 @@ export function NavigationSidebar({
         />
       </Collapsible>
 
-      {/* Bundle Header Section */}
-      <NavigationItem
-        label="Bundle Header"
-        sectionKey="bundleHeader"
-        hasChildren
-        onClick={() => onToggleSection("bundleHeader")}
-        isExpanded={expandedSection === "bundleHeader"}
-        isActive={false}
-      />
-      <Collapsible open={expandedSection === "bundleHeader"} id="bundleHeader-collapsible">
-        <NavigationItem
-          label="Tabs"
-          sectionKey="headerTabs"
-          isChild
-          onClick={() => onSubSectionClick("headerTabs")}
-          isActive={activeSubSection === "headerTabs"}
-        />
-        <NavigationItem
-          label="Header Text"
-          sectionKey="headerText"
-          isChild
-          onClick={() => onSubSectionClick("headerText")}
-          isActive={activeSubSection === "headerText"}
-        />
-      </Collapsible>
+      {/* Bundle Header Section (Full-Page Bundles only) */}
+      {isFullPage && (
+        <>
+          <NavigationItem
+            label="Bundle Header"
+            sectionKey="bundleHeader"
+            hasChildren
+            onClick={() => onToggleSection("bundleHeader")}
+            isExpanded={expandedSection === "bundleHeader"}
+            isActive={false}
+          />
+          <Collapsible open={expandedSection === "bundleHeader"} id="bundleHeader-collapsible">
+            <NavigationItem
+              label="Tabs"
+              sectionKey="headerTabs"
+              isChild
+              onClick={() => onSubSectionClick("headerTabs")}
+              isActive={activeSubSection === "headerTabs"}
+            />
+            <NavigationItem
+              label="Header Text"
+              sectionKey="headerText"
+              isChild
+              onClick={() => onSubSectionClick("headerText")}
+              isActive={activeSubSection === "headerText"}
+            />
+          </Collapsible>
+        </>
+      )}
 
       {/* General Section */}
       <NavigationItem
@@ -200,13 +210,15 @@ export function NavigationSidebar({
         isActive={false}
       />
       <Collapsible open={expandedSection === "general"} id="general-collapsible">
-        <NavigationItem
-          label="Empty State"
-          sectionKey="emptyState"
-          isChild
-          onClick={() => onSubSectionClick("emptyState")}
-          isActive={activeSubSection === "emptyState"}
-        />
+        {!isFullPage && (
+          <NavigationItem
+            label="Empty State"
+            sectionKey="emptyState"
+            isChild
+            onClick={() => onSubSectionClick("emptyState")}
+            isActive={activeSubSection === "emptyState"}
+          />
+        )}
         <NavigationItem
           label="Add to Cart Button"
           sectionKey="addToCartButton"
@@ -221,13 +233,15 @@ export function NavigationSidebar({
           onClick={() => onSubSectionClick("toasts")}
           isActive={activeSubSection === "toasts"}
         />
-        <NavigationItem
-          label="Modal Close Button"
-          sectionKey="modalCloseButton"
-          isChild
-          onClick={() => onSubSectionClick("modalCloseButton")}
-          isActive={activeSubSection === "modalCloseButton"}
-        />
+        {!isFullPage && (
+          <NavigationItem
+            label="Modal Close Button"
+            sectionKey="modalCloseButton"
+            isChild
+            onClick={() => onSubSectionClick("modalCloseButton")}
+            isActive={activeSubSection === "modalCloseButton"}
+          />
+        )}
         <NavigationItem
           label="Accessibility"
           sectionKey="accessibility"
@@ -235,18 +249,40 @@ export function NavigationSidebar({
           onClick={() => onSubSectionClick("accessibility")}
           isActive={activeSubSection === "accessibility"}
         />
+        {!isFullPage && (
+          <NavigationItem
+            label="Widget Style"
+            sectionKey="widgetStyle"
+            isChild
+            onClick={() => onSubSectionClick("widgetStyle")}
+            isActive={activeSubSection === "widgetStyle"}
+          />
+        )}
       </Collapsible>
 
-      <Divider />
+      {isFullPage && <Divider />}
 
-      {/* Promo Banner Section (Full-Page Bundles) */}
-      <NavigationItem
-        label="Promo Banner"
-        sectionKey="promoBanner"
-        onClick={() => onSubSectionClick("promoBanner")}
-        isExpanded={expandedSection === "promoBanner"}
-        isActive={activeSubSection === "promoBanner"}
-      />
+      {/* Promo Banner Section (Full-Page Bundles only) */}
+      {isFullPage && (
+        <NavigationItem
+          label="Promo Banner"
+          sectionKey="promoBanner"
+          onClick={() => onSubSectionClick("promoBanner")}
+          isExpanded={expandedSection === "promoBanner"}
+          isActive={activeSubSection === "promoBanner"}
+        />
+      )}
+
+      {/* Pricing Tier Pills (Full-Page Bundles only) */}
+      {isFullPage && (
+        <NavigationItem
+          label="Pricing Tier Pills"
+          sectionKey="tierPills"
+          onClick={() => onSubSectionClick("tierPills")}
+          isExpanded={expandedSection === "tierPills"}
+          isActive={activeSubSection === "tierPills"}
+        />
+      )}
     </div>
   );
 }

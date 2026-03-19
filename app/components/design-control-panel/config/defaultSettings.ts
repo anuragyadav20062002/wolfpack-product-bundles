@@ -159,6 +159,14 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   // Toasts
   toastBgColor: "#000000",
   toastTextColor: "#FFFFFF",
+  toastBorderRadius: 8,
+  toastBorderColor: "#FFFFFF",
+  toastBorderWidth: 0,
+  toastFontSize: 13,
+  toastFontWeight: 500,
+  toastAnimationDuration: 300,
+  toastBoxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+  toastEnterFromBottom: false,
 
   // Bundle Design
   bundleBgColor: "#FFFFFF",
@@ -253,6 +261,31 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   // Focus / Accessibility
   focusOutlineColor: "#5C6AC4",
   focusOutlineWidth: 2,
+
+  // Pricing Tier Pills (not shown on product page — use neutral defaults)
+  tierPillActiveBgColor: "#111111",
+  tierPillActiveTextColor: "#FFFFFF",
+  tierPillInactiveBgColor: "#F2FAE6",
+  tierPillInactiveTextColor: "#333333",
+  tierPillHoverBgColor: "#DCF5D2",
+  tierPillBorderColor: "#000000",
+  tierPillBorderRadius: 8,
+  tierPillHeight: 52,
+  tierPillGap: 12,
+  tierPillFontSize: 14,
+  tierPillFontWeight: 600,
+
+  // Loading overlay
+  loadingOverlayBgColor: "rgba(255,255,255,0.85)",
+  loadingOverlayTextColor: "#333333",
+
+  // Widget style
+  widgetStyle: "classic",
+  bottomSheetOverlayOpacity: 0.5,
+  bottomSheetAnimationDuration: 400,
+  emptySlotBorderStyle: "dashed",
+  emptySlotBorderColor: "#007AFF",
+  freeGiftBadgeUrl: "",
 
   // Custom CSS (empty by default)
   customCss: "",
@@ -410,6 +443,14 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Toasts
   toastBgColor: "#7132FF",
   toastTextColor: "#FFFFFF",
+  toastBorderRadius: 8,
+  toastBorderColor: "#FFFFFF",
+  toastBorderWidth: 0,
+  toastFontSize: 13,
+  toastFontWeight: 500,
+  toastAnimationDuration: 300,
+  toastBoxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+  toastEnterFromBottom: false,
 
   // Bundle Design
   bundleBgColor: "#F9FAFB",
@@ -504,6 +545,31 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Focus / Accessibility
   focusOutlineColor: "#7132FF",
   focusOutlineWidth: 2,
+
+  // Pricing Tier Pills (Full-Page Bundles)
+  tierPillActiveBgColor: "#111111",
+  tierPillActiveTextColor: "#FFFFFF",
+  tierPillInactiveBgColor: "#F2FAE6",
+  tierPillInactiveTextColor: "#333333",
+  tierPillHoverBgColor: "#DCF5D2",
+  tierPillBorderColor: "#000000",
+  tierPillBorderRadius: 8,
+  tierPillHeight: 52,
+  tierPillFontSize: 14,
+  tierPillFontWeight: 600,
+  tierPillGap: 12,
+
+  // Loading overlay
+  loadingOverlayBgColor: "rgba(255,255,255,0.85)",
+  loadingOverlayTextColor: "#333333",
+
+  // Widget style
+  widgetStyle: "classic",
+  bottomSheetOverlayOpacity: 0.5,
+  bottomSheetAnimationDuration: 400,
+  emptySlotBorderStyle: "dashed",
+  emptySlotBorderColor: "#007AFF",
+  freeGiftBadgeUrl: "",
 
   // Custom CSS (empty by default)
   customCss: "",

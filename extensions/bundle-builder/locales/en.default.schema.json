@@ -68,8 +68,6 @@
       "display_header": "Display Settings",
       "show_bundle_title_label": "Show bundle title",
       "show_bundle_description_label": "Show bundle description",
-      "show_step_timeline_label": "Show step progress timeline",
-      "show_step_timeline_info": "Display the step progress indicator at the top",
       "show_category_tabs_label": "Show category tabs",
       "show_category_tabs_info": "Display category/collection tabs for filtering products"
     }

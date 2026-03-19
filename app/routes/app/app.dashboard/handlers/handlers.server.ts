@@ -462,19 +462,17 @@ export async function handleCreateBundle(
     if (defaultVariantId) {
       try {
         const UPDATE_VARIANT = `
-          mutation updateVariantInventory($input: ProductVariantInput!) {
-            productVariantUpdate(input: $input) {
-              productVariant { id }
+          mutation updateVariantInventory($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+            productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+              productVariants { id }
               userErrors { field message }
             }
           }
         `;
         await admin.graphql(UPDATE_VARIANT, {
           variables: {
-            input: {
-              id: defaultVariantId,
-              inventoryManagement: "SHOPIFY",
-            }
+            productId: shopifyProductId,
+            variants: [{ id: defaultVariantId, inventoryManagement: "SHOPIFY" }],
           }
         });
       } catch (variantError) {
