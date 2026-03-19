@@ -1,4 +1,5 @@
 import type { DesignSettings } from "../../../types/state.types";
+import { BundleType } from "../../../constants/bundle";
 import { ProductCardPreview } from "./ProductCardPreview";
 import { BundleFooterPreview } from "./BundleFooterPreview";
 import { BundleHeaderPreview } from "./BundleHeaderPreview";
@@ -6,11 +7,13 @@ import { GeneralPreview } from "./GeneralPreview";
 import { StepBarPreview } from "./StepBarPreview";
 import { PromoBannerPreview } from "./PromoBannerPreview";
 import { GlobalColorsPreview } from "./GlobalColorsPreview";
+import { TierPillPreview } from "./TierPillPreview";
 import { PreviewScope } from "./PreviewScope";
 
 interface PreviewPanelProps {
   activeSubSection: string;
   settings: DesignSettings;
+  bundleType?: BundleType;
 }
 
 /**
@@ -21,7 +24,7 @@ interface PreviewPanelProps {
  * are wrapped in PreviewScope, which injects the real widget CSS and sets
  * all --bundle-* CSS variables from the current settings.
  */
-export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) {
+export function PreviewPanel({ activeSubSection, settings, bundleType }: PreviewPanelProps) {
   // Custom CSS - No preview needed
   if (activeSubSection === "customCss") {
     return null;
@@ -38,6 +41,15 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
         globalFooterBgColor={settings.globalFooterBgColor}
         globalFooterTextColor={settings.globalFooterTextColor}
       />
+    );
+  }
+
+  // Tier Pills subsection (Full-page bundles only)
+  if (activeSubSection === "tierPills") {
+    return (
+      <PreviewScope settings={settings}>
+        <TierPillPreview />
+      </PreviewScope>
     );
   }
 
@@ -59,6 +71,7 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
       <PreviewScope settings={settings}>
         <BundleFooterPreview
           activeSubSection={activeSubSection}
+          bundleType={bundleType}
           footerBgColor={settings.footerBgColor}
           footerBorderRadius={settings.footerBorderRadius}
           footerPadding={settings.footerPadding}
@@ -118,6 +131,14 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
           buttonAddToCartText={settings.buttonAddToCartText}
           toastBgColor={settings.toastBgColor}
           toastTextColor={settings.toastTextColor}
+          toastBorderRadius={settings.toastBorderRadius}
+          toastBorderColor={settings.toastBorderColor}
+          toastBorderWidth={settings.toastBorderWidth}
+          toastFontSize={settings.toastFontSize}
+          toastFontWeight={settings.toastFontWeight}
+          toastAnimationDuration={settings.toastAnimationDuration}
+          toastBoxShadow={settings.toastBoxShadow}
+          toastEnterFromBottom={settings.toastEnterFromBottom}
         />
       </PreviewScope>
     );

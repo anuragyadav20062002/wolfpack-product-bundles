@@ -5,7 +5,7 @@
  */
 
 import type { PricingRule } from "../../../types/pricing";
-export type { BundleStatus } from "../../../constants/bundle";
+import type { BundleStatus } from "../../../constants/bundle";
 
 export interface StepProduct {
   id: string;
@@ -35,12 +35,16 @@ export interface BundleData {
   description?: string;
   shopId: string;
   shopifyProductId?: string;
+  shopifyProductHandle?: string;
   shopifyPageHandle?: string;
   shopifyPageId?: string;
   bundleType: string;
   status: BundleStatus;
   templateName?: string;
   fullPageLayout?: string | null;
+  promoBannerBgImage?: string | null;
+  promoBannerBgImageCrop?: string | null;
+  loadingGif?: string | null;
   steps: BundleStep[];
   pricing?: BundlePricing;
 }
@@ -48,6 +52,7 @@ export interface BundleData {
 export interface LoaderData {
   bundle: BundleData;
   bundleProduct?: any;
+  availableBundles: { id: string; name: string }[];
   shop: string;
   apiKey: string;
   blockHandle: string;

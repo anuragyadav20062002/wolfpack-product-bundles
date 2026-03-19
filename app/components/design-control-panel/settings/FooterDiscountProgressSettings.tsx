@@ -43,19 +43,19 @@ export function FooterDiscountProgressSettings({ settings, onUpdate }: SettingsC
         </Text>
         <ButtonGroup variant="segmented">
           <Button
-            pressed={settings.successMessageFontWeight === 400}
+            pressed={(settings.successMessageFontWeight ?? 600) === 400}
             onClick={() => onUpdate("successMessageFontWeight", 400)}
           >
             Normal
           </Button>
           <Button
-            pressed={settings.successMessageFontWeight === 600}
+            pressed={(settings.successMessageFontWeight ?? 600) === 600}
             onClick={() => onUpdate("successMessageFontWeight", 600)}
           >
             Semi-Bold
           </Button>
           <Button
-            pressed={settings.successMessageFontWeight === 700}
+            pressed={(settings.successMessageFontWeight ?? 600) === 700}
             onClick={() => onUpdate("successMessageFontWeight", 700)}
           >
             Bold

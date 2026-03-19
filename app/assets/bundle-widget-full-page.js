@@ -95,6 +95,10 @@ class BundleWidgetFullPage {
     this.searchQuery = '';
     this.searchDebounceTimer = null;
 
+    // Tier pill state
+    this.tierConfig = [];
+    this.activeTierIndex = 0;
+
     // Initialize product modal (if BundleProductModal is available)
     this.productModal = null;
     if (window.BundleProductModal) {
@@ -149,6 +153,19 @@ class BundleWidgetFullPage {
         this.showFallbackUI();
         return;
       }
+
+      // Resolve tier config — prefer admin-saved (API) over legacy Theme Editor (data attribute)
+      this.tierConfig = this.resolveTierConfig(
+        this.selectedBundle.tierConfig ?? null,
+        this.tierConfig
+      );
+      this.initTierPills(this.tierConfig);
+
+      // Resolve showStepTimeline — prefer admin-saved (API) over Theme Editor data attribute
+      this.config.showStepTimeline = this.resolveShowStepTimeline(
+        this.selectedBundle.showStepTimeline ?? null,
+        this.config.showStepTimeline
+      );
 
       // Initialize data structures
       this.initializeDataStructures();
@@ -260,8 +277,11 @@ class BundleWidgetFullPage {
       successMessageTemplate: 'Congratulations! You got {discountText}!',
       currentProductId: window.currentProductId,
       currentProductHandle: window.currentProductHandle,
-      currentProductCollections: window.currentProductCollections
+      currentProductCollections: window.currentProductCollections,
+      tierConfig: this.parseTierConfig(dataset.tierConfig || '[]'),
     };
+
+    this.tierConfig = this.config.tierConfig;
 
     // Apply card layout settings as CSS variables
     this.applyCardLayoutSettings();
@@ -430,6 +450,9 @@ class BundleWidgetFullPage {
 
     // Initialize selected products array (one object per step)
     this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
+
+    // Pre-populate default products (mandatory items like Gift Box)
+    this._initDefaultProducts();
 
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
@@ -826,6 +849,15 @@ class BundleWidgetFullPage {
       if (categoryTabs) contentSection.appendChild(categoryTabs);
     }
 
+    // Free gift step custom heading
+    const currentStep = (this.selectedBundle?.steps || [])[this.currentStepIndex];
+    if (currentStep?.isFreeGift) {
+      const freeHeading = document.createElement('div');
+      freeHeading.className = 'fpb-step-free-heading';
+      freeHeading.textContent = `Complete the look and get a ${currentStep.freeGiftName || 'gift'} free!`;
+      contentSection.appendChild(freeHeading);
+    }
+
     const productGridContainer = document.createElement('div');
     productGridContainer.className = 'full-page-product-grid-container';
     productGridContainer.innerHTML = this.createProductGridLoadingState();
@@ -854,10 +886,94 @@ class BundleWidgetFullPage {
       this.renderSidePanel(sidePanel);
       this.hideLoadingOverlay();
       this.preloadNextStep();
+      this._renderMobileBottomBar();
     } catch (error) {
       this.hideLoadingOverlay();
       productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+      this._renderMobileBottomBar();
     }
+  }
+
+  // Mobile sticky bottom bar + slide-up sheet (replaces sidebar on < 768px)
+  _renderMobileBottomBar() {
+    document.querySelector('.fpb-mobile-bottom-bar')?.remove();
+    document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
+    document.querySelector('.fpb-mobile-backdrop')?.remove();
+
+    const { totalPrice } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice,
+      Object.values(this.selectedProducts || {}).reduce((sum, s) =>
+        sum + Object.values(s || {}).reduce((n, p) => n + (p.quantity || p || 1), 0), 0)
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const selectedCount = this.getAllSelectedProductsData().filter(p => !p.isDefault).length;
+    const isLastStep = this.currentStepIndex === (this.selectedBundle?.steps?.length || 1) - 1;
+    const isComplete = this.areBundleConditionsMet();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'fpb-mobile-backdrop';
+
+    const sheet = document.createElement('div');
+    sheet.className = 'fpb-mobile-bottom-sheet';
+    this._populateMobileSheet(sheet);
+
+    const bar = document.createElement('div');
+    bar.className = 'fpb-mobile-bottom-bar';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'fpb-mobile-toggle-btn';
+    toggleBtn.setAttribute('aria-label', 'View bundle summary');
+    toggleBtn.innerHTML = `<span class="fpb-caret">&#9650;</span><span class="fpb-mobile-toggle-count">${selectedCount}</span>`;
+    toggleBtn.addEventListener('click', () => {
+      const open = sheet.classList.toggle('is-open');
+      backdrop.classList.toggle('is-open', open);
+      toggleBtn.querySelector('.fpb-caret').innerHTML = open ? '&#9660;' : '&#9650;';
+    });
+    backdrop.addEventListener('click', () => {
+      sheet.classList.remove('is-open');
+      backdrop.classList.remove('is-open');
+      toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9650;';
+    });
+
+    const totalEl = document.createElement('div');
+    totalEl.className = 'fpb-mobile-total';
+    totalEl.textContent = CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format);
+
+    const ctaBtn = document.createElement('button');
+    ctaBtn.className = 'fpb-mobile-cta-btn';
+    ctaBtn.textContent = (isLastStep && isComplete) ? 'Add to Cart' : 'Next';
+    if (isLastStep && !isComplete) ctaBtn.disabled = true;
+    ctaBtn.addEventListener('click', () => {
+      if (isLastStep && isComplete) {
+        this.addBundleToCart();
+      } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex++;
+        this.renderFullPageLayoutWithSidebar();
+      } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
+        ToastManager.show(`Complete all steps to unlock the free ${this.freeGiftStep?.freeGiftName || 'gift'}!`);
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      }
+    });
+
+    bar.appendChild(toggleBtn);
+    bar.appendChild(totalEl);
+    bar.appendChild(ctaBtn);
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(sheet);
+    document.body.appendChild(bar);
+  }
+
+  _populateMobileSheet(sheet) {
+    sheet.innerHTML = '';
+    this.renderSidePanel(sheet);
   }
 
   // Render the sidebar panel content (used by footer_side layout)
@@ -951,6 +1067,11 @@ class BundleWidgetFullPage {
         const imgSrc = item.image || item.imageUrl || '';
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
+        const isFreeGiftItem = item.isFreeGift === true;
+        const priceHtml = isFreeGiftItem
+          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>`
+          : `<span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>`;
+
         row.innerHTML = `
           <div class="side-panel-product-img-wrap">
             ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
@@ -960,24 +1081,38 @@ class BundleWidgetFullPage {
             <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
             ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
           </div>
-          <span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>
+          ${priceHtml}
         `;
 
-        // Remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'side-panel-product-remove';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.addEventListener('click', () => {
-          const stepIndex = item.stepIndex ?? this.currentStepIndex;
-          const productId = item.variantId || item.productId || item.id;
-          this.updateProductSelection(stepIndex, productId, 0);
-        });
-        row.appendChild(removeBtn);
+        // Remove button — hidden for default (mandatory) products
+        if (!item.isDefault) {
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'side-panel-product-remove';
+          removeBtn.innerHTML = '&times;';
+          removeBtn.addEventListener('click', () => {
+            const stepIndex = item.stepIndex ?? this.currentStepIndex;
+            const productId = item.variantId || item.productId || item.id;
+            this.updateProductSelection(stepIndex, productId, 0);
+          });
+          row.appendChild(removeBtn);
+        }
 
         productsContainer.appendChild(row);
       });
     }
     panel.appendChild(productsContainer);
+
+    // Skeleton slots for unfilled paid step positions
+    const skeletonContainer = document.createElement('div');
+    skeletonContainer.className = 'side-panel-skeleton-slots';
+    const paidStepCount = this.paidSteps.reduce((sum, s) =>
+      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
+    const filledPaidCount = allSelectedProducts.filter(p => !p.isFreeGift && !p.isDefault).length;
+    this._renderSkeletonSlots(skeletonContainer, filledPaidCount, paidStepCount);
+    panel.appendChild(skeletonContainer);
+
+    // Free gift section (locked or unlocked)
+    this._renderFreeGiftSection(panel);
 
     // Divider
     const divider = document.createElement('div');
@@ -1012,6 +1147,9 @@ class BundleWidgetFullPage {
     nextBtn.addEventListener('click', () => {
       if (isLastStep) {
         this.addBundleToCart();
+      } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
+        const giftName = this.freeGiftStep?.freeGiftName || 'gift';
+        ToastManager.show(`Complete all steps to unlock the free ${giftName}!`);
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
         this.searchQuery = '';
@@ -1115,14 +1253,15 @@ class BundleWidgetFullPage {
           `;
         }
       } else {
-        // Empty step - show step number, name, and condition hint
-        // Get previous step name for locked tooltip
+        // Empty step - show step number, name, quantity hint, and optional lock
         const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
+        const quantityHint = this.getStepQuantityHint(step);
 
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
             <span class="tab-name">${escapedName}</span>
+            ${quantityHint ? `<span class="tab-quantity-hint">${quantityHint}</span>` : ''}
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">
@@ -1162,6 +1301,43 @@ class BundleWidgetFullPage {
     });
 
     return tabsContainer;
+  }
+
+  // Get a compact quantity hint string for a step tab (e.g. "Pick 2" or "Pick 2–5")
+  getStepQuantityHint(step) {
+    if (!step) return null;
+
+    const { conditionOperator, conditionValue, conditionOperator2, conditionValue2, minQuantity, maxQuantity } = step;
+    const OPERATORS = ConditionValidator.OPERATORS;
+
+    if (conditionOperator && conditionValue != null) {
+      const val = Number(conditionValue);
+
+      // Range condition: primary AND secondary
+      if (conditionOperator2 && conditionValue2 != null) {
+        const val2 = Number(conditionValue2);
+        const min = Math.min(val, val2);
+        const max = Math.max(val, val2);
+        return `Pick ${min}–${max}`;
+      }
+
+      switch (conditionOperator) {
+        case OPERATORS.EQUAL_TO:                  return `Pick ${val}`;
+        case OPERATORS.GREATER_THAN:              return `Pick ${val + 1}+`;
+        case OPERATORS.GREATER_THAN_OR_EQUAL_TO:  return `Pick ${val}+`;
+        case OPERATORS.LESS_THAN:                 return `Up to ${val - 1}`;
+        case OPERATORS.LESS_THAN_OR_EQUAL_TO:     return `Up to ${val}`;
+        default:                                  return null;
+      }
+    }
+
+    // Fallback to minQuantity / maxQuantity
+    const min = minQuantity != null ? Number(minQuantity) : null;
+    const max = maxQuantity != null ? Number(maxQuantity) : null;
+    if (min && max && min !== max) return `Pick ${min}–${max}`;
+    if (min && min > 1) return `Pick ${min}+`;
+    if (max && max > 1) return `Up to ${max}`;
+    return null;
   }
 
   // Get product images for a step (helper for tabs)
@@ -1528,9 +1704,21 @@ class BundleWidgetFullPage {
     }
 
 
+    // Check if step is at capacity (adding 1 more item would be blocked)
+    // When at capacity, unselected cards are dimmed
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
+    const isStepAtCapacity = !capacityCheck.allowed;
+
     // Create product cards using ComponentGenerator
     expandedProducts.forEach(product => {
       const productCard = this.createProductCard(product, stepIndex);
+      const productId = product.variantId || product.id;
+      const currentQty = stepSelections[productId] || 0;
+      // Dim unselected cards when step quota is full
+      if (isStepAtCapacity && currentQty === 0) {
+        productCard.classList.add('dimmed');
+      }
       grid.appendChild(productCard);
     });
 
@@ -1691,6 +1879,38 @@ class BundleWidgetFullPage {
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
 
+    // Free gift step: add "Free" badge and override price display to $0.00
+    const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
+    if (currentStepData?.isFreeGift) {
+      const imgEl = cardElement.querySelector('.product-image, .product-img, img');
+      if (imgEl && imgEl.parentElement) {
+        imgEl.parentElement.classList.add('fpb-card-image-wrapper');
+        const badge = document.createElement('span');
+        badge.className = 'fpb-free-badge';
+        const _badgeUrl = (() => {
+          const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-free-gift-badge-url').trim();
+          if (!v || v === 'none') return null;
+          const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
+          return m ? m[1] : null;
+        })();
+        if (_badgeUrl) {
+          const img = document.createElement('img');
+          img.src = _badgeUrl;
+          img.alt = 'Free gift';
+          img.className = 'fpb-free-badge-img';
+          badge.appendChild(img);
+        } else {
+          badge.textContent = 'Free';
+        }
+        imgEl.parentElement.appendChild(badge);
+      }
+      const priceEl = cardElement.querySelector('.product-price, .price');
+      if (priceEl) {
+        const originalPriceText = priceEl.textContent;
+        priceEl.innerHTML = `$0.00 <span class="side-panel-product-original-price">${originalPriceText}</span>`;
+      }
+    }
+
     // Attach event listeners for full-page specific interactions
     this.attachProductCardListeners(cardElement, product, stepIndex);
 
@@ -1786,7 +2006,7 @@ class BundleWidgetFullPage {
     existing.parentNode.replaceChild(fresh, existing);
   }
 
-  // Render fixed footer with selected products and navigation (Competitor-Inspired Design)
+  // Render floating footer card with selected products and navigation
   renderFullPageFooter() {
     if (!this.elements.footer) {
       return;
@@ -1799,79 +2019,147 @@ class BundleWidgetFullPage {
       return;
     }
 
+    const allSelectedProducts = this.getAllSelectedProductsData();
+
+    // Hide footer when nothing is selected yet
+    if (allSelectedProducts.length === 0) {
+      this.elements.footer.style.display = 'none';
+      return;
+    }
+
+    // Preserve open state across re-renders
+    const wasOpen = this.elements.footer.classList.contains('is-open');
+
     this.elements.footer.innerHTML = '';
-    this.elements.footer.className = 'full-page-footer redesigned';
+    this.elements.footer.className = 'full-page-footer floating-card';
+    if (wasOpen) this.elements.footer.classList.add('is-open');
     this.elements.footer.style.display = 'block';
 
-    // Calculate pricing data
+    // Pricing data
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData
     );
-
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
       totalQuantity
     );
-
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
-    const allSelectedProducts = this.getAllSelectedProductsData();
 
-    // Calculate progress for discount (if applicable)
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
-    const progressPercent = this.calculateDiscountProgress(totalQuantity);
-
-    // === SECTION 1: Progress Bar with Discount Messaging ===
-    const progressSection = document.createElement('div');
-    progressSection.className = 'footer-progress-section';
-
-    // Build discount messaging using configured templates (same pattern as product-page footer)
-    let discountMessage = '';
-    if (this.selectedBundle?.pricing?.enabled) {
+    // Callout banner text (shown in expanded panel when discount unlocked)
+    let calloutMessage = '';
+    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle,
-        totalPrice,
-        totalQuantity,
-        discountInfo,
-        currencyInfo
+        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
       );
-      if (discountInfo.hasDiscount) {
-        discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          variables
-        );
-      } else if (nextRule) {
-        discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-          variables
-        );
-      }
+      calloutMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+        variables
+      );
     }
 
-    progressSection.innerHTML = `
-      ${discountMessage ? `<div class="footer-discount-message">${discountMessage}</div>` : ''}
-    `;
-
-    // === SECTION 2: Scrollable Product Tiles (centered above navigation) ===
-    const productsSection = this.createFooterProductTiles(allSelectedProducts, currencyInfo);
-
-    // === SECTION 3: Navigation with Total between buttons ===
-    const navSection = document.createElement('div');
-    navSection.className = 'footer-nav-section';
+    // Total required quantity across all steps
+    const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
+      return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
+    }, 0);
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-    const canProceed = this.canProceedToNextStep();
 
-    // Create Back button
-    const backBtn = document.createElement('button');
-    backBtn.className = 'footer-btn footer-btn-back';
-    backBtn.textContent = 'Back';
-    if (this.currentStepIndex === 0) {
-      backBtn.disabled = true;
+    // Callout banner — always visible at top of card when deal is active
+    if (discountInfo.hasDiscount && calloutMessage) {
+      const callout = document.createElement('div');
+      callout.className = 'footer-callout-banner';
+      callout.innerHTML = calloutMessage;
+      this.elements.footer.appendChild(callout);
     }
 
+    // Expandable product list panel (no callout inside — it's now above the panel)
+    const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
+    const backdrop = document.createElement('button');
+    backdrop.className = 'footer-backdrop';
+    backdrop.setAttribute('type', 'button');
+    backdrop.setAttribute('aria-label', 'Close product list');
+    backdrop.addEventListener('click', () => {
+      this.elements.footer.classList.remove('is-open');
+    });
+    const bar = this._createFooterBar(
+      allSelectedProducts, totalQuantity, totalRequired,
+      totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
+    );
+
+    // Stack: callout (top, always visible) → panel (slides open) → backdrop → bar (always visible)
+    this.elements.footer.appendChild(panel);
+    this.elements.footer.appendChild(backdrop);
+    this.elements.footer.appendChild(bar);
+  }
+
+  // Creates the expandable product-list panel (callout banner is rendered separately above)
+  _createFooterPanel(allSelectedProducts, currencyInfo) {
+    const panel = document.createElement('div');
+    panel.className = 'footer-panel';
+
+    // Product list
+    const list = document.createElement('ul');
+    list.className = 'footer-panel-list';
+
+    allSelectedProducts.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'footer-panel-item';
+
+      const formattedPrice = CurrencyManager.formatMoney(item.price || 0, currencyInfo.display.format);
+      const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
+
+      li.innerHTML = `
+        <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
+             alt="${ComponentGenerator.escapeHtml(item.title)}"
+             class="footer-panel-thumb">
+        <div class="footer-panel-info">
+          <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
+          <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
+        </div>
+        <button class="footer-panel-remove" type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">
+          <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
+            <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </button>
+      `;
+
+      const removeBtn = li.querySelector('.footer-panel-remove');
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
+        this.updateProductSelection(item.stepIndex, item.variantId, 0);
+        const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
+        ToastManager.showWithUndo(
+          `Removed "${truncated}"`,
+          () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+          5000
+        );
+      });
+
+      list.appendChild(li);
+    });
+
+    panel.appendChild(list);
+    return panel;
+  }
+
+  // Creates the always-visible footer bar
+  _createFooterBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep) {
+    const bar = document.createElement('div');
+    bar.className = 'footer-bar';
+
+    // ── Left: Back button ──
+    const backBtn = document.createElement('button');
+    backBtn.className = 'footer-back-btn';
+    backBtn.setAttribute('type', 'button');
+    backBtn.innerHTML = `<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4l-6 6 6 6"/></svg>`;
+    backBtn.setAttribute('aria-label', 'Back');
+    if (this.currentStepIndex === 0) {
+      backBtn.style.visibility = 'hidden';
+    }
     backBtn.addEventListener('click', () => {
       if (this.currentStepIndex > 0) {
         this.activeCollectionId = null;
@@ -1881,26 +2169,74 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Create Total section (between buttons)
-    const totalSection = document.createElement('div');
-    totalSection.className = 'footer-total-section';
-    totalSection.innerHTML = `
-      <span class="total-label">Total</span>
-      <div class="total-prices">
-        ${discountInfo.hasDiscount ? `<span class="total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
-        <span class="total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+    // ── Centre-left: Thumbnail strip + toggle ──
+    const centreLeft = document.createElement('div');
+    centreLeft.className = 'footer-centre-left';
+
+    // Thumbnail strip
+    const thumbStrip = document.createElement('div');
+    thumbStrip.className = 'footer-thumbstrip';
+    const maxThumbs = 3;
+    allSelectedProducts.slice(0, maxThumbs).forEach(item => {
+      const img = document.createElement('img');
+      img.src = item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+      img.alt = item.title || '';
+      img.className = 'footer-thumbstrip-img';
+      thumbStrip.appendChild(img);
+    });
+    if (allSelectedProducts.length > maxThumbs) {
+      const overflow = document.createElement('span');
+      overflow.className = 'footer-thumbstrip-overflow';
+      overflow.textContent = `+${allSelectedProducts.length - maxThumbs}`;
+      thumbStrip.appendChild(overflow);
+    }
+
+    // Toggle button
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'footer-toggle';
+    toggleBtn.setAttribute('type', 'button');
+    toggleBtn.innerHTML = `
+      <span class="footer-toggle-text">${totalQuantity}/${totalRequired} Products</span>
+      <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M5 8l5 5 5-5"/>
+      </svg>
+    `;
+    toggleBtn.addEventListener('click', () => {
+      this.elements.footer.classList.toggle('is-open');
+    });
+
+    centreLeft.appendChild(thumbStrip);
+    centreLeft.appendChild(toggleBtn);
+
+    // ── Centre-right: Total + discount badge ──
+    const totalArea = document.createElement('div');
+    totalArea.className = 'footer-total-area';
+
+    let discountBadgeHTML = '';
+    if (discountInfo.hasDiscount && totalPrice > 0 && finalPrice < totalPrice) {
+      const discountPct = Math.round((1 - finalPrice / totalPrice) * 100);
+      if (discountPct > 0) {
+        discountBadgeHTML = `<span class="footer-discount-badge">${discountPct}% OFF</span>`;
+      }
+    }
+    totalArea.innerHTML = `
+      <span class="footer-total-label">Total:</span>
+      <div class="footer-total-prices">
+        ${discountInfo.hasDiscount && finalPrice < totalPrice ? `<span class="footer-total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
+        <span class="footer-total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+        ${discountBadgeHTML}
       </div>
     `;
 
-    // Create Next button
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'footer-btn footer-btn-next';
-    nextBtn.textContent = isLastStep ? 'Add to Cart' : 'Next';
-    if (isLastStep ? !this.areBundleConditionsMet() : !canProceed) {
-      nextBtn.disabled = true;
+    // ── Right: CTA button ──
+    const ctaBtn = document.createElement('button');
+    ctaBtn.className = 'footer-cta-btn';
+    ctaBtn.setAttribute('type', 'button');
+    ctaBtn.textContent = isLastStep ? (this.config.addToCartText || 'Add to Cart') : 'Next';
+    if (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep()) {
+      ctaBtn.disabled = true;
     }
-
-    nextBtn.addEventListener('click', () => {
+    ctaBtn.addEventListener('click', () => {
       if (isLastStep) {
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
@@ -1913,15 +2249,11 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Assemble nav section: Back | Total | Next
-    navSection.appendChild(backBtn);
-    navSection.appendChild(totalSection);
-    navSection.appendChild(nextBtn);
-
-    // Assemble footer: Progress -> Products (centered) -> Navigation
-    this.elements.footer.appendChild(progressSection);
-    this.elements.footer.appendChild(productsSection);
-    this.elements.footer.appendChild(navSection);
+    bar.appendChild(backBtn);
+    bar.appendChild(centreLeft);
+    bar.appendChild(totalArea);
+    bar.appendChild(ctaBtn);
+    return bar;
   }
 
   // Create scrollable product tiles component for footer
@@ -2087,7 +2419,9 @@ class BundleWidgetFullPage {
               variantTitle: variantTitle,
               imageUrl: imageUrl,
               image: imageUrl,
-              price: price
+              price: price,
+              isDefault: step.isDefault ?? false,
+              isFreeGift: step.isFreeGift ?? false,
             });
           } else {
           }
@@ -2246,7 +2580,124 @@ class BundleWidgetFullPage {
 
   // Helper: Check if all bundle conditions are met
   areBundleConditionsMet() {
-    return this.selectedBundle.steps.every((step, index) => this.isStepCompleted(index));
+    return this.selectedBundle.steps.every((step, index) => {
+      if (step.isFreeGift) return true; // free gift is optional for cart eligibility
+      return this.isStepCompleted(index);
+    });
+  }
+
+  // Free gift helpers
+
+  get freeGiftStep() {
+    return (this.selectedBundle?.steps || []).find(s => s.isFreeGift) ?? null;
+  }
+
+  get freeGiftStepIndex() {
+    return (this.selectedBundle?.steps || []).findIndex(s => s.isFreeGift);
+  }
+
+  get paidSteps() {
+    return (this.selectedBundle?.steps || []).filter(s => !s.isFreeGift && !s.isDefault);
+  }
+
+  get isFreeGiftUnlocked() {
+    if (!this.freeGiftStep) return false;
+    const steps = this.selectedBundle?.steps || [];
+    return this.paidSteps.every(paidStep => {
+      const globalIndex = steps.indexOf(paidStep);
+      return this.isStepCompleted(globalIndex);
+    });
+  }
+
+  canNavigateToStep(targetStepIndex) {
+    const targetStep = (this.selectedBundle?.steps || [])[targetStepIndex];
+    if (targetStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
+    return true;
+  }
+
+  _getFreeGiftRemainingCount() {
+    const steps = this.selectedBundle?.steps || [];
+    const total = this.paidSteps.reduce((sum, s) =>
+      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
+    const selected = this.paidSteps.reduce((sum, paidStep) => {
+      const globalIndex = steps.indexOf(paidStep);
+      const stepSel = this.selectedProducts[globalIndex] ?? {};
+      return sum + Object.values(stepSel).reduce((s, p) => s + (p.quantity || 1), 0);
+    }, 0);
+    return Math.max(0, total - selected);
+  }
+
+  _initDefaultProducts() {
+    const steps = this.selectedBundle?.steps || [];
+    steps.forEach((step, stepIndex) => {
+      if (!step.isDefault || !step.defaultVariantId) return;
+      const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
+      const product = allProducts.find(p =>
+        p.variantId === step.defaultVariantId ||
+        p.id === step.defaultVariantId ||
+        p.gid === step.defaultVariantId ||
+        (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+      );
+      if (product) {
+        if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
+        this.selectedProducts[stepIndex][step.defaultVariantId] = {
+          ...product,
+          variantId: step.defaultVariantId,
+          quantity: 1,
+          isDefault: true,
+        };
+      }
+    });
+  }
+
+  // Re-lock free gift if paid items no longer satisfy the unlock condition
+  _syncFreeGiftLock() {
+    if (!this.freeGiftStep || this.freeGiftStepIndex < 0) return;
+    if (!this.isFreeGiftUnlocked) {
+      this.selectedProducts[this.freeGiftStepIndex] = {};
+    }
+  }
+
+  // Render the free gift locked/unlocked section in a given container
+  _renderFreeGiftSection(container) {
+    const step = this.freeGiftStep;
+    if (!step) return;
+
+    const section = document.createElement('div');
+    const giftName = this._escapeHTML(step.freeGiftName || 'gift');
+
+    if (this.isFreeGiftUnlocked) {
+      section.className = 'side-panel-free-gift unlocked';
+      section.innerHTML = `
+        <span class="side-panel-free-gift-icon">✅</span>
+        <span class="side-panel-free-gift-text">Congrats! You're eligible for a FREE ${giftName}!</span>
+      `;
+    } else {
+      const remaining = this._getFreeGiftRemainingCount();
+      section.className = 'side-panel-free-gift';
+      section.innerHTML = `
+        <span class="side-panel-free-gift-icon">🔒</span>
+        <span class="side-panel-free-gift-text">Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!</span>
+      `;
+    }
+    container.appendChild(section);
+  }
+
+  // Render shimmer skeleton slots for unfilled positions
+  _renderSkeletonSlots(container, filledCount, totalRequired) {
+    const remaining = Math.max(0, totalRequired - filledCount);
+    for (let i = 0; i < remaining; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-skeleton-slot';
+      slot.innerHTML = `
+        <div class="side-panel-skeleton-thumb"></div>
+        <div class="side-panel-skeleton-lines">
+          <div class="side-panel-skeleton-line line-name"></div>
+          <div class="side-panel-skeleton-line line-price"></div>
+        </div>
+      `;
+      container.appendChild(slot);
+    }
   }
 
   // Add bundle to cart
@@ -3116,6 +3567,9 @@ class BundleWidgetFullPage {
       delete this.selectedProducts[stepIndex][productId];
     }
 
+    // Re-lock free gift if a paid item was just removed and conditions no longer met
+    this._syncFreeGiftLock();
+
     // Update UI without re-rendering the entire modal (prevents event listener duplication)
     this.updateProductQuantityDisplay(stepIndex, productId, quantity);
     this.renderModalTabs();
@@ -3278,11 +3732,13 @@ class BundleWidgetFullPage {
   }
 
   isStepAccessible(stepIndex) {
+    // Free gift step is only accessible when all paid steps are complete
+    if (!this.canNavigateToStep(stepIndex)) return false;
     // Check if all previous steps are completed
     for (let i = 0; i < stepIndex; i++) {
-      if (!this.validateStep(i)) {
-        return false;
-      }
+      const step = this.selectedBundle?.steps[i];
+      if (step?.isFreeGift || step?.isDefault) continue; // skip non-blocking steps
+      if (!this.validateStep(i)) return false;
     }
     return true;
   }
@@ -3597,7 +4053,192 @@ class BundleWidgetFullPage {
   // EVENT HANDLERS
   // ========================================================================
 
+  // ========================================================================
+  // TIER PILL SELECTION
+  // ========================================================================
+
+  /**
+   * Parses the JSON string from data-tier-config into a TierConfig array.
+   * Returns [] on any error — pill bar is simply not shown.
+   */
+  parseTierConfig(rawJson) {
+    try {
+      const parsed = JSON.parse(rawJson);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(t => typeof t?.label === 'string' && typeof t?.bundleId === 'string')
+        .map(t => ({ label: t.label.trim(), bundleId: t.bundleId.trim() }))
+        .filter(t => t.label !== '' && t.bundleId !== '')
+        .slice(0, 4);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Resolves which tier config array to use for pill rendering.
+   *
+   * Preference order:
+   *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
+   *     tiers in the admin UI (>= 2 valid entries after mapping).
+   *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
+   *     source, used as fallback when apiTierConfig is null/undefined.
+   *
+   * apiTierConfig entries use { label, linkedBundleId } (DB schema).
+   * Widget pill entries use { label, bundleId } — this method performs the mapping.
+   *
+   * Returns [] when fewer than 2 valid tiers exist after filtering.
+   */
+  resolveTierConfig(apiTierConfig, dataTierConfig) {
+    if (apiTierConfig == null) return dataTierConfig;
+
+    const mapped = (Array.isArray(apiTierConfig) ? apiTierConfig : [])
+      .filter(
+        t =>
+          typeof t?.label === 'string' &&
+          typeof t?.linkedBundleId === 'string' &&
+          t.label.trim() !== '' &&
+          t.linkedBundleId.trim() !== ''
+      )
+      .map(t => ({ label: t.label.trim(), bundleId: t.linkedBundleId.trim() }))
+      .slice(0, 4);
+
+    return mapped.length >= 2 ? mapped : [];
+  }
+
+  /**
+   * Resolves whether to show the step timeline.
+   * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
+   *
+   * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
+   * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
+   * @returns {boolean}
+   */
+  resolveShowStepTimeline(apiValue, dataAttrValue) {
+    if (apiValue !== null && apiValue !== undefined) return apiValue;
+    return dataAttrValue;
+  }
+
+  /** Returns true if the given tier index is the currently active one. */
+  isTierActive(tierIndex) {
+    return tierIndex === this.activeTierIndex;
+  }
+
+  /**
+   * Inserts the tier pill bar as the first child of the container.
+   * No-op when fewer than 2 tiers are configured (backward-compatible).
+   */
+  initTierPills(tiers) {
+    if (tiers.length < 2) return;
+
+    const bar = document.createElement('div');
+    bar.className = 'bundle-tier-pill-bar';
+    bar.setAttribute('role', 'group');
+    bar.setAttribute('aria-label', 'Bundle pricing tiers');
+
+    tiers.forEach((tier, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bundle-tier-pill' + (i === 0 ? ' bundle-tier-pill--active' : '');
+      btn.dataset.tierIndex = String(i);
+      btn.dataset.bundleId = tier.bundleId;
+      btn.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+      btn.textContent = tier.label;
+      bar.appendChild(btn);
+    });
+
+    this.container.insertBefore(bar, this.container.firstChild);
+    this.elements.tierPillBar = bar;
+  }
+
+  /** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
+  updatePillActiveStates() {
+    if (!this.elements.tierPillBar) return;
+    this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
+      const idx = parseInt(pill.dataset.tierIndex, 10);
+      const active = idx === this.activeTierIndex;
+      pill.classList.toggle('bundle-tier-pill--active', active);
+      pill.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  /** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
+  async switchTier(bundleId, tierIndex) {
+    if (tierIndex === this.activeTierIndex) return;
+
+    const pills = this.elements.tierPillBar
+      ? [...this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill')]
+      : [];
+
+    // Disable all pills while loading
+    pills.forEach(p => p.classList.add('bundle-tier-pill--disabled'));
+    if (pills[tierIndex]) pills[tierIndex].classList.add('bundle-tier-pill--loading');
+
+    this.showLoadingOverlay(null);
+
+    try {
+      // Reset mutable widget state
+      this.selectedProducts = [];
+      this.stepProductData = [];
+      this.currentStepIndex = 0;
+      this.stepCollectionProductIds = {};
+      this.searchQuery = '';
+
+      // Swap bundle ID and fetch new data
+      this.config.bundleId = bundleId;
+      await this.loadBundleData();
+      this.selectBundle();
+
+      if (!this.selectedBundle) {
+        throw new Error('Bundle not found for this tier.');
+      }
+
+      // Re-resolve showStepTimeline from the newly loaded tier bundle's API value
+      this.config.showStepTimeline = this.resolveShowStepTimeline(
+        this.selectedBundle.showStepTimeline ?? null,
+        this.config.showStepTimeline
+      );
+
+      this.initializeDataStructures();
+
+      // Clear existing step content and re-render
+      if (this.elements.stepsContainer) {
+        this.elements.stepsContainer.innerHTML = '';
+      }
+      await this.renderUI();
+
+      this.activeTierIndex = tierIndex;
+      this.updatePillActiveStates();
+    } catch (err) {
+      ToastManager.show(`Failed to load tier: ${err.message}`);
+      // Restore previous active state styling
+      this.updatePillActiveStates();
+    } finally {
+      this.hideLoadingOverlay();
+      pills.forEach(p => {
+        p.classList.remove('bundle-tier-pill--disabled', 'bundle-tier-pill--loading');
+      });
+    }
+  }
+
   attachEventListeners() {
+    // Tier pill click handler
+    if (this.elements.tierPillBar) {
+      this.elements.tierPillBar.addEventListener('click', e => {
+        const pill = e.target.closest('.bundle-tier-pill');
+        if (!pill) return;
+        this.switchTier(pill.dataset.bundleId, parseInt(pill.dataset.tierIndex, 10));
+      });
+      this.elements.tierPillBar.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          const pill = e.target.closest('.bundle-tier-pill');
+          if (!pill) return;
+          e.preventDefault();
+          pill.click();
+        }
+      });
+    }
+
     // Modal close handlers
     const modal = this.elements.modal;
     const closeButton = modal.querySelector('.close-button');

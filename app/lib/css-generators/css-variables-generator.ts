@@ -174,6 +174,14 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   /* Toasts */
   --bundle-toast-bg: ${s.toastBgColor || globalPrimaryButton};
   --bundle-toast-text: ${s.toastTextColor || globalButtonText};
+  --bundle-toast-border-radius: ${s.toastBorderRadius ?? 8}px;
+  --bundle-toast-border-color: ${s.toastBorderColor ?? '#FFFFFF'};
+  --bundle-toast-border-width: ${s.toastBorderWidth ?? 0}px;
+  --bundle-toast-font-size: ${s.toastFontSize ?? 13}px;
+  --bundle-toast-font-weight: ${s.toastFontWeight ?? 500};
+  --bundle-toast-animation-duration: ${s.toastAnimationDuration ?? 300}ms;
+  --bundle-toast-box-shadow: ${s.toastBoxShadow ?? '0 4px 12px rgba(0, 0, 0, 0.15)'};
+  --bundle-toast-enter-from-bottom: ${s.toastEnterFromBottom ? '1' : '0'};
   /* Bundle Design */
   --bundle-bg-color: ${s.bundleBgColor || '#FFFFFF'};
   --bundle-footer-scrollbar-color: ${s.footerScrollBarColor || globalPrimaryButton};
@@ -193,6 +201,8 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
   --bundle-discount-text-color: ${s.discountTextColor || globalPrimaryText};
   --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
+  /* Free Gift Badge (Product Page) — merchant-uploadable badge image */
+  --bundle-free-gift-badge-url: ${s.freeGiftBadgeUrl ? `url("${s.freeGiftBadgeUrl}")` : 'none'};
 
   /* SEARCH INPUT — names match what bundle-widget-full-page.css references */
   --bundle-search-bg: ${s.searchInputBgColor || '#F8F8F8'};
@@ -230,7 +240,20 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
 
   /* FOCUS / ACCESSIBILITY */
   --bundle-focus-outline-color: ${s.focusOutlineColor || globalPrimaryButton};
-  --bundle-focus-outline-width: ${s.focusOutlineWidth || 2}px;`;
+  --bundle-focus-outline-width: ${s.focusOutlineWidth || 2}px;
+
+  /* PRICING TIER PILLS (Full-Page Bundles) */
+  --bundle-tier-pill-active-bg: ${s.tierPillActiveBgColor || globalPrimaryButton};
+  --bundle-tier-pill-active-text: ${s.tierPillActiveTextColor || globalButtonText};
+  --bundle-tier-pill-inactive-bg: ${s.tierPillInactiveBgColor || 'rgb(242, 250, 238)'};
+  --bundle-tier-pill-inactive-text: ${s.tierPillInactiveTextColor || '#333333'};
+  --bundle-tier-pill-hover-bg: ${s.tierPillHoverBgColor || 'rgb(220, 245, 210)'};
+  --bundle-tier-pill-border: 1px solid ${s.tierPillBorderColor || '#000000'};
+  --bundle-tier-pill-border-radius: ${s.tierPillBorderRadius ?? 8}px;
+  --bundle-tier-pill-height: ${s.tierPillHeight ?? 52}px;
+  --bundle-tier-pill-font-size: ${s.tierPillFontSize ?? 14}px;
+  --bundle-tier-pill-font-weight: ${s.tierPillFontWeight ?? 600};
+  --bundle-tier-pill-gap: ${s.tierPillGap ?? 12}px;`;
 }
 
 /**

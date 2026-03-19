@@ -80,19 +80,19 @@ export function PromoBannerSettings({ settings, onUpdate }: SettingsComponentPro
         </Text>
         <ButtonGroup variant="segmented">
           <Button
-            pressed={settings.promoBannerTitleFontWeight === 400}
+            pressed={(settings.promoBannerTitleFontWeight ?? 600) === 400}
             onClick={() => onUpdate("promoBannerTitleFontWeight", 400)}
           >
             Normal
           </Button>
           <Button
-            pressed={settings.promoBannerTitleFontWeight === 600}
+            pressed={(settings.promoBannerTitleFontWeight ?? 600) === 600}
             onClick={() => onUpdate("promoBannerTitleFontWeight", 600)}
           >
             Semi-Bold
           </Button>
           <Button
-            pressed={settings.promoBannerTitleFontWeight === 700}
+            pressed={(settings.promoBannerTitleFontWeight ?? 600) === 700}
             onClick={() => onUpdate("promoBannerTitleFontWeight", 700)}
           >
             Bold

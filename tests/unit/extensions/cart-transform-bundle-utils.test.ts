@@ -511,9 +511,9 @@ describe('Cart Transform Bundle Utils', () => {
       const result = parseBundleDataFromMetafield(metafieldValue);
 
       expect(result).toBeDefined();
-      expect(result.id).toBe('bundle-1');
-      expect(result.name).toBe('Test Bundle');
-      expect(result.allBundleProductIds).toEqual([
+      expect(result!.id).toBe('bundle-1');
+      expect(result!.name).toBe('Test Bundle');
+      expect(result!.allBundleProductIds).toEqual([
         'gid://shopify/Product/123',
         'gid://shopify/Product/456',
         'gid://shopify/Product/789'
@@ -560,16 +560,16 @@ describe('Cart Transform Bundle Utils', () => {
 
     it('should return best applicable rule based on quantity', () => {
       const rule = getApplicableDiscountRule(bundleData, 5);
-      
+
       expect(rule).toBeDefined();
-      expect(rule.percentageOff).toBe(20); // Higher discount for 5+ items
+      expect(rule!.percentageOff).toBe(20); // Higher discount for 5+ items
     });
 
     it('should return lower tier rule when higher tier not met', () => {
       const rule = getApplicableDiscountRule(bundleData, 3);
-      
+
       expect(rule).toBeDefined();
-      expect(rule.percentageOff).toBe(10); // Lower discount for 2-4 items
+      expect(rule!.percentageOff).toBe(10); // Lower discount for 2-4 items
     });
 
     it('should return null when no rules are applicable', () => {
@@ -618,10 +618,10 @@ describe('Cart Transform Bundle Utils', () => {
         }
       };
 
-      const rule = getApplicableDiscountRule(bundleWithLegacyField, 3);
-      
+      const rule = getApplicableDiscountRule(bundleWithLegacyField as any, 3);
+
       expect(rule).toBeDefined();
-      expect(rule.percentageOff).toBe(15);
+      expect(rule!.percentageOff).toBe(15);
     });
   });
 });

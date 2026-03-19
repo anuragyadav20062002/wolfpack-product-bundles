@@ -65,11 +65,11 @@ import {
   LockIcon,
 } from "@shopify/polaris-icons";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
+import { PricingTiersSection } from "../../../components/PricingTiersSection";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
-import { slugify, validateSlug } from "../../../lib/slug-utils";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-configure.module.css";
 
@@ -86,15 +86,14 @@ import {
   handleEnsureBundleTemplates,
   handleCheckFullPageTemplate,
   handleValidateWidgetPlacement,
-  handleRenamePageSlug,
 } from "./handlers";
 
 // Types - extracted to separate module for better organization
 import type {
-  BundleStatus,
   LoaderData,
   BundleStatusSectionProps,
 } from "./types";
+import type { BundleStatus } from "../../../constants/bundle";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -180,6 +179,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     }
   }
 
+  // Fetch all full-page bundles for the shop (used in pricing tiers selector)
+  const availableBundles = await db.bundle.findMany({
+    where: {
+      shopId: session.shop,
+      bundleType: 'full_page',
+      status: { in: ['draft', 'active'] },
+    },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+
   // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
   // Per Shopify docs: addAppBlockId={api_key}/{handle}
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
@@ -191,6 +201,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return json({
     bundle,
     bundleProduct,
+    availableBundles,
     shop: session.shop,
     apiKey,
     blockHandle,
@@ -233,14 +244,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleEnsureBundleTemplates(admin, session);
       case "checkFullPageTemplate":
         return await handleCheckFullPageTemplate(admin, session);
-      case "validateWidgetPlacement": {
-        const desiredSlug = formData.get("pageSlug") as string | undefined || undefined;
-        return await handleValidateWidgetPlacement(admin, session, bundleId, desiredSlug);
-      }
-      case "renamePageSlug": {
-        const newSlug = formData.get("newSlug") as string;
-        return await handleRenamePageSlug(admin, session, bundleId, newSlug);
-      }
+      case "validateWidgetPlacement":
+        return await handleValidateWidgetPlacement(admin, session, bundleId);
       case "syncBundle":
         return await handleSyncBundle(admin, session, bundleId);
       default:
@@ -261,6 +266,7 @@ const bundleSetupItems = [
   { id: "step_setup",       label: "Step Setup",          icon: ListNumberedIcon, fullPageOnly: false },
   { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
   { id: "images_gifs",      label: "Images & GIFs",       icon: ImageIcon,        fullPageOnly: true  },
+  { id: "pricing_tiers",    label: "Pricing Tiers",       icon: DiscountIcon,     fullPageOnly: true  },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
@@ -287,7 +293,14 @@ const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps
 BundleStatusSection.displayName = 'BundleStatusSection';
 
 export default function ConfigureBundleFlow() {
-  const { bundle, bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle } = useLoaderData<LoaderData>();
+  const loaderData = useLoaderData<LoaderData>();
+  const bundle = loaderData.bundle as unknown as import("../../../hooks/useBundleConfigurationState").BundleData & {
+    promoBannerBgImage?: string | null;
+    promoBannerBgImageCrop?: string | null;
+    loadingGif?: string | null;
+    shopifyProductHandle?: string;
+  };
+  const { bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle } = loaderData;
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -395,6 +408,31 @@ export default function ConfigureBundleFlow() {
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
   const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
 
+  // Pricing tier config state (full-page bundles)
+  const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
+    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+  );
+  const originalTierConfigRef = useRef<{ label: string; linkedBundleId: string }[]>(
+    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+  );
+
+  // Admin-controlled step timeline visibility (null = defer to theme editor)
+  const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
+    (bundle as any).showStepTimeline !== false  // default true; only false when explicitly saved as false
+  );
+  const originalShowStepTimelineRef = useRef<boolean>(
+    (bundle as any).showStepTimeline !== false
+  );
+
+  // Widget install loading state
+  const [isInstallingWidget, setIsInstallingWidget] = useState(false);
+
+  // Warning modal state: steps + tiers conflict
+  const [stepsTiersWarning, setStepsTiersWarning] = useState<{
+    open: boolean;
+    onConfirm: (() => void) | null;
+  }>({ open: false, onConfirm: null });
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
@@ -431,21 +469,13 @@ export default function ConfigureBundleFlow() {
       formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
       formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
       formData.append("loadingGif", loadingGif ?? "");
+      formData.append("tierConfigData", tierConfig.length > 0 ? JSON.stringify(tierConfig) : "");
+      // Only send showStepTimeline when >= 2 tiers are configured (server will reset to null otherwise)
+      if (tierConfig.length >= 2) {
+        formData.append("showStepTimeline", String(showStepTimeline));
+      }
       AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
       AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
-
-      // If bundle is placed and slug has changed, rename the page handle
-      if (
-        bundle.bundleType === 'full_page' &&
-        bundle.shopifyPageId &&
-        formState.pageSlug &&
-        formState.pageSlug !== bundle.shopifyPageHandle
-      ) {
-        const renameData = new FormData();
-        renameData.append("intent", "renamePageSlug");
-        renameData.append("newSlug", formState.pageSlug);
-        fetcher.submit(renameData, { method: "post" });
-      }
 
       // Submit to server action using fetcher
 
@@ -463,7 +493,6 @@ export default function ConfigureBundleFlow() {
     formState.bundleName,
     formState.bundleDescription,
     formState.templateName,
-    formState.pageSlug,
     stepsState.steps,
     pricingState.discountEnabled,
     pricingState.discountType,
@@ -551,6 +580,7 @@ export default function ConfigureBundleFlow() {
             name: formState.bundleName,
             description: formState.bundleDescription,
             templateName: formState.templateName,
+            fullPageLayout: formState.fullPageLayout,
             steps: JSON.stringify(stepsState.steps),
             discountEnabled: pricingState.discountEnabled,
             discountType: pricingState.discountType,
@@ -563,6 +593,13 @@ export default function ConfigureBundleFlow() {
             bundleProduct: bundleProduct || null,
             productStatus: productStatus,
           };
+
+          // Update discard baselines for fields managed outside originalValuesRef
+          originalPromoBannerBgImageRef.current = promoBannerBgImage;
+          originalPromoBannerBgImageCropRef.current = promoBannerBgImageCrop;
+          originalLoadingGifRef.current = loadingGif;
+          originalTierConfigRef.current = tierConfig;
+          originalShowStepTimelineRef.current = showStepTimeline;
 
           // Reset dirty flag after successful save
           setIsDirty(false);
@@ -611,40 +648,19 @@ export default function ConfigureBundleFlow() {
           setIsLoadingPages(false);
         } else if ('themeId' in result && result.themeId) {
           // This is a get current theme response - handled by individual callbacks
-        } else if ('newHandle' in result && result.newHandle) {
-          // Page handle rename response
-          const adjusted = (result as any).adjusted;
-          if (adjusted) {
-            shopify.toast.show(`URL was taken — page renamed to /${result.newHandle}`, { isError: false, duration: 6000 });
-          } else {
-            shopify.toast.show("Page URL updated successfully!", { isError: false });
-          }
-          revalidator.revalidate();
         } else if ('pageHandle' in result && result.pageHandle) {
           // Bundle page created successfully
           const pageUrl = (result as any).pageUrl;
           const installRequired = (result as any).widgetInstallationRequired;
           const installLink = (result as any).widgetInstallationLink;
-          const slugAdjusted = (result as any).slugAdjusted;
-          const adjustedHandle = (result as any).pageHandle;
-
-          if (slugAdjusted) {
-            shopify.toast.show(
-              `URL was taken — page created at /${adjustedHandle}`,
-              { isError: false, duration: 6000 }
-            );
-          }
 
           if (installRequired && installLink) {
-            // First-time setup: open theme editor so merchant can click Save to enable the widget
-            if (!slugAdjusted) {
-              shopify.toast.show(
-                "Page created! Click Save in the theme editor to activate the widget.",
-                { isError: false, duration: 8000 }
-              );
-            }
+            shopify.toast.show(
+              "Page created! Click Save in the theme editor to activate the widget.",
+              { isError: false, duration: 8000 }
+            );
             window.open(installLink, '_blank');
-          } else if (!slugAdjusted) {
+          } else {
             shopify.toast.show("Bundle page created successfully!", { isError: false });
             if (pageUrl) {
               window.open(pageUrl, '_blank');
@@ -672,12 +688,14 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Discard handler - resets hook state and local image/crop/gif state
+  // Discard handler - resets hook state and all local state
   const handleDiscard = useCallback(() => {
     hookHandleDiscard();
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
     setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
     setLoadingGif(originalLoadingGifRef.current);
+    setTierConfig(originalTierConfigRef.current);
+    setShowStepTimeline(originalShowStepTimelineRef.current);
   }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
@@ -1200,15 +1218,12 @@ export default function ConfigureBundleFlow() {
     try {
       const formData = new FormData();
       formData.append("intent", "validateWidgetPlacement");
-      if (formState.pageSlug) {
-        formData.append("pageSlug", formState.pageSlug);
-      }
       fetcher.submit(formData, { method: "post" });
     } catch (error) {
       AppLogger.error('Error creating bundle page:', {}, error as any);
       shopify.toast.show("Failed to create bundle page", { isError: true, duration: 5000 });
     }
-  }, [fetcher, shopify, formState.pageSlug]);
+  }, [fetcher, shopify]);
 
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
@@ -1222,108 +1237,91 @@ export default function ConfigureBundleFlow() {
   }, [loadAvailablePages, shopify]);
 
   const handlePageSelection = useCallback(async (template: any) => {
-    try {
-      if (!template || !template.handle) {
-        AppLogger.error('🚨 [THEME_EDITOR] Invalid template object:', {}, template);
-        shopify.toast.show("Template data is invalid", { isError: true, duration: 5000 });
-        return;
-      }
+    if (!template?.handle) {
+      shopify.toast.show("Template data is invalid", { isError: true, duration: 5000 });
+      return;
+    }
 
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop;
+    const shopDomain = shop.includes('.myshopify.com')
+      ? shop.replace('.myshopify.com', '')
+      : shop;
 
-      shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
-      AppLogger.debug(`🎯 [THEME_EDITOR] Starting widget placement for template: ${template.handle}`);
+    // Build theme editor deep link (used as fallback for non-page templates and on error)
+    const buildThemeEditorUrl = () => {
+      const appBlockId = `${apiKey}/${blockHandle}`;
+      const templateParam = template.isPage ? 'page.full-page-bundle' : template.handle;
+      const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
+      return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
+    };
 
-      // Create a theme template service instance
-      // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
-      // For now, we'll use the existing approach but add template creation via API call
+    // ── Full-page bundle: auto-install via Theme API (no theme editor needed) ──
+    if (template.isPage) {
+      setIsInstallingWidget(true);
+      try {
+        AppLogger.debug(`🚀 [INSTALL] Auto-installing FPB widget for page: ${template.handle}`);
 
-      // Check if this is a bundle-specific template that needs to be created
-      if (template.isBundleContainer && template.bundleProduct) {
-        AppLogger.debug(`🏗️ [THEME_EDITOR] Ensuring template exists for bundle product: ${template.bundleProduct.handle}`);
-
-        // Make API call to create template if needed
-        const createTemplateResponse = await fetch(`/api/ensure-product-template`, {
+        const response = await fetch('/api/install-fpb-widget', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            productHandle: template.bundleProduct.handle,
-            bundleId: bundle.id
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pageHandle: template.handle }),
         });
 
-        if (!createTemplateResponse.ok) {
-          AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
-          shopify.toast.show("Failed to prepare product template", { isError: true, duration: 5000 });
-          return;
-        }
+        const result = await response.json() as { success: boolean; templateCreated?: boolean; templateAlreadyExists?: boolean; error?: string };
 
-        const templateResult = await createTemplateResponse.json();
-        AppLogger.debug(`✅ [THEME_EDITOR] Template preparation result:`, templateResult);
-
-        if (templateResult.created) {
-          shopify.toast.show(`Created new template for ${template.bundleProduct.handle}`, { isError: false, duration: 4000 });
+        if (result.success) {
+          setSelectedPage(template);
+          closePageSelectionModal();
+          const msg = result.templateAlreadyExists
+            ? `Widget already installed — your bundle page is live.`
+            : `Widget installed! Your bundle page is live.`;
+          shopify.toast.show(msg, { isError: false, duration: 6000 });
+          AppLogger.debug(`✅ [INSTALL] Widget installed successfully`, result);
+        } else {
+          // Auto-install failed — fall back to theme editor
+          AppLogger.error(`🚨 [INSTALL] Auto-install failed, falling back to theme editor`, { error: result.error });
+          setSelectedPage(template);
+          closePageSelectionModal();
+          shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
+          window.open(buildThemeEditorUrl(), '_blank');
         }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        AppLogger.error(`🚨 [INSTALL] Unexpected error, falling back to theme editor`, { errorMessage });
+        setSelectedPage(template);
+        closePageSelectionModal();
+        shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
+        window.open(buildThemeEditorUrl(), '_blank');
+      } finally {
+        setIsInstallingWidget(false);
       }
+      return;
+    }
 
-      // Use app API key and block handle from loader data (passed from server)
-      // CRITICAL: Must use app's API key (client_id), not extension UUID
+    // ── Product-page / custom template: open theme editor (existing flow) ──
+    try {
       if (!apiKey || !blockHandle) {
-        AppLogger.error('🚨 [THEME_EDITOR] Missing app configuration');
         shopify.toast.show("App configuration missing. Please check app setup.", { isError: true, duration: 5000 });
         return;
       }
 
-      const appBlockId = `${apiKey}/${blockHandle}`;
-
-      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`, {
-        apiKey,
-        blockHandle,
-        bundleId: bundle.id
-      });
-
-      // Generate deep link following Shopify's official documentation with bundle ID
-      // Official format: template + addAppBlockId + target + bundleId (for auto-population)
-      // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
-      //
-      // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
-      // the bundle_id setting in the theme editor, making setup seamless for merchants
-      //
-      // For full-page bundles: always use the shared 'page.full-page-bundle' template.
-      // All bundle pages are assigned this templateSuffix so the block only needs to be
-      // installed once. page.handle in Liquid identifies which bundle to render.
-      // For product templates, template format is just: {handle}
-      const templateParam = template.isPage ? 'page.full-page-bundle' : template.handle;
-
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection`;
-
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
-        templateParam,
-        isPage: template.isPage,
-        bundleId: bundle.id,
-        url: themeEditorUrl
-      });
+      if (template.isBundleContainer && template.bundleProduct) {
+        await fetch('/api/ensure-product-template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productHandle: template.bundleProduct.handle, bundleId: bundle.id }),
+        }).catch(() => { /* non-fatal */ });
+      }
 
       setSelectedPage(template);
       closePageSelectionModal();
-
-      // Open theme editor in a new tab to preserve embedded app session
-      shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
-      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor`);
-
-      // Open in new tab to preserve embedded app session (using _top would destroy iframe)
-      window.open(themeEditorUrl, '_blank');
-
+      shopify.toast.show(`Opening Theme Editor for "${template.title}"...`, { isError: false, duration: 5000 });
+      window.open(buildThemeEditorUrl(), '_blank');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
-      shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
+      shopify.toast.show(`Failed to open Theme Editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
-  }, [shop, shopify, bundle.id]);
+  }, [shop, shopify, bundle.id, apiKey, blockHandle]);
 
   return (
     <Page
@@ -1351,7 +1349,7 @@ export default function ConfigureBundleFlow() {
               content: "Add to Storefront",
               onAction: () => { void handleAddToStorefront(); },
               loading: fetcher.state === 'submitting',
-              disabled: bundle.bundleType === 'full_page' && !!validateSlug(formState.pageSlug),
+              disabled: false,
             }
       }
       secondaryActions={[
@@ -1520,7 +1518,7 @@ export default function ConfigureBundleFlow() {
                         label="Bundle Status"
                         options={statusOptions}
                         value={formState.bundleStatus}
-                        onChange={(selected: string) => formState.setBundleStatus(selected as 'active' | 'draft' | 'archived')}
+                        onChange={(selected: string) => formState.setBundleStatus(selected as BundleStatus)}
                         labelHidden
                       />
                     </BlockStack>
@@ -1535,46 +1533,6 @@ export default function ConfigureBundleFlow() {
                     status={formState.bundleStatus}
                     onChange={formState.setBundleStatus}
                   />
-                </Card>
-              )}
-
-              {/* Storefront Page — slug + "View on Storefront" */}
-              {bundle.bundleType === 'full_page' && (
-                <Card>
-                  <BlockStack gap="300">
-                    <Text variant="headingSm" as="h3">Storefront Page</Text>
-                    <Text variant="bodySm" as="p" tone="subdued">
-                      Choose the URL where this bundle will appear on your store.
-                    </Text>
-                    <TextField
-                      label="Page URL slug"
-                      autoComplete="off"
-                      prefix={`${shop.replace('.myshopify.com', '')}.myshopify.com/pages/`}
-                      value={formState.pageSlug}
-                      onChange={(value) => formState.setPageSlug(value)}
-                      onBlur={() => {
-                        formState.setPageSlug(slugify(formState.pageSlug));
-                      }}
-                      helpText={`https://${shop.replace('.myshopify.com', '')}.myshopify.com/pages/${formState.pageSlug || ''}`}
-                      error={
-                        formState.pageSlug
-                          ? (validateSlug(formState.pageSlug) ?? undefined)
-                          : 'URL slug cannot be empty.'
-                      }
-                    />
-                    {bundle.shopifyPageHandle && (
-                      <InlineStack gap="200">
-                        <Button
-                          icon={ExternalIcon}
-                          url={`https://${shop.replace('.myshopify.com', '')}.myshopify.com/pages/${bundle.shopifyPageHandle}`}
-                          target="_blank"
-                          size="slim"
-                        >
-                          View on Storefront
-                        </Button>
-                      </InlineStack>
-                    )}
-                  </BlockStack>
                 </Card>
               )}
 
@@ -1941,6 +1899,87 @@ export default function ConfigureBundleFlow() {
                                     Add Rule
                                   </Button>
                                 </BlockStack>
+
+                                {/* ── Step Options: Free Gift & Default Product ── */}
+                                <BlockStack gap="300">
+                                  <Divider />
+                                  <BlockStack gap="100">
+                                    <Text variant="headingSm" as="h4">Step Options</Text>
+                                    <Text as="p" variant="bodyMd" tone="subdued">
+                                      Advanced options for free gift steps and pre-selected (mandatory) products.
+                                    </Text>
+                                  </BlockStack>
+
+                                  {/* Free Gift toggle */}
+                                  <Checkbox
+                                    label="Free gift step"
+                                    helpText="This step is unlocked after all regular steps are complete. Products are shown at $0.00."
+                                    checked={step.isFreeGift === true}
+                                    onChange={(checked) => {
+                                      stepsState.updateStepField(step.id, 'isFreeGift', checked);
+                                      if (!checked) stepsState.updateStepField(step.id, 'freeGiftName', '');
+                                    }}
+                                  />
+
+                                  {step.isFreeGift && (
+                                    <FormLayout>
+                                      <TextField
+                                        label="Gift display name"
+                                        placeholder='e.g. "cap", "greeting card"'
+                                        helpText='Shown in the sidebar: "Add 2 more to claim a FREE cap!"'
+                                        value={step.freeGiftName || ''}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'freeGiftName', value)}
+                                        autoComplete="off"
+                                      />
+                                    </FormLayout>
+                                  )}
+
+                                  <Divider />
+
+                                  {/* Default (mandatory) product toggle */}
+                                  <Checkbox
+                                    label="Mandatory default product"
+                                    helpText="A specific variant is pre-selected when the bundle loads. Customers cannot remove it."
+                                    checked={step.isDefault === true}
+                                    onChange={(checked) => {
+                                      stepsState.updateStepField(step.id, 'isDefault', checked);
+                                      if (!checked) stepsState.updateStepField(step.id, 'defaultVariantId', '');
+                                    }}
+                                  />
+
+                                  {step.isDefault && (
+                                    <FormLayout>
+                                      <TextField
+                                        label="Default variant GID"
+                                        placeholder="gid://shopify/ProductVariant/123456789"
+                                        helpText="Paste the Shopify variant GID. It must be one of the products added to this step."
+                                        value={step.defaultVariantId || ''}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'defaultVariantId', value)}
+                                        autoComplete="off"
+                                      />
+                                      {step.StepProduct && step.StepProduct.length > 0 && (
+                                        <BlockStack gap="100">
+                                          <Text as="p" variant="bodySm" tone="subdued">
+                                            Available variants from products in this step:
+                                          </Text>
+                                          {step.StepProduct.flatMap((sp: any) =>
+                                            (sp.variants || []).map((v: any) => (
+                                              <Button
+                                                key={v.id || v.gid}
+                                                variant="plain"
+                                                size="micro"
+                                                onClick={() => stepsState.updateStepField(step.id, 'defaultVariantId', v.id || v.gid)}
+                                              >
+                                                {sp.title}{v.title && v.title !== 'Default Title' ? ` · ${v.title}` : ''} — {v.id || v.gid}
+                                              </Button>
+                                            ))
+                                          )}
+                                        </BlockStack>
+                                      )}
+                                    </FormLayout>
+                                  )}
+                                </BlockStack>
+
                           </BlockStack>
                         </BlockStack>
                       </Card>
@@ -2253,11 +2292,11 @@ export default function ConfigureBundleFlow() {
                       <InlineStack gap="600">
                         <BlockStack gap="100">
                           <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
-                          <Text variant="bodySm" as="p">JPG, PNG, WebP</Text>
+                          <Text variant="bodySm" as="p">JPG, PNG, WebP, GIF, SVG, AVIF</Text>
                         </BlockStack>
                         <BlockStack gap="100">
                           <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
-                          <Text variant="bodySm" as="p">1600 × 280 px · 16:3 ratio</Text>
+                          <Text variant="bodySm" as="p">1600 × 400 px · 4:1 ratio</Text>
                         </BlockStack>
                       </InlineStack>
                     </Box>
@@ -2329,26 +2368,95 @@ export default function ConfigureBundleFlow() {
                 </Card>
               </BlockStack>
             )}
+
+            {activeSection === "pricing_tiers" && bundle.bundleType === "full_page" && (
+              <BlockStack gap="400">
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={DiscountIcon} tone="subdued" />
+                    <BlockStack gap="0">
+                      <Text variant="headingSm" fontWeight="semibold" as="p">Pricing Tiers</Text>
+                      <Text variant="bodyXs" tone="subdued" as="p">
+                        Let shoppers switch between different bundle price points on the same page.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+                </Box>
+
+                <PricingTiersSection
+                  tiers={tierConfig}
+                  availableBundles={availableBundles}
+                  currentBundleId={bundle.id}
+                  showStepTimeline={showStepTimeline}
+                  onShowStepTimelineChange={(val) => {
+                    setShowStepTimeline(val);
+                    markAsDirty();
+                  }}
+                  stepsCount={stepsState.steps.length}
+                  onStepsTiersConflictWarning={(onConfirm) => {
+                    setStepsTiersWarning({ open: true, onConfirm });
+                  }}
+                  onChange={(tiers) => {
+                    setTierConfig(tiers);
+                    markAsDirty();
+                  }}
+                />
+              </BlockStack>
+            )}
           </Layout.Section>
         </Layout>
       </form>
 
+      {/* Steps + Tiers Conflict Warning Modal */}
+      <Modal
+        open={stepsTiersWarning.open}
+        onClose={() => setStepsTiersWarning({ open: false, onConfirm: null })}
+        title="Steps and Pricing Tiers conflict"
+        primaryAction={{
+          content: "Continue anyway",
+          onAction: () => {
+            stepsTiersWarning.onConfirm?.();
+            setStepsTiersWarning({ open: false, onConfirm: null });
+          },
+        }}
+        secondaryActions={[{
+          content: "Cancel",
+          onAction: () => setStepsTiersWarning({ open: false, onConfirm: null }),
+        }]}
+      >
+        <Modal.Section>
+          <BlockStack gap="300">
+            <Text as="p" variant="bodyMd">
+              <strong>Using both steps and pricing tiers creates a confusing experience for shoppers.</strong>
+            </Text>
+            <Text as="p" variant="bodyMd">
+              Pricing tier pills work best with a <strong>single-step flat-grid bundle</strong> (e.g. pick any 3 products).
+              Your bundle has <strong>{stepsState.steps.length} steps</strong> configured, which guides shoppers through a sequential flow.
+            </Text>
+            <Text as="p" variant="bodyMd" tone="subdued">
+              Continuing will configure tiers alongside steps. Consider reducing to 1 step for the best flat-grid BYOB experience.
+            </Text>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
+
       {/* Page Selection Modal */}
       <Modal
         open={isPageSelectionModalOpen}
-        onClose={() => closePageSelectionModal()}
-        title="Place Widget"
+        onClose={() => !isInstallingWidget && closePageSelectionModal()}
+        title="Add to Storefront"
         primaryAction={{
           content: "Cancel",
           onAction: () => closePageSelectionModal(),
+          disabled: isInstallingWidget,
         }}
       >
         <Modal.Section>
           <BlockStack gap="300">
             <Text as="p" variant="bodySm" tone="subdued">
               {bundle.bundleType === 'full_page'
-                ? 'Select a page to open the theme editor with widget placement.'
-                : 'Select a template to open the theme editor with widget placement.'}
+                ? 'Select the bundle page — we\'ll install the widget automatically. No Theme Editor needed.'
+                : 'Select a template to open the Theme Editor with widget placement.'}
             </Text>
 
             {isLoadingPages ? (
@@ -2381,10 +2489,12 @@ export default function ConfigureBundleFlow() {
                       <Button
                         onClick={() => handlePageSelection(template)}
                         variant={template.recommended ? "primary" : "secondary"}
-                        icon={ExternalIcon}
+                        icon={template.isPage ? undefined : ExternalIcon}
                         size="slim"
+                        loading={isInstallingWidget}
+                        disabled={isInstallingWidget}
                       >
-                        Select
+                        {isInstallingWidget ? 'Installing…' : 'Select'}
                       </Button>
                     </InlineStack>
                   </Card>

@@ -7,7 +7,8 @@
 
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
-import { Badge, BlockStack, Box, Button, Card, InlineStack, Page, Select, Text } from "@shopify/polaris";
+import { Badge, Banner, BlockStack, Button, InlineStack, Page, Select, Text } from "@shopify/polaris";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../../shopify.server";
 import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
 import db from "../../db.server";
@@ -277,6 +278,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 // ─── Pixel Status Card ────────────────────────────────────────
 
 function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
+  const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
   const isSubmitting = fetcher.state !== "idle";
 
@@ -302,36 +304,69 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
   }, [fetcher, active]);
 
   return (
-    <Card>
-      <Box padding="400">
-        <InlineStack align="space-between" blockAlign="center" wrap={false}>
-          <BlockStack gap="100">
-            <InlineStack gap="200" blockAlign="center">
+    <div
+      style={{
+        borderRadius: 12,
+        border: active ? "1px solid #a8e6c1" : "1px solid #e1e3e5",
+        background: active
+          ? "linear-gradient(135deg, #f0faf4 0%, #ffffff 100%)"
+          : "#ffffff",
+        overflow: "hidden",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      }}
+    >
+      {/* Status strip */}
+      <div
+        style={{
+          height: 4,
+          background: active
+            ? "linear-gradient(90deg, #00a47c, #34d399)"
+            : "linear-gradient(90deg, #b0b8c1, #d1d5db)",
+        }}
+      />
+
+      <div style={{ padding: "20px 24px" }}>
+        <InlineStack align="space-between" blockAlign="center" wrap={false} gap="400">
+          <BlockStack gap="200">
+            <InlineStack gap="300" blockAlign="center">
+              {/* Status indicator dot */}
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: active ? "#00a47c" : "#b0b8c1",
+                  boxShadow: active ? "0 0 0 3px rgba(0,164,124,0.18)" : "none",
+                  flexShrink: 0,
+                }}
+              />
               <Text as="h2" variant="headingMd">UTM Pixel Tracking</Text>
-              {active
-                ? <Badge tone="success">Active</Badge>
-                : <Badge tone="new">Not active</Badge>
-              }
+              <Badge tone={active ? "success" : "new"}>{active ? "Active" : "Not active"}</Badge>
             </InlineStack>
             <Text as="p" variant="bodyMd" tone="subdued">
               {active
-                ? "Tracking is active. UTM parameters are captured and attributed to orders at checkout."
-                : "Enable tracking to capture UTM parameters from visitor sessions and attribute orders to campaigns."
+                ? "UTM parameters are being captured and attributed to orders at checkout. Your ad spend is being tracked."
+                : "Enable tracking to capture UTM parameters from visitor sessions and attribute orders to ad campaigns."
               }
             </Text>
           </BlockStack>
-          <Button
-            onClick={handleToggle}
-            loading={isSubmitting}
-            disabled={isSubmitting}
-            tone={active ? "critical" : undefined}
-            variant={active ? "secondary" : "primary"}
-          >
-            {active ? "Disable tracking" : "Enable tracking"}
-          </Button>
+
+          <div style={{ flexShrink: 0 }}>
+            <Button
+              onClick={handleToggle}
+              loading={isSubmitting}
+              disabled={isSubmitting}
+              tone={active ? "critical" : undefined}
+              variant={active ? "secondary" : "primary"}
+              size="large"
+            >
+              {active ? "Disable tracking" : "Enable tracking"}
+            </Button>
+          </div>
         </InlineStack>
-      </Box>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -368,65 +403,22 @@ export default function AttributionDashboard() {
   const ordersGrowth = formatGrowth(summary.totalOrders, summary.prevTotalOrders);
   const aovGrowth = formatGrowth(summary.aov, summary.prevAov);
 
-  const chartTooltipFormatter = useCallback((value: number, name: string) => {
-    if (name === "revenue") return [formatRevenue(value), "Revenue"];
-    return [value, "Orders"];
+  const chartTooltipFormatter = useCallback((value: any, name: any): [string | number, string] => {
+    if (name === "revenue") return [formatRevenue(value as number), "Revenue"];
+    return [value as number, "Orders"];
   }, []);
 
   const chartXFormatter = useCallback((dateKey: string) => formatDateKey(dateKey), []);
 
-  // ── Empty state ───────────────────────────────────────────
+  // Show ~6-8 evenly spaced ticks depending on timeframe
+  const xAxisInterval = useMemo(() => {
+    const count = timeSeries.length;
+    if (count <= 8) return 0;          // ≤8 points: every day
+    if (count <= 31) return 4;         // 30-day window: every 5th day
+    return Math.floor(count / 8);      // 90-day window: ~every 11 days
+  }, [timeSeries.length]);
 
-  if (summary.totalOrders === 0 && summary.prevTotalOrders === 0) {
-    return (
-      <Page
-        title="Analytics"
-        subtitle="UTM attribution & bundle revenue"
-        backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
-      >
-        <BlockStack gap="400">
-          <PixelStatusCard pixelActive={pixelActive} />
-          <div style={{ maxWidth: 680, margin: "0 auto", width: "100%" }}>
-          <div style={{ background: "#fff", border: "1px solid #e1e3e5", borderRadius: 12 }}>
-            <div className={styles.emptyWrapper}>
-              <div className={styles.emptyIcon}>📊</div>
-              <p className={styles.emptyTitle}>No attribution data yet</p>
-              <p className={styles.emptySubtitle}>
-                Once customers arrive via UTM-tagged links and complete purchases,
-                you'll see revenue broken down by platform, campaign, and bundle here.
-              </p>
-              <div className={styles.emptySteps}>
-                <div className={styles.emptyStep}>
-                  <span className={styles.stepNum}>1</span>
-                  <span>
-                    Add UTM parameters to your ad links — e.g.{" "}
-                    <code style={{ background: "#fff", padding: "1px 5px", borderRadius: 4, fontSize: 12 }}>
-                      ?utm_source=facebook&utm_campaign=bundles
-                    </code>
-                  </span>
-                </div>
-                <div className={styles.emptyStep}>
-                  <span className={styles.stepNum}>2</span>
-                  <span>
-                    The web pixel captures UTM params on the first page view and stores them in the browser session.
-                  </span>
-                </div>
-                <div className={styles.emptyStep}>
-                  <span className={styles.stepNum}>3</span>
-                  <span>
-                    When the customer completes a checkout, the attribution data is saved and appears on this dashboard.
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          </div>
-        </BlockStack>
-      </Page>
-    );
-  }
-
-  // ── Data state ────────────────────────────────────────────
+  const hasNoData = summary.totalOrders === 0 && summary.prevTotalOrders === 0;
 
   return (
     <Page
@@ -435,6 +427,34 @@ export default function AttributionDashboard() {
       backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+        {/* Why are values nil? — shown at very top when there's no data */}
+        {hasNoData && (
+          <Banner
+            title={pixelActive ? "No data for this period" : "UTM tracking is not enabled"}
+            tone={pixelActive ? "info" : "warning"}
+          >
+            {pixelActive ? (
+              <BlockStack gap="200">
+                <Text as="p" variant="bodyMd">
+                  Tracking is active but no attributed orders were recorded yet. Values will populate once customers arrive via UTM-tagged links and complete a purchase.
+                </Text>
+                <Text as="p" variant="bodyMd">
+                  Make sure your ad links include UTM parameters — e.g.{" "}
+                  <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
+                    ?utm_source=facebook&utm_campaign=bundles
+                  </code>
+                </Text>
+              </BlockStack>
+            ) : (
+              <BlockStack gap="200">
+                <Text as="p" variant="bodyMd">
+                  Enable tracking below to start capturing UTM parameters from visitor sessions. Once active, orders from tagged ad links will be attributed and shown here.
+                </Text>
+              </BlockStack>
+            )}
+          </Banner>
+        )}
 
         {/* Pixel tracking toggle */}
         <PixelStatusCard pixelActive={pixelActive} />
@@ -468,7 +488,9 @@ export default function AttributionDashboard() {
                 {revenueGrowth} vs prev period
               </span>
             )}
-            <span className={styles.statSub}>from attributed orders</span>
+            <span className={styles.statSub}>
+              {summary.totalRevenue > 0 ? "from attributed orders" : "no attributed orders yet"}
+            </span>
           </div>
 
           {/* Attributed Orders */}
@@ -483,7 +505,9 @@ export default function AttributionDashboard() {
                 {ordersGrowth} vs prev period
               </span>
             )}
-            <span className={styles.statSub}>orders with UTM data</span>
+            <span className={styles.statSub}>
+              {summary.totalOrders > 0 ? "orders with UTM data" : "no UTM-tagged orders yet"}
+            </span>
           </div>
 
           {/* Average Order Value */}
@@ -533,7 +557,7 @@ export default function AttributionDashboard() {
                     tick={{ fontSize: 11, fill: "#8c9196" }}
                     axisLine={false}
                     tickLine={false}
-                    interval="preserveStartEnd"
+                    interval={xAxisInterval}
                   />
                   <YAxis
                     tickFormatter={formatRevenueShort}
@@ -582,6 +606,11 @@ export default function AttributionDashboard() {
               <span className={styles.colLabel} style={{ minWidth: 100 }}>Revenue</span>
               <span className={styles.colLabel} style={{ minWidth: 120 }}>&nbsp;</span>
             </div>
+            {byPlatform.length === 0 && (
+              <div style={{ padding: "24px", textAlign: "center", color: "#8c9196", fontSize: 13 }}>
+                No platform data yet — will appear once attributed orders come in.
+              </div>
+            )}
             {byPlatform.map((p, i) => (
               <div key={p.source} className={styles.platformRow}>
                 <div className={styles.platformName}>

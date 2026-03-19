@@ -157,6 +157,23 @@ const selectedCardHTML = `
 </div>
 `.trim();
 
+// Dimmed state card — shown when step quota is full (Beco-style)
+const dimmedCardHTML = `
+<div class="product-card dimmed" data-product-id="preview-dimmed">
+  <div class="product-image">
+    <img src="${PLACEHOLDER_IMG}" alt="Another Product" loading="lazy">
+  </div>
+  <div class="product-content-wrapper">
+    <div class="product-title">Another Product</div>
+    <div class="product-price-row">
+      <span class="product-price">$9.99</span>
+    </div>
+    <div class="product-spacer"></div>
+    <button class="product-add-btn" data-product-id="preview-dimmed">Add to Bundle</button>
+  </div>
+</div>
+`.trim();
+
 // Real modal structure matching ComponentGenerator.createModalHTML()
 const modalHTML = `
 <div class="modal-content" style="position:relative;max-width:680px;margin:0 auto;">
@@ -338,7 +355,54 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
     );
   }
 
-  // All other product card sub-sections: show two cards side-by-side
+  // Widget Style sub-section — pixel-accurate slot card preview using real CSS classes
+  if (activeSubSection === "widgetStyle") {
+    const widgetStyleHTML = `
+<div class="bundle-steps" style="grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 360px;">
+  <div class="bw-slot-card bw-slot-card--empty">
+    <div class="bw-slot-card__plus-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #1e3a8a))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+    </div>
+    <span class="bw-slot-card__label">T-Shirts</span>
+  </div>
+  <div class="bw-slot-card bw-slot-card--empty">
+    <div class="bw-slot-card__plus-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--bundle-empty-state-card-border, var(--bundle-global-primary-button, #1e3a8a))" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+    </div>
+    <span class="bw-slot-card__label">Pants</span>
+  </div>
+  <div class="bw-slot-card bw-slot-card--filled">
+    <div class="bw-slot-card__image-wrapper">
+      <img src="${PLACEHOLDER_IMG}" alt="Selected product" loading="lazy">
+    </div>
+    <div style="padding: 6px 6px 8px; font-size: 11px; font-weight: 600; color: #111; line-height: 1.3;">Classic Tee</div>
+  </div>
+</div>`.trim();
+
+    return (
+      <div style={{ textAlign: "center" }}>
+        <Text as="h3" variant="headingLg" fontWeight="semibold">
+          Widget Style
+        </Text>
+        <Text as="p" variant="bodySm" tone="subdued">
+          Slot cards — bottom-sheet mode
+        </Text>
+        <div style={{ marginTop: "32px", display: "inline-block" }}>
+          <HighlightBox active>
+            {/* eslint-disable-next-line react/no-danger */}
+            <div dangerouslySetInnerHTML={{ __html: widgetStyleHTML }} />
+          </HighlightBox>
+        </div>
+        <div style={{ marginTop: "16px" }}>
+          <Text as="p" variant="bodySm" tone="subdued">
+            Empty slots open the product picker sheet when tapped
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
+  // All other product card sub-sections: show three cards (unselected, selected, dimmed)
   return (
     <div style={{ textAlign: "center" }}>
       <Text as="h3" variant="headingLg" fontWeight="semibold">
@@ -370,11 +434,17 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
           {/* eslint-disable-next-line react/no-danger */}
           <div dangerouslySetInnerHTML={{ __html: selectedCardHTML }} />
         </HighlightBox>
+
+        {/* Dimmed card — when step quota is full */}
+        <HighlightBox active={false}>
+          {/* eslint-disable-next-line react/no-danger */}
+          <div dangerouslySetInnerHTML={{ __html: dimmedCardHTML }} />
+        </HighlightBox>
       </div>
 
       <div style={{ marginTop: "32px" }}>
         <Text as="p" variant="bodySm" tone="subdued">
-          Left: unselected · Right: selected with quantity controls
+          Left: unselected · Middle: selected · Right: dimmed (step quota full)
         </Text>
       </div>
     </div>

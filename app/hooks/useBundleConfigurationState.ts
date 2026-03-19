@@ -84,7 +84,6 @@ export function useBundleConfigurationState({
       status: bundle.status,
       templateName: bundle.templateName || "",
       fullPageLayout: bundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
-      pageSlug: bundle.shopifyPageHandle || "",
     },
     onStateChange: markAsDirty
   });

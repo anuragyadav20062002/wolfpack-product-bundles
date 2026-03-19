@@ -1,3 +1,38 @@
+/* ─── Landing Page ─────────────────────────────────────────────────────────── */
+
+/* Two-column card row on the landing page */
+.landingCardsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .landingCardsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inner flex layout of each bundle-type card */
+.bundleCardInner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+/* SVG illustration container */
+.bundleCardSvgWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 160px;
+  background: #f8f7ff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* ─── Main modal container ──────────────────────────────────────────────────── */
 /* Main modal container */
 .modalContainer {
   display: flex;

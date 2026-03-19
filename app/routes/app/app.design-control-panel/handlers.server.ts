@@ -94,6 +94,14 @@ function extractGeneralSettings(settings: any) {
     // Toasts
     toastBgColor: settings.toastBgColor,
     toastTextColor: settings.toastTextColor,
+    toastBorderRadius: settings.toastBorderRadius,
+    toastBorderColor: settings.toastBorderColor,
+    toastBorderWidth: settings.toastBorderWidth,
+    toastFontSize: settings.toastFontSize,
+    toastFontWeight: settings.toastFontWeight,
+    toastAnimationDuration: settings.toastAnimationDuration,
+    toastBoxShadow: settings.toastBoxShadow,
+    toastEnterFromBottom: settings.toastEnterFromBottom,
     // Bundle Design
     bundleBgColor: settings.bundleBgColor,
     footerScrollBarColor: settings.footerScrollBarColor,
@@ -113,6 +121,8 @@ function extractGeneralSettings(settings: any) {
     conditionsTextFontSize: settings.conditionsTextFontSize,
     discountTextColor: settings.discountTextColor,
     discountTextFontSize: settings.discountTextFontSize,
+    // Free Gift Badge (Product Page)
+    freeGiftBadgeUrl: settings.freeGiftBadgeUrl,
   };
 }
 
@@ -193,6 +203,66 @@ function buildSettingsData(settings: any, groupedSettings: {
     modalButtonBgColor: settings.modalButtonBgColor,
     modalButtonTextColor: settings.modalButtonTextColor,
     modalButtonBorderRadius: settings.modalButtonBorderRadius,
+    // Toast extended (direct columns — not in JSON blob)
+    toastBorderRadius: settings.toastBorderRadius,
+    toastBorderColor: settings.toastBorderColor,
+    toastBorderWidth: settings.toastBorderWidth,
+    toastFontSize: settings.toastFontSize,
+    toastFontWeight: settings.toastFontWeight,
+    toastAnimationDuration: settings.toastAnimationDuration,
+    toastBoxShadow: settings.toastBoxShadow,
+    toastEnterFromBottom: settings.toastEnterFromBottom,
+    // Button added state & typography
+    buttonAddedBgColor: settings.buttonAddedBgColor,
+    buttonAddedTextColor: settings.buttonAddedTextColor,
+    buttonTextTransform: settings.buttonTextTransform,
+    buttonLetterSpacing: settings.buttonLetterSpacing,
+    // Product card hover & transitions
+    productCardHoverTranslateY: settings.productCardHoverTranslateY,
+    productCardTransitionDuration: settings.productCardTransitionDuration,
+    // Tile quantity badge
+    tileQuantityBadgeBgColor: settings.tileQuantityBadgeBgColor,
+    tileQuantityBadgeTextColor: settings.tileQuantityBadgeTextColor,
+    // Modal close button
+    modalCloseButtonColor: settings.modalCloseButtonColor,
+    modalCloseButtonBgColor: settings.modalCloseButtonBgColor,
+    modalCloseButtonHoverColor: settings.modalCloseButtonHoverColor,
+    // Accessibility / focus
+    focusOutlineColor: settings.focusOutlineColor,
+    focusOutlineWidth: settings.focusOutlineWidth,
+    // Search input
+    searchInputBgColor: settings.searchInputBgColor,
+    searchInputBorderColor: settings.searchInputBorderColor,
+    searchInputFocusBorderColor: settings.searchInputFocusBorderColor,
+    searchInputTextColor: settings.searchInputTextColor,
+    searchInputPlaceholderColor: settings.searchInputPlaceholderColor,
+    searchClearButtonBgColor: settings.searchClearButtonBgColor,
+    searchClearButtonColor: settings.searchClearButtonColor,
+    // Skeleton loading
+    skeletonBaseBgColor: settings.skeletonBaseBgColor,
+    skeletonShimmerColor: settings.skeletonShimmerColor,
+    skeletonHighlightColor: settings.skeletonHighlightColor,
+    // Tier pills
+    tierPillActiveBgColor: settings.tierPillActiveBgColor,
+    tierPillActiveTextColor: settings.tierPillActiveTextColor,
+    tierPillInactiveBgColor: settings.tierPillInactiveBgColor,
+    tierPillInactiveTextColor: settings.tierPillInactiveTextColor,
+    tierPillHoverBgColor: settings.tierPillHoverBgColor,
+    tierPillBorderColor: settings.tierPillBorderColor,
+    tierPillBorderRadius: settings.tierPillBorderRadius,
+    tierPillHeight: settings.tierPillHeight,
+    tierPillGap: settings.tierPillGap,
+    tierPillFontSize: settings.tierPillFontSize,
+    tierPillFontWeight: settings.tierPillFontWeight,
+    // Loading overlay
+    loadingOverlayBgColor: settings.loadingOverlayBgColor,
+    loadingOverlayTextColor: settings.loadingOverlayTextColor,
+    // Widget style & bottom sheet
+    widgetStyle: settings.widgetStyle,
+    bottomSheetOverlayOpacity: settings.bottomSheetOverlayOpacity,
+    bottomSheetAnimationDuration: settings.bottomSheetAnimationDuration,
+    emptySlotBorderStyle: settings.emptySlotBorderStyle,
+    emptySlotBorderColor: settings.emptySlotBorderColor,
     ...groupedSettings,
   };
 }

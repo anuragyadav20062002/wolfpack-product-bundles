@@ -340,13 +340,13 @@ describe('MetafieldValidationService', () => {
       );
 
       expect(audit).toBeDefined();
-      expect(audit.database.totalBundles).toBe(2);
-      expect(audit.database.activeBundles).toBe(1);
-      expect(audit.database.inactiveBundles).toBe(1);
-      expect(audit.metafields.totalBundles).toBe(2);
-      expect(audit.inconsistencies.bundlesInMetafieldButNotActive).toHaveLength(1);
-      expect(audit.inconsistencies.bundlesInMetafieldButNotActive[0].id).toBe('bundle-3');
-      expect(audit.inconsistencies.activeBundlesNotInMetafield).toHaveLength(0);
+      expect(audit!.database.totalBundles).toBe(2);
+      expect(audit!.database.activeBundles).toBe(1);
+      expect(audit!.database.inactiveBundles).toBe(1);
+      expect(audit!.metafields.totalBundles).toBe(2);
+      expect(audit!.inconsistencies.bundlesInMetafieldButNotActive).toHaveLength(1);
+      expect(audit!.inconsistencies.bundlesInMetafieldButNotActive[0].id).toBe('bundle-3');
+      expect(audit!.inconsistencies.activeBundlesNotInMetafield).toHaveLength(0);
     });
 
     it('should handle missing shop metafield in audit', async () => {
@@ -367,7 +367,7 @@ describe('MetafieldValidationService', () => {
       );
 
       expect(audit).toBeDefined();
-      expect(audit.metafields.totalBundles).toBe(0);
+      expect(audit!.metafields.totalBundles).toBe(0);
     });
 
     it('should handle audit errors gracefully', async () => {
