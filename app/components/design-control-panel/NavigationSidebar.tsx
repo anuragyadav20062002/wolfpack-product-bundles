@@ -200,50 +200,6 @@ export function NavigationSidebar({
         </>
       )}
 
-      {/* Bundle Step Bar Section (Full-Page Bundles only) */}
-      {isFullPage && (
-        <>
-          <NavigationItem
-            label="Bundle Step Bar"
-            sectionKey="bundleStepBar"
-            hasChildren
-            onClick={() => onToggleSection("bundleStepBar")}
-            isExpanded={expandedSection === "bundleStepBar"}
-            isActive={false}
-          />
-          <Collapsible open={expandedSection === "bundleStepBar"} id="bundleStepBar-collapsible">
-            <NavigationItem
-              label="Completed Step"
-              sectionKey="completedStep"
-              isChild
-              onClick={() => onSubSectionClick("completedStep")}
-              isActive={activeSubSection === "completedStep"}
-            />
-            <NavigationItem
-              label="Incomplete Step"
-              sectionKey="incompleteStep"
-              isChild
-              onClick={() => onSubSectionClick("incompleteStep")}
-              isActive={activeSubSection === "incompleteStep"}
-            />
-            <NavigationItem
-              label="Progress Bar"
-              sectionKey="stepBarProgressBar"
-              isChild
-              onClick={() => onSubSectionClick("stepBarProgressBar")}
-              isActive={activeSubSection === "stepBarProgressBar"}
-            />
-            <NavigationItem
-              label="Step Bar Tabs"
-              sectionKey="stepBarTabs"
-              isChild
-              onClick={() => onSubSectionClick("stepBarTabs")}
-              isActive={activeSubSection === "stepBarTabs"}
-            />
-          </Collapsible>
-        </>
-      )}
-
       {/* General Section */}
       <NavigationItem
         label="General"

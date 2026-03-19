@@ -220,7 +220,6 @@ class BundleWidgetProductPage {
       isContainerProduct: dataset.isContainerProduct === 'true',
       containerBundleId: dataset.containerBundleId || null,
       hideDefaultButtons: dataset.hideDefaultButtons === 'true',
-      showTitle: dataset.showTitle !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       // Quantity selector visibility settings (default: show on card)
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
@@ -457,7 +456,6 @@ class BundleWidgetProductPage {
 
     // Get or create main UI elements
     this.elements = {
-      header: this.container.querySelector('.bundle-header') || this.createHeader(),
       stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
       footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
       addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
@@ -468,9 +466,6 @@ class BundleWidgetProductPage {
     };
 
     // Append elements if they were created
-    if (!this.container.querySelector('.bundle-header')) {
-      this.container.appendChild(this.elements.header);
-    }
     if (!this.container.querySelector('.bundle-steps')) {
       this.container.appendChild(this.elements.stepsContainer);
     }
@@ -553,16 +548,6 @@ class BundleWidgetProductPage {
     }
 
     return panel;
-  }
-
-  createHeader() {
-    const header = document.createElement('div');
-    header.className = 'bundle-header';
-    header.innerHTML = `
-      <h2 class="bundle-title">${ComponentGenerator.escapeHtml(this.selectedBundle.name)}</h2>
-      ${this.selectedBundle.description ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(this.selectedBundle.description)}</p>` : ''}
-    `;
-    return header;
   }
 
   createStepsContainer() {
@@ -693,33 +678,9 @@ class BundleWidgetProductPage {
   // ========================================================================
 
   renderUI() {
-    this.renderHeader();
     this.renderSteps();
     this.renderFooter();
     this.updateAddToCartButton();
-  }
-
-  renderHeader() {
-    if (!this.config.showTitle) {
-      this.elements.header.style.display = 'none';
-      return;
-    }
-
-    // Populate the title — the Liquid template pre-renders an empty <h2>,
-    // so we must fill it here after bundle data is loaded.
-    const titleEl = this.elements.header.querySelector('.bundle-title');
-    if (titleEl && this.selectedBundle?.name) {
-      titleEl.textContent = this.selectedBundle.name;
-    }
-    const descEl = this.elements.header.querySelector('.bundle-description');
-    if (!descEl && this.selectedBundle?.description) {
-      const p = document.createElement('p');
-      p.className = 'bundle-description';
-      p.textContent = this.selectedBundle.description;
-      this.elements.header.appendChild(p);
-    }
-
-    this.elements.header.style.display = 'block';
   }
 
   renderSteps() {

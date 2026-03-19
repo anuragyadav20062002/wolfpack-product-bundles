@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-20 03:15
+**Last Updated:** 2026-03-20 03:30
 
 ## Overview
 `buildSettingsData()` in `handlers.server.ts` was never updated when new direct Prisma columns were added to `DesignSettings`. As a result, ~40 fields are tracked dirty in the DCP UI, appear to save (success toast shown), but are silently dropped — the DB upsert never writes them. On page reload, `mergeSettings` correctly reads the columns but they're still at their default values since they were never persisted.
@@ -46,4 +46,6 @@ Also: the configure page save effect does not update the discard baselines for 5
 - [x] Phase 7: Search Input nav item gated with isFullPage — only shown for full-page bundles (product-page widget has no search functionality)
 - [x] Phase 8: Bundle Step Bar section added to NavigationSidebar (full-page only) — 4 child items now reachable
 - [x] Phase 9: Empty State nav item gated to product-page only
+- [x] Phase 10: Bundle Step Bar section removed — CSS variables emitted but no widget JS/CSS consumes them; dead UI
+
 **Status:** Completed

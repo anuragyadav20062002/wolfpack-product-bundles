@@ -80,13 +80,6 @@
     },
     {
       "type": "checkbox",
-      "id": "show_bundle_title",
-      "label": "t:bundle_product_page.settings.show_bundle_title_label",
-      "info": "t:bundle_product_page.settings.show_bundle_title_info",
-      "default": false
-    },
-    {
-      "type": "checkbox",
       "id": "show_step_numbers",
       "label": "t:bundle_product_page.settings.show_step_numbers_label",
       "info": "t:bundle_product_page.settings.show_step_numbers_info",
@@ -297,7 +290,6 @@
       data-container-bundle-id="{{ bundle_id }}"
       data-bundle-config='{{ bundle_ui_config | json }}'
       data-hide-default-buttons="{{ hide_default_buttons }}"
-      data-show-title="{{ block.settings.show_bundle_title }}"
       data-show-step-numbers="{{ block.settings.show_step_numbers }}"
       style="
         --step-box-size: {{ block.settings.step_box_size }}px;
@@ -322,12 +314,6 @@
       "
       class="bundle-widget-container"
     >
-      {% if block.settings.show_bundle_title %}
-        <div class="bundle-header">
-          <h2 class="bundle-title"></h2>
-        </div>
-      {% endif %}
-
       <div class="bundle-steps">
         <!-- Dynamic steps will be rendered here by JavaScript -->
       </div>
