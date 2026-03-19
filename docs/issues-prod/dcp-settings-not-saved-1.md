@@ -1,10 +1,10 @@
 # Issue: DCP Settings Silently Not Saved to DB
 
 **Issue ID:** dcp-settings-not-saved-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-20 03:45
+**Last Updated:** 2026-03-20 12:00
 
 ## Overview
 `buildSettingsData()` in `handlers.server.ts` was never updated when new direct Prisma columns were added to `DesignSettings`. As a result, ~40 fields are tracked dirty in the DCP UI, appear to save (success toast shown), but are silently dropped — the DB upsert never writes them. On page reload, `mergeSettings` correctly reads the columns but they're still at their default values since they were never persisted.
@@ -12,6 +12,14 @@
 Also: the configure page save effect does not update the discard baselines for 5 bundle-level media/tier fields (`promoBannerBgImage`, `promoBannerBgImageCrop`, `loadingGif`, `tierConfig`, `showStepTimeline`) after a successful save, so clicking Discard after saving reverts those fields to the initial page-load values.
 
 ## Progress Log
+
+### 2026-03-20 12:00 - Config-driven DCP section filtering
+- Implemented config-based DCP nav + settings segregation — zero `isFullPage` conditionals remaining in NavigationSidebar
+- Files created: `app/lib/dcp-config/types.ts`, `app/lib/dcp-config/base.config.ts`, `app/lib/dcp-config/pdp.config.ts`, `app/lib/dcp-config/fpb.config.ts`, `app/lib/dcp-config/index.ts`
+- Files modified: `app/components/design-control-panel/NavigationSidebar.tsx` (full rewrite to config-driven render), `app/components/design-control-panel/settings/SettingsPanel.tsx` (dead code removed)
+- Dead code removed: 4 orphaned SettingsPanel cases (`completedStep`, `incompleteStep`, `stepBarProgressBar`, `stepBarTabs`) + their dead imports (`CompletedStepSettings`, `IncompleteStepSettings`, `StepBarProgressBarSettings`, `StepBarTabsSettings`)
+- `customCss` is now accessible via nav for the first time — BASE_DCP_CONFIG includes it, NavigationSidebar renders it automatically
+- ESLint: 0 errors, 0 warnings on all modified/created files
 
 ### 2026-03-19 23:15 - Starting fix
 - Identified all missing fields by cross-referencing Prisma schema with `buildSettingsData`
@@ -48,5 +56,6 @@ Also: the configure page save effect does not update the discard baselines for 5
 - [x] Phase 9: Empty State nav item gated to product-page only
 - [x] Phase 10: Bundle Step Bar section removed — CSS variables emitted but no widget JS/CSS consumes them; dead UI
 - [x] Phase 11: Widget Style preview redesigned — mobile frame showing slot cards + bottom-sheet panel with product grid; no broken images; CSS vars wired live
+- [x] Phase 12: Config-driven DCP section filtering — `app/lib/dcp-config/` created; NavigationSidebar rewritten with zero `isFullPage` conditionals; 4 dead SettingsPanel cases removed; `customCss` now reachable via nav
 
-**Status:** Completed
+**Status:** In Progress
