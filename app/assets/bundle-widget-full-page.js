@@ -3608,7 +3608,7 @@ class BundleWidgetFullPage {
               this.currentStepIndex++;
               this.reRenderFullPage();
             }
-          }, 400);
+          }, 120);
         }
       }
     } else {
