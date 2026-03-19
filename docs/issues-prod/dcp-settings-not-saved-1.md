@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-20 00:15
+**Last Updated:** 2026-03-20 02:30
 
 ## Overview
 `buildSettingsData()` in `handlers.server.ts` was never updated when new direct Prisma columns were added to `DesignSettings`. As a result, ~40 fields are tracked dirty in the DCP UI, appear to save (success toast shown), but are silently dropped — the DB upsert never writes them. On page reload, `mergeSettings` correctly reads the columns but they're still at their default values since they were never persisted.
@@ -37,3 +37,4 @@ Also: the configure page save effect does not update the discard baselines for 5
 - [x] Phase 3: ESLint, lint, commit
 - [x] Phase 4: DCP modal bundle-type settings filtering
 - [x] Phase 5: Analytics banner position + PixelStatusCard redesign
+- [x] Phase 6: BundleFooterPreview — toggle filtered by bundle type; product-page DCP no longer shows full-page footer layouts

@@ -11,6 +11,7 @@ const HIGHLIGHT_STYLE = {
 
 interface BundleFooterPreviewProps {
   activeSubSection: string;
+  bundleType?: BundleType;
   footerBgColor: string;
   footerBorderRadius: number;
   footerPadding: number;
@@ -47,14 +48,14 @@ const SAMPLE_PRODUCTS = [
 ];
 
 // Bundle type toggle component for preview
-function BundleTypeToggle({ selected, onChange }: { selected: string; onChange: (value: string) => void }) {
+function BundleTypeToggle({ selected, onChange, options }: {
+  selected: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+}) {
   return (
     <div style={{ marginBottom: "16px", display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
-      {[
-        { value: BundleType.PRODUCT_PAGE, label: "Product Page" },
-        { value: BundleType.FULL_PAGE, label: "Full Page · Floating" },
-        { value: "full_page_sidebar", label: "Full Page · Sidebar" },
-      ].map(({ value, label }) => (
+      {options.map(({ value, label }) => (
         <button
           key={value}
           onClick={() => onChange(value)}
@@ -785,7 +786,21 @@ function SidebarFooterLayout({
 }
 
 export function BundleFooterPreview(props: BundleFooterPreviewProps) {
-  const [bundleType, setBundleType] = useState<string>(BundleType.PRODUCT_PAGE);
+  const isFullPageBundle = props.bundleType === BundleType.FULL_PAGE;
+
+  // Toggle options filtered to only show layouts relevant to the current bundle type
+  const toggleOptions = isFullPageBundle
+    ? [
+        { value: BundleType.FULL_PAGE, label: "Full Page · Floating" },
+        { value: "full_page_sidebar", label: "Full Page · Sidebar" },
+      ]
+    : [
+        { value: BundleType.PRODUCT_PAGE, label: "Product Page" },
+      ];
+
+  const [bundleType, setBundleType] = useState<string>(
+    isFullPageBundle ? BundleType.FULL_PAGE : BundleType.PRODUCT_PAGE
+  );
 
   const {
     activeSubSection,
@@ -974,7 +989,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
           {titles[activeSubSection]}
         </Text>
         <div style={{ marginTop: "24px" }}>
-          <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
+          <BundleTypeToggle selected={bundleType} onChange={setBundleType} options={toggleOptions} />
         </div>
         <div style={{ marginTop: "24px", display: "inline-block", position: "relative" }}>
           {/* Bundle Footer Messaging Container */}
@@ -1085,7 +1100,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
           {titles[activeSubSection]}
         </Text>
         <div style={{ marginTop: "24px" }}>
-          <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
+          <BundleTypeToggle selected={bundleType} onChange={setBundleType} options={toggleOptions} />
         </div>
         <div style={{ marginTop: "24px" }}>
           <SidebarFooterLayout {...sidebarProps} />
@@ -1107,7 +1122,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
           {titles[activeSubSection]}
         </Text>
         <div style={{ marginTop: "24px" }}>
-          <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
+          <BundleTypeToggle selected={bundleType} onChange={setBundleType} options={toggleOptions} />
         </div>
         <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "24px", alignItems: "center" }}>
           {/* Progress state */}

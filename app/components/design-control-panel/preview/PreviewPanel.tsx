@@ -1,4 +1,5 @@
 import type { DesignSettings } from "../../../types/state.types";
+import { BundleType } from "../../../constants/bundle";
 import { ProductCardPreview } from "./ProductCardPreview";
 import { BundleFooterPreview } from "./BundleFooterPreview";
 import { BundleHeaderPreview } from "./BundleHeaderPreview";
@@ -12,6 +13,7 @@ import { PreviewScope } from "./PreviewScope";
 interface PreviewPanelProps {
   activeSubSection: string;
   settings: DesignSettings;
+  bundleType?: BundleType;
 }
 
 /**
@@ -22,7 +24,7 @@ interface PreviewPanelProps {
  * are wrapped in PreviewScope, which injects the real widget CSS and sets
  * all --bundle-* CSS variables from the current settings.
  */
-export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) {
+export function PreviewPanel({ activeSubSection, settings, bundleType }: PreviewPanelProps) {
   // Custom CSS - No preview needed
   if (activeSubSection === "customCss") {
     return null;
@@ -69,6 +71,7 @@ export function PreviewPanel({ activeSubSection, settings }: PreviewPanelProps) 
       <PreviewScope settings={settings}>
         <BundleFooterPreview
           activeSubSection={activeSubSection}
+          bundleType={bundleType}
           footerBgColor={settings.footerBgColor}
           footerBorderRadius={settings.footerBorderRadius}
           footerPadding={settings.footerPadding}

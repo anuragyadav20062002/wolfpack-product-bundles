@@ -386,6 +386,7 @@ export default function DesignControlPanel() {
                   <PreviewPanel
                     activeSubSection={fullPageState.activeSubSection}
                     settings={fullPageState.settings}
+                    bundleType={BundleType.FULL_PAGE}
                   />
                 </div>
               </div>
@@ -419,6 +420,7 @@ export default function DesignControlPanel() {
                   <PreviewPanel
                     activeSubSection={productPageState.activeSubSection}
                     settings={productPageState.settings}
+                    bundleType={BundleType.PRODUCT_PAGE}
                   />
                 </div>
               </div>
