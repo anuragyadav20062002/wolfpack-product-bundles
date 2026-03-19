@@ -173,16 +173,6 @@ export function ErrorPage({ error }: ErrorPageProps) {
 
   return (
     <div style={styles.root}>
-      {/* Top bar */}
-      <div style={styles.topBar}>
-        <div style={styles.topBarInner}>
-          <div style={styles.logoMark}>
-            <span style={styles.logoText}>W</span>
-          </div>
-          <span style={styles.appName}>Wolfpack Bundles</span>
-        </div>
-      </div>
-
       {/* Main content */}
       <div style={styles.main}>
         <div style={styles.content}>
@@ -264,43 +254,6 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#F6F6F7",
     fontFamily:
       "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
-  },
-
-  // Top bar
-  topBar: {
-    background: "#1A1A2E",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
-  },
-  topBarInner: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    padding: "0 24px",
-    height: "56px",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-  logoMark: {
-    width: "32px",
-    height: "32px",
-    borderRadius: "8px",
-    background: "linear-gradient(135deg, #5C6AC4 0%, #9C6ADE 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  logoText: {
-    color: "#FFFFFF",
-    fontSize: "15px",
-    fontWeight: "700",
-    lineHeight: 1,
-  },
-  appName: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: "15px",
-    fontWeight: "600",
-    letterSpacing: "-0.01em",
   },
 
   // Main area
