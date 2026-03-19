@@ -3589,6 +3589,28 @@ class BundleWidgetFullPage {
       // Update step timeline tabs so completion state, images, counts, and
       // click listeners all reflect the new selection immediately.
       this.updateStepTimeline();
+
+      // Auto-advance: when the current step becomes complete after an addition,
+      // automatically move to the next step after a short delay so the shopper
+      // sees the completion state before the view changes.
+      // Guard: only on additions (quantity > 0), not removals; skip if a pending
+      // advance is already scheduled; skip on the last step.
+      if (quantity > 0 && !this._autoAdvancePending) {
+        const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+        if (!isLastStep && this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
+          this._autoAdvancePending = true;
+          setTimeout(() => {
+            this._autoAdvancePending = false;
+            // Re-check in case the shopper removed something during the delay
+            if (this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
+              this.activeCollectionId = null;
+              this.searchQuery = '';
+              this.currentStepIndex++;
+              this.reRenderFullPage();
+            }
+          }, 120);
+        }
+      }
     } else {
       this.updateFooterMessaging();
     }

@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-17
-**Last Updated:** 2026-03-17 23:00
+**Last Updated:** 2026-03-20 04:30
 
 ## Overview
 
@@ -24,6 +24,23 @@ Warning modal when steps + tiers conflict is configured simultaneously.
 - [x] Phase 3: Build + verify ✅
 
 ## Progress Log
+
+### 2026-03-20 04:30 - Bug fixes: warning logic was one-directional and fired too many times
+
+Two bugs found on review:
+
+**Bug 1 — Warning fired on 3rd/4th tier addition (should only fire on 1→2 transition)**
+`PricingTiersSection.addTier()` used `tiers.length + 1 >= 2` which is true for any tiers.length ≥ 1.
+So after a merchant acknowledged the warning once, it would fire again on every subsequent tier add.
+Fixed: changed to `tiers.length === 1` — only the 1→2 transition triggers the modal.
+
+**Bug 2 — No warning when adding a 2nd step while tiers are already active**
+The "Add New Tab" button called `stepsState.addStep()` directly with no conflict check.
+A merchant could have 2 tiers configured, then add a 2nd step with zero warning.
+Fixed: "Add New Tab" now checks `stepsState.steps.length === 1 && tierConfig.length >= 2`
+and shows the same warning modal (with confirm callback) before proceeding.
+
+Files: `PricingTiersSection.tsx`, `route.tsx`
 
 ### 2026-03-17 23:00 - All Phases Completed
 
