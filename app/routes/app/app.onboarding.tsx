@@ -346,6 +346,31 @@ export default function Onboarding() {
                   </Text>
                 </Banner>
 
+                <Banner tone="info">
+                  <BlockStack gap="200">
+                    <Text variant="bodyMd" as="p" fontWeight="semibold">
+                      Recommended: Enable &quot;Bundle Property Hider&quot;
+                    </Text>
+                    <Text variant="bodyMd" as="p">
+                      Some themes display internal bundle metadata in the cart
+                      (e.g. <code>_bundle_name</code>, <code>_is_bundle_parent</code>).
+                      To hide these, enable the <strong>Bundle Property Hider</strong> app
+                      embed in your theme editor:
+                    </Text>
+                    <List type="number">
+                      <List.Item>
+                        Go to <strong>Online Store &rarr; Customize</strong>
+                      </List.Item>
+                      <List.Item>
+                        Click <strong>App embeds</strong> in the left sidebar
+                      </List.Item>
+                      <List.Item>
+                        Toggle on <strong>Bundle Property Hider</strong> and save
+                      </List.Item>
+                    </List>
+                  </BlockStack>
+                </Banner>
+
                 <InlineStack gap="200">
                   <Button
                     variant="primary"
