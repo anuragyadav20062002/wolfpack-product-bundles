@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-20 02:30
+**Last Updated:** 2026-03-20 03:15
 
 ## Overview
 `buildSettingsData()` in `handlers.server.ts` was never updated when new direct Prisma columns were added to `DesignSettings`. As a result, ~40 fields are tracked dirty in the DCP UI, appear to save (success toast shown), but are silently dropped — the DB upsert never writes them. On page reload, `mergeSettings` correctly reads the columns but they're still at their default values since they were never persisted.
@@ -31,6 +31,11 @@ Also: the configure page save effect does not update the discard baselines for 5
 - Analytics: PixelStatusCard redesigned — colored status strip, pulsing dot indicator, cleaner layout, larger CTA button
 - Files: `NavigationSidebar.tsx`, `app.attribution.tsx`
 
+### 2026-03-20 03:15 - Bundle Step Bar nav section + Empty State gating
+- NavigationSidebar: Added "Bundle Step Bar" section (full-page only) with 4 child items: Completed Step, Incomplete Step, Progress Bar, Step Bar Tabs — previously these SettingsPanel cases were unreachable via nav
+- NavigationSidebar: Gated "Empty State" nav item to `!isFullPage` (product-page only) — full-page bundles have no empty state concept
+- Files: `NavigationSidebar.tsx`
+
 ## Phases Checklist
 - [x] Phase 1: Fix `buildSettingsData` — add all missing direct columns
 - [x] Phase 2: Fix configure route discard baseline refs after save
@@ -39,3 +44,6 @@ Also: the configure page save effect does not update the discard baselines for 5
 - [x] Phase 5: Analytics banner position + PixelStatusCard redesign
 - [x] Phase 6: BundleFooterPreview — toggle filtered by bundle type; product-page DCP no longer shows full-page footer layouts
 - [x] Phase 7: Search Input nav item gated with isFullPage — only shown for full-page bundles (product-page widget has no search functionality)
+- [x] Phase 8: Bundle Step Bar section added to NavigationSidebar (full-page only) — 4 child items now reachable
+- [x] Phase 9: Empty State nav item gated to product-page only
+**Status:** Completed
