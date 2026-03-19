@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-20
-**Last Updated:** 2026-03-20 02:00
+**Last Updated:** 2026-03-20 03:00
 
 ## Overview
 Fix all 8 bugs documented in `docs/dcp-settings-segregation/01-bugs-audit.md`.
@@ -30,6 +30,18 @@ Starting with dead code pruning, then working through the data-loss and visual b
 - ✅ PREV-01: Removed dead `customCss` null guard from PreviewPanel (customCss not routable via DCP config)
 - ✅ PREV-02: productCardTypography now highlights all three cards in ProductCardPreview (was active={false})
 - ✅ PREV-03: bundleType made required in PreviewPanelProps — both callers already passed it
+
+### 2026-03-20 03:00 - Completed dashboard audit fixes
+- ✅ DASH-BUG-01: Added fetcher useEffect — clone navigates to new bundle, delete shows toast; both show error toast on failure
+- ✅ DASH-BUG-02: Added handleEditBundle to bundleRows useMemo deps; wrapped in useCallback
+- ✅ DASH-BUG-04: handleDirectChat guarded with typeof window check + (window as any).$crisp
+- ✅ DASH-BUG-05: Removed _count.steps from loader select (wasted DB query, value never displayed)
+- ✅ DASH-BUG-06: Removed apiKey from loader return and component destructuring
+- ✅ DASH-DEAD-01/02/03/04: Removed syncToService, getFormData, confirmDelete, fullPageLayout state from useDashboardState
+- ✅ DASH-DEAD-05: Removed archived entry from STATUS_BADGES (loader never fetches archived bundles)
+- ✅ Added useAppBridge + shopify.toast for clone/delete feedback
+- ✅ Added fetcherIntentRef + cloningBundleTypeRef to track which action is in-flight
+- ✅ DASH-BUG-03 (pricing incomplete): Confirmed false alarm — clone handler does its own full DB query
 
 ## Phases Checklist
 - [x] Phase 1: Dead code pruning + BUG-03/04
