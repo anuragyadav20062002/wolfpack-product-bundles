@@ -1,10 +1,10 @@
 # Issue: FPB Bundle Config Metafield Cache
 
 **Issue ID:** fpb-config-metafield-cache-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-20
-**Last Updated:** 2026-03-20 12:55
+**Last Updated:** 2026-03-20 13:00
 
 ## Overview
 Cache full-page bundle config as a Shopify page metafield (`custom:bundle_config`) so the
@@ -44,11 +44,20 @@ FPB widget loads without the app proxy. Mirrors the PDP bundle pattern exactly.
   - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
   - `tests/unit/lib/bundle-formatter.test.ts` (new)
   - `tests/unit/services/fpb-config-metafield.test.ts` (new)
-- Next: Phase 5 — Liquid template + widget changes + widget rebuild
+### 2026-03-20 13:00 - Completed Phase 5
+- Liquid: injected `bundle_config_json` from `page.metafields.custom.bundle_config`; added `data-bundle-config` attribute to widget container
+- Widget: FPB `loadBundleData` now checks `data-bundle-config` first; falls back to proxy API if absent/unparseable
+- Bumped WIDGET_VERSION: `2.2.4` → `2.3.0`
+- Rebuilt `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`
+- Files changed:
+  - `extensions/bundle-builder/blocks/bundle-full-page.liquid`
+  - `app/assets/bundle-widget-full-page.js`
+  - `scripts/build-widget-bundles.js`
+  - `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`
 
 ## Phases Checklist
 - [x] Phase 1: Shared bundle formatter (`app/lib/bundle-formatter.server.ts`)
 - [x] Phase 2: Metafield definition helper (`ensureCustomPageBundleConfigDefinition`)
 - [x] Phase 3: `writeBundleConfigPageMetafield` service helper
 - [x] Phase 4: Call from both FPB handlers
-- [ ] Phase 5: Liquid + widget changes + widget rebuild
+- [x] Phase 5: Liquid + widget changes + widget rebuild

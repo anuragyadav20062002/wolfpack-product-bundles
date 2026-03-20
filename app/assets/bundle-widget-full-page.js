@@ -314,56 +314,74 @@ class BundleWidgetFullPage {
 
     if (bundleType === 'full_page' && bundleId) {
 
-      // Retry once after a short delay for transient server errors (504/503).
-      // This handles Render cold-start: the first request times out while the
-      // server is warming up; the retry ~3 s later succeeds.
-      const RETRY_DELAY_MS = 3000;
-      const RETRYABLE_STATUSES = new Set([503, 504]);
-
-      const fetchBundleData = async () => {
-        // Use Shopify app proxy path - Shopify automatically adds signature and auth params
-        // App proxy config: /apps/product-bundles -> https://wolfpack-product-bundle-app.onrender.com
-        // CRITICAL: URL-encode bundle ID to handle special characters in cuid() format
-        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
-
-        const response = await fetch(apiUrl);
-
-        if (!response.ok) {
-          // Try to get error details from response body
-          let errorDetails = `${response.status} ${response.statusText}`;
-          try {
-            const errorData = await response.json();
-            errorDetails = JSON.stringify(errorData);
-          } catch (e) {
-          }
-          const err = new Error(`API request failed: ${errorDetails}`);
-          err.status = response.status;
-          throw err;
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.bundle) {
-          return { [data.bundle.id]: data.bundle };
-        } else {
-          throw new Error('Invalid API response structure');
-        }
-      };
-
-      try {
+      // Prefer metafield cache (data-bundle-config) over proxy API call.
+      // The metafield is written by the app when "Place Widget Now" or "Sync Bundle"
+      // is clicked — it eliminates the proxy round-trip for first paint.
+      const cachedConfig = this.container.dataset.bundleConfig;
+      if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
         try {
-          bundleData = await fetchBundleData();
-        } catch (firstErr) {
-          // Retry once for 504/503 (server cold-start)
-          if (RETRYABLE_STATUSES.has(firstErr.status)) {
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-            bundleData = await fetchBundleData();
-          } else {
-            throw firstErr;
+          const parsed = JSON.parse(cachedConfig);
+          if (parsed && typeof parsed === 'object' && parsed.id) {
+            bundleData = { [parsed.id]: parsed };
           }
+        } catch (_e) {
+          // Malformed JSON in the attribute — fall through to proxy
         }
-      } catch (error) {
-        throw error;
+      }
+
+      // Fall back to proxy API if metafield cache was absent or unparseable.
+      if (!bundleData) {
+        // Retry once after a short delay for transient server errors (504/503).
+        // This handles Render cold-start: the first request times out while the
+        // server is warming up; the retry ~3 s later succeeds.
+        const RETRY_DELAY_MS = 3000;
+        const RETRYABLE_STATUSES = new Set([503, 504]);
+
+        const fetchBundleData = async () => {
+          // Use Shopify app proxy path - Shopify automatically adds signature and auth params
+          // App proxy config: /apps/product-bundles -> https://wolfpack-product-bundle-app.onrender.com
+          // CRITICAL: URL-encode bundle ID to handle special characters in cuid() format
+          const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
+
+          const response = await fetch(apiUrl);
+
+          if (!response.ok) {
+            // Try to get error details from response body
+            let errorDetails = `${response.status} ${response.statusText}`;
+            try {
+              const errorData = await response.json();
+              errorDetails = JSON.stringify(errorData);
+            } catch (e) {
+            }
+            const err = new Error(`API request failed: ${errorDetails}`);
+            err.status = response.status;
+            throw err;
+          }
+
+          const data = await response.json();
+
+          if (data.success && data.bundle) {
+            return { [data.bundle.id]: data.bundle };
+          } else {
+            throw new Error('Invalid API response structure');
+          }
+        };
+
+        try {
+          try {
+            bundleData = await fetchBundleData();
+          } catch (firstErr) {
+            // Retry once for 504/503 (server cold-start)
+            if (RETRYABLE_STATUSES.has(firstErr.status)) {
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+              bundleData = await fetchBundleData();
+            } else {
+              throw firstErr;
+            }
+          }
+        } catch (error) {
+          throw error;
+        }
       }
     } else {
       // Product-page bundle: load from data-bundle-config attribute
