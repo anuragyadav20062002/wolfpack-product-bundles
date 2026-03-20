@@ -1,0 +1,20 @@
+name: Enforce PROD → main only
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  enforce-prod-to-main:
+    name: Enforce PROD → main only
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block non-PROD PRs to main
+        if: github.head_ref != 'PROD'
+        run: |
+          echo "❌ PRs to main must come from PROD. Source branch: ${{ github.head_ref }}"
+          exit 1
+      - name: Allow PROD → main
+        if: github.head_ref == 'PROD'
+        run: |
+          echo "✅ PROD → main merge allowed."
