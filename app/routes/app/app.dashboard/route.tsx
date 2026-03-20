@@ -17,8 +17,6 @@ import {
   Icon,
   ChoiceList,
   Tooltip,
-  Banner,
-  List,
 } from "@shopify/polaris";
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, AlertTriangleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../../../shopify.server";
@@ -628,33 +626,6 @@ export default function Dashboard() {
               />
             </Layout.Section>
           )}
-
-          {/* App Embed reminder for hiding bundle properties in cart */}
-          <Layout.Section>
-            <Banner
-              title="Recommended: Enable Bundle Property Hider"
-              tone="info"
-              onDismiss={() => {}}
-            >
-              <BlockStack gap="200">
-                <Text variant="bodyMd" as="p">
-                  Some themes show internal bundle data (like <code>_bundle_name</code>) in the cart.
-                  To hide these, enable the <strong>Bundle Property Hider</strong> app embed:
-                </Text>
-                <List type="number">
-                  <List.Item>
-                    Go to <strong>Online Store &rarr; Customize</strong>
-                  </List.Item>
-                  <List.Item>
-                    Click <strong>App embeds</strong> in the left sidebar
-                  </List.Item>
-                  <List.Item>
-                    Toggle on <strong>Bundle Property Hider</strong> and save
-                  </List.Item>
-                </List>
-              </BlockStack>
-            </Banner>
-          </Layout.Section>
 
           <Layout.Section>
             <Card>
