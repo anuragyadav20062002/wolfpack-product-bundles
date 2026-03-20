@@ -25,4 +25,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Allow merge into STAGING
-        run: echo "✅ Any branch may merge into STAGING. Source branch: ${{ github.head_ref }}"
+        run: |
+          echo "✅ Any branch may merge into STAGING. Source branch: ${{ github.head_ref }}"
