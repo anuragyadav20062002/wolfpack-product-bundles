@@ -139,8 +139,8 @@ class BundleWidgetFullPage {
       // Show spinner overlay immediately (no gif url yet — bundle data not loaded)
       this.showLoadingOverlay(null);
 
-      // Load design settings CSS
-      await this.loadDesignSettingsCSS();
+      // Load design settings CSS (sync — sets up error listener for proxy fallback)
+      this.loadDesignSettingsCSS();
 
       // Load and validate bundle data
       await this.loadBundleData();
@@ -227,24 +227,34 @@ class BundleWidgetFullPage {
    * Load Design Control Panel CSS settings
    * Injects custom CSS from Design Control Panel into the page
    */
-  async loadDesignSettingsCSS() {
+  loadDesignSettingsCSS() {
     try {
-      // Get shop domain from bundle data or window
-      const shopDomain = window.Shopify?.shop || this.container.dataset.shop;
-
-      if (!shopDomain) {
-        return;
-      }
-
-      // CSS is loaded by the small loader (bundle-widget.js) for better performance
-      // No need to load it here - just verify it's present
+      // The Liquid template injects a <link> pointing to the design-settings app proxy URL.
+      // On non-production environments the app proxy may not be configured and Shopify
+      // returns an HTML error page instead of CSS, causing a MIME-type console error.
+      // Register an error listener: if the proxy link fails, fall back to the direct
+      // app server URL via window.__BUNDLE_APP_URL__.
       const existingLink = document.querySelector('link[href*="design-settings"]');
-      if (existingLink) {
-      } else {
-      }
+      if (!existingLink) return;
 
-    } catch (error) {
-      // Don't throw - widget should work even if design CSS fails to load
+      const appUrl = window.__BUNDLE_APP_URL__;
+      if (!appUrl) return;
+
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      existingLink.addEventListener('error', () => {
+        const directUrl = `${appUrl}/api/design-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+        const fallback = document.createElement('link');
+        fallback.rel = 'stylesheet';
+        fallback.type = 'text/css';
+        fallback.href = directUrl;
+        document.head.appendChild(fallback);
+        existingLink.remove();
+      }, { once: true });
+
+    } catch (_e) {
+      // Non-critical — widget works without design settings CSS
     }
   }
 
@@ -3091,8 +3101,14 @@ class BundleWidgetFullPage {
 
     let allProducts = [];
 
-    // Process explicit products - fetch using Storefront API via our backend
-    if (step.products && Array.isArray(step.products) && step.products.length > 0) {
+    // Process explicit products - fetch using Storefront API via our backend.
+    // Skip if StepProduct has enriched data: the API response derives step.products
+    // from step.StepProduct, so both arrays contain the same products. Fetching
+    // step.products when enriched StepProduct is already present wastes 1 API call per step.
+    const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
+      && step.StepProduct.some(sp => sp.title && sp.imageUrl);
+
+    if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
       const productIds = step.products.map(p => p.id); // Keep full GID format
       const shop = window.Shopify?.shop || window.location.host;
 
@@ -3965,113 +3981,6 @@ class BundleWidgetFullPage {
   // ========================================================================
   // CART OPERATIONS
   // ========================================================================
-
-  // NOTE: Add to cart functionality removed from full-page bundles
-  // Full-page bundles use modal-based product selection only
-  // Products are added to cart individually via modal's "Add to Cart" button
-  /*
-  async addToCart() {
-    try {
-      const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
-        this.selectedProducts,
-        this.stepProductData
-      );
-
-      if (totalQuantity === 0) {
-        ToastManager.show('Please select products for your bundle before adding to cart.');
-        return;
-      }
-
-      // Validate all steps
-      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
-      if (!allStepsValid) {
-        ToastManager.show('Please complete all bundle steps before adding to cart.');
-        return;
-      }
-
-      const cartItems = this.buildCartItems();
-
-      const response = await fetch('/cart/add.js', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ items: cartItems })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Cart add failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      // Show success message and redirect
-      ToastManager.show('Bundle added to cart successfully!');
-
-      setTimeout(() => {
-        window.location.href = '/cart';
-      }, 1000);
-
-    } catch (error) {
-      ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
-    }
-  }
-  */
-
-  buildCartItems() {
-    // Shopify Standard Bundle approach for configurable bundles:
-    // Add ACTUAL selected component products to cart with _bundle_id property
-    // Cart transform MERGE groups by _bundle_id and combines into bundle parent
-    // See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
-
-    const cartItems = [];
-    const bundleInstanceId = this.generateBundleInstanceId();
-
-
-    // Add ACTUAL selected component products to cart
-    // Each component gets _bundle_id property for grouping in cart transform
-    const unavailableProducts = []; // Track unavailable products
-
-    this.selectedProducts.forEach((stepSelections, stepIndex) => {
-      const productsInStep = this.stepProductData[stepIndex];
-
-      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        if (quantity > 0) {
-          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
-          if (product) {
-            // Check availability before adding to cart
-            if (product.available !== true) {
-              unavailableProducts.push(product.title);
-              return; // Skip this product
-            }
-
-
-            const cartItem = {
-              id: parseInt(variantId),
-              quantity: quantity,
-              properties: {
-                '_bundle_id': bundleInstanceId,
-                '_bundle_name': this.selectedBundle.name,
-                '_step_index': stepIndex.toString()
-              }
-            };
-
-            cartItems.push(cartItem);
-          }
-        }
-      });
-    });
-
-
-    // Throw error if any products are unavailable
-    if (unavailableProducts.length > 0) {
-      const productList = unavailableProducts.join(', ');
-      throw new Error(`The following product${unavailableProducts.length > 1 ? 's are' : ' is'} currently unavailable: ${productList}. Please remove ${unavailableProducts.length > 1 ? 'them' : 'it'} from your bundle or try again later.`);
-    }
-
-    return cartItems;
-  }
 
   generateBundleInstanceId() {
     // Generate unique bundle instance ID using UUID (recommended by Shopify)
