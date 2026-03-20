@@ -1,10 +1,10 @@
 # Issue: FPB Bundle Config Metafield Cache
 
 **Issue ID:** fpb-config-metafield-cache-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-20
-**Last Updated:** 2026-03-20 13:00
+**Last Updated:** 2026-03-20 13:30
 
 ## Overview
 Cache full-page bundle config as a Shopify page metafield (`custom:bundle_config`) so the
@@ -61,3 +61,4 @@ FPB widget loads without the app proxy. Mirrors the PDP bundle pattern exactly.
 - [x] Phase 3: `writeBundleConfigPageMetafield` service helper
 - [x] Phase 4: Call from both FPB handlers
 - [x] Phase 5: Liquid + widget changes + widget rebuild
+- [ ] Phase 5 hotfix: Add `.value` to metafield accessor in Liquid

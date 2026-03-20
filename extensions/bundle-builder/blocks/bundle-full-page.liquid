@@ -224,8 +224,8 @@
     the widget can skip the app proxy call on first paint.
   {% endcomment %}
   {% assign bundle_config_metafield = page.metafields.custom.bundle_config %}
-  {% if bundle_config_metafield != blank %}
-    {% assign bundle_config_json = bundle_config_metafield | json %}
+  {% if bundle_config_metafield.value != blank %}
+    {% assign bundle_config_json = bundle_config_metafield.value | json %}
   {% else %}
     {% assign bundle_config_json = 'null' %}
   {% endif %}
