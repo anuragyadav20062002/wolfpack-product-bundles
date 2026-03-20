@@ -27,6 +27,7 @@ import { useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
+import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 
@@ -201,9 +202,46 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     })();
   }
 
+  // Check whether the Shopify app proxy is reachable for this store.
+  // Proxy is required for full-page bundle widgets and DCP design settings CSS.
+  // We fetch the proxy health endpoint through the storefront so Shopify's routing
+  // either forwards it to us (proxy healthy) or returns 404 (proxy not registered).
+  // Timeout: 3 s. On timeout or non-404 error we default to healthy to avoid
+  // false-positive banners.
+  let proxyHealthy = true;
+  const appUrl = process.env.SHOPIFY_APP_URL ?? '';
+  try {
+    const controller = new AbortController();
+    const proxyTimer = setTimeout(() => controller.abort(), 3000);
+    const proxyRes = await fetch(
+      `https://${session.shop}/apps/product-bundles/api/proxy-health`,
+      { signal: controller.signal }
+    );
+    clearTimeout(proxyTimer);
+    // Only flag as broken on a definitive 404 from Shopify (empty body, text/html).
+    // Any other status (200, 4xx from our server, 5xx) we treat as "proxy is working."
+    if (proxyRes.status === 404) {
+      const ct = proxyRes.headers.get('content-type') ?? '';
+      // Shopify's own 404 returns text/html with empty body.
+      // Our server's 404 would return application/json — that means proxy IS working.
+      if (ct.includes('text/html')) {
+        proxyHealthy = false;
+        AppLogger.warn('App proxy health check failed — proxy not registered for shop', {
+          component: 'app.dashboard',
+          operation: 'proxy-health-check',
+          shop: session.shop,
+        });
+      }
+    }
+  } catch {
+    // Timeout or network error — default to healthy (avoid false positives)
+  }
+
   return json({
     bundles: bundlesWithPreview,
     shop: session.shop,
+    appUrl,
+    proxyHealthy,
     subscription: subscriptionInfo ? {
       plan: subscriptionInfo.plan,
       currentBundleCount: subscriptionInfo.currentBundleCount,
@@ -296,7 +334,7 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop } = useLoaderData<typeof loader>();
+  const { bundles, subscription, shop, proxyHealthy, appUrl } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -637,6 +675,13 @@ export default function Dashboard() {
         subtitle="Access your bundles, customer support & more."
       >
         <Layout>
+          {/* Proxy Health Banner — shown when app proxy is not registered for this store */}
+          {!proxyHealthy && (
+            <Layout.Section>
+              <ProxyHealthBanner shop={shop} appUrl={appUrl} />
+            </Layout.Section>
+          )}
+
           {/* Upgrade Prompt Banner for Free Users */}
           {subscription && (
             <Layout.Section>
