@@ -2220,7 +2220,7 @@ class BundleWidgetProductPage {
         const selectedEntries = Object.entries(stepSelections).filter(([, qty]) => qty > 0);
 
         if (selectedEntries.length > 0) {
-          const products = this.stepProductData[stepIndex] || [];
+          const products = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
           selectedEntries.forEach(([variantId, qty]) => {
             const product = products.find(p => (p.variantId || p.id) === variantId);
             if (product) {
@@ -3847,7 +3847,7 @@ class BundleWidgetProductPage {
     const unavailableProducts = []; // Track unavailable products
 
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
-      const productsInStep = this.stepProductData[stepIndex];
+      const productsInStep = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
@@ -3859,9 +3859,8 @@ class BundleWidgetProductPage {
               return; // Skip this product
             }
 
-
-            // Use selected variant ID; fall back to first variant for single-variant products.
-            const actualVariantId = product.variantId ?? product.variants?.[0]?.id;
+            // variantId is already the user-selected variant ID from selectedProducts
+            const actualVariantId = variantId;
 
             const step = this.selectedBundle.steps[stepIndex];
             const properties = {
