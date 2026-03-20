@@ -26,6 +26,7 @@ import { BillingService } from "../../../services/billing.server";
 import { useCallback, useRef, useEffect, useMemo, memo } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
+import { CartPropertyFixCard } from "../../../components/CartPropertyFixCard";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
@@ -890,6 +891,11 @@ export default function Dashboard() {
                 </Card>
               </div>
             </div>
+          </Layout.Section>
+
+          {/* Cart Property Display Fix */}
+          <Layout.Section>
+            <CartPropertyFixCard />
           </Layout.Section>
 
           {/* Demo Section */}
