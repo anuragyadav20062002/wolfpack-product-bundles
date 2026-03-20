@@ -6,7 +6,8 @@
  */
 
 import { AppLogger } from "../../lib/logger";
-import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition } from "../bundles/metafield-sync.server";
+import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition, ensureCustomPageBundleConfigDefinition } from "../bundles/metafield-sync.server";
+import { formatBundleForWidget } from "../../lib/bundle-formatter.server";
 import { ensureBundlePageTemplate } from "./widget-theme-template.server";
 import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
 import { slugify, resolveUniqueHandle } from "../../lib/slug-utils";
@@ -394,5 +395,77 @@ export async function renamePageHandle(
       pageId
     }, error);
     return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * Write the full bundle config as a `custom:bundle_config` JSON metafield on a Shopify page.
+ *
+ * This caches the bundle config so the FPB Liquid template can inject it as `data-bundle-config`
+ * on the widget container, eliminating the app proxy call for first-paint.
+ *
+ * Non-fatal: errors are logged but never thrown — a missing metafield means the widget falls
+ * back to the proxy API, which is still functional.
+ *
+ * @param admin  - Shopify Admin API client
+ * @param pageId - GID of the Shopify page (e.g. "gid://shopify/Page/123"). Skipped if null/undefined.
+ * @param bundle - Raw Prisma bundle with steps + StepProduct + pricing included
+ */
+export async function writeBundleConfigPageMetafield(
+  admin: any,
+  pageId: string | null | undefined,
+  bundle: any
+): Promise<void> {
+  if (!pageId) return;
+
+  try {
+    const formattedBundle = formatBundleForWidget(bundle);
+    const configJson = JSON.stringify(formattedBundle);
+
+    const SET_METAFIELD = `
+      mutation SetBundleConfigMetafield($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          metafields { id key }
+          userErrors { field message }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(SET_METAFIELD, {
+      variables: {
+        metafields: [
+          {
+            ownerId: pageId,
+            namespace: "custom",
+            key: "bundle_config",
+            value: configJson,
+            type: "json",
+          },
+        ],
+      },
+    });
+
+    const data = await response.json();
+    const userErrors = data.data?.metafieldsSet?.userErrors ?? [];
+
+    if (userErrors.length > 0) {
+      AppLogger.warn("Failed to write bundle_config metafield on page (non-fatal)", {
+        component: "WidgetFullPageBundle",
+        pageId,
+        errors: userErrors,
+      }, userErrors[0]);
+    } else {
+      AppLogger.info("bundle_config metafield written on page", {
+        component: "WidgetFullPageBundle",
+        pageId,
+        bundleId: bundle.id,
+      });
+    }
+  } catch (error) {
+    AppLogger.error("Error writing bundle_config metafield on page (non-fatal)", {
+      component: "WidgetFullPageBundle",
+      pageId,
+      bundleId: bundle?.id,
+    }, error as Error);
   }
 }

@@ -5,6 +5,7 @@ import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { BundleStatus } from "../../constants/bundle";
 import { ERROR_MESSAGES } from "../../constants/errors";
+import { formatBundleForWidget } from "../../lib/bundle-formatter.server";
 
 /**
  * Verify the Shopify App Proxy HMAC signature.
@@ -197,99 +198,11 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       bundleName: bundle.name
     });
 
-    // Build product response from DB data (StepProduct records).
+    // Build product response using the shared widget formatter.
     // StepProduct stores title, imageUrl, and variants (JSON) captured at save time.
     // We do NOT call the Shopify Admin API here — that endpoint is public-facing
     // (every storefront visitor triggers it) and Admin API calls are rate-limited.
-    // Calling Admin API from the hot path caused 504s when the leaky-bucket was
-    // depleted by concurrent save/sync/metafield operations.
-
-    // Convert a Shopify GID to its numeric ID for cart add operations.
-    const extractNumericId = (gid: string) => {
-      const match = gid.match(/\/(\d+)$/);
-      return match ? match[1] : gid;
-    };
-
-    const formattedBundle = {
-      id: bundle.id,
-      name: bundle.name,
-      description: bundle.description,
-      status: bundle.status,
-      bundleType: bundle.bundleType,
-      fullPageLayout: bundle.fullPageLayout ?? null,
-      shopifyProductId: bundle.shopifyProductId,
-      promoBannerBgImage: bundle.promoBannerBgImage ?? null,
-      promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
-      loadingGif: bundle.loadingGif ?? null,
-      tierConfig: bundle.tierConfig ?? null,
-      showStepTimeline: bundle.showStepTimeline ?? null,
-      steps: bundle.steps.map(step => {
-        const stepProducts = step.StepProduct ?? [];
-
-        // Variants are stored as JSON from the Shopify resource picker at save time.
-        // The resource picker returns GID-format variant IDs — convert to numeric here
-        // so the widget can use them for storefront cart add operations.
-        const productsArray = stepProducts.map(sp => {
-          const dbVariants = (sp.variants as any[]) ?? [];
-          const firstVariant = dbVariants[0];
-
-          return {
-            id: sp.productId,
-            title: sp.title,
-            handle: '',
-            images: sp.imageUrl ? [{ url: sp.imageUrl }] : [],
-            featuredImage: sp.imageUrl ? { url: sp.imageUrl } : null,
-            price: firstVariant?.price
-              ? Math.round(parseFloat(firstVariant.price) * 100)
-              : 0,
-            compareAtPrice: firstVariant?.compareAtPrice
-              ? Math.round(parseFloat(firstVariant.compareAtPrice) * 100)
-              : null,
-            available: true,
-            variants: dbVariants.map((v: any) => ({
-              id: extractNumericId(v.id ?? ''),
-              gid: v.id ?? '',
-              title: v.title ?? 'Default Title',
-              price: Math.round(parseFloat(v.price ?? '0') * 100),
-              compareAtPrice: v.compareAtPrice
-                ? Math.round(parseFloat(v.compareAtPrice) * 100)
-                : null,
-              image: v.imageUrl ? { url: v.imageUrl } : (v.image ?? null),
-              available: true,
-            })),
-          };
-        });
-
-        return {
-          id: step.id,
-          name: step.name,
-          position: step.position,
-          minQuantity: step.minQuantity,
-          maxQuantity: step.maxQuantity,
-          enabled: step.enabled,
-          displayVariantsAsIndividual: step.displayVariantsAsIndividual,
-          products: productsArray,
-          collections: step.collections || [],
-          StepProduct: stepProducts,
-          conditionType: step.conditionType,
-          conditionOperator: step.conditionOperator,
-          conditionValue: step.conditionValue,
-          conditionOperator2: step.conditionOperator2,
-          conditionValue2: step.conditionValue2,
-          isFreeGift: step.isFreeGift ?? false,
-          freeGiftName: step.freeGiftName ?? null,
-          isDefault: step.isDefault ?? false,
-          defaultVariantId: step.defaultVariantId ?? null,
-        };
-      }),
-      pricing: bundle.pricing ? {
-        enabled: bundle.pricing.enabled,
-        method: bundle.pricing.method,
-        rules: bundle.pricing.rules || [],
-        showFooter: bundle.pricing.showFooter,
-        messages: bundle.pricing.messages || {}
-      } : null
-    };
+    const formattedBundle = formatBundleForWidget(bundle);
 
     const responsePayload = {
       success: true,

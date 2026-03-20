@@ -11,7 +11,7 @@ import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
-import { renamePageHandle } from "../../../../services/widget-installation/widget-full-page-bundle.server";
+import { renamePageHandle, writeBundleConfigPageMetafield } from "../../../../services/widget-installation/widget-full-page-bundle.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -973,6 +973,9 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       data: { shopifyPageId: result.pageId, shopifyPageHandle: result.pageHandle },
     });
 
+    // 5b. Write bundle config metafield on the new page (non-fatal)
+    await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
+
     // 6. Re-run metafield operations from DB-authoritative state (if shopifyProductId exists)
     const shopifyProductId = bundle.shopifyProductId;
     if (shopifyProductId && bundle.pricing) {
@@ -1148,9 +1151,13 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
   try {
     AppLogger.debug("[WIDGET_PLACEMENT] Validating widget placement (single-click flow)", { bundleId });
 
-    // Get bundle data
+    // Load full bundle (steps + products + pricing) needed for the metafield config cache
     const bundle = await db.bundle.findUnique({
-      where: { id: bundleId, shopId: session.shop }
+      where: { id: bundleId, shopId: session.shop },
+      include: {
+        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        pricing: true,
+      },
     });
 
     if (!bundle) {
@@ -1196,6 +1203,9 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
         status: BundleStatus.ACTIVE  // CRITICAL: Activate bundle so widget can fetch it via API
       }
     });
+
+    // Write bundle config as page metafield for zero-proxy widget initialisation (non-fatal)
+    await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
 
     AppLogger.info("[WIDGET_PLACEMENT] Page created successfully (single-click mode)", {
       bundleId,
