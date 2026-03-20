@@ -1,15 +1,30 @@
-name: Enforce STAGING → PROD only
+name: Branch Merge Rules
 
 on:
-    pull_request:
-      branches: [main]
+  pull_request:
+    branches: [PROD, STAGING]
 
 jobs:
-    check-source-branch:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Block non-STAGING PRs to PROD
-          if: github.head_ref != 'STAGING'
-          run: |
-            echo "❌ PRs to PROD must come from STAGING. Source branch: ${{ github.head_ref }}"
-            exit 1
+  enforce-staging-to-prod:
+    name: Enforce STAGING → PROD only
+    if: github.base_ref == 'PROD'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block non-STAGING PRs to PROD
+        if: github.head_ref != 'STAGING'
+        run: |
+          echo "❌ PRs to PROD must come from STAGING. Source branch: ${{ github.head_ref }}"
+          exit 1
+      - name: Allow STAGING → PROD
+        if: github.head_ref == 'STAGING'
+        run: |
+          echo "✅ STAGING → PROD merge allowed."
+
+  allow-any-to-staging:
+    name: Allow any branch → STAGING
+    if: github.base_ref == 'STAGING'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Allow merge into STAGING
+        run: |
+          echo "✅ Any branch may merge into STAGING. Source branch: ${{ github.head_ref }}"

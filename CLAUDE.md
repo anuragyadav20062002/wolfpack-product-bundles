@@ -489,5 +489,35 @@ git log --grep="full-page-design-improvements-1"
 
 ---
 
-**Last Updated:** February 19, 2026
+## 🚨 Do Not Touch — Bundle Config Loading (FPB Widget)
+
+### NEVER modify the bundle config loading priority order in `bundle-widget-full-page.js`
+
+The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-start timeouts:
+
+1. **Stage 1 — Metafield cache (primary):** The Liquid block writes the bundle config as a JSON string into the `data-bundle-config` attribute on the widget container. The widget reads this on init for instant, zero-network first paint. The metafield (`page.metafields.custom.bundle_config`) is written by the app when the merchant clicks "Place Widget Now" or "Sync Bundle".
+
+2. **Stage 2 — Proxy API fallback:** If the metafield cache is absent, empty, or malformed JSON, the widget falls back to `GET /apps/product-bundles/api/bundle/{id}.json`. This path includes a single retry after 3 s for `503`/`504` responses to survive Render server cold-starts.
+
+**Why this matters:** Before this fix, widgets on pages without a warm server would silently fail to load — the proxy call timed out and there was no fallback. The metafield cache eliminates the round-trip entirely for the common case; the retry handles the cold-start edge case.
+
+**Rules:**
+- ❌ Do NOT remove or reorder the `data-bundle-config` check — it must always run before the proxy fetch.
+- ❌ Do NOT remove the `503`/`504` retry logic — Render cold-starts are real and ~3–10 s long.
+- ❌ Do NOT add a third loading source between Stage 1 and Stage 2 without understanding the full proxy auth flow.
+- ✅ The metafield is populated by `bundle-config-metafield.server.ts` — if bundle config structure changes, update both the server writer AND the widget parser together.
+
+**Relevant files:**
+- Widget reader: `app/assets/bundle-widget-full-page.js` — `loadBundleConfig()` (~line 325)
+- Liquid injector: `extensions/bundle-builder/blocks/bundle-full-page.liquid` — `data-bundle-config="{{ page.metafields.custom.bundle_config | escape }}"`
+- Server writer: `app/services/bundles/metafield-sync/` — `bundle-config-metafield.server.ts`
+
+---
+
+**Enforce this pattern throughout ALL changes in this project from now on.**
+**No exceptions.** ✅
+
+---
+
+**Last Updated:** 2026-03-20
 **Author:** Aditya Awasthi

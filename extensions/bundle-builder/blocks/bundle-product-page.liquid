@@ -406,14 +406,13 @@
     window.shopCurrency = {{ shop.currency | json }};
     window.shopMoneyFormat = {{ shop.money_format | json }};
 
-    // Enhanced multi-currency support
+    // Multi-currency support — customerCurrency populated from cart at page render
     window.shopifyMultiCurrency = {
       shopBaseCurrency: {{ shop.currency | json }},
       shopMoneyFormat: {{ shop.money_format | json }},
-      customerCurrency: null, // Will be detected dynamically
-      customerMoneyFormat: null,
-      exchangeRate: 1,
-      isMultiCurrencyEnabled: false
+      customerCurrency: {{ cart.currency.iso_code | json }},
+      customerMoneyFormat: {{ shop.money_format | json }},
+      isMultiCurrencyEnabled: {% if shop.enabled_currencies.size > 1 %}true{% else %}false{% endif %}
     };
     window.bundleWidgetInstanceCount = (window.bundleWidgetInstanceCount || 0) + 1;
     window.bundleWidgetContext = true;

@@ -13,44 +13,50 @@ import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 
 /**
  * Fetches all variants for a product using cursor-based pagination
- * Handles products with more than 100 variants
+ * Handles products with more than 100 variants.
+ * When country is provided, uses @inContext to get market-correct prices from Shopify Markets.
  */
 async function fetchAllVariants(
   storefrontUrl: string,
   storefrontAccessToken: string,
   productId: string,
+  country: string | null,
   cursor?: string
 ): Promise<any[]> {
-  const VARIANT_QUERY = `
-    query getProductVariants($id: ID!, $cursor: String) {
-      product(id: $id) {
-        variants(first: 100, after: $cursor) {
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-          edges {
-            node {
-              id
-              title
-              price {
-                amount
-                currencyCode
-              }
-              compareAtPrice {
-                amount
-                currencyCode
-              }
-              availableForSale
-              image {
-                url
+  const VARIANT_QUERY = country
+    ? `query getProductVariants($id: ID!, $cursor: String, $country: CountryCode!) @inContext(country: $country) {
+        product(id: $id) {
+          variants(first: 100, after: $cursor) {
+            pageInfo { hasNextPage endCursor }
+            edges {
+              node {
+                id title availableForSale
+                price { amount currencyCode }
+                compareAtPrice { amount currencyCode }
+                image { url }
               }
             }
           }
         }
-      }
-    }
-  `;
+      }`
+    : `query getProductVariants($id: ID!, $cursor: String) {
+        product(id: $id) {
+          variants(first: 100, after: $cursor) {
+            pageInfo { hasNextPage endCursor }
+            edges {
+              node {
+                id title availableForSale
+                price { amount currencyCode }
+                compareAtPrice { amount currencyCode }
+                image { url }
+              }
+            }
+          }
+        }
+      }`;
+
+  const variables: Record<string, string | undefined> = { id: productId, cursor };
+  if (country) variables.country = country;
 
   const response = await fetch(storefrontUrl, {
     method: 'POST',
@@ -58,10 +64,7 @@ async function fetchAllVariants(
       'Content-Type': 'application/json',
       'X-Shopify-Storefront-Access-Token': storefrontAccessToken
     },
-    body: JSON.stringify({
-      query: VARIANT_QUERY,
-      variables: { id: productId, cursor }
-    })
+    body: JSON.stringify({ query: VARIANT_QUERY, variables })
   });
 
   if (!response.ok) {
@@ -88,6 +91,7 @@ async function fetchAllVariants(
       storefrontUrl,
       storefrontAccessToken,
       productId,
+      country,
       endCursor
     );
     return [...variants, ...nextPageVariants];
@@ -99,6 +103,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const productIds = url.searchParams.get("ids");
   const shop = url.searchParams.get("shop");
+  // ISO 3166-1 alpha-2 country code from the customer's browser context (e.g. "CA", "DE").
+  // When provided, Storefront API returns market-correct prices via @inContext.
+  const country = url.searchParams.get("country") || null;
 
   if (!productIds) {
     return json({ error: "Missing product IDs" }, { status: 400 });
@@ -115,21 +122,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   try {
-    // First, fetch basic product info without variants to avoid over-fetching
-    const STOREFRONT_QUERY = `
-      query getProducts($ids: [ID!]!) {
-        nodes(ids: $ids) {
-          ... on Product {
-            id
-            title
-            handle
-            featuredImage {
-              url
-            }
+    // Fetch basic product info. Use @inContext when country is available so
+    // featured image URLs are market-correct (no pricing on this query).
+    const STOREFRONT_QUERY = country
+      ? `query getProducts($ids: [ID!]!, $country: CountryCode!) @inContext(country: $country) {
+          nodes(ids: $ids) {
+            ... on Product { id title handle featuredImage { url } }
           }
-        }
-      }
-    `;
+        }`
+      : `query getProducts($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Product { id title handle featuredImage { url } }
+          }
+        }`;
 
     // Get storefront access token from database
     let session = await db.session.findFirst({
@@ -187,16 +192,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const storefrontAccessToken = session.storefrontAccessToken;
     const storefrontUrl = `https://${shop}/api/${SHOPIFY_REST_API_VERSION}/graphql.json`;
 
+    const mainVariables: Record<string, unknown> = { ids };
+    if (country) mainVariables.country = country;
+
     const response = await fetch(storefrontUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Shopify-Storefront-Access-Token': storefrontAccessToken
       },
-      body: JSON.stringify({
-        query: STOREFRONT_QUERY,
-        variables: { ids }
-      })
+      body: JSON.stringify({ query: STOREFRONT_QUERY, variables: mainVariables })
     });
 
     if (!response.ok) {
@@ -220,11 +225,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         if (!product) return null;
 
         try {
-          // Fetch all variants with pagination
+          // Fetch all variants with pagination; pass country for market-correct prices
           const variantEdges = await fetchAllVariants(
             storefrontUrl,
             storefrontAccessToken,
-            product.id
+            product.id,
+            country
           );
 
           return {

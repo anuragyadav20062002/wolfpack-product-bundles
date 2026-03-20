@@ -45,24 +45,40 @@ export async function updateComponentProductMetafields(
   const componentQuantities: number[] = [];
   const componentVariantIds = new Set<string>();
 
-  // PERFORMANCE OPTIMIZATION: Collect all product IDs first, then batch fetch variants
+  // Products that need a Shopify API call to discover their variants (no cached variant data)
   const productIdMap: Array<{ productId: string; stepMinQuantity: number; source: string }> = [];
 
   for (const step of bundleConfig.steps) {
-    // CRITICAL FIX: Process ONLY ONE source to prevent duplicates
     // Priority: StepProduct (database relation) > products array (UI config)
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-      // Use StepProduct entries from database
       for (const stepProduct of step.StepProduct) {
-        if (stepProduct.productId && !isUUID(stepProduct.productId)) {
+        if (!stepProduct.productId || isUUID(stepProduct.productId)) {
+          if (stepProduct.productId) {
+            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
+          }
+          continue;
+        }
+
+        const dbVariants = Array.isArray(stepProduct.variants) ? stepProduct.variants : [];
+        if (dbVariants.length > 0) {
+          // Use ALL variant IDs already stored in the DB — no extra API call needed.
+          // Writing component_parents to every variant ensures Cart Transform can apply
+          // the bundle discount regardless of which variant the customer selects.
+          for (const variant of dbVariants) {
+            if (variant.id && !isUUID(variant.id)) {
+              componentVariantIds.add(variant.id);
+              componentReferences.push(variant.id);
+              componentQuantities.push(step.minQuantity || 1);
+            }
+          }
+        } else {
+          // No variants cached in DB — fall back to fetching the first variant from Shopify
           productIdMap.push({
             productId: stepProduct.productId,
             stepMinQuantity: step.minQuantity || 1,
-            source: 'StepProduct'
+            source: 'StepProduct-fallback'
           });
-        } else if (stepProduct.productId) {
-          console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
         }
       }
     } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
@@ -79,14 +95,13 @@ export async function updateComponentProductMetafields(
     }
   }
 
-  // Batch fetch all variants in a single query
+  // Batch fetch first variants only for products where no variant data was cached in the DB
   if (productIdMap.length > 0) {
     const productIds = productIdMap.map(item => item.productId);
-    console.log(`[COMPONENT_METAFIELD] Batch fetching variants for ${productIds.length} products`);
+    console.log(`[COMPONENT_METAFIELD] Batch fetching variants for ${productIds.length} products (no DB cache)`);
 
     const variantResults = await batchGetFirstVariants(admin, productIds);
 
-    // Process results in order
     productIdMap.forEach(item => {
       const cleanId = item.productId.replace('gid://shopify/Product/', '');
       const result = variantResults.get(cleanId);
