@@ -792,7 +792,6 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           variants: [
             {
               price: bundlePrice,
-              inventoryManagement: "NOT_MANAGED",
               inventoryPolicy: "CONTINUE"
             }
           ]

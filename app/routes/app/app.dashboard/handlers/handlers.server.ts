@@ -230,8 +230,7 @@ export async function handleCloneBundle(
             variants: [
               {
                 price: bundlePrice,
-                inventoryPolicy: "DENY",
-                inventoryManagement: "SHOPIFY",
+                inventoryPolicy: "CONTINUE",
                 requiresShipping: true,
                 taxable: true,
                 weight: 0,
@@ -450,36 +449,10 @@ export async function handleCreateBundle(
 
     const shopifyProductId = productData.data?.productCreate?.product?.id;
     const shopifyProductHandle = productData.data?.productCreate?.product?.handle;
-    const defaultVariantId = productData.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
 
     if (!shopifyProductId) {
       AppLogger.error("No product ID returned from Shopify", { component: "app.dashboard", operation: "create-bundle" });
       return json({ error: 'Failed to get product ID from Shopify' }, { status: 500 });
-    }
-
-    // Update the default variant to enable inventory management
-    // Price will be updated later when products are added via calculateBundlePrice
-    if (defaultVariantId) {
-      try {
-        const UPDATE_VARIANT = `
-          mutation updateVariantInventory($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-            productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-              productVariants { id }
-              userErrors { field message }
-            }
-          }
-        `;
-        await admin.graphql(UPDATE_VARIANT, {
-          variables: {
-            productId: shopifyProductId,
-            variants: [{ id: defaultVariantId, inventoryManagement: "SHOPIFY" }],
-          }
-        });
-      } catch (variantError) {
-        AppLogger.warn("Failed to enable inventory management on bundle variant", {
-          component: "app.dashboard", operation: "create-bundle"
-        }, variantError);
-      }
     }
 
     // Publish to all available sales channels
