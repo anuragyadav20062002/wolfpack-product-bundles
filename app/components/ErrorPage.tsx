@@ -231,7 +231,7 @@ export function ErrorPage({ error }: ErrorPageProps) {
           <p style={styles.support}>
             Need help?{" "}
             <a
-              href="mailto:support@getwolfpack.io"
+              href="mailto:wolfpack.shopifyapp@gmail.com"
               style={styles.supportLink}
             >
               Contact support
