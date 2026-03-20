@@ -209,7 +209,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Timeout: 3 s. On timeout or non-404 error we default to healthy to avoid
   // false-positive banners.
   let proxyHealthy = true;
-  const appUrl = process.env.SHOPIFY_APP_URL ?? '';
   try {
     const controller = new AbortController();
     const proxyTimer = setTimeout(() => controller.abort(), 3000);
