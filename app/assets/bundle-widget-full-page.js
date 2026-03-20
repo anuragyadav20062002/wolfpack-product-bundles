@@ -188,6 +188,10 @@ class BundleWidgetFullPage {
 
     } catch (error) {
       this.hideLoadingOverlay();
+      // Log full error to browser console for developer debugging
+      console.error('[BundleWidget] Initialization failed:', error);
+      // Fire-and-forget: send error to server for AppLogger tracking
+      this._reportError(error);
       this.showErrorUI(error);
     }
   }
@@ -4363,17 +4367,39 @@ class BundleWidgetFullPage {
     `;
   }
 
-  showErrorUI(error) {
+  showErrorUI(_error) {
     this.container.innerHTML = `
       <div class="bundle-error">
-        <h3>Bundle Widget Error</h3>
-        <p>Failed to initialize bundle widget.</p>
-        <details>
-          <summary>Error Details</summary>
-          <pre>${error.message}\n${error.stack}</pre>
-        </details>
+        <h3>Bundle unavailable</h3>
+        <p>We couldn&apos;t load this bundle right now. Please refresh the page or try again later.</p>
+        <p>If the problem persists, please contact the store owner.</p>
       </div>
     `;
+  }
+
+  /**
+   * Fire-and-forget error report to the server so AppLogger can track widget failures.
+   * Does NOT await — never blocks the render path.
+   */
+  _reportError(error) {
+    try {
+      const payload = {
+        message: error?.message ?? String(error),
+        bundleId: this.config?.bundleId ?? null,
+        bundleType: this.container?.dataset?.bundleType ?? null,
+        shop: window.Shopify?.shop ?? null,
+        url: window.location?.href ?? null,
+      };
+      // Use the app proxy path so the request is authenticated by Shopify
+      fetch('/apps/product-bundles/api/widget-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => { /* best-effort — ignore if proxy is also down */ });
+    } catch (_) {
+      // Never throw from error reporting
+    }
   }
 }
 
