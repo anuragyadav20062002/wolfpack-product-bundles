@@ -1,10 +1,7 @@
 import { useState, useCallback } from "react";
 import { Card, BlockStack, InlineStack, Text } from "@shopify/polaris";
 
-const LIQUID_SNIPPET = `{%- unless property.first contains '_' -%}
-  <dt>{{ property.first }}</dt>
-  <dd>{{ property.last }}</dd>
-{%- endunless -%}`;
+const LIQUID_SNIPPET = `or property.first contains '_'`;
 
 const STEPS = [
   {
@@ -19,8 +16,8 @@ const STEPS = [
   },
   {
     n: 3,
-    title: "Wrap the loop body with this condition",
-    desc: "Replace the loop body contents with the snippet below. Any property whose name starts with _ will be hidden from customers.",
+    title: "Add this condition to the existing unless guard",
+    desc: 'Inside the loop, find the unless condition (e.g. unless property.last == empty ...) and append the snippet below. If there is no unless, wrap the loop body with {%- unless property.first contains \'_\' -%} ... {%- endunless -%}.',
   },
 ] as const;
 
@@ -133,7 +130,7 @@ export function CartPropertyFixCard() {
                 fontSize: 11,
                 marginLeft: 6,
               }}>
-                cart.liquid
+                cart-item.liquid — unless condition
               </span>
             </div>
             <button
@@ -168,32 +165,32 @@ export function CartPropertyFixCard() {
             overflowX: 'auto',
             tabSize: 2,
           }}>
-            <span style={{ color: '#ff7b72' }}>{'{%-'}</span>
-            <span style={{ color: '#79c0ff' }}> unless </span>
+            <span style={{ color: '#79c0ff' }}>or </span>
             <span style={{ color: '#e6edf3' }}>property.first </span>
             <span style={{ color: '#79c0ff' }}>contains </span>
             <span style={{ color: '#a5d6ff' }}>'_'</span>
-            <span style={{ color: '#ff7b72' }}>{' -%}'}</span>
-            {'\n'}
-            {'  '}
-            <span style={{ color: '#7ee787' }}>{'<dt>'}</span>
-            <span style={{ color: '#ff7b72' }}>{'{{'}</span>
-            <span style={{ color: '#e6edf3' }}> property.first </span>
-            <span style={{ color: '#ff7b72' }}>{'}}'}</span>
-            <span style={{ color: '#7ee787' }}>{'</dt>'}</span>
-            {'\n'}
-            {'  '}
-            <span style={{ color: '#7ee787' }}>{'<dd>'}</span>
-            <span style={{ color: '#ff7b72' }}>{'{{'}</span>
-            <span style={{ color: '#e6edf3' }}> property.last </span>
-            <span style={{ color: '#ff7b72' }}>{'}}'}</span>
-            <span style={{ color: '#7ee787' }}>{'</dd>'}</span>
-            {'\n'}
-            <span style={{ color: '#ff7b72' }}>{'{%-'}</span>
-            <span style={{ color: '#79c0ff' }}> endunless </span>
-            <span style={{ color: '#ff7b72' }}>{'-%}'}</span>
           </pre>
         </div>
+
+        {/* ── Context label ─────────────────────────────────────────── */}
+        <Text variant="bodySm" tone="subdued" as="p">
+          Append this to the existing{' '}
+          <code style={{
+            fontFamily: '"SFMono-Regular", Consolas, monospace',
+            background: '#f4f4f4',
+            padding: '1px 5px',
+            borderRadius: 3,
+            fontSize: '0.88em',
+          }}>unless</code>
+          {' '}condition inside your property loop — for example:{' '}
+          <code style={{
+            fontFamily: '"SFMono-Regular", Consolas, monospace',
+            background: '#f4f4f4',
+            padding: '1px 5px',
+            borderRadius: 3,
+            fontSize: '0.88em',
+          }}>unless property.last == empty or property.first contains '_'</code>
+        </Text>
 
         {/* ── Footer note ───────────────────────────────────────────── */}
         <div style={{
