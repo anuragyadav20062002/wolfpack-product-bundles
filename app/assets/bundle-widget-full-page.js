@@ -3113,8 +3113,14 @@ class BundleWidgetFullPage {
       const apiBaseUrl = appUrl || window.location.origin;
 
 
+      // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
+      const country = window.Shopify?.country
+        || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+        || null;
+
       try {
-        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`);
+        const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -3167,8 +3173,14 @@ class BundleWidgetFullPage {
           const appUrl = window.__BUNDLE_APP_URL__ || '';
           const apiBaseUrl = appUrl || window.location.origin;
 
+          // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
+          const country = window.Shopify?.country
+            || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+            || null;
+
           try {
-            const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
+            const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+            const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
 
             if (!response.ok) {
             } else {
