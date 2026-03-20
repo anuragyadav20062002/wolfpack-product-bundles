@@ -36,7 +36,7 @@ const ROOT_DIR = join(__dirname, '..');
 // Verify live version in browser DevTools on the storefront:
 //   console.log(window.__BUNDLE_WIDGET_VERSION__)
 // ---------------------------------------------------------------------------
-const WIDGET_VERSION = '2.2.3';
+const WIDGET_VERSION = '2.3.0';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [

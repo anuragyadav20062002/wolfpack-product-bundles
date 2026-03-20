@@ -205,8 +205,7 @@ export async function action({ request }: ActionFunctionArgs) {
             variants: [
               {
                 price: bundlePrice,
-                inventoryPolicy: "DENY",
-                inventoryManagement: "SHOPIFY",
+                inventoryPolicy: "CONTINUE",
                 requiresShipping: true,
                 taxable: true,
                 weight: 0,

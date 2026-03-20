@@ -500,6 +500,16 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
                   disabled={isBlocked}
                 />
               </div>
+              {/* File input lives here — adjacent to the Upload button so the
+                  browser treats fileInputRef.current.click() as a trusted
+                  user-gesture (portaling across DOM trees can lose that context) */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES}
+                style={{ display: "none" }}
+                onChange={handleFileInputChange}
+              />
               <Button
                 variant="plain"
                 icon={UploadIcon}
@@ -658,16 +668,9 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
     <BlockStack gap="200">
       {trigger}
 
-      {/* Hidden native file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={ACCEPTED_TYPES}
-        style={{ display: "none" }}
-        onChange={handleFileInputChange}
-      />
-
-      {/* Portal modal — renders above the App Bridge DCP modal */}
+      {/* Portal modal — renders above the App Bridge DCP modal.
+          The hidden file input lives inside the portal (adjacent to the Upload
+          button) so programmatic .click() is treated as a trusted user gesture. */}
       {mounted && open ? createPortal(dialogContent, document.body) : null}
 
       {/* Crop editor — higher z-index than the file picker modal */}

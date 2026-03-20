@@ -1,0 +1,15 @@
+name: Enforce STAGING → PROD only
+
+on:
+    pull_request:
+      branches: [main]
+
+jobs:
+    check-source-branch:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Block non-STAGING PRs to PROD
+          if: github.head_ref != 'STAGING'
+          run: |
+            echo "❌ PRs to PROD must come from STAGING. Source branch: ${{ github.head_ref }}"
+            exit 1

@@ -48,7 +48,6 @@ import {
 } from "@shopify/polaris";
 import {
   ViewIcon,
-  SettingsIcon,
   DragHandleIcon,
   DeleteIcon,
   PlusIcon,
@@ -129,11 +128,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     throw new Response(ERROR_MESSAGES.BUNDLE_NOT_FOUND, { status: 404 });
   }
 
-  AppLogger.debug('Bundle loaded from database', {
-    component: 'bundle-config',
-    bundleId: bundle.id,
-    operation: 'load'
-  }, { stepsCount: bundle.steps.length });
 
   // Fetch bundle product data from Shopify if it exists
   let bundleProduct = null;
@@ -442,7 +436,6 @@ export default function ConfigureBundleFlow() {
     originalValuesRef,
   } = configState;
 
-  AppLogger.debug("[DEBUG] Initial step conditions state:", conditionsState.stepConditions);
 
   // Loading GIF state
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
@@ -487,8 +480,6 @@ export default function ConfigureBundleFlow() {
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
       formData.append("loadingGif", loadingGif ?? "");
-      AppLogger.debug("[DEBUG] Submitting step conditions to server:", conditionsState.stepConditions);
-      AppLogger.debug("[DEBUG] Submitting bundle product to server:", bundleProduct);
 
       // Submit to server action using fetcher
 
@@ -600,7 +591,6 @@ export default function ConfigureBundleFlow() {
           if ('syncedData' in result && result.syncedData) {
             const syncedData = result.syncedData as any;
             const { title, status, lastUpdated, changesDetected } = syncedData;
-            AppLogger.debug('Sync data:', { title, status, lastUpdated, changesDetected });
 
             // If changes were detected and applied, show additional notification
             if (changesDetected) {
@@ -726,15 +716,6 @@ export default function ConfigureBundleFlow() {
     const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
 
     if (bundleProduct) {
-      AppLogger.debug('Bundle product data for preview:', {
-        id: bundleProduct.id,
-        handle: bundleProduct.handle,
-        status: bundleProduct.status,
-        publishedOnCurrentPublication: bundleProduct.status === 'ACTIVE',
-        onlineStoreUrl: bundleProduct.onlineStoreUrl,
-        onlineStorePreviewUrl: bundleProduct.onlineStorePreviewUrl,
-        shop: shop
-      });
 
       // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
       if (bundleProduct.onlineStorePreviewUrl) {
@@ -805,7 +786,7 @@ export default function ConfigureBundleFlow() {
     }
 
     setActiveSection(section);
-  }, [isDirty, activeSection, shopify]);
+  }, [isDirty, shopify]);
 
   // Modal handlers for products and collections view
   // handleShowProducts and handleShowCollections removed - modals managed inline
@@ -838,13 +819,11 @@ export default function ConfigureBundleFlow() {
       // If variants exist and are selected, include them in the format needed by resource picker
       const selectionIds = currentProducts.map((p: any) => {
         const productGid = p.productId || p.id; // productId from DB, id from picker
-        AppLogger.debug(`🔍 [SELECTION_ID] Product: ${p.title}, productId: ${p.productId}, id: ${p.id}, using: ${productGid}`);
 
         // Check if this product has specific variants selected
         // If variants array exists and has items, include them in selectionIds
         if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
           const variantIds = p.variants.map((v: any) => ({ id: v.id }));
-          AppLogger.debug(`🔍 [SELECTION_ID] Product ${p.title} has ${p.variants.length} variants:`, variantIds);
           return {
             id: productGid,
             variants: variantIds
@@ -854,17 +833,7 @@ export default function ConfigureBundleFlow() {
         return { id: productGid };
       });
 
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] Total items in StepProduct:", {}, `${currentProducts.length}`);
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] Selection IDs being sent to picker:", {}, `${selectionIds.length}`);
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] StepProduct data structure:", {}, currentProducts.length > 0 ? Object.keys(currentProducts[0]) : 'empty');
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] StepProduct sample:", {}, JSON.stringify(currentProducts.slice(0, 2), null, 2));
-      AppLogger.debug("🔍 [PRODUCT_SELECTION] Selection IDs being sent to resource picker:", {}, JSON.stringify(selectionIds, null, 2));
 
-      AppLogger.debug("🚀 [RESOURCE_PICKER] Opening resource picker with config:", {
-        type: "product",
-        multiple: true,
-        selectionIds: selectionIds
-      });
 
       const products = await shopify.resourcePicker({
         type: "product",
@@ -872,25 +841,18 @@ export default function ConfigureBundleFlow() {
         selectionIds: selectionIds,
       });
 
-      AppLogger.debug("✅ [RESOURCE_PICKER] Resource picker closed. Received selection:", {}, products ? "YES" : "NO");
 
       if (products && products.selection) {
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] Previous products count:", {}, currentProducts.length);
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] New products count:", {}, products.selection.length);
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] Full response from picker:", {}, JSON.stringify(products, null, 2));
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] Raw products from resource picker:", {}, JSON.stringify(products.selection.slice(0, 2), null, 2));
 
         // Transform products to include imageUrl from images array
         const transformedProducts = products.selection.map((product: any) => {
           const imageUrl = product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null;
-          AppLogger.debug(`📸 [PRODUCT_SELECTION] Transforming ${product.title}: images array =`, {}, `${JSON.stringify(product.images)} → imageUrl = ${imageUrl}`);
           return {
             ...product,
             imageUrl: imageUrl
           };
         });
 
-        AppLogger.debug("🔍 [PRODUCT_SELECTION] Transformed products with imageUrl:", {}, JSON.stringify(transformedProducts.slice(0, 2), null, 2));
 
         // Update the step with selected products (this replaces the entire selection)
         // Deselected products will not be in the selection array, so they're automatically removed
@@ -913,7 +875,6 @@ export default function ConfigureBundleFlow() {
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
-      AppLogger.debug("Product selection cancelled or failed:", {}, error as any);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error :
         (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
@@ -975,7 +936,6 @@ export default function ConfigureBundleFlow() {
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
-      AppLogger.debug("Bundle product selection cancelled or failed:", {}, error as any);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error :
         (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
@@ -1097,8 +1057,6 @@ export default function ConfigureBundleFlow() {
       });
 
       if (collections && collections.length > 0) {
-        AppLogger.debug("🔍 [COLLECTION_SELECTION] Previous collections count:", {}, currentCollections.length);
-        AppLogger.debug("🔍 [COLLECTION_SELECTION] New collections count:", {}, collections.length);
 
         setSelectedCollections(prev => ({
           ...prev,
@@ -1123,7 +1081,6 @@ export default function ConfigureBundleFlow() {
       }
     } catch (error) {
       // Resource picker throws an error when user cancels - this is expected behavior
-      AppLogger.debug("Collection selection cancelled or failed:", {}, error as any);
       // Enhanced error detection to catch more cancellation patterns
       const errorMessage = typeof error === 'string' ? error :
         (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
@@ -1195,7 +1152,6 @@ export default function ConfigureBundleFlow() {
         : shop;
 
       shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
-      AppLogger.debug(`🎯 [THEME_EDITOR] Starting widget placement for template: ${template.handle}`);
 
       // Create a theme template service instance
       // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
@@ -1203,7 +1159,6 @@ export default function ConfigureBundleFlow() {
 
       // Check if this is a bundle-specific template that needs to be created
       if (template.isBundleContainer && template.bundleProduct) {
-        AppLogger.debug(`🏗️ [THEME_EDITOR] Ensuring template exists for bundle product: ${template.bundleProduct.handle}`);
 
         // Make API call to create template if needed
         const createTemplateResponse = await fetch(`/api/ensure-product-template`, {
@@ -1224,7 +1179,6 @@ export default function ConfigureBundleFlow() {
         }
 
         const templateResult = await createTemplateResponse.json();
-        AppLogger.debug(`✅ [THEME_EDITOR] Template preparation result:`, templateResult);
 
         if (templateResult.created) {
           shopify.toast.show(`Created new template for ${template.bundleProduct.handle}`, { isError: false, duration: 4000 });
@@ -1241,11 +1195,6 @@ export default function ConfigureBundleFlow() {
 
       const appBlockId = `${apiKey}/${blockHandle}`;
 
-      AppLogger.debug(`🔧 [THEME_EDITOR] Using app block ID: ${appBlockId}`, {
-        apiKey,
-        blockHandle,
-        bundleId: bundle.id
-      });
 
       // Generate deep link following Shopify's official documentation with bundle ID
       // Official format: template + addAppBlockId + target + bundleId (for auto-population)
@@ -1260,18 +1209,12 @@ export default function ConfigureBundleFlow() {
       // with a section block causes Shopify to misroute and may open the wrong template/product.
       const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}${pagePreviewParam}`;
 
-      AppLogger.debug(`🔗 [THEME_EDITOR] Generated deep link with bundleId:`, {
-        template: template.handle,
-        bundleId: bundle.id,
-        url: themeEditorUrl
-      });
 
       setSelectedPage(template);
       closePageSelectionModal();
 
       // Open theme editor in new window/tab for better workflow
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
-      AppLogger.debug(`✅ [THEME_EDITOR] Opening theme editor in new window`);
 
       // Open in new window using robust method to prevent app redirect
       const link = document.createElement('a');
