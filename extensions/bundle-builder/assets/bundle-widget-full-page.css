@@ -3512,15 +3512,27 @@ body.modal-open {
   color: var(--bundle-side-panel-title-color, #1E1E1E);
 }
 
+.side-panel-subtitle {
+  font-size: 13px;
+  color: var(--bundle-side-panel-text-color, #888888);
+  margin: -10px 0 14px;
+  padding: 0;
+}
+
 .side-panel-clear-btn {
   background: none;
-  border: none;
+  border: 1px solid currentColor;
   color: var(--bundle-side-panel-clear-color, #BD0000);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .side-panel-clear-btn:hover {
@@ -3932,9 +3944,9 @@ body.modal-open {
 .full-page-footer.floating-card .footer-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 0 16px;
-  height: 76px;
+  min-height: 72px;
   /* Card handles background, shadow, and border-radius — bar is transparent */
   background: var(--bundle-full-page-footer-bg-color, #FFFFFF);
 }

@@ -1038,7 +1038,7 @@ class BundleWidgetFullPage {
     if (allSelectedProducts.length > 0) {
       const clearBtn = document.createElement('button');
       clearBtn.className = 'side-panel-clear-btn';
-      clearBtn.textContent = 'Clear all';
+      clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
       clearBtn.addEventListener('click', () => {
         this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
         this.reRenderFullPage();
@@ -1046,6 +1046,12 @@ class BundleWidgetFullPage {
       header.appendChild(clearBtn);
     }
     panel.appendChild(header);
+
+    // Subtitle — "Review your bundle"
+    const subtitle = document.createElement('p');
+    subtitle.className = 'side-panel-subtitle';
+    subtitle.textContent = 'Review your bundle';
+    panel.appendChild(subtitle);
 
     // Discount messaging
     if (this.selectedBundle?.pricing?.enabled) {

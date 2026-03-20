@@ -43,4 +43,9 @@ Implement UI/UX changes to make the FPB floating footer and sidebar layouts matc
 - [x] Phase 1: Footer bar layout restructure (JS + CSS)
 - [x] Phase 2: Sidebar item count + qty display (JS + CSS)
 - [x] Phase 3: Build + verify
-- [ ] Phase 4: Deploy + visual test on store
+### 2026-03-20 19:50 - Phase 4 additional polish
+- Added "Review your bundle" subtitle below sidebar header
+- Clear button: icon + "Clear" with border pill style
+- Footer bar: gap 12px, min-height 72px for 2-row centre column
+
+- [ ] Phase 5: Deploy + visual test on store
