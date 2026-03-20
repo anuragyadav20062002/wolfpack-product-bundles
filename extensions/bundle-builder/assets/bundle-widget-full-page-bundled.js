@@ -2566,8 +2566,8 @@ class BundleWidgetFullPage {
       // Show spinner overlay immediately (no gif url yet — bundle data not loaded)
       this.showLoadingOverlay(null);
 
-      // Load design settings CSS
-      await this.loadDesignSettingsCSS();
+      // Load design settings CSS (sync — sets up error listener for proxy fallback)
+      this.loadDesignSettingsCSS();
 
       // Load and validate bundle data
       await this.loadBundleData();
@@ -2654,24 +2654,34 @@ class BundleWidgetFullPage {
    * Load Design Control Panel CSS settings
    * Injects custom CSS from Design Control Panel into the page
    */
-  async loadDesignSettingsCSS() {
+  loadDesignSettingsCSS() {
     try {
-      // Get shop domain from bundle data or window
-      const shopDomain = window.Shopify?.shop || this.container.dataset.shop;
-
-      if (!shopDomain) {
-        return;
-      }
-
-      // CSS is loaded by the small loader (bundle-widget.js) for better performance
-      // No need to load it here - just verify it's present
+      // The Liquid template injects a <link> pointing to the design-settings app proxy URL.
+      // On non-production environments the app proxy may not be configured and Shopify
+      // returns an HTML error page instead of CSS, causing a MIME-type console error.
+      // Register an error listener: if the proxy link fails, fall back to the direct
+      // app server URL via window.__BUNDLE_APP_URL__.
       const existingLink = document.querySelector('link[href*="design-settings"]');
-      if (existingLink) {
-      } else {
-      }
+      if (!existingLink) return;
 
-    } catch (error) {
-      // Don't throw - widget should work even if design CSS fails to load
+      const appUrl = window.__BUNDLE_APP_URL__;
+      if (!appUrl) return;
+
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      existingLink.addEventListener('error', () => {
+        const directUrl = `${appUrl}/api/design-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+        const fallback = document.createElement('link');
+        fallback.rel = 'stylesheet';
+        fallback.type = 'text/css';
+        fallback.href = directUrl;
+        document.head.appendChild(fallback);
+        existingLink.remove();
+      }, { once: true });
+
+    } catch (_e) {
+      // Non-critical — widget works without design settings CSS
     }
   }
 
@@ -3455,7 +3465,7 @@ class BundleWidgetFullPage {
     if (allSelectedProducts.length > 0) {
       const clearBtn = document.createElement('button');
       clearBtn.className = 'side-panel-clear-btn';
-      clearBtn.textContent = 'Clear all';
+      clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
       clearBtn.addEventListener('click', () => {
         this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
         this.reRenderFullPage();
@@ -3463,6 +3473,12 @@ class BundleWidgetFullPage {
       header.appendChild(clearBtn);
     }
     panel.appendChild(header);
+
+    // Subtitle — "Review your bundle"
+    const subtitle = document.createElement('p');
+    subtitle.className = 'side-panel-subtitle';
+    subtitle.textContent = 'Review your bundle';
+    panel.appendChild(subtitle);
 
     // Discount messaging
     if (this.selectedBundle?.pricing?.enabled) {
@@ -3502,6 +3518,14 @@ class BundleWidgetFullPage {
       panel.appendChild(progressWrap);
     }
 
+    // Item count label
+    if (allSelectedProducts.length > 0) {
+      const countLabel = document.createElement('div');
+      countLabel.className = 'side-panel-item-count';
+      countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+      panel.appendChild(countLabel);
+    }
+
     // Selected products list
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
@@ -3517,9 +3541,10 @@ class BundleWidgetFullPage {
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
         const isFreeGiftItem = item.isFreeGift === true;
+        const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
-          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>`
-          : `<span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>`;
+          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)} ${qtySpan}</span>`
+          : `<span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)} ${qtySpan}</span>`;
 
         row.innerHTML = `
           <div class="side-panel-product-img-wrap">
@@ -3537,7 +3562,7 @@ class BundleWidgetFullPage {
         if (!item.isDefault) {
           const removeBtn = document.createElement('button');
           removeBtn.className = 'side-panel-product-remove';
-          removeBtn.innerHTML = '&times;';
+          removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
           removeBtn.addEventListener('click', () => {
             const stepIndex = item.stepIndex ?? this.currentStepIndex;
             const productId = item.variantId || item.productId || item.id;
@@ -4600,29 +4625,7 @@ class BundleWidgetFullPage {
     const bar = document.createElement('div');
     bar.className = 'footer-bar';
 
-    // ── Left: Back button ──
-    const backBtn = document.createElement('button');
-    backBtn.className = 'footer-back-btn';
-    backBtn.setAttribute('type', 'button');
-    backBtn.innerHTML = `<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4l-6 6 6 6"/></svg>`;
-    backBtn.setAttribute('aria-label', 'Back');
-    if (this.currentStepIndex === 0) {
-      backBtn.style.visibility = 'hidden';
-    }
-    backBtn.addEventListener('click', () => {
-      if (this.currentStepIndex > 0) {
-        this.activeCollectionId = null;
-        this.searchQuery = '';
-        this.currentStepIndex--;
-        this.renderFullPageLayout();
-      }
-    });
-
-    // ── Centre-left: Thumbnail strip + toggle ──
-    const centreLeft = document.createElement('div');
-    centreLeft.className = 'footer-centre-left';
-
-    // Thumbnail strip
+    // ── Left: Thumbnail strip (standalone, circular) ──
     const thumbStrip = document.createElement('div');
     thumbStrip.className = 'footer-thumbstrip';
     const maxThumbs = 3;
@@ -4640,7 +4643,11 @@ class BundleWidgetFullPage {
       thumbStrip.appendChild(overflow);
     }
 
-    // Toggle button
+    // ── Centre: Toggle (row 1) + Total + discount badge (row 2) ──
+    const centreCol = document.createElement('div');
+    centreCol.className = 'footer-centre';
+
+    // Row 1 — toggle
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'footer-toggle';
     toggleBtn.setAttribute('type', 'button');
@@ -4654,10 +4661,7 @@ class BundleWidgetFullPage {
       this.elements.footer.classList.toggle('is-open');
     });
 
-    centreLeft.appendChild(thumbStrip);
-    centreLeft.appendChild(toggleBtn);
-
-    // ── Centre-right: Total + discount badge ──
+    // Row 2 — Total + discount badge
     const totalArea = document.createElement('div');
     totalArea.className = 'footer-total-area';
 
@@ -4676,6 +4680,9 @@ class BundleWidgetFullPage {
         ${discountBadgeHTML}
       </div>
     `;
+
+    centreCol.appendChild(toggleBtn);
+    centreCol.appendChild(totalArea);
 
     // ── Right: CTA button ──
     const ctaBtn = document.createElement('button');
@@ -4698,9 +4705,8 @@ class BundleWidgetFullPage {
       }
     });
 
-    bar.appendChild(backBtn);
-    bar.appendChild(centreLeft);
-    bar.appendChild(totalArea);
+    bar.appendChild(thumbStrip);
+    bar.appendChild(centreCol);
     bar.appendChild(ctaBtn);
     return bar;
   }
@@ -5518,8 +5524,14 @@ class BundleWidgetFullPage {
 
     let allProducts = [];
 
-    // Process explicit products - fetch using Storefront API via our backend
-    if (step.products && Array.isArray(step.products) && step.products.length > 0) {
+    // Process explicit products - fetch using Storefront API via our backend.
+    // Skip if StepProduct has enriched data: the API response derives step.products
+    // from step.StepProduct, so both arrays contain the same products. Fetching
+    // step.products when enriched StepProduct is already present wastes 1 API call per step.
+    const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
+      && step.StepProduct.some(sp => sp.title && sp.imageUrl);
+
+    if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
       const productIds = step.products.map(p => p.id); // Keep full GID format
       const shop = window.Shopify?.shop || window.location.host;
 
@@ -5528,8 +5540,14 @@ class BundleWidgetFullPage {
       const apiBaseUrl = appUrl || window.location.origin;
 
 
+      // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
+      const country = window.Shopify?.country
+        || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+        || null;
+
       try {
-        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`);
+        const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -5582,8 +5600,14 @@ class BundleWidgetFullPage {
           const appUrl = window.__BUNDLE_APP_URL__ || '';
           const apiBaseUrl = appUrl || window.location.origin;
 
+          // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
+          const country = window.Shopify?.country
+            || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+            || null;
+
           try {
-            const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}`);
+            const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+            const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
 
             if (!response.ok) {
             } else {
@@ -6392,113 +6416,6 @@ class BundleWidgetFullPage {
   // ========================================================================
   // CART OPERATIONS
   // ========================================================================
-
-  // NOTE: Add to cart functionality removed from full-page bundles
-  // Full-page bundles use modal-based product selection only
-  // Products are added to cart individually via modal's "Add to Cart" button
-  /*
-  async addToCart() {
-    try {
-      const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
-        this.selectedProducts,
-        this.stepProductData
-      );
-
-      if (totalQuantity === 0) {
-        ToastManager.show('Please select products for your bundle before adding to cart.');
-        return;
-      }
-
-      // Validate all steps
-      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
-      if (!allStepsValid) {
-        ToastManager.show('Please complete all bundle steps before adding to cart.');
-        return;
-      }
-
-      const cartItems = this.buildCartItems();
-
-      const response = await fetch('/cart/add.js', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ items: cartItems })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Cart add failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      // Show success message and redirect
-      ToastManager.show('Bundle added to cart successfully!');
-
-      setTimeout(() => {
-        window.location.href = '/cart';
-      }, 1000);
-
-    } catch (error) {
-      ToastManager.show(`Failed to add bundle to cart: ${error.message}`);
-    }
-  }
-  */
-
-  buildCartItems() {
-    // Shopify Standard Bundle approach for configurable bundles:
-    // Add ACTUAL selected component products to cart with _bundle_id property
-    // Cart transform MERGE groups by _bundle_id and combines into bundle parent
-    // See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
-
-    const cartItems = [];
-    const bundleInstanceId = this.generateBundleInstanceId();
-
-
-    // Add ACTUAL selected component products to cart
-    // Each component gets _bundle_id property for grouping in cart transform
-    const unavailableProducts = []; // Track unavailable products
-
-    this.selectedProducts.forEach((stepSelections, stepIndex) => {
-      const productsInStep = this.stepProductData[stepIndex];
-
-      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        if (quantity > 0) {
-          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
-          if (product) {
-            // Check availability before adding to cart
-            if (product.available !== true) {
-              unavailableProducts.push(product.title);
-              return; // Skip this product
-            }
-
-
-            const cartItem = {
-              id: parseInt(variantId),
-              quantity: quantity,
-              properties: {
-                '_bundle_id': bundleInstanceId,
-                '_bundle_name': this.selectedBundle.name,
-                '_step_index': stepIndex.toString()
-              }
-            };
-
-            cartItems.push(cartItem);
-          }
-        }
-      });
-    });
-
-
-    // Throw error if any products are unavailable
-    if (unavailableProducts.length > 0) {
-      const productList = unavailableProducts.join(', ');
-      throw new Error(`The following product${unavailableProducts.length > 1 ? 's are' : ' is'} currently unavailable: ${productList}. Please remove ${unavailableProducts.length > 1 ? 'them' : 'it'} from your bundle or try again later.`);
-    }
-
-    return cartItems;
-  }
 
   generateBundleInstanceId() {
     // Generate unique bundle instance ID using UUID (recommended by Shopify)

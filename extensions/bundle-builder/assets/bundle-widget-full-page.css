@@ -3512,19 +3512,39 @@ body.modal-open {
   color: var(--bundle-side-panel-title-color, #1E1E1E);
 }
 
+.side-panel-subtitle {
+  font-size: 13px;
+  color: var(--bundle-side-panel-text-color, #888888);
+  margin: -10px 0 14px;
+  padding: 0;
+}
+
 .side-panel-clear-btn {
   background: none;
-  border: none;
+  border: 1px solid currentColor;
   color: var(--bundle-side-panel-clear-color, #BD0000);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .side-panel-clear-btn:hover {
   background: rgba(189, 0, 0, 0.08);
+}
+
+.side-panel-item-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--bundle-side-panel-text-color, #888888);
+  padding: 2px 16px 6px;
+  letter-spacing: 0.01em;
 }
 
 .side-panel-discount-message {
@@ -3650,16 +3670,27 @@ body.modal-open {
   white-space: nowrap;
 }
 
+.side-panel-product-qty {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--bundle-side-panel-text-color, #888888);
+  margin-left: 2px;
+}
+
 .side-panel-product-remove {
   background: none;
   border: none;
-  color: var(--bundle-side-panel-remove-color, #999999);
+  color: var(--bundle-side-panel-remove-color, #AAAAAA);
   font-size: 18px;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px 6px;
   line-height: 1;
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .side-panel-product-remove:hover {
@@ -3913,9 +3944,9 @@ body.modal-open {
 .full-page-footer.floating-card .footer-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 0 16px;
-  height: 76px;
+  min-height: 72px;
   /* Card handles background, shadow, and border-radius — bar is transparent */
   background: var(--bundle-full-page-footer-bg-color, #FFFFFF);
 }
@@ -3938,10 +3969,21 @@ body.modal-open {
   background: rgba(0, 0, 0, 0.06);
 }
 
+/* .footer-centre-left retained for non-floating layouts */
 .full-page-footer.floating-card .footer-centre-left {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Floating-card: centre column stacks toggle (row 1) + total/badge (row 2) */
+.full-page-footer.floating-card .footer-centre {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
   flex: 1;
   min-width: 0;
 }
@@ -3952,13 +3994,14 @@ body.modal-open {
 }
 
 .full-page-footer.floating-card .footer-thumbstrip-img {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 50%;
   border: 2px solid #FFFFFF;
-  margin-left: -8px;
+  margin-left: -10px;
   flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
 .full-page-footer.floating-card .footer-thumbstrip-img:first-child {
@@ -3966,11 +4009,11 @@ body.modal-open {
 }
 
 .full-page-footer.floating-card .footer-thumbstrip-overflow {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   border: 2px solid #FFFFFF;
-  margin-left: -8px;
+  margin-left: -10px;
   background: var(--bundle-full-page-footer-text-color, #333333);
   color: #FFFFFF;
   font-size: 11px;
@@ -3988,12 +4031,13 @@ body.modal-open {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 4px;
+  padding: 2px 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--bundle-full-page-footer-header-color, #1E1E1E);
   white-space: nowrap;
   flex-shrink: 0;
+  width: fit-content;
 }
 
 .full-page-footer.floating-card .footer-chevron {
@@ -4010,6 +4054,7 @@ body.modal-open {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .full-page-footer.floating-card .footer-total-label {

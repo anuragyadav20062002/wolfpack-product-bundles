@@ -1,4 +1,5 @@
 query Input {
+  presentmentCurrencyRate
   cart {
     lines {
       id

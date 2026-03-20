@@ -9,6 +9,7 @@ import { CartTransformLogger as Logger } from './cart-transform-logger';
 // ============================================================================
 
 export interface CartTransformInput {
+  presentmentCurrencyRate?: number;
   cart: {
     lines: Array<{
       id: string;
@@ -167,19 +168,39 @@ function parseJSON<T>(value: string | undefined, defaultValue: T, context: strin
 }
 
 /**
- * Calculate discount percentage from price adjustment config
+ * Calculate discount percentage from price adjustment config.
+ *
+ * presentmentCurrencyRate: the rate from shop base currency → customer's presentment currency
+ * (e.g., 1.35 if shop is USD and customer sees CAD).
+ *
+ * Amount-based methods (fixed_amount_off, fixed_bundle_price) and amount-type conditions
+ * store their values in base-currency cents. The cart total arrives in presentment currency.
+ * We must multiply by this rate before comparing — never fall back silently, return 0 instead.
  */
 function calculateDiscountPercentage(
   priceAdjustment: PriceAdjustmentConfig,
   originalTotal: number,
-  totalQuantity: number
+  totalQuantity: number,
+  presentmentCurrencyRate: number
 ): number {
   const { method, value, conditions } = priceAdjustment;
 
   // Check conditions if present
   if (conditions) {
-    const actualValue = conditions.type === 'amount' ? originalTotal : totalQuantity;
-    const conditionValue = conditions.type === 'amount' ? conditions.value / 100 : conditions.value;
+    let actualValue: number;
+    let conditionValue: number;
+
+    if (conditions.type === 'amount') {
+      // Threshold is stored in base-currency cents. Convert to presentment currency.
+      // Fail clearly if rate is invalid — a wrong threshold is worse than no discount.
+      if (!Number.isFinite(presentmentCurrencyRate) || presentmentCurrencyRate <= 0) return 0;
+      conditionValue = (conditions.value / 100) * presentmentCurrencyRate;
+      actualValue = originalTotal;
+    } else {
+      conditionValue = conditions.value;
+      actualValue = totalQuantity;
+    }
+
     const normalizedOperator = normalizeConditionOperator(conditions.operator);
 
     let meetsCondition = false;
@@ -215,24 +236,31 @@ function calculateDiscountPercentage(
 
   switch (method) {
     case 'percentage_off':
+      // Percentage is currency-agnostic — no rate conversion needed.
       result = value;
       break;
 
-    case 'fixed_amount_off':
-      // Value is in cents, convert to decimal
-      const amountOff = value / 100;
+    case 'fixed_amount_off': {
+      // Value is stored in base-currency cents. Convert to presentment currency first.
+      // Fail clearly if rate is missing — applying base-currency amount against a
+      // presentment-currency total would silently produce the wrong discount percentage.
+      if (!Number.isFinite(presentmentCurrencyRate) || presentmentCurrencyRate <= 0) return 0;
+      const amountOff = (value / 100) * presentmentCurrencyRate;
       if (originalTotal > 0) {
         result = (amountOff / originalTotal) * 100;
       }
       break;
+    }
 
-    case 'fixed_bundle_price':
-      // Value is in cents, convert to decimal
-      const fixedPrice = value / 100;
+    case 'fixed_bundle_price': {
+      // Value is stored in base-currency cents. Convert to presentment currency first.
+      if (!Number.isFinite(presentmentCurrencyRate) || presentmentCurrencyRate <= 0) return 0;
+      const fixedPrice = (value / 100) * presentmentCurrencyRate;
       if (originalTotal > 0 && fixedPrice < originalTotal) {
         result = ((originalTotal - fixedPrice) / originalTotal) * 100;
       }
       break;
+    }
 
     default:
       break;
@@ -336,6 +364,13 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
     const bundleGroups = groupLinesByBundleId(input.cart.lines);
 
+    // Extract presentment currency rate once — used by all discount calculations.
+    // Shopify always provides this when the field is in the input query.
+    // It is 1.0 for single-currency stores.
+    const presentmentCurrencyRate = Number.isFinite(input.presentmentCurrencyRate)
+      ? (input.presentmentCurrencyRate as number)
+      : 0;
+
     for (const [bundleId, bundleComponentLines] of bundleGroups) {
       // Find the first line in this group that has component_parents metafield.
       // Not every component variant has this metafield — only some do.
@@ -381,7 +416,8 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         discountPercentage = calculateDiscountPercentage(
           parent.price_adjustment,
           originalTotal,
-          totalQuantity
+          totalQuantity,
+          presentmentCurrencyRate
         );
       }
 
@@ -511,7 +547,8 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
         discountPercentage = calculateDiscountPercentage(
           priceAdjustment,
           originalTotal,
-          totalQuantity
+          totalQuantity,
+          presentmentCurrencyRate
         );
 
       }

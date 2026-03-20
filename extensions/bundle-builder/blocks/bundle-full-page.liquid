@@ -285,10 +285,9 @@
       window.shopifyMultiCurrency = {
         shopBaseCurrency: {{ shop.currency | json }},
         shopMoneyFormat: {{ shop.money_format | json }},
-        customerCurrency: null,
-        customerMoneyFormat: null,
-        exchangeRate: 1,
-        isMultiCurrencyEnabled: false
+        customerCurrency: {{ cart.currency.iso_code | json }},
+        customerMoneyFormat: {{ shop.money_format | json }},
+        isMultiCurrencyEnabled: {% if shop.enabled_currencies.size > 1 %}true{% else %}false{% endif %}
       };
       window.bundleWidgetContext = true;
     }
