@@ -3512,6 +3512,14 @@ class BundleWidgetFullPage {
       panel.appendChild(progressWrap);
     }
 
+    // Item count label
+    if (allSelectedProducts.length > 0) {
+      const countLabel = document.createElement('div');
+      countLabel.className = 'side-panel-item-count';
+      countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+      panel.appendChild(countLabel);
+    }
+
     // Selected products list
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
@@ -3527,9 +3535,10 @@ class BundleWidgetFullPage {
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
         const isFreeGiftItem = item.isFreeGift === true;
+        const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
-          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>`
-          : `<span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)}</span>`;
+          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)} ${qtySpan}</span>`
+          : `<span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)} ${qtySpan}</span>`;
 
         row.innerHTML = `
           <div class="side-panel-product-img-wrap">
@@ -3547,7 +3556,7 @@ class BundleWidgetFullPage {
         if (!item.isDefault) {
           const removeBtn = document.createElement('button');
           removeBtn.className = 'side-panel-product-remove';
-          removeBtn.innerHTML = '&times;';
+          removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
           removeBtn.addEventListener('click', () => {
             const stepIndex = item.stepIndex ?? this.currentStepIndex;
             const productId = item.variantId || item.productId || item.id;
@@ -4610,29 +4619,7 @@ class BundleWidgetFullPage {
     const bar = document.createElement('div');
     bar.className = 'footer-bar';
 
-    // ── Left: Back button ──
-    const backBtn = document.createElement('button');
-    backBtn.className = 'footer-back-btn';
-    backBtn.setAttribute('type', 'button');
-    backBtn.innerHTML = `<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4l-6 6 6 6"/></svg>`;
-    backBtn.setAttribute('aria-label', 'Back');
-    if (this.currentStepIndex === 0) {
-      backBtn.style.visibility = 'hidden';
-    }
-    backBtn.addEventListener('click', () => {
-      if (this.currentStepIndex > 0) {
-        this.activeCollectionId = null;
-        this.searchQuery = '';
-        this.currentStepIndex--;
-        this.renderFullPageLayout();
-      }
-    });
-
-    // ── Centre-left: Thumbnail strip + toggle ──
-    const centreLeft = document.createElement('div');
-    centreLeft.className = 'footer-centre-left';
-
-    // Thumbnail strip
+    // ── Left: Thumbnail strip (standalone, circular) ──
     const thumbStrip = document.createElement('div');
     thumbStrip.className = 'footer-thumbstrip';
     const maxThumbs = 3;
@@ -4650,7 +4637,11 @@ class BundleWidgetFullPage {
       thumbStrip.appendChild(overflow);
     }
 
-    // Toggle button
+    // ── Centre: Toggle (row 1) + Total + discount badge (row 2) ──
+    const centreCol = document.createElement('div');
+    centreCol.className = 'footer-centre';
+
+    // Row 1 — toggle
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'footer-toggle';
     toggleBtn.setAttribute('type', 'button');
@@ -4664,10 +4655,7 @@ class BundleWidgetFullPage {
       this.elements.footer.classList.toggle('is-open');
     });
 
-    centreLeft.appendChild(thumbStrip);
-    centreLeft.appendChild(toggleBtn);
-
-    // ── Centre-right: Total + discount badge ──
+    // Row 2 — Total + discount badge
     const totalArea = document.createElement('div');
     totalArea.className = 'footer-total-area';
 
@@ -4686,6 +4674,9 @@ class BundleWidgetFullPage {
         ${discountBadgeHTML}
       </div>
     `;
+
+    centreCol.appendChild(toggleBtn);
+    centreCol.appendChild(totalArea);
 
     // ── Right: CTA button ──
     const ctaBtn = document.createElement('button');
@@ -4708,9 +4699,8 @@ class BundleWidgetFullPage {
       }
     });
 
-    bar.appendChild(backBtn);
-    bar.appendChild(centreLeft);
-    bar.appendChild(totalArea);
+    bar.appendChild(thumbStrip);
+    bar.appendChild(centreCol);
     bar.appendChild(ctaBtn);
     return bar;
   }
