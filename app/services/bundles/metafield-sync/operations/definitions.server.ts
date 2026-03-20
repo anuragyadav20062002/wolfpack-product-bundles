@@ -226,6 +226,58 @@ export async function ensureCustomPageBundleIdDefinition(admin: any): Promise<bo
   return true;
 }
 
+/**
+ * Ensure a PAGE metafield definition exists for custom:bundle_config with json type.
+ * This stores the full serialised bundle config so the FPB widget can read it directly
+ * from the Liquid metafield instead of calling the app proxy at runtime.
+ *
+ * The 'custom' namespace is always readable in Liquid via page.metafields.custom.bundle_config.
+ * We create the definition for type-safety and admin UI labelling only.
+ */
+export async function ensureCustomPageBundleConfigDefinition(admin: any): Promise<boolean> {
+  const CREATE_DEF = `
+    mutation CreateCustomPageBundleConfigDef($definition: MetafieldDefinitionInput!) {
+      metafieldDefinitionCreate(definition: $definition) {
+        createdDefinition { id }
+        userErrors { field message code }
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(CREATE_DEF, {
+      variables: {
+        definition: {
+          name: "Bundle Config",
+          namespace: "custom",
+          key: "bundle_config",
+          description: "Full bundle configuration cache for the FPB widget — eliminates app proxy dependency",
+          type: "json",
+          ownerType: "PAGE",
+        },
+      },
+    });
+
+    const data = await response.json();
+    const errors = data.data?.metafieldDefinitionCreate?.userErrors ?? [];
+
+    if (errors.length > 0) {
+      const error = errors[0];
+      if (error.code === "TAKEN") {
+        console.log("✓ [METAFIELD_DEF] custom:bundle_config PAGE definition already exists");
+      } else {
+        console.error("❌ [METAFIELD_DEF] Error creating custom:bundle_config definition:", error);
+      }
+    } else {
+      console.log("✓ [METAFIELD_DEF] Created custom:bundle_config PAGE definition");
+    }
+  } catch (error) {
+    console.error("❌ [METAFIELD_DEF] Failed to create custom:bundle_config definition:", error);
+  }
+
+  return true;
+}
+
 export async function ensurePageBundleIdMetafieldDefinition(admin: any): Promise<boolean> {
   const CREATE_METAFIELD_DEFINITION = `
     mutation CreatePageMetafieldDefinition($definition: MetafieldDefinitionInput!) {

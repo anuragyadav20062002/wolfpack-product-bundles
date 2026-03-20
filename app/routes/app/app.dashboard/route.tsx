@@ -24,8 +24,11 @@ import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
 import { useCallback, useRef, useEffect, useMemo, memo } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
+import { CartPropertyFixCard } from "../../../components/CartPropertyFixCard";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
+import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 
@@ -67,11 +70,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           enabled: true
         }
       },
-      _count: {
-        select: {
-          steps: true
-        }
-      }
     },
     orderBy: { createdAt: "desc" },
   });
@@ -144,9 +142,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }, error);
   }
 
-  // Get API key for deep linking
-  const apiKey = process.env.SHOPIFY_API_KEY || '';
-
   // Ensure UTM web pixel is activated for this shop (fire-and-forget, non-blocking).
   // Handles shops installed before the pixel extension was deployed.
   // Settings must be a plain object in variables — NOT JSON.stringify (causes validation failure).
@@ -208,16 +203,51 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     })();
   }
 
+  // Check whether the Shopify app proxy is reachable for this store.
+  // Proxy is required for full-page bundle widgets and DCP design settings CSS.
+  // We fetch the proxy health endpoint through the storefront so Shopify's routing
+  // either forwards it to us (proxy healthy) or returns 404 (proxy not registered).
+  // Timeout: 3 s. On timeout or non-404 error we default to healthy to avoid
+  // false-positive banners.
+  let proxyHealthy = true;
+  try {
+    const controller = new AbortController();
+    const proxyTimer = setTimeout(() => controller.abort(), 3000);
+    const proxyRes = await fetch(
+      `https://${session.shop}/apps/product-bundles/api/proxy-health`,
+      { signal: controller.signal }
+    );
+    clearTimeout(proxyTimer);
+    // Only flag as broken on a definitive 404 from Shopify (empty body, text/html).
+    // Any other status (200, 4xx from our server, 5xx) we treat as "proxy is working."
+    if (proxyRes.status === 404) {
+      const ct = proxyRes.headers.get('content-type') ?? '';
+      // Shopify's own 404 returns text/html with empty body.
+      // Our server's 404 would return application/json — that means proxy IS working.
+      if (ct.includes('text/html')) {
+        proxyHealthy = false;
+        AppLogger.warn('App proxy health check failed — proxy not registered for shop', {
+          component: 'app.dashboard',
+          operation: 'proxy-health-check',
+          shop: session.shop,
+        });
+      }
+    }
+  } catch {
+    // Timeout or network error — default to healthy (avoid false positives)
+  }
+
   return json({
     bundles: bundlesWithPreview,
     shop: session.shop,
+    appUrl,
+    proxyHealthy,
     subscription: subscriptionInfo ? {
       plan: subscriptionInfo.plan,
       currentBundleCount: subscriptionInfo.currentBundleCount,
       bundleLimit: subscriptionInfo.bundleLimit,
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
-    apiKey,
   });
 };
 
@@ -245,7 +275,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 const STATUS_BADGES = {
   active: <Badge tone="success">active</Badge>,
   draft: <Badge tone="info">draft</Badge>,
-  archived: <Badge tone="critical">archived</Badge>,
   unlisted: <Badge tone="warning">unlisted</Badge>,
 } as const;
 
@@ -305,11 +334,12 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, apiKey, shop } = useLoaderData<typeof loader>();
+  const { bundles, subscription, shop, proxyHealthy, appUrl } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const shopify = useAppBridge();
 
   // Use centralized dashboard state hook
   const dashboardState = useDashboardState();
@@ -323,7 +353,6 @@ export default function Dashboard() {
     setDescription,
     bundleType,
     setBundleType,
-    resetForm,
     deleteModalOpen,
     bundleToDelete,
     openDeleteModal,
@@ -331,6 +360,8 @@ export default function Dashboard() {
   } = dashboardState;
 
   const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const fetcherIntentRef = useRef<string | null>(null);
+  const cloningBundleTypeRef = useRef<string | null>(null);
 
   const isSubmitting = navigation.state === "submitting";
 
@@ -341,6 +372,31 @@ export default function Dashboard() {
       navigate(actionData.redirectTo);
     }
   }, [actionData, navigate, closeCreateModal]);
+
+  // Handle clone/delete responses (submitted via fetcher, not Form)
+  useEffect(() => {
+    if (fetcher.state !== 'idle' || !fetcher.data) return;
+    const intent = fetcherIntentRef.current;
+    if (!intent) return;
+
+    const data = fetcher.data as Record<string, unknown>;
+    if (data.success) {
+      if (intent === 'cloneBundle' && data.bundleId) {
+        shopify.toast.show('Bundle cloned successfully');
+        const routeBase = cloningBundleTypeRef.current === BundleType.FULL_PAGE
+          ? 'full-page-bundle'
+          : 'product-page-bundle';
+        navigate(`/app/bundles/${routeBase}/configure/${data.bundleId}`);
+      } else if (intent === 'deleteBundle') {
+        shopify.toast.show('Bundle deleted');
+      }
+    } else if (data.error) {
+      shopify.toast.show(String(data.error), { isError: true, duration: 5000 });
+    }
+
+    fetcherIntentRef.current = null;
+    cloningBundleTypeRef.current = null;
+  }, [fetcher.state, fetcher.data, navigate, shopify]);
 
   const handleCreateBundle = useCallback(() => {
     openCreateModal();
@@ -357,24 +413,27 @@ export default function Dashboard() {
   }, []);
 
   const handleDirectChat = () => {
-    if (window.$crisp) {
-      window.$crisp.push(["do", "chat:open"]);
+    if (typeof window !== 'undefined' && (window as any).$crisp) {
+      (window as any).$crisp.push(["do", "chat:open"]);
     }
   };
 
-  const handleEditBundle = (bundle: typeof bundles[number]) => {
+  const handleEditBundle = useCallback((bundle: typeof bundles[number]) => {
     const routeBase = bundle.bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
     navigate(`/app/bundles/${routeBase}/configure/${bundle.id}`);
-  };
+  }, [navigate]);
 
   const handleCloneBundle = useCallback((bundleId: string) => {
     if (confirm("Are you sure you want to clone this bundle?")) {
+      const sourceBundle = bundles.find(b => b.id === bundleId);
+      fetcherIntentRef.current = 'cloneBundle';
+      cloningBundleTypeRef.current = sourceBundle?.bundleType ?? null;
       const formData = new FormData();
       formData.append("intent", "cloneBundle");
       formData.append("bundleId", bundleId);
       fetcher.submit(formData, { method: "post" });
     }
-  }, [fetcher]);
+  }, [fetcher, bundles]);
 
   const handleDeleteBundle = useCallback((bundleId: string) => {
     openDeleteModal(bundleId);
@@ -382,6 +441,7 @@ export default function Dashboard() {
 
   const handleConfirmDelete = useCallback(() => {
     if (bundleToDelete) {
+      fetcherIntentRef.current = 'deleteBundle';
       const formData = new FormData();
       formData.append("intent", "deleteBundle");
       formData.append("bundleId", bundleToDelete);
@@ -436,7 +496,7 @@ export default function Dashboard() {
       onDelete={handleDeleteBundle}
       onPreview={handlePreviewBundle}
     />,
-  ]), [bundles, handleCloneBundle, handlePreviewBundle]);
+  ]), [bundles, handleEditBundle, handleCloneBundle, handlePreviewBundle, handleDeleteBundle]);
 
   return (
     <>
@@ -615,6 +675,13 @@ export default function Dashboard() {
         subtitle="Access your bundles, customer support & more."
       >
         <Layout>
+          {/* Proxy Health Banner — shown when app proxy is not registered for this store */}
+          {!proxyHealthy && (
+            <Layout.Section>
+              <ProxyHealthBanner shop={shop} appUrl={appUrl} />
+            </Layout.Section>
+          )}
+
           {/* Upgrade Prompt Banner for Free Users */}
           {subscription && (
             <Layout.Section>
@@ -824,6 +891,11 @@ export default function Dashboard() {
                 </Card>
               </div>
             </div>
+          </Layout.Section>
+
+          {/* Cart Property Display Fix */}
+          <Layout.Section>
+            <CartPropertyFixCard />
           </Layout.Section>
 
           {/* Demo Section */}

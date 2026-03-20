@@ -13,10 +13,6 @@ import { FooterButtonSettings } from "./FooterButtonSettings";
 import { FooterDiscountProgressSettings } from "./FooterDiscountProgressSettings";
 import { HeaderTabsSettings } from "./HeaderTabsSettings";
 import { HeaderTextSettings } from "./HeaderTextSettings";
-import { CompletedStepSettings } from "./CompletedStepSettings";
-import { IncompleteStepSettings } from "./IncompleteStepSettings";
-import { StepBarProgressBarSettings } from "./StepBarProgressBarSettings";
-import { StepBarTabsSettings } from "./StepBarTabsSettings";
 import { EmptyStateSettings } from "./EmptyStateSettings";
 import { AddToCartButtonSettings } from "./AddToCartButtonSettings";
 import { ToastsSettings } from "./ToastsSettings";
@@ -80,18 +76,6 @@ export function SettingsPanel({
 
     case "headerText":
       return <HeaderTextSettings settings={settings} onUpdate={onUpdate} />;
-
-    case "completedStep":
-      return <CompletedStepSettings settings={settings} onUpdate={onUpdate} />;
-
-    case "incompleteStep":
-      return <IncompleteStepSettings settings={settings} onUpdate={onUpdate} />;
-
-    case "stepBarProgressBar":
-      return <StepBarProgressBarSettings settings={settings} onUpdate={onUpdate} />;
-
-    case "stepBarTabs":
-      return <StepBarTabsSettings settings={settings} onUpdate={onUpdate} />;
 
     case "emptyState":
       return <EmptyStateSettings settings={settings} onUpdate={onUpdate} />;

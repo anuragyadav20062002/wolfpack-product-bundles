@@ -18,7 +18,6 @@ export interface CreateBundleFormState {
   bundleName: string;
   description: string;
   bundleType: string[];
-  fullPageLayout: string;
 }
 
 export interface DeleteModalState {
@@ -38,16 +37,10 @@ export function useDashboardState() {
   const [bundleName, setBundleName] = useState("");
   const [description, setDescription] = useState("");
   const [bundleType, setBundleType] = useState<string[]>(["product_page"]);
-  const [fullPageLayout, setFullPageLayout] = useState<string>("footer_bottom");
 
   // Delete confirmation modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [bundleToDelete, setBundleToDelete] = useState<string | null>(null);
-
-  // Sync with state service
-  const syncToService = useCallback(() => {
-    appStateService.openModal('createBundle');
-  }, []);
 
   // Open create bundle modal
   const openCreateModal = useCallback(() => {
@@ -61,16 +54,7 @@ export function useDashboardState() {
     setBundleName("");
     setDescription("");
     setBundleType(["product_page"]);
-    setFullPageLayout("footer_bottom");
     appStateService.closeModal('dashboard_createBundle');
-  }, []);
-
-  // Reset form after successful submission
-  const resetForm = useCallback(() => {
-    setBundleName("");
-    setDescription("");
-    setBundleType(["product_page"]);
-    setFullPageLayout("footer_bottom");
   }, []);
 
   // Open delete confirmation modal
@@ -87,22 +71,6 @@ export function useDashboardState() {
     appStateService.closeModal('dashboard_deleteConfirm');
   }, []);
 
-  // Confirm delete action
-  const confirmDelete = useCallback(() => {
-    const id = bundleToDelete;
-    closeDeleteModal();
-    return id;
-  }, [bundleToDelete, closeDeleteModal]);
-
-  // Get form data for submission
-  const getFormData = useCallback(() => {
-    return {
-      bundleName,
-      description,
-      bundleType: bundleType[0], // First element since it's stored as array
-    };
-  }, [bundleName, description, bundleType]);
-
   return {
     // Create modal state
     createModalOpen,
@@ -116,16 +84,11 @@ export function useDashboardState() {
     setDescription,
     bundleType,
     setBundleType,
-    fullPageLayout,
-    setFullPageLayout,
-    resetForm,
-    getFormData,
 
     // Delete modal state
     deleteModalOpen,
     bundleToDelete,
     openDeleteModal,
     closeDeleteModal,
-    confirmDelete,
   };
 }

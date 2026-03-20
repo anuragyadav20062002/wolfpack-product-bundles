@@ -1190,7 +1190,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
         {titles[activeSubSection] ?? activeSubSection}
       </Text>
       <div style={{ marginTop: "24px" }}>
-        <BundleTypeToggle selected={bundleType} onChange={setBundleType} />
+        <BundleTypeToggle selected={bundleType} onChange={setBundleType} options={toggleOptions} />
       </div>
       <div style={{ marginTop: "24px", display: "inline-block", position: "relative" }}>
         {bundleType === BundleType.FULL_PAGE ? (

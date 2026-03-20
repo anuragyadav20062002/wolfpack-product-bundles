@@ -29,6 +29,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-product-card-image-fit: ${s.productCardImageFit || 'cover'};
   --bundle-product-cards-per-row: ${s.productCardsPerRow || 3};
   --bundle-product-price-display: ${s.productPriceVisibility !== false ? 'block' : 'none'};
+  --bundle-product-title-display: ${s.productTitleVisibility !== false ? 'block' : 'none'};
   --bundle-product-price-bg-color: ${s.productPriceBgColor || '#F0F8F0'};
   --bundle-product-strike-price-color: ${s.productStrikePriceColor || globalSecondaryText};
   --bundle-product-strike-font-size: ${s.productStrikeFontSize || 14}px;
@@ -131,19 +132,6 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-header-tab-inactive-text: ${s.headerTabInactiveTextColor || globalPrimaryText};
   --bundle-header-tab-radius: ${s.headerTabRadius || 67}px;
   --modal-step-title-color: ${s.modalStepTitleColor || globalPrimaryText};
-
-  /* BUNDLE STEP BAR */
-  --bundle-step-name-font-color: ${s.stepNameFontColor || globalPrimaryText};
-  --bundle-step-name-font-size: ${s.stepNameFontSize || 16}px;
-  --bundle-completed-step-checkmark-color: ${s.completedStepCheckMarkColor || globalButtonText};
-  --bundle-completed-step-bg-color: ${s.completedStepBgColor || globalPrimaryButton};
-  --bundle-completed-step-circle-border-color: ${s.completedStepCircleBorderColor || globalPrimaryButton};
-  --bundle-completed-step-circle-border-radius: ${s.completedStepCircleBorderRadius || 50}px;
-  --bundle-incomplete-step-bg-color: ${s.incompleteStepBgColor || '#FFFFFF'};
-  --bundle-incomplete-step-circle-stroke-color: ${s.incompleteStepCircleStrokeColor || globalPrimaryButton};
-  --bundle-incomplete-step-circle-stroke-radius: ${s.incompleteStepCircleStrokeRadius || 50}px;
-  --bundle-step-bar-progress-filled-color: ${s.stepBarProgressFilledColor || globalPrimaryButton};
-  --bundle-step-bar-progress-empty-color: ${s.stepBarProgressEmptyColor || '#C6C6C6'};
 
   /* TABS */
   --bundle-tabs-active-bg-color: ${s.tabsActiveBgColor || globalPrimaryButton};
