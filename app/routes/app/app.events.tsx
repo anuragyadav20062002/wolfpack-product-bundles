@@ -17,7 +17,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 const LATEST_EVENTS = [
   {
     id: "fpb-metafield-cache-v2.3.0",
-    title: "FPB Bundle Config Metafield Cache",
+    title: "Landing Page Bundles Now Load Instantly",
     subtitle: "Full-page bundles now load instantly — no app proxy round-trip on first paint.",
     badge: "v2.3.0",
     badgeColor: "#e6f4ea",
@@ -30,26 +30,22 @@ const LATEST_EVENTS = [
         <BlockStack gap="200">
           <Text variant="bodyMd" fontWeight="semibold" as="p">What changed</Text>
           <Text variant="bodySm" tone="subdued" as="p">
-            When a merchant clicks "Place Widget Now" or "Sync Bundle", the full bundle
-            configuration is serialised as JSON and stored directly on the Shopify page as a{' '}
-            <code style={{ fontFamily: 'monospace', background: '#f4f4f4', padding: '1px 4px', borderRadius: 3, fontSize: '0.88em' }}>custom:bundle_config</code>
-            {' '}metafield. The FPB widget reads this metafield at load time via a{' '}
-            <code style={{ fontFamily: 'monospace', background: '#f4f4f4', padding: '1px 4px', borderRadius: 3, fontSize: '0.88em' }}>data-bundle-config</code>
-            {' '}attribute, skipping the proxy API call entirely.
+            Your full-page bundles now appear instantly when a customer visits the page —
+            no more loading spinner while the bundle content loads in.
           </Text>
         </BlockStack>
         <BlockStack gap="200">
           <Text variant="bodyMd" fontWeight="semibold" as="p">Why it matters</Text>
           <Text variant="bodySm" tone="subdued" as="p">
-            Eliminates the visible loading spinner on first paint for full-page bundles.
-            The proxy API remains as a fallback if the metafield is absent.
+            A faster first impression means a smoother shopping experience.
+            Customers see your bundle immediately, which reduces drop-off before they even engage with it.
           </Text>
         </BlockStack>
         <BlockStack gap="200">
           <Text variant="bodyMd" fontWeight="semibold" as="p">What you need to do</Text>
           <Text variant="bodySm" tone="subdued" as="p">
-            Click <strong>Sync Bundle</strong> on any existing full-page bundle to populate the metafield.
-            New bundles created after this release populate it automatically.
+            For any full-page bundles you set up before this update, open the bundle and click{' '}
+            <strong>Sync Bundle</strong> once. That's it — bundles you create going forward are already covered.
           </Text>
         </BlockStack>
       </BlockStack>
@@ -78,6 +74,7 @@ export default function EventsPage() {
     <Page
       title="Events"
       subtitle="Release notes, how-tos, and tutorials"
+      backAction={{ content: "Dashboard", url: "/app/dashboard" }}
     >
       <Layout>
 
