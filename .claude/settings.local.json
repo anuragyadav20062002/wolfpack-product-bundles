@@ -136,7 +136,9 @@
       "mcp__shopify-dev-mcp__validate_component_codeblocks",
       "Bash(ls:*)",
       "Bash(npm view:*)",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "mcp__chrome-devtools__evaluate_script",
+      "mcp__chrome-devtools__take_screenshot"
     ],
     "deny": []
   }
