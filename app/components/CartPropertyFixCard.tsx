@@ -65,7 +65,7 @@ export function CartPropertyFixContent() {
       {/* ── Numbered steps ────────────────────────────────────────── */}
       <BlockStack gap="300">
         {STEPS.map(({ n, title, desc }) => (
-          <InlineStack key={n} gap="300" blockAlign="start">
+          <InlineStack key={n} gap="300" blockAlign="start" wrap={false}>
             <div style={{
               width: 26,
               height: 26,
@@ -82,10 +82,12 @@ export function CartPropertyFixContent() {
             }}>
               {n}
             </div>
-            <BlockStack gap="050">
-              <Text variant="bodySm" fontWeight="semibold" as="p">{title}</Text>
-              <Text variant="bodySm" tone="subdued" as="p">{desc}</Text>
-            </BlockStack>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <BlockStack gap="050">
+                <Text variant="bodySm" fontWeight="semibold" as="p">{title}</Text>
+                <Text variant="bodySm" tone="subdued" as="p">{desc}</Text>
+              </BlockStack>
+            </div>
           </InlineStack>
         ))}
       </BlockStack>

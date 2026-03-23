@@ -425,7 +425,7 @@ export function ProductCardPreview({ activeSubSection }: ProductCardPreviewProps
     </div>
 
     <!-- Product grid inside sheet -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;">
 
       <!-- Product 1 — selected -->
       <div class="product-card selected" style="border-radius:8px;overflow:hidden;position:relative;padding:0;min-height:0;">
