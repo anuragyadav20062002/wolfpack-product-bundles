@@ -973,7 +973,7 @@ class BundleWidgetFullPage {
 
     const totalEl = document.createElement('div');
     totalEl.className = 'fpb-mobile-total';
-    totalEl.textContent = CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format);
+    totalEl.textContent = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
 
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
@@ -1116,8 +1116,8 @@ class BundleWidgetFullPage {
         const isFreeGiftItem = item.isFreeGift === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
-          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)} ${qtySpan}</span>`
-          : `<span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)} ${qtySpan}</span>`;
+          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
+          : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
 
         row.innerHTML = `
           <div class="side-panel-product-img-wrap">
@@ -1172,8 +1172,8 @@ class BundleWidgetFullPage {
     totalSection.innerHTML = `
       <span class="side-panel-total-label">Total</span>
       <div class="side-panel-total-prices">
-        ${discountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
-        <span class="side-panel-total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+        ${discountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
+        <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
       </div>
     `;
     panel.appendChild(totalSection);
@@ -1581,10 +1581,10 @@ class BundleWidgetFullPage {
       if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
         discountMessage = `Add ${qtyText} and get ${discountValue}% off!`;
       } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
-        const formattedAmount = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
+        const formattedAmount = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
         discountMessage = `Add ${qtyText} and save ${formattedAmount}!`;
       } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
-        const formattedPrice = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
+        const formattedPrice = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
         discountMessage = `Add ${qtyText} for just ${formattedPrice}!`;
       }
     }
@@ -2155,7 +2155,7 @@ class BundleWidgetFullPage {
       const li = document.createElement('li');
       li.className = 'footer-panel-item';
 
-      const formattedPrice = CurrencyManager.formatMoney(item.price || 0, currencyInfo.display.format);
+      const formattedPrice = CurrencyManager.convertAndFormat(item.price || 0, currencyInfo);
       const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
 
       li.innerHTML = `
@@ -2248,8 +2248,8 @@ class BundleWidgetFullPage {
     totalArea.innerHTML = `
       <span class="footer-total-label">Total:</span>
       <div class="footer-total-prices">
-        ${discountInfo.hasDiscount && finalPrice < totalPrice ? `<span class="footer-total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
-        <span class="footer-total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+        ${discountInfo.hasDiscount && finalPrice < totalPrice ? `<span class="footer-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
+        <span class="footer-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
         ${discountBadgeHTML}
       </div>
     `;
@@ -2526,7 +2526,7 @@ class BundleWidgetFullPage {
           <img src="${variant.image}" alt="${variantTitle}" />
           <div class="variant-info">
             <span class="variant-title">${variantTitle}</span>
-            <span class="variant-quantity">Qty: ${variant.quantity} × ${CurrencyManager.formatMoney(variant.price, currencyInfo.display.format)}</span>
+            <span class="variant-quantity">Qty: ${variant.quantity} × ${CurrencyManager.convertAndFormat(variant.price, currencyInfo)}</span>
           </div>
           <button class="remove-variant-btn" data-step="${variant.stepIndex}" data-variant-id="${variant.variantId}">Remove</button>
         </div>
@@ -3449,8 +3449,8 @@ class BundleWidgetFullPage {
 
             ${product.price ? `
               <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
-                <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
               </div>
             ` : ''}
 
@@ -3763,6 +3763,33 @@ class BundleWidgetFullPage {
       }
       productCard.classList.remove('selected');
     }
+
+    // Refresh dimmed state on all sibling cards now that the selection has changed
+    this._refreshSiblingDimState(stepIndex);
+  }
+
+  // Refresh the .dimmed class on every card in the current step's product grid.
+  // Called after every real-time selection change so cards gray out (or un-gray)
+  // immediately when the step quota is filled or freed — not only on full re-renders.
+  _refreshSiblingDimState(stepIndex) {
+    const step = this.selectedBundle?.steps?.[stepIndex];
+    if (!step) return;
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
+    const isAtCapacity = !capacityCheck.allowed;
+    // Only one step's grid is visible at a time; navigate up from any card in it
+    const anyCard = this.container.querySelector('.product-grid .product-card');
+    const grid = anyCard?.closest('.product-grid');
+    if (!grid) return;
+    grid.querySelectorAll('.product-card').forEach(card => {
+      const cardProductId = card.dataset.productId;
+      const currentQty = cardProductId ? (stepSelections[cardProductId] || 0) : 0;
+      if (isAtCapacity && currentQty === 0) {
+        card.classList.add('dimmed');
+      } else {
+        card.classList.remove('dimmed');
+      }
+    });
   }
 
   // Helper to find product by ID across all step data
@@ -3937,13 +3964,13 @@ class BundleWidgetFullPage {
 
     if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
       // Show strike-through original price and discounted price
-      strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      strikePriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
       strikePriceEl.style.display = 'inline';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
     } else {
       // Show only regular price
       strikePriceEl.style.display = 'none';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
     }
   }
 

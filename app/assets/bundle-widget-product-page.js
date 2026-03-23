@@ -1228,7 +1228,7 @@ class BundleWidgetProductPage {
     } else {
       // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
-      const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+      const formattedPrice = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
 
       button.textContent = `Add Bundle to Cart \u2022 ${formattedPrice}`;
 
@@ -1242,9 +1242,9 @@ class BundleWidgetProductPage {
     if (totalPillFinal) {
       if (totalQuantity > 0) {
         const currencyInfo = CurrencyManager.getCurrencyInfo();
-        totalPillFinal.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+        totalPillFinal.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
         if (discountInfo.hasDiscount && totalPillStrike) {
-          totalPillStrike.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+          totalPillStrike.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
         } else if (totalPillStrike) {
           totalPillStrike.textContent = '';
         }
@@ -1636,7 +1636,7 @@ class BundleWidgetProductPage {
       const stepName = currentStep.name || 'gift';
       const firstProduct = rawProducts?.[0];
       const priceStr = firstProduct?.price
-        ? CurrencyManager.formatMoney(firstProduct.price, CurrencyManager.getCurrencyInfo().display.format)
+        ? CurrencyManager.convertAndFormat(firstProduct.price, CurrencyManager.getCurrencyInfo())
         : '';
       promo.innerHTML = `
         <p class="bw-bs-free-gift-heading">Get a ${ComponentGenerator.escapeHtml(stepName)} worth ${priceStr} absolutely free!</p>
@@ -1697,8 +1697,8 @@ class BundleWidgetProductPage {
 
             ${product.price ? `
               <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
-                <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
               </div>
             ` : ''}
 
@@ -2204,13 +2204,13 @@ class BundleWidgetProductPage {
 
     if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
       // Show strike-through original price and discounted price
-      strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      strikePriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
       strikePriceEl.style.display = 'inline';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
     } else {
       // Show only regular price
       strikePriceEl.style.display = 'none';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
     }
   }
 

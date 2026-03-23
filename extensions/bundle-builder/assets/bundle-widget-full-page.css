@@ -1,16 +1,15 @@
 
 
 .bundle-widget-full-page {
-  width: 100vw !important;
+  width: 100%;
   min-height: 100vh;
   background: var(--bundle-full-page-bg-color, #FFFFFF);
-  margin: 0 !important;
-  margin-left: calc(-50vw + 50%) !important;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   position: relative;
-  max-width: none !important;
+  box-sizing: border-box;
 }
 
 .bundle-tier-pill-bar {

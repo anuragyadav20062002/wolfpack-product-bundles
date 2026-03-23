@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.3.1
- * Built   : 2026-03-22
+ * Version : 2.3.2
+ * Built   : 2026-03-23
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.3.1';
+window.__BUNDLE_WIDGET_VERSION__ = '2.3.2';
 (function() {
   'use strict';
 
@@ -354,6 +354,13 @@ class CurrencyManager {
   static getCurrencyInfo() {
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
+    const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
+    // Use Shopify's currency format if available (set by currency switcher apps).
+    // Otherwise build a symbol-prefixed format from the display currency so we never
+    // inherit the shop's base-currency format string (e.g. ₹{{amount}}) for a customer
+    // viewing in a different currency (e.g. GBP).
+    const displayFormat = window.Shopify?.currency?.format
+      || `${displaySymbol}{{amount}}`;
 
     return {
       // For calculations (always use shop's base currency)
@@ -365,13 +372,29 @@ class CurrencyManager {
       // For display (use customer's viewing currency)
       display: {
         code: customerCurrency.code,
-        symbol: this.getCurrencySymbol(customerCurrency.code),
-        format: customerCurrency.format,
+        symbol: displaySymbol,
+        format: displayFormat,
         rate: customerCurrency.rate
       },
       // Multi-currency status
       isMultiCurrency: customerCurrency.code !== shopBaseCurrency.code
     };
+  }
+
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
+  static convertAndFormat(amount, currencyInfo) {
+    const rate = currencyInfo.display.rate;
+    const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
+      ? this.convertCurrency(amount, currencyInfo.calculation.code, currencyInfo.display.code, rate)
+      : amount;
+    return this.formatMoney(converted, currencyInfo.display.format);
   }
 }
 
@@ -2720,7 +2743,7 @@ class BundleWidgetProductPage {
     } else {
       // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
-      const formattedPrice = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+      const formattedPrice = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
 
       button.textContent = `Add Bundle to Cart \u2022 ${formattedPrice}`;
 
@@ -2734,9 +2757,9 @@ class BundleWidgetProductPage {
     if (totalPillFinal) {
       if (totalQuantity > 0) {
         const currencyInfo = CurrencyManager.getCurrencyInfo();
-        totalPillFinal.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+        totalPillFinal.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
         if (discountInfo.hasDiscount && totalPillStrike) {
-          totalPillStrike.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+          totalPillStrike.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
         } else if (totalPillStrike) {
           totalPillStrike.textContent = '';
         }
@@ -3128,7 +3151,7 @@ class BundleWidgetProductPage {
       const stepName = currentStep.name || 'gift';
       const firstProduct = rawProducts?.[0];
       const priceStr = firstProduct?.price
-        ? CurrencyManager.formatMoney(firstProduct.price, CurrencyManager.getCurrencyInfo().display.format)
+        ? CurrencyManager.convertAndFormat(firstProduct.price, CurrencyManager.getCurrencyInfo())
         : '';
       promo.innerHTML = `
         <p class="bw-bs-free-gift-heading">Get a ${ComponentGenerator.escapeHtml(stepName)} worth ${priceStr} absolutely free!</p>
@@ -3189,8 +3212,8 @@ class BundleWidgetProductPage {
 
             ${product.price ? `
               <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
-                <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
               </div>
             ` : ''}
 
@@ -3696,13 +3719,13 @@ class BundleWidgetProductPage {
 
     if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
       // Show strike-through original price and discounted price
-      strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      strikePriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
       strikePriceEl.style.display = 'inline';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
     } else {
       // Show only regular price
       strikePriceEl.style.display = 'none';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
     }
   }
 
