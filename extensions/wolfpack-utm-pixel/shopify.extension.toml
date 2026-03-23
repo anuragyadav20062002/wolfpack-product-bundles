@@ -1,4 +1,5 @@
 name = "wolfpack-utm-pixel"
+uid = "9c39afc7-f730-af5d-e507-823597e5186693eb73cf"
 type = "web_pixel_extension"
 
 runtime_context = "strict"
