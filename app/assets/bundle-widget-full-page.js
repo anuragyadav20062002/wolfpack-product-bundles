@@ -2287,83 +2287,6 @@ class BundleWidgetFullPage {
     return bar;
   }
 
-  // Create scrollable product tiles component for footer
-  // Shows product image, name, variant (if any), and remove button
-  createFooterProductTiles(allSelectedProducts, currencyInfo) {
-    const container = document.createElement('div');
-    container.className = 'footer-products-tiles-container';
-
-    if (allSelectedProducts.length === 0) {
-      return container;
-    }
-
-    // Create scrollable tiles wrapper
-    const tilesWrapper = document.createElement('div');
-    tilesWrapper.className = 'footer-products-tiles-wrapper';
-
-    // Show each selected item as its own tile (already expanded by variant)
-    allSelectedProducts.forEach(item => {
-      const tile = document.createElement('div');
-      tile.className = 'footer-product-tile';
-
-      // Determine if this is a variant
-      const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title'
-        ? item.variantTitle
-        : '';
-
-      // Truncate product name for compact display
-      const displayTitle = this.truncateTitle(item.parentTitle || item.title, 20);
-
-      tile.innerHTML = `
-        <div class="tile-image-wrapper">
-          <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(item.title)}" class="tile-image">
-          <span class="tile-quantity-badge">${item.quantity}</span>
-        </div>
-        <div class="tile-info">
-          <span class="tile-product-name">${ComponentGenerator.escapeHtml(displayTitle)}</span>
-          ${variantInfo ? `<span class="tile-variant-name">${ComponentGenerator.escapeHtml(variantInfo)}</span>` : ''}
-        </div>
-        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">×</button>
-      `;
-
-      // Attach remove handler with undo support
-      const removeBtn = tile.querySelector('.tile-remove');
-      removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-
-        // Store item data for undo
-        const removedItem = {
-          stepIndex: item.stepIndex,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          title: item.title
-        };
-
-        // Remove the product
-        this.updateProductSelection(item.stepIndex, item.variantId, 0);
-
-        // Show undo toast
-        const truncatedTitle = removedItem.title.length > 25
-          ? removedItem.title.substring(0, 25) + '...'
-          : removedItem.title;
-
-        ToastManager.showWithUndo(
-          `Removed "${truncatedTitle}"`,
-          () => {
-            // Undo callback - restore the product
-            this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity);
-          },
-          5000
-        );
-      });
-
-      tilesWrapper.appendChild(tile);
-    });
-
-    container.appendChild(tilesWrapper);
-    return container;
-  }
-
   // Helper: Calculate discount progress percentage
   calculateDiscountProgress(currentQuantity) {
     if (!this.selectedBundle?.pricing?.enabled) return 0;
@@ -3775,6 +3698,11 @@ class BundleWidgetFullPage {
   // Called after every real-time selection change so cards gray out (or un-gray)
   // immediately when the step quota is filled or freed — not only on full re-renders.
   _refreshSiblingDimState(stepIndex) {
+    // Only update the DOM if this step's grid is currently visible.
+    // When a product is removed via the footer while on a different step,
+    // skip the DOM update — createFullPageProductGrid will apply the correct
+    // dim state when the user navigates to that step.
+    if (stepIndex !== this.currentStepIndex) return;
     const step = this.selectedBundle?.steps?.[stepIndex];
     if (!step) return;
     const stepSelections = this.selectedProducts[stepIndex] || {};

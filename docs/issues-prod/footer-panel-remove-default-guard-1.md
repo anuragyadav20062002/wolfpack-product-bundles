@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-24
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-03-24 (non-critical fixes applied)
 
 ## Overview
 
@@ -45,6 +45,26 @@ allSelectedProducts.forEach(item => {
 Move the trash button HTML and its event listener inside an `if (!item.isDefault)`
 guard in `_createFooterPanel`, matching the sidebar behaviour.
 
+## Non-Critical Findings (from audit)
+
+### Finding 1 — Dead code: `createFooterProductTiles`
+
+`createFooterProductTiles` (~line 2289) was a fully-built alternative footer tile
+component with its own remove handler. It was never called anywhere in the codebase.
+Deleted in full.
+
+### Finding 2 — `_refreshSiblingDimState` wrong-step DOM update
+
+`_refreshSiblingDimState(stepIndex)` queried
+`this.container.querySelector('.product-grid .product-card')` which always finds the
+currently visible step's grid. When a product is removed via the footer panel while the
+user is viewing a different step, the method would apply the wrong step's capacity check
+to the visible grid's cards.
+
+Fix: added `if (stepIndex !== this.currentStepIndex) return;` as the first guard.
+When the user navigates to the affected step, `createFullPageProductGrid` renders the
+correct dim state from scratch.
+
 ## Progress Log
 
 ### 2026-03-24 - Implementing fix
@@ -53,7 +73,16 @@ guard in `_createFooterPanel`, matching the sidebar behaviour.
 - Change: wrap trash button + remove listener in `if (!item.isDefault)`
 - Rebuild widget bundles after change
 
+### 2026-03-24 - Non-critical fixes applied
+
+- Finding 1: Deleted dead `createFooterProductTiles` method entirely
+- Finding 2: Added `if (stepIndex !== this.currentStepIndex) return;` guard to
+  `_refreshSiblingDimState` to prevent wrong-step DOM mutation on cross-step removes
+- Rebuilt FPB bundle: 247.0 KB
+
 ## Phases Checklist
 - [x] Add `isDefault` guard in `_createFooterPanel`
-- [x] Rebuild widget bundles (FPB: 249.6 KB)
+- [x] Delete dead `createFooterProductTiles` method
+- [x] Fix `_refreshSiblingDimState` cross-step guard
+- [x] Rebuild widget bundles (FPB: 247.0 KB)
 - [ ] Verify default items show no trash icon in footer panel (manual, post-deploy)
