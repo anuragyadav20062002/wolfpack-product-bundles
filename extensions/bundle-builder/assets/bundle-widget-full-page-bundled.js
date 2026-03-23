@@ -4616,25 +4616,28 @@ class BundleWidgetFullPage {
           <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
           <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
         </div>
+        ${!item.isDefault ? `
         <button class="footer-panel-remove" type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">
           <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
             <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
           </svg>
-        </button>
+        </button>` : ''}
       `;
 
-      const removeBtn = li.querySelector('.footer-panel-remove');
-      removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
-        this.updateProductSelection(item.stepIndex, item.variantId, 0);
-        const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
-        ToastManager.showWithUndo(
-          `Removed "${truncated}"`,
-          () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-          5000
-        );
-      });
+      if (!item.isDefault) {
+        const removeBtn = li.querySelector('.footer-panel-remove');
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
+          this.updateProductSelection(item.stepIndex, item.variantId, 0);
+          const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
+          ToastManager.showWithUndo(
+            `Removed "${truncated}"`,
+            () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+            5000
+          );
+        });
+      }
 
       list.appendChild(li);
     });
