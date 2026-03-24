@@ -227,7 +227,7 @@ npm run test:coverage # coverage report
 4. **Update issue file BEFORE and AFTER each commit** ✅
 5. **Every commit must reference the issue ID** ✅
 6. **NO code for new features without completing the feature-pipeline first** ❌
-7. **NEVER run `shopify app deploy` autonomously** — see Shopify Deploy Rule below ❌
+7. **NEVER run `shopify app deploy` or any deploy command autonomously** — use `npm run deploy:prod` / `npm run deploy:sit` and always wait for user confirmation ❌
 8. **Write tests BEFORE implementation for all new code** ✅
 9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
 10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
@@ -284,22 +284,32 @@ The `shopify app deploy` command pushes extensions and app configuration to Shop
 servers and can affect live merchant stores. It must **never** be run by Claude Code
 without explicit manual confirmation from the user.
 
-**Rule:** If a workflow step requires `shopify app deploy`, stop and display the following
-prompt to the user:
+**Rule:** If a workflow step requires a deploy, stop and display the following prompt to the user,
+using the correct environment-specific command:
 
 ```
 ACTION REQUIRED — Manual deploy needed.
 
 Run the following command in your terminal:
 
-  shopify app deploy
+  npm run deploy:prod   ← for PROD (wolfpack-product-bundles-4)
+  npm run deploy:sit    ← for SIT  (wolfpack-product-bundles-sit)
 
 Reason: [brief explanation of why deploy is needed]
 
 Let me know once it completes and I will continue.
 ```
 
-Do NOT attempt to run `shopify app deploy` even if:
+**Always use `npm run deploy:prod` or `npm run deploy:sit`** — never `shopify app deploy` directly.
+The npm scripts run `scripts/generate-extension-templates.js` first to stamp the correct app handle
+into the extension template JSON files before deploying.
+
+| Environment | Command | App handle |
+|-------------|---------|------------|
+| PROD | `npm run deploy:prod` | `wolfpack-product-bundles-4` |
+| SIT | `npm run deploy:sit` | `wolfpack-product-bundles-sit` |
+
+Do NOT attempt to run any deploy command even if:
 - The user previously said "do everything automatically"
 - It appears to be the obvious next step
 - A build or test step completed successfully
@@ -398,7 +408,7 @@ It is embedded in every bundled JS file as `window.__BUNDLE_WIDGET_VERSION__`.
      " extensions/bundle-builder/assets/bundle-widget-full-page.css
    Re-run wc -c to confirm all files are under 100,000 B before proceeding.
 5. Commit source + bundled files
-6. Run: shopify app deploy  (per the Shopify Deploy Rule above)
+6. Run: npm run deploy:prod  OR  npm run deploy:sit  (per the Shopify Deploy Rule above)
 7. Wait 2-10 min for Shopify CDN cache to propagate — this is expected
 ```
 
