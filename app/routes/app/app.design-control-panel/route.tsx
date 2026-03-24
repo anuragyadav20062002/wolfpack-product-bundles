@@ -387,6 +387,9 @@ export default function DesignControlPanel() {
                     activeSubSection={fullPageState.activeSubSection}
                     settings={fullPageState.settings}
                     bundleType={BundleType.FULL_PAGE}
+                    isDirty={fullPageState.hasUnsavedChanges}
+                    previewUrl={null}
+                    saveCount={fullPageState.saveCount}
                   />
                 </div>
               </div>
@@ -421,6 +424,9 @@ export default function DesignControlPanel() {
                     activeSubSection={productPageState.activeSubSection}
                     settings={productPageState.settings}
                     bundleType={BundleType.PRODUCT_PAGE}
+                    isDirty={productPageState.hasUnsavedChanges}
+                    previewUrl={null}
+                    saveCount={productPageState.saveCount}
                   />
                 </div>
               </div>

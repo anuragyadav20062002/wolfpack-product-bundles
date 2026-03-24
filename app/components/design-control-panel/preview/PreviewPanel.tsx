@@ -8,22 +8,43 @@ import { PromoBannerPreview } from "./PromoBannerPreview";
 import { GlobalColorsPreview } from "./GlobalColorsPreview";
 import { TierPillPreview } from "./TierPillPreview";
 import { PreviewScope } from "./PreviewScope";
+import { StorefrontIframePreview } from "./StorefrontIframePreview";
 
 interface PreviewPanelProps {
   activeSubSection: string;
   settings: DesignSettings;
   bundleType: BundleType;
+  /** True when the merchant has unsaved changes — switches to CSS component preview mode. */
+  isDirty: boolean;
+  /**
+   * Storefront URL to load in the iframe preview.
+   * When null/undefined, the iframe mode is skipped and the CSS preview is always shown.
+   */
+  previewUrl?: string | null;
+  /** Increments on each successful save to trigger an iframe reload. */
+  saveCount: number;
 }
 
 /**
- * PreviewPanel - Orchestrator component that renders the appropriate
- * preview based on the active subsection.
+ * PreviewPanel — dual-mode preview orchestrator.
  *
- * All sub-previews (except GlobalColors which is a colour-swatch palette)
- * are wrapped in PreviewScope, which injects the real widget CSS and sets
- * all --bundle-* CSS variables from the current settings.
+ * SAVED mode   (!isDirty && previewUrl): scaled storefront iframe — shows the full page
+ *              exactly as a shopper sees it, after the latest save is persisted.
+ *
+ * EDITING mode (isDirty || !previewUrl): CSS-variable component previews — update on
+ *              every keystroke with zero network round-trips.
+ *
+ * All component-mode sub-previews (except GlobalColors) are wrapped in PreviewScope,
+ * which injects the real widget CSS and sets --bundle-* CSS variables from settings.
  */
-export function PreviewPanel({ activeSubSection, settings, bundleType }: PreviewPanelProps) {
+export function PreviewPanel({ activeSubSection, settings, bundleType, isDirty, previewUrl, saveCount }: PreviewPanelProps) {
+  // ── Saved mode: show the live storefront in a scaled, read-only iframe ────────
+  if (!isDirty && previewUrl) {
+    return <StorefrontIframePreview url={previewUrl} saveCount={saveCount} />;
+  }
+
+  // ── Editing mode: CSS-variable component previews (unchanged below) ───────────
+
   // Global Colors - intentional simplified swatch palette, not a widget preview
   if (activeSubSection === "globalColors") {
     return (
