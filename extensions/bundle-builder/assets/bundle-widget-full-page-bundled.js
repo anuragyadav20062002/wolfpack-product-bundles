@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.3.5
+ * Version : 2.3.6
  * Built   : 2026-03-24
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.3.5';
+window.__BUNDLE_WIDGET_VERSION__ = '2.3.6';
 (function() {
   'use strict';
 
@@ -3755,15 +3755,13 @@ class BundleWidgetFullPage {
           `;
         }
       } else {
-        // Empty step - show step number, name, quantity hint, and optional lock
+        // Empty step - show step number, name, "0 selected" count badge, and optional lock
         const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
-        const quantityHint = this.getStepQuantityHint(step);
-
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
             <span class="tab-name">${escapedName}</span>
-            ${quantityHint ? `<span class="tab-quantity-hint">${quantityHint}</span>` : ''}
+            <span class="tab-count">0 selected</span>
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">

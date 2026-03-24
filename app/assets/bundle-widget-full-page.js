@@ -1302,15 +1302,13 @@ class BundleWidgetFullPage {
           `;
         }
       } else {
-        // Empty step - show step number, name, quantity hint, and optional lock
+        // Empty step - show step number, name, "0 selected" count badge, and optional lock
         const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
-        const quantityHint = this.getStepQuantityHint(step);
-
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
             <span class="tab-name">${escapedName}</span>
-            ${quantityHint ? `<span class="tab-quantity-hint">${quantityHint}</span>` : ''}
+            <span class="tab-count">0 selected</span>
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">
