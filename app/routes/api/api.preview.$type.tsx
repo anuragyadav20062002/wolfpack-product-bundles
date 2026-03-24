@@ -4,7 +4,7 @@
  * Returns a full HTML document that renders mock widget HTML styled with the
  * merchant's current design settings. Loaded in an iframe inside the DCP modal.
  *
- * Same-origin as the app → no X-Frame-Options issues + real-time CSS variable
+ * Same-origin as the app — uses CSP frame-ancestors (not X-Frame-Options) so it can
  * injection via postMessage from the parent DCP frame.
  *
  * URL: /api/preview/pdp?shop=xxx.myshopify.com
@@ -557,7 +557,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "X-Frame-Options": "SAMEORIGIN",
+      "Content-Security-Policy": "frame-ancestors 'self' https://admin.shopify.com",
       "Cache-Control": "no-store",
     },
   });
