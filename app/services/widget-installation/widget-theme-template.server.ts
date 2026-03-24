@@ -248,7 +248,7 @@ async function writeThemeAsset(admin: any, themeGid: string, filename: string, c
   const response = await admin.graphql(MUTATION, {
     variables: {
       themeId: themeGid,
-      files: [{ filename, body: { asString: content } }],
+      files: [{ filename, body: { type: "TEXT", value: content } }],
     },
   });
   const data = await response.json();
