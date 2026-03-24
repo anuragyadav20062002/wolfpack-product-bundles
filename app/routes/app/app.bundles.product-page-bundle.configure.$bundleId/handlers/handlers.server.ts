@@ -206,6 +206,11 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 minQuantity: parseInt(step.minQuantity) || 1,
                 maxQuantity: parseInt(step.maxQuantity) || 1,
                 enabled: step.enabled !== false, // Default to true unless explicitly false
+                // Free gift & default product fields
+                isFreeGift: step.isFreeGift === true,
+                freeGiftName: step.freeGiftName || null,
+                isDefault: step.isDefault === true,
+                defaultVariantId: step.defaultVariantId || null,
                 // Apply condition data if available
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,

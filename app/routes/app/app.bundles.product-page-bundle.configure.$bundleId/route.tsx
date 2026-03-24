@@ -1640,6 +1640,87 @@ export default function ConfigureBundleFlow() {
                                     Add Rule
                                   </Button>
                                 </BlockStack>
+
+                                {/* ── Step Options: Free Gift & Default Product ── */}
+                                <BlockStack gap="300">
+                                  <Divider />
+                                  <BlockStack gap="100">
+                                    <Text variant="headingSm" as="h4">Step Options</Text>
+                                    <Text as="p" variant="bodyMd" tone="subdued">
+                                      Advanced options for free gift steps and pre-selected (mandatory) products.
+                                    </Text>
+                                  </BlockStack>
+
+                                  {/* Free Gift toggle */}
+                                  <Checkbox
+                                    label="Free gift step"
+                                    helpText="This step is unlocked after all regular steps are complete. Products are shown at $0.00."
+                                    checked={step.isFreeGift === true}
+                                    onChange={(checked) => {
+                                      stepsState.updateStepField(step.id, 'isFreeGift', checked);
+                                      if (!checked) stepsState.updateStepField(step.id, 'freeGiftName', '');
+                                    }}
+                                  />
+
+                                  {step.isFreeGift && (
+                                    <FormLayout>
+                                      <TextField
+                                        label="Gift display name"
+                                        placeholder='e.g. "cap", "greeting card"'
+                                        helpText='Shown in the widget: "Add 2 more to claim a FREE cap!"'
+                                        value={step.freeGiftName || ''}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'freeGiftName', value)}
+                                        autoComplete="off"
+                                      />
+                                    </FormLayout>
+                                  )}
+
+                                  <Divider />
+
+                                  {/* Default (mandatory) product toggle */}
+                                  <Checkbox
+                                    label="Mandatory default product"
+                                    helpText="A specific variant is pre-selected when the bundle loads. Customers cannot remove it."
+                                    checked={step.isDefault === true}
+                                    onChange={(checked) => {
+                                      stepsState.updateStepField(step.id, 'isDefault', checked);
+                                      if (!checked) stepsState.updateStepField(step.id, 'defaultVariantId', '');
+                                    }}
+                                  />
+
+                                  {step.isDefault && (
+                                    <FormLayout>
+                                      <TextField
+                                        label="Default variant GID"
+                                        placeholder="gid://shopify/ProductVariant/123456789"
+                                        helpText="Paste the Shopify variant GID. It must be one of the products added to this step."
+                                        value={step.defaultVariantId || ''}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'defaultVariantId', value)}
+                                        autoComplete="off"
+                                      />
+                                      {step.StepProduct && step.StepProduct.length > 0 && (
+                                        <BlockStack gap="100">
+                                          <Text as="p" variant="bodySm" tone="subdued">
+                                            Available variants from products in this step:
+                                          </Text>
+                                          {step.StepProduct.flatMap((sp: any) =>
+                                            (sp.variants || []).map((v: any) => (
+                                              <Button
+                                                key={v.id || v.gid}
+                                                variant="plain"
+                                                size="micro"
+                                                onClick={() => stepsState.updateStepField(step.id, 'defaultVariantId', v.id || v.gid)}
+                                              >
+                                                {sp.title}{v.title && v.title !== 'Default Title' ? ` · ${v.title}` : ''} — {v.id || v.gid}
+                                              </Button>
+                                            ))
+                                          )}
+                                        </BlockStack>
+                                      )}
+                                    </FormLayout>
+                                  )}
+                                </BlockStack>
+
                               </BlockStack>
                             </Collapsible>
                           </BlockStack>
