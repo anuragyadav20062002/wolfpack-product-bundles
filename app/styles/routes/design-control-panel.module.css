@@ -55,16 +55,14 @@
   padding: 20px;
   background-color: #f4f4f4;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
   min-width: 0;
-  overflow-x: hidden;
+  overflow: auto;
 }
 
 /* Preview wrapper */
 .previewWrapper {
-  position: relative;
-  display: inline-block;
+  width: 100%;
 }
 
 /* Settings panel container */
