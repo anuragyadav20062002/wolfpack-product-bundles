@@ -5,5 +5,7 @@
       "settings": {}
     }
   },
-  "order": ["bundle"]
+  "order": [
+    "bundle"
+  ]
 }
