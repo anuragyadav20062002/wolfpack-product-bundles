@@ -2538,7 +2538,7 @@ class BundleWidgetFullPage {
   // Helper: Check if all bundle conditions are met
   areBundleConditionsMet() {
     return this.selectedBundle.steps.every((step, index) => {
-      if (step.isFreeGift) return true; // free gift is optional for cart eligibility
+      if (step.isFreeGift || step.isDefault) return true; // non-blocking steps
       return this.isStepCompleted(index);
     });
   }
@@ -2597,12 +2597,9 @@ class BundleWidgetFullPage {
       );
       if (product) {
         if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-        this.selectedProducts[stepIndex][step.defaultVariantId] = {
-          ...product,
-          variantId: step.defaultVariantId,
-          quantity: 1,
-          isDefault: true,
-        };
+        // Store quantity as a number (1) so every consumer that reads selectedProducts
+        // with `if (quantity > 0)` correctly includes the default product.
+        this.selectedProducts[stepIndex][step.defaultVariantId] = 1;
       }
     });
   }
