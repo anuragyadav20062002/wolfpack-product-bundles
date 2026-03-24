@@ -36,7 +36,10 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
       <Divider />
 
       <Text as="p" variant="bodyMd" fontWeight="medium">
-        Empty Slot Card Border
+        Empty Slot Card Border Style
+      </Text>
+      <Text as="p" variant="bodySm" tone="subdued">
+        Border style for empty product slots in the grid. Color is shared with Empty State → Card Border Color.
       </Text>
       <ButtonGroup variant="segmented">
         <Button
@@ -52,13 +55,6 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
           Solid
         </Button>
       </ButtonGroup>
-
-      <InlineColorInput
-        id="emptySlotBorderColorInput"
-        label="Empty slot border color"
-        value={settings.emptySlotBorderColor ?? settings.globalPrimaryButtonColor ?? "#007AFF"}
-        onChange={(val) => onUpdate("emptySlotBorderColor", val)}
-      />
 
       {/* Free Gift Badge — visible in all widget style modes */}
       <Divider />

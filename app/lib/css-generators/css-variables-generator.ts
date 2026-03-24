@@ -147,6 +147,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-empty-state-card-border: ${s.emptyStateCardBorderColor || '#F6F6F6'};
   --bundle-empty-state-text: ${s.emptyStateTextColor || globalSecondaryText};
   --bundle-empty-state-border-style: ${s.emptyStateBorderStyle || 'dashed'};
+  --bundle-empty-slot-border-style: ${s.emptySlotBorderStyle || 'dashed'};
   /* Drawer */
   --bundle-drawer-bg: ${s.drawerBgColor || '#FFFFFF'};
   /* Add to Cart Button */
