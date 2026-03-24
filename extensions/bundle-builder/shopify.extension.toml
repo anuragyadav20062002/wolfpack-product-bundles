@@ -13,7 +13,7 @@ handle = "bundle-builder"
 api_version = "2025-10"
 
 [[extensions.blocks]]
-target = "section"
+target = "all"
 liquid_path = "blocks/bundle-product-page.liquid"
 
 # Full-Page Bundle Block (for standalone pages)
