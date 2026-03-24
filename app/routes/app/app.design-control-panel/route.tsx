@@ -26,66 +26,34 @@ import { CustomCssCard, CssGuideContent } from "../../../components/design-contr
 
 import { DEFAULT_SETTINGS, mergeSettings } from "../../../components/design-control-panel/config";
 import { handleSaveSettings } from "./handlers.server";
-import {
-  ensureProductBundleTemplate,
-  ensureBundlePageTemplate,
-} from "../../../services/widget-installation/widget-theme-template.server";
 import designControlPanelStyles from "../../../styles/routes/design-control-panel.module.css";
 
-const FIRST_PRODUCT_QUERY = `#graphql
-  query FirstProduct {
-    products(first: 1, query: "status:active") {
-      edges { node { handle } }
-    }
-  }
-`;
-
-const FIRST_PAGE_QUERY = `#graphql
-  query FirstPage {
-    pages(first: 1) {
-      edges { node { handle } }
-    }
-  }
-`;
-
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session, admin } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const shopId = session.shop;
+  const appUrl = (process.env.SHOPIFY_APP_URL ?? "").replace(/\/$/, "");
 
-  const apiKey = process.env.SHOPIFY_API_KEY ?? "";
-
-  // All six operations run in parallel. Template writes are awaited so the
-  // preview URL is guaranteed to work on first DCP open (no race condition).
-  const [productPageSettings, fullPageSettings, productRes, pageRes] = await Promise.all([
+  const [productPageSettings, fullPageSettings] = await Promise.all([
     prisma.designSettings.findUnique({
-      where: { shopId_bundleType: { shopId, bundleType: "product_page" } }
+      where: { shopId_bundleType: { shopId, bundleType: "product_page" } },
     }),
     prisma.designSettings.findUnique({
-      where: { shopId_bundleType: { shopId, bundleType: "full_page" } }
+      where: { shopId_bundleType: { shopId, bundleType: "full_page" } },
     }),
-    admin.graphql(FIRST_PRODUCT_QUERY),
-    admin.graphql(FIRST_PAGE_QUERY),
-    ensureProductBundleTemplate(admin, session, apiKey),
-    ensureBundlePageTemplate(admin, session, apiKey),
   ]);
-
-  const productData = await productRes.json();
-  const productHandle: string | null = productData.data?.products?.edges?.[0]?.node?.handle ?? null;
-
-  const pageData = await pageRes.json();
-  const pageHandle: string | null = pageData.data?.pages?.edges?.[0]?.node?.handle ?? null;
 
   const settings = {
     product_page: mergeSettings(productPageSettings, DEFAULT_SETTINGS.product_page),
     full_page: mergeSettings(fullPageSettings, DEFAULT_SETTINGS.full_page),
   };
 
-  const pdpPreviewUrl = productHandle
-    ? `https://${shopId}/products/${productHandle}?view=product-page-bundle`
+  // App-served preview pages — same origin as app, no X-Frame-Options issues.
+  // CSS variables are pushed in real-time via postMessage by PreviewPanel.
+  const pdpPreviewUrl = appUrl
+    ? `${appUrl}/api/preview/pdp?shop=${shopId}`
     : null;
-
-  const fpbPreviewUrl = pageHandle
-    ? `https://${shopId}/pages/${pageHandle}?view=full-page-bundle`
+  const fpbPreviewUrl = appUrl
+    ? `${appUrl}/api/preview/fpb?shop=${shopId}`
     : null;
 
   return json({ shopId, settings, previewUrls: { pdp: pdpPreviewUrl, fpb: fpbPreviewUrl } });
@@ -427,12 +395,9 @@ export default function DesignControlPanel() {
               <div className={designControlPanelStyles.previewPanel}>
                 <div className={designControlPanelStyles.previewWrapper}>
                   <PreviewPanel
-                    activeSubSection={fullPageState.activeSubSection}
                     settings={fullPageState.settings}
                     bundleType={BundleType.FULL_PAGE}
-                    isDirty={fullPageState.hasUnsavedChanges}
                     previewUrl={previewUrls.fpb}
-                    saveCount={fullPageState.saveCount}
                   />
                 </div>
               </div>
@@ -464,12 +429,9 @@ export default function DesignControlPanel() {
               <div className={designControlPanelStyles.previewPanel}>
                 <div className={designControlPanelStyles.previewWrapper}>
                   <PreviewPanel
-                    activeSubSection={productPageState.activeSubSection}
                     settings={productPageState.settings}
                     bundleType={BundleType.PRODUCT_PAGE}
-                    isDirty={productPageState.hasUnsavedChanges}
                     previewUrl={previewUrls.pdp}
-                    saveCount={productPageState.saveCount}
                   />
                 </div>
               </div>
