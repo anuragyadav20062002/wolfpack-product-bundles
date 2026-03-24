@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-03-24
-**Last Updated:** 2026-03-24 17:15
+**Last Updated:** 2026-03-24 18:00
 
 ## Overview
 
@@ -39,7 +39,21 @@ Files to modify:
   - Preview URL construction (product page preview)
 - ✅ Linted — 0 errors
 
+### 2026-03-24 18:00 - Fix Theme Editor previewPath switching to wrong product
+
+Root cause: Shopify Theme Editor picks the first product with `templateSuffix: "product-page-bundle"`
+as the preview when `addAppBlockId` is used. The configure handler sets that suffix on `shopifyProductId`
+(a real product, not the PDP display product), so Theme Editor always redirects to the wrong product.
+
+- ✅ Install route now calls `applyTemplateSuffixToProduct(productHandle)` after template creation
+  so the actual PDP product gets `templateSuffix: "product-page-bundle"` — Theme Editor will then
+  select it as the representative product
+- ✅ "Open in Theme Editor" secondary button: when `widgetInstalled` is true, uses
+  `?template=product.product-page-bundle` (no `addAppBlockId`) to navigate directly to the installed
+  template without triggering Shopify's product-selection redirect
+
 ## Phases Checklist
 - [x] Phase 1: Fix `writeThemeAsset` GraphQL mutation input
 - [x] Phase 2: Fix product handle priority in configure route
 - [x] Phase 3: Lint + commit
+- [x] Phase 4: Fix Theme Editor wrong product preview (templateSuffix + secondary button URL)

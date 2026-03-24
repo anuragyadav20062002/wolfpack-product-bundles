@@ -1257,8 +1257,12 @@ export default function ConfigureBundleFlow() {
           onAction: () => {
             const productHandle = bundle.shopifyProductHandle;
             const previewParam = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
-            // target=newAppsSection is correct for section-type blocks.
-            const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
+            // If the widget is already installed, navigate directly to the installed template.
+            // Using addAppBlockId on an already-installed block causes Shopify to change the
+            // previewPath to the first product with that templateSuffix (which may not be this bundle's product).
+            const themeEditorUrl = widgetInstalled
+              ? `https://${shop}/admin/themes/current/editor?template=product.product-page-bundle${previewParam}`
+              : `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
             window.open(themeEditorUrl, '_blank');
           },
         },
