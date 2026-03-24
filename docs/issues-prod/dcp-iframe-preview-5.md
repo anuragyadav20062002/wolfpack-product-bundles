@@ -67,4 +67,23 @@ updates in real-time as the merchant changes settings.
 - [x] Phase 2: Modify PreviewPanel for always-on iframe + postMessage
 - [x] Phase 3: Modify StorefrontIframePreview (remove dual-mode props)
 - [x] Phase 4: Simplify DCP loader (app URL based preview URLs)
+### 2026-03-24 11:00 - Full pixel-perfect audit and fix
+
+Deep audit comparing preview HTML against real widget JS source (bundle-widget-product-page.js,
+bundle-widget-full-page.js). Found 130+ missing CSS class usages across PDP and FPB.
+
+**PDP fixes:**
+- Added `modal-footer-discount-messaging` / `footer-discount-text` to modal footer
+- Added `empty-state-card` + `empty-state-card-icon` + `empty-state-card-text` slot
+
+**FPB fixes:**
+- Added promo banner: `.promo-banner.has-discount`, `.promo-banner-subtitle`, `.promo-banner-title`, `.promo-banner-note`
+- Added tier pills: `.bundle-tier-pill-bar` + `.bundle-tier-pill` (active, disabled states)
+- Added search input: `.step-search-container`, `.step-search-input-wrapper`, `.step-search-icon`, `.step-search-input`, `.step-search-clear`
+- Added side panel: full `.full-page-side-panel` with products, progress bar, totals, nav buttons
+- Replaced old footer with real floating card footer: `.full-page-footer.floating-card`, `.footer-callout-banner`, `.footer-bar`, `.footer-thumbstrip`, `.footer-centre`, `.footer-toggle`, `.footer-total-area`, `.footer-cta-btn`, `.footer-discount-badge`
+- Fixed FPB product card quantity controls: `.product-quantity-wrapper` > `.product-quantity-selector` > `.qty-btn .qty-decrease`/`.qty-increase` + `.qty-display` (PDP still uses `.inline-quantity-controls` — both are real widget patterns)
+- Added step tab locked tooltip: `.tab-locked-tooltip`
+- Added step tab images: `.tab-images` + `.tab-product-image` (shown when step has selections)
+
 - [ ] Phase 5: Test and commit
