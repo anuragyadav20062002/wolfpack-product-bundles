@@ -523,6 +523,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       }
 
       AppLogger.debug("[METAFIELDS] All metafields updated successfully");
+
+      // Keep page metafield cache in sync with every save so the storefront widget
+      // reflects changes immediately without requiring a manual "Sync Bundle".
+      // Non-fatal: a write failure must not fail the Save response.
+      if (updatedBundle.shopifyPageId) {
+        await writeBundleConfigPageMetafield(admin, updatedBundle.shopifyPageId, updatedBundle);
+      }
     }
 
     // BUNDLE INDEX: No longer needed
