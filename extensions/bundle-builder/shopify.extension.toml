@@ -13,11 +13,6 @@ handle = "bundle-builder"
 api_version = "2025-10"
 
 [[extensions.blocks]]
-target = "all"
-liquid_path = "blocks/bundle-product-page.liquid"
-
-# Same block registered as a standalone section so it can appear in product.product-page-bundle.json
-[[extensions.blocks]]
 target = "section"
 liquid_path = "blocks/bundle-product-page.liquid"
 

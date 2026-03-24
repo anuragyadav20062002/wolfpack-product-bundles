@@ -28,24 +28,41 @@ import { DEFAULT_SETTINGS, mergeSettings } from "../../../components/design-cont
 import { handleSaveSettings } from "./handlers.server";
 import designControlPanelStyles from "../../../styles/routes/design-control-panel.module.css";
 
+const FIRST_PRODUCT_QUERY = `#graphql
+  query FirstProduct {
+    products(first: 1, query: "status:active") {
+      edges { node { handle } }
+    }
+  }
+`;
+
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shopId = session.shop;
 
-  const productPageSettings = await prisma.designSettings.findUnique({
-    where: { shopId_bundleType: { shopId, bundleType: "product_page" } }
-  });
+  const [productPageSettings, fullPageSettings, productRes] = await Promise.all([
+    prisma.designSettings.findUnique({
+      where: { shopId_bundleType: { shopId, bundleType: "product_page" } }
+    }),
+    prisma.designSettings.findUnique({
+      where: { shopId_bundleType: { shopId, bundleType: "full_page" } }
+    }),
+    admin.graphql(FIRST_PRODUCT_QUERY),
+  ]);
 
-  const fullPageSettings = await prisma.designSettings.findUnique({
-    where: { shopId_bundleType: { shopId, bundleType: "full_page" } }
-  });
+  const productData = await productRes.json();
+  const productHandle: string | null = productData.data?.products?.edges?.[0]?.node?.handle ?? null;
 
   const settings = {
     product_page: mergeSettings(productPageSettings, DEFAULT_SETTINGS.product_page),
     full_page: mergeSettings(fullPageSettings, DEFAULT_SETTINGS.full_page),
   };
 
-  return json({ shopId, settings });
+  const pdpPreviewUrl = productHandle
+    ? `https://${shopId}/products/${productHandle}?view=product-page-bundle`
+    : null;
+
+  return json({ shopId, settings, previewUrls: { pdp: pdpPreviewUrl, fpb: null } });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -171,7 +188,7 @@ function ProductPageSvg() {
 // ─── Route Component ──────────────────────────────────────────────────────────
 
 export default function DesignControlPanel() {
-  const { settings } = useLoaderData<typeof loader>();
+  const { settings, previewUrls } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const shopify = useAppBridge();
 
@@ -425,7 +442,7 @@ export default function DesignControlPanel() {
                     settings={productPageState.settings}
                     bundleType={BundleType.PRODUCT_PAGE}
                     isDirty={productPageState.hasUnsavedChanges}
-                    previewUrl={null}
+                    previewUrl={previewUrls.pdp}
                     saveCount={productPageState.saveCount}
                   />
                 </div>
