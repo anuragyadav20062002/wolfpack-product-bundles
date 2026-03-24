@@ -304,10 +304,13 @@ Let me know once it completes and I will continue.
 The npm scripts run `scripts/generate-extension-templates.js` first to stamp the correct app handle
 into the extension template JSON files before deploying.
 
-| Environment | Command | App handle |
+| Environment | Command | `SHOPIFY_APP_HANDLE` env var |
 |-------------|---------|------------|
 | PROD | `npm run deploy:prod` | `wolfpack-product-bundles-4` |
 | SIT | `npm run deploy:sit` | `wolfpack-product-bundles-sit` |
+
+The `SHOPIFY_APP_HANDLE` env var must be set correctly on each server environment.
+Preview templates are written to merchant themes at runtime (on DCP open) using this value.
 
 Do NOT attempt to run any deploy command even if:
 - The user previously said "do everything automatically"

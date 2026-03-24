@@ -26,6 +26,7 @@ import { CustomCssCard, CssGuideContent } from "../../../components/design-contr
 
 import { DEFAULT_SETTINGS, mergeSettings } from "../../../components/design-control-panel/config";
 import { handleSaveSettings } from "./handlers.server";
+import { ensurePreviewTemplates } from "../../../services/theme/ensure-preview-templates.server";
 import designControlPanelStyles from "../../../styles/routes/design-control-panel.module.css";
 
 const FIRST_PRODUCT_QUERY = `#graphql
@@ -47,6 +48,9 @@ const FIRST_PAGE_QUERY = `#graphql
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session, admin } = await authenticate.admin(request);
   const shopId = session.shop;
+
+  // Write preview templates to the merchant's theme (idempotent, non-fatal)
+  void ensurePreviewTemplates(admin, session);
 
   const [productPageSettings, fullPageSettings, productRes, pageRes] = await Promise.all([
     prisma.designSettings.findUnique({
