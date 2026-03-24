@@ -314,46 +314,43 @@ function buildBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: strin
 }
 
 /**
- * Build the product bundle template by injecting the app block INSIDE the
- * main-product section, immediately after the "buy-buttons" block (or after
- * "title" if buy-buttons is absent). This ensures the widget appears in the
- * expected position within the Product Information group in the Theme Editor.
+ * Build the product bundle template by injecting the app block into the
+ * section that owns the buy-buttons block (preferred) or the title block
+ * (fallback), immediately after the anchor block in its block_order.
  *
- * Falls back to a separate top-level "apps" section only when no compatible
- * main-product section is found (old themes that pre-date app blocks).
+ * We deliberately do NOT use section type ("main-product") as a signal —
+ * theme authors name sections differently. The presence of buy-buttons or
+ * title blocks is the reliable indicator of the product information section.
+ *
+ * Falls back to a top-level "apps" section only when neither anchor is found
+ * in any section (very old themes that pre-date app blocks in sections).
  */
 function buildProductBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: string): any {
   const template = JSON.parse(JSON.stringify(baseTemplate));
   const blockType = `shopify://apps/${apiKey}/blocks/${PRODUCT_BLOCK_HANDLE}/${blockUuid}`;
   const blockKey = "wolfpack_bundle";
 
-  const mainSectionKey = findMainProductSectionKey(template);
+  // Try buy-buttons first, then title.
+  const result =
+    findSectionAndBlockKey(template, "buy-buttons") ??
+    findSectionAndBlockKey(template, "title");
 
-  if (mainSectionKey) {
-    const section = template.sections[mainSectionKey];
+  if (result) {
+    const { sectionKey, anchorKey } = result;
+    const section = template.sections[sectionKey];
     if (!section.blocks) section.blocks = {};
     if (!section.block_order) section.block_order = [];
 
     section.blocks[blockKey] = { type: blockType };
 
-    // Preferred: after buy-buttons. Fallback: after title. Last resort: append.
-    const anchorKey =
-      findBlockKeyByType(section, "buy-buttons") ??
-      findBlockKeyByType(section, "title") ??
-      null;
-
-    if (anchorKey !== null) {
-      const idx = section.block_order.indexOf(anchorKey);
-      if (idx !== -1) {
-        section.block_order.splice(idx + 1, 0, blockKey);
-      } else {
-        section.block_order.push(blockKey);
-      }
+    const idx = section.block_order.indexOf(anchorKey);
+    if (idx !== -1) {
+      section.block_order.splice(idx + 1, 0, blockKey);
     } else {
       section.block_order.push(blockKey);
     }
   } else {
-    // Fallback for themes without a recognisable main-product section.
+    // Fallback: old themes with no sections that have buy-buttons or title blocks.
     appendBundleWidgetSection(template, apiKey, PRODUCT_BLOCK_HANDLE, blockUuid);
   }
 
@@ -361,30 +358,19 @@ function buildProductBundleTemplate(baseTemplate: any, apiKey: string, blockUuid
 }
 
 /**
- * Find the key of the section that contains the product information blocks.
- * Resolution order:
- *  1. First section whose type is exactly "main-product"
- *  2. First section whose blocks include a "buy-buttons" block
- *  3. First section whose blocks include a "title" block
+ * Scan all sections for the first one that contains a block of the given type.
+ * Returns both the section key and the matched block key, or null if not found.
  */
-function findMainProductSectionKey(template: any): string | null {
-  const sections: [string, any][] = Object.entries(template.sections ?? {});
-  for (const [key, section] of sections) {
-    if ((section as any).type === "main-product") return key;
-  }
-  for (const [key, section] of sections) {
-    if (findBlockKeyByType(section as any, "buy-buttons")) return key;
-  }
-  for (const [key, section] of sections) {
-    if (findBlockKeyByType(section as any, "title")) return key;
-  }
-  return null;
-}
-
-/** Return the block key in a section whose type matches, or null. */
-function findBlockKeyByType(section: any, blockType: string): string | null {
-  for (const [key, block] of Object.entries(section.blocks ?? {})) {
-    if ((block as any).type === blockType) return key;
+function findSectionAndBlockKey(
+  template: any,
+  blockType: string,
+): { sectionKey: string; anchorKey: string } | null {
+  for (const [sectionKey, section] of Object.entries(template.sections ?? {})) {
+    for (const [blockKey, block] of Object.entries((section as any).blocks ?? {})) {
+      if ((block as any).type === blockType) {
+        return { sectionKey, anchorKey: blockKey };
+      }
+    }
   }
   return null;
 }

@@ -36,26 +36,26 @@ touches the existing `main-product` section's `blocks` / `block_order`.
 
 **Fix 1:** In the `installFetcher` success handler, replace the
 `open(productUrl)` call with an `open(themeEditorUrl)` call where:
-  `themeEditorUrl = https://{shop}/admin/themes/current/editor?previewPath=/products/{handle}&template=product.product-page-bundle`
+  `themeEditorUrl = https://{shop}/admin/themes/current/editor?previewPath=%2Fproducts%2F{handle}&template=product.product-page-bundle`
+  (`previewPath` value is URL-encoded; `template` is the Shopify alternate-template name)
 
 **Fix 2:** Replace `buildProductBundleTemplate` with logic that:
-1. Finds the section whose `type` is `main-product` (fallback: section
-   containing a `buy-buttons` block, then containing a `title` block)
-2. Injects `wolfpack_bundle` block into that section's `blocks`
-3. Inserts `wolfpack_bundle` key into `block_order` right after the
-   `buy-buttons` key (fallback: after `title` key, then append)
-4. Falls back to the current `apps`-section approach only if no compatible
-   main section is found (old-style themes)
+1. Scans ALL sections for the first one containing a `buy-buttons` block
+2. Falls back to finding the first section with a `title` block
+3. Injects `wolfpack_bundle` block into that section's `blocks`
+4. Inserts `wolfpack_bundle` key into `block_order` right after the anchor key
+5. Falls back to a top-level `apps` section only if neither anchor is found
+   (does NOT use section `type` — theme authors name sections differently)
 
 ## Progress Log
 
 ### 2026-03-24 - Implemented and committed
 
 - ✅ Fix 1 (block placement): Replaced `appendBundleWidgetSection` call in
-  `buildProductBundleTemplate` with new logic that injects the block inside the
-  `main-product` section after `buy-buttons` (fallback: after `title`, then append).
-  Added `findMainProductSectionKey()` + `findBlockKeyByType()` helpers.
-  Retains fallback to separate `apps` section for old themes with no compatible section.
+  `buildProductBundleTemplate` with logic that scans ALL sections for `buy-buttons`
+  block first, then `title` block, and injects after the anchor. Added
+  `findSectionAndBlockKey()` helper. Removed section-type detection entirely.
+  Retains `apps`-section fallback when neither anchor is found.
 - ✅ Fix 2 (theme editor redirect): Changed `installFetcher` success handler from
   `open(onlineStorePreviewUrl)` to `open(themeEditorUrl)` where:
   `themeEditorUrl = https://{shop}/admin/themes/current/editor?previewPath=/products/{handle}&template=product.product-page-bundle`
