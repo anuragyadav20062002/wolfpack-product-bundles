@@ -631,7 +631,7 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Handle install widget response — on success, open the product page
+  // Handle install widget response — on success, open the Theme Editor on the correct product
   useEffect(() => {
     if (installFetcher.data && installFetcher.state === 'idle') {
       const result = installFetcher.data;
@@ -639,28 +639,29 @@ export default function ConfigureBundleFlow() {
         setWidgetInstalled(true);
         shopify.toast.show(
           result.templateAlreadyExists
-            ? "Widget already installed on your product page."
-            : "Widget installed! Opening your bundle product page…",
+            ? "Widget already on your theme. Opening Theme Editor…"
+            : "Widget installed! Opening Theme Editor on your product…",
           { isError: false }
         );
-        // Navigate to the product page after install
-        const productUrl = bundleProduct?.onlineStorePreviewUrl || bundleProduct?.onlineStoreUrl;
-        if (productUrl) {
-          const separator = productUrl.includes('?') ? '&' : '?';
-          const urlWithTemplate = formState.templateName
-            ? `${productUrl}${separator}view=${formState.templateName}`
-            : productUrl;
-          open(urlWithTemplate, '_blank');
+        // Open Theme Editor with the bundle product as the preview and the
+        // product-page-bundle template active so the merchant immediately sees
+        // where the widget is placed.
+        const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
+        if (productHandle) {
+          const previewPath = encodeURIComponent(`/products/${productHandle}`);
+          const themeEditorUrl = `https://${shop}/admin/themes/current/editor?previewPath=${previewPath}&template=product.product-page-bundle`;
+          open(themeEditorUrl, '_blank');
         }
       } else {
-        shopify.toast.show(result.error || "Couldn't auto-install — opening Theme Editor instead.", { isError: true, duration: 5000 });
-        // Fallback: open theme editor
-        if (bundleProduct?.onlineStoreUrl) {
-          open(`${bundleProduct.onlineStoreUrl}`, '_blank');
-        }
+        shopify.toast.show(result.error || "Install failed — opening Theme Editor instead.", { isError: true, duration: 5000 });
+        // Fallback: open Theme Editor without a specific template so the merchant
+        // can place the block manually
+        const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
+        const previewPath = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
+        open(`https://${shop}/admin/themes/current/editor?template=product${previewPath}`, '_blank');
       }
     }
-  }, [installFetcher.data, installFetcher.state]);
+  }, [installFetcher.data, installFetcher.state, bundleProduct, bundle.shopifyProductHandle, shop]);
 
   const handleAddToStorefront = useCallback(() => {
     const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;

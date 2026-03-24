@@ -313,13 +313,87 @@ function buildBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: strin
   return appendBundleWidgetSection(baseTemplate, apiKey, BLOCK_HANDLE, blockUuid);
 }
 
+/**
+ * Build the product bundle template by injecting the app block INSIDE the
+ * main-product section, immediately after the "buy-buttons" block (or after
+ * "title" if buy-buttons is absent). This ensures the widget appears in the
+ * expected position within the Product Information group in the Theme Editor.
+ *
+ * Falls back to a separate top-level "apps" section only when no compatible
+ * main-product section is found (old themes that pre-date app blocks).
+ */
 function buildProductBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: string): any {
-  return appendBundleWidgetSection(baseTemplate, apiKey, PRODUCT_BLOCK_HANDLE, blockUuid);
+  const template = JSON.parse(JSON.stringify(baseTemplate));
+  const blockType = `shopify://apps/${apiKey}/blocks/${PRODUCT_BLOCK_HANDLE}/${blockUuid}`;
+  const blockKey = "wolfpack_bundle";
+
+  const mainSectionKey = findMainProductSectionKey(template);
+
+  if (mainSectionKey) {
+    const section = template.sections[mainSectionKey];
+    if (!section.blocks) section.blocks = {};
+    if (!section.block_order) section.block_order = [];
+
+    section.blocks[blockKey] = { type: blockType };
+
+    // Preferred: after buy-buttons. Fallback: after title. Last resort: append.
+    const anchorKey =
+      findBlockKeyByType(section, "buy-buttons") ??
+      findBlockKeyByType(section, "title") ??
+      null;
+
+    if (anchorKey !== null) {
+      const idx = section.block_order.indexOf(anchorKey);
+      if (idx !== -1) {
+        section.block_order.splice(idx + 1, 0, blockKey);
+      } else {
+        section.block_order.push(blockKey);
+      }
+    } else {
+      section.block_order.push(blockKey);
+    }
+  } else {
+    // Fallback for themes without a recognisable main-product section.
+    appendBundleWidgetSection(template, apiKey, PRODUCT_BLOCK_HANDLE, blockUuid);
+  }
+
+  return template;
+}
+
+/**
+ * Find the key of the section that contains the product information blocks.
+ * Resolution order:
+ *  1. First section whose type is exactly "main-product"
+ *  2. First section whose blocks include a "buy-buttons" block
+ *  3. First section whose blocks include a "title" block
+ */
+function findMainProductSectionKey(template: any): string | null {
+  const sections: [string, any][] = Object.entries(template.sections ?? {});
+  for (const [key, section] of sections) {
+    if ((section as any).type === "main-product") return key;
+  }
+  for (const [key, section] of sections) {
+    if (findBlockKeyByType(section as any, "buy-buttons")) return key;
+  }
+  for (const [key, section] of sections) {
+    if (findBlockKeyByType(section as any, "title")) return key;
+  }
+  return null;
+}
+
+/** Return the block key in a section whose type matches, or null. */
+function findBlockKeyByType(section: any, blockType: string): string | null {
+  for (const [key, block] of Object.entries(section.blocks ?? {})) {
+    if ((block as any).type === blockType) return key;
+  }
+  return null;
 }
 
 /** Deep-clones the base template and appends an 'apps' section with the given block. */
 function appendBundleWidgetSection(baseTemplate: any, apiKey: string, blockHandle: string, blockUuid: string): any {
-  const template = JSON.parse(JSON.stringify(baseTemplate));
+  const template = typeof baseTemplate === "string"
+    ? JSON.parse(baseTemplate)
+    : JSON.parse(JSON.stringify(baseTemplate));
 
   template.sections["bundle_widget"] = {
     type: "apps",
