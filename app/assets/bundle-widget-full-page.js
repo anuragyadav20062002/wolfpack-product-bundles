@@ -1126,9 +1126,16 @@ class BundleWidgetFullPage {
           removeBtn.className = 'side-panel-product-remove';
           removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
           removeBtn.addEventListener('click', () => {
-            const stepIndex = item.stepIndex ?? this.currentStepIndex;
+            const stepIndex = item.stepIndex;
             const productId = item.variantId || item.productId || item.id;
+            const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
             this.updateProductSelection(stepIndex, productId, 0);
+            const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+            ToastManager.showWithUndo(
+              `Removed "${truncated}"`,
+              () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+              5000
+            );
           });
           row.appendChild(removeBtn);
         }
@@ -2164,6 +2171,7 @@ class BundleWidgetFullPage {
 
       if (!item.isDefault) {
         const removeBtn = li.querySelector('.footer-panel-remove');
+        if (!removeBtn) return;
         removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
