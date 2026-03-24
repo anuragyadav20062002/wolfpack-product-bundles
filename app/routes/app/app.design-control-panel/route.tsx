@@ -36,11 +36,19 @@ const FIRST_PRODUCT_QUERY = `#graphql
   }
 `;
 
+const FIRST_PAGE_QUERY = `#graphql
+  query FirstPage {
+    pages(first: 1) {
+      edges { node { handle } }
+    }
+  }
+`;
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session, admin } = await authenticate.admin(request);
   const shopId = session.shop;
 
-  const [productPageSettings, fullPageSettings, productRes] = await Promise.all([
+  const [productPageSettings, fullPageSettings, productRes, pageRes] = await Promise.all([
     prisma.designSettings.findUnique({
       where: { shopId_bundleType: { shopId, bundleType: "product_page" } }
     }),
@@ -48,10 +56,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
       where: { shopId_bundleType: { shopId, bundleType: "full_page" } }
     }),
     admin.graphql(FIRST_PRODUCT_QUERY),
+    admin.graphql(FIRST_PAGE_QUERY),
   ]);
 
   const productData = await productRes.json();
   const productHandle: string | null = productData.data?.products?.edges?.[0]?.node?.handle ?? null;
+
+  const pageData = await pageRes.json();
+  const pageHandle: string | null = pageData.data?.pages?.edges?.[0]?.node?.handle ?? null;
 
   const settings = {
     product_page: mergeSettings(productPageSettings, DEFAULT_SETTINGS.product_page),
@@ -62,7 +74,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     ? `https://${shopId}/products/${productHandle}?view=product-page-bundle`
     : null;
 
-  return json({ shopId, settings, previewUrls: { pdp: pdpPreviewUrl, fpb: null } });
+  const fpbPreviewUrl = pageHandle
+    ? `https://${shopId}/pages/${pageHandle}?view=full-page-bundle`
+    : null;
+
+  return json({ shopId, settings, previewUrls: { pdp: pdpPreviewUrl, fpb: fpbPreviewUrl } });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -405,7 +421,7 @@ export default function DesignControlPanel() {
                     settings={fullPageState.settings}
                     bundleType={BundleType.FULL_PAGE}
                     isDirty={fullPageState.hasUnsavedChanges}
-                    previewUrl={null}
+                    previewUrl={previewUrls.fpb}
                     saveCount={fullPageState.saveCount}
                   />
                 </div>
