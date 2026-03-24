@@ -365,11 +365,6 @@ const fpbPageHtml = `
       </div>
       <p class="side-panel-subtitle">Review your bundle</p>
       <div class="side-panel-discount-message">Add 1 more to save 20%</div>
-      <div class="side-panel-progress">
-        <div class="side-panel-progress-bar-bg">
-          <div class="side-panel-progress-bar-fill" style="width:66%;"></div>
-        </div>
-      </div>
       <div class="side-panel-item-count">2 of 3 items</div>
       <div class="side-panel-products">
         <div class="side-panel-product-row">

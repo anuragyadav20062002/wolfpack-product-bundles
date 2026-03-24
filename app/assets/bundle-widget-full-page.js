@@ -1080,19 +1080,6 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Progress bar
-    const progressPercent = this.calculateDiscountProgress(totalQuantity);
-    if (progressPercent !== null && this.selectedBundle?.pricing?.enabled) {
-      const progressWrap = document.createElement('div');
-      progressWrap.className = 'side-panel-progress';
-      progressWrap.innerHTML = `
-        <div class="side-panel-progress-bar-bg">
-          <div class="side-panel-progress-bar-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
-        </div>
-      `;
-      panel.appendChild(progressWrap);
-    }
-
     // Item count label
     if (allSelectedProducts.length > 0) {
       const countLabel = document.createElement('div');
@@ -2286,20 +2273,6 @@ class BundleWidgetFullPage {
     bar.appendChild(centreCol);
     bar.appendChild(ctaBtn);
     return bar;
-  }
-
-  // Helper: Calculate discount progress percentage
-  calculateDiscountProgress(currentQuantity) {
-    if (!this.selectedBundle?.pricing?.enabled) return 0;
-
-    const rules = this.selectedBundle.pricing.rules || [];
-    if (rules.length === 0) return 0;
-
-    // Find the highest threshold (nested structure: rule.condition.value)
-    const maxThreshold = Math.max(...rules.map(r => r.condition?.value || 0));
-    if (maxThreshold === 0) return 0;
-
-    return Math.min(100, (currentQuantity / maxThreshold) * 100);
   }
 
   // Helper: Truncate title for compact display
