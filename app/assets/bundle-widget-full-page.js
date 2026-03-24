@@ -934,7 +934,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice,
       Object.values(this.selectedProducts || {}).reduce((sum, s) =>
@@ -1015,7 +1016,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -2085,7 +2087,8 @@ class BundleWidgetFullPage {
     // Pricing data
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -2684,15 +2687,19 @@ class BundleWidgetFullPage {
             const numericVariantId = this.extractId(variantId) || variantId;
 
 
+            const properties = {
+              '_bundle_id': bundleInstanceId,
+              '_bundle_name': bundleName,
+              '_step_index': String(stepIndex),
+              '_step_name': step.name
+            };
+            if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
+            if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+
             items.push({
               id: numericVariantId,
               quantity: quantity,
-              properties: {
-                '_bundle_id': bundleInstanceId,
-                '_bundle_name': bundleName,
-                '_step_index': String(stepIndex),
-                '_step_name': step.name
-              }
+              properties
             });
           }
         });
@@ -2903,7 +2910,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
 
     const discountInfo = PricingCalculator.calculateDiscount(
@@ -2956,7 +2964,8 @@ class BundleWidgetFullPage {
 
     const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -3795,7 +3804,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
 
     const discountInfo = PricingCalculator.calculateDiscount(

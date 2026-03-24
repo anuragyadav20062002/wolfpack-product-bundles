@@ -11,12 +11,15 @@
 import { BUNDLE_WIDGET } from './constants.js';
 
 export class PricingCalculator {
-  static calculateBundleTotal(selectedProducts, stepProductData) {
+  static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
     let totalQuantity = 0;
 
-
     selectedProducts.forEach((stepSelections, stepIndex) => {
+      // Skip free gift steps — their retail cost is not charged to the customer.
+      // The cart transform handles making them $0 at checkout via adjusted discount math.
+      if (steps?.[stepIndex]?.isFreeGift) return;
+
       const productsInStep = stepProductData[stepIndex] || [];
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {

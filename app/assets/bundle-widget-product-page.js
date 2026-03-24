@@ -1191,7 +1191,8 @@ class BundleWidgetProductPage {
   updateAddToCartButton() {
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
 
     const discountInfo = PricingCalculator.calculateDiscount(
@@ -2115,7 +2116,8 @@ class BundleWidgetProductPage {
   updateModalFooterMessaging() {
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
 
     const discountInfo = PricingCalculator.calculateDiscount(
@@ -2268,7 +2270,8 @@ class BundleWidgetProductPage {
     try {
       const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
         this.selectedProducts,
-        this.stepProductData
+        this.stepProductData,
+        this.selectedBundle?.steps
       );
 
       if (totalQuantity === 0) {

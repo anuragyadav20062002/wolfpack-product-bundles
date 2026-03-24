@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.3.2
- * Built   : 2026-03-23
+ * Version : 2.3.3
+ * Built   : 2026-03-24
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.3.2';
+window.__BUNDLE_WIDGET_VERSION__ = '2.3.3';
 (function() {
   'use strict';
 
@@ -593,12 +593,15 @@ class BundleDataManager {
 
 
 class PricingCalculator {
-  static calculateBundleTotal(selectedProducts, stepProductData) {
+  static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
     let totalQuantity = 0;
 
-
     selectedProducts.forEach((stepSelections, stepIndex) => {
+      // Skip free gift steps — their retail cost is not charged to the customer.
+      // The cart transform handles making them $0 at checkout via adjusted discount math.
+      if (steps?.[stepIndex]?.isFreeGift) return;
+
       const productsInStep = stepProductData[stepIndex] || [];
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
@@ -3384,7 +3387,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice,
       Object.values(this.selectedProducts || {}).reduce((sum, s) =>
@@ -3465,7 +3469,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -4535,7 +4540,8 @@ class BundleWidgetFullPage {
     // Pricing data
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -5134,15 +5140,19 @@ class BundleWidgetFullPage {
             const numericVariantId = this.extractId(variantId) || variantId;
 
 
+            const properties = {
+              '_bundle_id': bundleInstanceId,
+              '_bundle_name': bundleName,
+              '_step_index': String(stepIndex),
+              '_step_name': step.name
+            };
+            if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
+            if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+
             items.push({
               id: numericVariantId,
               quantity: quantity,
-              properties: {
-                '_bundle_id': bundleInstanceId,
-                '_bundle_name': bundleName,
-                '_step_index': String(stepIndex),
-                '_step_name': step.name
-              }
+              properties
             });
           }
         });
@@ -5353,7 +5363,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
 
     const discountInfo = PricingCalculator.calculateDiscount(
@@ -5406,7 +5417,8 @@ class BundleWidgetFullPage {
 
     const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -6245,7 +6257,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
 
     const discountInfo = PricingCalculator.calculateDiscount(
