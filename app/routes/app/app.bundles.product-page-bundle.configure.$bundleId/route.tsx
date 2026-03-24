@@ -648,7 +648,7 @@ export default function ConfigureBundleFlow() {
         // where the widget is placed.
         // shopifyProductHandle is the actual PDP product; bundleProduct.handle is the synthetic
         // bundle product for ads/checkout — prefer the PDP handle for the theme editor URL.
-        const productHandle = bundle.shopifyProductHandle || bundleProduct?.handle;
+        const productHandle = bundle.shopifyProductHandle;
         if (productHandle) {
           const previewPath = encodeURIComponent(`/products/${productHandle}`);
           const themeEditorUrl = `https://${shop}/admin/themes/current/editor?previewPath=${previewPath}&template=product.product-page-bundle`;
@@ -658,7 +658,7 @@ export default function ConfigureBundleFlow() {
         shopify.toast.show(result.error || "Install failed — opening Theme Editor instead.", { isError: true, duration: 5000 });
         // Fallback: open Theme Editor without a specific template so the merchant
         // can place the block manually
-        const productHandle = bundle.shopifyProductHandle || bundleProduct?.handle;
+        const productHandle = bundle.shopifyProductHandle;
         const previewPath = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
         open(`https://${shop}/admin/themes/current/editor?template=product${previewPath}`, '_blank');
       }
@@ -666,7 +666,7 @@ export default function ConfigureBundleFlow() {
   }, [installFetcher.data, installFetcher.state, bundleProduct, bundle.shopifyProductHandle, shop]);
 
   const handleAddToStorefront = useCallback(() => {
-    const productHandle = bundle.shopifyProductHandle || bundleProduct?.handle;
+    const productHandle = bundle.shopifyProductHandle;
     installFetcher.submit(
       JSON.stringify({ productHandle, bundleId: bundle.id }),
       { method: 'POST', action: '/api/install-pdp-widget', encType: 'application/json' }
@@ -716,7 +716,7 @@ export default function ConfigureBundleFlow() {
 
     // Try different URL construction methods
     let productUrl = null;
-    const productHandle = bundle.shopifyProductHandle || bundleProduct?.handle;
+    const productHandle = bundle.shopifyProductHandle;
 
     if (bundleProduct) {
 
@@ -1255,7 +1255,7 @@ export default function ConfigureBundleFlow() {
           content: "Open in Theme Editor",
           icon: ExternalIcon,
           onAction: () => {
-            const productHandle = bundle.shopifyProductHandle || bundleProduct?.handle;
+            const productHandle = bundle.shopifyProductHandle;
             const previewParam = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
             // target=newAppsSection is correct for section-type blocks.
             const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;

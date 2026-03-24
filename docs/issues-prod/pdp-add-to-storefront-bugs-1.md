@@ -31,7 +31,7 @@ Files to modify:
 ### 2026-03-24 17:15 - Completed
 
 - ✅ Fixed `writeThemeAsset`: `body: { asString: content }` → `body: { type: "TEXT", value: content }` (Shopify API 2025-10 requirement)
-- ✅ Fixed handle priority in 4 locations — `bundle.shopifyProductHandle || bundleProduct?.handle`:
+- ✅ Removed `bundleProduct?.handle` fallback entirely — 5 locations now use `bundle.shopifyProductHandle` only:
   - Theme editor URL on success (install effect)
   - Theme editor URL on failure fallback (install effect)
   - `handleAddToStorefront` submit payload
