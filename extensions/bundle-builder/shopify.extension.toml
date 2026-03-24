@@ -16,6 +16,11 @@ api_version = "2025-10"
 target = "all"
 liquid_path = "blocks/bundle-product-page.liquid"
 
+# Same block registered as a standalone section so it can appear in product.product-page-bundle.json
+[[extensions.blocks]]
+target = "section"
+liquid_path = "blocks/bundle-product-page.liquid"
+
 # Full-Page Bundle Block (for standalone pages)
 [[extensions.blocks]]
 target = "section"
