@@ -52,14 +52,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { session, admin } = await authenticate.admin(request);
   const shopId = session.shop;
 
-  // Ensure preview templates exist in the merchant's theme (idempotent, non-fatal).
-  // Reuses the same smart template injection used by "Add to Storefront" —
-  // clones product.json / page.json from the theme and injects the bundle block
-  // with the correct apiKey + blockUuid type string.
   const apiKey = process.env.SHOPIFY_API_KEY ?? "";
-  void ensureProductBundleTemplate(admin, session, apiKey);
-  void ensureBundlePageTemplate(admin, session, apiKey);
 
+  // All six operations run in parallel. Template writes are awaited so the
+  // preview URL is guaranteed to work on first DCP open (no race condition).
   const [productPageSettings, fullPageSettings, productRes, pageRes] = await Promise.all([
     prisma.designSettings.findUnique({
       where: { shopId_bundleType: { shopId, bundleType: "product_page" } }
@@ -69,6 +65,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }),
     admin.graphql(FIRST_PRODUCT_QUERY),
     admin.graphql(FIRST_PAGE_QUERY),
+    ensureProductBundleTemplate(admin, session, apiKey),
+    ensureBundlePageTemplate(admin, session, apiKey),
   ]);
 
   const productData = await productRes.json();
