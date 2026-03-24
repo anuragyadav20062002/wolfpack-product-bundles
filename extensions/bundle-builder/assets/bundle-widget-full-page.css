@@ -3461,6 +3461,7 @@ body.modal-open {
   min-width: 0;
   width: auto; /* Override .full-page-content-section width:100% that pushes side panel off-screen */
   padding: 20px 40px;
+  overflow: visible; /* Allow absolutely-positioned tooltips to render above the step tabs without being clipped */
 }
 
 /* Sidebar layout: use flexible column widths at desktop so cards never overflow
@@ -3474,6 +3475,14 @@ body.modal-open {
     padding-left: 0;
     padding-right: 0;
     margin-top: 0; /* remove extra top margin — content already has padding-top via sidebar-content */
+  }
+
+  /* Reset the fixed card width from the base desktop rule so cards fill their 1fr grid column.
+     Without this, .product-card { min-width: 280px } causes overflow in the narrowed sidebar area. */
+  .sidebar-content .product-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 }
 

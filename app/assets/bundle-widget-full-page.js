@@ -2531,6 +2531,70 @@ class BundleWidgetFullPage {
     }
   }
 
+  // Sidebar-only surgical step advance: updates the product grid and tabs in-place
+  // without tearing down the entire two-column DOM structure. Prevents the layout
+  // shift that occurs when reRenderFullPage() destroys and rebuilds everything.
+  async _sidebarAdvanceToNextStep() {
+    const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
+    if (!contentSection) {
+      // Fallback: full re-render if DOM structure is unexpected
+      this.renderFullPageLayoutWithSidebar();
+      return;
+    }
+
+    // 1. Update step timeline tabs in-place (active/completed/locked state + click listeners)
+    this.updateStepTimeline();
+
+    // 2. Rebuild search input for the new step (search query was cleared by the caller)
+    const existingSearch = contentSection.querySelector('.step-search-container');
+    if (existingSearch) existingSearch.replaceWith(this.createSearchInput());
+
+    // 3. Rebuild category tabs for the new step
+    const existingTabs = contentSection.querySelector('.category-tabs');
+    if (this.config.showCategoryTabs) {
+      const newTabs = this.createCategoryTabs(this.currentStepIndex);
+      if (existingTabs && newTabs) {
+        existingTabs.replaceWith(newTabs);
+      } else if (existingTabs && !newTabs) {
+        existingTabs.remove();
+      } else if (!existingTabs && newTabs) {
+        const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
+        if (gridContainer) contentSection.insertBefore(newTabs, gridContainer);
+      }
+    } else if (existingTabs) {
+      existingTabs.remove();
+    }
+
+    // 4. Show loading skeleton in product grid
+    const productGridContainer = contentSection.querySelector('.full-page-product-grid-container');
+    if (!productGridContainer) {
+      this.renderFullPageLayoutWithSidebar();
+      return;
+    }
+    productGridContainer.innerHTML = this.createProductGridLoadingState();
+
+    // 5. Immediately update side panel to reflect current selections
+    const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
+    if (sidePanel) this.renderSidePanel(sidePanel);
+
+    // 6. Async: load products for the new step and swap in the grid
+    if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
+    try {
+      await this.loadStepProducts(this.currentStepIndex);
+      const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+      productGridContainer.innerHTML = '';
+      productGridContainer.appendChild(productGrid);
+      if (sidePanel) this.renderSidePanel(sidePanel);
+      this.hideLoadingOverlay();
+      this.preloadNextStep();
+      this._renderMobileBottomBar();
+    } catch (error) {
+      this.hideLoadingOverlay();
+      productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+      this._renderMobileBottomBar();
+    }
+  }
+
   canProceedToNextStep() {
     return this.isStepCompleted(this.currentStepIndex);
   }
@@ -3584,7 +3648,12 @@ class BundleWidgetFullPage {
               this.activeCollectionId = null;
               this.searchQuery = '';
               this.currentStepIndex++;
-              this.reRenderFullPage();
+              const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+              if (layout === 'footer_side') {
+                this._sidebarAdvanceToNextStep();
+              } else {
+                this.reRenderFullPage();
+              }
             }
           }, 120);
         }

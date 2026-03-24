@@ -519,5 +519,15 @@ The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-s
 
 ---
 
-**Last Updated:** 2026-03-20
+## 🔐 Test Store Access
+
+**Default storefront password for all locked test stores: `1`**
+
+- Test store: `wolfpack-store-test-1.myshopify.com`
+- Use this password when Chrome DevTools MCP or any browser automation tool
+  hits the Shopify storefront password gate.
+
+---
+
+**Last Updated:** 2026-03-24
 **Author:** Aditya Awasthi
