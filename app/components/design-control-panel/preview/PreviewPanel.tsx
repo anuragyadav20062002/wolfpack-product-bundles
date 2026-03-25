@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import type { DesignSettings } from "../../../types/state.types";
 import { BundleType } from "../../../constants/bundle";
 import { settingsToCSSVarRecord } from "../../../lib/preview-css-vars";
-import { AppPreviewIframe } from "./StorefrontIframePreview";
+import { AppPreviewIframe, DualAppPreviewIframe } from "./StorefrontIframePreview";
 
 interface PreviewPanelProps {
   settings: DesignSettings;
@@ -40,82 +40,127 @@ const TOGGLE_BTN_ACTIVE: React.CSSProperties = {
   borderColor: "#1a1a1a",
 };
 
+function buildCssVarString(settings: DesignSettings): string {
+  const record = settingsToCSSVarRecord(settings);
+  return Object.entries(record)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(";");
+}
+
+function pushCss(
+  iframeRef: React.RefObject<HTMLIFrameElement>,
+  readyRef: React.MutableRefObject<boolean>,
+  pendingRef: React.MutableRefObject<string | null>,
+  cssVars: string
+) {
+  if (readyRef.current) {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "DCP_CSS_UPDATE", vars: cssVars },
+      "*"
+    );
+  } else {
+    pendingRef.current = cssVars;
+  }
+}
+
 /**
  * PreviewPanel — always-on app-served iframe preview.
  *
- * Shows an interactive bundle widget preview (PDP modal open / FPB full layout)
- * that updates in real-time as the merchant changes settings. CSS variables are
- * pushed into the iframe via postMessage on every settings change — no save or
- * reload required.
+ * For FPB, both sidebar and floating-footer iframes are loaded simultaneously
+ * on mount. The footer layout toggle switches between them via a 150 ms CSS
+ * opacity crossfade — no iframe reload, no blank flash.
  *
- * For FPB, a footer layout toggle (Sidebar | Floating Footer) lets the merchant
- * preview both layout options without switching away from the DCP.
+ * For PDP, a single iframe is used (no layout variants needed).
+ *
+ * CSS variables are pushed into all active iframes via postMessage on every
+ * settings change — no save or reload required.
  */
 export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  // Track whether the iframe has signalled readiness
-  const iframeReadyRef = useRef(false);
-  // Buffer the last CSS payload so we can replay it on ready
-  const pendingCssRef = useRef<string | null>(null);
+  const isFpb = bundleType === BundleType.FULL_PAGE;
 
-  // Footer layout toggle — only relevant for FPB
+  // ── FPB: dual-iframe refs + ready tracking ─────────────────────────────────
+  const sidebarRef = useRef<HTMLIFrameElement>(null);
+  const floatingRef = useRef<HTMLIFrameElement>(null);
+  const readySidebar = useRef(false);
+  const readyFloating = useRef(false);
+  const pendingSidebar = useRef<string | null>(null);
+  const pendingFloating = useRef<string | null>(null);
+
+  // ── PDP: single-iframe refs ────────────────────────────────────────────────
+  const singleRef = useRef<HTMLIFrameElement>(null);
+  const readySingle = useRef(false);
+  const pendingSingle = useRef<string | null>(null);
+
+  // Footer layout toggle — FPB only
   const [fpbFooterLayout, setFpbFooterLayout] = useState<FpbFooterLayout>("sidebar");
 
-  // Compute the effective iframe URL (append footerLayout for FPB)
-  const effectiveUrl = (() => {
-    if (!previewUrl) return null;
-    if (bundleType !== BundleType.FULL_PAGE) return previewUrl;
-    const sep = previewUrl.includes("?") ? "&" : "?";
-    return `${previewUrl}${sep}footerLayout=${fpbFooterLayout}`;
-  })();
+  // Build FPB URLs (both always constructed when previewUrl is set)
+  const sep = previewUrl?.includes("?") ? "&" : "?";
+  const sidebarUrl = previewUrl ? `${previewUrl}${sep}footerLayout=sidebar` : null;
+  const floatingUrl = previewUrl ? `${previewUrl}${sep}footerLayout=floating` : null;
 
-  // Build the CSS variable string from current settings
-  const buildCssVarString = () => {
-    const record = settingsToCSSVarRecord(settings);
-    return Object.entries(record)
-      .map(([k, v]) => `${k}:${v}`)
-      .join(";");
-  };
-
-  // Listen for DCP_PREVIEW_READY from the iframe, then flush pending CSS
+  // ── Listen for DCP_PREVIEW_READY — identify iframe by e.source ─────────────
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
-      if ((e.data as { type?: string } | null)?.type === "DCP_PREVIEW_READY") {
-        iframeReadyRef.current = true;
-        if (pendingCssRef.current !== null) {
-          iframeRef.current?.contentWindow?.postMessage(
-            { type: "DCP_CSS_UPDATE", vars: pendingCssRef.current },
-            "*"
-          );
-          pendingCssRef.current = null;
+      if ((e.data as { type?: string } | null)?.type !== "DCP_PREVIEW_READY") return;
+      const src = e.source;
+
+      if (isFpb) {
+        if (src === sidebarRef.current?.contentWindow) {
+          readySidebar.current = true;
+          if (pendingSidebar.current !== null) {
+            sidebarRef.current?.contentWindow?.postMessage(
+              { type: "DCP_CSS_UPDATE", vars: pendingSidebar.current },
+              "*"
+            );
+            pendingSidebar.current = null;
+          }
+        } else if (src === floatingRef.current?.contentWindow) {
+          readyFloating.current = true;
+          if (pendingFloating.current !== null) {
+            floatingRef.current?.contentWindow?.postMessage(
+              { type: "DCP_CSS_UPDATE", vars: pendingFloating.current },
+              "*"
+            );
+            pendingFloating.current = null;
+          }
+        }
+      } else {
+        if (src === singleRef.current?.contentWindow) {
+          readySingle.current = true;
+          if (pendingSingle.current !== null) {
+            singleRef.current?.contentWindow?.postMessage(
+              { type: "DCP_CSS_UPDATE", vars: pendingSingle.current },
+              "*"
+            );
+            pendingSingle.current = null;
+          }
         }
       }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFpb]);
 
-  // Reset ready state when the URL changes (iframe reloads)
+  // Reset single-iframe ready state when its URL changes
   useEffect(() => {
-    iframeReadyRef.current = false;
-  }, [effectiveUrl]);
+    readySingle.current = false;
+  }, [previewUrl]);
 
-  // Push CSS variable updates to the iframe on every settings change
+  // ── Push CSS var updates to all iframes on every settings change ───────────
   useEffect(() => {
-    const cssVars = buildCssVarString();
-    if (iframeReadyRef.current) {
-      iframeRef.current?.contentWindow?.postMessage(
-        { type: "DCP_CSS_UPDATE", vars: cssVars },
-        "*"
-      );
+    const cssVars = buildCssVarString(settings);
+    if (isFpb) {
+      pushCss(sidebarRef, readySidebar, pendingSidebar, cssVars);
+      pushCss(floatingRef, readyFloating, pendingFloating, cssVars);
     } else {
-      // Buffer for when iframe becomes ready
-      pendingCssRef.current = cssVars;
+      pushCss(singleRef, readySingle, pendingSingle, cssVars);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
 
-  if (!effectiveUrl) {
+  if (!previewUrl) {
     return (
       <div
         style={{
@@ -137,7 +182,7 @@ export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelP
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {/* Footer layout toggle — FPB only */}
-      {bundleType === BundleType.FULL_PAGE && (
+      {isFpb && (
         <div
           style={{
             display: "flex",
@@ -172,7 +217,18 @@ export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelP
         </div>
       )}
 
-      <AppPreviewIframe ref={iframeRef} url={effectiveUrl} />
+      {/* Preview iframe(s) */}
+      {isFpb && sidebarUrl && floatingUrl ? (
+        <DualAppPreviewIframe
+          urlA={sidebarUrl}
+          urlB={floatingUrl}
+          activeKey={fpbFooterLayout === "sidebar" ? "a" : "b"}
+          refA={sidebarRef}
+          refB={floatingRef}
+        />
+      ) : (
+        <AppPreviewIframe ref={singleRef} url={previewUrl} />
+      )}
     </div>
   );
 }

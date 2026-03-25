@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState, useCallback, forwardRef } from "react";
 import { Spinner } from "@shopify/polaris";
 
+// ─── Shared constants ────────────────────────────────────────────────────────
+
 // The iframe is rendered at full desktop resolution and CSS-scaled down to fit
 // the preview panel. This gives a pixel-accurate representation of the widget
 // without clipping or scrollbars at any panel width.
@@ -151,3 +153,120 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
 
 // Keep the old name as an alias for backwards compatibility within this file
 export { AppPreviewIframe as StorefrontIframePreview };
+
+// ─── DualAppPreviewIframe ─────────────────────────────────────────────────────
+//
+// Renders two iframes (urlA and urlB) in a shared scaled container.
+// Both are mounted and loaded on mount so switching between them requires no
+// reload. The active iframe is shown at full opacity; the inactive one is hidden
+// with opacity: 0 and pointer-events: none. Switching is a 150 ms CSS fade.
+
+interface DualAppPreviewIframeProps {
+  urlA: string;
+  urlB: string;
+  /** Which iframe is currently visible */
+  activeKey: "a" | "b";
+  refA: React.RefObject<HTMLIFrameElement>;
+  refB: React.RefObject<HTMLIFrameElement>;
+}
+
+export function DualAppPreviewIframe({
+  urlA,
+  urlB,
+  activeKey,
+  refA,
+  refB,
+}: DualAppPreviewIframeProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+  const [loadedA, setLoadedA] = useState(false);
+  const [loadedB, setLoadedB] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      if (width > 0) setScale(width / DESKTOP_WIDTH);
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  const containerHeight = scale > 0 ? Math.round(DESKTOP_HEIGHT * scale) : 0;
+  const activeLoaded = activeKey === "a" ? loadedA : loadedB;
+
+  const iframeStyle = (isActive: boolean): React.CSSProperties => ({
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: `${DESKTOP_WIDTH}px`,
+    height: `${DESKTOP_HEIGHT}px`,
+    border: "none",
+    transform: `scale(${scale})`,
+    transformOrigin: "top left",
+    display: "block",
+    opacity: isActive ? 1 : 0,
+    pointerEvents: isActive ? "auto" : "none",
+    transition: "opacity 150ms ease",
+    zIndex: isActive ? 2 : 1,
+  });
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: containerHeight > 0 ? `${containerHeight}px` : "200px",
+        position: "relative",
+        overflow: "hidden",
+        background: "#f4f4f4",
+        borderRadius: "8px",
+      }}
+    >
+      {/* Loading spinner — shown until the active iframe has fired onLoad */}
+      {(!activeLoaded || scale === 0) && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            background: "#f4f4f4",
+            zIndex: 10,
+            minHeight: "200px",
+          }}
+        >
+          <Spinner accessibilityLabel="Loading preview" />
+          <span style={{ fontSize: "13px", color: "#6d7175" }}>
+            Loading preview…
+          </span>
+        </div>
+      )}
+
+      {scale > 0 && (
+        <>
+          <iframe
+            ref={refA}
+            src={urlA}
+            title="Bundle widget preview – sidebar"
+            sandbox="allow-scripts allow-same-origin"
+            style={iframeStyle(activeKey === "a")}
+            onLoad={() => setLoadedA(true)}
+          />
+          <iframe
+            ref={refB}
+            src={urlB}
+            title="Bundle widget preview – floating footer"
+            sandbox="allow-scripts allow-same-origin"
+            style={iframeStyle(activeKey === "b")}
+            onLoad={() => setLoadedB(true)}
+          />
+        </>
+      )}
+    </div>
+  );
+}
