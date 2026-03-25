@@ -230,9 +230,33 @@ export class BillingService {
       });
 
       // If no active subscription, user is on free plan
-      const activeSubscription = shop.subscriptions[0];
-      const plan = activeSubscription?.plan || "free";
-      const status = activeSubscription?.status || BundleStatus.ACTIVE;
+      let activeSubscription = shop.subscriptions[0];
+
+      // Owner-granted subscriptions (shopifySubscriptionId IS NULL) expire server-side
+      // based on currentPeriodEnd. If the period has passed, treat as expired immediately —
+      // no background job needed; the check runs on every request.
+      if (
+        activeSubscription &&
+        activeSubscription.shopifySubscriptionId === null &&
+        activeSubscription.currentPeriodEnd !== null &&
+        activeSubscription.currentPeriodEnd < new Date()
+      ) {
+        AppLogger.info("Owner-granted subscription expired", {
+          component: "billing.server",
+          operation: "getSubscriptionInfo"
+        }, { shopDomain, subscriptionId: activeSubscription.id, expiredAt: activeSubscription.currentPeriodEnd });
+
+        // Expire it in the DB so subsequent queries don't re-evaluate it
+        await db.subscription.update({
+          where: { id: activeSubscription.id },
+          data: { status: "expired" }
+        });
+
+        activeSubscription = undefined as typeof activeSubscription;
+      }
+
+      const plan = activeSubscription?.plan ?? "free";
+      const status = activeSubscription?.status ?? BundleStatus.ACTIVE;
       const bundleLimit = PLANS[plan].bundleLimit;
 
       return {
@@ -663,26 +687,36 @@ export class BillingService {
    * Grant the Grow plan to a merchant without going through Shopify billing.
    * Used by the owner-only grant API to issue free / early-access invites.
    *
+   * The grant expires server-side after `days` days (default 14). After expiry,
+   * getSubscriptionInfo() automatically demotes the shop back to Free plan.
+   * The owner must call this again to renew / extend access.
+   *
    * Creates an active Grow subscription directly in the DB
    * (shopifySubscriptionId is null — no charge is created on Shopify).
    * Any previously active subscription is cancelled first.
    */
   static async grantGrowPlan(
-    shopDomain: string
-  ): Promise<{ success: boolean; subscriptionId?: string; error?: string }> {
+    shopDomain: string,
+    days = 14
+  ): Promise<{ success: boolean; subscriptionId?: string; expiresAt?: Date; error?: string }> {
     try {
       const shop = await db.shop.findUnique({ where: { shopDomain } });
       if (!shop) {
         return { success: false, error: `Shop not found: ${shopDomain}` };
       }
 
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
       // Cancel any currently active subscription so there is only one active record
       await db.subscription.updateMany({
         where: { shopId: shop.id, status: "active" },
-        data: { status: "cancelled", cancelledAt: new Date() }
+        data: { status: "cancelled", cancelledAt: now }
       });
 
-      // Create owner-granted Grow subscription — no Shopify billing flow
+      // Create owner-granted Grow subscription — no Shopify billing flow.
+      // shopifySubscriptionId is intentionally null; getSubscriptionInfo() uses
+      // this to identify owner grants and enforce currentPeriodEnd expiry.
       const subscription = await db.subscription.create({
         data: {
           shopId: shop.id,
@@ -691,7 +725,8 @@ export class BillingService {
           name: "Grow Plan (Owner Grant)",
           price: 0,
           currencyCode: "USD",
-          currentPeriodStart: new Date()
+          currentPeriodStart: now,
+          currentPeriodEnd: expiresAt
         }
       });
 
@@ -704,9 +739,9 @@ export class BillingService {
       AppLogger.info("Grow plan granted by owner", {
         component: "billing.server",
         operation: "grantGrowPlan"
-      }, { shopDomain, subscriptionId: subscription.id });
+      }, { shopDomain, subscriptionId: subscription.id, days, expiresAt: expiresAt.toISOString() });
 
-      return { success: true, subscriptionId: subscription.id };
+      return { success: true, subscriptionId: subscription.id, expiresAt };
     } catch (error) {
       AppLogger.error("Error granting Grow plan", {
         component: "billing.server",
