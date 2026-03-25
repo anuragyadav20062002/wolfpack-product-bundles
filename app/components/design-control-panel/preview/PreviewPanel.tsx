@@ -1,6 +1,6 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import type { DesignSettings } from "../../../types/state.types";
-import type { BundleType } from "../../../constants/bundle";
+import { BundleType } from "../../../constants/bundle";
 import { settingsToCSSVarRecord } from "../../../lib/preview-css-vars";
 import { AppPreviewIframe } from "./StorefrontIframePreview";
 
@@ -18,6 +18,28 @@ interface PreviewPanelProps {
   saveCount?: number;
 }
 
+type FpbFooterLayout = "sidebar" | "floating";
+
+const TOGGLE_BTN_BASE: React.CSSProperties = {
+  padding: "6px 16px",
+  border: "1.5px solid #ddd",
+  borderRadius: "6px",
+  background: "#fff",
+  color: "#444",
+  cursor: "pointer",
+  fontSize: "12px",
+  fontWeight: 500,
+  lineHeight: "1.4",
+  transition: "background 0.12s, color 0.12s, border-color 0.12s",
+};
+
+const TOGGLE_BTN_ACTIVE: React.CSSProperties = {
+  ...TOGGLE_BTN_BASE,
+  background: "#1a1a1a",
+  color: "#fff",
+  borderColor: "#1a1a1a",
+};
+
 /**
  * PreviewPanel — always-on app-served iframe preview.
  *
@@ -26,15 +48,26 @@ interface PreviewPanelProps {
  * pushed into the iframe via postMessage on every settings change — no save or
  * reload required.
  *
- * The preview page is served from the same app origin so there are no
- * X-Frame-Options issues and postMessage works without cross-origin restrictions.
+ * For FPB, a footer layout toggle (Sidebar | Floating Footer) lets the merchant
+ * preview both layout options without switching away from the DCP.
  */
-export function PreviewPanel({ settings, previewUrl }: PreviewPanelProps) {
+export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Track whether the iframe has signalled readiness
   const iframeReadyRef = useRef(false);
   // Buffer the last CSS payload so we can replay it on ready
   const pendingCssRef = useRef<string | null>(null);
+
+  // Footer layout toggle — only relevant for FPB
+  const [fpbFooterLayout, setFpbFooterLayout] = useState<FpbFooterLayout>("sidebar");
+
+  // Compute the effective iframe URL (append footerLayout for FPB)
+  const effectiveUrl = (() => {
+    if (!previewUrl) return null;
+    if (bundleType !== BundleType.FULL_PAGE) return previewUrl;
+    const sep = previewUrl.includes("?") ? "&" : "?";
+    return `${previewUrl}${sep}footerLayout=${fpbFooterLayout}`;
+  })();
 
   // Build the CSS variable string from current settings
   const buildCssVarString = () => {
@@ -65,7 +98,7 @@ export function PreviewPanel({ settings, previewUrl }: PreviewPanelProps) {
   // Reset ready state when the URL changes (iframe reloads)
   useEffect(() => {
     iframeReadyRef.current = false;
-  }, [previewUrl]);
+  }, [effectiveUrl]);
 
   // Push CSS variable updates to the iframe on every settings change
   useEffect(() => {
@@ -82,7 +115,7 @@ export function PreviewPanel({ settings, previewUrl }: PreviewPanelProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
 
-  if (!previewUrl) {
+  if (!effectiveUrl) {
     return (
       <div
         style={{
@@ -101,5 +134,45 @@ export function PreviewPanel({ settings, previewUrl }: PreviewPanelProps) {
     );
   }
 
-  return <AppPreviewIframe ref={iframeRef} url={previewUrl} />;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      {/* Footer layout toggle — FPB only */}
+      {bundleType === BundleType.FULL_PAGE && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            justifyContent: "center",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: 500,
+              color: "#888",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
+          >
+            Footer layout:
+          </span>
+          <button
+            style={fpbFooterLayout === "sidebar" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
+            onClick={() => setFpbFooterLayout("sidebar")}
+          >
+            Sidebar
+          </button>
+          <button
+            style={fpbFooterLayout === "floating" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
+            onClick={() => setFpbFooterLayout("floating")}
+          >
+            Floating Footer
+          </button>
+        </div>
+      )}
+
+      <AppPreviewIframe ref={iframeRef} url={effectiveUrl} />
+    </div>
+  );
 }
