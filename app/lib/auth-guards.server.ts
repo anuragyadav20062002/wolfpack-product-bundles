@@ -76,3 +76,46 @@ export function requireInternalSecret(request: Request): Response | null {
 
   return null; // Authorized — caller proceeds
 }
+
+// ─── Owner API Guard ──────────────────────────────────────────────────────────
+// Use on owner-only routes (e.g., the grant-plan endpoint).
+// Checks Authorization: Bearer <OWNER_API_SECRET> with constant-time comparison.
+// Only the app owner (who holds OWNER_API_SECRET) can call these routes.
+//
+// Returns null when authorized (caller may proceed).
+// Returns a 401 Response when unauthorized (caller must return it immediately).
+//
+// Usage:
+//   const authError = requireOwnerSecret(request);
+//   if (authError) return authError;
+export function requireOwnerSecret(request: Request): Response | null {
+  const secret = process.env.OWNER_API_SECRET;
+
+  if (!secret) {
+    console.warn(
+      "[auth-guards] OWNER_API_SECRET is not set — rejecting all owner API requests (fail-closed)"
+    );
+    return json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const authHeader = request.headers.get("Authorization") ?? "";
+  const prefix = "Bearer ";
+
+  if (!authHeader.startsWith(prefix)) {
+    return json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const provided = authHeader.slice(prefix.length);
+
+  try {
+    const a = createHash("sha256").update(provided).digest();
+    const b = createHash("sha256").update(secret).digest();
+    if (!timingSafeEqual(a, b)) {
+      return json({ error: "Unauthorized" }, { status: 401 });
+    }
+  } catch {
+    return json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  return null; // Authorized — caller proceeds
+}

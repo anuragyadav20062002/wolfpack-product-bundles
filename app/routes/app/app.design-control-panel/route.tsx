@@ -10,6 +10,8 @@ import {
   Text,
   Button,
   InlineStack,
+  Banner,
+  Box,
 } from "@shopify/polaris";
 import { Modal, SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../../../shopify.server";
@@ -26,6 +28,7 @@ import { CustomCssCard, CssGuideContent } from "../../../components/design-contr
 
 import { DEFAULT_SETTINGS, mergeSettings } from "../../../components/design-control-panel/config";
 import { handleSaveSettings } from "./handlers.server";
+import { BillingService } from "../../../services/billing.server";
 import designControlPanelStyles from "../../../styles/routes/design-control-panel.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -56,7 +59,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
     ? `${appUrl}/api/preview/fpb?shop=${shopId}`
     : null;
 
-  return json({ shopId, settings, previewUrls: { pdp: pdpPreviewUrl, fpb: fpbPreviewUrl } });
+  const canAccessDcp = await BillingService.isFeatureAvailable(shopId, "design_control_panel");
+
+  return json({
+    shopId,
+    settings,
+    previewUrls: { pdp: pdpPreviewUrl, fpb: fpbPreviewUrl },
+    isPaywalled: !canAccessDcp
+  });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -182,7 +192,7 @@ function ProductPageSvg() {
 // ─── Route Component ──────────────────────────────────────────────────────────
 
 export default function DesignControlPanel() {
-  const { settings, previewUrls } = useLoaderData<typeof loader>();
+  const { settings, previewUrls, isPaywalled } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const shopify = useAppBridge();
 
@@ -317,6 +327,22 @@ export default function DesignControlPanel() {
         subtitle="Customize the appearance of your bundles"
         backAction={{ content: "Go to Bundles", url: "/app/dashboard" }}
       >
+        {/* ── Paywall Banner (Grow plan required, shown on PROD for Free users) ── */}
+        {isPaywalled && (
+          <Box paddingBlockEnd="400">
+            <Banner
+              title="Design Control Panel is a Grow plan feature"
+              tone="warning"
+              action={{ content: "Upgrade to Grow", url: "/app/pricing" }}
+            >
+              <p>
+                Unlock full design customization — colors, typography, hover animations, and
+                custom CSS — by upgrading to the Grow plan for $9.99/month.
+              </p>
+            </Banner>
+          </Box>
+        )}
+
         {/* ── Bundle-Type Entry Cards ─────────────────────────────────────────── */}
         <div className={designControlPanelStyles.landingCardsRow}>
           {/* Landing Page Bundles */}
@@ -334,8 +360,13 @@ export default function DesignControlPanel() {
                 </Text>
               </BlockStack>
               <InlineStack>
-                <Button variant="primary" onClick={handleOpenFullPageModal}>
-                  Customize
+                <Button
+                  variant="primary"
+                  onClick={handleOpenFullPageModal}
+                  disabled={isPaywalled}
+                  url={isPaywalled ? "/app/pricing" : undefined}
+                >
+                  {isPaywalled ? "Upgrade to Customize" : "Customize"}
                 </Button>
               </InlineStack>
             </div>
@@ -356,8 +387,13 @@ export default function DesignControlPanel() {
                 </Text>
               </BlockStack>
               <InlineStack>
-                <Button variant="primary" onClick={handleOpenProductPageModal}>
-                  Customize
+                <Button
+                  variant="primary"
+                  onClick={handleOpenProductPageModal}
+                  disabled={isPaywalled}
+                  url={isPaywalled ? "/app/pricing" : undefined}
+                >
+                  {isPaywalled ? "Upgrade to Customize" : "Customize"}
                 </Button>
               </InlineStack>
             </div>
@@ -367,7 +403,7 @@ export default function DesignControlPanel() {
         {/* ── Custom CSS Section ──────────────────────────────────────────────── */}
         <Layout>
           <Layout.Section>
-            <div style={{ marginTop: "20px" }}>
+            <div style={{ marginTop: "20px", opacity: isPaywalled ? 0.5 : 1, pointerEvents: isPaywalled ? "none" : undefined }}>
               <CustomCssCard
                 fullPageCss={fullPageState.settings.customCss ?? ""}
                 productPageCss={productPageState.settings.customCss ?? ""}
