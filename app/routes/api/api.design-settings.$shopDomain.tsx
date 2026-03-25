@@ -268,7 +268,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       });
     }
 
-    const css = generateCSSFromSettings(finalSettings, bundleTypeForCSS, customCss);
+    const themeColors = (designSettings as any)?.themeColors ?? null;
+    const css = generateCSSFromSettings(finalSettings, bundleTypeForCSS, customCss, themeColors);
 
     // Build a stable ETag from the design settings last-modified time.
     // Browsers send If-None-Match on repeat visits; we respond with 304 when unchanged.

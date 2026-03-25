@@ -361,6 +361,10 @@ model DesignSettings {
   // Advanced Settings - Custom CSS
   customCss                   String?
 
+  // Cached Shopify theme colors — used as fallback global color anchors when no DCP values set.
+  // Populated on install and on Sync Bundle. Null = fall through to hardcoded defaults.
+  themeColors                 Json?
+
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
 

@@ -40,6 +40,7 @@ import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/
 import { validateTierConfig } from "../../../../lib/tier-config-validator.server";
 import { SHOPIFY_REST_API_VERSION } from "../../../../constants/api";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
+import { syncThemeColors } from "../../../../services/theme-colors.server";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -1062,6 +1063,9 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
 
       AppLogger.info('[SYNC_BUNDLE] All metafields re-synced successfully', { bundleId });
     }
+
+    // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
+    syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
 
     return json({ success: true, synced: true, message: 'Bundle synced successfully' });
 
