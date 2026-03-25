@@ -46,7 +46,7 @@ export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
       "All bundle types included",
       "Advanced discount rules",
       "Design Control Panel",
-      "Bundle analytics (coming soon)",
+      "Bundle analytics",
       "Priority support",
       "Early access to new features"
     ]

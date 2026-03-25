@@ -23,7 +23,7 @@ import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
-import { useCallback, useRef, useEffect, useMemo, memo } from "react";
+import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
 import { CartPropertyFixContent } from "../../../components/CartPropertyFixCard";
@@ -484,8 +484,12 @@ export default function Dashboard() {
     return BUNDLE_TYPE_BADGES[bundleType as keyof typeof BUNDLE_TYPE_BADGES] || <Badge>{bundleType}</Badge>;
   };
 
+  const [bundleFilter, setBundleFilter] = useState("");
+
   // Memoize bundleRows to prevent unnecessary re-renders
-  const bundleRows = useMemo(() => bundles.map((bundle) => [
+  const bundleRows = useMemo(() => bundles
+    .filter((b) => b.name.toLowerCase().includes(bundleFilter.toLowerCase()))
+    .map((bundle) => [
     bundle.name,
     getStatusDisplay(bundle.status),
     getBundleTypeDisplay(bundle.bundleType),
@@ -733,13 +737,30 @@ export default function Dashboard() {
                     </BlockStack>
                   </Card>
                 ) : (
-                  <div className={dashboardStyles.dataTableWrapper}>
-                    <DataTable
-                      columnContentTypes={["text", "text", "text", "text"]}
-                      headings={["Bundle Name", "Status", "Type", "Actions"]}
-                      rows={bundleRows}
+                  <BlockStack gap="300">
+                    <TextField
+                      label="Filter bundles"
+                      labelHidden
+                      placeholder="Filter by name…"
+                      value={bundleFilter}
+                      onChange={setBundleFilter}
+                      clearButton
+                      onClearButtonClick={() => setBundleFilter("")}
+                      autoComplete="off"
                     />
-                  </div>
+                    <div className={dashboardStyles.dataTableWrapper}>
+                      <DataTable
+                        columnContentTypes={["text", "text", "text", "text"]}
+                        headings={["Bundle Name", "Status", "Type", "Actions"]}
+                        rows={bundleRows}
+                      />
+                      {bundleRows.length === 0 && bundleFilter && (
+                        <div style={{ padding: "24px", textAlign: "center", color: "#6d7175", fontSize: 13 }}>
+                          {`No bundles match "${bundleFilter}"`}
+                        </div>
+                      )}
+                    </div>
+                  </BlockStack>
                 )}
               </BlockStack>
             </Card>

@@ -385,12 +385,31 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
               <Text as="h2" variant="headingMd">UTM Pixel Tracking</Text>
               <Badge tone={active ? "success" : "new"}>{active ? "Active" : "Not active"}</Badge>
             </InlineStack>
-            <Text as="p" variant="bodyMd" tone="subdued">
-              {active
-                ? "UTM parameters are being captured and attributed to orders at checkout. Your ad spend is being tracked."
-                : "Enable tracking to capture UTM parameters from visitor sessions and attribute orders to ad campaigns."
-              }
-            </Text>
+            {active ? (
+              <Text as="p" variant="bodyMd" tone="subdued">
+                UTM parameters are being captured and attributed to orders at checkout. Your ad spend is being tracked.
+              </Text>
+            ) : (
+              <BlockStack gap="300">
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  Enable tracking to start attributing orders to your ad campaigns. Three steps:
+                </Text>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm">
+                    <strong>1. Enable pixel</strong> — click the button to install the tracking pixel on your store.
+                  </Text>
+                  <Text as="p" variant="bodySm">
+                    <strong>2. Tag your ad links</strong> — add UTM parameters to any ad URLs, e.g.{" "}
+                    <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
+                      ?utm_source=facebook&amp;utm_campaign=bundles
+                    </code>
+                  </Text>
+                  <Text as="p" variant="bodySm">
+                    <strong>3. Watch orders appear</strong> — attributed orders will show up here within minutes of a purchase.
+                  </Text>
+                </BlockStack>
+              </BlockStack>
+            )}
           </BlockStack>
 
           <div style={{ flexShrink: 0 }}>
