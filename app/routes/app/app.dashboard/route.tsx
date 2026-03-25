@@ -309,13 +309,16 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
 
     {/* Group 2: Preview (view action) */}
     <Tooltip content={bundle.previewHandle ? "Preview in store" : "Save bundle to preview"}>
-      <Button
-        size="micro"
-        icon={ExternalIcon}
-        onClick={() => onPreview(bundle)}
-        accessibilityLabel="Preview bundle"
-        disabled={!bundle.previewHandle}
-      />
+      {/* span captures pointer-events so tooltip fires even when button is disabled */}
+      <span style={{ display: "inline-flex" }}>
+        <Button
+          size="micro"
+          icon={ExternalIcon}
+          onClick={() => onPreview(bundle)}
+          accessibilityLabel="Preview bundle"
+          disabled={!bundle.previewHandle}
+        />
+      </span>
     </Tooltip>
 
     {/* Group 3: Delete (destructive action - separate to prevent accidents) */}
