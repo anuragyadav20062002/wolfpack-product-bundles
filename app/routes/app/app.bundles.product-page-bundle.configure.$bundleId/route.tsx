@@ -250,7 +250,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 const bundleSetupItems = [
   { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
   { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
-  { id: "images_gifs", label: "Images & GIFs", icon: ImageIcon },
+  { id: "images_gifs", label: "Bundle Assets", icon: ImageIcon },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },

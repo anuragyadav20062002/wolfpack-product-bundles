@@ -72,7 +72,7 @@ export default function EventsPage() {
 
   return (
     <Page
-      title="Events"
+      title="Updates &amp; FAQs"
       subtitle="Release notes, how-tos, and tutorials"
       backAction={{ content: "Dashboard", url: "/app/dashboard" }}
     >
@@ -82,7 +82,7 @@ export default function EventsPage() {
         <Layout.Section>
           <BlockStack gap="400">
             <SectionHeader
-              title="Latest Events"
+              title="Latest Updates"
               count={LATEST_EVENTS.length}
             />
             <BlockStack gap="300">

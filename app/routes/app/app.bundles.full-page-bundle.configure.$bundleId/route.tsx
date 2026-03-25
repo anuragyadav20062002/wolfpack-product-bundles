@@ -258,7 +258,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 const bundleSetupItems = [
   { id: "step_setup",       label: "Step Setup",          icon: ListNumberedIcon, fullPageOnly: false },
   { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
-  { id: "images_gifs",      label: "Images & GIFs",       icon: ImageIcon,        fullPageOnly: true  },
+  { id: "images_gifs",      label: "Bundle Assets",       icon: ImageIcon,        fullPageOnly: true  },
   { id: "pricing_tiers",    label: "Pricing Tiers",       icon: DiscountIcon,     fullPageOnly: true  },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
