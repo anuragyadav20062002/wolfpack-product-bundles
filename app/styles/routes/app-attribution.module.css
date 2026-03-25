@@ -397,3 +397,124 @@
 .dot4 { background: #50b83c; }
 .dot5 { background: #9c6ade; }
 .dotDefault { background: #c4cdd0; }
+
+/* ── Bundle Revenue Section ─────────────────────────────────── */
+
+.bundleSection {
+  padding: 4px 0 0;
+}
+
+/* KPI cards grid */
+.bundleKpiCard {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.bundleKpiLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6d7175;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bundleKpiValue {
+  font-size: 26px;
+  font-weight: 700;
+  color: #202223;
+  line-height: 1.2;
+}
+
+/* Two-column layout: trend chart + leaderboard */
+.bundleSplitRow {
+  display: grid;
+  grid-template-columns: 55fr 45fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .bundleSplitRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Leaderboard 4-column row */
+.leaderboardRow {
+  display: grid;
+  grid-template-columns: 1fr 100px 72px 80px;
+  align-items: center;
+}
+
+/* Truncate long bundle names */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+/* Section divider for UTM Attribution */
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.sectionDivider::before,
+.sectionDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e1e3e5;
+}
+
+.sectionDividerLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6d7175;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* Trend chart legend */
+.trendLegend {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-end;
+  padding: 0 8px 4px;
+  margin-top: 4px;
+}
+
+.trendLegendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #6d7175;
+}
+
+.trendDotGreen {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  background: #008060;
+}
+
+.trendDotPurple {
+  display: inline-block;
+  width: 12px;
+  height: 2px;
+  border-radius: 2px;
+  background: #5c6ac4;
+  border-top: 1px dashed #5c6ac4;
+}
