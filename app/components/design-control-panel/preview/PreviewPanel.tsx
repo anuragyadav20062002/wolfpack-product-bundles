@@ -12,7 +12,7 @@ interface PreviewPanelProps {
    * When null/undefined, no preview is rendered.
    */
   previewUrl?: string | null;
-  // Kept for API compatibility — no longer used internally.
+  /** Active sub-section — used to toggle tier pills vs header tabs in FPB preview. */
   activeSubSection?: string;
   isDirty?: boolean;
   saveCount?: number;
@@ -73,22 +73,6 @@ function buildCssVarString(settings: DesignSettings): string {
     .join(";");
 }
 
-function pushCss(
-  iframeRef: React.RefObject<HTMLIFrameElement>,
-  readyRef: React.MutableRefObject<boolean>,
-  pendingRef: React.MutableRefObject<string | null>,
-  cssVars: string
-) {
-  if (readyRef.current) {
-    iframeRef.current?.contentWindow?.postMessage(
-      { type: "DCP_CSS_UPDATE", vars: cssVars },
-      "*"
-    );
-  } else {
-    pendingRef.current = cssVars;
-  }
-}
-
 /**
  * PreviewPanel — always-on app-served iframe preview.
  *
@@ -98,24 +82,61 @@ function pushCss(
  *
  * For PDP, a single iframe is used (no layout variants needed).
  *
- * CSS variables are pushed into all active iframes via postMessage on every
+ * CSS variables are pushed into all active iframes via BroadcastChannel on every
  * settings change — no save or reload required.
  */
-export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelProps) {
+export function PreviewPanel({ settings, bundleType, previewUrl, activeSubSection }: PreviewPanelProps) {
   const isFpb = bundleType === BundleType.FULL_PAGE;
+  const channelName = isFpb ? "dcp-css-updates-fpb" : "dcp-css-updates-pdp";
 
-  // ── FPB: dual-iframe refs + ready tracking ─────────────────────────────────
+  // ── FPB: dual-iframe refs (used by DualAppPreviewIframe for onLoad tracking) ─
   const sidebarRef = useRef<HTMLIFrameElement>(null);
   const floatingRef = useRef<HTMLIFrameElement>(null);
-  const readySidebar = useRef(false);
-  const readyFloating = useRef(false);
-  const pendingSidebar = useRef<string | null>(null);
-  const pendingFloating = useRef<string | null>(null);
 
-  // ── PDP: single-iframe refs ────────────────────────────────────────────────
+  // ── PDP: single-iframe ref ─────────────────────────────────────────────────
   const singleRef = useRef<HTMLIFrameElement>(null);
-  const readySingle = useRef(false);
-  const pendingSingle = useRef<string | null>(null);
+
+  // ── BroadcastChannel — same-origin cross-frame CSS delivery ───────────────
+  // Bypasses the App Bridge v4 modal-frame hierarchy issue where window.parent
+  // inside preview iframes points to the modal frame, not the app-iframe.
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const latestCssVarsRef = useRef<string>("");
+
+  useEffect(() => {
+    const channel = new BroadcastChannel(channelName);
+    channelRef.current = channel;
+
+    channel.addEventListener("message", (e: MessageEvent) => {
+      // Preview iframe just loaded — send it the current CSS vars immediately
+      if ((e.data as { type?: string } | null)?.type === "DCP_PREVIEW_READY") {
+        if (latestCssVarsRef.current) {
+          channel.postMessage({ type: "DCP_CSS_UPDATE", vars: latestCssVarsRef.current });
+        }
+      }
+    });
+
+    return () => {
+      channel.close();
+      channelRef.current = null;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channelName]);
+
+  // ── Push CSS var updates on every settings change ──────────────────────────
+  useEffect(() => {
+    const cssVars = buildCssVarString(settings);
+    latestCssVarsRef.current = cssVars;
+    channelRef.current?.postMessage({ type: "DCP_CSS_UPDATE", vars: cssVars });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
+
+  // ── Broadcast section changes so the preview can show/hide tier pills vs tabs
+  useEffect(() => {
+    if (activeSubSection !== undefined) {
+      channelRef.current?.postMessage({ type: "DCP_SECTION_CHANGE", section: activeSubSection });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSubSection]);
 
   // Footer layout toggle — FPB only
   const [fpbFooterLayout, setFpbFooterLayout] = useState<FpbFooterLayout>("sidebar");
@@ -127,67 +148,6 @@ export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelP
   const sep = previewUrl?.includes("?") ? "&" : "?";
   const sidebarUrl = previewUrl ? `${previewUrl}${sep}footerLayout=sidebar` : null;
   const floatingUrl = previewUrl ? `${previewUrl}${sep}footerLayout=floating` : null;
-
-  // ── Listen for DCP_PREVIEW_READY — identify iframe by e.source ─────────────
-  useEffect(() => {
-    const handleMessage = (e: MessageEvent) => {
-      if ((e.data as { type?: string } | null)?.type !== "DCP_PREVIEW_READY") return;
-      const src = e.source;
-
-      if (isFpb) {
-        if (src === sidebarRef.current?.contentWindow) {
-          readySidebar.current = true;
-          if (pendingSidebar.current !== null) {
-            sidebarRef.current?.contentWindow?.postMessage(
-              { type: "DCP_CSS_UPDATE", vars: pendingSidebar.current },
-              "*"
-            );
-            pendingSidebar.current = null;
-          }
-        } else if (src === floatingRef.current?.contentWindow) {
-          readyFloating.current = true;
-          if (pendingFloating.current !== null) {
-            floatingRef.current?.contentWindow?.postMessage(
-              { type: "DCP_CSS_UPDATE", vars: pendingFloating.current },
-              "*"
-            );
-            pendingFloating.current = null;
-          }
-        }
-      } else {
-        if (src === singleRef.current?.contentWindow) {
-          readySingle.current = true;
-          if (pendingSingle.current !== null) {
-            singleRef.current?.contentWindow?.postMessage(
-              { type: "DCP_CSS_UPDATE", vars: pendingSingle.current },
-              "*"
-            );
-            pendingSingle.current = null;
-          }
-        }
-      }
-    };
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFpb]);
-
-  // Reset single-iframe ready state when its URL changes
-  useEffect(() => {
-    readySingle.current = false;
-  }, [previewUrl]);
-
-  // ── Push CSS var updates to all iframes on every settings change ───────────
-  useEffect(() => {
-    const cssVars = buildCssVarString(settings);
-    if (isFpb) {
-      pushCss(sidebarRef, readySidebar, pendingSidebar, cssVars);
-      pushCss(floatingRef, readyFloating, pendingFloating, cssVars);
-    } else {
-      pushCss(singleRef, readySingle, pendingSingle, cssVars);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings]);
 
   if (!previewUrl) {
     return (

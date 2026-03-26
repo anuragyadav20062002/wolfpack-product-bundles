@@ -699,29 +699,49 @@ html, body {
 }
 `;
 
-// ─── postMessage listener script ──────────────────────────────────────────────
+// ─── BroadcastChannel script ──────────────────────────────────────────────────
+//
+// Uses BroadcastChannel (same-origin) instead of window.postMessage because
+// @shopify/app-bridge-react v4 renders DCP modals in separate modal-frame iframes
+// (e.g. frame://wolfpack-product-bundles-sit/modal/...).  window.parent inside these
+// preview iframes points to the modal frame — NOT the app-iframe where PreviewPanel
+// listens — so window.parent.postMessage never reaches PreviewPanel.
+// BroadcastChannel bypasses the frame hierarchy entirely.
 
-const postMessageScript = `
-(function() {
-  window.addEventListener('message', function(e) {
-    if (!e.data || e.data.type !== 'DCP_CSS_UPDATE') return;
-    var styleEl = document.getElementById('dcp-live-vars');
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      styleEl.id = 'dcp-live-vars';
-      document.head.appendChild(styleEl);
+function getPreviewScript(type: string): string {
+  return `(function() {
+  var bc = new BroadcastChannel('dcp-css-updates-${type}');
+
+  bc.addEventListener('message', function(e) {
+    if (!e.data) return;
+
+    if (e.data.type === 'DCP_CSS_UPDATE') {
+      var styleEl = document.getElementById('dcp-live-vars');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'dcp-live-vars';
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = ':root{' + e.data.vars + '}';
     }
-    styleEl.textContent = ':root{' + e.data.vars + '}';
+
+    if (e.data.type === 'DCP_SECTION_CHANGE') {
+      var section = e.data.section || '';
+      var tierBar = document.querySelector('.bundle-tier-pill-bar');
+      var stepTabs = document.querySelector('.step-tabs-container');
+      if (tierBar) tierBar.style.display = section === 'headerTabs' ? 'none' : '';
+      if (stepTabs) stepTabs.style.display = section === 'tierPills' ? 'none' : '';
+    }
   });
 
-  // Notify parent that iframe is ready to receive CSS updates
+  // Notify PreviewPanel that this iframe is ready to receive CSS updates.
+  // BroadcastChannel is used so the message reaches the app-iframe regardless
+  // of which modal frame this preview iframe lives inside.
   window.addEventListener('load', function() {
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: 'DCP_PREVIEW_READY' }, '*');
-    }
+    bc.postMessage({ type: 'DCP_PREVIEW_READY' });
   });
-})();
-`;
+})();`;
+}
 
 // ─── Loader ───────────────────────────────────────────────────────────────────
 
@@ -756,8 +776,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   <style id="widget-css">${widgetCss}</style>
   <style id="full-page-css">${fullPageCss}</style>
   <style id="page-layout-css">${pageLayoutCss}</style>
-  <style id="dcp-live-vars">/* CSS variables injected via postMessage */</style>
-  <script>${postMessageScript}</script>
+  <style id="dcp-live-vars">/* CSS variables injected via BroadcastChannel */</style>
+  <script>${getPreviewScript(type)}</script>
 </head>
 <body>
   ${bodyHtml}

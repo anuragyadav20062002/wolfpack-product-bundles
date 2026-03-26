@@ -434,6 +434,7 @@ export default function DesignControlPanel() {
                     settings={fullPageState.settings}
                     bundleType={BundleType.FULL_PAGE}
                     previewUrl={previewUrls.fpb}
+                    activeSubSection={fullPageState.activeSubSection}
                   />
                 </div>
               </div>
@@ -469,6 +470,7 @@ export default function DesignControlPanel() {
                     settings={productPageState.settings}
                     bundleType={BundleType.PRODUCT_PAGE}
                     previewUrl={previewUrls.pdp}
+                    activeSubSection={productPageState.activeSubSection}
                   />
                 </div>
               </div>
