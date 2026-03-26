@@ -14,11 +14,16 @@ export function ProductCardSettings({ settings, onUpdate }: SettingsComponentPro
       </Text>
       <Divider />
 
-      <ColorPicker
-        label="Background Color"
-        value={settings.productCardBgColor}
-        onChange={(value) => onUpdate("productCardBgColor", value)}
-      />
+      <BlockStack gap="100">
+        <ColorPicker
+          label="Selected Card Background"
+          value={settings.productCardBgColor}
+          onChange={(value) => onUpdate("productCardBgColor", value)}
+        />
+        <Text as="p" variant="bodySm" tone="subdued">
+          Applied to product cards when they have been added to the bundle.
+        </Text>
+      </BlockStack>
 
       <BlockStack gap="200">
         <Text as="p" variant="bodyMd" fontWeight="medium">

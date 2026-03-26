@@ -33,7 +33,7 @@ export function GlobalColorsSettings({ settings, onUpdate }: SettingsComponentPr
         </div>
       </InlineStack>
       <Text as="p" variant="bodyMd" tone="subdued">
-        Set brand-wide defaults here. Individual sections can override these values for fine-grained control.
+        Start here. Most widget colors inherit from these defaults — only go into individual sections if you need finer control.
       </Text>
       <Divider />
 

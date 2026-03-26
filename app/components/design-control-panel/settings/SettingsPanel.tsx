@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Banner, Text, Divider } from "@shopify/polaris";
 import type { SettingsPanelProps } from "./types";
 import type { DesignSettings } from "../../../types/state.types";
@@ -147,6 +148,7 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const sectionKeys = SECTION_KEYS[activeSubSection];
   const canReset = !!(defaultSettings && sectionKeys && sectionKeys.length > 0);
+  const [pendingReset, setPendingReset] = useState(false);
 
   function handleResetSection() {
     if (!defaultSettings || !sectionKeys) return;
@@ -155,37 +157,79 @@ export function SettingsPanel({
       (patch as Record<string, unknown>)[key] = defaultSettings[key];
     }
     onBatchUpdate(patch);
+    setPendingReset(false);
   }
 
   function wrapWithReset(content: React.ReactNode) {
     if (!canReset) return <>{content}</>;
     return (
       <>
-        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "8px" }}>
-          <button
-            onClick={handleResetSection}
-            style={{
-              background: "#c0392b",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              padding: "5px 12px",
-              fontSize: "12px",
-              fontWeight: 500,
-              cursor: "pointer",
-              lineHeight: "1.4",
-              letterSpacing: "0.01em",
-              transition: "background 0.12s",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.background = "#a93226";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.background = "#c0392b";
-            }}
-          >
-            Reset to defaults
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+          {pendingReset ? (
+            <>
+              <span style={{ fontSize: "12px", color: "#c0392b", fontWeight: 500 }}>
+                Reset this section to defaults?
+              </span>
+              <button
+                onClick={handleResetSection}
+                style={{
+                  background: "#c0392b",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  lineHeight: "1.4",
+                }}
+              >
+                Yes, reset
+              </button>
+              <button
+                onClick={() => setPendingReset(false)}
+                style={{
+                  background: "transparent",
+                  color: "#616161",
+                  border: "1px solid #d1d1d1",
+                  borderRadius: "6px",
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  lineHeight: "1.4",
+                }}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setPendingReset(true)}
+              style={{
+                background: "transparent",
+                color: "#c0392b",
+                border: "1px solid #c0392b",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "12px",
+                fontWeight: 500,
+                cursor: "pointer",
+                lineHeight: "1.4",
+                transition: "background 0.12s, color 0.12s",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = "#c0392b";
+                (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                (e.currentTarget as HTMLButtonElement).style.color = "#c0392b";
+              }}
+            >
+              Reset to defaults
+            </button>
+          )}
         </div>
         <Divider />
         {content}
