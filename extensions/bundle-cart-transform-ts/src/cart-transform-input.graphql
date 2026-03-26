@@ -10,6 +10,9 @@ query Input {
       bundleName: attribute(key: "_bundle_name") {
         value
       }
+      stepType: attribute(key: "_bundle_step_type") {
+        value
+      }
       merchandise {
         __typename
         ... on ProductVariant {

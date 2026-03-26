@@ -9,7 +9,7 @@ export function TypographySettings({ settings, onUpdate }: SettingsComponentProp
   return (
     <BlockStack gap="400">
       <Text as="h2" variant="headingMd">
-        Typography
+        Button Typography
       </Text>
       <Text as="p" variant="bodySm" tone="subdued">
         Fine-tune text styling across buttons in the bundle widget.
@@ -51,6 +51,7 @@ export function TypographySettings({ settings, onUpdate }: SettingsComponentProp
         max={20}
         step={1}
         output
+        suffix={`${settings.buttonLetterSpacing}`}
       />
     </BlockStack>
   );

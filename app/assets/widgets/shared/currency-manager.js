@@ -73,6 +73,13 @@ export class CurrencyManager {
   static getCurrencyInfo() {
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
+    const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
+    // Use Shopify's currency format if available (set by currency switcher apps).
+    // Otherwise build a symbol-prefixed format from the display currency so we never
+    // inherit the shop's base-currency format string (e.g. ₹{{amount}}) for a customer
+    // viewing in a different currency (e.g. GBP).
+    const displayFormat = window.Shopify?.currency?.format
+      || `${displaySymbol}{{amount}}`;
 
     return {
       // For calculations (always use shop's base currency)
@@ -84,12 +91,28 @@ export class CurrencyManager {
       // For display (use customer's viewing currency)
       display: {
         code: customerCurrency.code,
-        symbol: this.getCurrencySymbol(customerCurrency.code),
-        format: customerCurrency.format,
+        symbol: displaySymbol,
+        format: displayFormat,
         rate: customerCurrency.rate
       },
       // Multi-currency status
       isMultiCurrency: customerCurrency.code !== shopBaseCurrency.code
     };
+  }
+
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
+  static convertAndFormat(amount, currencyInfo) {
+    const rate = currencyInfo.display.rate;
+    const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
+      ? this.convertCurrency(amount, currencyInfo.calculation.code, currencyInfo.display.code, rate)
+      : amount;
+    return this.formatMoney(converted, currencyInfo.display.format);
   }
 }

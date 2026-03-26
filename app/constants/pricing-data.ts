@@ -23,7 +23,7 @@ export const FEATURE_COMPARISON: FeatureComparisonRow[] = [
   { feature: "Basic discount rules", free: true, grow: true },
   { feature: "Advanced discount rules", free: false, grow: true, highlight: true },
   { feature: "Design Control Panel", free: false, grow: true, highlight: true },
-  { feature: "Bundle analytics", free: false, grow: "Coming soon", highlight: true },
+  { feature: "Bundle analytics", free: false, grow: true, highlight: true },
   { feature: "Priority support", free: false, grow: true, highlight: true },
   { feature: "Early access to features", free: false, grow: true },
   { feature: "Community access", free: true, grow: true },

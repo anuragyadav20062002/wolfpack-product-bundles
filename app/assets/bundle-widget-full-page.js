@@ -859,20 +859,22 @@ class BundleWidgetFullPage {
       this.elements.footer.style.display = 'none';
     }
 
-    // Two-column wrapper: content (left) + sidebar (right)
+    // ABOVE: Step timeline sits above the two-column area (same horizontal position as
+    // the floating footer layout) so tabs always appear at the top, not as a left column.
+    if (this.config.showStepTimeline) {
+      this.elements.stepsContainer.appendChild(this.createStepTimeline());
+    }
+
+    // Two-column wrapper: content (center) | sidebar (right)
     const twoColWrapper = document.createElement('div');
     twoColWrapper.className = 'sidebar-layout-wrapper';
 
-    // LEFT: Main content (same as footer_bottom minus the footer)
+    // CENTER: Main content (same as footer_bottom minus the footer)
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section sidebar-content';
 
     const promoBanner = this.createPromoBanner();
     if (promoBanner) contentSection.appendChild(promoBanner);
-
-    if (this.config.showStepTimeline) {
-      contentSection.appendChild(this.createStepTimeline());
-    }
 
     contentSection.appendChild(this.createSearchInput());
 
@@ -934,7 +936,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice,
       Object.values(this.selectedProducts || {}).reduce((sum, s) =>
@@ -973,7 +976,7 @@ class BundleWidgetFullPage {
 
     const totalEl = document.createElement('div');
     totalEl.className = 'fpb-mobile-total';
-    totalEl.textContent = CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format);
+    totalEl.textContent = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
 
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
@@ -1015,7 +1018,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -1078,19 +1082,6 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Progress bar
-    const progressPercent = this.calculateDiscountProgress(totalQuantity);
-    if (progressPercent !== null && this.selectedBundle?.pricing?.enabled) {
-      const progressWrap = document.createElement('div');
-      progressWrap.className = 'side-panel-progress';
-      progressWrap.innerHTML = `
-        <div class="side-panel-progress-bar-bg">
-          <div class="side-panel-progress-bar-fill" style="width: ${Math.min(progressPercent, 100)}%"></div>
-        </div>
-      `;
-      panel.appendChild(progressWrap);
-    }
-
     // Item count label
     if (allSelectedProducts.length > 0) {
       const countLabel = document.createElement('div');
@@ -1116,8 +1107,8 @@ class BundleWidgetFullPage {
         const isFreeGiftItem = item.isFreeGift === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
-          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)} ${qtySpan}</span>`
-          : `<span class="side-panel-product-price">${CurrencyManager.formatMoney(item.price * item.quantity, currencyInfo.display.format)} ${qtySpan}</span>`;
+          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
+          : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
 
         row.innerHTML = `
           <div class="side-panel-product-img-wrap">
@@ -1137,9 +1128,16 @@ class BundleWidgetFullPage {
           removeBtn.className = 'side-panel-product-remove';
           removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
           removeBtn.addEventListener('click', () => {
-            const stepIndex = item.stepIndex ?? this.currentStepIndex;
+            const stepIndex = item.stepIndex;
             const productId = item.variantId || item.productId || item.id;
+            const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
             this.updateProductSelection(stepIndex, productId, 0);
+            const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+            ToastManager.showWithUndo(
+              `Removed "${truncated}"`,
+              () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+              5000
+            );
           });
           row.appendChild(removeBtn);
         }
@@ -1172,8 +1170,8 @@ class BundleWidgetFullPage {
     totalSection.innerHTML = `
       <span class="side-panel-total-label">Total</span>
       <div class="side-panel-total-prices">
-        ${discountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
-        <span class="side-panel-total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+        ${discountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
+        <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
       </div>
     `;
     panel.appendChild(totalSection);
@@ -1300,15 +1298,13 @@ class BundleWidgetFullPage {
           `;
         }
       } else {
-        // Empty step - show step number, name, quantity hint, and optional lock
+        // Empty step - show step number, name, "0 selected" count badge, and optional lock
         const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
-        const quantityHint = this.getStepQuantityHint(step);
-
         tabContent = `
           <div class="tab-number">${index + 1}</div>
           <div class="tab-info">
             <span class="tab-name">${escapedName}</span>
-            ${quantityHint ? `<span class="tab-quantity-hint">${quantityHint}</span>` : ''}
+            <span class="tab-count">0 selected</span>
           </div>
           ${!isAccessible ? `
             <div class="tab-lock">
@@ -1581,10 +1577,10 @@ class BundleWidgetFullPage {
       if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
         discountMessage = `Add ${qtyText} and get ${discountValue}% off!`;
       } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
-        const formattedAmount = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
+        const formattedAmount = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
         discountMessage = `Add ${qtyText} and save ${formattedAmount}!`;
       } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
-        const formattedPrice = CurrencyManager.formatMoney(discountValue, currencyInfo.display.format);
+        const formattedPrice = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
         discountMessage = `Add ${qtyText} for just ${formattedPrice}!`;
       }
     }
@@ -2068,12 +2064,6 @@ class BundleWidgetFullPage {
 
     const allSelectedProducts = this.getAllSelectedProductsData();
 
-    // Hide footer when nothing is selected yet
-    if (allSelectedProducts.length === 0) {
-      this.elements.footer.style.display = 'none';
-      return;
-    }
-
     // Preserve open state across re-renders
     const wasOpen = this.elements.footer.classList.contains('is-open');
 
@@ -2085,7 +2075,8 @@ class BundleWidgetFullPage {
     // Pricing data
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -2155,7 +2146,7 @@ class BundleWidgetFullPage {
       const li = document.createElement('li');
       li.className = 'footer-panel-item';
 
-      const formattedPrice = CurrencyManager.formatMoney(item.price || 0, currencyInfo.display.format);
+      const formattedPrice = CurrencyManager.convertAndFormat(item.price || 0, currencyInfo);
       const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
 
       li.innerHTML = `
@@ -2166,25 +2157,29 @@ class BundleWidgetFullPage {
           <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
           <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
         </div>
+        ${!item.isDefault ? `
         <button class="footer-panel-remove" type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">
           <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
             <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
           </svg>
-        </button>
+        </button>` : ''}
       `;
 
-      const removeBtn = li.querySelector('.footer-panel-remove');
-      removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
-        this.updateProductSelection(item.stepIndex, item.variantId, 0);
-        const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
-        ToastManager.showWithUndo(
-          `Removed "${truncated}"`,
-          () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-          5000
-        );
-      });
+      if (!item.isDefault) {
+        const removeBtn = li.querySelector('.footer-panel-remove');
+        if (!removeBtn) return;
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
+          this.updateProductSelection(item.stepIndex, item.variantId, 0);
+          const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
+          ToastManager.showWithUndo(
+            `Removed "${truncated}"`,
+            () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+            5000
+          );
+        });
+      }
 
       list.appendChild(li);
     });
@@ -2248,8 +2243,8 @@ class BundleWidgetFullPage {
     totalArea.innerHTML = `
       <span class="footer-total-label">Total:</span>
       <div class="footer-total-prices">
-        ${discountInfo.hasDiscount && finalPrice < totalPrice ? `<span class="footer-total-original">${CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format)}</span>` : ''}
-        <span class="footer-total-final">${CurrencyManager.formatMoney(finalPrice, currencyInfo.display.format)}</span>
+        ${discountInfo.hasDiscount && finalPrice < totalPrice ? `<span class="footer-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
+        <span class="footer-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
         ${discountBadgeHTML}
       </div>
     `;
@@ -2282,97 +2277,6 @@ class BundleWidgetFullPage {
     bar.appendChild(centreCol);
     bar.appendChild(ctaBtn);
     return bar;
-  }
-
-  // Create scrollable product tiles component for footer
-  // Shows product image, name, variant (if any), and remove button
-  createFooterProductTiles(allSelectedProducts, currencyInfo) {
-    const container = document.createElement('div');
-    container.className = 'footer-products-tiles-container';
-
-    if (allSelectedProducts.length === 0) {
-      return container;
-    }
-
-    // Create scrollable tiles wrapper
-    const tilesWrapper = document.createElement('div');
-    tilesWrapper.className = 'footer-products-tiles-wrapper';
-
-    // Show each selected item as its own tile (already expanded by variant)
-    allSelectedProducts.forEach(item => {
-      const tile = document.createElement('div');
-      tile.className = 'footer-product-tile';
-
-      // Determine if this is a variant
-      const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title'
-        ? item.variantTitle
-        : '';
-
-      // Truncate product name for compact display
-      const displayTitle = this.truncateTitle(item.parentTitle || item.title, 20);
-
-      tile.innerHTML = `
-        <div class="tile-image-wrapper">
-          <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(item.title)}" class="tile-image">
-          <span class="tile-quantity-badge">${item.quantity}</span>
-        </div>
-        <div class="tile-info">
-          <span class="tile-product-name">${ComponentGenerator.escapeHtml(displayTitle)}</span>
-          ${variantInfo ? `<span class="tile-variant-name">${ComponentGenerator.escapeHtml(variantInfo)}</span>` : ''}
-        </div>
-        <button class="tile-remove" data-step="${item.stepIndex}" data-variant-id="${item.variantId}" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">×</button>
-      `;
-
-      // Attach remove handler with undo support
-      const removeBtn = tile.querySelector('.tile-remove');
-      removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-
-        // Store item data for undo
-        const removedItem = {
-          stepIndex: item.stepIndex,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          title: item.title
-        };
-
-        // Remove the product
-        this.updateProductSelection(item.stepIndex, item.variantId, 0);
-
-        // Show undo toast
-        const truncatedTitle = removedItem.title.length > 25
-          ? removedItem.title.substring(0, 25) + '...'
-          : removedItem.title;
-
-        ToastManager.showWithUndo(
-          `Removed "${truncatedTitle}"`,
-          () => {
-            // Undo callback - restore the product
-            this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity);
-          },
-          5000
-        );
-      });
-
-      tilesWrapper.appendChild(tile);
-    });
-
-    container.appendChild(tilesWrapper);
-    return container;
-  }
-
-  // Helper: Calculate discount progress percentage
-  calculateDiscountProgress(currentQuantity) {
-    if (!this.selectedBundle?.pricing?.enabled) return 0;
-
-    const rules = this.selectedBundle.pricing.rules || [];
-    if (rules.length === 0) return 0;
-
-    // Find the highest threshold (nested structure: rule.condition.value)
-    const maxThreshold = Math.max(...rules.map(r => r.condition?.value || 0));
-    if (maxThreshold === 0) return 0;
-
-    return Math.min(100, (currentQuantity / maxThreshold) * 100);
   }
 
   // Helper: Truncate title for compact display
@@ -2526,7 +2430,7 @@ class BundleWidgetFullPage {
           <img src="${variant.image}" alt="${variantTitle}" />
           <div class="variant-info">
             <span class="variant-title">${variantTitle}</span>
-            <span class="variant-quantity">Qty: ${variant.quantity} × ${CurrencyManager.formatMoney(variant.price, currencyInfo.display.format)}</span>
+            <span class="variant-quantity">Qty: ${variant.quantity} × ${CurrencyManager.convertAndFormat(variant.price, currencyInfo)}</span>
           </div>
           <button class="remove-variant-btn" data-step="${variant.stepIndex}" data-variant-id="${variant.variantId}">Remove</button>
         </div>
@@ -2602,6 +2506,70 @@ class BundleWidgetFullPage {
     }
   }
 
+  // Sidebar-only surgical step advance: updates the product grid and tabs in-place
+  // without tearing down the entire two-column DOM structure. Prevents the layout
+  // shift that occurs when reRenderFullPage() destroys and rebuilds everything.
+  async _sidebarAdvanceToNextStep() {
+    const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
+    if (!contentSection) {
+      // Fallback: full re-render if DOM structure is unexpected
+      this.renderFullPageLayoutWithSidebar();
+      return;
+    }
+
+    // 1. Update step timeline tabs in-place (active/completed/locked state + click listeners)
+    this.updateStepTimeline();
+
+    // 2. Rebuild search input for the new step (search query was cleared by the caller)
+    const existingSearch = contentSection.querySelector('.step-search-container');
+    if (existingSearch) existingSearch.replaceWith(this.createSearchInput());
+
+    // 3. Rebuild category tabs for the new step
+    const existingTabs = contentSection.querySelector('.category-tabs');
+    if (this.config.showCategoryTabs) {
+      const newTabs = this.createCategoryTabs(this.currentStepIndex);
+      if (existingTabs && newTabs) {
+        existingTabs.replaceWith(newTabs);
+      } else if (existingTabs && !newTabs) {
+        existingTabs.remove();
+      } else if (!existingTabs && newTabs) {
+        const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
+        if (gridContainer) contentSection.insertBefore(newTabs, gridContainer);
+      }
+    } else if (existingTabs) {
+      existingTabs.remove();
+    }
+
+    // 4. Show loading skeleton in product grid
+    const productGridContainer = contentSection.querySelector('.full-page-product-grid-container');
+    if (!productGridContainer) {
+      this.renderFullPageLayoutWithSidebar();
+      return;
+    }
+    productGridContainer.innerHTML = this.createProductGridLoadingState();
+
+    // 5. Immediately update side panel to reflect current selections
+    const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
+    if (sidePanel) this.renderSidePanel(sidePanel);
+
+    // 6. Async: load products for the new step and swap in the grid
+    if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
+    try {
+      await this.loadStepProducts(this.currentStepIndex);
+      const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+      productGridContainer.innerHTML = '';
+      productGridContainer.appendChild(productGrid);
+      if (sidePanel) this.renderSidePanel(sidePanel);
+      this.hideLoadingOverlay();
+      this.preloadNextStep();
+      this._renderMobileBottomBar();
+    } catch (error) {
+      this.hideLoadingOverlay();
+      productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+      this._renderMobileBottomBar();
+    }
+  }
+
   canProceedToNextStep() {
     return this.isStepCompleted(this.currentStepIndex);
   }
@@ -2609,7 +2577,7 @@ class BundleWidgetFullPage {
   // Helper: Check if all bundle conditions are met
   areBundleConditionsMet() {
     return this.selectedBundle.steps.every((step, index) => {
-      if (step.isFreeGift) return true; // free gift is optional for cart eligibility
+      if (step.isFreeGift || step.isDefault) return true; // non-blocking steps
       return this.isStepCompleted(index);
     });
   }
@@ -2668,12 +2636,9 @@ class BundleWidgetFullPage {
       );
       if (product) {
         if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-        this.selectedProducts[stepIndex][step.defaultVariantId] = {
-          ...product,
-          variantId: step.defaultVariantId,
-          quantity: 1,
-          isDefault: true,
-        };
+        // Store quantity as a number (1) so every consumer that reads selectedProducts
+        // with `if (quantity > 0)` correctly includes the default product.
+        this.selectedProducts[stepIndex][step.defaultVariantId] = 1;
       }
     });
   }
@@ -2758,15 +2723,19 @@ class BundleWidgetFullPage {
             const numericVariantId = this.extractId(variantId) || variantId;
 
 
+            const properties = {
+              '_bundle_id': bundleInstanceId,
+              '_bundle_name': bundleName,
+              '_step_index': String(stepIndex),
+              '_step_name': step.name
+            };
+            if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
+            if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+
             items.push({
               id: numericVariantId,
               quantity: quantity,
-              properties: {
-                '_bundle_id': bundleInstanceId,
-                '_bundle_name': bundleName,
-                '_step_index': String(stepIndex),
-                '_step_name': step.name
-              }
+              properties
             });
           }
         });
@@ -2977,7 +2946,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
 
     const discountInfo = PricingCalculator.calculateDiscount(
@@ -3030,7 +3000,8 @@ class BundleWidgetFullPage {
 
     const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
@@ -3449,8 +3420,8 @@ class BundleWidgetFullPage {
 
             ${product.price ? `
               <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
-                <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
               </div>
             ` : ''}
 
@@ -3640,8 +3611,15 @@ class BundleWidgetFullPage {
       // automatically move to the next step after a short delay so the shopper
       // sees the completion state before the view changes.
       // Guard: only on additions (quantity > 0), not removals; skip if a pending
-      // advance is already scheduled; skip on the last step.
-      if (quantity > 0 && !this._autoAdvancePending) {
+      // advance is already scheduled; skip on the last step; skip when the step
+      // has no explicit conditions (no conditionType/conditionOperator/conditionValue)
+      // so shoppers can add as many products as they want on unconditioned steps.
+      const _autoAdvanceStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+      const _hasExplicitCondition = _autoAdvanceStep &&
+        _autoAdvanceStep.conditionType &&
+        _autoAdvanceStep.conditionOperator &&
+        _autoAdvanceStep.conditionValue != null;
+      if (quantity > 0 && !this._autoAdvancePending && _hasExplicitCondition) {
         const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
         if (!isLastStep && this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
           this._autoAdvancePending = true;
@@ -3652,7 +3630,12 @@ class BundleWidgetFullPage {
               this.activeCollectionId = null;
               this.searchQuery = '';
               this.currentStepIndex++;
-              this.reRenderFullPage();
+              const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+              if (layout === 'footer_side') {
+                this._sidebarAdvanceToNextStep();
+              } else {
+                this.reRenderFullPage();
+              }
             }
           }, 120);
         }
@@ -3763,6 +3746,38 @@ class BundleWidgetFullPage {
       }
       productCard.classList.remove('selected');
     }
+
+    // Refresh dimmed state on all sibling cards now that the selection has changed
+    this._refreshSiblingDimState(stepIndex);
+  }
+
+  // Refresh the .dimmed class on every card in the current step's product grid.
+  // Called after every real-time selection change so cards gray out (or un-gray)
+  // immediately when the step quota is filled or freed — not only on full re-renders.
+  _refreshSiblingDimState(stepIndex) {
+    // Only update the DOM if this step's grid is currently visible.
+    // When a product is removed via the footer while on a different step,
+    // skip the DOM update — createFullPageProductGrid will apply the correct
+    // dim state when the user navigates to that step.
+    if (stepIndex !== this.currentStepIndex) return;
+    const step = this.selectedBundle?.steps?.[stepIndex];
+    if (!step) return;
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
+    const isAtCapacity = !capacityCheck.allowed;
+    // Only one step's grid is visible at a time; navigate up from any card in it
+    const anyCard = this.container.querySelector('.product-grid .product-card');
+    const grid = anyCard?.closest('.product-grid');
+    if (!grid) return;
+    grid.querySelectorAll('.product-card').forEach(card => {
+      const cardProductId = card.dataset.productId;
+      const currentQty = cardProductId ? (stepSelections[cardProductId] || 0) : 0;
+      if (isAtCapacity && currentQty === 0) {
+        card.classList.add('dimmed');
+      } else {
+        card.classList.remove('dimmed');
+      }
+    });
   }
 
   // Helper to find product by ID across all step data
@@ -3837,7 +3852,8 @@ class BundleWidgetFullPage {
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
-      this.stepProductData
+      this.stepProductData,
+      this.selectedBundle?.steps
     );
 
     const discountInfo = PricingCalculator.calculateDiscount(
@@ -3937,13 +3953,13 @@ class BundleWidgetFullPage {
 
     if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
       // Show strike-through original price and discounted price
-      strikePriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      strikePriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
       strikePriceEl.style.display = 'inline';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
     } else {
       // Show only regular price
       strikePriceEl.style.display = 'none';
-      finalPriceEl.textContent = CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format);
+      finalPriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
     }
   }
 

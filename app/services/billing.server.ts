@@ -12,7 +12,7 @@
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
 import type { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
-import { PLANS } from "../constants/plans";
+import { PLANS, GROW_ONLY_FEATURES, isFeatureGatingEnabled } from "../constants/plans";
 import { ERROR_MESSAGES } from "../constants/errors";
 import { BundleStatus } from "../constants/bundle";
 
@@ -230,9 +230,33 @@ export class BillingService {
       });
 
       // If no active subscription, user is on free plan
-      const activeSubscription = shop.subscriptions[0];
-      const plan = activeSubscription?.plan || "free";
-      const status = activeSubscription?.status || BundleStatus.ACTIVE;
+      let activeSubscription = shop.subscriptions[0];
+
+      // Owner-granted subscriptions (shopifySubscriptionId IS NULL) expire server-side
+      // based on currentPeriodEnd. If the period has passed, treat as expired immediately —
+      // no background job needed; the check runs on every request.
+      if (
+        activeSubscription &&
+        activeSubscription.shopifySubscriptionId === null &&
+        activeSubscription.currentPeriodEnd !== null &&
+        activeSubscription.currentPeriodEnd < new Date()
+      ) {
+        AppLogger.info("Owner-granted subscription expired", {
+          component: "billing.server",
+          operation: "getSubscriptionInfo"
+        }, { shopDomain, subscriptionId: activeSubscription.id, expiredAt: activeSubscription.currentPeriodEnd });
+
+        // Expire it in the DB so subsequent queries don't re-evaluate it
+        await db.subscription.update({
+          where: { id: activeSubscription.id },
+          data: { status: "expired" }
+        });
+
+        activeSubscription = undefined as typeof activeSubscription;
+      }
+
+      const plan = activeSubscription?.plan ?? "free";
+      const status = activeSubscription?.status ?? BundleStatus.ACTIVE;
       const bundleLimit = PLANS[plan].bundleLimit;
 
       return {
@@ -638,31 +662,96 @@ export class BillingService {
   }
 
   /**
-   * Check if a feature is available for the shop's current plan
+   * Check if a feature is available for the shop's current plan.
+   *
+   * Enforcement is opt-in via the ENFORCE_PLAN_GATES=true env var so the
+   * paywall is transparent on SIT without any code changes.
    */
   static async isFeatureAvailable(
     shopDomain: string,
     feature: string
   ): Promise<boolean> {
-    // NOTE: Feature gating is currently DISABLED - all features available to all plans
-    // To re-enable, uncomment the features below:
-    const GROW_ONLY_FEATURES: string[] = [
-      // "design_control_panel",
-      // "advanced_discounts",
-      // "priority_support",
-      // "bundle_analytics",
-      // "early_access"
-    ];
+    // Skip enforcement on SIT (ENFORCE_PLAN_GATES not set or !== "true")
+    if (!isFeatureGatingEnabled()) return true;
 
-    // If not a Grow-only feature, it's available to all
-    if (!GROW_ONLY_FEATURES.includes(feature)) {
-      return true;
-    }
+    // If not a Grow-only feature, available to all plans
+    if (!(GROW_ONLY_FEATURES as readonly string[]).includes(feature)) return true;
 
-    // Check current plan
     const info = await this.getSubscriptionInfo(shopDomain);
     if (!info) return false;
 
     return info.plan === "grow" && info.isActive;
+  }
+
+  /**
+   * Grant the Grow plan to a merchant without going through Shopify billing.
+   * Used by the owner-only grant API to issue free / early-access invites.
+   *
+   * The grant expires server-side after `days` days (default 14). After expiry,
+   * getSubscriptionInfo() automatically demotes the shop back to Free plan.
+   * The owner must call this again to renew / extend access.
+   *
+   * Creates an active Grow subscription directly in the DB
+   * (shopifySubscriptionId is null — no charge is created on Shopify).
+   * Any previously active subscription is cancelled first.
+   */
+  static async grantGrowPlan(
+    shopDomain: string,
+    days = 14
+  ): Promise<{ success: boolean; subscriptionId?: string; expiresAt?: Date; error?: string }> {
+    try {
+      const shop = await db.shop.findUnique({ where: { shopDomain } });
+      if (!shop) {
+        return { success: false, error: `Shop not found: ${shopDomain}` };
+      }
+
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+      // Cancel any currently active subscription so there is only one active record
+      await db.subscription.updateMany({
+        where: { shopId: shop.id, status: "active" },
+        data: { status: "cancelled", cancelledAt: now }
+      });
+
+      // Create owner-granted Grow subscription — no Shopify billing flow.
+      // shopifySubscriptionId is intentionally null; getSubscriptionInfo() uses
+      // this to identify owner grants and enforce currentPeriodEnd expiry.
+      const subscription = await db.subscription.create({
+        data: {
+          shopId: shop.id,
+          plan: "grow",
+          status: "active",
+          name: "Grow Plan (Owner Grant)",
+          price: 0,
+          currencyCode: "USD",
+          currentPeriodStart: now,
+          currentPeriodEnd: expiresAt
+        }
+      });
+
+      // Point the shop at the new subscription
+      await db.shop.update({
+        where: { id: shop.id },
+        data: { currentSubscriptionId: subscription.id }
+      });
+
+      AppLogger.info("Grow plan granted by owner", {
+        component: "billing.server",
+        operation: "grantGrowPlan"
+      }, { shopDomain, subscriptionId: subscription.id, days, expiresAt: expiresAt.toISOString() });
+
+      return { success: true, subscriptionId: subscription.id, expiresAt };
+    } catch (error) {
+      AppLogger.error("Error granting Grow plan", {
+        component: "billing.server",
+        operation: "grantGrowPlan"
+      }, error);
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error"
+      };
+    }
   }
 }

@@ -45,6 +45,7 @@ import {
   Spinner,
   Divider,
   Box,
+  Tooltip,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -258,7 +259,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 const bundleSetupItems = [
   { id: "step_setup",       label: "Step Setup",          icon: ListNumberedIcon, fullPageOnly: false },
   { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
-  { id: "images_gifs",      label: "Images & GIFs",       icon: ImageIcon,        fullPageOnly: true  },
+  { id: "images_gifs",      label: "Bundle Assets",       icon: ImageIcon,        fullPageOnly: true  },
   { id: "pricing_tiers",    label: "Pricing Tiers",       icon: DiscountIcon,     fullPageOnly: true  },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
@@ -1306,8 +1307,14 @@ export default function ConfigureBundleFlow() {
           content: "Sync Bundle",
           icon: RefreshIcon,
           destructive: true,
-          disabled: isDirty || fetcher.state !== 'idle',
-          onAction: () => setIsSyncModalOpen(true),
+          onAction: () => {
+            if (isDirty) {
+              shopify.toast.show("Save your changes before syncing", { isError: true });
+              return;
+            }
+            if (fetcher.state !== 'idle') return;
+            setIsSyncModalOpen(true);
+          },
         },
       ]}
     >
@@ -2096,7 +2103,7 @@ export default function ConfigureBundleFlow() {
                           </Card>
                         ))}
 
-                        {pricingState.discountRules.length < 4 && (
+                        {pricingState.discountRules.length < 4 ? (
                           <Button
                             variant="tertiary"
                             fullWidth
@@ -2105,6 +2112,10 @@ export default function ConfigureBundleFlow() {
                           >
                             Add rule
                           </Button>
+                        ) : (
+                          <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+                            Maximum 4 discount rules reached
+                          </Text>
                         )}
                       </BlockStack>
 
@@ -2120,11 +2131,13 @@ export default function ConfigureBundleFlow() {
                               Edit how discount messages appear above the subtotal.
                             </Text>
                           </BlockStack>
-                          <Checkbox
-                            label="Discount Messaging"
-                            checked={pricingState.discountMessagingEnabled}
-                            onChange={pricingState.setDiscountMessagingEnabled}
-                          />
+                          <Tooltip content="Show dynamic discount progress messages in the bundle widget (e.g. 'Add 2 more items to unlock 20% off')">
+                            <Checkbox
+                              label="Discount Messaging"
+                              checked={pricingState.discountMessagingEnabled}
+                              onChange={pricingState.setDiscountMessagingEnabled}
+                            />
+                          </Tooltip>
                         </InlineStack>
 
                         {/* Integrated Variables Helper */}
@@ -2289,17 +2302,10 @@ export default function ConfigureBundleFlow() {
                           <Text variant="bodyXs" tone="subdued" as="p">Overlay shown while bundle content is loading</Text>
                         </BlockStack>
                       </InlineStack>
-                      <Badge tone="magic">Storefront</Badge>
+                      <Tooltip content="This setting controls the loading animation visible to shoppers on your storefront">
+                        <Badge tone="magic">Storefront</Badge>
+                      </Tooltip>
                     </InlineStack>
-
-                    <BlockStack gap="100">
-                      <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">APPEARS DURING</Text>
-                      <InlineStack gap="150" wrap>
-                        <Badge tone="info">Initial load</Badge>
-                        <Badge tone="info">Step transitions</Badge>
-                        <Badge tone="info">Add to cart</Badge>
-                      </InlineStack>
-                    </BlockStack>
 
                     <Box background="bg-surface-secondary" padding="300" borderRadius="200">
                       <InlineStack gap="600">
@@ -2325,6 +2331,17 @@ export default function ConfigureBundleFlow() {
                       }}
                       hideCropEditor
                     />
+
+                    {loadingGif && (
+                      <BlockStack gap="200">
+                        <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">PREVIEW</Text>
+                        <img
+                          src={loadingGif}
+                          alt="Loading animation preview"
+                          style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: "1px solid #e1e3e5" }}
+                        />
+                      </BlockStack>
+                    )}
                   </BlockStack>
                 </Card>
               </BlockStack>

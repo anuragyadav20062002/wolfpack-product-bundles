@@ -695,3 +695,82 @@ describe('PricingCalculator.getNextDiscountRule', () => {
     expect(PricingCalculator.getNextDiscountRule(bundle, 3, 0)).toBeNull();
   });
 });
+
+// ─── calculateBundleTotal — free gift step exclusion ─────────────────────────
+
+describe('PricingCalculator.calculateBundleTotal — free gift step exclusion', () => {
+  // Two steps: step 0 is paid ($500, qty 1), step 1 is free gift ($200, qty 1).
+  const selectedProducts = [
+    { 'var-paid': 1 },
+    { 'var-gift': 1 },
+  ];
+  const stepProductData = [
+    [{ variantId: 'var-paid', price: 50000 }],  // 50000 cents = $500
+    [{ variantId: 'var-gift', price: 20000 }],  // 20000 cents = $200
+  ];
+  const steps = [
+    { isFreeGift: false },
+    { isFreeGift: true },
+  ];
+
+  it('with steps: free gift step is excluded from totalPrice and totalQuantity', () => {
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      selectedProducts, stepProductData, steps
+    );
+    expect(totalPrice).toBe(50000);
+    expect(totalQuantity).toBe(1);
+  });
+
+  it('without steps (backward compat): free gift price is included as before', () => {
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      selectedProducts, stepProductData
+    );
+    expect(totalPrice).toBe(70000);
+    expect(totalQuantity).toBe(2);
+  });
+
+  it('with steps=null: behaves identically to no steps argument', () => {
+    const { totalPrice } = PricingCalculator.calculateBundleTotal(
+      selectedProducts, stepProductData, null
+    );
+    expect(totalPrice).toBe(70000);
+  });
+
+  it('all free gift steps: totalPrice = 0, totalQuantity = 0', () => {
+    const allGiftSteps = [{ isFreeGift: true }, { isFreeGift: true }];
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      selectedProducts, stepProductData, allGiftSteps
+    );
+    expect(totalPrice).toBe(0);
+    expect(totalQuantity).toBe(0);
+  });
+});
+
+// ─── calculateDiscount on paid-only total ────────────────────────────────────
+
+describe('PricingCalculator.calculateDiscount — free gift excluded from totalPrice', () => {
+  // After calculateBundleTotal skips the free gift step, calculateDiscount
+  // receives only the paid total. Verify that discount is applied correctly.
+
+  it('percentage_off on paid-only total: finalPrice = paid * (1 - pct/100)', () => {
+    // paidTotal = 50000 cents ($500), 10% off
+    const bundle = makeBundle(true, [makeQtyRule('gte', 1, 'percentage_off', 10)]);
+    const { finalPrice, discountAmount } = PricingCalculator.calculateDiscount(bundle, 50000, 1);
+    expect(discountAmount).toBe(5000);
+    expect(finalPrice).toBe(45000);
+  });
+
+  it('fixed_amount_off on paid-only total: finalPrice = paidTotal - amountOff', () => {
+    // paidTotal = 50000 cents ($500), $50 off = 5000 cents
+    const bundle = makeBundle(true, [makeQtyRule('gte', 1, 'fixed_amount_off', 5000)]);
+    const { finalPrice } = PricingCalculator.calculateDiscount(bundle, 50000, 1);
+    expect(finalPrice).toBe(45000);
+  });
+
+  it('fixed_bundle_price on paid-only total: finalPrice = fixedPrice', () => {
+    // paidTotal = 50000 cents ($500), fixedPrice = 40000 cents ($400)
+    const bundle = makeBundle(true, [makeQtyRule('gte', 1, 'fixed_bundle_price', 40000)]);
+    const { finalPrice } = PricingCalculator.calculateDiscount(bundle, 50000, 1);
+    expect(finalPrice).toBe(40000);
+  });
+});

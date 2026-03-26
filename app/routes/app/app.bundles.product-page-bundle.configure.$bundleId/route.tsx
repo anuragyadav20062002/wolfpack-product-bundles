@@ -45,6 +45,7 @@ import {
   Spinner,
   Divider,
   Box,
+  Tooltip,
 } from "@shopify/polaris";
 import {
   ViewIcon,
@@ -250,7 +251,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 const bundleSetupItems = [
   { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
   { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
-  { id: "images_gifs", label: "Images & GIFs", icon: ImageIcon },
+  { id: "images_gifs", label: "Bundle Assets", icon: ImageIcon },
   // Bundle Upsell and Bundle Settings disabled for later release
   // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
   // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
@@ -631,7 +632,7 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Handle install widget response — on success, open the product page
+  // Handle install widget response — on success, open the Theme Editor on the correct product
   useEffect(() => {
     if (installFetcher.data && installFetcher.state === 'idle') {
       const result = installFetcher.data;
@@ -639,31 +640,34 @@ export default function ConfigureBundleFlow() {
         setWidgetInstalled(true);
         shopify.toast.show(
           result.templateAlreadyExists
-            ? "Widget already installed on your product page."
-            : "Widget installed! Opening your bundle product page…",
+            ? "Widget already on your theme. Opening Theme Editor…"
+            : "Widget installed! Opening Theme Editor on your product…",
           { isError: false }
         );
-        // Navigate to the product page after install
-        const productUrl = bundleProduct?.onlineStorePreviewUrl || bundleProduct?.onlineStoreUrl;
-        if (productUrl) {
-          const separator = productUrl.includes('?') ? '&' : '?';
-          const urlWithTemplate = formState.templateName
-            ? `${productUrl}${separator}view=${formState.templateName}`
-            : productUrl;
-          open(urlWithTemplate, '_blank');
+        // Open Theme Editor with the bundle product as the preview and the
+        // product-page-bundle template active so the merchant immediately sees
+        // where the widget is placed.
+        // shopifyProductHandle is the actual PDP product; bundleProduct.handle is the synthetic
+        // bundle product for ads/checkout — prefer the PDP handle for the theme editor URL.
+        const productHandle = bundle.shopifyProductHandle;
+        if (productHandle) {
+          const previewPath = encodeURIComponent(`/products/${productHandle}`);
+          const themeEditorUrl = `https://${shop}/admin/themes/current/editor?previewPath=${previewPath}&template=product.product-page-bundle`;
+          open(themeEditorUrl, '_blank');
         }
       } else {
-        shopify.toast.show(result.error || "Couldn't auto-install — opening Theme Editor instead.", { isError: true, duration: 5000 });
-        // Fallback: open theme editor
-        if (bundleProduct?.onlineStoreUrl) {
-          open(`${bundleProduct.onlineStoreUrl}`, '_blank');
-        }
+        shopify.toast.show(result.error || "Install failed — opening Theme Editor instead.", { isError: true, duration: 5000 });
+        // Fallback: open Theme Editor without a specific template so the merchant
+        // can place the block manually
+        const productHandle = bundle.shopifyProductHandle;
+        const previewPath = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
+        open(`https://${shop}/admin/themes/current/editor?template=product${previewPath}`, '_blank');
       }
     }
-  }, [installFetcher.data, installFetcher.state]);
+  }, [installFetcher.data, installFetcher.state, bundleProduct, bundle.shopifyProductHandle, shop]);
 
   const handleAddToStorefront = useCallback(() => {
-    const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
+    const productHandle = bundle.shopifyProductHandle;
     installFetcher.submit(
       JSON.stringify({ productHandle, bundleId: bundle.id }),
       { method: 'POST', action: '/api/install-pdp-widget', encType: 'application/json' }
@@ -713,7 +717,7 @@ export default function ConfigureBundleFlow() {
 
     // Try different URL construction methods
     let productUrl = null;
-    const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
+    const productHandle = bundle.shopifyProductHandle;
 
     if (bundleProduct) {
 
@@ -1252,10 +1256,14 @@ export default function ConfigureBundleFlow() {
           content: "Open in Theme Editor",
           icon: ExternalIcon,
           onAction: () => {
-            const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
+            const productHandle = bundle.shopifyProductHandle;
             const previewParam = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
-            // target=newAppsSection is correct for section-type blocks.
-            const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
+            // If the widget is already installed, navigate directly to the installed template.
+            // Using addAppBlockId on an already-installed block causes Shopify to change the
+            // previewPath to the first product with that templateSuffix (which may not be this bundle's product).
+            const themeEditorUrl = widgetInstalled
+              ? `https://${shop}/admin/themes/current/editor?template=product.product-page-bundle${previewParam}`
+              : `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
             window.open(themeEditorUrl, '_blank');
           },
         },
@@ -1263,8 +1271,14 @@ export default function ConfigureBundleFlow() {
           content: "Sync Bundle",
           icon: RefreshIcon,
           destructive: true,
-          disabled: isDirty || fetcher.state !== 'idle',
-          onAction: () => setIsSyncModalOpen(true),
+          onAction: () => {
+            if (isDirty) {
+              shopify.toast.show("Save your changes before syncing", { isError: true });
+              return;
+            }
+            if (fetcher.state !== 'idle') return;
+            setIsSyncModalOpen(true);
+          },
         },
       ]}
     >
@@ -1633,6 +1647,87 @@ export default function ConfigureBundleFlow() {
                                     Add Rule
                                   </Button>
                                 </BlockStack>
+
+                                {/* ── Step Options: Free Gift & Default Product ── */}
+                                <BlockStack gap="300">
+                                  <Divider />
+                                  <BlockStack gap="100">
+                                    <Text variant="headingSm" as="h4">Step Options</Text>
+                                    <Text as="p" variant="bodyMd" tone="subdued">
+                                      Advanced options for free gift steps and pre-selected (mandatory) products.
+                                    </Text>
+                                  </BlockStack>
+
+                                  {/* Free Gift toggle */}
+                                  <Checkbox
+                                    label="Free gift step"
+                                    helpText="This step is unlocked after all regular steps are complete. Products are shown at $0.00."
+                                    checked={step.isFreeGift === true}
+                                    onChange={(checked) => {
+                                      stepsState.updateStepField(step.id, 'isFreeGift', checked);
+                                      if (!checked) stepsState.updateStepField(step.id, 'freeGiftName', '');
+                                    }}
+                                  />
+
+                                  {step.isFreeGift && (
+                                    <FormLayout>
+                                      <TextField
+                                        label="Gift display name"
+                                        placeholder='e.g. "cap", "greeting card"'
+                                        helpText='Shown in the widget: "Add 2 more to claim a FREE cap!"'
+                                        value={step.freeGiftName || ''}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'freeGiftName', value)}
+                                        autoComplete="off"
+                                      />
+                                    </FormLayout>
+                                  )}
+
+                                  <Divider />
+
+                                  {/* Default (mandatory) product toggle */}
+                                  <Checkbox
+                                    label="Mandatory default product"
+                                    helpText="A specific variant is pre-selected when the bundle loads. Customers cannot remove it."
+                                    checked={step.isDefault === true}
+                                    onChange={(checked) => {
+                                      stepsState.updateStepField(step.id, 'isDefault', checked);
+                                      if (!checked) stepsState.updateStepField(step.id, 'defaultVariantId', '');
+                                    }}
+                                  />
+
+                                  {step.isDefault && (
+                                    <FormLayout>
+                                      <TextField
+                                        label="Default variant GID"
+                                        placeholder="gid://shopify/ProductVariant/123456789"
+                                        helpText="Paste the Shopify variant GID. It must be one of the products added to this step."
+                                        value={step.defaultVariantId || ''}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'defaultVariantId', value)}
+                                        autoComplete="off"
+                                      />
+                                      {step.StepProduct && step.StepProduct.length > 0 && (
+                                        <BlockStack gap="100">
+                                          <Text as="p" variant="bodySm" tone="subdued">
+                                            Available variants from products in this step:
+                                          </Text>
+                                          {step.StepProduct.flatMap((sp: any) =>
+                                            (sp.variants || []).map((v: any) => (
+                                              <Button
+                                                key={v.id || v.gid}
+                                                variant="plain"
+                                                size="micro"
+                                                onClick={() => stepsState.updateStepField(step.id, 'defaultVariantId', v.id || v.gid)}
+                                              >
+                                                {sp.title}{v.title && v.title !== 'Default Title' ? ` · ${v.title}` : ''} — {v.id || v.gid}
+                                              </Button>
+                                            ))
+                                          )}
+                                        </BlockStack>
+                                      )}
+                                    </FormLayout>
+                                  )}
+                                </BlockStack>
+
                               </BlockStack>
                             </Collapsible>
                           </BlockStack>
@@ -1792,7 +1887,7 @@ export default function ConfigureBundleFlow() {
                           </Card>
                         ))}
 
-                        {pricingState.discountRules.length < 4 && (
+                        {pricingState.discountRules.length < 4 ? (
                           <Button
                             variant="tertiary"
                             fullWidth
@@ -1801,6 +1896,10 @@ export default function ConfigureBundleFlow() {
                           >
                             Add rule
                           </Button>
+                        ) : (
+                          <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+                            Maximum 4 discount rules reached
+                          </Text>
                         )}
                       </BlockStack>
 
@@ -1816,11 +1915,13 @@ export default function ConfigureBundleFlow() {
                               Edit how discount messages appear above the subtotal.
                             </Text>
                           </BlockStack>
-                          <Checkbox
-                            label="Discount Messaging"
-                            checked={pricingState.discountMessagingEnabled}
-                            onChange={pricingState.setDiscountMessagingEnabled}
-                          />
+                          <Tooltip content="Show dynamic discount progress messages in the bundle widget (e.g. 'Add 2 more items to unlock 20% off')">
+                            <Checkbox
+                              label="Discount Messaging"
+                              checked={pricingState.discountMessagingEnabled}
+                              onChange={pricingState.setDiscountMessagingEnabled}
+                            />
+                          </Tooltip>
                         </InlineStack>
 
                         {/* Integrated Variables Helper */}
@@ -1942,17 +2043,10 @@ export default function ConfigureBundleFlow() {
                           <Text variant="bodyXs" tone="subdued" as="p">Overlay shown while bundle content is loading</Text>
                         </BlockStack>
                       </InlineStack>
-                      <Badge tone="magic">Storefront</Badge>
+                      <Tooltip content="This setting controls the loading animation visible to shoppers on your storefront">
+                        <Badge tone="magic">Storefront</Badge>
+                      </Tooltip>
                     </InlineStack>
-
-                    <BlockStack gap="100">
-                      <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">APPEARS DURING</Text>
-                      <InlineStack gap="150" wrap>
-                        <Badge tone="info">Initial load</Badge>
-                        <Badge tone="info">Step transitions</Badge>
-                        <Badge tone="info">Add to cart</Badge>
-                      </InlineStack>
-                    </BlockStack>
 
                     <Box background="bg-surface-secondary" padding="300" borderRadius="200">
                       <InlineStack gap="600">
@@ -1978,6 +2072,17 @@ export default function ConfigureBundleFlow() {
                       }}
                       hideCropEditor
                     />
+
+                    {loadingGif && (
+                      <BlockStack gap="200">
+                        <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">PREVIEW</Text>
+                        <img
+                          src={loadingGif}
+                          alt="Loading animation preview"
+                          style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: "1px solid #e1e3e5" }}
+                        />
+                      </BlockStack>
+                    )}
                   </BlockStack>
                 </Card>
               </BlockStack>

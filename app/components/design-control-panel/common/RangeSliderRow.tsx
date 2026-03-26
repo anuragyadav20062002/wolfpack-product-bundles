@@ -1,4 +1,4 @@
-import { RangeSlider } from "@shopify/polaris";
+import { RangeSlider, TextField, InlineStack } from "@shopify/polaris";
 
 interface RangeSliderRowProps {
   label: string;
@@ -11,8 +11,8 @@ interface RangeSliderRowProps {
 }
 
 /**
- * RangeSliderRow - A standardized range slider with output display.
- * Wraps Polaris RangeSlider with consistent props and type handling.
+ * RangeSliderRow - A standardized range slider with a paired number text input.
+ * Allows both dragging the slider and typing an exact number directly.
  */
 export function RangeSliderRow({
   label,
@@ -24,15 +24,36 @@ export function RangeSliderRow({
   suffix,
 }: RangeSliderRowProps) {
   return (
-    <RangeSlider
-      label={label}
-      value={value}
-      onChange={(val) => onChange(val as number)}
-      min={min}
-      max={max}
-      step={step}
-      output
-      suffix={suffix}
-    />
+    <InlineStack gap="300" blockAlign="center" wrap={false}>
+      <div style={{ flex: 1 }}>
+        <RangeSlider
+          label={label}
+          value={value}
+          onChange={(val) => onChange(val as number)}
+          min={min}
+          max={max}
+          step={step}
+          suffix={suffix}
+        />
+      </div>
+      <div style={{ width: "64px", flexShrink: 0, marginTop: "18px" }}>
+        <TextField
+          label=""
+          labelHidden
+          type="number"
+          value={String(value)}
+          onChange={(v) => {
+            const parsed = parseInt(v, 10);
+            if (!isNaN(parsed)) {
+              onChange(Math.min(max, Math.max(min, parsed)));
+            }
+          }}
+          min={min}
+          max={max}
+          step={step}
+          autoComplete="off"
+        />
+      </div>
+    </InlineStack>
   );
 }

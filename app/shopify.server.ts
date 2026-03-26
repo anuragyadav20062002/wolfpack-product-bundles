@@ -12,6 +12,7 @@ import { createStorefrontAccessToken } from "./services/storefront-token.server"
 import { CartTransformService } from "./services/cart-transform-service.server";
 import { BillingService } from "./services/billing.server";
 import { ensureVariantBundleMetafieldDefinitions } from "./services/bundles/metafield-sync.server";
+import { syncThemeColors } from "./services/theme-colors.server";
 import { AppLogger } from "./lib/logger";
 
 const shopify = shopifyApp({
@@ -87,6 +88,13 @@ const shopify = shopifyApp({
         }
       } catch (error: any) {
         AppLogger.error("Failed to sync $app:serverUrl metafield", { shop: session.shop }, error);
+      }
+
+      // Sync theme colors for bundle widget color inheritance (non-critical)
+      try {
+        await syncThemeColors(admin, session.shop);
+      } catch (error: any) {
+        AppLogger.error("Failed to sync theme colors", { shop: session.shop }, error);
       }
 
       // UTM pixel is NOT activated automatically on install.

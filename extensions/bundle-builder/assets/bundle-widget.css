@@ -1371,42 +1371,6 @@
 }
 
 /* Modal Footer Progress Bar */
-.modal-footer-progress-section {
-  display: block;
-  margin-top: 16px;
-  margin-bottom: 12px;
-}
-
-.modal-footer-progress-bar {
-  width: 100%;
-  height: 8px;
-  background-color: #E3E3E3;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.modal-footer-progress-fill {
-  width: 0%;
-  height: 100%;
-  background-color: #000000;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.modal-footer-progress-details {
-  text-align: center;
-  font-size: 12px;
-  color: #6B7280;
-  font-weight: 500;
-}
-
-.modal-footer-progress-details .current-quantity,
-.modal-footer-progress-details .target-quantity {
-  color: #374151;
-  font-weight: 600;
-}
-
 /* Tablet responsive adjustments for modal footer */
 @media (max-width: 768px) {
   .modal-footer {
@@ -1916,9 +1880,6 @@
     margin: 8px 0;
   }
 
-  .modal-footer-progress-section {
-    margin: 8px 0;
-  }
 }
 
 

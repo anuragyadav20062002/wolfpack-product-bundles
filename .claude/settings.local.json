@@ -138,7 +138,8 @@
       "Bash(npm view:*)",
       "Bash(npm audit:*)",
       "mcp__chrome-devtools__evaluate_script",
-      "mcp__chrome-devtools__take_screenshot"
+      "mcp__chrome-devtools__take_screenshot",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }

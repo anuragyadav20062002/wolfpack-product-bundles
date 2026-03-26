@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { useFetcher } from "@remix-run/react";
 import {
   BlockStack,
@@ -109,7 +108,7 @@ function ProgressCircle({ status }: { status: "spinning" | "success" }) {
 export function FilePicker({ value, onChange, cropValue, onCropChange, label = "Choose background image", hideCropEditor = false }: FilePickerProps) {
   const [open, setOpen] = useState(false);
   const [cropEditorOpen, setCropEditorOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [files, setFiles] = useState<StoreFile[]>([]);
   const [search, setSearch] = useState("");
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
@@ -136,10 +135,17 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
   const filesLoading = filesFetcher.state === "loading";
   const isBlocked = uploadStatus === "uploading" || uploadStatus === "polling";
 
-  // Mark mounted so createPortal is safe on the client
+  // Open/close the native <dialog> so it appears in the browser top layer,
+  // above App Bridge's <ui-modal> which also uses the top layer.
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const el = dialogRef.current;
+    if (!el) return;
+    if (open) {
+      if (!el.open) el.showModal();
+    } else {
+      if (el.open) el.close();
+    }
+  }, [open]);
 
   // Load initial files when picker opens
   useEffect(() => {
@@ -423,21 +429,13 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
     </button>
   );
 
-  // ─── Portal modal ──────────────────────────────────────────────────────────
+  // ─── Native <dialog> modal ─────────────────────────────────────────────────
+  // Using showModal() places the dialog in the browser top layer, above
+  // App Bridge's <ui-modal> which also uses the top layer.
 
-  const dialogContent = (
-    // Outer overlay — captures backdrop clicks
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) handleClose(); }}
-    >
-      {/* Backdrop */}
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }} />
-
-      {/* Dialog */}
+  const dialogInner = (
       <div
         style={{
-          position: "relative",
           width: "min(90vw, 680px)",
           maxHeight: "82vh",
           background: "#fff",
@@ -661,20 +659,28 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
           </Button>
         </div>
       </div>
-    </div>
   );
 
   return (
     <BlockStack gap="200">
       {trigger}
 
-      {/* Portal modal — renders above the App Bridge DCP modal.
-          The hidden file input lives inside the portal (adjacent to the Upload
-          button) so programmatic .click() is treated as a trusted user gesture. */}
-      {mounted && open ? createPortal(dialogContent, document.body) : null}
+      {/* Native <dialog> — rendered in the browser top layer via showModal(),
+          which places it above App Bridge's <ui-modal> regardless of z-index.
+          The hidden file input lives here so .click() is a trusted user gesture. */}
+      <style>{`dialog.fp-dialog::backdrop { background: rgba(0,0,0,0.5); } dialog.fp-dialog { border: none; padding: 0; background: transparent; border-radius: 12px; outline: none; }`}</style>
+      <dialog
+        ref={dialogRef}
+        className="fp-dialog"
+        onClose={handleClose}
+        onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+        style={{ maxWidth: "none", maxHeight: "none" }}
+      >
+        {dialogInner}
+      </dialog>
 
-      {/* Crop editor — higher z-index than the file picker modal */}
-      {mounted && !hideCropEditor && cropEditorOpen && value && (
+      {/* Crop editor */}
+      {!hideCropEditor && cropEditorOpen && value && (
         <ImageCropEditor
           imageUrl={value}
           cropValue={cropValue ?? null}

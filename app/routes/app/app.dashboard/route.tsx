@@ -23,9 +23,10 @@ import { authenticate } from "../../../shopify.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
-import { useCallback, useRef, useEffect, useMemo, memo } from "react";
+import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
+import { CartPropertyFixContent } from "../../../components/CartPropertyFixCard";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
@@ -308,13 +309,16 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
 
     {/* Group 2: Preview (view action) */}
     <Tooltip content={bundle.previewHandle ? "Preview in store" : "Save bundle to preview"}>
-      <Button
-        size="micro"
-        icon={ExternalIcon}
-        onClick={() => onPreview(bundle)}
-        accessibilityLabel="Preview bundle"
-        disabled={!bundle.previewHandle}
-      />
+      {/* span captures pointer-events so tooltip fires even when button is disabled */}
+      <span style={{ display: "inline-flex" }}>
+        <Button
+          size="micro"
+          icon={ExternalIcon}
+          onClick={() => onPreview(bundle)}
+          accessibilityLabel="Preview bundle"
+          disabled={!bundle.previewHandle}
+        />
+      </span>
     </Tooltip>
 
     {/* Group 3: Delete (destructive action - separate to prevent accidents) */}
@@ -480,8 +484,12 @@ export default function Dashboard() {
     return BUNDLE_TYPE_BADGES[bundleType as keyof typeof BUNDLE_TYPE_BADGES] || <Badge>{bundleType}</Badge>;
   };
 
+  const [bundleFilter, setBundleFilter] = useState("");
+
   // Memoize bundleRows to prevent unnecessary re-renders
-  const bundleRows = useMemo(() => bundles.map((bundle) => [
+  const bundleRows = useMemo(() => bundles
+    .filter((b) => b.name.toLowerCase().includes(bundleFilter.toLowerCase()))
+    .map((bundle) => [
     bundle.name,
     getStatusDisplay(bundle.status),
     getBundleTypeDisplay(bundle.bundleType),
@@ -729,13 +737,30 @@ export default function Dashboard() {
                     </BlockStack>
                   </Card>
                 ) : (
-                  <div className={dashboardStyles.dataTableWrapper}>
-                    <DataTable
-                      columnContentTypes={["text", "text", "text", "text"]}
-                      headings={["Bundle Name", "Status", "Type", "Actions"]}
-                      rows={bundleRows}
+                  <BlockStack gap="300">
+                    <TextField
+                      label="Filter bundles"
+                      labelHidden
+                      placeholder="Filter by name…"
+                      value={bundleFilter}
+                      onChange={setBundleFilter}
+                      clearButton
+                      onClearButtonClick={() => setBundleFilter("")}
+                      autoComplete="off"
                     />
-                  </div>
+                    <div className={dashboardStyles.dataTableWrapper}>
+                      <DataTable
+                        columnContentTypes={["text", "text", "text", "text"]}
+                        headings={["Bundle Name", "Status", "Type", "Actions"]}
+                        rows={bundleRows}
+                      />
+                      {bundleRows.length === 0 && bundleFilter && (
+                        <div style={{ padding: "24px", textAlign: "center", color: "#6d7175", fontSize: 13 }}>
+                          {`No bundles match "${bundleFilter}"`}
+                        </div>
+                      )}
+                    </div>
+                  </BlockStack>
                 )}
               </BlockStack>
             </Card>
@@ -744,70 +769,69 @@ export default function Dashboard() {
           {/* Bottom section with setup instructions and account manager */}
           <Layout.Section>
             <div className={dashboardStyles.bottomSection}>
-              {/* Cart Transform Bundle Setup Instructions */}
-              <div className={dashboardStyles.bottomSectionCol}>
-                <BundleSetupInstructions
-                  title="Bundle Setup Steps"
-                  subtitle="Follow these steps to create your bundle"
-                  bundlesExist={bundles.length > 0}
-                  steps={[
-                    {
-                      id: "create_bundle",
-                      title: 'Click "Create Bundle"',
-                      description: "Click the \"Create\" button to start making your bundle.",
-                      isClickable: true,
-                      onClick: handleCreateBundle,
-                    },
-                    {
-                      id: "name_description",
-                      title: "Enter bundle name and description",
-                      description: "Type a clear name and an optional description for your bundle.",
-                      onClick: () =>  {},
-                    },
-                    {
-                      id: "create_bundle_modal",
-                      title: 'Click "Bundle Settings"',
-                      description: "This will take you to your bundle set up page.",
-                      onClick: () =>  {},
-                    },
-                    {
-                      id: "add_steps",
-                      title: "Add bundle steps and choose products",
-                      description: "Add steps to your bundle, select products/collections you want.",
-                      isClickable: bundles.length > 0,
-                      onClick: () => {
-                        if (bundles.length > 0) {
-                          const routeBase = bundles[0].bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
-                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
-                        }
+              {/* Setup guide (new merchants) → Cart property fix tip (returning merchants) */}
+              <div className={`${dashboardStyles.bottomSectionCol} ${dashboardStyles.fadeIn}`}>
+                {bundles.length === 0 ? (
+                  <BundleSetupInstructions
+                    title="Bundle Setup Steps"
+                    subtitle="Follow these steps to create your bundle"
+                    bundlesExist={false}
+                    steps={[
+                      {
+                        id: "create_bundle",
+                        title: 'Click "Create Bundle"',
+                        description: "Click the \"Create\" button to start making your bundle.",
+                        isClickable: true,
+                        onClick: handleCreateBundle,
                       },
-                    },
-                    {
-                      id: "setup_pricing",
-                      title: "Set discount rules and pricing",
-                      description: "Choose how discounts and pricing should work for your bundle.",
-                      isClickable: bundles.length > 0,
-                      onClick: () => {
-                        if (bundles.length > 0) {
-                          const routeBase = bundles[0].bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
-                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
-                        }
+                      {
+                        id: "name_description",
+                        title: "Enter bundle name and description",
+                        description: "Type a clear name and an optional description for your bundle.",
+                        onClick: () => {},
                       },
-                    },
-                    {
-                      id: "publish",
-                      title: "Save and publish your bundle",
-                      description: "Save your settings to make your bundle live on your store.",
-                      isClickable: bundles.length > 0,
-                      onClick: () => {
-                        if (bundles.length > 0) {
-                          const routeBase = bundles[0].bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
-                          navigate(`/app/bundles/${routeBase}/configure/${bundles[0].id}`);
-                        }
+                      {
+                        id: "create_bundle_modal",
+                        title: 'Click "Bundle Settings"',
+                        description: "This will take you to your bundle set up page.",
+                        onClick: () => {},
                       },
-                    },
-                  ]}
-                />
+                      {
+                        id: "add_steps",
+                        title: "Add bundle steps and choose products",
+                        description: "Add steps to your bundle, select products/collections you want.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                      {
+                        id: "setup_pricing",
+                        title: "Set discount rules and pricing",
+                        description: "Choose how discounts and pricing should work for your bundle.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                      {
+                        id: "publish",
+                        title: "Save and publish your bundle",
+                        description: "Save your settings to make your bundle live on your store.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                    ]}
+                  />
+                ) : (
+                  <Card>
+                    <BlockStack gap="200">
+                      <Text variant="headingSm" as="h3">Cart Property Display Fix</Text>
+                      <Text variant="bodySm" tone="subdued" as="p">
+                        Some themes show internal bundle properties on the cart page. Here&apos;s a one-line Liquid fix.
+                      </Text>
+                    </BlockStack>
+                    <div style={{ marginTop: 16 }}>
+                      <CartPropertyFixContent />
+                    </div>
+                  </Card>
+                )}
               </div>
 
               {/* Your Account Manager Card */}

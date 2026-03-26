@@ -5,7 +5,7 @@
  * Driven by config from app/lib/dcp-config — no hardcoded bundle-type conditionals.
  */
 
-import { Text, Divider, Collapsible } from "@shopify/polaris";
+import { Text, Divider, Collapsible, Tooltip } from "@shopify/polaris";
 import { NavigationItem } from "./NavigationItem";
 import type { BundleType } from "../../constants/bundle";
 import { getDCPConfig } from "../../lib/dcp-config";
@@ -43,7 +43,7 @@ export function NavigationSidebar({
     >
       <div style={{ padding: "16px" }}>
         <Text as="h3" variant="headingSm">
-          Customise
+          Customize
         </Text>
       </div>
 
@@ -57,43 +57,80 @@ export function NavigationSidebar({
             {/* Divider after globalColors (index 0) */}
             {index === 1 && <Divider />}
 
-            {/* Divider before the first bundle-type-specific group (e.g. FPB bundleHeader) */}
+            {/* Divider between FPB-specific groups (bundleHeader, tierPills, promoBanner) and shared base groups */}
             {isFirstExtraGroup && <Divider />}
 
             {group.hasChildren ? (
               <>
-                <NavigationItem
-                  label={group.label}
-                  sectionKey={group.key}
-                  hasChildren
-                  onClick={() => onToggleSection(group.key)}
-                  isExpanded={expandedSection === group.key}
-                  isActive={false}
-                />
+                {group.description ? (
+                  <Tooltip content={group.description} dismissOnMouseOut preferredPosition="right">
+                    <NavigationItem
+                      label={group.label}
+                      sectionKey={group.key}
+                      hasChildren
+                      onClick={() => onToggleSection(group.key)}
+                      isExpanded={expandedSection === group.key}
+                      isActive={false}
+                    />
+                  </Tooltip>
+                ) : (
+                  <NavigationItem
+                    label={group.label}
+                    sectionKey={group.key}
+                    hasChildren
+                    onClick={() => onToggleSection(group.key)}
+                    isExpanded={expandedSection === group.key}
+                    isActive={false}
+                  />
+                )}
                 <Collapsible
                   open={expandedSection === group.key}
                   id={`${group.key}-collapsible`}
                 >
                   {(group.children ?? []).map((child) => (
-                    <NavigationItem
-                      key={child.key}
-                      label={child.label}
-                      sectionKey={child.key}
-                      isChild
-                      onClick={() => onSubSectionClick(child.key)}
-                      isActive={activeSubSection === child.key}
-                    />
+                    child.description ? (
+                      <Tooltip key={child.key} content={child.description} dismissOnMouseOut preferredPosition="right">
+                        <NavigationItem
+                          label={child.label}
+                          sectionKey={child.key}
+                          isChild
+                          onClick={() => onSubSectionClick(child.key)}
+                          isActive={activeSubSection === child.key}
+                        />
+                      </Tooltip>
+                    ) : (
+                      <NavigationItem
+                        key={child.key}
+                        label={child.label}
+                        sectionKey={child.key}
+                        isChild
+                        onClick={() => onSubSectionClick(child.key)}
+                        isActive={activeSubSection === child.key}
+                      />
+                    )
                   ))}
                 </Collapsible>
               </>
             ) : (
-              <NavigationItem
-                label={group.label}
-                sectionKey={group.sectionKey ?? group.key}
-                onClick={() => onSubSectionClick(group.sectionKey ?? group.key)}
-                isExpanded={expandedSection === group.key}
-                isActive={activeSubSection === (group.sectionKey ?? group.key)}
-              />
+              group.description ? (
+                <Tooltip content={group.description} dismissOnMouseOut preferredPosition="right">
+                  <NavigationItem
+                    label={group.label}
+                    sectionKey={group.sectionKey ?? group.key}
+                    onClick={() => onSubSectionClick(group.sectionKey ?? group.key)}
+                    isExpanded={expandedSection === group.key}
+                    isActive={activeSubSection === (group.sectionKey ?? group.key)}
+                  />
+                </Tooltip>
+              ) : (
+                <NavigationItem
+                  label={group.label}
+                  sectionKey={group.sectionKey ?? group.key}
+                  onClick={() => onSubSectionClick(group.sectionKey ?? group.key)}
+                  isExpanded={expandedSection === group.key}
+                  isActive={activeSubSection === (group.sectionKey ?? group.key)}
+                />
+              )
             )}
           </div>
         );

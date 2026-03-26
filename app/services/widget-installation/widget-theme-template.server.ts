@@ -248,7 +248,7 @@ async function writeThemeAsset(admin: any, themeGid: string, filename: string, c
   const response = await admin.graphql(MUTATION, {
     variables: {
       themeId: themeGid,
-      files: [{ filename, body: { asString: content } }],
+      files: [{ filename, body: { type: "TEXT", value: content } }],
     },
   });
   const data = await response.json();
@@ -313,13 +313,73 @@ function buildBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: strin
   return appendBundleWidgetSection(baseTemplate, apiKey, BLOCK_HANDLE, blockUuid);
 }
 
+/**
+ * Build the product bundle template by injecting the app block into the
+ * section that owns the buy-buttons block (preferred) or the title block
+ * (fallback), immediately after the anchor block in its block_order.
+ *
+ * We deliberately do NOT use section type ("main-product") as a signal —
+ * theme authors name sections differently. The presence of buy-buttons or
+ * title blocks is the reliable indicator of the product information section.
+ *
+ * Falls back to a top-level "apps" section only when neither anchor is found
+ * in any section (very old themes that pre-date app blocks in sections).
+ */
 function buildProductBundleTemplate(baseTemplate: any, apiKey: string, blockUuid: string): any {
-  return appendBundleWidgetSection(baseTemplate, apiKey, PRODUCT_BLOCK_HANDLE, blockUuid);
+  const template = JSON.parse(JSON.stringify(baseTemplate));
+  const blockType = `shopify://apps/${apiKey}/blocks/${PRODUCT_BLOCK_HANDLE}/${blockUuid}`;
+  const blockKey = "wolfpack_bundle";
+
+  // Try buy-buttons first, then title.
+  const result =
+    findSectionAndBlockKey(template, "buy-buttons") ??
+    findSectionAndBlockKey(template, "title");
+
+  if (result) {
+    const { sectionKey, anchorKey } = result;
+    const section = template.sections[sectionKey];
+    if (!section.blocks) section.blocks = {};
+    if (!section.block_order) section.block_order = [];
+
+    section.blocks[blockKey] = { type: blockType };
+
+    const idx = section.block_order.indexOf(anchorKey);
+    if (idx !== -1) {
+      section.block_order.splice(idx + 1, 0, blockKey);
+    } else {
+      section.block_order.push(blockKey);
+    }
+  } else {
+    // Fallback: old themes with no sections that have buy-buttons or title blocks.
+    appendBundleWidgetSection(template, apiKey, PRODUCT_BLOCK_HANDLE, blockUuid);
+  }
+
+  return template;
+}
+
+/**
+ * Scan all sections for the first one that contains a block of the given type.
+ * Returns both the section key and the matched block key, or null if not found.
+ */
+function findSectionAndBlockKey(
+  template: any,
+  blockType: string,
+): { sectionKey: string; anchorKey: string } | null {
+  for (const [sectionKey, section] of Object.entries(template.sections ?? {})) {
+    for (const [blockKey, block] of Object.entries((section as any).blocks ?? {})) {
+      if ((block as any).type === blockType) {
+        return { sectionKey, anchorKey: blockKey };
+      }
+    }
+  }
+  return null;
 }
 
 /** Deep-clones the base template and appends an 'apps' section with the given block. */
 function appendBundleWidgetSection(baseTemplate: any, apiKey: string, blockHandle: string, blockUuid: string): any {
-  const template = JSON.parse(JSON.stringify(baseTemplate));
+  const template = typeof baseTemplate === "string"
+    ? JSON.parse(baseTemplate)
+    : JSON.parse(JSON.stringify(baseTemplate));
 
   template.sections["bundle_widget"] = {
     type: "apps",
