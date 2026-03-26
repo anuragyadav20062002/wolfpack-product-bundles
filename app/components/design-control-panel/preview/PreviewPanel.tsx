@@ -24,7 +24,7 @@ const DESKTOP_WIDTH = 1440;
 const MOBILE_WIDTH = 375;
 
 const TOGGLE_BTN_BASE: React.CSSProperties = {
-  padding: "6px 16px",
+  padding: "5px 12px",
   border: "1.5px solid #ddd",
   borderRadius: "6px",
   background: "#fff",
@@ -38,6 +38,29 @@ const TOGGLE_BTN_BASE: React.CSSProperties = {
 
 const TOGGLE_BTN_ACTIVE: React.CSSProperties = {
   ...TOGGLE_BTN_BASE,
+  background: "#1a1a1a",
+  color: "#fff",
+  borderColor: "#1a1a1a",
+};
+
+const ICON_BTN_BASE: React.CSSProperties = {
+  width: "32px",
+  height: "32px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: "1.5px solid #ddd",
+  borderRadius: "6px",
+  background: "#fff",
+  color: "#666",
+  cursor: "pointer",
+  padding: 0,
+  transition: "background 0.12s, color 0.12s, border-color 0.12s",
+  flexShrink: 0,
+};
+
+const ICON_BTN_ACTIVE: React.CSSProperties = {
+  ...ICON_BTN_BASE,
   background: "#1a1a1a",
   color: "#fff",
   borderColor: "#1a1a1a",
@@ -186,57 +209,65 @@ export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelP
   }
 
   const LABEL_STYLE: React.CSSProperties = {
-    fontSize: "11px",
-    fontWeight: 500,
-    color: "#888",
+    fontSize: "10px",
+    fontWeight: 600,
+    color: "#999",
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
+    letterSpacing: "0.07em",
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      {/* Viewport toggle — both bundle types */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
-        <span style={LABEL_STYLE}>Viewport:</span>
-        <button
-          style={viewportMode === "desktop" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
-          onClick={() => setViewportMode("desktop")}
-        >
-          Desktop
-        </button>
-        <button
-          style={viewportMode === "mobile" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
-          onClick={() => setViewportMode("mobile")}
-        >
-          Mobile
-        </button>
-      </div>
+      {/* Control bar: viewport icons (left) + layout toggle (right, FPB only) */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
 
-      {/* Footer layout toggle — FPB only */}
-      {isFpb && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            justifyContent: "center",
-          }}
-        >
-          <span style={LABEL_STYLE}>Footer layout:</span>
+        {/* Viewport icon buttons */}
+        <div style={{ display: "flex", gap: "4px" }}>
           <button
-            style={fpbFooterLayout === "sidebar" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
-            onClick={() => setFpbFooterLayout("sidebar")}
+            style={viewportMode === "desktop" ? ICON_BTN_ACTIVE : ICON_BTN_BASE}
+            onClick={() => setViewportMode("desktop")}
+            title="Desktop"
           >
-            Sidebar
+            {/* Monitor icon */}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <path d="M8 21h8"/>
+              <path d="M12 17v4"/>
+            </svg>
           </button>
           <button
-            style={fpbFooterLayout === "floating" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
-            onClick={() => setFpbFooterLayout("floating")}
+            style={viewportMode === "mobile" ? ICON_BTN_ACTIVE : ICON_BTN_BASE}
+            onClick={() => setViewportMode("mobile")}
+            title="Mobile"
           >
-            Floating Footer
+            {/* Phone icon */}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2"/>
+              <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="3"/>
+            </svg>
           </button>
         </div>
-      )}
+
+        {/* Layout toggle — FPB only */}
+        {isFpb && (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={LABEL_STYLE}>Layout</span>
+            <button
+              style={fpbFooterLayout === "sidebar" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
+              onClick={() => setFpbFooterLayout("sidebar")}
+            >
+              Sidebar
+            </button>
+            <button
+              style={fpbFooterLayout === "floating" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
+              onClick={() => setFpbFooterLayout("floating")}
+            >
+              Floating
+            </button>
+          </div>
+        )}
+
+      </div>
 
       {/* Preview iframe(s) */}
       {isFpb && sidebarUrl && floatingUrl ? (

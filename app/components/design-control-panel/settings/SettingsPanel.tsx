@@ -1,4 +1,4 @@
-import { Banner, Text, Button, InlineStack, Divider } from "@shopify/polaris";
+import { Banner, Text, Divider } from "@shopify/polaris";
 import type { SettingsPanelProps } from "./types";
 import type { DesignSettings } from "../../../types/state.types";
 import { GlobalColorsSettings } from "./GlobalColorsSettings";
@@ -161,11 +161,28 @@ export function SettingsPanel({
     if (!canReset) return <>{content}</>;
     return (
       <>
-        <InlineStack align="end">
-          <Button variant="plain" size="slim" tone="critical" onClick={handleResetSection}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+          <button
+            onClick={handleResetSection}
+            style={{
+              background: "#c0392b",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+              lineHeight: "1.4",
+              letterSpacing: "0.01em",
+              transition: "background 0.12s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#a93226"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#c0392b"; }}
+          >
             Reset to defaults
-          </Button>
-        </InlineStack>
+          </button>
+        </div>
         <Divider />
         {content}
       </>
