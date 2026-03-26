@@ -67,10 +67,10 @@
 
 /* Settings panel container */
 .settingsPanel {
-  width: 240px;
-  min-width: 240px;
+  width: 200px;
+  min-width: 200px;
   border-left: 1px solid #d9d9d9;
-  padding: 20px;
+  padding: 16px;
   background-color: #ffffff;
   overflow-y: auto;
 }

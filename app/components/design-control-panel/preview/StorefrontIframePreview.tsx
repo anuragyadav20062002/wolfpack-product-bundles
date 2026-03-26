@@ -42,7 +42,8 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
 
       const observer = new ResizeObserver((entries) => {
         const width = entries[0]?.contentRect.width ?? 0;
-        if (width > 0) setScale(width / viewportWidth);
+        // Cap at 1.0 — never zoom the preview beyond its native resolution
+        if (width > 0) setScale(Math.min(1, width / viewportWidth));
       });
 
       observer.observe(container);
@@ -74,6 +75,7 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
         ref={containerRef}
         style={{
           width: "100%",
+          maxWidth: `${viewportWidth}px`,
           height: containerHeight > 0 ? `${containerHeight}px` : "auto",
           position: "relative",
           overflow: "hidden",
@@ -194,7 +196,7 @@ export function DualAppPreviewIframe({
     if (!container) return;
     const observer = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width ?? 0;
-      if (width > 0) setScale(width / viewportWidth);
+      if (width > 0) setScale(Math.min(1, width / viewportWidth));
     });
     observer.observe(container);
     return () => observer.disconnect();
@@ -224,6 +226,7 @@ export function DualAppPreviewIframe({
       ref={containerRef}
       style={{
         width: "100%",
+        maxWidth: `${viewportWidth}px`,
         height: containerHeight > 0 ? `${containerHeight}px` : "200px",
         position: "relative",
         overflow: "hidden",

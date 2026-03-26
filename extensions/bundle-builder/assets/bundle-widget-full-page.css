@@ -619,8 +619,8 @@
 
 @media (min-width: 1024px) {
   .promo-banner {
-    padding: var(--bundle-promo-banner-padding, 48px) 64px;
-    min-height: 220px;
+    padding: var(--bundle-promo-banner-padding, 32px) 64px;
+    min-height: 160px;
     margin-bottom: 24px;
     border-radius: var(--bundle-promo-banner-radius, 16px);
   }
@@ -3396,6 +3396,29 @@ body.modal-open {
   flex-direction: row;
   width: 100%;
   min-height: 100vh;
+}
+
+/* Step tabs become a fixed-width vertical left column in sidebar layout.
+   Without this, .step-tabs-container (flex-wrap:wrap) sizes to its content
+   and can grow to 600+ px — consuming most of the layout width. */
+.sidebar-layout-wrapper .step-tabs-container {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  width: 240px;
+  min-width: 240px;
+  flex-shrink: 0;
+  justify-content: flex-start;
+  align-items: stretch;
+  margin: 0;
+  padding: 20px 12px;
+  gap: 8px;
+  border-right: 1px solid rgba(0, 0, 0, 0.07);
+  background: var(--bundle-step-tabs-sidebar-bg, #f9fafb);
+}
+
+.sidebar-layout-wrapper .step-tab {
+  width: 100%;
+  min-width: 0;
 }
 
 .sidebar-layout-wrapper .sidebar-content {
