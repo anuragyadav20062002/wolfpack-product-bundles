@@ -40,7 +40,7 @@ export const BASE_DCP_CONFIG: DCPGroup[] = [
     description: 'Widget-wide controls for the add-to-cart button, toasts, and accessibility',
     hasChildren: true,
     children: [
-      { key: 'addToCartButton', label: 'Add to Cart Button', description: 'Main add-to-cart button colors and discount pill badge' },
+      { key: 'addToCartButton', label: 'Checkout Button', description: 'Main checkout button colors and discount pill badge' },
       { key: 'toasts', label: 'Toasts', description: 'In-widget toast notification appearance and animation' },
       { key: 'accessibility', label: 'Accessibility', description: 'Focus outline style for keyboard navigation' },
     ],

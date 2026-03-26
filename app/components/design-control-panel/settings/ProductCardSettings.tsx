@@ -50,6 +50,9 @@ export function ProductCardSettings({ settings, onUpdate }: SettingsComponentPro
         <Text as="p" variant="bodyMd" fontWeight="medium">
           Number of cards per row
         </Text>
+        <Text as="p" variant="bodySm" tone="subdued">
+          Desktop only — mobile always shows 2 cards per row.
+        </Text>
         <ButtonGroup variant="segmented">
           <Button
             pressed={String(settings.productCardsPerRow) === "3"}

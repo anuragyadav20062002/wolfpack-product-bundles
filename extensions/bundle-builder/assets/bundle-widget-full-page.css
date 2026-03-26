@@ -539,6 +539,9 @@
     scrollbar-width: none;
     justify-content: flex-start;
     padding: 0 12px 4px;
+    /* Fade gradient on right edge — hints that more tabs are scrollable */
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    mask-image: linear-gradient(to right, black 80%, transparent 100%);
   }
 
   .step-tabs-container::-webkit-scrollbar {

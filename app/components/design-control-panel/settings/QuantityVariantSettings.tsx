@@ -39,7 +39,7 @@ export function QuantityVariantSettings({ settings, onUpdate }: SettingsComponen
           min={0}
           max={67}
           output
-          suffix="px"
+          suffix={`${settings.quantitySelectorBorderRadius}px`}
         />
       </BlockStack>
 
@@ -70,7 +70,7 @@ export function QuantityVariantSettings({ settings, onUpdate }: SettingsComponen
           min={0}
           max={67}
           output
-          suffix="px"
+          suffix={`${settings.variantSelectorBorderRadius}px`}
         />
       </BlockStack>
     </BlockStack>

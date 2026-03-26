@@ -756,6 +756,11 @@ html, body {
 
 /* Preview: tier pills hidden by default — only shown when on the Pricing Tier Pills section */
 .bundle-tier-pill-bar { display: none; }
+
+/* Preview: show promo banner in sidebar layout so merchants can style it in DCP.
+   Production CSS hides it in sidebar layout (too much vertical space), but in the
+   design preview we always want it visible so color/text changes are reflected. */
+.layout-sidebar .promo-banner { display: block !important; }
 `;
 
 // ─── BroadcastChannel script ──────────────────────────────────────────────────
@@ -793,6 +798,24 @@ function getPreviewScript(type: string): string {
       // the CSS .bundle-tier-pill-bar { display: none } rule would immediately take over again.
       if (tierBar) tierBar.style.display = section === 'tierPills' ? 'flex' : 'none';
       if (stepTabs) stepTabs.style.display = section === 'tierPills' ? 'none' : 'flex';
+
+      // Skeleton preview: swap product cards ↔ skeleton cards when on skeletonLoading section.
+      var grid = document.querySelector('.full-page-product-grid');
+      if (grid) {
+        if (section === 'skeletonLoading') {
+          if (!grid.dataset.originalHtml) {
+            grid.dataset.originalHtml = grid.innerHTML;
+          }
+          var skeletonHtml = '';
+          for (var i = 0; i < 6; i++) {
+            skeletonHtml += '<div class="product-card skeleton-loading"><div class="skeleton-card-content"></div></div>';
+          }
+          grid.innerHTML = skeletonHtml;
+        } else if (grid.dataset.originalHtml) {
+          grid.innerHTML = grid.dataset.originalHtml;
+          delete grid.dataset.originalHtml;
+        }
+      }
     }
   });
 
