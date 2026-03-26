@@ -1,70 +1,30 @@
-# Issue: DCP Audit — Navigation Labels, UX, and Config Fixes
+# Issue: DCP Audit Fixes — Preview + Default Colors + Section Labels
 
 **Issue ID:** dcp-audit-fixes-1
 **Status:** Completed
-**Priority:** 🟡 Medium
-**Created:** 2026-03-26
-**Last Updated:** 2026-03-26 19:00
+**Priority:** 🔴 High
+**Created:** 2026-03-27
+**Last Updated:** 2026-03-27 02:35
 
 ## Overview
 
-Comprehensive DCP audit (FPB + PDP) surfaced 16 items. This issue tracks the targeted
-fixes: nav label bugs, config copy-paste errors, styling issues, and section-aware preview gaps.
+Fixing issues identified in the DCP audit (`docs/dcp-audit/DCP_AUDIT_FPB_2026-03-27.md`).
+
+Covers:
+1. Remove blank space at bottom of FPB sidebar layout preview (`min-height: 100vh` → `unset`)
+2. Replace test color `#7132FF` defaults in 5 settings + `#0080ff` card BG
+3. Rename "Header Text" subsection → "Conditions & Discount Text"
 
 ## Phases Checklist
 
-- [x] Phase 1: Label + config fixes (B4, B1, B2, B3)
-- [x] Phase 2: UI polish (U2 reset button, U8 section-aware preview extension)
-- [x] Phase 3: FPB nav reordering (U1)
-- [x] Phase 4: PDP BACK/NEXT casing (B6)
-- [x] Phase 5: UX improvements (U3, U4, U5, U6, U7)
-- [x] Phase 6: PDP mobile preview blank screen fix
-- [x] Phase 7: Preview polish — spinner on toggle, tier pill section-awareness, empty state removal, reset button
-- [x] Phase 8: FPB sidebar layout audit (cramped/overflow — separate investigation needed)
+- [x] Phase 1: Remove `min-height: 100vh` from preview CSS
+- [x] Phase 2: Fix default colors (5 utility settings)
+- [x] Phase 3: Rename "Header Text" section
 
 ## Progress Log
 
-### 2026-03-26 16:29 - Starting implementation
-- Files: NavigationSidebar.tsx, base.config.ts, fpb.config.ts, api.preview.$type.tsx
-- Working through fixes in priority order: B4 → B1 → B2 → B3 → U2 → U8 → U1 → B6
-
-### 2026-03-26 16:45 - Completed all phases
-- ✅ B4: "Customise" → "Customize" in NavigationSidebar.tsx:46
-- ✅ B1: First child of Product Card group renamed "Product Card" → "Card Layout" in base.config.ts
-- ✅ B2: Last child "Typography" → "Button Typography" in base.config.ts
-- ✅ B3: `headerText` description in fpb.config.ts fixed (was copy-paste from headerTabs)
-- ✅ U2: Reset to defaults button changed from solid red #c0392b → ghost/outline neutral style in SettingsPanel.tsx
-- ✅ U8: Section-aware preview extended — headerText now hides step tabs (shows tier pills) in api.preview.$type.tsx
-- ✅ U1: FPB nav reordered — Bundle Header, Tier Pills, Promo Banner now come before Product Card in fpb.config.ts
-- ✅ B6: PDP BACK/NEXT → Back/Next in bundle-widget-product-page.js + preview HTML; widget rebuilt
-- Files changed: NavigationSidebar.tsx, base.config.ts, fpb.config.ts, SettingsPanel.tsx, api.preview.$type.tsx, bundle-widget-product-page.js, bundle-widget-product-page-bundled.js
-
-### 2026-03-26 17:30 - Completed Phase 5: UX improvements
-- ✅ U6: Product Card sub-sections consolidated — removed productCardTypography + addedButtonState as separate nav items; SettingsPanel.tsx renderSection() now renders them merged into productCard and button cases; base.config.ts trimmed from 7 to 5 children; ProductCardSettings.tsx duplicate font sliders removed; SECTION_KEYS merged
-- ✅ U3: Toast box-shadow TextField replaced with Select preset (None/Subtle/Medium/Heavy/Custom) + conditional custom TextField in ToastsSettings.tsx
-- ✅ U4: "Copy from Next" plain button added to Back Button heading row in FooterButtonSettings.tsx; copies Next button bg+text colors via onBatchUpdate
-- ✅ U5: Global Colors description updated from vague "bundle will adapt" to clarifying note about per-section overrides in GlobalColorsSettings.tsx
-- ✅ U7: Search Input 7 pickers now grouped under Input / Text / Clear Button subheadings in SearchInputSettings.tsx
-- Files changed: SettingsPanel.tsx, base.config.ts, ProductCardSettings.tsx, ToastsSettings.tsx, FooterButtonSettings.tsx, GlobalColorsSettings.tsx, SearchInputSettings.tsx
-
-### 2026-03-26 18:00 - Completed Phase 6: PDP mobile preview blank screen fix
-- ✅ PDP (and FPB) mobile preview was completely blank after toggling to mobile mode
-- Root cause: `setScale(0)` reset effect fired AFTER the ResizeObserver had already computed the correct scale, leaving scale permanently at 0 with no subsequent resize event to recover
-- Fix: removed the redundant `setScale(0)` useEffect in StorefrontIframePreview.tsx — the ResizeObserver already handles rescaling when the container's maxWidth changes
-- Files changed: StorefrontIframePreview.tsx
-
-### 2026-03-26 19:00 - Completed Phase 8: FPB sidebar layout audit
-- ✅ Sidebar content horizontal padding reduced: 40px → 24px (gives ~32px more grid width)
-- ✅ Side panel width reduced: 360px → 320px (gives 40px more to the product grid)
-- ✅ Product card button overflow fixed: `.sidebar-content .product-add-btn` now uses `overflow: hidden` + `font-size: 12px` + `padding: 0 12px` — prevents "ADD TO BUNDLE" from overflowing button bounds in narrower sidebar cards
-- ✅ Remaining empty-state-card removed from fpbSidebarHtml (was missed in Phase 7)
-- Net effect: each card in 3-column sidebar grid grows from ~245px → ~285px wide at 1440px viewport
-- Files changed: bundle-widget-full-page.css, api.preview.$type.tsx
-
-### 2026-03-26 18:30 - Completed Phase 7: Preview polish
-- ✅ Viewport toggle loading spinner: added isTransitioning state (300ms) in StorefrontIframePreview.tsx — spinner shows during desktop↔mobile switch
-- ✅ Tier pill section-awareness: tier pills hidden by default via CSS (.bundle-tier-pill-bar { display: none }); DCP_SECTION_CHANGE handler now shows tier pills only on 'tierPills' section, step tabs everywhere else in api.preview.$type.tsx
-- ✅ Empty state cards removed from all 3 preview HTML blocks (pdpPageHtml, fpbSidebarHtml, fpbFloatingHtml) — cleaner preview with only real product cards
-- ✅ Reset to defaults button: changed to red background (#c0392b) and left-aligned in SettingsPanel.tsx
-- ⚠️ FPB sidebar layout cramped/overflow issue noted — needs separate dedicated audit (Phase 8)
-- Files changed: StorefrontIframePreview.tsx, SettingsPanel.tsx, api.preview.$type.tsx
+### 2026-03-27 02:35 - Completed all phases
+- ✅ Phase 1: `api.preview.$type.tsx` — `.bundle-widget-full-page { min-height: 100vh }` → `min-height: unset`; removes blank space below content in FPB sidebar preview
+- ✅ Phase 2: `defaultSettings.ts` — replaced `#7132FF` with `#111111` in 4 utility settings (`addToCartButtonBgColor`, `toastBgColor`, `searchInputFocusBorderColor`, `tileQuantityBadgeBgColor`); replaced with `#000000` in `focusOutlineColor`. Left intentional brand-accent purples (tabs active, footer Next button, step bar, etc.) untouched per comment "vibrant, branded design with purple accents".
+- ✅ Phase 3: `fpb.config.ts` — renamed nav label `'Header Text'` → `'Conditions & Discount Text'`; `HeaderTextSettings.tsx` — updated panel heading to match
+- Files changed: `app/routes/api/api.preview.$type.tsx`, `app/components/design-control-panel/config/defaultSettings.ts`, `app/lib/dcp-config/fpb.config.ts`, `app/components/design-control-panel/settings/HeaderTextSettings.tsx`

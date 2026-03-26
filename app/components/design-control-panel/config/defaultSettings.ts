@@ -429,7 +429,7 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   drawerBgColor: "#F9FAFB",
 
   // Add to Cart Button
-  addToCartButtonBgColor: "#7132FF",
+  addToCartButtonBgColor: "#111111",
   addToCartButtonTextColor: "#FFFFFF",
   addToCartButtonBorderRadius: 67,
 
@@ -441,7 +441,7 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   discountPillBorderRadius: 20,
 
   // Toasts
-  toastBgColor: "#7132FF",
+  toastBgColor: "#111111",
   toastTextColor: "#FFFFFF",
   toastBorderRadius: 8,
   toastBorderColor: "#FFFFFF",
@@ -514,7 +514,7 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Search Input
   searchInputBgColor: "#F8F8F8",
   searchInputBorderColor: "#E0E0E0",
-  searchInputFocusBorderColor: "#7132FF",
+  searchInputFocusBorderColor: "#111111",
   searchInputTextColor: "#333333",
   searchInputPlaceholderColor: "#999999",
   searchClearButtonBgColor: "rgba(0,0,0,0.08)",
@@ -530,7 +530,7 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   productCardTransitionDuration: 200,
 
   // Tile Quantity Badge
-  tileQuantityBadgeBgColor: "#7132FF",
+  tileQuantityBadgeBgColor: "#111111",
   tileQuantityBadgeTextColor: "#FFFFFF",
 
   // Modal Close Button
@@ -543,7 +543,7 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   buttonLetterSpacing: 0,
 
   // Focus / Accessibility
-  focusOutlineColor: "#7132FF",
+  focusOutlineColor: "#000000",
   focusOutlineWidth: 2,
 
   // Pricing Tier Pills (Full-Page Bundles)

@@ -749,9 +749,9 @@ html, body {
   padding-top: 8px;
 }
 
-/* FPB: fill viewport height */
+/* FPB: do not enforce min-height in preview — content should be as tall as it is */
 .bundle-widget-full-page {
-  min-height: 100vh;
+  min-height: unset;
 }
 
 /* Preview: tier pills hidden by default — only shown when on the Pricing Tier Pills section */

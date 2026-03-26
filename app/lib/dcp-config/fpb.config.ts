@@ -33,7 +33,7 @@ export const FPB_DCP_CONFIG: DCPGroup[] = [
     hasChildren: true,
     children: [
       { key: 'headerTabs' as const, label: 'Tabs', description: 'Step bar circles, progress bar, and step name label styling' },
-      { key: 'headerText' as const, label: 'Header Text', description: 'Conditions and discount text styling shown in the bundle header area' },
+      { key: 'headerText' as const, label: 'Conditions & Discount Text', description: 'Conditions and discount text styling shown in the bundle header area' },
     ],
   },
   {
