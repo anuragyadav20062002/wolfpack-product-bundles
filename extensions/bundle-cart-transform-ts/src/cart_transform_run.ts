@@ -20,6 +20,9 @@ export interface CartTransformInput {
       bundleName?: {
         value: string;
       };
+      stepType?: {
+        value: string;
+      };
       merchandise: {
         __typename: string;
         id: string;
@@ -168,7 +171,19 @@ function parseJSON<T>(value: string | undefined, defaultValue: T, context: strin
 }
 
 /**
+ * Returns true when the cart line is a free-gift component.
+ * The widget sets `_bundle_step_type: free_gift` on the line properties for free-gift steps.
+ * Lines without this attribute (normal paid steps) return false.
+ */
+function isFreeGiftLine(line: CartTransformInput['cart']['lines'][number]): boolean {
+  return line.stepType?.value === 'free_gift';
+}
+
+/**
  * Calculate discount percentage from price adjustment config.
+ *
+ * paidTotal:     sum of component line costs that are NOT free-gift lines (presentment currency)
+ * originalTotal: paidTotal + freeGiftTotal — the gross sum Shopify applies percentageDecrease to
  *
  * presentmentCurrencyRate: the rate from shop base currency → customer's presentment currency
  * (e.g., 1.35 if shop is USD and customer sees CAD).
@@ -176,16 +191,28 @@ function parseJSON<T>(value: string | undefined, defaultValue: T, context: strin
  * Amount-based methods (fixed_amount_off, fixed_bundle_price) and amount-type conditions
  * store their values in base-currency cents. The cart total arrives in presentment currency.
  * We must multiply by this rate before comparing — never fall back silently, return 0 instead.
+ *
+ * Free gift math: we compute an effectivePct such that
+ *   originalTotal × (1 − effectivePct/100) = targetTotal
+ * where targetTotal is what the customer should pay for paid items only.
+ * This makes the free gift cost $0 without any change to the MERGE architecture.
+ * When there are no free-gift lines, paidTotal === originalTotal and all formulas
+ * reduce to the previous behaviour (pure no-op for normal bundles).
  */
 function calculateDiscountPercentage(
   priceAdjustment: PriceAdjustmentConfig,
+  paidTotal: number,
   originalTotal: number,
   totalQuantity: number,
+  paidQuantity: number,
   presentmentCurrencyRate: number
 ): number {
   const { method, value, conditions } = priceAdjustment;
 
-  // Check conditions if present
+  // Check conditions if present.
+  // Amount conditions check against paidTotal only — free gift cost must not contribute
+  // to unlocking a paid-item discount threshold.
+  // Quantity conditions check against paidQuantity for the same reason.
   if (conditions) {
     let actualValue: number;
     let conditionValue: number;
@@ -195,10 +222,10 @@ function calculateDiscountPercentage(
       // Fail clearly if rate is invalid — a wrong threshold is worse than no discount.
       if (!Number.isFinite(presentmentCurrencyRate) || presentmentCurrencyRate <= 0) return 0;
       conditionValue = (conditions.value / 100) * presentmentCurrencyRate;
-      actualValue = originalTotal;
+      actualValue = paidTotal;
     } else {
       conditionValue = conditions.value;
-      actualValue = totalQuantity;
+      actualValue = paidQuantity;
     }
 
     const normalizedOperator = normalizeConditionOperator(conditions.operator);
@@ -231,13 +258,17 @@ function calculateDiscountPercentage(
     }
   }
 
-  // Calculate discount based on method
-  let result = 0;
+  if (originalTotal <= 0) return 0;
+
+  // Compute targetPrice — what the customer should pay for paid items only.
+  // Free gift lines are already excluded from paidTotal, so their cost is
+  // absorbed into the effectivePct automatically.
+  let targetPrice = 0;
 
   switch (method) {
     case 'percentage_off':
       // Percentage is currency-agnostic — no rate conversion needed.
-      result = value;
+      targetPrice = paidTotal * (1 - value / 100);
       break;
 
     case 'fixed_amount_off': {
@@ -246,9 +277,7 @@ function calculateDiscountPercentage(
       // presentment-currency total would silently produce the wrong discount percentage.
       if (!Number.isFinite(presentmentCurrencyRate) || presentmentCurrencyRate <= 0) return 0;
       const amountOff = (value / 100) * presentmentCurrencyRate;
-      if (originalTotal > 0) {
-        result = (amountOff / originalTotal) * 100;
-      }
+      targetPrice = Math.max(0, paidTotal - amountOff);
       break;
     }
 
@@ -256,15 +285,20 @@ function calculateDiscountPercentage(
       // Value is stored in base-currency cents. Convert to presentment currency first.
       if (!Number.isFinite(presentmentCurrencyRate) || presentmentCurrencyRate <= 0) return 0;
       const fixedPrice = (value / 100) * presentmentCurrencyRate;
-      if (originalTotal > 0 && fixedPrice < originalTotal) {
-        result = ((originalTotal - fixedPrice) / originalTotal) * 100;
-      }
+      // Cap at paidTotal: when fixedPrice > paidTotal the merchant inadvertently set a
+      // price that would charge for the "free" gift. Clamp so free gift stays at $0.
+      targetPrice = Math.min(fixedPrice, paidTotal);
       break;
     }
 
     default:
       break;
   }
+
+  // effectivePct = (1 − targetPrice/originalTotal) × 100
+  // Shopify applies this to originalTotal (paid + free gift sum) in the MERGE operation.
+  // The result is exactly targetPrice, so the customer pays only for paid items.
+  const result = (1 - targetPrice / originalTotal) * 100;
 
   // Clamp to valid 0-100 range. NaN must be caught explicitly —
   // Math.max(0, Math.min(100, NaN)) returns NaN, not 0.
@@ -402,21 +436,33 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
       if (!parentVariantId) continue;
 
-      // Calculate bundle totals from ACTUAL selected component prices
+      // Calculate bundle totals from ACTUAL selected component prices.
+      // Free-gift lines are separated so the discount math can make them $0.
+      let paidTotal = 0;
+      let freeGiftTotal = 0;
+      let paidQuantity = 0;
       let totalQuantity = 0;
-      let originalTotal = 0;
       for (const l of bundleComponentLines) {
+        const lineTotal = safeParseFloat(l.cost.totalAmount.amount);
         totalQuantity += l.quantity;
-        originalTotal += safeParseFloat(l.cost.totalAmount.amount);
+        if (isFreeGiftLine(l)) {
+          freeGiftTotal += lineTotal;
+        } else {
+          paidTotal += lineTotal;
+          paidQuantity += l.quantity;
+        }
       }
+      const originalTotal = paidTotal + freeGiftTotal;
 
       // Get price adjustment from component_parents
       let discountPercentage = 0;
       if (parent.price_adjustment) {
         discountPercentage = calculateDiscountPercentage(
           parent.price_adjustment,
+          paidTotal,
           originalTotal,
           totalQuantity,
+          paidQuantity,
           presentmentCurrencyRate
         );
       }
@@ -434,12 +480,15 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
       const savingsCents = originalTotalCents - discountedTotalCents;
 
       // Compact format: array of [title, qty, retailCents, bundleCents, discountPct, savingsCents]
-      // This keeps the JSON well under Shopify's attribute value size limit (~255 chars)
+      // This keeps the JSON well under Shopify's attribute value size limit (~255 chars).
+      // Free-gift lines display at $0 (100% off); paid lines use the effective discount pct.
       const componentDetails = bundleComponentLines.map((l, index) => {
         const retailCents = Math.round(safeParseFloat(l.cost.amountPerQuantity.amount) * 100);
-        const bundleCents = Math.round(retailCents * (1 - discountPercentage / 100));
+        const isLineAFreeGift = isFreeGiftLine(l);
+        const bundleCents = isLineAFreeGift ? 0 : Math.round(retailCents * (1 - discountPercentage / 100));
+        const linePct = isLineAFreeGift ? 100 : discountPercentage;
         const title = (l.merchandise.product?.title || `Component ${index + 1}`).slice(0, 25);
-        return [title, l.quantity, retailCents, bundleCents, discountPercentage, retailCents - bundleCents];
+        return [title, l.quantity, retailCents, bundleCents, linePct, retailCents - bundleCents];
       });
 
       Logger.info('Merge operation', { phase: 'merge', bundleId }, {

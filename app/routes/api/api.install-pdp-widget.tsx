@@ -4,6 +4,10 @@
  * Programmatically installs the bundle-product-page app block into the active
  * Shopify theme by writing `templates/product.product-page-bundle.json`.
  *
+ * Also sets templateSuffix: "product-page-bundle" on the actual PDP product so
+ * it uses the correct template in the storefront and Shopify Theme Editor picks
+ * it as the representative product (not the synthetic bundle product).
+ *
  * This gives merchants a one-click "Add to Storefront" flow from the configure
  * page without needing to open the Theme Editor manually.
  * The operation is idempotent — safe to call multiple times.
@@ -18,6 +22,47 @@ import { ensureProductBundleTemplate } from "../../services/widget-installation/
 import { AppLogger } from "../../lib/logger";
 
 const COMPONENT = "InstallPdpWidget";
+
+async function applyTemplateSuffixToProduct(admin: any, productHandle: string): Promise<void> {
+  // Fetch the product GID by handle
+  const GET_PRODUCT = `
+    query GetProductByHandle($handle: String!) {
+      productByHandle(handle: $handle) { id templateSuffix }
+    }
+  `;
+  const res = await admin.graphql(GET_PRODUCT, { variables: { handle: productHandle } });
+  const data = await res.json();
+  const product = data.data?.productByHandle;
+
+  if (!product) {
+    AppLogger.warn("[INSTALL] Product not found by handle — skipping templateSuffix", { component: COMPONENT, productHandle });
+    return;
+  }
+
+  if (product.templateSuffix === "product-page-bundle") {
+    AppLogger.info("[INSTALL] Product already has correct templateSuffix", { component: COMPONENT, productHandle });
+    return;
+  }
+
+  const UPDATE_SUFFIX = `
+    mutation SetTemplateSuffix($id: ID!, $suffix: String!) {
+      productUpdate(input: { id: $id, templateSuffix: $suffix }) {
+        product { id templateSuffix }
+        userErrors { field message }
+      }
+    }
+  `;
+  const updateRes = await admin.graphql(UPDATE_SUFFIX, {
+    variables: { id: product.id, suffix: "product-page-bundle" },
+  });
+  const updateData = await updateRes.json();
+  const userErrors = updateData.data?.productUpdate?.userErrors ?? [];
+  if (userErrors.length > 0) {
+    AppLogger.warn("[INSTALL] templateSuffix update had user errors", { component: COMPONENT, productHandle, userErrors });
+  } else {
+    AppLogger.info("[INSTALL] templateSuffix applied to PDP product", { component: COMPONENT, productHandle });
+  }
+}
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   if (request.method !== "POST") {
@@ -43,6 +88,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!result.success) {
       AppLogger.error("[INSTALL] Template install failed", { component: COMPONENT, error: result.error });
       return json({ success: false, error: result.error ?? "Template install failed" }, { status: 500 });
+    }
+
+    // Set templateSuffix on the actual PDP product so the storefront uses the
+    // correct template and Shopify Theme Editor selects the right preview product.
+    if (productHandle) {
+      await applyTemplateSuffixToProduct(admin, productHandle).catch((err) => {
+        AppLogger.warn("[INSTALL] templateSuffix step failed (non-fatal)", { component: COMPONENT, productHandle }, err);
+      });
     }
 
     AppLogger.info("[INSTALL] Template install succeeded", {

@@ -10,7 +10,7 @@ export function AddToCartButtonSettings({ settings, onUpdate }: SettingsComponen
   return (
     <BlockStack gap="400">
       <Text as="h2" variant="headingMd">
-        Add to Cart Button
+        Checkout Button
       </Text>
       <Divider />
 

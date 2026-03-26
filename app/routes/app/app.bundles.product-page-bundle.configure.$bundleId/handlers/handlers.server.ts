@@ -37,6 +37,7 @@ import {
 } from "../../../../services/bundles/bundle-configure-handlers.server";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
+import { syncThemeColors } from "../../../../services/theme-colors.server";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -206,6 +207,11 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 minQuantity: parseInt(step.minQuantity) || 1,
                 maxQuantity: parseInt(step.maxQuantity) || 1,
                 enabled: step.enabled !== false, // Default to true unless explicitly false
+                // Free gift & default product fields
+                isFreeGift: step.isFreeGift === true,
+                freeGiftName: step.freeGiftName || null,
+                isDefault: step.isDefault === true,
+                defaultVariantId: step.defaultVariantId || null,
                 // Apply condition data if available
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,
@@ -1107,6 +1113,9 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
 
       AppLogger.info('[SYNC_BUNDLE] All metafields re-synced successfully', { bundleId });
     }
+
+    // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
+    syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
 
     return json({ success: true, synced: true, message: 'Bundle synced successfully' });
 

@@ -7,10 +7,20 @@
 
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
-import { Badge, Banner, BlockStack, Button, InlineStack, Page, Select, Text } from "@shopify/polaris";
+import { Badge, Banner, BlockStack, Button, DatePicker, InlineGrid, InlineStack, Page, Popover, Text, Tooltip } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../../shopify.server";
 import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
+import {
+  computeBundleRevenueSummary,
+  buildBundleLeaderboard,
+  buildBundleTrendSeries,
+  formatDelta,
+  type OrderAttributionRow,
+  type BundleRevenueSummary,
+  type TrendPoint,
+  type LeaderboardRow,
+} from "../../lib/analytics";
 import db from "../../db.server";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import {
@@ -64,6 +74,10 @@ function platformDotClass(i: number) {
   return DOT_CLASSES[i] ?? styles.dotDefault;
 }
 
+function chartXFormatter(dateKey: string) {
+  return formatDateKey(dateKey);
+}
+
 // ─── Loader ──────────────────────────────────────────────────
 
 // ─── Action ──────────────────────────────────────────────────
@@ -111,23 +125,41 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const shopId = session.shop;
 
   const url = new URL(request.url);
-  const days = parseInt(url.searchParams.get("days") || "30", 10);
 
-  // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
-  const pixelStatus = await getPixelStatus(admin);
+  // Date range derivation — custom (?from&to) takes priority over preset (?days)
+  const fromParam = url.searchParams.get("from");
+  const toParam   = url.searchParams.get("to");
 
-  // Current period
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  since.setHours(0, 0, 0, 0);
+  let since: Date;
+  let until: Date;
+  let days: number;
+  let fromStr: string | undefined;
+  let toStr: string | undefined;
+
+  if (fromParam && toParam) {
+    since = new Date(fromParam + "T00:00:00.000Z");
+    until = new Date(toParam   + "T23:59:59.999Z");
+    days  = Math.max(1, Math.round((until.getTime() - since.getTime()) / 86400000));
+    fromStr = fromParam;
+    toStr   = toParam;
+  } else {
+    days  = Math.max(1, parseInt(url.searchParams.get("days") || "30", 10));
+    until = new Date();
+    since = new Date(until);
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+  }
 
   // Previous period — same length, immediately before current
   const prevSince = new Date(since);
   prevSince.setDate(prevSince.getDate() - days);
 
+  // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
+  const pixelStatus = await getPixelStatus(admin);
+
   const [currentAttributions, previousAttributions] = await Promise.all([
     db.orderAttribution.findMany({
-      where: { shopId, createdAt: { gte: since } },
+      where: { shopId, createdAt: { gte: since, lte: until } },
       orderBy: { createdAt: "asc" },
     }),
     db.orderAttribution.findMany({
@@ -142,10 +174,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const bundles = bundleIds.length > 0
     ? await db.bundle.findMany({
         where: { id: { in: bundleIds } },
-        select: { id: true, name: true },
+        select: { id: true, name: true, status: true },
       })
     : [];
   const bundleNameMap = Object.fromEntries(bundles.map(b => [b.id, b.name]));
+  const bundleStatusMap = Object.fromEntries(bundles.map(b => [b.id, b.status]));
 
   // ── Current period summaries ──────────────────────────────
 
@@ -257,8 +290,33 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     cursor.setDate(cursor.getDate() + 1);
   }
 
+  // ── Bundle Revenue section — new additive aggregations ───────
+
+  const attrRows: OrderAttributionRow[] = currentAttributions.map(a => ({
+    bundleId: a.bundleId,
+    revenue: a.revenue,
+    createdAt: a.createdAt,
+  }));
+  const prevAttrRows: OrderAttributionRow[] = previousAttributions.map(a => ({
+    bundleId: a.bundleId,
+    revenue: a.revenue,
+    createdAt: a.createdAt,
+  }));
+
+  const prevTotalRevForPercent = previousAttributions.reduce((s, a) => s + a.revenue, 0);
+  const bundleRevenueSummary = computeBundleRevenueSummary(
+    attrRows,
+    prevAttrRows,
+    totalRevenue,
+    prevTotalRevForPercent,
+  );
+  const bundleLeaderboard = buildBundleLeaderboard(attrRows, bundleNameMap, bundleStatusMap, 10);
+  const bundleRevenueTrend = buildBundleTrendSeries(attrRows, since, days, until);
+
   return json({
     days,
+    from: fromStr,
+    to: toStr,
     pixelActive: pixelStatus.active,
     summary: {
       totalRevenue, totalOrders, bundleOrders, aov,
@@ -270,6 +328,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     byCampaign,
     byBundle,
     byLandingPage,
+    bundleRevenueSummary,
+    bundleLeaderboard,
+    bundleRevenueTrend,
   });
 };
 
@@ -344,12 +405,31 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
               <Text as="h2" variant="headingMd">UTM Pixel Tracking</Text>
               <Badge tone={active ? "success" : "new"}>{active ? "Active" : "Not active"}</Badge>
             </InlineStack>
-            <Text as="p" variant="bodyMd" tone="subdued">
-              {active
-                ? "UTM parameters are being captured and attributed to orders at checkout. Your ad spend is being tracked."
-                : "Enable tracking to capture UTM parameters from visitor sessions and attribute orders to ad campaigns."
-              }
-            </Text>
+            {active ? (
+              <Text as="p" variant="bodyMd" tone="subdued">
+                UTM parameters are being captured and attributed to orders at checkout. Your ad spend is being tracked.
+              </Text>
+            ) : (
+              <BlockStack gap="300">
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  Enable tracking to start attributing orders to your ad campaigns. Three steps:
+                </Text>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm">
+                    <strong>1. Enable pixel</strong> — click the button to install the tracking pixel on your store.
+                  </Text>
+                  <Text as="p" variant="bodySm">
+                    <strong>2. Tag your ad links</strong> — add UTM parameters to any ad URLs, e.g.{" "}
+                    <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
+                      ?utm_source=facebook&amp;utm_campaign=bundles
+                    </code>
+                  </Text>
+                  <Text as="p" variant="bodySm">
+                    <strong>3. Watch orders appear</strong> — attributed orders will show up here within minutes of a purchase.
+                  </Text>
+                </BlockStack>
+              </BlockStack>
+            )}
           </BlockStack>
 
           <div style={{ flexShrink: 0 }}>
@@ -370,32 +450,382 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
   );
 }
 
+// ─── BundleKpiRow ─────────────────────────────────────────────
+
+function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
+  const revDelta = formatDelta(s.totalBundleRevenue, s.prevTotalBundleRevenue);
+  const ordDelta = formatDelta(s.totalBundleOrders, s.prevTotalBundleOrders);
+  const aovDelta = s.bundleAOV !== null && s.prevBundleAOV !== null
+    ? formatDelta(s.bundleAOV, s.prevBundleAOV)
+    : null;
+  // Percentage-point delta — straight difference, not relative change
+  const pctPpDiff = s.bundleRevenuePercent - s.prevBundleRevenuePercent;
+  const pctDelta = s.prevBundleRevenuePercent === 0
+    ? null
+    : {
+        label: (pctPpDiff >= 0 ? "+" : "") + pctPpDiff.toFixed(1) + " pp",
+        direction: (pctPpDiff > 0 ? "positive" : pctPpDiff < 0 ? "negative" : "neutral") as "positive" | "negative" | "neutral",
+      };
+
+  function deltaTone(dir: string): "success" | "critical" | "new" {
+    if (dir === "positive") return "success";
+    if (dir === "negative") return "critical";
+    return "new";
+  }
+
+  return (
+    <InlineGrid columns={{ xs: 2, md: 4 }} gap="400">
+      <div className={styles.bundleKpiCard}>
+        <span className={styles.bundleKpiLabel}>Bundle Revenue</span>
+        <span className={styles.bundleKpiValue}>
+          {s.totalBundleRevenue > 0 ? formatRevenue(s.totalBundleRevenue) : "$0"}
+        </span>
+        {revDelta.label !== "—" ? (
+          <Badge tone={deltaTone(revDelta.direction)}>{`${revDelta.label} vs prev`}</Badge>
+        ) : (
+          <Badge tone="new">{"— no prior data"}</Badge>
+        )}
+      </div>
+
+      <div className={styles.bundleKpiCard}>
+        <span className={styles.bundleKpiLabel}>Bundle Orders</span>
+        <span className={styles.bundleKpiValue}>{s.totalBundleOrders}</span>
+        {ordDelta.label !== "—" ? (
+          <Badge tone={deltaTone(ordDelta.direction)}>{`${ordDelta.label} vs prev`}</Badge>
+        ) : (
+          <Badge tone="new">{"— no prior data"}</Badge>
+        )}
+      </div>
+
+      <div className={styles.bundleKpiCard}>
+        <span className={styles.bundleKpiLabel}>Bundle AOV</span>
+        <span className={styles.bundleKpiValue}>
+          {s.bundleAOV !== null ? formatRevenue(s.bundleAOV) : "—"}
+        </span>
+        {aovDelta && aovDelta.label !== "—" ? (
+          <Badge tone={deltaTone(aovDelta.direction)}>{`${aovDelta.label} vs prev`}</Badge>
+        ) : (
+          <Badge tone="new">{"— no prior data"}</Badge>
+        )}
+      </div>
+
+      <div className={styles.bundleKpiCard}>
+        <span className={styles.bundleKpiLabel}>% Revenue from Bundles</span>
+        <span className={styles.bundleKpiValue}>
+          {s.bundleRevenuePercent > 0 ? s.bundleRevenuePercent.toFixed(1) + "%" : "0%"}
+        </span>
+        {pctDelta ? (
+          <Badge tone={deltaTone(pctDelta.direction)}>{`${pctDelta.label} vs prev`}</Badge>
+        ) : (
+          <Badge tone="new">{"— no prior data"}</Badge>
+        )}
+      </div>
+    </InlineGrid>
+  );
+}
+
+// ─── BundleTrendChart ─────────────────────────────────────────
+
+function BundleTrendChart({
+  trend,
+  days,
+  isClient,
+}: {
+  trend: TrendPoint[];
+  days: number;
+  isClient: boolean;
+}) {
+  const xAxisInterval = useMemo(() => {
+    const count = trend.length;
+    if (count <= 8) return 0;
+    if (count <= 31) return 4;
+    return Math.floor(count / 8);
+  }, [trend.length]);
+
+  const tooltipFormatter = useCallback(
+    (value: unknown, name: unknown): [string, string] => {
+      const label = name === "bundleRevenue" ? "Bundle Revenue" : "Total Revenue";
+      return [formatRevenue(value as number), label];
+    },
+    [],
+  );
+
+  if (!isClient || trend.length <= 1) return null;
+
+  return (
+    <div className={styles.sectionCard}>
+      <div className={styles.sectionHeader}>
+        <span className={styles.sectionTitle}>Revenue Trend</span>
+        <span className={styles.sectionCount}>
+          {days >= 90 ? "weekly" : "daily"}
+        </span>
+      </div>
+      <div style={{ padding: "20px 16px 16px" }}>
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart
+            data={trend}
+            margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id="bundleRevGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#008060" stopOpacity={0.22} />
+                <stop offset="95%" stopColor="#008060" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f2f3" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickFormatter={chartXFormatter}
+              tick={{ fontSize: 11, fill: "#8c9196" }}
+              axisLine={false}
+              tickLine={false}
+              interval={xAxisInterval}
+            />
+            <YAxis
+              tickFormatter={formatRevenueShort}
+              tick={{ fontSize: 11, fill: "#8c9196" }}
+              axisLine={false}
+              tickLine={false}
+              width={56}
+            />
+            <RechartsTooltip
+              formatter={tooltipFormatter}
+              contentStyle={{
+                border: "1px solid #e1e3e5",
+                borderRadius: 8,
+                fontSize: 13,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              }}
+              labelFormatter={(label) => formatDateKey(label as string)}
+            />
+            <Area
+              type="monotone"
+              dataKey="bundleRevenue"
+              stroke="#008060"
+              strokeWidth={2}
+              fill="url(#bundleRevGrad)"
+              dot={false}
+              activeDot={{ r: 4, fill: "#008060" }}
+            />
+            <Area
+              type="monotone"
+              dataKey="totalRevenue"
+              stroke="#5c6ac4"
+              strokeWidth={1.5}
+              strokeDasharray="4 2"
+              fill="none"
+              dot={false}
+              activeDot={{ r: 3, fill: "#5c6ac4" }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+        <div className={styles.trendLegend}>
+          <span className={styles.trendLegendItem}>
+            <span className={styles.trendDotGreen} /> Bundle Revenue
+          </span>
+          <span className={styles.trendLegendItem}>
+            <span className={styles.trendDotPurple} /> Total Revenue
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── BundleLeaderboardCard ─────────────────────────────────────
+
+function BundleLeaderboardCard({ leaderboard }: { leaderboard: LeaderboardRow[] }) {
+  return (
+    <div className={styles.sectionCard}>
+      <div className={styles.sectionHeader}>
+        <span className={styles.sectionTitle}>Revenue by Bundle</span>
+        <span className={styles.sectionCount}>
+          {leaderboard.length} bundle{leaderboard.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+      <div className={styles.dataTable}>
+        <div className={`${styles.dataRow} ${styles.leaderboardRow} ${styles.headRow}`}>
+          <span className={styles.dataCell}>Bundle</span>
+          <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
+          <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
+          <span className={`${styles.dataCell} ${styles.right}`}>AOV</span>
+        </div>
+        {leaderboard.length === 0 && (
+          <div className={styles.emptyWrapper}>
+            <Text as="p" variant="bodyMd" tone="subdued">
+              No bundle orders in this period.
+            </Text>
+          </div>
+        )}
+        {leaderboard.map((row) => {
+          const isLong = row.bundleName.length > 40;
+          const nameCell = isLong ? (
+            <Tooltip content={row.bundleName}>
+              <span className={`${styles.dataCell} ${styles.primary} ${styles.truncate}`}>
+                {row.bundleName}
+                {row.bundleStatus === "archived" && (
+                  <span style={{ marginLeft: 6 }}>
+                    <Badge tone="attention">Archived</Badge>
+                  </span>
+                )}
+              </span>
+            </Tooltip>
+          ) : (
+            <span className={`${styles.dataCell} ${styles.primary}`}>
+              {row.bundleName}
+              {row.bundleStatus === "archived" && (
+                <span style={{ marginLeft: 6 }}>
+                  <Badge tone="attention">Archived</Badge>
+                </span>
+              )}
+            </span>
+          );
+
+          return (
+            <div key={row.bundleId} className={`${styles.dataRow} ${styles.leaderboardRow}`}>
+              {nameCell}
+              <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
+                {formatRevenue(row.revenue)}
+              </span>
+              <span className={`${styles.dataCell} ${styles.right}`}>{row.orders}</span>
+              <span className={`${styles.dataCell} ${styles.right}`} style={{ color: "#6d7175" }}>
+                {row.aov !== null ? formatRevenue(row.aov) : "—"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── DateRangeSelector ───────────────────────────────────────
+
+function formatDateLabel(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+function formatRangeLabel(days: number, from?: string, to?: string): string {
+  if (from && to) {
+    const start = new Date(from + "T00:00:00Z");
+    const end   = new Date(to   + "T00:00:00Z");
+    const startStr = formatDateLabel(start);
+    const endStr   = formatDateLabel(end);
+    // Strip year from start if same year
+    if (start.getUTCFullYear() === end.getUTCFullYear()) {
+      const startNoYear = start.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+      return `${startNoYear} – ${endStr}`;
+    }
+    return `${startStr} – ${endStr}`;
+  }
+  return `Last ${days} days`;
+}
+
+interface DateRangeSelectorProps {
+  days: number;
+  from?: string;
+  to?: string;
+}
+
+function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
+  const [popoverActive, setPopoverActive] = useState(false);
+  const today = new Date();
+  const [{ month, year }, setCalendar] = useState({
+    month: today.getMonth(),
+    year: today.getFullYear(),
+  });
+  const [selectedRange, setSelectedRange] = useState<{ start: Date; end: Date } | undefined>(undefined);
+
+  const triggerLabel = formatRangeLabel(days, from, to);
+
+  function navigate(daysN?: number, fromStr?: string, toStr?: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("days");
+    url.searchParams.delete("from");
+    url.searchParams.delete("to");
+    if (fromStr && toStr) {
+      url.searchParams.set("from", fromStr);
+      url.searchParams.set("to", toStr);
+    } else {
+      url.searchParams.set("days", String(daysN ?? 30));
+    }
+    window.location.href = url.toString();
+  }
+
+  function handleApply() {
+    if (!selectedRange) return;
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    navigate(undefined, fmt(selectedRange.start), fmt(selectedRange.end));
+  }
+
+  const activator = (
+    <Button disclosure onClick={() => setPopoverActive((v) => !v)}>
+      {triggerLabel}
+    </Button>
+  );
+
+  return (
+    <Popover
+      active={popoverActive}
+      activator={activator}
+      onClose={() => setPopoverActive(false)}
+      preferredPosition="below"
+      sectioned
+    >
+      <div className={styles.dateRangePopover}>
+        {/* Preset chips */}
+        <div className={styles.presetChips}>
+          {([7, 30, 90] as const).map((d) => (
+            <button
+              key={d}
+              className={`${styles.presetChip}${!from && days === d ? ` ${styles.presetChipActive}` : ""}`}
+              onClick={() => navigate(d)}
+            >
+              Last {d} days
+            </button>
+          ))}
+        </div>
+
+        {/* Calendar */}
+        <DatePicker
+          month={month}
+          year={year}
+          allowRange
+          multiMonth
+          disableDatesAfter={today}
+          selected={selectedRange}
+          onChange={({ start, end }) => setSelectedRange({ start, end })}
+          onMonthChange={(m, y) => setCalendar({ month: m, year: y })}
+        />
+
+        {/* Apply */}
+        <div className={styles.calendarApplyRow}>
+          <Button
+            variant="primary"
+            disabled={!selectedRange}
+            onClick={handleApply}
+          >
+            Apply
+          </Button>
+        </div>
+      </div>
+    </Popover>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────
 
 export default function AttributionDashboard() {
   const {
-    days, summary, timeSeries,
+    days, from, to, summary, timeSeries,
     byPlatform, byMedium, byCampaign, byBundle, byLandingPage,
     pixelActive,
+    bundleRevenueSummary, bundleLeaderboard, bundleRevenueTrend,
   } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-  const [selectedDays, setSelectedDays] = useState(days.toString());
   // Recharts uses ResizeObserver — only render on client to avoid SSR mismatch
   const [isClient, setIsClient] = useState(false);
   useEffect(() => setIsClient(true), []);
-
-  const handleDaysChange = useCallback((value: string) => {
-    setSelectedDays(value);
-    const url = new URL(window.location.href);
-    url.searchParams.set("days", value);
-    window.location.href = url.toString();
-  }, []);
-
-  const dateRangeOptions = useMemo(() => [
-    { label: "Last 7 days", value: "7" },
-    { label: "Last 30 days", value: "30" },
-    { label: "Last 90 days", value: "90" },
-  ], []);
 
   const maxPlatformRevenue = byPlatform[0]?.revenue || 1;
 
@@ -407,8 +837,6 @@ export default function AttributionDashboard() {
     if (name === "revenue") return [formatRevenue(value as number), "Revenue"];
     return [value as number, "Orders"];
   }, []);
-
-  const chartXFormatter = useCallback((dateKey: string) => formatDateKey(dateKey), []);
 
   // Show ~6-8 evenly spaced ticks depending on timeframe
   const xAxisInterval = useMemo(() => {
@@ -423,7 +851,7 @@ export default function AttributionDashboard() {
   return (
     <Page
       title="Analytics"
-      subtitle="UTM attribution & bundle revenue"
+      subtitle="Bundle revenue & UTM attribution"
       backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -463,14 +891,25 @@ export default function AttributionDashboard() {
         <div className={styles.headerRow}>
           <div />
           <div className={styles.datePickerWrap}>
-            <Select
-              label="Date range"
-              labelInline
-              options={dateRangeOptions}
-              value={selectedDays}
-              onChange={handleDaysChange}
-            />
+            <DateRangeSelector days={days} from={from} to={to} />
           </div>
+        </div>
+
+        {/* ── Bundle Revenue Section ─────────────────────────── */}
+        <div className={styles.bundleSection}>
+          <Text as="h2" variant="headingMd">Bundle Revenue</Text>
+        </div>
+
+        <BundleKpiRow summary={bundleRevenueSummary} />
+
+        <div className={styles.bundleSplitRow}>
+          <BundleTrendChart trend={bundleRevenueTrend} days={days} isClient={isClient} />
+          <BundleLeaderboardCard leaderboard={bundleLeaderboard} />
+        </div>
+
+        {/* ── Section divider: UTM Attribution ──────────────── */}
+        <div className={styles.sectionDivider}>
+          <span className={styles.sectionDividerLabel}>UTM Attribution</span>
         </div>
 
         {/* Metric cards */}

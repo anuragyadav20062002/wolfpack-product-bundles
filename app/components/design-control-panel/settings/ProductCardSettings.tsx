@@ -14,30 +14,16 @@ export function ProductCardSettings({ settings, onUpdate }: SettingsComponentPro
       </Text>
       <Divider />
 
-      <ColorPicker
-        label="Background Color"
-        value={settings.productCardBgColor}
-        onChange={(value) => onUpdate("productCardBgColor", value)}
-      />
-
-      <RangeSlider
-        label="Font Size"
-        value={settings.productCardFontSize}
-        onChange={(value) => onUpdate("productCardFontSize", value as number)}
-        min={12}
-        max={24}
-        output
-      />
-
-      <RangeSlider
-        label="Font Weight"
-        value={settings.productCardFontWeight}
-        onChange={(value) => onUpdate("productCardFontWeight", value as number)}
-        min={300}
-        max={900}
-        step={100}
-        output
-      />
+      <BlockStack gap="100">
+        <ColorPicker
+          label="Selected Card Background"
+          value={settings.productCardBgColor}
+          onChange={(value) => onUpdate("productCardBgColor", value)}
+        />
+        <Text as="p" variant="bodySm" tone="subdued">
+          Applied to product cards when they have been added to the bundle.
+        </Text>
+      </BlockStack>
 
       <BlockStack gap="200">
         <Text as="p" variant="bodyMd" fontWeight="medium">
@@ -68,6 +54,9 @@ export function ProductCardSettings({ settings, onUpdate }: SettingsComponentPro
       <BlockStack gap="200">
         <Text as="p" variant="bodyMd" fontWeight="medium">
           Number of cards per row
+        </Text>
+        <Text as="p" variant="bodySm" tone="subdued">
+          Desktop only — mobile always shows 2 cards per row.
         </Text>
         <ButtonGroup variant="segmented">
           <Button

@@ -10,6 +10,8 @@ import {
   Text,
   Button,
   InlineStack,
+  Banner,
+  Box,
 } from "@shopify/polaris";
 import { Modal, SaveBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../../../shopify.server";
@@ -26,26 +28,45 @@ import { CustomCssCard, CssGuideContent } from "../../../components/design-contr
 
 import { DEFAULT_SETTINGS, mergeSettings } from "../../../components/design-control-panel/config";
 import { handleSaveSettings } from "./handlers.server";
+import { BillingService } from "../../../services/billing.server";
 import designControlPanelStyles from "../../../styles/routes/design-control-panel.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
   const shopId = session.shop;
+  const appUrl = (process.env.SHOPIFY_APP_URL ?? "").replace(/\/$/, "");
 
-  const productPageSettings = await prisma.designSettings.findUnique({
-    where: { shopId_bundleType: { shopId, bundleType: "product_page" } }
-  });
-
-  const fullPageSettings = await prisma.designSettings.findUnique({
-    where: { shopId_bundleType: { shopId, bundleType: "full_page" } }
-  });
+  const [productPageSettings, fullPageSettings] = await Promise.all([
+    prisma.designSettings.findUnique({
+      where: { shopId_bundleType: { shopId, bundleType: "product_page" } },
+    }),
+    prisma.designSettings.findUnique({
+      where: { shopId_bundleType: { shopId, bundleType: "full_page" } },
+    }),
+  ]);
 
   const settings = {
     product_page: mergeSettings(productPageSettings, DEFAULT_SETTINGS.product_page),
     full_page: mergeSettings(fullPageSettings, DEFAULT_SETTINGS.full_page),
   };
 
-  return json({ shopId, settings });
+  // App-served preview pages — same origin as app, no X-Frame-Options issues.
+  // CSS variables are pushed in real-time via postMessage by PreviewPanel.
+  const pdpPreviewUrl = appUrl
+    ? `${appUrl}/api/preview/pdp?shop=${shopId}`
+    : null;
+  const fpbPreviewUrl = appUrl
+    ? `${appUrl}/api/preview/fpb?shop=${shopId}`
+    : null;
+
+  const canAccessDcp = await BillingService.isFeatureAvailable(shopId, "design_control_panel");
+
+  return json({
+    shopId,
+    settings,
+    previewUrls: { pdp: pdpPreviewUrl, fpb: fpbPreviewUrl },
+    isPaywalled: !canAccessDcp
+  });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -171,7 +192,7 @@ function ProductPageSvg() {
 // ─── Route Component ──────────────────────────────────────────────────────────
 
 export default function DesignControlPanel() {
-  const { settings } = useLoaderData<typeof loader>();
+  const { settings, previewUrls, isPaywalled } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const shopify = useAppBridge();
 
@@ -306,6 +327,22 @@ export default function DesignControlPanel() {
         subtitle="Customize the appearance of your bundles"
         backAction={{ content: "Go to Bundles", url: "/app/dashboard" }}
       >
+        {/* ── Paywall Banner (Grow plan required, shown on PROD for Free users) ── */}
+        {isPaywalled && (
+          <Box paddingBlockEnd="400">
+            <Banner
+              title="Design Control Panel is a Grow plan feature"
+              tone="warning"
+              action={{ content: "Upgrade to Grow", url: "/app/pricing" }}
+            >
+              <p>
+                Unlock full design customization — colors, typography, hover animations, and
+                custom CSS — by upgrading to the Grow plan for $9.99/month.
+              </p>
+            </Banner>
+          </Box>
+        )}
+
         {/* ── Bundle-Type Entry Cards ─────────────────────────────────────────── */}
         <div className={designControlPanelStyles.landingCardsRow}>
           {/* Landing Page Bundles */}
@@ -323,8 +360,13 @@ export default function DesignControlPanel() {
                 </Text>
               </BlockStack>
               <InlineStack>
-                <Button variant="primary" onClick={handleOpenFullPageModal}>
-                  Customize
+                <Button
+                  variant="primary"
+                  onClick={handleOpenFullPageModal}
+                  disabled={isPaywalled}
+                  url={isPaywalled ? "/app/pricing" : undefined}
+                >
+                  {isPaywalled ? "Upgrade to Customize" : "Customize"}
                 </Button>
               </InlineStack>
             </div>
@@ -345,8 +387,13 @@ export default function DesignControlPanel() {
                 </Text>
               </BlockStack>
               <InlineStack>
-                <Button variant="primary" onClick={handleOpenProductPageModal}>
-                  Customize
+                <Button
+                  variant="primary"
+                  onClick={handleOpenProductPageModal}
+                  disabled={isPaywalled}
+                  url={isPaywalled ? "/app/pricing" : undefined}
+                >
+                  {isPaywalled ? "Upgrade to Customize" : "Customize"}
                 </Button>
               </InlineStack>
             </div>
@@ -356,7 +403,7 @@ export default function DesignControlPanel() {
         {/* ── Custom CSS Section ──────────────────────────────────────────────── */}
         <Layout>
           <Layout.Section>
-            <div style={{ marginTop: "20px" }}>
+            <div style={{ marginTop: "20px", opacity: isPaywalled ? 0.5 : 1, pointerEvents: isPaywalled ? "none" : undefined }}>
               <CustomCssCard
                 fullPageCss={fullPageState.settings.customCss ?? ""}
                 productPageCss={productPageState.settings.customCss ?? ""}
@@ -384,9 +431,10 @@ export default function DesignControlPanel() {
               <div className={designControlPanelStyles.previewPanel}>
                 <div className={designControlPanelStyles.previewWrapper}>
                   <PreviewPanel
-                    activeSubSection={fullPageState.activeSubSection}
                     settings={fullPageState.settings}
                     bundleType={BundleType.FULL_PAGE}
+                    previewUrl={previewUrls.fpb}
+                    activeSubSection={fullPageState.activeSubSection}
                   />
                 </div>
               </div>
@@ -398,6 +446,7 @@ export default function DesignControlPanel() {
                   onBatchUpdate={fullPageState.updateSettings}
                   customCssHelpOpen={fullPageState.customCssHelpOpen}
                   setCustomCssHelpOpen={fullPageState.setCustomCssHelpOpen}
+                  defaultSettings={DEFAULT_SETTINGS.full_page}
                 />
               </div>
             </div>
@@ -418,9 +467,10 @@ export default function DesignControlPanel() {
               <div className={designControlPanelStyles.previewPanel}>
                 <div className={designControlPanelStyles.previewWrapper}>
                   <PreviewPanel
-                    activeSubSection={productPageState.activeSubSection}
                     settings={productPageState.settings}
                     bundleType={BundleType.PRODUCT_PAGE}
+                    previewUrl={previewUrls.pdp}
+                    activeSubSection={productPageState.activeSubSection}
                   />
                 </div>
               </div>
@@ -432,6 +482,7 @@ export default function DesignControlPanel() {
                   onBatchUpdate={productPageState.updateSettings}
                   customCssHelpOpen={productPageState.customCssHelpOpen}
                   setCustomCssHelpOpen={productPageState.setCustomCssHelpOpen}
+                  defaultSettings={DEFAULT_SETTINGS.product_page}
                 />
               </div>
             </div>

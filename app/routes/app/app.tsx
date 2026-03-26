@@ -33,7 +33,7 @@ export default function App() {
         <a href="/app/design-control-panel">Design Control Panel</a>
         <a href="/app/attribution">Analytics</a>
         <a href="/app/pricing">Pricing</a>
-        <a href="/app/events">Events</a>
+        <a href="/app/events">Updates &amp; FAQs</a>
       </NavMenu>
       <Outlet />
     </AppProvider>

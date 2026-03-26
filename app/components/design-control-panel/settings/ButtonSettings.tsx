@@ -33,6 +33,7 @@ export function ButtonSettings({ settings, onUpdate }: SettingsComponentProps) {
         min={12}
         max={24}
         output
+        suffix={`${settings.buttonFontSize}px`}
       />
 
       <RangeSlider
@@ -42,6 +43,7 @@ export function ButtonSettings({ settings, onUpdate }: SettingsComponentProps) {
         min={0}
         max={24}
         output
+        suffix={`${settings.buttonBorderRadius}px`}
       />
     </BlockStack>
   );

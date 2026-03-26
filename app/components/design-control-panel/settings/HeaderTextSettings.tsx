@@ -10,7 +10,7 @@ export function HeaderTextSettings({ settings, onUpdate }: SettingsComponentProp
   return (
     <BlockStack gap="400">
       <Text as="h2" variant="headingMd">
-        Header Text
+        Conditions &amp; Discount Text
       </Text>
       <Divider />
 

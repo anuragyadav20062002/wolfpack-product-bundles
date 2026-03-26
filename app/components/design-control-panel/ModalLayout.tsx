@@ -44,8 +44,8 @@ export function ModalLayout({ navigation, preview, settings }: ModalLayoutProps)
             overflowX: "hidden",
           }}
         >
-          {/* Preview with Arrow Overlay */}
-          <div style={{ position: "relative", display: "inline-block" }}>
+          {/* Preview fills the full center column width */}
+          <div style={{ position: "relative", display: "block", width: "100%" }}>
             {preview}
           </div>
         </div>

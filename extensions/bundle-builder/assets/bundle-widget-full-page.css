@@ -1,16 +1,15 @@
 
 
 .bundle-widget-full-page {
-  width: 100vw !important;
+  width: 100%;
   min-height: 100vh;
   background: var(--bundle-full-page-bg-color, #FFFFFF);
-  margin: 0 !important;
-  margin-left: calc(-50vw + 50%) !important;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   position: relative;
-  max-width: none !important;
+  box-sizing: border-box;
 }
 
 .bundle-tier-pill-bar {
@@ -540,6 +539,9 @@
     scrollbar-width: none;
     justify-content: flex-start;
     padding: 0 12px 4px;
+    /* Fade gradient on right edge — hints that more tabs are scrollable */
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    mask-image: linear-gradient(to right, black 80%, transparent 100%);
   }
 
   .step-tabs-container::-webkit-scrollbar {
@@ -620,8 +622,8 @@
 
 @media (min-width: 1024px) {
   .promo-banner {
-    padding: var(--bundle-promo-banner-padding, 48px) 64px;
-    min-height: 220px;
+    padding: var(--bundle-promo-banner-padding, 32px) 64px;
+    min-height: 160px;
     margin-bottom: 24px;
     border-radius: var(--bundle-promo-banner-radius, 16px);
   }
@@ -1594,39 +1596,6 @@
   display: block;
 }
 
-.footer-progress-section {
-  width: 100%;
-  padding: 16px 80px;
-  border-top: 1px solid var(--bundle-full-page-footer-border-color, rgba(0, 0, 0, 0.1));
-}
-
-.footer-progress-bar-container {
-  position: relative;
-  width: 100%;
-  height: 6px;
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-.footer-progress-bar-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #DEDEDE;
-  border-radius: 20px;
-}
-
-.footer-progress-bar-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: var(--bundle-full-page-footer-quantity-badge-bg, #1E1E1E);
-  border-radius: 20px;
-  transition: width 0.3s ease;
-}
 
 .full-page-footer.redesigned {
   display: block !important;
@@ -1659,14 +1628,6 @@
   }
 }
 
-.full-page-footer.redesigned .footer-progress-section {
-  padding: 12px 24px 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  border-top: none;
-  background: transparent;
-  text-align: center;
-}
-
 .full-page-footer.redesigned .footer-discount-message {
   text-align: center;
   font-size: 15px;
@@ -1674,23 +1635,6 @@
   color: var(--bundle-full-page-discount-text-color, #E65100);
   margin-bottom: 0;
   font-family: inherit;
-}
-
-.full-page-footer.redesigned .footer-progress-bar-container {
-  max-width: 800px;
-  margin: 0 auto;
-  height: 6px;
-  border-radius: 3px;
-}
-
-.full-page-footer.redesigned .footer-progress-bar-bg {
-  background: var(--bundle-full-page-progress-track, #C8E6C9);
-  border-radius: 3px;
-}
-
-.full-page-footer.redesigned .footer-progress-bar-fill {
-  background: var(--bundle-full-page-progress-fill, #4CAF50);
-  border-radius: 3px;
 }
 
 .full-page-footer.redesigned > .footer-products-strip {
@@ -3457,11 +3401,13 @@ body.modal-open {
   min-height: 100vh;
 }
 
+
 .sidebar-layout-wrapper .sidebar-content {
   flex: 1 1 0%;
   min-width: 0;
   width: auto; /* Override .full-page-content-section width:100% that pushes side panel off-screen */
-  padding: 20px 40px;
+  padding: 20px 24px;
+  overflow: visible; /* Allow absolutely-positioned tooltips to render above the step tabs without being clipped */
 }
 
 /* Sidebar layout: use flexible column widths at desktop so cards never overflow
@@ -3476,6 +3422,22 @@ body.modal-open {
     padding-right: 0;
     margin-top: 0; /* remove extra top margin — content already has padding-top via sidebar-content */
   }
+
+  /* Reset the fixed card width from the base desktop rule so cards fill their 1fr grid column.
+     Without this, .product-card { min-width: 280px } causes overflow in the narrowed sidebar area. */
+  .sidebar-content .product-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Sidebar: clip button text at narrower card widths and reduce font size so
+     "ADD TO BUNDLE" never overflows the button boundary. */
+  .sidebar-content .product-add-btn {
+    overflow: hidden;
+    font-size: 12px;
+    padding: 0 12px;
+  }
 }
 
 /* Hide promo banner in sidebar layout — it takes up too much vertical space
@@ -3485,7 +3447,7 @@ body.modal-open {
 }
 
 .full-page-side-panel {
-  width: 360px;
+  width: 320px;
   flex-shrink: 0;
   background: var(--bundle-side-panel-bg, #FAFAFA);
   border-left: 1px solid var(--bundle-side-panel-border, rgba(0, 0, 0, 0.08));
@@ -3555,25 +3517,6 @@ body.modal-open {
   border-radius: 6px;
   margin-bottom: 12px;
   text-align: center;
-}
-
-.side-panel-progress {
-  margin-bottom: 16px;
-}
-
-.side-panel-progress-bar-bg {
-  width: 100%;
-  height: 6px;
-  background: var(--bundle-side-panel-progress-bg, #E5E7EB);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.side-panel-progress-bar-fill {
-  height: 100%;
-  background: var(--bundle-side-panel-progress-fill, #7132FF);
-  border-radius: 3px;
-  transition: width 0.3s ease;
 }
 
 .side-panel-products {
@@ -3782,7 +3725,7 @@ body.modal-open {
     flex-direction: column;
   }
 
-  .full-page-side-panel {
+.full-page-side-panel {
     width: 100%;
     height: auto;
     position: sticky;
@@ -3839,6 +3782,8 @@ body.modal-open {
 
 /* Panel — expandable product list, slides down between callout and bar */
 .full-page-footer.floating-card .footer-panel {
+  position: relative;
+  z-index: 1; /* above the backdrop (z-index: 0) within the footer stacking context */
   background: var(--bundle-footer-panel-bg, #FFFFFF);
   max-height: 0;
   overflow: hidden;
@@ -3930,8 +3875,8 @@ body.modal-open {
   display: none;
   position: fixed;
   inset: 0;
-  /* z-index below the card (1000) so the bar and panel remain clickable */
-  z-index: 999;
+  /* z-index: 0 within the footer's stacking context — panel and bar sit above it at z-index: 1 */
+  z-index: 0;
   background: transparent;
   border: none;
   cursor: default;
@@ -3942,12 +3887,13 @@ body.modal-open {
 }
 
 .full-page-footer.floating-card .footer-bar {
+  position: relative;
+  z-index: 1; /* above the backdrop (z-index: 0) within the footer stacking context */
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
   min-height: 72px;
-  /* Card handles background, shadow, and border-radius — bar is transparent */
   background: var(--bundle-full-page-footer-bg-color, #FFFFFF);
 }
 
@@ -4132,6 +4078,13 @@ body.modal-open {
   }
 
   .full-page-footer.floating-card .footer-total-original {
+    display: none;
+  }
+
+  /* Hide discount badge at narrow mobile — the callout banner above already
+     communicates the discount, and the badge overflows behind the Next Step button
+     at ≤480px where horizontal space is tight. */
+  .full-page-footer.floating-card .footer-discount-badge {
     display: none;
   }
 

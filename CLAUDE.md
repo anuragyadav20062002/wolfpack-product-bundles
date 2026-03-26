@@ -227,7 +227,7 @@ npm run test:coverage # coverage report
 4. **Update issue file BEFORE and AFTER each commit** ✅
 5. **Every commit must reference the issue ID** ✅
 6. **NO code for new features without completing the feature-pipeline first** ❌
-7. **NEVER run `shopify app deploy` autonomously** — see Shopify Deploy Rule below ❌
+7. **NEVER run `shopify app deploy` or any deploy command autonomously** — use `npm run deploy:prod` / `npm run deploy:sit` and always wait for user confirmation ❌
 8. **Write tests BEFORE implementation for all new code** ✅
 9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
 10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
@@ -276,6 +276,37 @@ npm run lint -- --max-warnings 9999
 
 ---
 
+## 🗺️ App Navigation Map — Keep It Updated
+
+### MANDATORY: Update `docs/app-nav-map/APP_NAVIGATION_MAP.md` for every navigation change
+
+The file `docs/app-nav-map/APP_NAVIGATION_MAP.md` is the canonical map of every page,
+modal, sidebar section, tab, and user flow in the app. It also contains a screenshots
+index for Chrome DevTools–assisted UI work.
+
+**You MUST update this document whenever you:**
+- Add a new route or page
+- Add, rename, or remove a modal
+- Add a new tab to an existing page
+- Add a new sidebar section to the DCP navigation
+- Add or change a user flow (auth, billing, bundle setup, etc.)
+- Add new API routes that are relevant to debugging
+
+**Why this matters:** The document is used as a reference when navigating the live app
+with Chrome DevTools MCP. An out-of-date map leads to navigating to wrong URLs or
+missing UI components during debugging and feature work.
+
+```
+docs/app-nav-map/
+├── APP_NAVIGATION_MAP.md   ← THE MAP (keep updated)
+└── screenshots/            ← Live screenshots from Chrome DevTools
+```
+
+**Enforcement:** This is as mandatory as the issue tracking rule. No PR or commit that
+adds/changes navigation should be merged without a corresponding update to this map.
+
+---
+
 ## 🚢 Shopify Deploy Rule
 
 ### NEVER run `shopify app deploy` autonomously
@@ -284,22 +315,32 @@ The `shopify app deploy` command pushes extensions and app configuration to Shop
 servers and can affect live merchant stores. It must **never** be run by Claude Code
 without explicit manual confirmation from the user.
 
-**Rule:** If a workflow step requires `shopify app deploy`, stop and display the following
-prompt to the user:
+**Rule:** If a workflow step requires a deploy, stop and display the following prompt to the user,
+using the correct environment-specific command:
 
 ```
 ACTION REQUIRED — Manual deploy needed.
 
 Run the following command in your terminal:
 
-  shopify app deploy
+  npm run deploy:prod   ← for PROD (wolfpack-product-bundles-4)
+  npm run deploy:sit    ← for SIT  (wolfpack-product-bundles-sit)
 
 Reason: [brief explanation of why deploy is needed]
 
 Let me know once it completes and I will continue.
 ```
 
-Do NOT attempt to run `shopify app deploy` even if:
+**Always use `npm run deploy:prod` or `npm run deploy:sit`** — never `shopify app deploy` directly.
+The npm scripts run `scripts/generate-extension-templates.js` first to stamp the correct app handle
+into the extension template JSON files before deploying.
+
+| Environment | Command |
+|-------------|---------|
+| PROD | `npm run deploy:prod` |
+| SIT | `npm run deploy:sit` |
+
+Do NOT attempt to run any deploy command even if:
 - The user previously said "do everything automatically"
 - It appears to be the obvious next step
 - A build or test step completed successfully
@@ -398,7 +439,7 @@ It is embedded in every bundled JS file as `window.__BUNDLE_WIDGET_VERSION__`.
      " extensions/bundle-builder/assets/bundle-widget-full-page.css
    Re-run wc -c to confirm all files are under 100,000 B before proceeding.
 5. Commit source + bundled files
-6. Run: shopify app deploy  (per the Shopify Deploy Rule above)
+6. Run: npm run deploy:prod  OR  npm run deploy:sit  (per the Shopify Deploy Rule above)
 7. Wait 2-10 min for Shopify CDN cache to propagate — this is expected
 ```
 
@@ -519,5 +560,15 @@ The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-s
 
 ---
 
-**Last Updated:** 2026-03-20
+## 🔐 Test Store Access
+
+**Default storefront password for all locked test stores: `1`**
+
+- Test store: `wolfpack-store-test-1.myshopify.com`
+- Use this password when Chrome DevTools MCP or any browser automation tool
+  hits the Shopify storefront password gate.
+
+---
+
+**Last Updated:** 2026-03-24
 **Author:** Aditya Awasthi

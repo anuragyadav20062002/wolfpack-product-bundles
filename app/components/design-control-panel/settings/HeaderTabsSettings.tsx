@@ -45,6 +45,7 @@ export function HeaderTabsSettings({ settings, onUpdate }: SettingsComponentProp
         min={0}
         max={100}
         output
+        suffix={`${settings.headerTabRadius}px`}
       />
     </BlockStack>
   );

@@ -12,6 +12,9 @@ export function FooterSettings({ settings, onUpdate }: SettingsComponentProps) {
       <Text as="h2" variant="headingMd">
         Footer
       </Text>
+      <Text as="p" variant="bodySm" tone="subdued">
+        These settings apply to both the sidebar panel and the floating footer — switching layouts will reflect the same values.
+      </Text>
       <Divider />
 
       <ColorPicker

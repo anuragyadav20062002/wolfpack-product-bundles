@@ -33,7 +33,7 @@ export function GlobalColorsSettings({ settings, onUpdate }: SettingsComponentPr
         </div>
       </InlineStack>
       <Text as="p" variant="bodyMd" tone="subdued">
-        Enter your brand colors here and the bundle will adapt
+        Start here. Most widget colors inherit from these defaults — only go into individual sections if you need finer control.
       </Text>
       <Divider />
 

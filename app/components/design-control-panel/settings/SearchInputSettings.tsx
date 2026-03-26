@@ -17,6 +17,8 @@ export function SearchInputSettings({ settings, onUpdate }: SettingsComponentPro
       </Text>
       <Divider />
 
+      <Text as="p" variant="bodySm" fontWeight="semibold" tone="subdued">Input</Text>
+
       <ColorPicker
         label="Background Color"
         value={settings.searchInputBgColor}
@@ -37,6 +39,8 @@ export function SearchInputSettings({ settings, onUpdate }: SettingsComponentPro
 
       <Divider />
 
+      <Text as="p" variant="bodySm" fontWeight="semibold" tone="subdued">Text</Text>
+
       <ColorPicker
         label="Text Color"
         value={settings.searchInputTextColor}
@@ -51,14 +55,16 @@ export function SearchInputSettings({ settings, onUpdate }: SettingsComponentPro
 
       <Divider />
 
+      <Text as="p" variant="bodySm" fontWeight="semibold" tone="subdued">Clear Button</Text>
+
       <ColorPicker
-        label="Clear Button Background"
+        label="Background"
         value={settings.searchClearButtonBgColor}
         onChange={(value) => onUpdate("searchClearButtonBgColor", value)}
       />
 
       <ColorPicker
-        label="Clear Button Icon Color"
+        label="Icon Color"
         value={settings.searchClearButtonColor}
         onChange={(value) => onUpdate("searchClearButtonColor", value)}
       />

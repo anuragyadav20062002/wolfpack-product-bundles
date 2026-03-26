@@ -13,7 +13,7 @@
  * - Provides settings collection for save
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { appState as appStateService } from "../services/app.state.service";
 import type { DesignSettings } from "../types/state.types";
 import { BundleType } from "../constants/bundle";
@@ -70,6 +70,11 @@ export function useDesignControlPanelState(
 
   // Custom CSS help modal state
   const [customCssHelpOpen, setCustomCssHelpOpen] = useState(false);
+
+  // Increments on every successful save so the storefront iframe key changes,
+  // forcing it to reload and reflect the persisted state.
+  const saveCountRef = useRef(0);
+  const [saveCount, setSaveCount] = useState(0);
 
   // Sync with loader data when it changes
   useEffect(() => {
@@ -165,13 +170,16 @@ export function useDesignControlPanelState(
     };
   }, [currentSettings]);
 
-  // Mark settings as saved (after successful API call)
+  // Mark settings as saved (after successful API call).
+  // Increments saveCount to force the storefront iframe to reload.
   const markAsSaved = useCallback(() => {
     setOriginalSettings(prev => ({
       ...prev,
       [selectedBundleType]: { ...currentSettings },
     }));
     appStateService.setDesignSettingsDirty(false);
+    saveCountRef.current += 1;
+    setSaveCount(saveCountRef.current);
   }, [currentSettings, selectedBundleType]);
 
   // Navigation helpers
@@ -212,6 +220,7 @@ export function useDesignControlPanelState(
 
     // Dirty state
     hasUnsavedChanges,
+    saveCount,
 
     // Actions
     handleDiscard,
