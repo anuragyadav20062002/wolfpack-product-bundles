@@ -293,11 +293,11 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
 
 /**
  * Default settings for full_page bundle type
- * A more vibrant, branded design with purple accents for standalone bundle pages
+ * Default settings for full-page bundles — theme-agnostic neutral palette
  */
 export const FULL_PAGE_DEFAULTS: DesignSettings = {
   // Global Colors
-  globalPrimaryButtonColor: "#7132FF",
+  globalPrimaryButtonColor: "#111111",
   globalButtonTextColor: "#FFFFFF",
   globalPrimaryTextColor: "#111827",
   globalSecondaryTextColor: "#9CA3AF",
@@ -378,9 +378,9 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   footerBackButtonTextColor: "#111827",
   footerBackButtonBorderColor: "#E5E7EB",
   footerBackButtonBorderRadius: 12,
-  footerNextButtonBgColor: "#7132FF",
+  footerNextButtonBgColor: "#111111",
   footerNextButtonTextColor: "#FFFFFF",
-  footerNextButtonBorderColor: "#7132FF",
+  footerNextButtonBorderColor: "#111111",
   footerNextButtonBorderRadius: 12,
 
   // Discount Text
@@ -398,8 +398,8 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
 
   // Completed Step
   completedStepCheckMarkColor: "#FFFFFF",
-  completedStepBgColor: "#7132FF",
-  completedStepCircleBorderColor: "#7132FF",
+  completedStepBgColor: "#111111",
+  completedStepCircleBorderColor: "#111111",
   completedStepCircleBorderRadius: 50,
 
   // Incomplete Step
@@ -408,11 +408,11 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   incompleteStepCircleStrokeRadius: 50,
 
   // Step Bar Progress Bar
-  stepBarProgressFilledColor: "#7132FF",
+  stepBarProgressFilledColor: "#111111",
   stepBarProgressEmptyColor: "#E5E7EB",
 
   // Tabs
-  tabsActiveBgColor: "#7132FF",
+  tabsActiveBgColor: "#111111",
   tabsActiveTextColor: "#FFFFFF",
   tabsInactiveBgColor: "#F9FAFB",
   tabsInactiveTextColor: "#111827",
@@ -454,15 +454,15 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
 
   // Bundle Design
   bundleBgColor: "#F9FAFB",
-  footerScrollBarColor: "#7132FF",
+  footerScrollBarColor: "#111111",
 
   // Product Page Title
   productPageTitleFontColor: "#111827",
   productPageTitleFontSize: 28,
 
   // Bundle Upsell
-  bundleUpsellButtonBgColor: "#7132FF",
-  bundleUpsellBorderColor: "#7132FF",
+  bundleUpsellButtonBgColor: "#111111",
+  bundleUpsellBorderColor: "#111111",
   bundleUpsellTextColor: "#FFFFFF",
 
   // Filters
