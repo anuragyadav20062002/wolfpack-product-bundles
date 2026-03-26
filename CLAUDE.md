@@ -276,6 +276,37 @@ npm run lint -- --max-warnings 9999
 
 ---
 
+## 🗺️ App Navigation Map — Keep It Updated
+
+### MANDATORY: Update `docs/app-nav-map/APP_NAVIGATION_MAP.md` for every navigation change
+
+The file `docs/app-nav-map/APP_NAVIGATION_MAP.md` is the canonical map of every page,
+modal, sidebar section, tab, and user flow in the app. It also contains a screenshots
+index for Chrome DevTools–assisted UI work.
+
+**You MUST update this document whenever you:**
+- Add a new route or page
+- Add, rename, or remove a modal
+- Add a new tab to an existing page
+- Add a new sidebar section to the DCP navigation
+- Add or change a user flow (auth, billing, bundle setup, etc.)
+- Add new API routes that are relevant to debugging
+
+**Why this matters:** The document is used as a reference when navigating the live app
+with Chrome DevTools MCP. An out-of-date map leads to navigating to wrong URLs or
+missing UI components during debugging and feature work.
+
+```
+docs/app-nav-map/
+├── APP_NAVIGATION_MAP.md   ← THE MAP (keep updated)
+└── screenshots/            ← Live screenshots from Chrome DevTools
+```
+
+**Enforcement:** This is as mandatory as the issue tracking rule. No PR or commit that
+adds/changes navigation should be merged without a corresponding update to this map.
+
+---
+
 ## 🚢 Shopify Deploy Rule
 
 ### NEVER run `shopify app deploy` autonomously
