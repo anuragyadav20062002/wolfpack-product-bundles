@@ -3793,6 +3793,8 @@ body.modal-open {
 
 /* Panel — expandable product list, slides down between callout and bar */
 .full-page-footer.floating-card .footer-panel {
+  position: relative;
+  z-index: 1; /* above the backdrop (z-index: 0) within the footer stacking context */
   background: var(--bundle-footer-panel-bg, #FFFFFF);
   max-height: 0;
   overflow: hidden;
@@ -3884,8 +3886,8 @@ body.modal-open {
   display: none;
   position: fixed;
   inset: 0;
-  /* z-index below the card (1000) so the bar and panel remain clickable */
-  z-index: 999;
+  /* z-index: 0 within the footer's stacking context — panel and bar sit above it at z-index: 1 */
+  z-index: 0;
   background: transparent;
   border: none;
   cursor: default;
@@ -3896,12 +3898,13 @@ body.modal-open {
 }
 
 .full-page-footer.floating-card .footer-bar {
+  position: relative;
+  z-index: 1; /* above the backdrop (z-index: 0) within the footer stacking context */
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
   min-height: 72px;
-  /* Card handles background, shadow, and border-radius — bar is transparent */
   background: var(--bundle-full-page-footer-bg-color, #FFFFFF);
 }
 
