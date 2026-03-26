@@ -180,83 +180,92 @@ const pdpPageHtml = `
 `.trim();
 
 // ─── FPB preview HTML — Sidebar layout (footer_side) ──────────────────────────
-// Uses .layout-sidebar + .sidebar-layout-wrapper for the real 3-column layout:
-// step-tabs (left) | product grid (center) | side panel (right).
-// Promo banner is hidden in this layout via CSS (.layout-sidebar .promo-banner).
+// Three-column layout: step-tabs (left) | product grid (center) | side panel (right).
+// Structure matches live widget: tier-pills → header → bundle-steps → sidebar-layout-wrapper
+//   with step-tabs-container as direct flex child (left column), sidebar-content (center),
+//   and full-page-side-panel (right).
 
 const fpbSidebarHtml = `
-<div class="bundle-widget-full-page layout-sidebar" style="min-height:100vh;">
+<div class="bundle-widget-full-page" style="min-height:100vh;">
 
-  <!-- Promo banner hidden by CSS in sidebar layout -->
-  <div class="promo-banner has-discount" style="padding:16px 20px;text-align:center;">
-    <div class="promo-banner-subtitle">Mix &amp; Match</div>
-    <h2 class="promo-banner-title" style="margin:4px 0;">Summer Bundle — Save 20%</h2>
-    <div class="promo-banner-note">Buy any 3 items and save automatically at checkout</div>
-  </div>
-
-  <!-- Tier pills -->
+  <!-- Tier pills — live widget inserts these as container.firstChild (before header) -->
   <div class="bundle-tier-pill-bar" role="group" aria-label="Bundle pricing tiers">
     <button type="button" class="bundle-tier-pill bundle-tier-pill--active" data-tier-index="0" aria-pressed="true">Buy 2 — Save 10%</button>
     <button type="button" class="bundle-tier-pill" data-tier-index="1" aria-pressed="false">Buy 3 — Save 20%</button>
     <button type="button" class="bundle-tier-pill bundle-tier-pill--disabled" data-tier-index="2" aria-pressed="false">Buy 5 — Save 30%</button>
   </div>
 
-  <!-- Sidebar layout wrapper: step-tabs | content | side-panel -->
-  <div class="sidebar-layout-wrapper">
+  <!-- Bundle header -->
+  <div class="bundle-header">
+    <h1 class="bundle-title">Summer Bundle</h1>
+    <p class="bundle-description">Build your perfect summer outfit and save 20%</p>
+  </div>
 
-    <!-- Left: step timeline tabs -->
-    <div class="step-tabs-container">
-      <div class="step-tab active completed" data-step-index="0">
-        <div class="tab-images">
-          <img src="${PLACEHOLDER_IMG}" alt="Polo" class="tab-product-image">
-          <img src="${PLACEHOLDER_IMG}" alt="Linen" class="tab-product-image">
-        </div>
-        <div class="tab-info">
-          <span class="tab-name">Choose Tops</span>
-          <span class="tab-count">2 selected</span>
-        </div>
-        <div class="tab-check">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-      </div>
-      <div class="step-tab" data-step-index="1">
-        <div class="tab-number">2</div>
-        <div class="tab-info">
-          <span class="tab-name">Choose Bottoms</span>
-          <span class="tab-count">0 selected</span>
-        </div>
-      </div>
-      <div class="step-tab locked" data-step-index="2">
-        <div class="tab-number">3</div>
-        <div class="tab-info">
-          <span class="tab-name">Accessories</span>
-        </div>
-        <div class="tab-lock">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-        </div>
-        <div class="tab-locked-tooltip">Complete "Choose Bottoms" first</div>
-      </div>
-    </div>
+  <!-- Steps container — sidebar layout -->
+  <div class="bundle-steps full-page-layout layout-sidebar">
+    <div class="sidebar-layout-wrapper">
 
-    <!-- Center: search + product grid -->
-    <div class="full-page-content-section sidebar-content">
-
-      <div class="step-search-container">
-        <div class="step-search-input-wrapper">
-          <svg class="step-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input type="text" class="step-search-input" placeholder="Search products..." autocomplete="off" value="">
+      <!-- Left: step timeline tabs (direct flex child — 240px column via CSS) -->
+      <div class="step-tabs-container">
+        <div class="step-tab active completed" data-step-index="0">
+          <div class="tab-images">
+            <img src="${PLACEHOLDER_IMG}" alt="Polo" class="tab-product-image">
+            <img src="${PLACEHOLDER_IMG}" alt="Linen" class="tab-product-image">
+          </div>
+          <div class="tab-info">
+            <span class="tab-name">Choose Tops</span>
+            <span class="tab-count">2 selected</span>
+          </div>
+          <div class="tab-check">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="step-tab" data-step-index="1">
+          <div class="tab-number">2</div>
+          <div class="tab-info">
+            <span class="tab-name">Choose Bottoms</span>
+            <span class="tab-count">0 selected</span>
+          </div>
+        </div>
+        <div class="step-tab locked" data-step-index="2">
+          <div class="tab-number">3</div>
+          <div class="tab-info">
+            <span class="tab-name">Accessories</span>
+          </div>
+          <div class="tab-lock">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div class="tab-locked-tooltip">Complete "Choose Bottoms" first</div>
         </div>
       </div>
 
-      <div class="full-page-product-grid">
+      <!-- Center: promo banner (hidden by CSS in sidebar) + search + product grid -->
+      <div class="full-page-content-section sidebar-content">
+
+        <!-- Promo banner — inside sidebar-content, hidden via CSS in sidebar layout -->
+        <div class="promo-banner has-discount">
+          <div class="promo-banner-subtitle">Mix &amp; Match</div>
+          <h2 class="promo-banner-title">Summer Bundle — Save 20%</h2>
+          <div class="promo-banner-note">Buy any 3 items and save automatically at checkout</div>
+        </div>
+
+        <div class="step-search-container">
+          <div class="step-search-input-wrapper">
+            <svg class="step-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" class="step-search-input" placeholder="Search products..." autocomplete="off" value="">
+          </div>
+        </div>
+
+        <div class="full-page-product-grid-container">
+        <div class="full-page-product-grid">
 
         <div class="product-card selected" data-product-id="s1">
           <div class="selected-overlay">✓</div>
@@ -321,8 +330,10 @@ const fpbSidebarHtml = `
           <p class="empty-state-card-text">Select Item</p>
         </div>
 
-      </div>
-    </div>
+        </div><!-- /.full-page-product-grid -->
+        </div><!-- /.full-page-product-grid-container -->
+
+      </div><!-- /.sidebar-content -->
 
     <!-- Right: side panel -->
     <div class="full-page-side-panel">
@@ -377,87 +388,99 @@ const fpbSidebarHtml = `
         <button class="side-panel-btn side-panel-btn-next" type="button">Next Step</button>
         <button class="side-panel-btn side-panel-btn-back" type="button">Back</button>
       </div>
-    </div>
+    </div><!-- /.full-page-side-panel -->
 
-  </div>
-</div>
+  </div><!-- /.sidebar-layout-wrapper -->
+  </div><!-- /.bundle-steps -->
+
+</div><!-- /.bundle-widget-full-page -->
 `.trim();
 
 // ─── FPB preview HTML — Floating footer layout (footer_bottom) ─────────────────
-// Uses standard single-column layout with .full-page-footer.floating-card
-// stuck at the bottom. Step tabs appear as horizontal pills across the top.
-// Promo banner is visible in this layout.
+// Structure matches live widget: tier-pills → header → bundle-steps.full-page-layout
+//   → full-page-content-section (promo + step-tabs + search + product-grid)
+//   → full-page-footer.floating-card (outside bundle-steps, at root level).
 
 const fpbFloatingHtml = `
-<div class="bundle-widget-full-page" style="min-height:100vh;display:flex;flex-direction:column;">
+<div class="bundle-widget-full-page" style="min-height:100vh;">
 
-  <!-- Promo banner -->
-  <div class="promo-banner has-discount" style="padding:16px 20px;text-align:center;">
-    <div class="promo-banner-subtitle">Mix &amp; Match</div>
-    <h2 class="promo-banner-title" style="margin:4px 0;">Summer Bundle — Save 20%</h2>
-    <div class="promo-banner-note">Buy any 3 items and save automatically at checkout</div>
-  </div>
-
-  <!-- Tier pills -->
+  <!-- Tier pills — live widget inserts these as container.firstChild (before header) -->
   <div class="bundle-tier-pill-bar" role="group" aria-label="Bundle pricing tiers">
     <button type="button" class="bundle-tier-pill bundle-tier-pill--active" data-tier-index="0" aria-pressed="true">Buy 2 — Save 10%</button>
     <button type="button" class="bundle-tier-pill" data-tier-index="1" aria-pressed="false">Buy 3 — Save 20%</button>
     <button type="button" class="bundle-tier-pill bundle-tier-pill--disabled" data-tier-index="2" aria-pressed="false">Buy 5 — Save 30%</button>
   </div>
 
-  <!-- Step tabs (horizontal row) -->
-  <div class="step-tabs-container" style="padding:0 20px;">
-    <div class="step-tab active completed" data-step-index="0">
-      <div class="tab-images">
-        <img src="${PLACEHOLDER_IMG}" alt="Polo" class="tab-product-image">
-        <img src="${PLACEHOLDER_IMG}" alt="Linen" class="tab-product-image">
-      </div>
-      <div class="tab-info">
-        <span class="tab-name">Choose Tops</span>
-        <span class="tab-count">2 selected</span>
-      </div>
-      <div class="tab-check">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-          <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-    </div>
-    <div class="step-tab" data-step-index="1">
-      <div class="tab-number">2</div>
-      <div class="tab-info">
-        <span class="tab-name">Choose Bottoms</span>
-        <span class="tab-count">0 selected</span>
-      </div>
-    </div>
-    <div class="step-tab locked" data-step-index="2">
-      <div class="tab-number">3</div>
-      <div class="tab-info">
-        <span class="tab-name">Accessories</span>
-      </div>
-      <div class="tab-lock">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-      </div>
-      <div class="tab-locked-tooltip">Complete "Choose Bottoms" first</div>
-    </div>
+  <!-- Bundle header -->
+  <div class="bundle-header">
+    <h1 class="bundle-title">Summer Bundle</h1>
+    <p class="bundle-description">Build your perfect summer outfit and save 20%</p>
   </div>
 
-  <!-- Main content section -->
-  <div class="full-page-content-section" style="flex:1;">
+  <!-- Steps container -->
+  <div class="bundle-steps full-page-layout">
 
-    <div class="step-search-container">
-      <div class="step-search-input-wrapper">
-        <svg class="step-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="M21 21l-4.35-4.35"/>
-        </svg>
-        <input type="text" class="step-search-input" placeholder="Search products..." autocomplete="off" value="">
+    <!-- Main content section (promo + step-tabs + search + grid) -->
+    <div class="full-page-content-section">
+
+      <!-- Promo banner -->
+      <div class="promo-banner has-discount">
+        <div class="promo-banner-subtitle">Mix &amp; Match</div>
+        <h2 class="promo-banner-title">Summer Bundle — Save 20%</h2>
+        <div class="promo-banner-note">Buy any 3 items and save automatically at checkout</div>
       </div>
-    </div>
 
-    <div class="full-page-product-grid">
+      <!-- Step tabs (horizontal row in floating layout) -->
+      <div class="step-tabs-container">
+        <div class="step-tab active completed" data-step-index="0">
+          <div class="tab-images">
+            <img src="${PLACEHOLDER_IMG}" alt="Polo" class="tab-product-image">
+            <img src="${PLACEHOLDER_IMG}" alt="Linen" class="tab-product-image">
+          </div>
+          <div class="tab-info">
+            <span class="tab-name">Choose Tops</span>
+            <span class="tab-count">2 selected</span>
+          </div>
+          <div class="tab-check">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="step-tab" data-step-index="1">
+          <div class="tab-number">2</div>
+          <div class="tab-info">
+            <span class="tab-name">Choose Bottoms</span>
+            <span class="tab-count">0 selected</span>
+          </div>
+        </div>
+        <div class="step-tab locked" data-step-index="2">
+          <div class="tab-number">3</div>
+          <div class="tab-info">
+            <span class="tab-name">Accessories</span>
+          </div>
+          <div class="tab-lock">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div class="tab-locked-tooltip">Complete "Choose Bottoms" first</div>
+        </div>
+      </div>
+
+      <div class="step-search-container">
+        <div class="step-search-input-wrapper">
+          <svg class="step-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="text" class="step-search-input" placeholder="Search products..." autocomplete="off" value="">
+        </div>
+      </div>
+
+      <div class="full-page-product-grid-container">
+      <div class="full-page-product-grid">
 
       <div class="product-card selected" data-product-id="f1">
         <div class="selected-overlay">✓</div>
@@ -522,8 +545,11 @@ const fpbFloatingHtml = `
         <p class="empty-state-card-text">Select Item</p>
       </div>
 
-    </div>
-  </div>
+      </div><!-- /.full-page-product-grid -->
+      </div><!-- /.full-page-product-grid-container -->
+
+    </div><!-- /.full-page-content-section -->
+  </div><!-- /.bundle-steps -->
 
   <!-- Floating footer bar (sticky at bottom) -->
   <div class="full-page-footer floating-card is-open">
@@ -565,7 +591,13 @@ function getFpbHtml(footerLayout: string): string {
 
 const pageLayoutCss = `
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow-y: auto;
+}
 
 /* PDP: background page */
 .preview-page-bg {
@@ -594,9 +626,9 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   padding-top: 8px;
 }
 
-/* FPB: fill viewport */
+/* FPB: fill viewport height */
 .bundle-widget-full-page {
-  height: 100vh;
+  min-height: 100vh;
 }
 `;
 

@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.3.6
- * Built   : 2026-03-24
+ * Built   : 2026-03-26
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -3312,20 +3312,21 @@ class BundleWidgetFullPage {
       this.elements.footer.style.display = 'none';
     }
 
-    // Two-column wrapper: content (left) + sidebar (right)
+    // Three-column wrapper: step-tabs (left) | content (center) | sidebar (right)
     const twoColWrapper = document.createElement('div');
     twoColWrapper.className = 'sidebar-layout-wrapper';
 
-    // LEFT: Main content (same as footer_bottom minus the footer)
+    // LEFT: Step timeline (direct flex child — becomes fixed-width vertical column via CSS)
+    if (this.config.showStepTimeline) {
+      twoColWrapper.appendChild(this.createStepTimeline());
+    }
+
+    // CENTER: Main content (same as footer_bottom minus the footer)
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section sidebar-content';
 
     const promoBanner = this.createPromoBanner();
     if (promoBanner) contentSection.appendChild(promoBanner);
-
-    if (this.config.showStepTimeline) {
-      contentSection.appendChild(this.createStepTimeline());
-    }
 
     contentSection.appendChild(this.createSearchInput());
 
