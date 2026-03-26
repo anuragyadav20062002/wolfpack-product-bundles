@@ -4516,12 +4516,6 @@ class BundleWidgetFullPage {
 
     const allSelectedProducts = this.getAllSelectedProductsData();
 
-    // Hide footer when nothing is selected yet
-    if (allSelectedProducts.length === 0) {
-      this.elements.footer.style.display = 'none';
-      return;
-    }
-
     // Preserve open state across re-renders
     const wasOpen = this.elements.footer.classList.contains('is-open');
 
@@ -6069,8 +6063,15 @@ class BundleWidgetFullPage {
       // automatically move to the next step after a short delay so the shopper
       // sees the completion state before the view changes.
       // Guard: only on additions (quantity > 0), not removals; skip if a pending
-      // advance is already scheduled; skip on the last step.
-      if (quantity > 0 && !this._autoAdvancePending) {
+      // advance is already scheduled; skip on the last step; skip when the step
+      // has no explicit conditions (no conditionType/conditionOperator/conditionValue)
+      // so shoppers can add as many products as they want on unconditioned steps.
+      const _autoAdvanceStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+      const _hasExplicitCondition = _autoAdvanceStep &&
+        _autoAdvanceStep.conditionType &&
+        _autoAdvanceStep.conditionOperator &&
+        _autoAdvanceStep.conditionValue != null;
+      if (quantity > 0 && !this._autoAdvancePending && _hasExplicitCondition) {
         const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
         if (!isLastStep && this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
           this._autoAdvancePending = true;
