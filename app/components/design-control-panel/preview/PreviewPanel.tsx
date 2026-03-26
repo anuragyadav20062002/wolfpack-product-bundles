@@ -20,6 +20,7 @@ interface PreviewPanelProps {
 
 type FpbFooterLayout = "sidebar" | "floating";
 type ViewportMode = "desktop" | "mobile";
+const DESKTOP_WIDTH = 1440;
 const MOBILE_WIDTH = 375;
 
 const TOGGLE_BTN_BASE: React.CSSProperties = {
