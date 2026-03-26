@@ -18,4 +18,5 @@ export interface SettingsPanelProps extends SettingsComponentProps {
   customCssHelpOpen: boolean;
   setCustomCssHelpOpen: (open: boolean) => void;
   onBatchUpdate: (updates: Partial<DesignSettings>) => void;
+  defaultSettings?: DesignSettings;
 }

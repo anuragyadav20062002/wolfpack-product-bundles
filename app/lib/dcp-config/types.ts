@@ -15,6 +15,8 @@ export type DCPGroupKey =
 export interface DCPSection {
   key: DCPSectionKey;
   label: string;
+  /** Short tooltip shown on hover in the nav sidebar */
+  description?: string;
 }
 
 export interface DCPGroup {
@@ -25,4 +27,6 @@ export interface DCPGroup {
   /** For groups with hasChildren:false, the single section it maps to */
   sectionKey?: DCPSectionKey;
   children?: DCPSection[];
+  /** Short tooltip shown on hover in the nav sidebar */
+  description?: string;
 }

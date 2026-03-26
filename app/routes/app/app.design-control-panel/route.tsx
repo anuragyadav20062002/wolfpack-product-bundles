@@ -445,6 +445,7 @@ export default function DesignControlPanel() {
                   onBatchUpdate={fullPageState.updateSettings}
                   customCssHelpOpen={fullPageState.customCssHelpOpen}
                   setCustomCssHelpOpen={fullPageState.setCustomCssHelpOpen}
+                  defaultSettings={DEFAULT_SETTINGS.full_page}
                 />
               </div>
             </div>
@@ -479,6 +480,7 @@ export default function DesignControlPanel() {
                   onBatchUpdate={productPageState.updateSettings}
                   customCssHelpOpen={productPageState.customCssHelpOpen}
                   setCustomCssHelpOpen={productPageState.setCustomCssHelpOpen}
+                  defaultSettings={DEFAULT_SETTINGS.product_page}
                 />
               </div>
             </div>
