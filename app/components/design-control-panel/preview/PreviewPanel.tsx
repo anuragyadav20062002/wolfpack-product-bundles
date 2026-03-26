@@ -19,6 +19,8 @@ interface PreviewPanelProps {
 }
 
 type FpbFooterLayout = "sidebar" | "floating";
+type ViewportMode = "desktop" | "mobile";
+const MOBILE_WIDTH = 375;
 
 const TOGGLE_BTN_BASE: React.CSSProperties = {
   padding: "6px 16px",
@@ -93,6 +95,9 @@ export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelP
 
   // Footer layout toggle — FPB only
   const [fpbFooterLayout, setFpbFooterLayout] = useState<FpbFooterLayout>("sidebar");
+  // Viewport toggle — both bundle types
+  const [viewportMode, setViewportMode] = useState<ViewportMode>("desktop");
+  const viewportWidth = viewportMode === "mobile" ? MOBILE_WIDTH : DESKTOP_WIDTH;
 
   // Build FPB URLs (both always constructed when previewUrl is set)
   const sep = previewUrl?.includes("?") ? "&" : "?";
@@ -179,8 +184,33 @@ export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelP
     );
   }
 
+  const LABEL_STYLE: React.CSSProperties = {
+    fontSize: "11px",
+    fontWeight: 500,
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      {/* Viewport toggle — both bundle types */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+        <span style={LABEL_STYLE}>Viewport:</span>
+        <button
+          style={viewportMode === "desktop" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
+          onClick={() => setViewportMode("desktop")}
+        >
+          Desktop
+        </button>
+        <button
+          style={viewportMode === "mobile" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
+          onClick={() => setViewportMode("mobile")}
+        >
+          Mobile
+        </button>
+      </div>
+
       {/* Footer layout toggle — FPB only */}
       {isFpb && (
         <div
@@ -191,17 +221,7 @@ export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelP
             justifyContent: "center",
           }}
         >
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 500,
-              color: "#888",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Footer layout:
-          </span>
+          <span style={LABEL_STYLE}>Footer layout:</span>
           <button
             style={fpbFooterLayout === "sidebar" ? TOGGLE_BTN_ACTIVE : TOGGLE_BTN_BASE}
             onClick={() => setFpbFooterLayout("sidebar")}
@@ -225,9 +245,10 @@ export function PreviewPanel({ settings, bundleType, previewUrl }: PreviewPanelP
           activeKey={fpbFooterLayout === "sidebar" ? "a" : "b"}
           refA={sidebarRef}
           refB={floatingRef}
+          viewportWidth={viewportWidth}
         />
       ) : (
-        <AppPreviewIframe ref={singleRef} url={previewUrl} />
+        <AppPreviewIframe ref={singleRef} url={previewUrl} viewportWidth={viewportWidth} />
       )}
     </div>
   );

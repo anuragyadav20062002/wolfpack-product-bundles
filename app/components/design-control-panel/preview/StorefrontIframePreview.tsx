@@ -12,6 +12,8 @@ const DESKTOP_HEIGHT = 900;
 interface AppPreviewIframeProps {
   /** URL of the app-served preview page (e.g. /api/preview/pdp?shop=...) */
   url: string;
+  /** Viewport width to simulate. Defaults to DESKTOP_WIDTH (1440). Use 375 for mobile. */
+  viewportWidth?: number;
 }
 
 /**
@@ -26,7 +28,7 @@ interface AppPreviewIframeProps {
  * iframeRef.current.contentWindow.postMessage(...) to push CSS updates.
  */
 export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframeProps>(
-  function AppPreviewIframe({ url }, ref) {
+  function AppPreviewIframe({ url, viewportWidth = DESKTOP_WIDTH }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -40,12 +42,12 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
 
       const observer = new ResizeObserver((entries) => {
         const width = entries[0]?.contentRect.width ?? 0;
-        if (width > 0) setScale(width / DESKTOP_WIDTH);
+        if (width > 0) setScale(width / viewportWidth);
       });
 
       observer.observe(container);
       return () => observer.disconnect();
-    }, []);
+    }, [viewportWidth]);
 
     // Reset loading state when the URL changes.
     useEffect(() => {
@@ -64,6 +66,8 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
 
     // Container height matches the scaled-down iframe so it doesn't overflow.
     const containerHeight = scale > 0 ? Math.round(DESKTOP_HEIGHT * scale) : 0;
+    // Reset scale when viewportWidth changes so there's no flash of wrong size
+    useEffect(() => { setScale(0); }, [viewportWidth]);
 
     return (
       <div
@@ -126,7 +130,7 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
           </div>
         )}
 
-        {/* The iframe — rendered at full desktop size, then scaled down */}
+        {/* The iframe — rendered at the target viewport width, then scaled down */}
         {scale > 0 && (
           <iframe
             ref={ref}
@@ -135,7 +139,7 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
             title="Bundle widget preview"
             sandbox="allow-scripts allow-same-origin"
             style={{
-              width: `${DESKTOP_WIDTH}px`,
+              width: `${viewportWidth}px`,
               height: `${DESKTOP_HEIGHT}px`,
               border: "none",
               transform: `scale(${scale})`,
@@ -168,6 +172,8 @@ interface DualAppPreviewIframeProps {
   activeKey: "a" | "b";
   refA: React.RefObject<HTMLIFrameElement>;
   refB: React.RefObject<HTMLIFrameElement>;
+  /** Viewport width to simulate. Defaults to DESKTOP_WIDTH (1440). Use 375 for mobile. */
+  viewportWidth?: number;
 }
 
 export function DualAppPreviewIframe({
@@ -176,6 +182,7 @@ export function DualAppPreviewIframe({
   activeKey,
   refA,
   refB,
+  viewportWidth = DESKTOP_WIDTH,
 }: DualAppPreviewIframeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
@@ -187,11 +194,11 @@ export function DualAppPreviewIframe({
     if (!container) return;
     const observer = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width ?? 0;
-      if (width > 0) setScale(width / DESKTOP_WIDTH);
+      if (width > 0) setScale(width / viewportWidth);
     });
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
+  }, [viewportWidth]);
 
   const containerHeight = scale > 0 ? Math.round(DESKTOP_HEIGHT * scale) : 0;
   const activeLoaded = activeKey === "a" ? loadedA : loadedB;
@@ -200,7 +207,7 @@ export function DualAppPreviewIframe({
     position: "absolute",
     top: 0,
     left: 0,
-    width: `${DESKTOP_WIDTH}px`,
+    width: `${viewportWidth}px`,
     height: `${DESKTOP_HEIGHT}px`,
     border: "none",
     transform: `scale(${scale})`,
