@@ -67,8 +67,6 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
 
     // Container height matches the scaled-down iframe so it doesn't overflow.
     const containerHeight = scale > 0 ? Math.round(DESKTOP_HEIGHT * scale) : 0;
-    // Reset scale when viewportWidth changes so there's no flash of wrong size
-    useEffect(() => { setScale(0); }, [viewportWidth]);
 
     return (
       <div
