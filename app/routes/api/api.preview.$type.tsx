@@ -21,6 +21,83 @@ import { type LoaderFunctionArgs } from "@remix-run/node";
 const PLACEHOLDER_IMG =
   "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png";
 
+/**
+ * Fetch font assets from the merchant's live storefront.
+ *
+ * Modern Shopify OS 2.0 themes (Dawn, Craft, Sense, etc.) output two things:
+ *   1. Font stylesheet <link> tags (Google Fonts, Shopify CDN, Typekit) in <head>
+ *   2. CSS custom properties (--font-body-family, --font-heading-family, etc.) in
+ *      inline <style> blocks inside <head>
+ *
+ * We scrape both from the storefront homepage and inject them into the preview so
+ * the DCP preview uses the same fonts the merchant's shoppers see.
+ *
+ * Falls back silently (returns empty strings) on password-protected storefronts,
+ * network errors, or timeouts.
+ */
+async function fetchThemeFontAssets(
+  shop: string
+): Promise<{ links: string; inlineCss: string }> {
+  if (!shop) return { links: "", inlineCss: "" };
+  try {
+    const res = await fetch(`https://${shop}/`, {
+      headers: {
+        Accept: "text/html",
+        "User-Agent": "WolfpackBundleApp/1.0 (DCP Preview)",
+      },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return { links: "", inlineCss: "" };
+    const html = await res.text();
+
+    // Only scan the <head> — font declarations live there, not in <body>
+    const headMatch = html.match(/<head[\s\S]*?<\/head>/i);
+    const headHtml = headMatch ? headMatch[0] : html;
+
+    // 1. Font stylesheet <link> tags from known font CDNs
+    const linkRe = /<link\b[^>]*\bhref=["']([^"']*)["'][^>]*>/gi;
+    const fontLinks: string[] = [];
+    for (const m of headHtml.matchAll(linkRe)) {
+      const href = m[1];
+      const tag = m[0];
+      const isFontCdn =
+        href.includes("fonts.googleapis.com") ||
+        href.includes("fonts.shopifycdn.com") ||
+        href.includes("use.typekit.net") ||
+        href.includes("fonts.gstatic.com");
+      const isStylesheet =
+        tag.includes('rel="stylesheet"') ||
+        tag.includes("rel='stylesheet'") ||
+        /\brel=stylesheet\b/.test(tag);
+      if (isFontCdn && isStylesheet) fontLinks.push(tag);
+    }
+
+    // 2. CSS custom properties for font families from inline <style> blocks
+    // Dawn and most OS 2.0 themes output: --font-body-family, --font-heading-family
+    const styleRe = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+    const fontVarRe = /--font-[\w-]+\s*:\s*[^;\n}]+/g;
+    const seen = new Set<string>();
+    const fontVars: string[] = [];
+    for (const sm of headHtml.matchAll(styleRe)) {
+      for (const vm of sm[1].matchAll(fontVarRe)) {
+        const decl = vm[0].trim().replace(/;$/, "");
+        if (!seen.has(decl)) {
+          seen.add(decl);
+          fontVars.push(decl);
+        }
+      }
+    }
+
+    return {
+      links: fontLinks.join("\n"),
+      inlineCss: fontVars.length ? `:root{${fontVars.join(";")}}` : "",
+    };
+  } catch {
+    // Storefront unavailable (password-protected, network error, timeout) — silent fallback
+    return { links: "", inlineCss: "" };
+  }
+}
+
 function getWidgetCss(): { widgetCss: string; fullPageCss: string } {
   try {
     const assetsDir = join(process.cwd(), "extensions/bundle-builder/assets");
@@ -638,7 +715,10 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* Use the storefront theme's font family (injected from fetchThemeFontAssets).
+     Falls back through common Shopify OS 2.0 theme variable names before the
+     system font stack so any modern theme is covered automatically. */
+  font-family: var(--font-body-family, var(--font-body, var(--body-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif)));
   overflow-y: auto;
 }
 
@@ -748,12 +828,20 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const { widgetCss, fullPageCss } = getWidgetCss();
   const bodyHtml = type === "pdp" ? pdpPageHtml : getFpbHtml(footerLayout);
 
+  // Fetch storefront theme fonts — 3s timeout, silent fallback on failure.
+  // Injects font <link> tags + CSS custom properties so the preview matches
+  // the merchant's live storefront typography.
+  const { links: themeFontLinks, inlineCss: themeFontCss } =
+    await fetchThemeFontAssets(shop);
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bundle Widget Preview</title>
+  ${themeFontLinks}
+  ${themeFontCss ? `<style id="theme-fonts">${themeFontCss}</style>` : ""}
   ${designSettingsCssUrl ? `<link id="design-settings-css" rel="stylesheet" href="${designSettingsCssUrl}">` : ""}
   <style id="widget-css">${widgetCss}</style>
   <style id="full-page-css">${fullPageCss}</style>
