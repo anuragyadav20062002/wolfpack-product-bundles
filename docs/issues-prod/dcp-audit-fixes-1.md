@@ -1,10 +1,10 @@
 # Issue: DCP Audit — Navigation Labels, UX, and Config Fixes
 
 **Issue ID:** dcp-audit-fixes-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-03-26
-**Last Updated:** 2026-03-26 18:30
+**Last Updated:** 2026-03-26 19:00
 
 ## Overview
 
@@ -20,7 +20,7 @@ fixes: nav label bugs, config copy-paste errors, styling issues, and section-awa
 - [x] Phase 5: UX improvements (U3, U4, U5, U6, U7)
 - [x] Phase 6: PDP mobile preview blank screen fix
 - [x] Phase 7: Preview polish — spinner on toggle, tier pill section-awareness, empty state removal, reset button
-- [ ] Phase 8: FPB sidebar layout audit (cramped/overflow — separate investigation needed)
+- [x] Phase 8: FPB sidebar layout audit (cramped/overflow — separate investigation needed)
 
 ## Progress Log
 
@@ -52,6 +52,14 @@ fixes: nav label bugs, config copy-paste errors, styling issues, and section-awa
 - Root cause: `setScale(0)` reset effect fired AFTER the ResizeObserver had already computed the correct scale, leaving scale permanently at 0 with no subsequent resize event to recover
 - Fix: removed the redundant `setScale(0)` useEffect in StorefrontIframePreview.tsx — the ResizeObserver already handles rescaling when the container's maxWidth changes
 - Files changed: StorefrontIframePreview.tsx
+
+### 2026-03-26 19:00 - Completed Phase 8: FPB sidebar layout audit
+- ✅ Sidebar content horizontal padding reduced: 40px → 24px (gives ~32px more grid width)
+- ✅ Side panel width reduced: 360px → 320px (gives 40px more to the product grid)
+- ✅ Product card button overflow fixed: `.sidebar-content .product-add-btn` now uses `overflow: hidden` + `font-size: 12px` + `padding: 0 12px` — prevents "ADD TO BUNDLE" from overflowing button bounds in narrower sidebar cards
+- ✅ Remaining empty-state-card removed from fpbSidebarHtml (was missed in Phase 7)
+- Net effect: each card in 3-column sidebar grid grows from ~245px → ~285px wide at 1440px viewport
+- Files changed: bundle-widget-full-page.css, api.preview.$type.tsx
 
 ### 2026-03-26 18:30 - Completed Phase 7: Preview polish
 - ✅ Viewport toggle loading spinner: added isTransitioning state (300ms) in StorefrontIframePreview.tsx — spinner shows during desktop↔mobile switch

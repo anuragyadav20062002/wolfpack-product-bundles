@@ -313,14 +313,6 @@ const fpbSidebarHtml = `
           </div>
         </div>
 
-        <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-          <p class="empty-state-card-text">Select Item</p>
-        </div>
-
         </div><!-- /.full-page-product-grid -->
         </div><!-- /.full-page-product-grid-container -->
 
