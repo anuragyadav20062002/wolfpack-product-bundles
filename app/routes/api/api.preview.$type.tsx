@@ -166,8 +166,8 @@ const pdpPageHtml = `
           </span>
         </div>
         <div class="modal-footer-buttons-row">
-          <button class="modal-nav-button prev-button">BACK</button>
-          <button class="modal-nav-button next-button">NEXT</button>
+          <button class="modal-nav-button prev-button">Back</button>
+          <button class="modal-nav-button next-button">Next</button>
         </div>
         <div class="modal-footer-discount-messaging">
           <div class="footer-discount-text">Add 1 more item to unlock 20% off</div>
@@ -730,7 +730,8 @@ function getPreviewScript(type: string): string {
       var tierBar = document.querySelector('.bundle-tier-pill-bar');
       var stepTabs = document.querySelector('.step-tabs-container');
       if (tierBar) tierBar.style.display = section === 'headerTabs' ? 'none' : '';
-      if (stepTabs) stepTabs.style.display = section === 'tierPills' ? 'none' : '';
+      // headerText = bundle header conditions/discount text → hide step tabs so tier pills stay prominent
+      if (stepTabs) stepTabs.style.display = (section === 'tierPills' || section === 'headerText') ? 'none' : '';
     }
   });
 

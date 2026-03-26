@@ -43,7 +43,7 @@ export function NavigationSidebar({
     >
       <div style={{ padding: "16px" }}>
         <Text as="h3" variant="headingSm">
-          Customise
+          Customize
         </Text>
       </div>
 
@@ -57,7 +57,7 @@ export function NavigationSidebar({
             {/* Divider after globalColors (index 0) */}
             {index === 1 && <Divider />}
 
-            {/* Divider before the first bundle-type-specific group (e.g. FPB bundleHeader) */}
+            {/* Divider between FPB-specific groups (bundleHeader, tierPills, promoBanner) and shared base groups */}
             {isFirstExtraGroup && <Divider />}
 
             {group.hasChildren ? (

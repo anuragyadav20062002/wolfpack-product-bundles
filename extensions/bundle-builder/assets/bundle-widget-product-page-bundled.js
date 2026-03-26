@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
  * Version : 2.3.6
- * Built   : 2026-03-24
+ * Built   : 2026-03-26
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -2051,10 +2051,10 @@ class BundleWidgetProductPage {
           <div class="bw-bs-nav-pill">
             <button class="modal-nav-button prev-button bw-bs-nav-btn" aria-label="Previous step">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              PREV
+              Prev
             </button>
             <button class="modal-nav-button next-button bw-bs-nav-btn" aria-label="Next step">
-              NEXT
+              Next
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
@@ -2138,8 +2138,8 @@ class BundleWidgetProductPage {
 
               <!-- Buttons Row - At Bottom -->
               <div class="modal-footer-buttons-row">
-                <button class="modal-nav-button prev-button">BACK</button>
-                <button class="modal-nav-button next-button">NEXT</button>
+                <button class="modal-nav-button prev-button">Back</button>
+                <button class="modal-nav-button next-button">Next</button>
               </div>
             </div>
           </div>

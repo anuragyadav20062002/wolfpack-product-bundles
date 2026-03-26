@@ -14,13 +14,13 @@ export const BASE_DCP_CONFIG: DCPGroup[] = [
     description: 'Appearance, layout, and typography of product cards in the bundle grid',
     hasChildren: true,
     children: [
-      { key: 'productCard', label: 'Product Card', description: 'Card dimensions, background, borders, shadow, and image settings' },
+      { key: 'productCard', label: 'Card Layout', description: 'Card dimensions, background, borders, shadow, and image settings' },
       { key: 'productCardTypography', label: 'Product Card Typography', description: 'Price label colors and font sizes on the product card' },
       { key: 'button', label: 'Button', description: 'Add-to-bundle button colors, font size, and border radius' },
       { key: 'addedButtonState', label: 'Added State', description: 'Button appearance after a product has been added to the bundle' },
       { key: 'quantityVariantSelector', label: 'Quantity & Variant Selector', description: 'Quantity stepper and variant option pill styling' },
       { key: 'skeletonLoading', label: 'Skeleton Loading', description: 'Placeholder shimmer colors shown while product data loads' },
-      { key: 'typography', label: 'Typography', description: 'Button text transform and letter spacing overrides' },
+      { key: 'typography', label: 'Button Typography', description: 'Button text transform and letter spacing overrides' },
     ],
   },
   {

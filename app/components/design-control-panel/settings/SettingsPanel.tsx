@@ -165,20 +165,26 @@ export function SettingsPanel({
           <button
             onClick={handleResetSection}
             style={{
-              background: "#c0392b",
-              color: "#fff",
-              border: "none",
+              background: "transparent",
+              color: "#6d7175",
+              border: "1.5px solid #c9cccf",
               borderRadius: "6px",
-              padding: "6px 12px",
+              padding: "5px 12px",
               fontSize: "12px",
-              fontWeight: 600,
+              fontWeight: 500,
               cursor: "pointer",
               lineHeight: "1.4",
               letterSpacing: "0.01em",
-              transition: "background 0.12s",
+              transition: "border-color 0.12s, color 0.12s",
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#a93226"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#c0392b"; }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "#8c9196";
+              (e.currentTarget as HTMLButtonElement).style.color = "#202223";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "#c9cccf";
+              (e.currentTarget as HTMLButtonElement).style.color = "#6d7175";
+            }}
           >
             Reset to defaults
           </button>
