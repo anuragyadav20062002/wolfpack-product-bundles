@@ -594,17 +594,17 @@ const fpbFloatingHtml = `
   </div><!-- /.bundle-steps -->
 
   <!-- Floating footer bar (sticky at bottom) -->
-  <div class="full-page-footer floating-card is-open">
-    <div class="footer-callout-banner">Add 1 more item to unlock 20% off your bundle</div>
+  <div class="full-page-footer floating-card">
+    <div class="footer-callout-banner">🎉 You unlocked 20% off!</div>
     <div class="footer-bar">
       <div class="footer-thumbstrip">
         <img src="${PLACEHOLDER_IMG}" alt="Polo Shirt" class="footer-thumbstrip-img">
         <img src="${PLACEHOLDER_IMG}" alt="Linen Shirt" class="footer-thumbstrip-img">
-        <span class="footer-thumbstrip-overflow">+1</span>
+        <img src="${PLACEHOLDER_IMG}" alt="Denim Jacket" class="footer-thumbstrip-img">
       </div>
       <div class="footer-centre">
         <button class="footer-toggle" type="button">
-          <span class="footer-toggle-text">2/3 Products</span>
+          <span class="footer-toggle-text">3/3 Products</span>
           <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M5 8l5 5 5-5"/>
           </svg>
@@ -612,13 +612,13 @@ const fpbFloatingHtml = `
         <div class="footer-total-area">
           <span class="footer-total-label">Total:</span>
           <div class="footer-total-prices">
-            <span class="footer-total-original">$69.98</span>
-            <span class="footer-total-final">$62.98</span>
-            <span class="footer-discount-badge">10% OFF</span>
+            <span class="footer-total-original">$89.97</span>
+            <span class="footer-total-final">$71.98</span>
+            <span class="footer-discount-badge">20% OFF</span>
           </div>
         </div>
       </div>
-      <button class="footer-cta-btn" type="button">Next Step</button>
+      <button class="footer-cta-btn" type="button">Next</button>
     </div>
   </div>
 

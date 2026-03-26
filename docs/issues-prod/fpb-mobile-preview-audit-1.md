@@ -14,6 +14,7 @@ surfaced two concrete layout bugs in bundle-widget-full-page.css.
 ## Phases Checklist
 
 - [x] Phase 1: Sidebar step tabs full-width on mobile + floating discount badge overflow
+- [x] Phase 2: Floating footer preview accuracy — callout banner state, CTA text, badge tier
 
 ## Progress Log
 
@@ -45,3 +46,15 @@ surfaced two concrete layout bugs in bundle-widget-full-page.css.
 - ✅ Sidebar step tabs: `width: 100%; min-width: 0; flex-direction: row; overflow-x: auto` at ≤768px — tabs now span full viewport width as a horizontal scrollable row; border-right removed, border-bottom added; each tab `flex-shrink: 0; width: auto; min-width: 130px`
 - ✅ Floating footer badge: `.footer-discount-badge { display: none }` inside existing `@media (max-width: 480px)` block — eliminates overflow behind Next Step button; callout banner still communicates the discount
 - Files changed: extensions/bundle-builder/assets/bundle-widget-full-page.css
+
+### 2026-03-27 - Completed Phase 2: Floating footer preview accuracy
+- Root cause analysis: cross-referenced preview HTML against live widget JS (_createFooterBar line 2197, callout banner line 2094)
+- ✅ Callout banner: "Add 1 more item..." → "🎉 You unlocked 20% off!" — live widget only shows footer-callout-banner in success state (discountInfo.hasDiscount = true)
+- ✅ Footer toggle: "2/3 Products" → "3/3 Products" — consistent with success/unlocked state
+- ✅ Thumbstrip: 3 product images (no overflow span) to match 3/3 state
+- ✅ Discount badge: "10% OFF" → "20% OFF" — matches the 3-item tier (Buy 3 — Save 20%)
+- ✅ Prices: $89.97 → $71.98 (3 items at 20% off) for accuracy
+- ✅ CTA button: "Next Step" → "Next" — widget JS line 2264 uses 'Next' for floating footer CTA
+- ✅ Removed is-open class — chevron should point down (panel closed by default)
+- Note: tier pills section-awareness + step tabs hiding already correctly coded in Phase 7 (DCP_SECTION_CHANGE handler); pending SIT deployment
+- Files changed: app/routes/api/api.preview.$type.tsx
