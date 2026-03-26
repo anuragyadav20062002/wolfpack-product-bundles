@@ -76,6 +76,7 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
         style={{
           width: "100%",
           maxWidth: `${viewportWidth}px`,
+          margin: "0 auto",
           height: containerHeight > 0 ? `${containerHeight}px` : "auto",
           position: "relative",
           overflow: "hidden",
@@ -227,6 +228,7 @@ export function DualAppPreviewIframe({
       style={{
         width: "100%",
         maxWidth: `${viewportWidth}px`,
+        margin: "0 auto",
         height: containerHeight > 0 ? `${containerHeight}px` : "200px",
         position: "relative",
         overflow: "hidden",
