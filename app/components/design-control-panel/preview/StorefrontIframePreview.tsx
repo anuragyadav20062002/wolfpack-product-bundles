@@ -33,6 +33,7 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
     const [scale, setScale] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false);
 
     // Measure the container width and compute the CSS scale factor.
     // ResizeObserver ensures the scale stays correct if the panel resizes.
@@ -55,6 +56,13 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
       setIsLoading(true);
       setLoadError(false);
     }, [url]);
+
+    // Brief transitioning overlay when viewport width changes (desktop ↔ mobile).
+    useEffect(() => {
+      setIsTransitioning(true);
+      const tid = setTimeout(() => setIsTransitioning(false), 300);
+      return () => clearTimeout(tid);
+    }, [viewportWidth]);
 
     const handleLoad = useCallback(() => {
       setIsLoading(false);
@@ -82,8 +90,8 @@ export const AppPreviewIframe = forwardRef<HTMLIFrameElement, AppPreviewIframePr
           borderRadius: "8px",
         }}
       >
-        {/* Loading spinner — shown until the iframe fires onLoad */}
-        {(isLoading || scale === 0) && (
+        {/* Loading spinner — shown until the iframe fires onLoad, or during viewport transition */}
+        {(isLoading || scale === 0 || isTransitioning) && (
           <div
             style={{
               position: "absolute",

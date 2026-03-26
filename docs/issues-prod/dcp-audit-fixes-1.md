@@ -1,10 +1,10 @@
 # Issue: DCP Audit — Navigation Labels, UX, and Config Fixes
 
 **Issue ID:** dcp-audit-fixes-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-03-26
-**Last Updated:** 2026-03-26 18:00
+**Last Updated:** 2026-03-26 18:30
 
 ## Overview
 
@@ -19,6 +19,8 @@ fixes: nav label bugs, config copy-paste errors, styling issues, and section-awa
 - [x] Phase 4: PDP BACK/NEXT casing (B6)
 - [x] Phase 5: UX improvements (U3, U4, U5, U6, U7)
 - [x] Phase 6: PDP mobile preview blank screen fix
+- [x] Phase 7: Preview polish — spinner on toggle, tier pill section-awareness, empty state removal, reset button
+- [ ] Phase 8: FPB sidebar layout audit (cramped/overflow — separate investigation needed)
 
 ## Progress Log
 
@@ -50,3 +52,11 @@ fixes: nav label bugs, config copy-paste errors, styling issues, and section-awa
 - Root cause: `setScale(0)` reset effect fired AFTER the ResizeObserver had already computed the correct scale, leaving scale permanently at 0 with no subsequent resize event to recover
 - Fix: removed the redundant `setScale(0)` useEffect in StorefrontIframePreview.tsx — the ResizeObserver already handles rescaling when the container's maxWidth changes
 - Files changed: StorefrontIframePreview.tsx
+
+### 2026-03-26 18:30 - Completed Phase 7: Preview polish
+- ✅ Viewport toggle loading spinner: added isTransitioning state (300ms) in StorefrontIframePreview.tsx — spinner shows during desktop↔mobile switch
+- ✅ Tier pill section-awareness: tier pills hidden by default via CSS (.bundle-tier-pill-bar { display: none }); DCP_SECTION_CHANGE handler now shows tier pills only on 'tierPills' section, step tabs everywhere else in api.preview.$type.tsx
+- ✅ Empty state cards removed from all 3 preview HTML blocks (pdpPageHtml, fpbSidebarHtml, fpbFloatingHtml) — cleaner preview with only real product cards
+- ✅ Reset to defaults button: changed to red background (#c0392b) and left-aligned in SettingsPanel.tsx
+- ⚠️ FPB sidebar layout cramped/overflow issue noted — needs separate dedicated audit (Phase 8)
+- Files changed: StorefrontIframePreview.tsx, SettingsPanel.tsx, api.preview.$type.tsx

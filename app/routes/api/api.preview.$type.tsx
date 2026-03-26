@@ -137,15 +137,6 @@ const pdpPageHtml = `
           </div>
         </div>
 
-        <!-- Empty state card -->
-        <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-          <p class="empty-state-card-text">Select Item</p>
-        </div>
-
       </div>
     </div>
 
@@ -604,14 +595,6 @@ const fpbFloatingHtml = `
         </div>
       </div>
 
-      <div class="empty-state-card">
-        <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-          <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-        </svg>
-        <p class="empty-state-card-text">Select Item</p>
-      </div>
-
       </div><!-- /.full-page-product-grid -->
       </div><!-- /.full-page-product-grid-container -->
 
@@ -697,6 +680,9 @@ html, body {
 .bundle-widget-full-page {
   min-height: 100vh;
 }
+
+/* Preview: tier pills hidden by default — only shown when on the Pricing Tier Pills section */
+.bundle-tier-pill-bar { display: none; }
 `;
 
 // ─── BroadcastChannel script ──────────────────────────────────────────────────
@@ -729,9 +715,9 @@ function getPreviewScript(type: string): string {
       var section = e.data.section || '';
       var tierBar = document.querySelector('.bundle-tier-pill-bar');
       var stepTabs = document.querySelector('.step-tabs-container');
-      if (tierBar) tierBar.style.display = section === 'headerTabs' ? 'none' : '';
-      // headerText = bundle header conditions/discount text → hide step tabs so tier pills stay prominent
-      if (stepTabs) stepTabs.style.display = (section === 'tierPills' || section === 'headerText') ? 'none' : '';
+      // Tier pills visible only when editing their section; step tabs visible everywhere else
+      if (tierBar) tierBar.style.display = section === 'tierPills' ? '' : 'none';
+      if (stepTabs) stepTabs.style.display = section === 'tierPills' ? 'none' : '';
     }
   });
 
