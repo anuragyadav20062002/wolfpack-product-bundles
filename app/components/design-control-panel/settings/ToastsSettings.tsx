@@ -2,6 +2,14 @@ import { BlockStack, Text, Divider, RangeSlider, Select, TextField, Checkbox, In
 import { InlineColorInput } from "../common/InlineColorInput";
 import type { SettingsComponentProps } from "./types";
 
+const SHADOW_PRESET_OPTIONS = [
+  { label: "None", value: "none" },
+  { label: "Subtle", value: "0 2px 6px rgba(0, 0, 0, 0.08)" },
+  { label: "Medium", value: "0 4px 12px rgba(0, 0, 0, 0.15)" },
+  { label: "Heavy", value: "0 8px 24px rgba(0, 0, 0, 0.25)" },
+  { label: "Custom", value: "__custom__" },
+];
+
 const FONT_WEIGHT_OPTIONS = [
   { label: "300 — Light", value: "300" },
   { label: "400 — Regular", value: "400" },
@@ -14,7 +22,16 @@ const FONT_WEIGHT_OPTIONS = [
  * Toasts Settings Panel
  * Full visual control over bundle widget toast notifications.
  */
+function getShadowSelectValue(shadow: string | undefined): string {
+  const val = shadow ?? "0 4px 12px rgba(0, 0, 0, 0.15)";
+  const preset = SHADOW_PRESET_OPTIONS.find((o) => o.value === val && o.value !== "__custom__");
+  return preset ? preset.value : "__custom__";
+}
+
 export function ToastsSettings({ settings, onUpdate }: SettingsComponentProps) {
+  const shadowSelectValue = getShadowSelectValue(settings.toastBoxShadow);
+  const isCustomShadow = shadowSelectValue === "__custom__";
+
   return (
     <BlockStack gap="400">
       <Text as="h2" variant="headingMd">
@@ -124,15 +141,28 @@ export function ToastsSettings({ settings, onUpdate }: SettingsComponentProps) {
       {/* Shadow */}
       <Text as="p" variant="bodySm" fontWeight="semibold" tone="subdued">Shadow</Text>
 
-      <TextField
-        label="Box Shadow"
-        value={settings.toastBoxShadow ?? "0 4px 12px rgba(0, 0, 0, 0.15)"}
-        onChange={(value) => onUpdate("toastBoxShadow", value)}
-        autoComplete="off"
-        monospaced
-        placeholder="0 4px 12px rgba(0, 0, 0, 0.15)"
-        helpText="Any valid CSS box-shadow value"
+      <Select
+        label="Shadow Preset"
+        options={SHADOW_PRESET_OPTIONS}
+        value={shadowSelectValue}
+        onChange={(value) => {
+          if (value !== "__custom__") {
+            onUpdate("toastBoxShadow", value);
+          }
+        }}
       />
+
+      {isCustomShadow && (
+        <TextField
+          label="Custom Box Shadow"
+          value={settings.toastBoxShadow ?? ""}
+          onChange={(value) => onUpdate("toastBoxShadow", value)}
+          autoComplete="off"
+          monospaced
+          placeholder="e.g. 0 4px 12px rgba(0, 0, 0, 0.15)"
+          helpText="Any valid CSS box-shadow value"
+        />
+      )}
     </BlockStack>
   );
 }

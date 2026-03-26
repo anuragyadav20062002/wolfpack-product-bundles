@@ -33,7 +33,7 @@ export function GlobalColorsSettings({ settings, onUpdate }: SettingsComponentPr
         </div>
       </InlineStack>
       <Text as="p" variant="bodyMd" tone="subdued">
-        Enter your brand colors here and the bundle will adapt
+        Set brand-wide defaults here. Individual sections can override these values for fine-grained control.
       </Text>
       <Divider />
 

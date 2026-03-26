@@ -20,25 +20,6 @@ export function ProductCardSettings({ settings, onUpdate }: SettingsComponentPro
         onChange={(value) => onUpdate("productCardBgColor", value)}
       />
 
-      <RangeSlider
-        label="Font Size"
-        value={settings.productCardFontSize}
-        onChange={(value) => onUpdate("productCardFontSize", value as number)}
-        min={12}
-        max={24}
-        output
-      />
-
-      <RangeSlider
-        label="Font Weight"
-        value={settings.productCardFontWeight}
-        onChange={(value) => onUpdate("productCardFontWeight", value as number)}
-        min={300}
-        max={900}
-        step={100}
-        output
-      />
-
       <BlockStack gap="200">
         <Text as="p" variant="bodyMd" fontWeight="medium">
           Product Image Fit

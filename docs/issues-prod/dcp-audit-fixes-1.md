@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-03-26
-**Last Updated:** 2026-03-26 16:29
+**Last Updated:** 2026-03-26 17:30
 
 ## Overview
 
@@ -17,6 +17,7 @@ fixes: nav label bugs, config copy-paste errors, styling issues, and section-awa
 - [x] Phase 2: UI polish (U2 reset button, U8 section-aware preview extension)
 - [x] Phase 3: FPB nav reordering (U1)
 - [x] Phase 4: PDP BACK/NEXT casing (B6)
+- [x] Phase 5: UX improvements (U3, U4, U5, U6, U7)
 
 ## Progress Log
 
@@ -34,3 +35,11 @@ fixes: nav label bugs, config copy-paste errors, styling issues, and section-awa
 - ✅ U1: FPB nav reordered — Bundle Header, Tier Pills, Promo Banner now come before Product Card in fpb.config.ts
 - ✅ B6: PDP BACK/NEXT → Back/Next in bundle-widget-product-page.js + preview HTML; widget rebuilt
 - Files changed: NavigationSidebar.tsx, base.config.ts, fpb.config.ts, SettingsPanel.tsx, api.preview.$type.tsx, bundle-widget-product-page.js, bundle-widget-product-page-bundled.js
+
+### 2026-03-26 17:30 - Completed Phase 5: UX improvements
+- ✅ U6: Product Card sub-sections consolidated — removed productCardTypography + addedButtonState as separate nav items; SettingsPanel.tsx renderSection() now renders them merged into productCard and button cases; base.config.ts trimmed from 7 to 5 children; ProductCardSettings.tsx duplicate font sliders removed; SECTION_KEYS merged
+- ✅ U3: Toast box-shadow TextField replaced with Select preset (None/Subtle/Medium/Heavy/Custom) + conditional custom TextField in ToastsSettings.tsx
+- ✅ U4: "Copy from Next" plain button added to Back Button heading row in FooterButtonSettings.tsx; copies Next button bg+text colors via onBatchUpdate
+- ✅ U5: Global Colors description updated from vague "bundle will adapt" to clarifying note about per-section overrides in GlobalColorsSettings.tsx
+- ✅ U7: Search Input 7 pickers now grouped under Input / Text / Clear Button subheadings in SearchInputSettings.tsx
+- Files changed: SettingsPanel.tsx, base.config.ts, ProductCardSettings.tsx, ToastsSettings.tsx, FooterButtonSettings.tsx, GlobalColorsSettings.tsx, SearchInputSettings.tsx

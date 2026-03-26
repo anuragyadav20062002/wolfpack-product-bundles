@@ -44,16 +44,16 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
     "productCardBorderColor", "productCardShadow", "productCardHoverShadow",
     "productCardHoverTranslateY", "productCardTransitionDuration",
     "productImageHeight", "productImageBorderRadius", "productImageBgColor",
-  ],
-  productCardTypography: [
+    // Merged from productCardTypography
     "productStrikePriceColor", "productStrikeFontSize", "productStrikeFontWeight",
     "productFinalPriceColor", "productFinalPriceFontSize", "productFinalPriceFontWeight",
   ],
   button: [
     "buttonBgColor", "buttonTextColor", "buttonFontSize", "buttonFontWeight",
     "buttonBorderRadius", "buttonHoverBgColor", "buttonAddToCartText",
+    // Merged from addedButtonState
+    "buttonAddedBgColor", "buttonAddedTextColor",
   ],
-  addedButtonState: ["buttonAddedBgColor", "buttonAddedTextColor"],
   quantityVariantSelector: [
     "quantitySelectorBgColor", "quantitySelectorTextColor", "quantitySelectorFontSize",
     "quantitySelectorBorderRadius", "variantSelectorBgColor", "variantSelectorTextColor",
@@ -200,13 +200,21 @@ export function SettingsPanel({
       case "globalColors":
         return <GlobalColorsSettings settings={settings} onUpdate={onUpdate} />;
       case "productCard":
-        return <ProductCardSettings settings={settings} onUpdate={onUpdate} />;
-      case "productCardTypography":
-        return <ProductCardTypographySettings settings={settings} onUpdate={onUpdate} />;
+        return (
+          <>
+            <ProductCardSettings settings={settings} onUpdate={onUpdate} />
+            <Divider />
+            <ProductCardTypographySettings settings={settings} onUpdate={onUpdate} />
+          </>
+        );
       case "button":
-        return <ButtonSettings settings={settings} onUpdate={onUpdate} />;
-      case "addedButtonState":
-        return <AddedButtonStateSettings settings={settings} onUpdate={onUpdate} />;
+        return (
+          <>
+            <ButtonSettings settings={settings} onUpdate={onUpdate} />
+            <Divider />
+            <AddedButtonStateSettings settings={settings} onUpdate={onUpdate} />
+          </>
+        );
       case "quantityVariantSelector":
         return <QuantityVariantSettings settings={settings} onUpdate={onUpdate} />;
       case "footer":

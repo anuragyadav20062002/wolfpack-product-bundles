@@ -1,4 +1,4 @@
-import { BlockStack, Text, Divider, RangeSlider } from "@shopify/polaris";
+import { BlockStack, Text, Divider, RangeSlider, InlineStack, Button } from "@shopify/polaris";
 import { ColorPicker } from "../common/ColorPicker";
 import type { SettingsComponentProps } from "./types";
 
@@ -14,9 +14,25 @@ export function FooterButtonSettings({ settings, onUpdate, onBatchUpdate }: Sett
       </Text>
       <Divider />
 
-      <Text as="h3" variant="headingSm">
-        Back Button
-      </Text>
+      <InlineStack align="space-between" blockAlign="center">
+        <Text as="h3" variant="headingSm">
+          Back Button
+        </Text>
+        <Button
+          variant="plain"
+          size="slim"
+          onClick={() => {
+            if (onBatchUpdate) {
+              onBatchUpdate({
+                footerBackButtonBgColor: settings.footerNextButtonBgColor,
+                footerBackButtonTextColor: settings.footerNextButtonTextColor,
+              });
+            }
+          }}
+        >
+          Copy from Next
+        </Button>
+      </InlineStack>
 
       <ColorPicker
         label="Back Button Color"
