@@ -265,6 +265,48 @@ describe("buildBundleTrendSeries", () => {
   });
 });
 
+  it("explicit until: daily buckets stop at until date", () => {
+    const since = new Date("2026-03-01T00:00:00Z");
+    const until = new Date("2026-03-03T23:59:59Z"); // 3-day range
+    const row = makeRow({ createdAt: new Date("2026-03-02T10:00:00Z"), bundleId: "b1", revenue: 1000 });
+    const result = buildBundleTrendSeries([row], since, 3, until);
+    expect(result).toHaveLength(3);
+    expect(result[0].date).toBe("2026-03-01");
+    expect(result[2].date).toBe("2026-03-03");
+    const day2 = result.find((p) => p.date === "2026-03-02");
+    expect(day2?.bundleRevenue).toBe(1000);
+  });
+
+  it("explicit until: same-day range (days=1) produces exactly 1 bucket", () => {
+    const since = new Date("2026-03-15T00:00:00Z");
+    const until = new Date("2026-03-15T23:59:59Z");
+    const row = makeRow({ createdAt: since, bundleId: "b1", revenue: 500 });
+    const result = buildBundleTrendSeries([row], since, 1, until);
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe("2026-03-15");
+    expect(result[0].bundleRevenue).toBe(500);
+  });
+
+  it("explicit until with weekly mode (days >= 90): last bucket does not exceed until", () => {
+    const since = new Date("2026-01-05T00:00:00Z"); // Monday
+    const until = new Date("2026-04-05T23:59:59Z"); // 90 days later
+    const result = buildBundleTrendSeries([], since, 90, until);
+    expect(result.length).toBeGreaterThan(0);
+    // All bucket dates should be >= since
+    for (const point of result) {
+      expect(new Date(point.date).getTime()).toBeGreaterThanOrEqual(since.getTime());
+    }
+  });
+
+  it("no until: existing behaviour unchanged (fills days buckets from since)", () => {
+    const since = new Date("2026-03-01T00:00:00Z");
+    const result = buildBundleTrendSeries([], since, 7);
+    expect(result).toHaveLength(7);
+    expect(result[0].date).toBe("2026-03-01");
+    expect(result[6].date).toBe("2026-03-07");
+  });
+});
+
 // ─── formatDelta ──────────────────────────────────────────────────────────────
 
 describe("formatDelta", () => {

@@ -7,7 +7,7 @@
 
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
-import { Badge, Banner, BlockStack, Button, InlineGrid, InlineStack, Page, Select, Text, Tooltip } from "@shopify/polaris";
+import { Badge, Banner, BlockStack, Button, DatePicker, InlineGrid, InlineStack, Page, Popover, Text, Tooltip } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../../shopify.server";
 import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
@@ -125,23 +125,41 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const shopId = session.shop;
 
   const url = new URL(request.url);
-  const days = parseInt(url.searchParams.get("days") || "30", 10);
 
-  // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
-  const pixelStatus = await getPixelStatus(admin);
+  // Date range derivation — custom (?from&to) takes priority over preset (?days)
+  const fromParam = url.searchParams.get("from");
+  const toParam   = url.searchParams.get("to");
 
-  // Current period
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  since.setHours(0, 0, 0, 0);
+  let since: Date;
+  let until: Date;
+  let days: number;
+  let fromStr: string | undefined;
+  let toStr: string | undefined;
+
+  if (fromParam && toParam) {
+    since = new Date(fromParam + "T00:00:00.000Z");
+    until = new Date(toParam   + "T23:59:59.999Z");
+    days  = Math.max(1, Math.round((until.getTime() - since.getTime()) / 86400000));
+    fromStr = fromParam;
+    toStr   = toParam;
+  } else {
+    days  = Math.max(1, parseInt(url.searchParams.get("days") || "30", 10));
+    until = new Date();
+    since = new Date(until);
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+  }
 
   // Previous period — same length, immediately before current
   const prevSince = new Date(since);
   prevSince.setDate(prevSince.getDate() - days);
 
+  // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
+  const pixelStatus = await getPixelStatus(admin);
+
   const [currentAttributions, previousAttributions] = await Promise.all([
     db.orderAttribution.findMany({
-      where: { shopId, createdAt: { gte: since } },
+      where: { shopId, createdAt: { gte: since, lte: until } },
       orderBy: { createdAt: "asc" },
     }),
     db.orderAttribution.findMany({
@@ -293,10 +311,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     prevTotalRevForPercent,
   );
   const bundleLeaderboard = buildBundleLeaderboard(attrRows, bundleNameMap, bundleStatusMap, 10);
-  const bundleRevenueTrend = buildBundleTrendSeries(attrRows, since, days);
+  const bundleRevenueTrend = buildBundleTrendSeries(attrRows, since, days, until);
 
   return json({
     days,
+    from: fromStr,
+    to: toStr,
     pixelActive: pixelStatus.active,
     summary: {
       totalRevenue, totalOrders, bundleOrders, aov,
@@ -679,33 +699,133 @@ function BundleLeaderboardCard({ leaderboard }: { leaderboard: LeaderboardRow[] 
   );
 }
 
+// ─── DateRangeSelector ───────────────────────────────────────
+
+function formatDateLabel(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+function formatRangeLabel(days: number, from?: string, to?: string): string {
+  if (from && to) {
+    const start = new Date(from + "T00:00:00Z");
+    const end   = new Date(to   + "T00:00:00Z");
+    const startStr = formatDateLabel(start);
+    const endStr   = formatDateLabel(end);
+    // Strip year from start if same year
+    if (start.getUTCFullYear() === end.getUTCFullYear()) {
+      const startNoYear = start.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+      return `${startNoYear} – ${endStr}`;
+    }
+    return `${startStr} – ${endStr}`;
+  }
+  return `Last ${days} days`;
+}
+
+interface DateRangeSelectorProps {
+  days: number;
+  from?: string;
+  to?: string;
+}
+
+function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
+  const [popoverActive, setPopoverActive] = useState(false);
+  const today = new Date();
+  const [{ month, year }, setCalendar] = useState({
+    month: today.getMonth(),
+    year: today.getFullYear(),
+  });
+  const [selectedRange, setSelectedRange] = useState<{ start: Date; end: Date } | undefined>(undefined);
+
+  const triggerLabel = formatRangeLabel(days, from, to);
+
+  function navigate(daysN?: number, fromStr?: string, toStr?: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("days");
+    url.searchParams.delete("from");
+    url.searchParams.delete("to");
+    if (fromStr && toStr) {
+      url.searchParams.set("from", fromStr);
+      url.searchParams.set("to", toStr);
+    } else {
+      url.searchParams.set("days", String(daysN ?? 30));
+    }
+    window.location.href = url.toString();
+  }
+
+  function handleApply() {
+    if (!selectedRange) return;
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    navigate(undefined, fmt(selectedRange.start), fmt(selectedRange.end));
+  }
+
+  const activator = (
+    <Button disclosure onClick={() => setPopoverActive((v) => !v)}>
+      {triggerLabel}
+    </Button>
+  );
+
+  return (
+    <Popover
+      active={popoverActive}
+      activator={activator}
+      onClose={() => setPopoverActive(false)}
+      preferredPosition="below"
+      sectioned
+    >
+      <div className={styles.dateRangePopover}>
+        {/* Preset chips */}
+        <div className={styles.presetChips}>
+          {([7, 30, 90] as const).map((d) => (
+            <button
+              key={d}
+              className={`${styles.presetChip}${!from && days === d ? ` ${styles.presetChipActive}` : ""}`}
+              onClick={() => navigate(d)}
+            >
+              Last {d} days
+            </button>
+          ))}
+        </div>
+
+        {/* Calendar */}
+        <DatePicker
+          month={month}
+          year={year}
+          allowRange
+          multiMonth
+          disableDatesAfter={today}
+          selected={selectedRange}
+          onChange={({ start, end }) => setSelectedRange({ start, end })}
+          onMonthChange={(m, y) => setCalendar({ month: m, year: y })}
+        />
+
+        {/* Apply */}
+        <div className={styles.calendarApplyRow}>
+          <Button
+            variant="primary"
+            disabled={!selectedRange}
+            onClick={handleApply}
+          >
+            Apply
+          </Button>
+        </div>
+      </div>
+    </Popover>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────
 
 export default function AttributionDashboard() {
   const {
-    days, summary, timeSeries,
+    days, from, to, summary, timeSeries,
     byPlatform, byMedium, byCampaign, byBundle, byLandingPage,
     pixelActive,
     bundleRevenueSummary, bundleLeaderboard, bundleRevenueTrend,
   } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-  const [selectedDays, setSelectedDays] = useState(days.toString());
   // Recharts uses ResizeObserver — only render on client to avoid SSR mismatch
   const [isClient, setIsClient] = useState(false);
   useEffect(() => setIsClient(true), []);
-
-  const handleDaysChange = useCallback((value: string) => {
-    setSelectedDays(value);
-    const url = new URL(window.location.href);
-    url.searchParams.set("days", value);
-    window.location.href = url.toString();
-  }, []);
-
-  const dateRangeOptions = useMemo(() => [
-    { label: "Last 7 days", value: "7" },
-    { label: "Last 30 days", value: "30" },
-    { label: "Last 90 days", value: "90" },
-  ], []);
 
   const maxPlatformRevenue = byPlatform[0]?.revenue || 1;
 
@@ -771,13 +891,7 @@ export default function AttributionDashboard() {
         <div className={styles.headerRow}>
           <div />
           <div className={styles.datePickerWrap}>
-            <Select
-              label="Date range"
-              labelInline
-              options={dateRangeOptions}
-              value={selectedDays}
-              onChange={handleDaysChange}
-            />
+            <DateRangeSelector days={days} from={from} to={to} />
           </div>
         </div>
 

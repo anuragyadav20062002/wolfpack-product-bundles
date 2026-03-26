@@ -169,7 +169,9 @@ export function buildBundleTrendSeries(
   current: OrderAttributionRow[],
   since: Date,
   days: number,
+  until?: Date,
 ): TrendPoint[] {
+  const windowEnd = until ?? new Date(since.getTime() + days * 86400000);
   const weekly = days >= 90;
 
   // Build accumulator map keyed by date string
@@ -178,7 +180,7 @@ export function buildBundleTrendSeries(
   // Fill all buckets for the window so there are no gaps
   if (weekly) {
     const cursor = new Date(since);
-    while (cursor < new Date(since.getTime() + days * 86400000)) {
+    while (cursor < windowEnd) {
       const key = getWeekStart(cursor);
       if (!map.has(key)) {
         map.set(key, { bundleRevenue: 0, totalRevenue: 0 });
@@ -186,10 +188,10 @@ export function buildBundleTrendSeries(
       cursor.setUTCDate(cursor.getUTCDate() + 7);
     }
   } else {
-    for (let i = 0; i < days; i++) {
-      const d = new Date(since);
-      d.setUTCDate(d.getUTCDate() + i);
-      map.set(toDateKey(d), { bundleRevenue: 0, totalRevenue: 0 });
+    const cursor = new Date(since);
+    while (cursor < windowEnd) {
+      map.set(toDateKey(cursor), { bundleRevenue: 0, totalRevenue: 0 });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
   }
 

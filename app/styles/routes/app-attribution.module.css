@@ -93,6 +93,48 @@
   min-width: 160px;
 }
 
+.dateRangePopover {
+  padding: 12px;
+  min-width: 560px;
+}
+
+.presetChips {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.presetChip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid #c9cccf;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  color: #202223;
+  transition: background 120ms, border-color 120ms;
+}
+
+.presetChip:hover {
+  background: #f6f6f7;
+  border-color: #8c9196;
+}
+
+.presetChipActive {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.calendarApplyRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e1e3e5;
+}
+
 /* ── Stat cards ────────────────────────────────────────────── */
 .statsGrid {
   display: grid;
