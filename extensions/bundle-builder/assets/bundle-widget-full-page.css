@@ -3744,6 +3744,32 @@ body.modal-open {
     flex-direction: column;
   }
 
+  /* Step tabs: convert from fixed-width vertical column to full-width horizontal
+     scrolling row. Without this, the 240px desktop column width leaves a ~135px
+     white gap to the right on a 375px mobile viewport. */
+  .sidebar-layout-wrapper .step-tabs-container {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    padding: 12px 16px;
+  }
+
+  .sidebar-layout-wrapper .step-tabs-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Each tab: allow natural auto width in the row, prevent shrinking */
+  .sidebar-layout-wrapper .step-tab {
+    flex-shrink: 0;
+    width: auto;
+    min-width: 130px;
+  }
+
   .full-page-side-panel {
     width: 100%;
     height: auto;
@@ -4097,6 +4123,13 @@ body.modal-open {
   }
 
   .full-page-footer.floating-card .footer-total-original {
+    display: none;
+  }
+
+  /* Hide discount badge at narrow mobile — the callout banner above already
+     communicates the discount, and the badge overflows behind the Next Step button
+     at ≤480px where horizontal space is tight. */
+  .full-page-footer.floating-card .footer-discount-badge {
     display: none;
   }
 
