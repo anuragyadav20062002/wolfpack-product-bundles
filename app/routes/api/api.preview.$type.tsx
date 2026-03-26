@@ -186,7 +186,7 @@ const pdpPageHtml = `
 //   and full-page-side-panel (right).
 
 const fpbSidebarHtml = `
-<div class="bundle-widget-full-page" style="min-height:100vh;">
+<div class="bundle-widget-full-page">
 
   <!-- Tier pills — live widget inserts these as container.firstChild (before header) -->
   <div class="bundle-tier-pill-bar" role="group" aria-label="Bundle pricing tiers">
@@ -394,6 +394,73 @@ const fpbSidebarHtml = `
   </div><!-- /.bundle-steps -->
 
 </div><!-- /.bundle-widget-full-page -->
+
+<!-- Mobile: backdrop overlay (position:fixed, shown when sheet is open) -->
+<div class="fpb-mobile-backdrop"></div>
+
+<!-- Mobile: slide-up summary sheet (mirrors side panel content, position:fixed bottom:56px) -->
+<div class="fpb-mobile-bottom-sheet">
+  <div class="side-panel-header">
+    <span class="side-panel-title">Your Bundle</span>
+    <button class="side-panel-clear-btn" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      Clear
+    </button>
+  </div>
+  <div class="side-panel-discount-message">Add 1 more to save 20%</div>
+  <div class="side-panel-item-count">2 of 3 items</div>
+  <div class="side-panel-products">
+    <div class="side-panel-product-row">
+      <div class="side-panel-product-img-wrap">
+        <img src="${PLACEHOLDER_IMG}" alt="Polo Shirt" class="side-panel-product-img">
+      </div>
+      <div class="side-panel-product-info">
+        <span class="side-panel-product-title">Polo Shirt</span>
+        <span class="side-panel-product-variant">Size: M</span>
+      </div>
+      <span class="side-panel-product-price">$32.99</span>
+      <button class="side-panel-product-remove" type="button" aria-label="Remove">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="side-panel-product-row">
+      <div class="side-panel-product-img-wrap">
+        <img src="${PLACEHOLDER_IMG}" alt="Linen Shirt" class="side-panel-product-img">
+        <span class="side-panel-qty-badge">1</span>
+      </div>
+      <div class="side-panel-product-info">
+        <span class="side-panel-product-title">Linen Shirt</span>
+        <span class="side-panel-product-variant">Size: L</span>
+      </div>
+      <span class="side-panel-product-price">$29.99</span>
+      <button class="side-panel-product-remove" type="button" aria-label="Remove">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="side-panel-divider"></div>
+  <div class="side-panel-total">
+    <span class="side-panel-total-label">Total</span>
+    <div class="side-panel-total-prices">
+      <span class="side-panel-total-original">$69.98</span>
+      <span class="side-panel-total-final">$62.98</span>
+    </div>
+  </div>
+  <div class="side-panel-nav">
+    <button class="side-panel-btn side-panel-btn-next" type="button">Next Step</button>
+    <button class="side-panel-btn side-panel-btn-back" type="button">Back</button>
+  </div>
+</div>
+
+<!-- Mobile: sticky bottom bar (position:fixed bottom:0, visible at ≤767px via CSS) -->
+<div class="fpb-mobile-bottom-bar">
+  <button class="fpb-mobile-toggle-btn" type="button" aria-label="View bundle summary">
+    <span class="fpb-caret">&#9650;</span>
+    <span class="fpb-mobile-toggle-count">2</span>
+  </button>
+  <div class="fpb-mobile-total">$62.98</div>
+  <button class="fpb-mobile-cta-btn" type="button">Next</button>
+</div>
 `.trim();
 
 // ─── FPB preview HTML — Floating footer layout (footer_bottom) ─────────────────
@@ -402,7 +469,7 @@ const fpbSidebarHtml = `
 //   → full-page-footer.floating-card (outside bundle-steps, at root level).
 
 const fpbFloatingHtml = `
-<div class="bundle-widget-full-page" style="min-height:100vh;">
+<div class="bundle-widget-full-page">
 
   <!-- Tier pills — live widget inserts these as container.firstChild (before header) -->
   <div class="bundle-tier-pill-bar" role="group" aria-label="Bundle pricing tiers">
