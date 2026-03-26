@@ -3398,28 +3398,6 @@ body.modal-open {
   min-height: 100vh;
 }
 
-/* Step tabs become a fixed-width vertical left column in sidebar layout.
-   Without this, .step-tabs-container (flex-wrap:wrap) sizes to its content
-   and can grow to 600+ px — consuming most of the layout width. */
-.sidebar-layout-wrapper .step-tabs-container {
-  flex-direction: column;
-  flex-wrap: nowrap;
-  width: 240px;
-  min-width: 240px;
-  flex-shrink: 0;
-  justify-content: flex-start;
-  align-items: stretch;
-  margin: 0;
-  padding: 20px 12px;
-  gap: 8px;
-  border-right: 1px solid rgba(0, 0, 0, 0.07);
-  background: var(--bundle-step-tabs-sidebar-bg, #f9fafb);
-}
-
-.sidebar-layout-wrapper .step-tab {
-  width: 100%;
-  min-width: 0;
-}
 
 .sidebar-layout-wrapper .sidebar-content {
   flex: 1 1 0%;
@@ -3744,33 +3722,7 @@ body.modal-open {
     flex-direction: column;
   }
 
-  /* Step tabs: convert from fixed-width vertical column to full-width horizontal
-     scrolling row. Without this, the 240px desktop column width leaves a ~135px
-     white gap to the right on a 375px mobile viewport. */
-  .sidebar-layout-wrapper .step-tabs-container {
-    width: 100%;
-    min-width: 0;
-    flex-direction: row;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    border-right: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
-    padding: 12px 16px;
-  }
-
-  .sidebar-layout-wrapper .step-tabs-container::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Each tab: allow natural auto width in the row, prevent shrinking */
-  .sidebar-layout-wrapper .step-tab {
-    flex-shrink: 0;
-    width: auto;
-    min-width: 130px;
-  }
-
-  .full-page-side-panel {
+.full-page-side-panel {
     width: 100%;
     height: auto;
     position: sticky;

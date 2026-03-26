@@ -194,46 +194,47 @@ const fpbSidebarHtml = `
 
   <!-- Steps container — sidebar layout -->
   <div class="bundle-steps full-page-layout layout-sidebar">
-    <div class="sidebar-layout-wrapper">
 
-      <!-- Left: step timeline tabs (direct flex child — 240px column via CSS) -->
-      <div class="step-tabs-container">
-        <div class="step-tab active completed" data-step-index="0">
-          <div class="tab-images">
-            <img src="${PLACEHOLDER_IMG}" alt="Polo" class="tab-product-image">
-            <img src="${PLACEHOLDER_IMG}" alt="Linen" class="tab-product-image">
-          </div>
-          <div class="tab-info">
-            <span class="tab-name">Choose Tops</span>
-            <span class="tab-count">2 selected</span>
-          </div>
-          <div class="tab-check">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
+    <!-- Step timeline tabs — above the two-column area (horizontal bar, same as floating layout) -->
+    <div class="step-tabs-container">
+      <div class="step-tab active completed" data-step-index="0">
+        <div class="tab-images">
+          <img src="${PLACEHOLDER_IMG}" alt="Polo" class="tab-product-image">
+          <img src="${PLACEHOLDER_IMG}" alt="Linen" class="tab-product-image">
         </div>
-        <div class="step-tab" data-step-index="1">
-          <div class="tab-number">2</div>
-          <div class="tab-info">
-            <span class="tab-name">Choose Bottoms</span>
-            <span class="tab-count">0 selected</span>
-          </div>
+        <div class="tab-info">
+          <span class="tab-name">Choose Tops</span>
+          <span class="tab-count">2 selected</span>
         </div>
-        <div class="step-tab locked" data-step-index="2">
-          <div class="tab-number">3</div>
-          <div class="tab-info">
-            <span class="tab-name">Accessories</span>
-          </div>
-          <div class="tab-lock">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-          </div>
-          <div class="tab-locked-tooltip">Complete "Choose Bottoms" first</div>
+        <div class="tab-check">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
       </div>
+      <div class="step-tab" data-step-index="1">
+        <div class="tab-number">2</div>
+        <div class="tab-info">
+          <span class="tab-name">Choose Bottoms</span>
+          <span class="tab-count">0 selected</span>
+        </div>
+      </div>
+      <div class="step-tab locked" data-step-index="2">
+        <div class="tab-number">3</div>
+        <div class="tab-info">
+          <span class="tab-name">Accessories</span>
+        </div>
+        <div class="tab-lock">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <div class="tab-locked-tooltip">Complete "Choose Bottoms" first</div>
+      </div>
+    </div>
+
+    <div class="sidebar-layout-wrapper">
 
       <!-- Center: promo banner (hidden by CSS in sidebar) + search + product grid -->
       <div class="full-page-content-section sidebar-content">
@@ -707,9 +708,11 @@ function getPreviewScript(type: string): string {
       var section = e.data.section || '';
       var tierBar = document.querySelector('.bundle-tier-pill-bar');
       var stepTabs = document.querySelector('.step-tabs-container');
-      // Tier pills visible only when editing their section; step tabs visible everywhere else
-      if (tierBar) tierBar.style.display = section === 'tierPills' ? '' : 'none';
-      if (stepTabs) stepTabs.style.display = section === 'tierPills' ? 'none' : '';
+      // Tier pills visible only when editing their section; step tabs visible everywhere else.
+      // Must use explicit 'flex'/'block' — '' (empty string) only clears the inline style and
+      // the CSS .bundle-tier-pill-bar { display: none } rule would immediately take over again.
+      if (tierBar) tierBar.style.display = section === 'tierPills' ? 'flex' : 'none';
+      if (stepTabs) stepTabs.style.display = section === 'tierPills' ? 'none' : 'flex';
     }
   });
 

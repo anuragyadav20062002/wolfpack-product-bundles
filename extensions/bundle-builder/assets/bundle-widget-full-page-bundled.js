@@ -3312,14 +3312,15 @@ class BundleWidgetFullPage {
       this.elements.footer.style.display = 'none';
     }
 
-    // Three-column wrapper: step-tabs (left) | content (center) | sidebar (right)
+    // ABOVE: Step timeline sits above the two-column area (same horizontal position as
+    // the floating footer layout) so tabs always appear at the top, not as a left column.
+    if (this.config.showStepTimeline) {
+      this.elements.stepsContainer.appendChild(this.createStepTimeline());
+    }
+
+    // Two-column wrapper: content (center) | sidebar (right)
     const twoColWrapper = document.createElement('div');
     twoColWrapper.className = 'sidebar-layout-wrapper';
-
-    // LEFT: Step timeline (direct flex child — becomes fixed-width vertical column via CSS)
-    if (this.config.showStepTimeline) {
-      twoColWrapper.appendChild(this.createStepTimeline());
-    }
 
     // CENTER: Main content (same as footer_bottom minus the footer)
     const contentSection = document.createElement('div');
