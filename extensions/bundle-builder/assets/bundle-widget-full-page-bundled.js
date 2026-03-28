@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.3.6
- * Built   : 2026-03-27
+ * Version : 2.4.0
+ * Built   : 2026-03-28
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.3.6';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.0';
 (function() {
   'use strict';
 
