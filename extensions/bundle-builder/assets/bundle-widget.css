@@ -2910,6 +2910,33 @@
   margin: 0;
 }
 
+/* Step change animation — cards slide up into view */
+@keyframes bw-slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.product-grid.bw-animate-in .product-card {
+  animation: bw-slideUpFadeIn 0.35s ease-out both;
+}
+
+/* Stagger each card by 50ms for a wave effect */
+.product-grid.bw-animate-in .product-card:nth-child(1) { animation-delay: 0ms; }
+.product-grid.bw-animate-in .product-card:nth-child(2) { animation-delay: 50ms; }
+.product-grid.bw-animate-in .product-card:nth-child(3) { animation-delay: 100ms; }
+.product-grid.bw-animate-in .product-card:nth-child(4) { animation-delay: 150ms; }
+.product-grid.bw-animate-in .product-card:nth-child(5) { animation-delay: 200ms; }
+.product-grid.bw-animate-in .product-card:nth-child(6) { animation-delay: 250ms; }
+.product-grid.bw-animate-in .product-card:nth-child(7) { animation-delay: 300ms; }
+.product-grid.bw-animate-in .product-card:nth-child(8) { animation-delay: 350ms; }
+.product-grid.bw-animate-in .product-card:nth-child(n+9) { animation-delay: 400ms; }
+
 /* Slot card grid — set per-row via CSS variable */
 .bundle-steps {
   display: grid;

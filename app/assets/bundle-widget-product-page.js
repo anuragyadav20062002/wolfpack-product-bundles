@@ -1714,6 +1714,11 @@ class BundleWidgetProductPage {
       `;
     }).join('');
 
+    // Trigger slide-up animation for cards
+    productGrid.classList.remove('bw-animate-in');
+    void productGrid.offsetWidth; // force reflow
+    productGrid.classList.add('bw-animate-in');
+
     // Attach event handlers
     this.attachProductEventHandlers(productGrid, stepIndex);
   }
@@ -1961,9 +1966,11 @@ class BundleWidgetProductPage {
     this.updateAddToCartButton();
     this.updateFooterMessaging();
 
-    // Auto-step progression for bottom-sheet mode
+    // Auto-step progression
     if (this.widgetStyle === 'bottom-sheet') {
       this._autoProgressBottomSheet(stepIndex);
+    } else {
+      this._autoProgressClassicModal(stepIndex);
     }
   }
 
@@ -2006,6 +2013,24 @@ class BundleWidgetProductPage {
         }).catch(() => {});
       }, 300);
     }
+  }
+
+  /**
+   * Classic modal auto-close.
+   * When all steps are complete, auto-close the modal after a short delay.
+   */
+  _autoProgressClassicModal(stepIndex) {
+    if (!this.validateStep(stepIndex)) return;
+
+    const steps = this.selectedBundle.steps;
+    // Check if any step is still incomplete
+    for (let i = 0; i < steps.length; i++) {
+      if (!this.validateStep(i)) return; // at least one step incomplete — do nothing
+    }
+
+    // All steps complete — refresh tabs with checkmarks, then auto-close
+    this.renderModalTabs();
+    setTimeout(() => this.closeModal(), 500);
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {

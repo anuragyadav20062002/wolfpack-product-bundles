@@ -27,7 +27,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-product-card-font-size: ${s.productCardFontSize || 20}px;
   --bundle-product-card-font-weight: ${s.productCardFontWeight || 600};
   --bundle-product-card-image-fit: ${s.productCardImageFit || 'cover'};
-  --bundle-product-cards-per-row: ${s.productCardsPerRow || 3};
+  --bundle-product-cards-per-row: ${s.productCardsPerRow || 4};
   --bundle-product-price-display: ${s.productPriceVisibility !== false ? 'block' : 'none'};
   --bundle-product-title-display: ${s.productTitleVisibility !== false ? 'block' : 'none'};
   --bundle-product-price-bg-color: ${s.productPriceBgColor || '#F0F8F0'};
