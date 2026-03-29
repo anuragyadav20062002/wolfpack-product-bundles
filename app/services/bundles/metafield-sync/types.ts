@@ -50,6 +50,7 @@ export interface BundleUiConfig {
   status: string;
   bundleType: string;
   shopifyProductId: string | null;
+  fullPagePageHandle?: string | null;
   bundleVariantId: string;
   steps: BundleUiStep[];
   pricing: BundleUiPricing | null;

@@ -38,10 +38,22 @@ jest.mock('../../../app/services/widget-installation.server', () => ({
 
 jest.mock('../../../app/services/widget-installation/widget-full-page-bundle.server', () => ({
   renamePageHandle: jest.fn(),
+  writeBundleConfigPageMetafield: jest.fn(),
+}));
+
+jest.mock('../../../app/services/bundles/metafield-sync.server', () => ({
+  updateBundleProductMetafields: jest.fn(),
+  updateComponentProductMetafields: jest.fn(),
+}));
+
+jest.mock('../../../app/services/widget-installation/widget-theme-template.server', () => ({
+  ensureProductBundleTemplate: jest.fn(),
 }));
 
 import { WidgetInstallationService } from '../../../app/services/widget-installation.server';
 import { renamePageHandle } from '../../../app/services/widget-installation/widget-full-page-bundle.server';
+import { updateBundleProductMetafields } from '../../../app/services/bundles/metafield-sync.server';
+import { ensureProductBundleTemplate } from '../../../app/services/widget-installation/widget-theme-template.server';
 import {
   handleValidateWidgetPlacement,
   handleRenamePageSlug,
@@ -50,6 +62,8 @@ import {
 const getDb = () => require('../../../app/db.server').default;
 const mockCreateFullPageBundle = WidgetInstallationService.createFullPageBundle as jest.MockedFunction<typeof WidgetInstallationService.createFullPageBundle>;
 const mockRenamePageHandle = renamePageHandle as jest.MockedFunction<typeof renamePageHandle>;
+const mockUpdateBundleProductMetafields = updateBundleProductMetafields as jest.MockedFunction<typeof updateBundleProductMetafields>;
+const mockEnsureProductBundleTemplate = ensureProductBundleTemplate as jest.MockedFunction<typeof ensureProductBundleTemplate>;
 
 const mockAdmin = { graphql: jest.fn() } as any;
 const mockSession = {
@@ -68,6 +82,11 @@ const bundleId = 'bundle-abc123';
 describe('handleValidateWidgetPlacement', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockEnsureProductBundleTemplate.mockResolvedValue({
+      success: true,
+      templateCreated: false,
+      templateAlreadyExists: true,
+    });
   });
 
   it('passes desiredSlug to createFullPageBundle and updates DB with returned handle', async () => {
@@ -140,6 +159,65 @@ describe('handleValidateWidgetPlacement', () => {
       mockAdmin, mockSession, expect.any(String), bundleId, 'My Kit', undefined
     );
     expect(body.success).toBe(true);
+  });
+
+  it('syncs bundle product redirect metadata after page creation when a bundle product exists', async () => {
+    (getDb().bundle.findUnique as jest.Mock).mockResolvedValue({
+      id: bundleId,
+      name: 'My Kit',
+      description: 'Bundle description',
+      status: 'draft',
+      bundleType: 'full_page',
+      shopId: 'test-shop.myshopify.com',
+      shopifyProductId: 'gid://shopify/Product/99',
+      steps: [
+        {
+          id: 'step-1',
+          name: 'Step 1',
+          position: 1,
+          minQuantity: 1,
+          maxQuantity: 1,
+          enabled: true,
+          StepProduct: [{ productId: 'gid://shopify/Product/123', title: 'Product 123' }],
+          collections: [],
+        },
+      ],
+      pricing: null,
+    });
+
+    mockCreateFullPageBundle.mockResolvedValue({
+      success: true,
+      pageId: 'gid://shopify/Page/1',
+      pageHandle: 'fresh-slug',
+      pageUrl: 'https://test-shop.myshopify.com/pages/fresh-slug',
+      slugAdjusted: false,
+    });
+
+    (getDb().bundle.update as jest.Mock).mockResolvedValue({});
+    mockAdmin.graphql.mockResolvedValue(
+      createMockGraphQLResponse({
+        productUpdate: {
+          product: {
+            id: 'gid://shopify/Product/99',
+            status: 'ACTIVE',
+            templateSuffix: 'product-page-bundle',
+          },
+          userErrors: [],
+        },
+      }),
+    );
+
+    await handleValidateWidgetPlacement(mockAdmin, mockSession, bundleId, 'fresh-slug');
+
+    expect(mockEnsureProductBundleTemplate).toHaveBeenCalled();
+    expect(mockUpdateBundleProductMetafields).toHaveBeenCalledWith(
+      mockAdmin,
+      'gid://shopify/Product/99',
+      expect.objectContaining({
+        shopifyPageHandle: 'fresh-slug',
+        status: 'active',
+      }),
+    );
   });
 });
 
@@ -225,5 +303,50 @@ describe('handleRenamePageSlug', () => {
 
     expect(response.status).toBe(400);
     expect(mockRenamePageHandle).not.toHaveBeenCalled();
+  });
+
+  it('refreshes bundle product redirect metadata after slug rename when a bundle product exists', async () => {
+    (getDb().bundle.findUnique as jest.Mock).mockResolvedValue({
+      id: bundleId,
+      shopId: 'test-shop.myshopify.com',
+      shopifyPageId: 'gid://shopify/Page/1',
+      shopifyPageHandle: 'old-slug',
+      shopifyProductId: 'gid://shopify/Product/42',
+      name: 'My Kit',
+      description: 'Bundle description',
+      status: 'active',
+      bundleType: 'full_page',
+      steps: [
+        {
+          id: 'step-1',
+          name: 'Step 1',
+          position: 1,
+          minQuantity: 1,
+          maxQuantity: 1,
+          enabled: true,
+          StepProduct: [{ productId: 'gid://shopify/Product/123', title: 'Product 123' }],
+          collections: [],
+        },
+      ],
+      pricing: null,
+    });
+
+    mockRenamePageHandle.mockResolvedValue({
+      success: true,
+      newHandle: 'renamed-slug',
+      adjusted: false,
+    });
+
+    (getDb().bundle.update as jest.Mock).mockResolvedValue({});
+
+    await handleRenamePageSlug(mockAdmin, mockSession, bundleId, 'renamed-slug');
+
+    expect(mockUpdateBundleProductMetafields).toHaveBeenCalledWith(
+      mockAdmin,
+      'gid://shopify/Product/42',
+      expect.objectContaining({
+        shopifyPageHandle: 'renamed-slug',
+      }),
+    );
   });
 });
