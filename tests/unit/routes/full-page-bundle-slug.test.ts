@@ -38,6 +38,7 @@ jest.mock('../../../app/services/widget-installation.server', () => ({
 
 jest.mock('../../../app/services/widget-installation/widget-full-page-bundle.server', () => ({
   renamePageHandle: jest.fn(),
+  writeBundleConfigPageMetafield: jest.fn(),
 }));
 
 import { WidgetInstallationService } from '../../../app/services/widget-installation.server';

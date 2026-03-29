@@ -53,6 +53,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       status: bundle.status,
       bundleType: bundle.bundleType,
       shopifyProductId: bundle.shopifyProductId,
+      shopifyPageHandle: bundle.shopifyPageHandle,
       steps: bundle.steps.map(step => ({
         id: step.id,
         name: step.name,

@@ -445,6 +445,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         // CRITICAL: Include bundle parent variant ID for cart transform merge operations
         bundleParentVariantId: bundleParentVariantId,
         shopifyProductId: updatedBundle.shopifyProductId, // Bundle product ID for querying metafield
+        shopifyPageHandle: updatedBundle.shopifyPageHandle || null,
         updatedAt: new Date().toISOString()
       };
 
@@ -704,14 +705,15 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
         const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
         const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
 
-        const bundleConfiguration = {
-          bundleId: bundle.id,
-          name: bundle.name,
-          templateName: bundle.templateName || null,
-          bundleType: bundle.bundleType || BundleType.FULL_PAGE,
-          type: "cart_transform",
-          steps: optimizedSteps,
-          pricing: {
+      const bundleConfiguration = {
+        bundleId: bundle.id,
+        name: bundle.name,
+        templateName: bundle.templateName || null,
+        bundleType: bundle.bundleType || BundleType.FULL_PAGE,
+        shopifyPageHandle: bundle.shopifyPageHandle || null,
+        type: "cart_transform",
+        steps: optimizedSteps,
+        pricing: {
             enabled: bundle.pricing.enabled,
             method: bundle.pricing.method,
             rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
@@ -868,6 +870,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       name: bundle.name,
       templateName: bundle.templateName || null,
       bundleType: bundle.bundleType || BundleType.FULL_PAGE,
+      shopifyPageHandle: bundle.shopifyPageHandle || null,
       type: "cart_transform",
       steps: optimizedSteps,
       pricing: {

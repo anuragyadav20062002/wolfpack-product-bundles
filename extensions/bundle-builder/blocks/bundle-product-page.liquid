@@ -235,6 +235,8 @@
 {% assign bundle_id = nil %}
 {% assign should_show_widget = false %}
 {% assign hide_default_buttons = false %}
+{% assign is_full_page_bundle_product = false %}
+{% assign full_page_redirect_handle = blank %}
 
 {% comment %}
   Use $app reserved namespace for app-owned metafields
@@ -264,6 +266,10 @@
       {% assign is_bundle_product = true %}
       {% assign should_show_widget = true %}
       {% assign hide_default_buttons = true %}
+      {% if bundle_ui_config.bundleType == 'full_page' %}
+        {% assign is_full_page_bundle_product = true %}
+        {% assign full_page_redirect_handle = bundle_ui_config.fullPagePageHandle %}
+      {% endif %}
 
       {% comment %} Extract bundle ID from UI config {% endcomment %}
       {% if bundle_ui_config.bundleId %}
@@ -281,9 +287,17 @@
 
 {% if should_show_widget %}
     <div
+      id="bundle-full-page-redirecting"
+      style="display:none; padding:16px 0; color:#4b5563; font-size:14px;"
+    >
+      Redirecting to bundle page...
+    </div>
+    <div
       {{ block.shopify_attributes }}
       id="bundle-builder-app"
       data-bundle-id="{{ bundle_id }}"
+      data-bundle-type="{% if bundle_ui_config and bundle_ui_config.bundleType %}{{ bundle_ui_config.bundleType }}{% else %}product_page{% endif %}"
+      data-full-page-redirect-handle="{{ full_page_redirect_handle | default: '' }}"
       data-app-url="{{ block.settings.app_url | default: '' }}"
       data-is-bundle-product="{{ is_bundle_product }}"
       data-is-container-product="{{ is_bundle_product }}"
@@ -394,6 +408,107 @@
     {% assign server_url_field = shop_app_metafields['serverUrl'] %}
   {% endif %}
   window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
+</script>
+
+<script>
+  (function() {
+    const bundleConfig = {{ bundle_ui_config | json }};
+    const bundleId = {{ bundle_id | json }};
+    const liquidDesignMode = {{ request.design_mode | json }};
+
+    if (!bundleConfig || bundleConfig.bundleType !== 'full_page') {
+      return;
+    }
+
+    const widgetEl = document.getElementById('bundle-builder-app');
+    const redirectNotice = document.getElementById('bundle-full-page-redirecting');
+    let hideStyle = null;
+
+    const isThemeEditorSession = () => {
+      let isFramed = false;
+      try {
+        isFramed = window.self !== window.top;
+      } catch (_error) {
+        isFramed = true;
+      }
+
+      return Boolean(
+        liquidDesignMode ||
+        window.Shopify?.designMode ||
+        window.location.pathname.includes('/editor') ||
+        window.location.search.includes('addAppBlockId=') ||
+        (window.location.search.includes('previewPath=') && isFramed)
+      );
+    };
+
+    const showRedirectState = () => {
+      if (hideStyle) return;
+      hideStyle = document.createElement('style');
+      hideStyle.id = 'bundle-full-page-redirect-style';
+      hideStyle.textContent = '#bundle-builder-app{display:none !important;}#bundle-full-page-redirecting{display:block !important;}';
+      document.head.appendChild(hideStyle);
+    };
+
+    const clearRedirectState = () => {
+      if (hideStyle) {
+        hideStyle.remove();
+        hideStyle = null;
+      }
+      if (redirectNotice) {
+        redirectNotice.style.display = 'none';
+      }
+      if (widgetEl) {
+        widgetEl.style.display = '';
+      }
+    };
+
+    if (isThemeEditorSession()) {
+      clearRedirectState();
+      return;
+    }
+
+    const redirectToHandle = (handle) => {
+      if (!handle) {
+        clearRedirectState();
+        return;
+      }
+
+      const targetPath = `/pages/${encodeURIComponent(handle)}`;
+      if (window.location.pathname === targetPath) {
+        clearRedirectState();
+        return;
+      }
+
+      showRedirectState();
+      const targetUrl = `${window.location.origin}${targetPath}${window.location.search}${window.location.hash}`;
+      window.location.replace(targetUrl);
+    };
+
+    const fallbackLookup = async () => {
+      if (!bundleId) return null;
+
+      const response = await fetch(`${window.location.origin}/apps/product-bundles/api/bundles.json`, {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        throw new Error(`Bundle lookup failed with ${response.status}`);
+      }
+
+      const payload = await response.json();
+      return payload?.bundles?.[bundleId]?.shopifyPageHandle || null;
+    };
+
+    showRedirectState();
+
+    Promise.resolve(bundleConfig.fullPagePageHandle || null)
+      .then((handle) => handle || fallbackLookup())
+      .then((handle) => redirectToHandle(handle))
+      .catch((error) => {
+        console.warn('[BUNDLE_WIDGET] Failed to resolve full-page redirect target', error);
+        clearRedirectState();
+      });
+  })();
 </script>
 
 <script>
