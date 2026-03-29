@@ -114,7 +114,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       productCardFontSize: 16,
       productCardFontWeight: 400,
       productCardImageFit: "cover",
-      productCardsPerRow: 3,
+      productCardsPerRow: 4,
       productPriceVisibility: true,
       productPriceBgColor: "#F0F8F0",
       productStrikePriceColor: "#8D8D8D",

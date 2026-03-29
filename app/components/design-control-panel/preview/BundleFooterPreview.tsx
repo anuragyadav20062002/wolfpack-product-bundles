@@ -406,29 +406,11 @@ function FullPageFooterLayout({
   );
 }
 
-// Product-page (modal) footer layout — matches storefront: Total Pill → Discount Text → Buttons
+// Product-page (modal) footer layout — floating pill design matching storefront
 function ProductPageFooterLayout({
   highlightTarget,
-  footerBgColor,
-  footerBorderRadius,
-  footerPadding,
-  footerTotalBgColor,
-  footerStrikePriceColor,
-  footerStrikeFontSize,
-  footerStrikeFontWeight,
-  footerFinalPriceColor,
-  footerFinalPriceFontSize,
-  footerFinalPriceFontWeight,
-  footerPriceVisibility,
-  footerBackButtonBgColor,
-  footerBackButtonTextColor,
-  footerBackButtonBorderColor,
-  footerBackButtonBorderRadius,
   footerNextButtonBgColor,
   footerNextButtonTextColor,
-  footerNextButtonBorderColor,
-  footerNextButtonBorderRadius,
-  footerDiscountTextVisibility,
 }: {
   highlightTarget: HighlightTarget;
   footerBgColor: string;
@@ -455,133 +437,75 @@ function ProductPageFooterLayout({
   return (
     <div
       style={{
-        backgroundColor: footerBgColor,
-        borderRadius: `${footerBorderRadius}px`,
-        padding: "12px 24px",
-        minWidth: "480px",
+        position: "relative",
+        height: "80px",
+        background: "transparent",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        position: "relative",
-        borderTop: "1px solid #E5E7EB",
-        boxShadow: "0 -2px 8px rgba(0,0,0,0.06)",
         width: "100%",
         ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
       }}
     >
-      {/* Centered Grouped Content — matches .modal-footer-grouped-content */}
+      {/* Cart count pill */}
       <div
         style={{
-          display: "inline-flex",
-          flexDirection: "column",
+          position: "absolute",
+          bottom: "56px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#FFFFFF",
+          borderRadius: "50px",
+          padding: "6px 14px",
+          display: "flex",
           alignItems: "center",
-          gap: "8px",
+          gap: "6px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+          fontSize: "14px",
+          fontWeight: 700,
+          color: "#333",
         }}
       >
-        {/* Total Pill — matches .modal-footer-total-pill */}
-        {footerPriceVisibility !== false && (
-          <div
-            style={{
-              backgroundColor: footerTotalBgColor,
-              padding: "10px 20px",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "16px",
-              fontWeight: 500,
-              position: "relative",
-              ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
-            }}
-          >
-            <span style={{
-              color: footerStrikePriceColor,
-              fontSize: `${footerStrikeFontSize}px`,
-              fontWeight: footerStrikeFontWeight,
-              textDecoration: "line-through",
-            }}>
-              $24.99
-            </span>
-            <span style={{
-              color: footerFinalPriceColor,
-              fontSize: `${footerFinalPriceFontSize}px`,
-              fontWeight: footerFinalPriceFontWeight,
-            }}>
-              $19.99
-            </span>
-            <span style={{ color: "#666", fontWeight: 400 }}>|</span>
-            <span style={{ color: "#666", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: 600 }}>
-              2
-              <ShoppingCartIcon width={18} height={18} color="#666" />
-            </span>
-          </div>
-        )}
-
-        {/* Discount Messaging — matches .modal-footer-discount-messaging */}
-        {footerDiscountTextVisibility && (
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: "8px",
-              marginTop: "8px",
-              ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
-            }}
-          >
-            <div style={{ fontSize: "14px", fontWeight: 500, color: "#374151", lineHeight: 1.4 }}>
-              Add 2 more items to get <strong>10% off</strong>
-            </div>
-          </div>
-        )}
-
-        {/* Buttons Row — matches .modal-footer-buttons-row */}
-        <div
+        2 <ShoppingCartIcon width={18} height={18} color="#333" />
+      </div>
+      {/* Nav pill */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "40px",
+          backgroundColor: footerNextButtonBgColor,
+          borderRadius: "50px",
+          padding: "14px 25px",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+          ...(highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}),
+        }}
+      >
+        <span
           style={{
-            display: "flex",
-            gap: "12px",
-            alignItems: "center",
-            ...(highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}),
+            color: footerNextButtonTextColor,
+            fontSize: "13px",
+            fontWeight: 700,
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.5px",
+            opacity: 0.85,
+            cursor: "pointer",
           }}
         >
-          {/* Back Button — matches .modal-nav-button.prev-button */}
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: footerBackButtonBgColor,
-              color: footerBackButtonTextColor,
-              border: `2px solid ${footerBackButtonBorderColor}`,
-              borderRadius: `${footerBackButtonBorderRadius}px`,
-              padding: "10px 28px",
-              fontSize: "14px",
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: "0 2px 6px rgba(0, 0, 0, 0.06)",
-            }}
-          >
-            BACK
-          </button>
-
-          {/* Next Button — matches .modal-nav-button.next-button */}
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: footerNextButtonBgColor,
-              color: footerNextButtonTextColor,
-              border: `2px solid ${footerNextButtonBorderColor}`,
-              borderRadius: `${footerNextButtonBorderRadius}px`,
-              padding: "10px 28px",
-              fontSize: "14px",
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-            }}
-          >
-            NEXT
-          </button>
-        </div>
+          BACK
+        </span>
+        <span
+          style={{
+            color: footerNextButtonTextColor,
+            fontSize: "13px",
+            fontWeight: 700,
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.5px",
+            cursor: "pointer",
+          }}
+        >
+          NEXT
+        </span>
       </div>
     </div>
   );

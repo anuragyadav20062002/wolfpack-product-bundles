@@ -26,7 +26,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   productCardFontSize: 20,
   productCardFontWeight: 600,
   productCardImageFit: "cover",
-  productCardsPerRow: 3,
+  productCardsPerRow: 4,
   productTitleVisibility: true,
   productPriceVisibility: true,
   productPriceBgColor: "#F0F8F0",
