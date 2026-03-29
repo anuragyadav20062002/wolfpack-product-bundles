@@ -1258,164 +1258,109 @@
   z-index: 10;
 }
 
-/* Modal Footer - Clean Compact */
+/* Modal Footer - Floating Pill Design */
 .modal-footer {
+  position: relative;
+  height: 80px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 24px;
-  border-top: 1px solid #E5E7EB;
-  margin-top: 0;
-  background-color: var(--bundle-footer-bg, #FFFFFF);
-  border-radius: var(--bundle-footer-border-radius, 0px);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
   z-index: 10;
   width: 100%;
 }
 
-/* Centered Grouped Content Container */
-.modal-footer-grouped-content {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Total Pill - Sits Above Buttons */
-.modal-footer-total-pill {
-  background-color: var(--bundle-footer-total-bg, #f6f6f6);
-  padding: 10px 20px;
-  border-radius: 8px;
+/* Cart Count Pill - Floats above nav pill */
+.modal-footer-cart-pill {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #FFFFFF;
+  border-radius: 50px;
+  padding: 6px 14px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-/* Total Prices inside Pill */
-.modal-footer-total-pill .total-price-strike {
-  font-size: var(--bundle-footer-strike-font-size, 13px);
-  font-weight: var(--bundle-footer-strike-font-weight, 500);
-  color: var(--bundle-footer-strike-price-color, var(--bundle-global-secondary-text, #8d8d8d));
-  text-decoration: line-through;
-}
-
-.modal-footer-total-pill .total-price-final {
-  font-size: var(--bundle-footer-final-price-font-size, 18px);
-  font-weight: var(--bundle-footer-final-price-font-weight, 700);
-  color: var(--bundle-footer-final-price-color, var(--bundle-global-footer-text, #000000));
-}
-
-/* Buttons Row - Below Pill */
-.modal-footer-buttons-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-/* Cart Badge Wrapper inside Pill */
-.cart-badge-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #666;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  z-index: 11;
 }
 
 .cart-badge-count {
-  font-weight: 600;
-  color: #666;
+  font-weight: 700;
+  color: #333;
 }
 
 .cart-icon {
-  font-size: 14px;
+  color: #333;
 }
 
-/* Price Cart Separator */
-.price-cart-separator {
-  color: #666;
-  font-weight: 400;
+/* Nav Pill - Colored pill with Back/Next */
+.modal-footer-nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  background-color: var(--bundle-footer-next-button-bg, var(--bundle-global-primary-button, #000000));
+  border-radius: 50px;
+  padding: 14px 25px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-/* Modal Footer Discount Messaging - Between Price Pill and Buttons */
-.modal-footer-discount-messaging {
-  display: block;
+/* Header Discount Messaging - Below tabs */
+.modal-header-discount-messaging {
   text-align: center;
-  margin-bottom: 8px;
-  margin-top: 8px;
+  padding: 4px 16px 8px;
 }
 
-.modal-footer-discount-messaging .footer-discount-text {
-  font-size: 14px;
+.modal-header-discount-messaging .footer-discount-text {
+  font-size: 13px;
   font-weight: 500;
   color: #374151;
   line-height: 1.4;
 }
 
-.modal-footer-discount-messaging .footer-discount-text .bundle-conditions-text {
+.modal-header-discount-messaging .footer-discount-text .bundle-conditions-text {
   color: var(--bundle-conditions-text-color, #374151);
   opacity: 1;
   font-weight: 600;
 }
 
-.modal-footer-discount-messaging .footer-discount-text .bundle-discount-text {
+.modal-header-discount-messaging .footer-discount-text .bundle-discount-text {
   color: var(--bundle-discount-text-color, #374151);
   opacity: 1;
   font-weight: 600;
 }
 
-.modal-footer-discount-messaging.qualified .footer-discount-text {
+.modal-header-discount-messaging.qualified .footer-discount-text {
   color: var(--bundle-success-message-text-color, #059669);
   font-weight: var(--bundle-success-message-font-weight, 600);
-  font-size: var(--bundle-success-message-font-size, 16px);
+  font-size: var(--bundle-success-message-font-size, 14px);
 }
 
-/* Modal Footer Progress Bar */
-/* Tablet responsive adjustments for modal footer */
-@media (max-width: 768px) {
-  .modal-footer {
-    padding: 16px 20px;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .modal-footer-grouped-content {
-    width: 100%;
-  }
-
-  .modal-footer-total-pill {
-    padding: 10px 16px;
-    justify-content: center;
-  }
-
-  .modal-footer-buttons-row {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .modal-nav-button {
-    min-width: 100px;
-    padding: 12px 20px;
-    font-size: 13px;
-  }
-}
-
-/* Navigation Buttons - Compact Centered Layout */
+/* Navigation Buttons - Inside Floating Pill */
 .modal-nav-button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 28px;
+  padding: 0;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 700;
+  transition: opacity 0.2s ease;
   white-space: nowrap;
-  min-width: 100px;
   border: none;
-  text-transform: none;
-  letter-spacing: 0;
+  background: transparent;
+  color: var(--bundle-footer-next-button-text, var(--bundle-global-button-text, #FFFFFF));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .modal-nav-button svg {
@@ -1425,35 +1370,37 @@
 }
 
 .modal-nav-button.prev-button {
-  background-color: var(--bundle-footer-back-button-bg, #FFFFFF);
-  color: var(--bundle-footer-back-button-text, #000000);
-  border: 2px solid var(--bundle-footer-back-button-border, #E0E0E0);
-  border-radius: var(--bundle-footer-back-button-radius, 10px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  background: transparent;
+  color: var(--bundle-footer-next-button-text, var(--bundle-global-button-text, #FFFFFF));
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  opacity: 0.85;
 }
 
 .modal-nav-button.prev-button:hover {
-  background-color: #F8F8F8;
-  border-color: #D0D0D0;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  opacity: 1;
+  background: transparent;
+  transform: none;
+  box-shadow: none;
 }
 
 .modal-nav-button.next-button {
-  background-color: var(--bundle-footer-next-button-bg, var(--bundle-global-primary-button, #000000));
+  background: transparent;
   color: var(--bundle-footer-next-button-text, var(--bundle-global-button-text, #FFFFFF));
-  border: 2px solid var(--bundle-footer-next-button-border, var(--bundle-global-primary-button, #000000));
-  border-radius: var(--bundle-footer-next-button-radius, 10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .modal-nav-button.next-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  opacity: 0.85;
+  transform: none;
+  box-shadow: none;
 }
 
 .modal-nav-button:disabled {
-  opacity: 0.5;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
@@ -1832,52 +1779,30 @@
     padding: 10px 16px 6px;
   }
   
-  .modal-footer {
-    padding: 12px 16px;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .modal-nav-button {
-    flex: 1;
-    padding: 10px 16px;
-    font-size: 13px;
-    justify-content: center;
-  }
-
-  .modal-nav-button svg {
-    width: 14px;
-    height: 14px;
-  }
-
   /* Keep 2 column grid on small mobile */
   .bundle-builder-modal .modal-body .product-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
 
-  /* Scale down footer elements */
-  .modal-footer-total-pill {
-    padding: 8px 14px;
-    font-size: 14px;
+  /* Compact floating pill on small screens */
+  .modal-footer {
+    height: 70px;
   }
 
-  .modal-footer-buttons-row {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
+  .modal-footer-cart-pill {
+    padding: 5px 12px;
+    font-size: 13px;
+    bottom: 50px;
   }
 
-  .modal-footer-buttons-row .modal-nav-button {
-    width: 100%;
+  .modal-footer-nav-pill {
+    padding: 12px 20px;
+    gap: 30px;
   }
 
-  .modal-footer-grouped-content {
-    width: 100%;
-  }
-
-  .modal-footer-discount-messaging {
-    margin: 8px 0;
+  .modal-nav-button {
+    font-size: 12px;
   }
 
 }
@@ -2984,6 +2909,33 @@
   color: #555555;
   margin: 0;
 }
+
+/* Step change animation — cards slide up into view */
+@keyframes bw-slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.product-grid.bw-animate-in .product-card {
+  animation: bw-slideUpFadeIn 0.35s ease-out both;
+}
+
+/* Stagger each card by 50ms for a wave effect */
+.product-grid.bw-animate-in .product-card:nth-child(1) { animation-delay: 0ms; }
+.product-grid.bw-animate-in .product-card:nth-child(2) { animation-delay: 50ms; }
+.product-grid.bw-animate-in .product-card:nth-child(3) { animation-delay: 100ms; }
+.product-grid.bw-animate-in .product-card:nth-child(4) { animation-delay: 150ms; }
+.product-grid.bw-animate-in .product-card:nth-child(5) { animation-delay: 200ms; }
+.product-grid.bw-animate-in .product-card:nth-child(6) { animation-delay: 250ms; }
+.product-grid.bw-animate-in .product-card:nth-child(7) { animation-delay: 300ms; }
+.product-grid.bw-animate-in .product-card:nth-child(8) { animation-delay: 350ms; }
+.product-grid.bw-animate-in .product-card:nth-child(n+9) { animation-delay: 400ms; }
 
 /* Slot card grid — set per-row via CSS variable */
 .bundle-steps {

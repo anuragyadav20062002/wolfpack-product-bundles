@@ -217,29 +217,24 @@ const pdpPageHtml = `
       </div>
     </div>
 
-    <!-- Modal footer: price pill + nav buttons + discount messaging -->
+    <!-- Discount messaging in header area -->
+    <div class="modal-header-discount-messaging">
+      <div class="footer-discount-text">Add 1 more item to unlock 20% off</div>
+    </div>
+
+    <!-- Modal footer: floating pill design -->
     <div class="modal-footer">
-      <div class="modal-footer-grouped-content">
-        <div class="modal-footer-total-pill">
-          <span class="total-price-strike">$59.98</span>
-          <span class="total-price-final">$48.98</span>
-          <span class="price-cart-separator">|</span>
-          <span class="cart-badge-wrapper">
-            <span class="cart-badge-count">1</span>
-            <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-              <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-            </svg>
-          </span>
-        </div>
-        <div class="modal-footer-buttons-row">
-          <button class="modal-nav-button prev-button">Back</button>
-          <button class="modal-nav-button next-button">Next</button>
-        </div>
-        <div class="modal-footer-discount-messaging">
-          <div class="footer-discount-text">Add 1 more item to unlock 20% off</div>
-        </div>
+      <div class="modal-footer-cart-pill">
+        <span class="cart-badge-count">1</span>
+        <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+      </div>
+      <div class="modal-footer-nav-pill">
+        <button class="modal-nav-button prev-button">Back</button>
+        <button class="modal-nav-button next-button">Next</button>
       </div>
     </div>
 

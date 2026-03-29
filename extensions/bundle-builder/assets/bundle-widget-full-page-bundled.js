@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.3.6
- * Built   : 2026-03-26
+ * Version : 2.4.1
+ * Built   : 2026-03-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.3.6';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.1';
 (function() {
   'use strict';
 
@@ -84,15 +84,8 @@ const ConditionValidator = (function () {
    * @returns {{ allowed: boolean, limitText: string|null }}
    */
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
-    // No valid primary condition → enforce maxQuantity as an upper bound if set, otherwise allow
+    // No explicit condition configured → no upper bound; always allow increases
     if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
-      if (step && step.maxQuantity != null && Number(step.maxQuantity) > 0) {
-        const max = Number(step.maxQuantity);
-        const totalAfter = calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity);
-        if (totalAfter > max) {
-          return { allowed: false, limitText: `at most ${max}` };
-        }
-      }
       return { allowed: true, limitText: null };
     }
 
@@ -134,13 +127,10 @@ const ConditionValidator = (function () {
       total += qty || 0;
     }
 
-    // No explicit condition configured → fallback to minQuantity / maxQuantity range.
+    // No explicit condition configured → only enforce minQuantity; no upper bound
     if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
-      const max = step.maxQuantity != null ? Number(step.maxQuantity) : null;
-      if (total < min) return false;
-      if (max !== null && max > 0 && total > max) return false;
-      return true;
+      return total >= min;
     }
 
     // Primary condition

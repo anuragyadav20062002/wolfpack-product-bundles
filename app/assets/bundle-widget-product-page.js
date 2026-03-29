@@ -590,39 +590,28 @@ class BundleWidgetProductPage {
               <div class="modal-tabs"></div>
               <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
             </div>
+            <div class="modal-header-discount-messaging">
+              <div class="footer-discount-text"></div>
+            </div>
             <span class="close-button">&times;</span>
           </div>
           <div class="modal-body">
             <div class="product-grid"></div>
           </div>
           <div class="modal-footer">
-            <!-- Centered Grouped Content Container -->
-            <div class="modal-footer-grouped-content">
-              <!-- Total Pill - Sits Above Everything -->
-              <div class="modal-footer-total-pill">
-                <span class="total-price-strike"></span>
-                <span class="total-price-final"></span>
-                <span class="price-cart-separator">|</span>
-                <span class="cart-badge-wrapper">
-                  <span class="cart-badge-count">0</span>
-                  <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                  </svg>
-                </span>
-              </div>
-
-              <!-- Discount Messaging Section - Between Price and Buttons -->
-              <div class="modal-footer-discount-messaging">
-                <div class="footer-discount-text"></div>
-              </div>
-
-              <!-- Buttons Row - At Bottom -->
-              <div class="modal-footer-buttons-row">
-                <button class="modal-nav-button prev-button">Back</button>
-                <button class="modal-nav-button next-button">Next</button>
-              </div>
+            <!-- Cart count pill -->
+            <div class="modal-footer-cart-pill">
+              <span class="cart-badge-count">0</span>
+              <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+              </svg>
+            </div>
+            <!-- Nav pill with Back/Next -->
+            <div class="modal-footer-nav-pill">
+              <button class="modal-nav-button prev-button">Back</button>
+              <button class="modal-nav-button next-button">Next</button>
             </div>
           </div>
         </div>
@@ -1725,6 +1714,11 @@ class BundleWidgetProductPage {
       `;
     }).join('');
 
+    // Trigger slide-up animation for cards
+    productGrid.classList.remove('bw-animate-in');
+    void productGrid.offsetWidth; // force reflow
+    productGrid.classList.add('bw-animate-in');
+
     // Attach event handlers
     this.attachProductEventHandlers(productGrid, stepIndex);
   }
@@ -1972,9 +1966,11 @@ class BundleWidgetProductPage {
     this.updateAddToCartButton();
     this.updateFooterMessaging();
 
-    // Auto-step progression for bottom-sheet mode
+    // Auto-step progression
     if (this.widgetStyle === 'bottom-sheet') {
       this._autoProgressBottomSheet(stepIndex);
+    } else {
+      this._autoProgressClassicModal(stepIndex);
     }
   }
 
@@ -2017,6 +2013,24 @@ class BundleWidgetProductPage {
         }).catch(() => {});
       }, 300);
     }
+  }
+
+  /**
+   * Classic modal auto-close.
+   * When all steps are complete, auto-close the modal after a short delay.
+   */
+  _autoProgressClassicModal(stepIndex) {
+    if (!this.validateStep(stepIndex)) return;
+
+    const steps = this.selectedBundle.steps;
+    // Check if any step is still incomplete
+    for (let i = 0; i < steps.length; i++) {
+      if (!this.validateStep(i)) return; // at least one step incomplete — do nothing
+    }
+
+    // All steps complete — refresh tabs with checkmarks, then auto-close
+    this.renderModalTabs();
+    setTimeout(() => this.closeModal(), 500);
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
@@ -2155,7 +2169,8 @@ class BundleWidgetProductPage {
 
   updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
-    const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
+    const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging')
+      || this.elements.modal.querySelector('.modal-header-discount-messaging');
 
     if (!footerDiscountText) return;
 

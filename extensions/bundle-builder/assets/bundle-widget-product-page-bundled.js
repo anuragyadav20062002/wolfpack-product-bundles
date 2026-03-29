@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.3.6
- * Built   : 2026-03-26
+ * Version : 2.4.1
+ * Built   : 2026-03-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.3.6';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.1';
 (function() {
   'use strict';
 
@@ -84,15 +84,8 @@ const ConditionValidator = (function () {
    * @returns {{ allowed: boolean, limitText: string|null }}
    */
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
-    // No valid primary condition → enforce maxQuantity as an upper bound if set, otherwise allow
+    // No explicit condition configured → no upper bound; always allow increases
     if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
-      if (step && step.maxQuantity != null && Number(step.maxQuantity) > 0) {
-        const max = Number(step.maxQuantity);
-        const totalAfter = calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity);
-        if (totalAfter > max) {
-          return { allowed: false, limitText: `at most ${max}` };
-        }
-      }
       return { allowed: true, limitText: null };
     }
 
@@ -134,13 +127,10 @@ const ConditionValidator = (function () {
       total += qty || 0;
     }
 
-    // No explicit condition configured → fallback to minQuantity / maxQuantity range.
+    // No explicit condition configured → only enforce minQuantity; no upper bound
     if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
-      const max = step.maxQuantity != null ? Number(step.maxQuantity) : null;
-      if (total < min) return false;
-      if (max !== null && max > 0 && total > max) return false;
-      return true;
+      return total >= min;
     }
 
     // Primary condition
@@ -2108,39 +2098,28 @@ class BundleWidgetProductPage {
               <div class="modal-tabs"></div>
               <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
             </div>
+            <div class="modal-header-discount-messaging">
+              <div class="footer-discount-text"></div>
+            </div>
             <span class="close-button">&times;</span>
           </div>
           <div class="modal-body">
             <div class="product-grid"></div>
           </div>
           <div class="modal-footer">
-            <!-- Centered Grouped Content Container -->
-            <div class="modal-footer-grouped-content">
-              <!-- Total Pill - Sits Above Everything -->
-              <div class="modal-footer-total-pill">
-                <span class="total-price-strike"></span>
-                <span class="total-price-final"></span>
-                <span class="price-cart-separator">|</span>
-                <span class="cart-badge-wrapper">
-                  <span class="cart-badge-count">0</span>
-                  <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                  </svg>
-                </span>
-              </div>
-
-              <!-- Discount Messaging Section - Between Price and Buttons -->
-              <div class="modal-footer-discount-messaging">
-                <div class="footer-discount-text"></div>
-              </div>
-
-              <!-- Buttons Row - At Bottom -->
-              <div class="modal-footer-buttons-row">
-                <button class="modal-nav-button prev-button">Back</button>
-                <button class="modal-nav-button next-button">Next</button>
-              </div>
+            <!-- Cart count pill -->
+            <div class="modal-footer-cart-pill">
+              <span class="cart-badge-count">0</span>
+              <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+              </svg>
+            </div>
+            <!-- Nav pill with Back/Next -->
+            <div class="modal-footer-nav-pill">
+              <button class="modal-nav-button prev-button">Back</button>
+              <button class="modal-nav-button next-button">Next</button>
             </div>
           </div>
         </div>
@@ -3243,6 +3222,11 @@ class BundleWidgetProductPage {
       `;
     }).join('');
 
+    // Trigger slide-up animation for cards
+    productGrid.classList.remove('bw-animate-in');
+    void productGrid.offsetWidth; // force reflow
+    productGrid.classList.add('bw-animate-in');
+
     // Attach event handlers
     this.attachProductEventHandlers(productGrid, stepIndex);
   }
@@ -3490,9 +3474,11 @@ class BundleWidgetProductPage {
     this.updateAddToCartButton();
     this.updateFooterMessaging();
 
-    // Auto-step progression for bottom-sheet mode
+    // Auto-step progression
     if (this.widgetStyle === 'bottom-sheet') {
       this._autoProgressBottomSheet(stepIndex);
+    } else {
+      this._autoProgressClassicModal(stepIndex);
     }
   }
 
@@ -3535,6 +3521,24 @@ class BundleWidgetProductPage {
         }).catch(() => {});
       }, 300);
     }
+  }
+
+  /**
+   * Classic modal auto-close.
+   * When all steps are complete, auto-close the modal after a short delay.
+   */
+  _autoProgressClassicModal(stepIndex) {
+    if (!this.validateStep(stepIndex)) return;
+
+    const steps = this.selectedBundle.steps;
+    // Check if any step is still incomplete
+    for (let i = 0; i < steps.length; i++) {
+      if (!this.validateStep(i)) return; // at least one step incomplete — do nothing
+    }
+
+    // All steps complete — refresh tabs with checkmarks, then auto-close
+    this.renderModalTabs();
+    setTimeout(() => this.closeModal(), 500);
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
@@ -3673,7 +3677,8 @@ class BundleWidgetProductPage {
 
   updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
     const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
-    const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
+    const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging')
+      || this.elements.modal.querySelector('.modal-header-discount-messaging');
 
     if (!footerDiscountText) return;
 
