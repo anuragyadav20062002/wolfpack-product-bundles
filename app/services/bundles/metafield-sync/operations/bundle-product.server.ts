@@ -224,6 +224,9 @@ export async function updateBundleProductMetafields(
     status: bundleConfiguration.status || BundleStatus.ACTIVE, // Widget needs this for filtering
     bundleType: bundleConfiguration.bundleType || BundleType.PRODUCT_PAGE, // Widget needs this for selection
     shopifyProductId: bundleConfiguration.shopifyProductId || null, // Product ID for matching
+    fullPagePageHandle: bundleConfiguration.bundleType === BundleType.FULL_PAGE
+      ? (bundleConfiguration.shopifyPageHandle || null)
+      : null,
     bundleVariantId: bundleVariantId, // Bundle parent variant ID for cart transform EXPAND operation
     steps: (bundleConfiguration.steps || []).map((step: any) => ({
       id: step.id,
