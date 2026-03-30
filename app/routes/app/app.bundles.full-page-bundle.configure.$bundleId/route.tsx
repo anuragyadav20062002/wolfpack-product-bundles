@@ -85,6 +85,7 @@ import {
   handleEnsureBundleTemplates,
   handleCheckFullPageTemplate,
   handleValidateWidgetPlacement,
+  handleCreatePreviewPage,
 } from "./handlers";
 
 // Types - extracted to separate module for better organization
@@ -240,6 +241,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleCheckFullPageTemplate(admin, session);
       case "validateWidgetPlacement":
         return await handleValidateWidgetPlacement(admin, session, bundleId);
+      case "createPreviewPage":
+        return await handleCreatePreviewPage(admin, session, bundleId);
       case "syncBundle":
         return await handleSyncBundle(admin, session, bundleId);
       default:
@@ -657,6 +660,11 @@ export default function ConfigureBundleFlow() {
             }
           }
           revalidator.revalidate();
+        } else if ('shareablePreviewUrl' in result && result.shareablePreviewUrl) {
+          // Draft preview page created/retrieved — open in new tab
+          shopify.toast.show("Opening preview in new tab…", { duration: 2000 });
+          window.open(result.shareablePreviewUrl as string, '_blank');
+          revalidator.revalidate();
         } else if ('synced' in result && result.synced) {
           // Sync bundle response
           shopify.toast.show(('message' in result ? result.message : null) || "Bundle synced successfully", { isError: false });
@@ -726,10 +734,10 @@ export default function ConfigureBundleFlow() {
     // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
     if (bundle.bundleType === 'full_page') {
       if (!bundle.shopifyPageHandle) {
-        shopify.toast.show("Bundle page not created yet. Please use 'Add to Storefront' to create the bundle page first.", {
-          isError: true,
-          duration: 5000
-        });
+        // No published page yet — trigger draft preview page creation
+        const formData = new FormData();
+        formData.append("intent", "createPreviewPage");
+        fetcher.submit(formData, { method: "post" });
         return;
       }
 
@@ -1303,6 +1311,15 @@ export default function ConfigureBundleFlow() {
             }
       }
       secondaryActions={[
+        ...(!bundle.shopifyPageHandle
+          ? [{
+              content: "Preview on Storefront",
+              icon: ViewIcon,
+              onAction: () => { void handlePreviewBundle(); },
+              loading: fetcher.state !== 'idle',
+              disabled: fetcher.state !== 'idle',
+            }]
+          : []),
         {
           content: "Sync Bundle",
           icon: RefreshIcon,
