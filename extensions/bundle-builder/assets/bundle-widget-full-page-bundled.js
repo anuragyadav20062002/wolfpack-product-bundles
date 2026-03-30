@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.4.1
- * Built   : 2026-03-29
+ * Version : 2.4.2
+ * Built   : 2026-03-30
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.4.1';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.2';
 (function() {
   'use strict';
 
@@ -2621,6 +2621,13 @@ class BundleWidgetFullPage {
 
       // Hide overlay now that UI is fully rendered
       this.hideLoadingOverlay();
+
+      // For full-page bundles using cached config: schedule a background layout
+      // refresh so any layout change saved by the merchant since the CDN-cached
+      // page HTML was last built is picked up within seconds of page load.
+      if (!window.Shopify?.designMode) {
+        this._scheduleLayoutRefresh().catch(() => {});
+      }
 
       // Attach event listeners
       this.attachEventListeners();
@@ -6775,6 +6782,54 @@ class BundleWidgetFullPage {
    * Fire-and-forget error report to the server so AppLogger can track widget failures.
    * Does NOT await — never blocks the render path.
    */
+
+  /**
+   * Background layout refresh — runs after initial render.
+   *
+   * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
+   * after the merchant saves a layout change. This method fetches the latest config
+   * from the proxy API and, if the layout differs from what was cached, re-renders
+   * the steps container so the correct layout is shown within seconds of page load.
+   *
+   * Only runs when:
+   *   1. Cached data was used for first render (data-bundle-config attr was present)
+   *   2. Not in the Shopify theme editor (designMode)
+   *
+   * Fire-and-forget: all errors are silently swallowed.
+   */
+  async _scheduleLayoutRefresh() {
+    const bundleId = this.container.dataset.bundleId;
+    if (!bundleId) return;
+
+    // Only needed when we served the first render from the CDN-cached metafield.
+    // If the proxy API was used for the first render, the data is already fresh.
+    const cachedAttr = this.container.dataset.bundleConfig;
+    const usedCache = cachedAttr && cachedAttr !== 'null' && cachedAttr !== 'undefined' && cachedAttr.trim() !== '';
+    if (!usedCache) return;
+
+    try {
+      const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
+      const response = await fetch(apiUrl);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!data?.bundle) return;
+
+      const freshLayout = data.bundle.fullPageLayout || 'footer_bottom';
+      const currentLayout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+
+      if (freshLayout !== currentLayout && this.selectedBundle) {
+        this.selectedBundle.fullPageLayout = freshLayout;
+        if (this.bundleData?.[bundleId]) {
+          this.bundleData[bundleId].fullPageLayout = freshLayout;
+        }
+        await this.renderSteps();
+      }
+    } catch (_e) {
+      // Best-effort: silently ignore all errors
+    }
+  }
+
   _reportError(error) {
     try {
       const payload = {

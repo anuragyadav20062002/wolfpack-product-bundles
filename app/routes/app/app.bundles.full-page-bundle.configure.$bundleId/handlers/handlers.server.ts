@@ -704,13 +704,16 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       }
 
       AppLogger.debug("[METAFIELDS] All metafields updated successfully");
+    }
 
-      // Keep page metafield cache in sync with every save so the storefront widget
-      // reflects changes immediately without requiring a manual "Sync Bundle".
-      // Non-fatal: a write failure must not fail the Save response.
-      if (updatedBundle.shopifyPageId) {
-        await writeBundleConfigPageMetafield(admin, updatedBundle.shopifyPageId, updatedBundle);
-      }
+    // Keep page metafield cache in sync with every save so the storefront widget
+    // reflects layout/config changes without requiring a manual "Sync Bundle".
+    // Intentionally placed OUTSIDE the shopifyProductId guard: full-page bundles that
+    // have no redirect product (shopifyProductId = null) still need the page metafield
+    // updated so the storefront widget picks up layout changes.
+    // Non-fatal: writeBundleConfigPageMetafield has its own try/catch and never throws.
+    if (updatedBundle.shopifyPageId) {
+      await writeBundleConfigPageMetafield(admin, updatedBundle.shopifyPageId, updatedBundle);
     }
 
     // BUNDLE INDEX: No longer needed
