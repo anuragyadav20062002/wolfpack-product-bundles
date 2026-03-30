@@ -22,6 +22,7 @@ export interface FullPageBundleResult {
   pageId?: string;
   pageHandle?: string;
   pageUrl?: string;
+  shareablePreviewUrl?: string;
   widgetInstallationRequired?: boolean;
   widgetInstallationLink?: string;
   slugAdjusted?: boolean;

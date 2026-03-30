@@ -91,6 +91,8 @@ model Bundle {
   shopifyProductHandle String? // Shopify Product handle for preview URLs (e.g., "summer-bundle")
   shopifyPageHandle String? // Shopify Page handle for full-page bundles (e.g., "build-your-bundle")
   shopifyPageId    String? // Shopify Page ID (GID) for full-page bundles
+  shopifyPreviewPageId     String? // GID of draft preview page (cleared after publishing)
+  shopifyPreviewPageHandle String? // Handle of draft preview page (for reference and cleanup)
   templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
   promoBannerBgImage String? // URL of the promo banner background image (full-page bundles only)
   promoBannerBgImageCrop String? // JSON {x,y,width} percentages defining the visible crop region

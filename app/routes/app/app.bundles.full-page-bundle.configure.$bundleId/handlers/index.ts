@@ -15,5 +15,6 @@ export {
   handleEnsureBundleTemplates,
   handleCheckFullPageTemplate,
   handleValidateWidgetPlacement,
+  handleCreatePreviewPage,
   handleRenamePageSlug,
 } from './handlers.server';
