@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.4.5
+ * Version : 2.4.6
  * Built   : 2026-03-31
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.4.5';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.6';
 (function() {
   'use strict';
 
@@ -1859,15 +1859,15 @@ class BundleWidgetProductPage {
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
     this._stepFetchFailed = {};
 
-    // Pre-mark default steps as complete using a sentinel variant ID
-    // (default products are always included in the bundle — no user selection required)
-    if (this.widgetStyle === 'bottom-sheet') {
-      this.selectedBundle.steps.forEach((step, i) => {
-        if (step.isDefault && step.defaultVariantId) {
-          this.selectedProducts[i][step.defaultVariantId] = 1;
-        }
-      });
-    }
+    // Seed default steps into selectedProducts regardless of widget style.
+    // Default products are always included in the bundle — no user selection required.
+    // buildCartItems() reads selectedProducts, so without this the default item is
+    // silently excluded from the cart payload on classic modal style bundles.
+    this.selectedBundle.steps.forEach((step, i) => {
+      if (step.isDefault && step.defaultVariantId) {
+        this.selectedProducts[i][step.defaultVariantId] = 1;
+      }
+    });
   }
 
   /**
@@ -2630,6 +2630,10 @@ class BundleWidgetProductPage {
 
   // Remove a specific product from selection (decrease quantity by 1)
   removeProductFromSelection(stepIndex, variantId) {
+    // Guard: default products are compulsory — they must always stay in selectedProducts
+    const step = this.selectedBundle?.steps[stepIndex];
+    if (step?.isDefault && step?.defaultVariantId === variantId) return;
+
     const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
 
     if (currentQuantity > 1) {
