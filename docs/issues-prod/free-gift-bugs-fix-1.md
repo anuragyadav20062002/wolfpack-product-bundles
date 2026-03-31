@@ -1,10 +1,10 @@
 # Issue: Free Gift Critical Bug Fixes
 
 **Issue ID:** free-gift-bugs-fix-1
-**Status:** Completed
+**Status:** Completed — All 7 bugs fixed across 2 commits
 **Priority:** 🔴 High
 **Created:** 2026-03-31
-**Last Updated:** 2026-03-31 04:30
+**Last Updated:** 2026-04-01 00:30
 
 ## Overview
 
@@ -57,4 +57,24 @@ This issue covers the 3 CRITICAL bugs that must be fixed first:
 - ✅ CSS sizes: 96,061 B (under 100,000 B limit)
 - ✅ Cart transform WASM: Function built successfully
 
-**Status:** Ready for deploy + Sync Bundle on affected bundles
+**Status:** All 7 bugs fixed. Ready for deploy + Sync Bundle on affected bundles.
+
+### 2026-04-01 00:30 - Bugs #3, #4, #7 Fixed (PPB Widget)
+
+**Bug #3 — PPB: free gift slot card not synced when paid selection changes**
+- ✅ Added `_syncFreeGiftSlotCard()` helper — re-renders only the free gift slot card
+- ✅ Called from `updateProductSelection()` after each paid step selection update
+- File: `app/assets/bundle-widget-product-page.js`
+
+**Bug #4 — PPB: `isStepAccessible()` blocks on free gift / default steps**
+- ✅ Added `if (step?.isFreeGift || step?.isDefault) continue;` guard to loop
+- File: `app/assets/bundle-widget-product-page.js`
+
+**Bug #7 — PPB: auto-advance and auto-close don't skip free gift steps**
+- ✅ `bsFindNextIncompleteStep()`: added `isFreeGift` to the skip list alongside `isDefault`
+- ✅ `_autoProgressClassicModal()`: skip `isFreeGift` / `isDefault` in "all complete" loop
+- File: `app/assets/bundle-widget-product-page.js`
+
+- ✅ ESLint: 0 errors
+- ✅ Widget version bumped: 2.4.4 → 2.4.5
+- ✅ `npm run build:widgets` — full-page 253.8 KB, product-page 153.4 KB
