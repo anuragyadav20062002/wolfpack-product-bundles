@@ -26,7 +26,6 @@ import { BillingService } from "../../../services/billing.server";
 import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
-import { CartPropertyFixContent } from "../../../components/CartPropertyFixCard";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
