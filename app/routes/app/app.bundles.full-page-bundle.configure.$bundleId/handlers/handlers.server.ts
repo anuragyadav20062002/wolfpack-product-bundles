@@ -262,6 +262,59 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
   });
 }
 
+/**
+ * Create a Shopify URL redirect from /products/{productHandle} → /pages/{pageHandle}.
+ * Shopify URL redirects are applied before theme routing, so this reliably sends
+ * customers to the full-page bundle page even if the product still exists.
+ * Non-fatal — logs warnings but never throws.
+ */
+async function createProductPageRedirect(
+  admin: ShopifyAdmin,
+  productId: string,
+  pageHandle: string,
+): Promise<void> {
+  try {
+    const productRes = await admin.graphql(`
+      query GetProductHandle($id: ID!) {
+        product(id: $id) { handle }
+      }
+    `, { variables: { id: productId } });
+    const productData = await productRes.json() as { data?: { product?: { handle?: string } } };
+    const productHandle = productData?.data?.product?.handle;
+
+    if (!productHandle) {
+      AppLogger.warn("[URL_REDIRECT] Could not resolve product handle — skipping redirect creation", { productId });
+      return;
+    }
+
+    const path = `/products/${productHandle}`;
+    const target = `/pages/${pageHandle}`;
+
+    const redirectRes = await admin.graphql(`
+      mutation CreateBundleRedirect($path: String!, $target: String!) {
+        urlRedirectCreate(urlRedirect: { path: $path, target: $target }) {
+          urlRedirect { id }
+          userErrors { field message }
+        }
+      }
+    `, { variables: { path, target } });
+    const redirectData = await redirectRes.json() as any;
+    const userErrors = redirectData?.data?.urlRedirectCreate?.userErrors ?? [];
+
+    if (userErrors.length > 0) {
+      AppLogger.warn("[URL_REDIRECT] userErrors creating product page redirect (may already exist)", {
+        productId, path, target, userErrors,
+      });
+    } else {
+      AppLogger.info("[URL_REDIRECT] Created product page redirect", { path, target });
+    }
+  } catch (error) {
+    AppLogger.warn("[URL_REDIRECT] Failed to create product page redirect (non-fatal)", {
+      productId, pageHandle,
+    }, error as Error);
+  }
+}
+
 function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<string, unknown> = {}) {
   return {
     bundleId: bundle.id,
@@ -1243,6 +1296,11 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
 
         await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
 
+        // Create URL redirect so /products/{handle} → /pages/{pageHandle} at routing level
+        if (bundle.shopifyProductId && bundle.shopifyPreviewPageHandle) {
+          createProductPageRedirect(admin, bundle.shopifyProductId, bundle.shopifyPreviewPageHandle).catch(() => {});
+        }
+
         AppLogger.info("[WIDGET_PLACEMENT] Draft preview page promoted to published", {
           bundleId,
           pageId: bundle.shopifyPreviewPageId,
@@ -1310,6 +1368,11 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
 
     // Write bundle config as page metafield for zero-proxy widget initialisation (non-fatal)
     await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
+
+    // Create URL redirect so /products/{handle} → /pages/{pageHandle} at routing level (non-fatal)
+    if (bundle.shopifyProductId && result.pageHandle) {
+      createProductPageRedirect(admin, bundle.shopifyProductId, result.pageHandle).catch(() => {});
+    }
 
     if (bundle.shopifyProductId) {
       try {
