@@ -179,6 +179,13 @@ class BundleWidgetFullPage {
       // Hide overlay now that UI is fully rendered
       this.hideLoadingOverlay();
 
+      // For full-page bundles using cached config: schedule a background layout
+      // refresh so any layout change saved by the merchant since the CDN-cached
+      // page HTML was last built is picked up within seconds of page load.
+      if (!window.Shopify?.designMode) {
+        this._scheduleLayoutRefresh().catch(() => {});
+      }
+
       // Attach event listeners
       this.attachEventListeners();
 
@@ -978,12 +985,14 @@ class BundleWidgetFullPage {
     totalEl.className = 'fpb-mobile-total';
     totalEl.textContent = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
 
+    const conditionlessMobile = this.bundleHasNoConditions();
+    const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
-    ctaBtn.textContent = (isLastStep && isComplete) ? 'Add to Cart' : 'Next';
-    if (isLastStep && !isComplete) ctaBtn.disabled = true;
+    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? 'Add to Cart' : 'Next';
+    if (conditionlessMobile ? !hasSelectionMobile : (isLastStep && !isComplete)) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
-      if (isLastStep && isComplete) {
+      if (conditionlessMobile || (isLastStep && isComplete)) {
         this.addBundleToCart();
       } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
         this.activeCollectionId = null;
@@ -1182,15 +1191,17 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
     const canProceed = this.canProceedToNextStep();
+    const conditionless = this.bundleHasNoConditions();
+    const hasSelection = conditionless && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
-    nextBtn.textContent = isLastStep ? 'Add to Cart' : 'Next Step';
-    if (isLastStep ? !this.areBundleConditionsMet() : !canProceed) {
+    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';
+    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)) {
       nextBtn.disabled = true;
     }
     nextBtn.addEventListener('click', () => {
-      if (isLastStep) {
+      if (conditionless || isLastStep) {
         this.addBundleToCart();
       } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
         const giftName = this.freeGiftStep?.freeGiftName || 'gift';
@@ -2256,12 +2267,14 @@ class BundleWidgetFullPage {
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'footer-cta-btn';
     ctaBtn.setAttribute('type', 'button');
-    ctaBtn.textContent = isLastStep ? (this.config.addToCartText || 'Add to Cart') : 'Next';
-    if (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep()) {
+    const conditionless = this.bundleHasNoConditions();
+    const hasSelection = conditionless && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    ctaBtn.textContent = (conditionless || isLastStep) ? (this.config.addToCartText || 'Add to Cart') : 'Next';
+    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
     }
     ctaBtn.addEventListener('click', () => {
-      if (isLastStep) {
+      if (conditionless || isLastStep) {
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
@@ -2579,6 +2592,17 @@ class BundleWidgetFullPage {
     return this.selectedBundle.steps.every((step, index) => {
       if (step.isFreeGift || step.isDefault) return true; // non-blocking steps
       return this.isStepCompleted(index);
+    });
+  }
+
+  // Returns true when every non-free-gift, non-default step has no condition
+  // configured at all (conditionType / conditionOperator / conditionValue all absent).
+  // In this mode the customer can add to cart at any step without completing all steps.
+  bundleHasNoConditions() {
+    if (!this.selectedBundle?.steps?.length) return false;
+    return this.selectedBundle.steps.every(step => {
+      if (step.isFreeGift || step.isDefault) return true;
+      return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
     });
   }
 
@@ -4332,6 +4356,54 @@ class BundleWidgetFullPage {
    * Fire-and-forget error report to the server so AppLogger can track widget failures.
    * Does NOT await — never blocks the render path.
    */
+
+  /**
+   * Background layout refresh — runs after initial render.
+   *
+   * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
+   * after the merchant saves a layout change. This method fetches the latest config
+   * from the proxy API and, if the layout differs from what was cached, re-renders
+   * the steps container so the correct layout is shown within seconds of page load.
+   *
+   * Only runs when:
+   *   1. Cached data was used for first render (data-bundle-config attr was present)
+   *   2. Not in the Shopify theme editor (designMode)
+   *
+   * Fire-and-forget: all errors are silently swallowed.
+   */
+  async _scheduleLayoutRefresh() {
+    const bundleId = this.container.dataset.bundleId;
+    if (!bundleId) return;
+
+    // Only needed when we served the first render from the CDN-cached metafield.
+    // If the proxy API was used for the first render, the data is already fresh.
+    const cachedAttr = this.container.dataset.bundleConfig;
+    const usedCache = cachedAttr && cachedAttr !== 'null' && cachedAttr !== 'undefined' && cachedAttr.trim() !== '';
+    if (!usedCache) return;
+
+    try {
+      const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
+      const response = await fetch(apiUrl);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!data?.bundle) return;
+
+      const freshLayout = data.bundle.fullPageLayout || 'footer_bottom';
+      const currentLayout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+
+      if (freshLayout !== currentLayout && this.selectedBundle) {
+        this.selectedBundle.fullPageLayout = freshLayout;
+        if (this.bundleData?.[bundleId]) {
+          this.bundleData[bundleId].fullPageLayout = freshLayout;
+        }
+        await this.renderSteps();
+      }
+    } catch (_e) {
+      // Best-effort: silently ignore all errors
+    }
+  }
+
   _reportError(error) {
     try {
       const payload = {

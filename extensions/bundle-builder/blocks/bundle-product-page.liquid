@@ -235,7 +235,6 @@
 {% assign bundle_id = nil %}
 {% assign should_show_widget = false %}
 {% assign hide_default_buttons = false %}
-{% assign is_full_page_bundle_product = false %}
 {% assign full_page_redirect_handle = blank %}
 
 {% comment %}
@@ -267,7 +266,6 @@
       {% assign should_show_widget = true %}
       {% assign hide_default_buttons = true %}
       {% if bundle_ui_config.bundleType == 'full_page' %}
-        {% assign is_full_page_bundle_product = true %}
         {% assign full_page_redirect_handle = bundle_ui_config.fullPagePageHandle %}
       {% endif %}
 

@@ -39,7 +39,8 @@ export async function createFullPageBundle(
   apiKey: string,
   bundleId: string,
   bundleName: string,
-  desiredSlug?: string
+  desiredSlug?: string,
+  isPublished = true
 ): Promise<FullPageBundleResult> {
   const shop = session.shop;
 
@@ -94,6 +95,7 @@ export async function createFullPageBundle(
 
     const checkData = await checkResponse.json();
     let createdPage = checkData.data?.pages?.edges?.[0]?.node || null;
+    let shareablePreviewUrl: string | undefined;
 
     // If page doesn't exist, create it
     if (!createdPage) {
@@ -112,6 +114,7 @@ export async function createFullPageBundle(
               title
               handle
               templateSuffix
+              shareablePreviewUrl
             }
             userErrors {
               field
@@ -121,24 +124,13 @@ export async function createFullPageBundle(
         }
       `;
 
-      const pageInput: Record<string, any> = {
-        title: pageTitle,
-        handle: pageHandle,
-        body: '',
-        isPublished: true
-      };
-
-      if (templateSuffix) {
-        pageInput.templateSuffix = templateSuffix;
-      }
-
       const pageResponse = await admin.graphql(CREATE_PAGE, {
         variables: {
           page: {
             title: pageTitle,
             handle: pageHandle,
             body: '',
-            isPublished: true,
+            isPublished,
             templateSuffix: 'full-page-bundle'
           }
         }
@@ -168,6 +160,8 @@ export async function createFullPageBundle(
           errorType: 'page_creation_failed'
         };
       }
+
+      shareablePreviewUrl = pageData.data?.pageCreate?.page?.shareablePreviewUrl ?? undefined;
 
       AppLogger.info('Page created successfully', {
         component: 'WidgetFullPageBundle',
@@ -300,7 +294,8 @@ export async function createFullPageBundle(
         success: true,
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
-        pageUrl: pageUrl,
+        pageUrl: isPublished ? pageUrl : undefined,
+        shareablePreviewUrl: !isPublished ? shareablePreviewUrl : undefined,
         slugAdjusted,
         widgetInstallationRequired: true,
         widgetInstallationLink: deepLink.url
@@ -311,7 +306,8 @@ export async function createFullPageBundle(
       success: true,
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
-      pageUrl: pageUrl,
+      pageUrl: isPublished ? pageUrl : undefined,
+      shareablePreviewUrl: !isPublished ? shareablePreviewUrl : undefined,
       slugAdjusted
     };
 
@@ -467,5 +463,112 @@ export async function writeBundleConfigPageMetafield(
       pageId,
       bundleId: bundle?.id,
     }, error as Error);
+  }
+}
+
+/**
+ * Promote a draft Shopify page to published.
+ *
+ * Used when the merchant clicks "Add to Storefront" after previewing their bundle
+ * via a draft page. Calls pageUpdate with isPublished: true.
+ *
+ * @param admin  - Shopify Admin API client
+ * @param pageId - GID of the draft page (e.g. "gid://shopify/Page/123")
+ */
+export async function publishPreviewPage(
+  admin: any,
+  pageId: string
+): Promise<{ success: boolean; error?: string }> {
+  const PUBLISH_PAGE = `
+    mutation publishPage($id: ID!, $page: PageUpdateInput!) {
+      pageUpdate(id: $id, page: $page) {
+        page {
+          id
+          handle
+          isPublished
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(PUBLISH_PAGE, {
+      variables: { id: pageId, page: { isPublished: true } },
+    });
+    const data = await response.json();
+    const userErrors = data.data?.pageUpdate?.userErrors ?? [];
+
+    if (userErrors.length > 0) {
+      AppLogger.error('publishPreviewPage: pageUpdate returned userErrors', {
+        component: 'WidgetFullPageBundle',
+        pageId,
+        errors: userErrors,
+      });
+      return { success: false, error: userErrors[0].message };
+    }
+
+    AppLogger.info('publishPreviewPage: draft page promoted to published', {
+      component: 'WidgetFullPageBundle',
+      pageId,
+    });
+    return { success: true };
+  } catch (error) {
+    AppLogger.error('publishPreviewPage: unexpected error', {
+      component: 'WidgetFullPageBundle',
+      pageId,
+    }, error as Error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * Retrieve the shareablePreviewUrl for an existing draft page.
+ *
+ * Used on subsequent "Preview" clicks when a draft page already exists
+ * (stored as shopifyPreviewPageId on the bundle). Returns pageNotFound:true
+ * if the page has been deleted externally.
+ *
+ * @param admin  - Shopify Admin API client
+ * @param pageId - GID of the draft page
+ */
+export async function getPreviewPageUrl(
+  admin: any,
+  pageId: string
+): Promise<{ success: boolean; shareablePreviewUrl?: string; pageNotFound?: boolean; error?: string }> {
+  const GET_PREVIEW_URL = `
+    query getPagePreviewUrl($id: ID!) {
+      page(id: $id) {
+        id
+        shareablePreviewUrl
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(GET_PREVIEW_URL, {
+      variables: { id: pageId },
+    });
+    const data = await response.json();
+    const page = data.data?.page;
+
+    if (!page) {
+      AppLogger.warn('getPreviewPageUrl: page not found (may have been deleted)', {
+        component: 'WidgetFullPageBundle',
+        pageId,
+      });
+      return { success: false, pageNotFound: true };
+    }
+
+    return { success: true, shareablePreviewUrl: page.shareablePreviewUrl };
+  } catch (error) {
+    AppLogger.error('getPreviewPageUrl: unexpected error', {
+      component: 'WidgetFullPageBundle',
+      pageId,
+    }, error as Error);
+    return { success: false, error: (error as Error).message };
   }
 }

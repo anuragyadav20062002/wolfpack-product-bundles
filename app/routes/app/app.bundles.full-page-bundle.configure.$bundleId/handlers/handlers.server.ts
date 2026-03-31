@@ -11,7 +11,7 @@ import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
-import { renamePageHandle, writeBundleConfigPageMetafield } from "../../../../services/widget-installation/widget-full-page-bundle.server";
+import { renamePageHandle, writeBundleConfigPageMetafield, publishPreviewPage, getPreviewPageUrl } from "../../../../services/widget-installation/widget-full-page-bundle.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -260,6 +260,59 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
         : [],
     };
   });
+}
+
+/**
+ * Create a Shopify URL redirect from /products/{productHandle} → /pages/{pageHandle}.
+ * Shopify URL redirects are applied before theme routing, so this reliably sends
+ * customers to the full-page bundle page even if the product still exists.
+ * Non-fatal — logs warnings but never throws.
+ */
+async function createProductPageRedirect(
+  admin: ShopifyAdmin,
+  productId: string,
+  pageHandle: string,
+): Promise<void> {
+  try {
+    const productRes = await admin.graphql(`
+      query GetProductHandle($id: ID!) {
+        product(id: $id) { handle }
+      }
+    `, { variables: { id: productId } });
+    const productData = await productRes.json() as { data?: { product?: { handle?: string } } };
+    const productHandle = productData?.data?.product?.handle;
+
+    if (!productHandle) {
+      AppLogger.warn("[URL_REDIRECT] Could not resolve product handle — skipping redirect creation", { productId });
+      return;
+    }
+
+    const path = `/products/${productHandle}`;
+    const target = `/pages/${pageHandle}`;
+
+    const redirectRes = await admin.graphql(`
+      mutation CreateBundleRedirect($path: String!, $target: String!) {
+        urlRedirectCreate(urlRedirect: { path: $path, target: $target }) {
+          urlRedirect { id }
+          userErrors { field message }
+        }
+      }
+    `, { variables: { path, target } });
+    const redirectData = await redirectRes.json() as any;
+    const userErrors = redirectData?.data?.urlRedirectCreate?.userErrors ?? [];
+
+    if (userErrors.length > 0) {
+      AppLogger.warn("[URL_REDIRECT] userErrors creating product page redirect (may already exist)", {
+        productId, path, target, userErrors,
+      });
+    } else {
+      AppLogger.info("[URL_REDIRECT] Created product page redirect", { path, target });
+    }
+  } catch (error) {
+    AppLogger.warn("[URL_REDIRECT] Failed to create product page redirect (non-fatal)", {
+      productId, pageHandle,
+    }, error as Error);
+  }
 }
 
 function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<string, unknown> = {}) {
@@ -704,13 +757,16 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       }
 
       AppLogger.debug("[METAFIELDS] All metafields updated successfully");
+    }
 
-      // Keep page metafield cache in sync with every save so the storefront widget
-      // reflects changes immediately without requiring a manual "Sync Bundle".
-      // Non-fatal: a write failure must not fail the Save response.
-      if (updatedBundle.shopifyPageId) {
-        await writeBundleConfigPageMetafield(admin, updatedBundle.shopifyPageId, updatedBundle);
-      }
+    // Keep page metafield cache in sync with every save so the storefront widget
+    // reflects layout/config changes without requiring a manual "Sync Bundle".
+    // Intentionally placed OUTSIDE the shopifyProductId guard: full-page bundles that
+    // have no redirect product (shopifyProductId = null) still need the page metafield
+    // updated so the storefront widget picks up layout changes.
+    // Non-fatal: writeBundleConfigPageMetafield has its own try/catch and never throws.
+    if (updatedBundle.shopifyPageId) {
+      await writeBundleConfigPageMetafield(admin, updatedBundle.shopifyPageId, updatedBundle);
     }
 
     // BUNDLE INDEX: No longer needed
@@ -1221,6 +1277,58 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
       }, { status: 404 });
     }
 
+    // If a draft preview page exists, promote it to published instead of creating a new page.
+    // This prevents duplicate Shopify pages when the merchant previewed before publishing.
+    if (bundle.shopifyPreviewPageId) {
+      const publishResult = await publishPreviewPage(admin, bundle.shopifyPreviewPageId);
+
+      if (publishResult.success) {
+        await db.bundle.update({
+          where: { id: bundleId, shopId: session.shop },
+          data: {
+            shopifyPageHandle: bundle.shopifyPreviewPageHandle,
+            shopifyPageId: bundle.shopifyPreviewPageId,
+            shopifyPreviewPageId: null,
+            shopifyPreviewPageHandle: null,
+            status: BundleStatus.ACTIVE,
+          },
+        });
+
+        await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
+
+        // Create URL redirect so /products/{handle} → /pages/{pageHandle} at routing level
+        if (bundle.shopifyProductId && bundle.shopifyPreviewPageHandle) {
+          createProductPageRedirect(admin, bundle.shopifyProductId, bundle.shopifyPreviewPageHandle).catch(() => {});
+        }
+
+        AppLogger.info("[WIDGET_PLACEMENT] Draft preview page promoted to published", {
+          bundleId,
+          pageId: bundle.shopifyPreviewPageId,
+          pageHandle: bundle.shopifyPreviewPageHandle,
+        });
+
+        return json({
+          success: true,
+          pageHandle: bundle.shopifyPreviewPageHandle,
+          pageId: bundle.shopifyPreviewPageId,
+          pageUrl: `https://${session.shop.replace('.myshopify.com', '')}.myshopify.com/pages/${bundle.shopifyPreviewPageHandle}`,
+          slugAdjusted: false,
+          message: `Bundle page published successfully!`,
+        });
+      }
+
+      // Promotion failed (page deleted externally) — clear stale preview refs and fall through
+      AppLogger.warn("[WIDGET_PLACEMENT] Failed to promote draft preview page, falling back to create", {
+        bundleId,
+        previewPageId: bundle.shopifyPreviewPageId,
+        error: publishResult.error,
+      });
+      await db.bundle.update({
+        where: { id: bundleId, shopId: session.shop },
+        data: { shopifyPreviewPageId: null, shopifyPreviewPageHandle: null },
+      });
+    }
+
     // UPDATED: Single-click workflow for full-page bundles
     // This will:
     // 1. Ensures page.full-page-bundle.json template exists in theme
@@ -1260,6 +1368,11 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
 
     // Write bundle config as page metafield for zero-proxy widget initialisation (non-fatal)
     await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
+
+    // Create URL redirect so /products/{handle} → /pages/{pageHandle} at routing level (non-fatal)
+    if (bundle.shopifyProductId && result.pageHandle) {
+      createProductPageRedirect(admin, bundle.shopifyProductId, result.pageHandle).catch(() => {});
+    }
 
     if (bundle.shopifyProductId) {
       try {
@@ -1314,6 +1427,99 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     return json({
       success: false,
       error: (error as Error).message || "Widget placement validation failed"
+    }, { status: 500 });
+  }
+}
+
+/**
+ * Create (or re-open) a draft Shopify preview page for a full-page bundle.
+ *
+ * Called by the "Preview on Storefront" button before the merchant has added the bundle
+ * to their storefront. Creates a draft page on first click; returns the cached
+ * shareablePreviewUrl on subsequent clicks. Falls back to creating a fresh draft if
+ * the existing one was deleted externally.
+ */
+export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Session, bundleId: string) {
+  try {
+    AppLogger.debug("[PREVIEW_PAGE] Creating/retrieving preview page", { bundleId });
+
+    const bundle = await db.bundle.findUnique({
+      where: { id: bundleId, shopId: session.shop },
+      include: {
+        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        pricing: true,
+      },
+    });
+
+    if (!bundle) {
+      return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
+    }
+
+    // If an existing draft preview page is tracked, return its shareablePreviewUrl directly
+    if (bundle.shopifyPreviewPageId) {
+      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId);
+
+      if (urlResult.success) {
+        AppLogger.info("[PREVIEW_PAGE] Returning existing draft preview URL", {
+          bundleId,
+          previewPageId: bundle.shopifyPreviewPageId,
+        });
+        return json({ success: true, shareablePreviewUrl: urlResult.shareablePreviewUrl });
+      }
+
+      // Page was deleted externally — clear stale refs and create a fresh draft below
+      AppLogger.warn("[PREVIEW_PAGE] Existing draft page not found, recreating", {
+        bundleId,
+        previewPageId: bundle.shopifyPreviewPageId,
+      });
+      await db.bundle.update({
+        where: { id: bundleId, shopId: session.shop },
+        data: { shopifyPreviewPageId: null, shopifyPreviewPageHandle: null },
+      });
+    }
+
+    // Create a new draft page
+    const apiKey = process.env.SHOPIFY_API_KEY || '';
+    const result = await WidgetInstallationService.createFullPageBundle(
+      admin,
+      session,
+      apiKey,
+      bundleId,
+      `[Preview] ${bundle.name}`,
+      undefined,
+      false   // isPublished: false → draft page
+    );
+
+    if (!result.success) {
+      AppLogger.error("[PREVIEW_PAGE] Draft page creation failed", { bundleId, error: result.error });
+      return json({ success: false, error: result.error }, { status: 400 });
+    }
+
+    // Cache bundle config on draft page (non-fatal — preview still works via proxy fallback)
+    await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
+
+    // Persist draft page refs on bundle
+    await db.bundle.update({
+      where: { id: bundleId, shopId: session.shop },
+      data: {
+        shopifyPreviewPageId: result.pageId,
+        shopifyPreviewPageHandle: result.pageHandle,
+      },
+    });
+
+    AppLogger.info("[PREVIEW_PAGE] Draft preview page created", {
+      bundleId,
+      previewPageId: result.pageId,
+      previewPageHandle: result.pageHandle,
+    });
+
+    return json({ success: true, shareablePreviewUrl: result.shareablePreviewUrl });
+
+  } catch (error) {
+    AppLogger.error("[PREVIEW_PAGE] Unexpected error", {}, error as Error);
+    return json({
+      success: false,
+      error: (error as Error).message || "Failed to create preview page",
     }, { status: 500 });
   }
 }
