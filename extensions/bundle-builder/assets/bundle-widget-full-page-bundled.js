@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.4.2
- * Built   : 2026-03-30
+ * Version : 2.4.3
+ * Built   : 2026-03-31
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.4.2';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.3';
 (function() {
   'use strict';
 
@@ -3428,12 +3428,14 @@ class BundleWidgetFullPage {
     totalEl.className = 'fpb-mobile-total';
     totalEl.textContent = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
 
+    const conditionlessMobile = this.bundleHasNoConditions();
+    const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
-    ctaBtn.textContent = (isLastStep && isComplete) ? 'Add to Cart' : 'Next';
-    if (isLastStep && !isComplete) ctaBtn.disabled = true;
+    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? 'Add to Cart' : 'Next';
+    if (conditionlessMobile ? !hasSelectionMobile : (isLastStep && !isComplete)) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
-      if (isLastStep && isComplete) {
+      if (conditionlessMobile || (isLastStep && isComplete)) {
         this.addBundleToCart();
       } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
         this.activeCollectionId = null;
@@ -3632,15 +3634,17 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
     const canProceed = this.canProceedToNextStep();
+    const conditionless = this.bundleHasNoConditions();
+    const hasSelection = conditionless && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
-    nextBtn.textContent = isLastStep ? 'Add to Cart' : 'Next Step';
-    if (isLastStep ? !this.areBundleConditionsMet() : !canProceed) {
+    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';
+    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)) {
       nextBtn.disabled = true;
     }
     nextBtn.addEventListener('click', () => {
-      if (isLastStep) {
+      if (conditionless || isLastStep) {
         this.addBundleToCart();
       } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
         const giftName = this.freeGiftStep?.freeGiftName || 'gift';
@@ -4706,12 +4710,14 @@ class BundleWidgetFullPage {
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'footer-cta-btn';
     ctaBtn.setAttribute('type', 'button');
-    ctaBtn.textContent = isLastStep ? (this.config.addToCartText || 'Add to Cart') : 'Next';
-    if (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep()) {
+    const conditionless = this.bundleHasNoConditions();
+    const hasSelection = conditionless && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    ctaBtn.textContent = (conditionless || isLastStep) ? (this.config.addToCartText || 'Add to Cart') : 'Next';
+    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
     }
     ctaBtn.addEventListener('click', () => {
-      if (isLastStep) {
+      if (conditionless || isLastStep) {
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
@@ -5029,6 +5035,17 @@ class BundleWidgetFullPage {
     return this.selectedBundle.steps.every((step, index) => {
       if (step.isFreeGift || step.isDefault) return true; // non-blocking steps
       return this.isStepCompleted(index);
+    });
+  }
+
+  // Returns true when every non-free-gift, non-default step has no condition
+  // configured at all (conditionType / conditionOperator / conditionValue all absent).
+  // In this mode the customer can add to cart at any step without completing all steps.
+  bundleHasNoConditions() {
+    if (!this.selectedBundle?.steps?.length) return false;
+    return this.selectedBundle.steps.every(step => {
+      if (step.isFreeGift || step.isDefault) return true;
+      return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
     });
   }
 
