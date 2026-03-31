@@ -180,6 +180,16 @@ function isFreeGiftLine(line: CartTransformInput['cart']['lines'][number]): bool
 }
 
 /**
+ * Returns true when the cart line is a default (compulsory) component.
+ * The widget sets `_bundle_step_type: default` on the line properties for default steps.
+ * Default lines are treated as paid items (they contribute to paidTotal and discount
+ * thresholds) — this function exists for logging clarity and future conditional logic.
+ */
+function isDefaultLine(line: CartTransformInput['cart']['lines'][number]): boolean {
+  return line.stepType?.value === 'default';
+}
+
+/**
  * Calculate discount percentage from price adjustment config.
  *
  * paidTotal:     sum of component line costs that are NOT free-gift lines (presentment currency)
