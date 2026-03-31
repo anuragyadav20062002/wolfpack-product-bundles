@@ -240,7 +240,13 @@ export async function updateBundleProductMetafields(
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue,
       conditionOperator2: step.conditionOperator2,
-      conditionValue2: step.conditionValue2
+      conditionValue2: step.conditionValue2,
+      // Free gift + default step fields — required by widget to detect step type
+      // and by cart transform to tag _bundle_step_type: free_gift on line properties
+      isFreeGift: step.isFreeGift || false,
+      freeGiftName: step.freeGiftName || null,
+      isDefault: step.isDefault || false,
+      defaultVariantId: step.defaultVariantId || null,
     })),
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,
