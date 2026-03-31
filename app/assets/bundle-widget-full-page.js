@@ -2642,7 +2642,7 @@ class BundleWidgetFullPage {
     const selected = this.paidSteps.reduce((sum, paidStep) => {
       const globalIndex = steps.indexOf(paidStep);
       const stepSel = this.selectedProducts[globalIndex] ?? {};
-      return sum + Object.values(stepSel).reduce((s, p) => s + (p.quantity || 1), 0);
+      return sum + Object.values(stepSel).reduce((s, p) => s + (typeof p === 'number' ? p : (p.quantity || 1)), 0);
     }, 0);
     return Math.max(0, total - selected);
   }
@@ -2720,8 +2720,10 @@ class BundleWidgetFullPage {
   // Add bundle to cart
   async addBundleToCart() {
     try {
-      // Final validation: all step conditions must be satisfied
-      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+      // Final validation: all paid steps must be satisfied.
+      // Free gift and default steps are non-blocking and are intentionally skipped here —
+      // the customer may choose not to select a free gift, and default items are pre-seeded.
+      const allStepsValid = this.areBundleConditionsMet();
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;

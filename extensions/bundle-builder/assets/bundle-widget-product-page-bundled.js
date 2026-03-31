@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.4.3
+ * Version : 2.4.5
  * Built   : 2026-03-31
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.4.3';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.5';
 (function() {
   'use strict';
 
@@ -1590,7 +1590,10 @@ function createDefaultLoadingAnimation() {
  */
 function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex) {
   for (let i = fromIndex + 1; i < steps.length; i++) {
-    if (!steps[i].isDefault && !validateFn(i)) return i;
+    // Free gift and default steps are non-required — never auto-advance into them.
+    // The free gift step has its own unlock flow; default steps are pre-filled.
+    if (steps[i].isDefault || steps[i].isFreeGift) continue;
+    if (!validateFn(i)) return i;
   }
   return -1;
 }
@@ -3473,6 +3476,9 @@ class BundleWidgetProductPage {
     this.updateModalFooterMessaging();
     this.updateAddToCartButton();
     this.updateFooterMessaging();
+    // Sync free gift slot lock/unlock state — selection changes on paid steps can cross
+    // the unlock threshold, so the slot card must reflect the current isFreeGiftUnlocked state.
+    this._syncFreeGiftSlotCard();
 
     // Auto-step progression
     if (this.widgetStyle === 'bottom-sheet') {
@@ -3480,6 +3486,22 @@ class BundleWidgetProductPage {
     } else {
       this._autoProgressClassicModal(stepIndex);
     }
+  }
+
+  /**
+   * Re-render only the free gift slot card in the main stepsContainer to reflect
+   * the current isFreeGiftUnlocked state. Called after every paid-step selection
+   * change so the lock/unlock state stays in sync without a full renderSteps() pass.
+   */
+  _syncFreeGiftSlotCard() {
+    const freeGiftIdx = this.freeGiftStepIndex;
+    if (freeGiftIdx === -1 || !this.elements.stepsContainer) return;
+    const existing = this.elements.stepsContainer.querySelector(`[data-step-index="${freeGiftIdx}"]`);
+    if (!existing) return;
+    const step = this.selectedBundle?.steps[freeGiftIdx];
+    if (!step?.isFreeGift) return;
+    const fresh = this.createFreeGiftSlotCard(step, freeGiftIdx);
+    existing.replaceWith(fresh);
   }
 
   /**
@@ -3531,9 +3553,11 @@ class BundleWidgetProductPage {
     if (!this.validateStep(stepIndex)) return;
 
     const steps = this.selectedBundle.steps;
-    // Check if any step is still incomplete
+    // Check if any required step is still incomplete.
+    // Free gift and default steps are non-blocking — skip them.
     for (let i = 0; i < steps.length; i++) {
-      if (!this.validateStep(i)) return; // at least one step incomplete — do nothing
+      if (steps[i].isFreeGift || steps[i].isDefault) continue;
+      if (!this.validateStep(i)) return; // at least one paid step incomplete
     }
 
     // All steps complete — refresh tabs with checkmarks, then auto-close
@@ -3612,11 +3636,12 @@ class BundleWidgetProductPage {
   }
 
   isStepAccessible(stepIndex) {
-    // Check if all previous steps are completed
+    // Check if all previous required steps are completed.
+    // Free gift and default steps are non-blocking — skip them.
     for (let i = 0; i < stepIndex; i++) {
-      if (!this.validateStep(i)) {
-        return false;
-      }
+      const step = this.selectedBundle?.steps[i];
+      if (step?.isFreeGift || step?.isDefault) continue;
+      if (!this.validateStep(i)) return false;
     }
     return true;
   }

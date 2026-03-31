@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.4.3
+ * Version : 2.4.5
  * Built   : 2026-03-31
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.4.3';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.5';
 (function() {
   'use strict';
 
@@ -5085,7 +5085,7 @@ class BundleWidgetFullPage {
     const selected = this.paidSteps.reduce((sum, paidStep) => {
       const globalIndex = steps.indexOf(paidStep);
       const stepSel = this.selectedProducts[globalIndex] ?? {};
-      return sum + Object.values(stepSel).reduce((s, p) => s + (p.quantity || 1), 0);
+      return sum + Object.values(stepSel).reduce((s, p) => s + (typeof p === 'number' ? p : (p.quantity || 1)), 0);
     }, 0);
     return Math.max(0, total - selected);
   }
@@ -5163,8 +5163,10 @@ class BundleWidgetFullPage {
   // Add bundle to cart
   async addBundleToCart() {
     try {
-      // Final validation: all step conditions must be satisfied
-      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+      // Final validation: all paid steps must be satisfied.
+      // Free gift and default steps are non-blocking and are intentionally skipped here —
+      // the customer may choose not to select a free gift, and default items are pre-seeded.
+      const allStepsValid = this.areBundleConditionsMet();
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;
