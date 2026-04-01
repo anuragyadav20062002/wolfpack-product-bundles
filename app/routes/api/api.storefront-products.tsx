@@ -1,7 +1,7 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
-import { createStorefrontAccessToken } from "../../services/storefront-token.server";
+import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
@@ -136,56 +136,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
           }
         }`;
 
-    // Get storefront access token from database
-    let session = await db.session.findFirst({
+    // Storefront token is created at install time (lifecycle webhook / auth callback).
+    // If it is missing here, the install flow is broken — fail clearly and fast.
+    const session = await db.session.findFirst({
       where: { shop },
-      select: { storefrontAccessToken: true, accessToken: true }
+      select: { storefrontAccessToken: true }
     });
 
-    if (!session) {
-      console.error("[STOREFRONT_API] No session found for shop:", shop);
-      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404 });
-    }
-
-    // If no storefront token exists, try to create one on-demand (handles race condition)
-    if (!session.storefrontAccessToken && session.accessToken) {
-      console.log("[STOREFRONT_API] No storefront token found. Creating on-demand for shop:", shop);
-
-      try {
-        // Create admin-like object that matches AdminApiContext type
-        const admin = {
-          graphql: async (query: string, options?: any) => {
-            const response = await fetch(`https://${shop}/admin/api/${SHOPIFY_REST_API_VERSION}/graphql.json`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Shopify-Access-Token': session!.accessToken
-              },
-              body: JSON.stringify({
-                query,
-                variables: options?.variables
-              })
-            });
-            return response;
-          }
-        } as any; // Type assertion since we're creating a minimal admin context
-
-        const token = await createStorefrontAccessToken(admin, shop);
-        console.log("[STOREFRONT_API] ✅ Created storefront token on-demand");
-
-        // Refresh session to get the new token
-        session = await db.session.findFirst({
-          where: { shop },
-          select: { storefrontAccessToken: true, accessToken: true }
-        });
-      } catch (error) {
-        console.error("[STOREFRONT_API] Failed to create token on-demand:", error);
-        return json({ error: "Could not create storefront access token" }, { status: 500 });
-      }
-    }
-
     if (!session?.storefrontAccessToken) {
-      console.error("[STOREFRONT_API] Still no storefront access token after creation attempt");
+      AppLogger.warn("[STOREFRONT_API] No storefront token for shop — install may be incomplete", {
+        component: "api.storefront-products",
+        shop,
+      });
       return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404 });
     }
 
@@ -205,14 +167,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     if (!response.ok) {
-      console.error("[STOREFRONT_API] Request failed:", response.status);
+      AppLogger.error("[STOREFRONT_API] Storefront API request failed", { component: "api.storefront-products", status: response.status });
       return json({ error: "Failed to fetch from Storefront API" }, { status: 500 });
     }
 
     const data = await response.json();
 
     if (data.errors) {
-      console.error("[STOREFRONT_API] GraphQL errors:", data.errors);
+      AppLogger.error("[STOREFRONT_API] GraphQL errors", { component: "api.storefront-products" }, data.errors);
       return json({ error: "GraphQL errors", details: data.errors }, { status: 500 });
     }
 
@@ -247,8 +209,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
               image: edge.node.image ? { src: edge.node.image.url } : null
             }))
           };
-        } catch (error: any) {
-          console.error(`[STOREFRONT_API] Failed to fetch variants for product ${product.id}:`, error.message);
+        } catch (error) {
+          AppLogger.warn("[STOREFRONT_API] Failed to fetch variants for product", { component: "api.storefront-products", productId: product.id });
           // Return product with empty variants on error
           return {
             id: product.id,
@@ -264,7 +226,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const validProducts = products.filter(Boolean);
     const totalVariants = validProducts.reduce((sum, p) => sum + (p?.variants?.length || 0), 0);
 
-    console.log(`[STOREFRONT_API] Successfully fetched ${validProducts.length} products with ${totalVariants} total variants`);
+    AppLogger.debug("[STOREFRONT_API] Fetched products", { component: "api.storefront-products", productCount: validProducts.length, variantCount: totalVariants });
 
     return json({
       products: validProducts,
@@ -277,11 +239,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
       }
     });
 
-  } catch (error: any) {
-    console.error("[STOREFRONT_API] Error:", error);
+  } catch (error) {
+    AppLogger.error("[STOREFRONT_API] Internal error", { component: "api.storefront-products" }, error);
     return json({
       error: "Internal server error",
-      message: error.message
+      message: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 });
   }
 }
