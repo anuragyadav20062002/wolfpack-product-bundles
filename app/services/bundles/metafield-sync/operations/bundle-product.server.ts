@@ -7,6 +7,7 @@
 import { isUUID } from "../../../../utils/shopify-validators";
 import { getFirstVariantId, batchGetFirstVariantsWithPrices } from "../../../../utils/variant-lookup.server";
 import { AppLogger } from "../../../../lib/logger";
+import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { checkMetafieldSize } from "../utils/size-check";
 import { calculateComponentPricing } from "../utils/pricing";
 import type { PriceAdjustment, BundleUiConfig, ComponentPricing } from "../types";
@@ -23,7 +24,7 @@ import { BundleStatus, BundleType } from "../../../../constants/bundle";
  * - component_pricing (json) - Per-component pricing for expanded checkout display (cents)
  */
 export async function updateBundleProductMetafields(
-  admin: any,
+  admin: ShopifyAdmin,
   bundleProductId: string,
   bundleConfiguration: any
 ): Promise<any[] | undefined> {

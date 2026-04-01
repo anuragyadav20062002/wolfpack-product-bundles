@@ -18,12 +18,13 @@
 
 import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
+import type { ShopifyAdmin } from "../../lib/auth-guards.server";
 import { ensureProductBundleTemplate } from "../../services/widget-installation/widget-theme-template.server";
 import { AppLogger } from "../../lib/logger";
 
 const COMPONENT = "InstallPdpWidget";
 
-async function applyTemplateSuffixToProduct(admin: any, productHandle: string): Promise<void> {
+async function applyTemplateSuffixToProduct(admin: ShopifyAdmin, productHandle: string): Promise<void> {
   // Fetch the product GID by handle
   const GET_PRODUCT = `
     query GetProductByHandle($handle: String!) {

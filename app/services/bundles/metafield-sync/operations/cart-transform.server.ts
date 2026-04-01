@@ -6,6 +6,7 @@
 
 import db from "../../../../db.server";
 import { AppLogger } from "../../../../lib/logger";
+import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { BundleStatus } from "../../../../constants/bundle";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { safeJsonParse } from "../utils/size-check";
@@ -15,7 +16,7 @@ import type { OptimizedBundleConfig, OptimizedStepConfig, OptimizedPricingConfig
  * Updates cart transform metafield with all active bundles
  */
 export async function updateCartTransformMetafield(
-  admin: any,
+  admin: ShopifyAdmin,
   shopId: string
 ): Promise<any | null> {
   AppLogger.debug("[CART_TRANSFORM_METAFIELD] Starting update", {

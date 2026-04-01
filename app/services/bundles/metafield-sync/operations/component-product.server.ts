@@ -7,6 +7,7 @@
 import { isUUID } from "../../../../utils/shopify-validators";
 import { getFirstVariantId, batchGetFirstVariants } from "../../../../utils/variant-lookup.server";
 import { AppLogger } from "../../../../lib/logger";
+import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { checkMetafieldSize } from "../utils/size-check";
 import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../../../../constants/metafields";
 import type { PriceAdjustment, ComponentParentsData } from "../types";
@@ -18,7 +19,7 @@ import type { PriceAdjustment, ComponentParentsData } from "../types";
  * to track which bundles they belong to.
  */
 export async function updateComponentProductMetafields(
-  admin: any,
+  admin: ShopifyAdmin,
   bundleProductId: string,
   bundleConfig: any
 ): Promise<void> {
