@@ -5,6 +5,7 @@
  */
 
 import db from "../../../../db.server";
+import { AppLogger } from "../../../../lib/logger";
 import { BundleStatus } from "../../../../constants/bundle";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { safeJsonParse } from "../utils/size-check";
@@ -17,8 +18,10 @@ export async function updateCartTransformMetafield(
   admin: any,
   shopId: string
 ): Promise<any | null> {
-  console.log("🔄 [CART_TRANSFORM_METAFIELD] Starting cart transform metafield update");
-  console.log("🆔 [CART_TRANSFORM_METAFIELD] Shop ID:", shopId);
+  AppLogger.debug("[CART_TRANSFORM_METAFIELD] Starting update", {
+    component: "cart-transform.server",
+    shopId,
+  });
 
   try {
     // First get the existing cart transform ID
@@ -41,11 +44,12 @@ export async function updateCartTransformMetafield(
     const cartTransformId = cartTransformData.data?.cartTransforms?.edges?.[0]?.node?.id;
 
     if (!cartTransformId) {
-      console.error('🔄 [CART_TRANSFORM_METAFIELD] No cart transform found - cannot update metafields');
+      AppLogger.error("[CART_TRANSFORM_METAFIELD] No cart transform found — cannot update metafields", {
+        component: "cart-transform.server",
+        shopId,
+      });
       return null;
     }
-
-    console.log("🔄 [CART_TRANSFORM_METAFIELD] Found cart transform ID:", cartTransformId);
 
     // Fetch all published bundles for this shop
     const allPublishedBundles = await db.bundle.findMany({
@@ -63,7 +67,10 @@ export async function updateCartTransformMetafield(
       },
     });
 
-    console.log(`🔄 [CART_TRANSFORM_METAFIELD] Found ${allPublishedBundles.length} published bundles`);
+    AppLogger.debug("[CART_TRANSFORM_METAFIELD] Found published bundles", {
+      component: "cart-transform.server",
+      count: allPublishedBundles.length,
+    });
 
     // Create MINIMAL optimized bundle configuration for cart transform performance
     const optimizedBundleConfigs: OptimizedBundleConfig[] = await Promise.all(
@@ -141,10 +148,11 @@ export async function updateCartTransformMetafield(
       })
     );
 
-    const originalSize = JSON.stringify(allPublishedBundles).length;
-    const optimizedSize = JSON.stringify(optimizedBundleConfigs).length;
-    console.log(`📏 [CART_TRANSFORM_METAFIELD] Size optimization: ${originalSize} → ${optimizedSize} chars (${Math.round((1 - optimizedSize / originalSize) * 100)}% reduction)`);
-    console.log(`🎯 [CART_TRANSFORM_METAFIELD] Optimized bundle configs:`, JSON.stringify(optimizedBundleConfigs, null, 2));
+    AppLogger.debug("[CART_TRANSFORM_METAFIELD] Optimized bundle configs built", {
+      component: "cart-transform.server",
+      originalSize: JSON.stringify(allPublishedBundles).length,
+      optimizedSize: JSON.stringify(optimizedBundleConfigs).length,
+    });
 
     // Update cart transform metafield using metafieldsSet
     const UPDATE_CART_TRANSFORM_METAFIELD = `
@@ -184,17 +192,26 @@ export async function updateCartTransformMetafield(
     });
 
     const data = await response.json();
-    console.log("🔄 [CART_TRANSFORM_METAFIELD] GraphQL response:", JSON.stringify(data, null, 2));
 
     if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-      console.error("🔄 [CART_TRANSFORM_METAFIELD] User errors:", data.data.metafieldsSet.userErrors);
+      AppLogger.error("[CART_TRANSFORM_METAFIELD] User errors on metafield set", {
+        component: "cart-transform.server",
+        shopId,
+      }, data.data.metafieldsSet.userErrors);
       return null;
     }
 
-    console.log("🔄 [CART_TRANSFORM_METAFIELD] Cart transform metafield updated successfully");
+    AppLogger.info("[CART_TRANSFORM_METAFIELD] Cart transform metafield updated", {
+      component: "cart-transform.server",
+      shopId,
+      bundleCount: optimizedBundleConfigs.length,
+    });
     return data.data?.metafieldsSet?.metafields?.[0];
   } catch (error) {
-    console.error("🔄 [CART_TRANSFORM_METAFIELD] Error updating cart transform metafield:", error);
+    AppLogger.error("[CART_TRANSFORM_METAFIELD] Error updating cart transform metafield", {
+      component: "cart-transform.server",
+      shopId,
+    }, error);
     return null;
   }
 }

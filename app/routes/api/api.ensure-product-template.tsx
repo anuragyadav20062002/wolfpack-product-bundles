@@ -42,7 +42,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     AppLogger.error('Unexpected error in ensure template', { operation: 'ensure-template' }, error);
     return json({
       success: false,
-      error: (error as Error).message || "Request failed"
+      error: error instanceof Error ? error.message : "Request failed"
     }, { status: 500 });
   }
 };
