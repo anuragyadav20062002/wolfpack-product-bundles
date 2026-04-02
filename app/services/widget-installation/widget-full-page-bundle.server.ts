@@ -8,7 +8,6 @@
 import { AppLogger } from "../../lib/logger";
 import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition, ensureCustomPageBundleConfigDefinition } from "../bundles/metafield-sync.server";
 import { formatBundleForWidget } from "../../lib/bundle-formatter.server";
-import { ensureBundlePageTemplate } from "./widget-theme-template.server";
 import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
 import { slugify, resolveUniqueHandle } from "../../lib/slug-utils";
 import type { FullPageBundleResult } from "./types";
@@ -52,21 +51,12 @@ export async function createFullPageBundle(
       bundleName
     });
 
-    // Step 0: Ensure the bundle page template exists in the active theme
-    const templateResult = await ensureBundlePageTemplate(admin, session, apiKey);
-
-    if (!templateResult.success) {
-      AppLogger.warn('Could not ensure bundle page template (non-fatal)', {
-        component: 'WidgetFullPageBundle',
-        error: templateResult.error
-      });
-    }
-
-    // Always attach the templateSuffix regardless of whether the template file was
-    // just created or already existed. The suffix tells Shopify to serve this page
-    // using templates/page.full-page-bundle.json. Even if that template write failed
-    // above (unlikely now that UUID comes from EXTENSION_UID), the suffix ensures
-    // the page uses the right template as soon as the file exists in the theme.
+    // FPB pages are served via URL redirect (/products/{handle} → /pages/{handle}).
+    // The redirect fires before Shopify's theme engine renders any template, so
+    // templateSuffix is meaningless for routing. We intentionally do NOT call
+    // ensureBundlePageTemplate / themeFilesUpsert here — that API requires a Shopify
+    // exemption that disqualifies the app from the Built For Shopify badge.
+    // Merchants add the app block to their page template once via the Theme Editor.
     const templateSuffix = 'full-page-bundle';
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
@@ -95,7 +85,6 @@ export async function createFullPageBundle(
 
     const checkData = await checkResponse.json();
     let createdPage = checkData.data?.pages?.edges?.[0]?.node || null;
-    let shareablePreviewUrl: string | undefined;
 
     // If page doesn't exist, create it
     if (!createdPage) {
@@ -114,7 +103,6 @@ export async function createFullPageBundle(
               title
               handle
               templateSuffix
-              shareablePreviewUrl
             }
             userErrors {
               field
@@ -160,8 +148,6 @@ export async function createFullPageBundle(
           errorType: 'page_creation_failed'
         };
       }
-
-      shareablePreviewUrl = pageData.data?.pageCreate?.page?.shareablePreviewUrl ?? undefined;
 
       AppLogger.info('Page created successfully', {
         component: 'WidgetFullPageBundle',
@@ -294,8 +280,7 @@ export async function createFullPageBundle(
         success: true,
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
-        pageUrl: isPublished ? pageUrl : undefined,
-        shareablePreviewUrl: !isPublished ? shareablePreviewUrl : undefined,
+        pageUrl,
         slugAdjusted,
         widgetInstallationRequired: true,
         widgetInstallationLink: deepLink.url
@@ -306,8 +291,7 @@ export async function createFullPageBundle(
       success: true,
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
-      pageUrl: isPublished ? pageUrl : undefined,
-      shareablePreviewUrl: !isPublished ? shareablePreviewUrl : undefined,
+      pageUrl,
       slugAdjusted
     };
 
@@ -537,13 +521,14 @@ export async function publishPreviewPage(
  */
 export async function getPreviewPageUrl(
   admin: any,
-  pageId: string
-): Promise<{ success: boolean; shareablePreviewUrl?: string; pageNotFound?: boolean; error?: string }> {
+  pageId: string,
+  shopDomain: string
+): Promise<{ success: boolean; previewUrl?: string; pageNotFound?: boolean; error?: string }> {
   const GET_PREVIEW_URL = `
     query getPagePreviewUrl($id: ID!) {
       page(id: $id) {
         id
-        shareablePreviewUrl
+        handle
       }
     }
   `;
@@ -563,7 +548,8 @@ export async function getPreviewPageUrl(
       return { success: false, pageNotFound: true };
     }
 
-    return { success: true, shareablePreviewUrl: page.shareablePreviewUrl };
+    const shop = shopDomain.replace('.myshopify.com', '');
+    return { success: true, previewUrl: `https://${shop}.myshopify.com/pages/${page.handle}` };
   } catch (error) {
     AppLogger.error('getPreviewPageUrl: unexpected error', {
       component: 'WidgetFullPageBundle',

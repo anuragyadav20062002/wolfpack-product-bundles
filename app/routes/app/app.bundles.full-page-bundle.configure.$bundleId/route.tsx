@@ -1351,7 +1351,6 @@ export default function ConfigureBundleFlow() {
         <SaveBar
           id="bundle-save-bar"
           open={isDirty}
-          discardConfirmation={true}
         >
           <button
             type="submit"

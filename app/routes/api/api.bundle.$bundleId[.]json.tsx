@@ -154,15 +154,17 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       bundleId
     });
 
-    // Allow draft and active bundles — merchants can test before publishing.
-    // Unlisted bundles are intentionally excluded from storefront serving.
+    // Allow draft, active, and unlisted bundles.
+    // Draft: merchants can test before publishing.
+    // Unlisted: hidden from search/collections/sitemap but accessible via direct URL —
+    //   the API is HMAC-protected + UUID bundle ID so serving it here is safe.
     // Archived bundles are excluded — they are taken offline.
     const bundle = await db.bundle.findFirst({
       where: {
         id: bundleId,
         shopId: shopDomain,
         status: {
-          in: [BundleStatus.DRAFT, BundleStatus.ACTIVE]
+          in: [BundleStatus.DRAFT, BundleStatus.ACTIVE, BundleStatus.UNLISTED]
         }
       },
       include: {
@@ -239,7 +241,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     }, error);
     return json({
       success: false,
-      error: (error as Error).message
+      error: error instanceof Error ? error.message : "Internal error"
     }, { status: 500, headers: CORS_HEADERS });
   }
 };

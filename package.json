@@ -27,6 +27,7 @@
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
     "webhook-worker": "tsx scripts/webhook-worker.ts",
+    "bulk-sync": "tsx scripts/bulk-sync-bundles.ts",
     "test": "ts-node tests/test-runner.ts",
     "test:unit": "ts-node tests/test-runner.ts unit",
     "test:integration": "ts-node tests/test-runner.ts integration",

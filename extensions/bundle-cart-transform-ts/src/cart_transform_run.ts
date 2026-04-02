@@ -180,6 +180,16 @@ function isFreeGiftLine(line: CartTransformInput['cart']['lines'][number]): bool
 }
 
 /**
+ * Returns true when the cart line is a default (compulsory) component.
+ * The widget sets `_bundle_step_type: default` on the line properties for default steps.
+ * Default lines are treated as paid items (they contribute to paidTotal and discount
+ * thresholds) — this function exists for logging clarity and future conditional logic.
+ */
+function isDefaultLine(line: CartTransformInput['cart']['lines'][number]): boolean {
+  return line.stepType?.value === 'default';
+}
+
+/**
  * Calculate discount percentage from price adjustment config.
  *
  * paidTotal:     sum of component line costs that are NOT free-gift lines (presentment currency)
@@ -465,6 +475,13 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
           paidQuantity,
           presentmentCurrencyRate
         );
+      } else if (freeGiftTotal > 0 && originalTotal > 0) {
+        // No pricing rule configured, but free gift lines are present.
+        // Apply an effective discount that absorbs the free gift cost so
+        // customers pay only for paid items — free gifts must always be $0.
+        // effectivePct = (1 − paidTotal/originalTotal) × 100
+        const raw = (1 - paidTotal / originalTotal) * 100;
+        discountPercentage = Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
       }
 
       // Get bundle name and generate unique title to prevent Shopify consolidation

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.4.3
- * Built   : 2026-03-31
+ * Version : 2.4.6
+ * Built   : 2026-04-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.4.3';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.6';
 (function() {
   'use strict';
 
@@ -511,7 +511,8 @@ class BundleDataManager {
     }
 
     const bundles = Object.values(bundlesData).filter(bundle =>
-      this.validateSingleBundle(bundle) && bundle.status === 'active'
+      this.validateSingleBundle(bundle) &&
+      (bundle.status === 'active' || bundle.status === 'unlisted')
     );
 
     if (bundles.length === 0) {
@@ -3559,7 +3560,7 @@ class BundleWidgetFullPage {
         const isFreeGiftItem = item.isFreeGift === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
-          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
+          ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
 
         row.innerHTML = `
@@ -4404,7 +4405,8 @@ class BundleWidgetFullPage {
       const priceEl = cardElement.querySelector('.product-price, .price');
       if (priceEl) {
         const originalPriceText = priceEl.textContent;
-        priceEl.innerHTML = `$0.00 <span class="side-panel-product-original-price">${originalPriceText}</span>`;
+        const _ci = CurrencyManager.getCurrencyInfo();
+        priceEl.innerHTML = `${CurrencyManager.convertAndFormat(0, _ci)} <span class="side-panel-product-original-price">${originalPriceText}</span>`;
       }
     }
 
@@ -4552,8 +4554,9 @@ class BundleWidgetFullPage {
       );
     }
 
-    // Total required quantity across all steps
+    // Total required quantity across paid steps only (free gift and default steps are non-blocking)
     const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
+      if (step.isFreeGift || step.isDefault) return sum;
       return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
     }, 0);
 
@@ -4673,8 +4676,13 @@ class BundleWidgetFullPage {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'footer-toggle';
     toggleBtn.setAttribute('type', 'button');
+    const hasConditions = !this.bundleHasNoConditions();
+    const totalSelected = allSelectedProducts.filter(p => !p.isDefault).length;
+    const toggleText = hasConditions
+      ? `${totalQuantity}/${totalRequired} Steps`
+      : `${totalSelected} Product${totalSelected !== 1 ? 's' : ''}`;
     toggleBtn.innerHTML = `
-      <span class="footer-toggle-text">${totalQuantity}/${totalRequired} Products</span>
+      <span class="footer-toggle-text">${toggleText}</span>
       <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M5 8l5 5 5-5"/>
       </svg>
@@ -5085,7 +5093,7 @@ class BundleWidgetFullPage {
     const selected = this.paidSteps.reduce((sum, paidStep) => {
       const globalIndex = steps.indexOf(paidStep);
       const stepSel = this.selectedProducts[globalIndex] ?? {};
-      return sum + Object.values(stepSel).reduce((s, p) => s + (p.quantity || 1), 0);
+      return sum + Object.values(stepSel).reduce((s, p) => s + (typeof p === 'number' ? p : (p.quantity || 1)), 0);
     }, 0);
     return Math.max(0, total - selected);
   }
@@ -5163,8 +5171,10 @@ class BundleWidgetFullPage {
   // Add bundle to cart
   async addBundleToCart() {
     try {
-      // Final validation: all step conditions must be satisfied
-      const allStepsValid = this.selectedBundle.steps.every((_, index) => this.validateStep(index));
+      // Final validation: all paid steps must be satisfied.
+      // Free gift and default steps are non-blocking and are intentionally skipped here —
+      // the customer may choose not to select a free gift, and default items are pre-seeded.
+      const allStepsValid = this.areBundleConditionsMet();
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;

@@ -72,7 +72,10 @@
  */
 function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex) {
   for (let i = fromIndex + 1; i < steps.length; i++) {
-    if (!steps[i].isDefault && !validateFn(i)) return i;
+    // Free gift and default steps are non-required — never auto-advance into them.
+    // The free gift step has its own unlock flow; default steps are pre-filled.
+    if (steps[i].isDefault || steps[i].isFreeGift) continue;
+    if (!validateFn(i)) return i;
   }
   return -1;
 }
@@ -348,15 +351,15 @@ class BundleWidgetProductPage {
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
     this._stepFetchFailed = {};
 
-    // Pre-mark default steps as complete using a sentinel variant ID
-    // (default products are always included in the bundle — no user selection required)
-    if (this.widgetStyle === 'bottom-sheet') {
-      this.selectedBundle.steps.forEach((step, i) => {
-        if (step.isDefault && step.defaultVariantId) {
-          this.selectedProducts[i][step.defaultVariantId] = 1;
-        }
-      });
-    }
+    // Seed default steps into selectedProducts regardless of widget style.
+    // Default products are always included in the bundle — no user selection required.
+    // buildCartItems() reads selectedProducts, so without this the default item is
+    // silently excluded from the cart payload on classic modal style bundles.
+    this.selectedBundle.steps.forEach((step, i) => {
+      if (step.isDefault && step.defaultVariantId) {
+        this.selectedProducts[i][step.defaultVariantId] = 1;
+      }
+    });
   }
 
   /**
@@ -1009,7 +1012,6 @@ class BundleWidgetProductPage {
   createFreeGiftSlotCard(step, stepIndex) {
     const unlocked = this.isFreeGiftUnlocked;
     const stepBox = document.createElement('div');
-    stepBox.className = `step-box bw-slot-card bw-slot-card--empty${!unlocked ? ' bw-slot-card--locked' : ''}`;
     stepBox.dataset.stepIndex = stepIndex;
 
     // Check if free gift step already has a selection
@@ -1057,33 +1059,49 @@ class BundleWidgetProductPage {
       }
     }
 
-    // Empty / locked state
-    // Circular icon background
-    const iconWrapper = document.createElement('div');
-    iconWrapper.className = 'bw-slot-card__plus-icon';
-    iconWrapper.style.cssText = `
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: rgba(30, 58, 138, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
-    `;
-    iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
-    </svg>`;
-    iconWrapper.style.color = '#1e3a8a';
-    stepBox.appendChild(iconWrapper);
+    // Empty / locked state — mirror createEmptyStateCard structure for each widget style
+    if (this.widgetStyle === 'bottom-sheet') {
+      stepBox.className = `step-box bw-slot-card bw-slot-card--empty${!unlocked ? ' bw-slot-card--locked' : ''}`;
 
-    // Label: "Free {stepName}"
-    const label = document.createElement('p');
-    label.className = 'step-name bw-slot-card__label';
-    label.textContent = `Free ${step.name || `Step ${stepIndex + 1}`}`;
-    stepBox.appendChild(label);
+      const iconWrapper = document.createElement('div');
+      iconWrapper.className = 'bw-slot-card__plus-icon';
+      iconWrapper.style.cssText = `
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(30, 58, 138, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+      `;
+      iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
+      </svg>`;
+      iconWrapper.style.color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+      stepBox.appendChild(iconWrapper);
 
-    // Red ribbon SVG overlay — top-right
+      const label = document.createElement('p');
+      label.className = 'step-name bw-slot-card__label';
+      label.textContent = `Free ${step.name || `Step ${stepIndex + 1}`}`;
+      stepBox.appendChild(label);
+    } else {
+      // Classic mode — same structure as a normal empty step card
+      stepBox.className = 'step-box';
+
+      const plusIcon = document.createElement('span');
+      plusIcon.className = 'plus-icon';
+      plusIcon.textContent = '+';
+      stepBox.appendChild(plusIcon);
+
+      const label = document.createElement('p');
+      label.className = 'step-name';
+      label.textContent = `Free ${step.name || `Step ${stepIndex + 1}`}`;
+      stepBox.appendChild(label);
+    }
+
+    // Red ribbon SVG overlay — top-right (free gift differentiator in all modes)
     stepBox.appendChild(this._createRibbonSvg());
 
     if (unlocked) {
@@ -1119,6 +1137,10 @@ class BundleWidgetProductPage {
 
   // Remove a specific product from selection (decrease quantity by 1)
   removeProductFromSelection(stepIndex, variantId) {
+    // Guard: default products are compulsory — they must always stay in selectedProducts
+    const step = this.selectedBundle?.steps[stepIndex];
+    if (step?.isDefault && step?.defaultVariantId === variantId) return;
+
     const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
 
     if (currentQuantity > 1) {
@@ -1965,6 +1987,9 @@ class BundleWidgetProductPage {
     this.updateModalFooterMessaging();
     this.updateAddToCartButton();
     this.updateFooterMessaging();
+    // Sync free gift slot lock/unlock state — selection changes on paid steps can cross
+    // the unlock threshold, so the slot card must reflect the current isFreeGiftUnlocked state.
+    this._syncFreeGiftSlotCard();
 
     // Auto-step progression
     if (this.widgetStyle === 'bottom-sheet') {
@@ -1972,6 +1997,22 @@ class BundleWidgetProductPage {
     } else {
       this._autoProgressClassicModal(stepIndex);
     }
+  }
+
+  /**
+   * Re-render only the free gift slot card in the main stepsContainer to reflect
+   * the current isFreeGiftUnlocked state. Called after every paid-step selection
+   * change so the lock/unlock state stays in sync without a full renderSteps() pass.
+   */
+  _syncFreeGiftSlotCard() {
+    const freeGiftIdx = this.freeGiftStepIndex;
+    if (freeGiftIdx === -1 || !this.elements.stepsContainer) return;
+    const existing = this.elements.stepsContainer.querySelector(`[data-step-index="${freeGiftIdx}"]`);
+    if (!existing) return;
+    const step = this.selectedBundle?.steps[freeGiftIdx];
+    if (!step?.isFreeGift) return;
+    const fresh = this.createFreeGiftSlotCard(step, freeGiftIdx);
+    existing.replaceWith(fresh);
   }
 
   /**
@@ -2023,9 +2064,11 @@ class BundleWidgetProductPage {
     if (!this.validateStep(stepIndex)) return;
 
     const steps = this.selectedBundle.steps;
-    // Check if any step is still incomplete
+    // Check if any required step is still incomplete.
+    // Free gift and default steps are non-blocking — skip them.
     for (let i = 0; i < steps.length; i++) {
-      if (!this.validateStep(i)) return; // at least one step incomplete — do nothing
+      if (steps[i].isFreeGift || steps[i].isDefault) continue;
+      if (!this.validateStep(i)) return; // at least one paid step incomplete
     }
 
     // All steps complete — refresh tabs with checkmarks, then auto-close
@@ -2104,11 +2147,12 @@ class BundleWidgetProductPage {
   }
 
   isStepAccessible(stepIndex) {
-    // Check if all previous steps are completed
+    // Check if all previous required steps are completed.
+    // Free gift and default steps are non-blocking — skip them.
     for (let i = 0; i < stepIndex; i++) {
-      if (!this.validateStep(i)) {
-        return false;
-      }
+      const step = this.selectedBundle?.steps[i];
+      if (step?.isFreeGift || step?.isDefault) continue;
+      if (!this.validateStep(i)) return false;
     }
     return true;
   }
