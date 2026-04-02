@@ -1,0 +1,440 @@
+{% comment %}
+  Wolfpack Product-Page Bundle — App Embed Block
+  ===============================================
+  Activated once per store in Theme Settings > App Embeds.
+  Renders the PDP bundle widget automatically on any product page whose first
+  variant has the $app:bundle_ui_config metafield set by the app.
+  No per-product template placement required.
+
+  Positioning: The widget container is initially hidden and moved into the
+  correct position (after the add-to-cart form) by the inline script below,
+  before the deferred widget JS initialises.
+{% endcomment %}
+
+{% assign app_namespace = '$app' %}
+{% assign bundle_variant = product.variants.first %}
+{% assign bundle_ui_config = nil %}
+{% assign is_bundle_product = false %}
+{% assign full_page_redirect_handle = blank %}
+
+{% if bundle_variant %}
+  {% assign variant_metafields = bundle_variant.metafields[app_namespace] %}
+  {% if variant_metafields %}
+    {% assign bundle_ui_config_field = variant_metafields['bundle_ui_config'] %}
+    {% if bundle_ui_config_field and bundle_ui_config_field.value %}
+      {% assign bundle_ui_config = bundle_ui_config_field.value %}
+      {% assign is_bundle_product = true %}
+      {% if bundle_ui_config.bundleType == 'full_page' %}
+        {% assign full_page_redirect_handle = bundle_ui_config.fullPagePageHandle %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endif %}
+
+{% comment %} Skip render when no bundle is configured on this product {% endcomment %}
+{% unless is_bundle_product or request.design_mode %}
+  {% break %}
+{% endunless %}
+
+{% assign bundle_id = nil %}
+{% if bundle_ui_config.bundleId %}
+  {% assign bundle_id = bundle_ui_config.bundleId %}
+{% endif %}
+
+<div
+  id="bundle-full-page-redirecting"
+  style="display:none; padding:16px 0; color:#4b5563; font-size:14px;"
+>
+  Redirecting to bundle page...
+</div>
+
+<div
+  id="bundle-builder-app"
+  data-bundle-id="{{ bundle_id }}"
+  data-bundle-type="{% if bundle_ui_config and bundle_ui_config.bundleType %}{{ bundle_ui_config.bundleType }}{% else %}product_page{% endif %}"
+  data-full-page-redirect-handle="{{ full_page_redirect_handle | default: '' }}"
+  data-is-bundle-product="{{ is_bundle_product }}"
+  data-is-container-product="{{ is_bundle_product }}"
+  data-container-bundle-id="{{ bundle_id }}"
+  data-bundle-config='{{ bundle_ui_config | json }}'
+  data-hide-default-buttons="{{ is_bundle_product }}"
+  data-show-step-numbers="{{ block.settings.show_step_numbers }}"
+  style="
+    --step-box-size: {{ block.settings.step_box_size | default: 150 }}px;
+    --bundle-add-to-cart-button-height: {{ block.settings.button_height | default: 55 }}px;
+    --widget-max-width: {{ block.settings.widget_max_width | default: 800 }}px;
+    --step-cards-per-row: {{ block.settings.step_cards_per_row | default: 3 }};
+    --container-spacing: {{ block.settings.container_spacing | default: 20 }}px;
+    --element-spacing: {{ block.settings.element_spacing | default: 15 }}px;
+    --step-card-spacing: {{ block.settings.step_card_gap | default: 15 }}px;
+    --modal-header-padding: {{ block.settings.modal_header_padding | default: 40 }}px;
+    --modal-body-padding: {{ block.settings.modal_body_padding | default: 40 }}px;
+    --button-spacing: 25px;
+    --modal-footer-bg-color: #ffffff;
+    --modal-footer-text-color: #2d3748;
+    --bundle-header-tab-radius: {{ block.settings.step_tab_border_radius | default: 10 }}px;
+    --modal-product-card-height: {{ block.settings.modal_product_card_height | default: 160 }}px;
+    --modal-product-image-height: {{ block.settings.modal_product_image_height | default: 70 }}px;
+    --modal-product-price-color: {{ block.settings.modal_product_price_color | default: '#2c5530' }};
+    --modal-product-price-bg: {{ block.settings.modal_product_price_bg | default: '#f0f8f0' }};
+    --modal-product-title-size: {{ block.settings.modal_product_title_size | default: 90 }}%;
+    --modal-product-price-size: {{ block.settings.modal_product_price_size | default: 85 }}%;
+    display: none;
+  "
+  class="bundle-widget-container"
+>
+  <div class="bundle-steps"></div>
+  <div class="bundle-includes"></div>
+  <button class="add-bundle-to-cart">Add Bundle to Cart</button>
+</div>
+
+<script>
+  {% comment %} Reposition widget into the product form area before JS init {% endcomment %}
+  (function () {
+    var widget = document.getElementById('bundle-builder-app');
+    if (!widget) return;
+
+    {% comment %} Find insertion point — after add-to-cart form, or fallback to main content {% endcomment %}
+    var insertAfter =
+      document.querySelector('.product-form__cart-submit')?.closest('form') ||
+      document.querySelector('form[action*="/cart/add"]') ||
+      document.querySelector('.product-form') ||
+      document.querySelector('[data-type="add-to-cart-form"]') ||
+      document.querySelector('main');
+
+    if (insertAfter && insertAfter.parentNode) {
+      insertAfter.parentNode.insertBefore(widget, insertAfter.nextSibling);
+    }
+
+    widget.style.display = '';
+  })();
+</script>
+
+{% if is_bundle_product %}
+<style>
+  .product-form__cart-submit,
+  .product-form__buttons button[name="add"],
+  .btn.product-form__cart-submit,
+  button[name="add"]:not(.bundle-add-to-cart),
+  input[name="add"]:not(.bundle-add-to-cart),
+  form[action*="/cart/add"] button[type="submit"]:not(.bundle-add-to-cart),
+  form[action*="/cart/add"] input[type="submit"]:not(.bundle-add-to-cart),
+  .shopify-payment-button,
+  .dynamic-checkout__content,
+  .additional-checkout-buttons,
+  .payment-button-container,
+  [data-testid="AddToCartButton"]:not(.bundle-add-to-cart),
+  .add-to-cart-button:not(.bundle-add-to-cart),
+  .btn-addtocart:not(.bundle-add-to-cart),
+  .product-add-to-cart:not(.bundle-add-to-cart) {
+    display: none !important;
+  }
+{% endif %}
+
+<script>
+  if (!window.bundleWidgetContext) {
+    window.currentProductId = {{ product.id | json }};
+    window.currentProductHandle = {{ product.handle | json }};
+    window.shopCurrency = {{ shop.currency | json }};
+    window.shopMoneyFormat = {{ shop.money_format | json }};
+    window.shopifyMultiCurrency = {
+      shopBaseCurrency: {{ shop.currency | json }},
+      shopMoneyFormat: {{ shop.money_format | json }},
+      customerCurrency: {{ cart.currency.iso_code | json }},
+      customerMoneyFormat: {{ shop.money_format | json }},
+      isMultiCurrencyEnabled: {% if shop.enabled_currencies.size > 1 %}true{% else %}false{% endif %}
+    };
+    window.bundleWidgetContext = true;
+  }
+</script>
+
+<script>
+  {% assign server_url_field = shop.metafields[app_namespace]['serverUrl'] %}
+  window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
+</script>
+
+{% comment %} Full-page redirect script for FPB container products {% endcomment %}
+<script>
+  (function () {
+    var bundleConfig = {{ bundle_ui_config | json }};
+    var bundleId = {{ bundle_id | json }};
+    var liquidDesignMode = {{ request.design_mode | json }};
+    var canonicalStoreOrigin = {{ shop.permanent_domain | default: shop.domain | prepend: 'https://' | json }};
+
+    if (!bundleConfig || bundleConfig.bundleType !== 'full_page') return;
+
+    var widgetEl = document.getElementById('bundle-builder-app');
+    var redirectNotice = document.getElementById('bundle-full-page-redirecting');
+    var hideStyle = null;
+
+    var isThemeEditorSession = function () {
+      var isFramed = false;
+      try { isFramed = window.self !== window.top; } catch (_e) { isFramed = true; }
+      return Boolean(
+        liquidDesignMode ||
+        window.Shopify?.designMode ||
+        window.location.pathname.includes('/editor') ||
+        window.location.search.includes('addAppBlockId=') ||
+        (window.location.search.includes('previewPath=') && isFramed)
+      );
+    };
+
+    if (isThemeEditorSession()) return;
+
+    var showRedirectState = function () {
+      if (hideStyle) return;
+      hideStyle = document.createElement('style');
+      hideStyle.textContent = '#bundle-builder-app{display:none !important;}#bundle-full-page-redirecting{display:block !important;}';
+      document.head.appendChild(hideStyle);
+    };
+
+    var clearRedirectState = function () {
+      if (hideStyle) { hideStyle.remove(); hideStyle = null; }
+      if (redirectNotice) redirectNotice.style.display = 'none';
+      if (widgetEl) widgetEl.style.display = '';
+    };
+
+    var buildRedirectQuery = function () {
+      var params = new URLSearchParams(window.location.search);
+      ['preview_key', 'preview_theme_id', 'previewPath', '_fd', 'pb'].forEach(function (p) { params.delete(p); });
+      var q = params.toString();
+      return q ? '?' + q : '';
+    };
+
+    var redirectToHandle = function (handle) {
+      if (!handle) { clearRedirectState(); return; }
+      var targetPath = '/pages/' + encodeURIComponent(handle);
+      if (window.location.pathname === targetPath) { clearRedirectState(); return; }
+      showRedirectState();
+      window.location.replace(canonicalStoreOrigin + targetPath + buildRedirectQuery() + window.location.hash);
+    };
+
+    var fallbackLookup = function () {
+      if (!bundleId) return Promise.resolve(null);
+      return fetch('/apps/product-bundles/api/bundles.json', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (payload) { return payload?.bundles?.[bundleId]?.shopifyPageHandle || null; });
+    };
+
+    showRedirectState();
+
+    Promise.resolve()
+      .then(function () {
+        return bundleConfig.fullPagePageHandle || fallbackLookup();
+      })
+      .then(function (handle) { redirectToHandle(handle); })
+      .catch(function () { clearRedirectState(); });
+  })();
+</script>
+
+{% # theme-check-disable RemoteAsset %}
+<link
+  rel="stylesheet"
+  href="{{ shop.url }}/apps/product-bundles/api/design-settings/{{ shop.domain }}?bundleType=product_page"
+  type="text/css"
+>
+{% # theme-check-enable RemoteAsset %}
+
+<link rel="stylesheet" href="{{ 'bundle-widget.css' | asset_url }}">
+
+<script>
+  (function () {
+    var s = document.createElement('script');
+    s.src = '{{ 'bundle-widget-product-page-bundled.js' | asset_url }}';
+    s.async = false;
+    document.head.appendChild(s);
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Wolfpack Bundle (Product Page)",
+  "target": "body",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Renders automatically on any product with a Wolfpack bundle configured. No per-product setup needed."
+    },
+    {
+      "type": "header",
+      "content": "Layout & Sizing"
+    },
+    {
+      "type": "range",
+      "id": "widget_max_width",
+      "min": 300,
+      "max": 1200,
+      "step": 50,
+      "unit": "px",
+      "label": "Widget max width",
+      "default": 800
+    },
+    {
+      "type": "range",
+      "id": "step_box_size",
+      "min": 100,
+      "max": 250,
+      "step": 10,
+      "unit": "px",
+      "label": "Step box size",
+      "default": 150
+    },
+    {
+      "type": "range",
+      "id": "step_cards_per_row",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "label": "Cards per row",
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "button_height",
+      "min": 40,
+      "max": 80,
+      "step": 5,
+      "unit": "px",
+      "label": "Button height",
+      "default": 55
+    },
+    {
+      "type": "header",
+      "content": "Display"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_step_numbers",
+      "label": "Show step numbers",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "container_spacing",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "Container spacing",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "element_spacing",
+      "min": 0,
+      "max": 30,
+      "step": 5,
+      "unit": "px",
+      "label": "Element spacing",
+      "default": 15
+    },
+    {
+      "type": "range",
+      "id": "step_card_gap",
+      "min": 0,
+      "max": 30,
+      "step": 5,
+      "unit": "px",
+      "label": "Step card gap",
+      "default": 15
+    },
+    {
+      "type": "range",
+      "id": "modal_header_padding",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "unit": "px",
+      "label": "Modal header padding",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "modal_body_padding",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "unit": "px",
+      "label": "Modal body padding",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Step Navigation"
+    },
+    {
+      "type": "range",
+      "id": "step_tab_border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "label": "Step tab border radius",
+      "default": 10
+    },
+    {
+      "type": "header",
+      "content": "Modal Product Cards"
+    },
+    {
+      "type": "range",
+      "id": "modal_product_card_height",
+      "min": 140,
+      "max": 200,
+      "step": 10,
+      "unit": "px",
+      "label": "Card height",
+      "default": 160
+    },
+    {
+      "type": "range",
+      "id": "modal_product_image_height",
+      "min": 50,
+      "max": 90,
+      "step": 5,
+      "unit": "px",
+      "label": "Image height",
+      "default": 70
+    },
+    {
+      "type": "color",
+      "id": "modal_product_price_color",
+      "label": "Price text color",
+      "default": "#2c5530"
+    },
+    {
+      "type": "color",
+      "id": "modal_product_price_bg",
+      "label": "Price background",
+      "default": "#f0f8f0"
+    },
+    {
+      "type": "range",
+      "id": "modal_product_title_size",
+      "min": 70,
+      "max": 120,
+      "step": 5,
+      "unit": "%",
+      "label": "Title font size",
+      "default": 90
+    },
+    {
+      "type": "range",
+      "id": "modal_product_price_size",
+      "min": 60,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "label": "Price font size",
+      "default": 85
+    }
+  ]
+}
+{% endschema %}

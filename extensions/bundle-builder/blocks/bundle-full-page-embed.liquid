@@ -1,0 +1,251 @@
+{% comment %}
+  Wolfpack Full-Page Bundle — App Embed Block
+  ============================================
+  Activated once per store in Theme Settings > App Embeds.
+  Renders the bundle widget automatically on any page that has the
+  custom.bundle_id metafield set by the app (written when "Place Widget Now" is clicked).
+  No per-page block placement required.
+{% endcomment %}
+
+{% assign bundle_id = page.metafields.custom.bundle_id %}
+
+{% comment %} Skip render on non-bundle pages (no metafield) except in theme editor preview {% endcomment %}
+{% unless bundle_id != blank or request.design_mode %}
+  {% break %}
+{% endunless %}
+
+{% unless bundle_id != blank %}
+  {% assign bundle_id = 'preview' %}
+{% endunless %}
+
+{% comment %} Bundle config metafield — written by app on sync, enables zero-proxy first paint {% endcomment %}
+{% assign bundle_config_metafield = page.metafields.custom.bundle_config %}
+{% if bundle_config_metafield.value != blank %}
+  {% assign bundle_config_json = bundle_config_metafield.value | json %}
+{% else %}
+  {% assign bundle_config_json = 'null' %}
+{% endif %}
+
+{% comment %} Build tier config JSON from embed settings {% endcomment %}
+{% assign tier_config_json = '[' %}
+{% assign tier_json_first = true %}
+{% for i in (1..4) %}
+  {% assign t_label_key   = 'tier_' | append: i | append: '_label' %}
+  {% assign t_id_key      = 'tier_' | append: i | append: '_bundle_id' %}
+  {% assign t_label       = block.settings[t_label_key] %}
+  {% assign t_bundle_id   = block.settings[t_id_key] %}
+  {% if i == 1 and t_bundle_id == blank %}
+    {% assign t_bundle_id = bundle_id %}
+  {% endif %}
+  {% if t_label != blank and t_bundle_id != blank %}
+    {% unless tier_json_first %}
+      {% assign tier_config_json = tier_config_json | append: ',' %}
+    {% endunless %}
+    {% assign tier_json_first = false %}
+    {% assign tier_config_json = tier_config_json | append: '{"label":' | append: t_label | json | append: ',"bundleId":' | append: t_bundle_id | json | append: '}' %}
+  {% endif %}
+{% endfor %}
+{% assign tier_config_json = tier_config_json | append: ']' %}
+
+<div
+  id="bundle-builder-app"
+  data-bundle-id="{{ bundle_id }}"
+  data-bundle-type="full_page"
+  data-bundle-config="{{ bundle_config_json | escape }}"
+  data-show-title="{{ block.settings.show_bundle_title }}"
+  data-show-description="{{ block.settings.show_bundle_description }}"
+  data-show-category-tabs="{{ block.settings.show_category_tabs }}"
+  data-custom-title="{{ block.settings.custom_title | escape }}"
+  data-custom-description="{{ block.settings.custom_description | escape }}"
+  data-product-card-spacing="{{ block.settings.product_card_spacing }}"
+  data-product-cards-per-row="{{ block.settings.product_cards_per_row }}"
+  data-show-promo-banner="{{ block.settings.show_promo_banner | default: true }}"
+  data-promo-banner-subtitle="{{ block.settings.promo_banner_subtitle | default: 'Mix & Match' | escape }}"
+  data-promo-banner-tagline="{{ block.settings.promo_banner_tagline | default: 'Create Your Perfect Bundle' | escape }}"
+  data-promo-banner-note="{{ block.settings.promo_banner_note | default: 'Mix & Match Your Favorites' | escape }}"
+  data-tier-config="{{ tier_config_json | escape }}"
+  class="bundle-widget-container bundle-widget-full-page"
+>
+  <div class="bundle-loading">
+    <div class="loading-spinner"></div>
+  </div>
+</div>
+
+<script>
+  if (!window.bundleWidgetContext) {
+    window.shopCurrency = {{ shop.currency | json }};
+    window.shopMoneyFormat = {{ shop.money_format | json }};
+    window.shopifyMultiCurrency = {
+      shopBaseCurrency: {{ shop.currency | json }},
+      shopMoneyFormat: {{ shop.money_format | json }},
+      customerCurrency: {{ cart.currency.iso_code | json }},
+      customerMoneyFormat: {{ shop.money_format | json }},
+      isMultiCurrencyEnabled: {% if shop.enabled_currencies.size > 1 %}true{% else %}false{% endif %}
+    };
+    window.bundleWidgetContext = true;
+  }
+</script>
+
+<script>
+  {% assign app_namespace = '$app' %}
+  {% assign server_url_field = shop.metafields[app_namespace]['serverUrl'] %}
+  window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
+</script>
+
+{% # theme-check-disable RemoteAsset %}
+<link
+  rel="stylesheet"
+  href="{{ shop.url }}/apps/product-bundles/api/design-settings/{{ shop.domain }}?bundleType=full_page"
+  type="text/css"
+>
+{% # theme-check-enable RemoteAsset %}
+
+<link rel="stylesheet" href="{{ 'bundle-widget-full-page.css' | asset_url }}">
+<script src="{{ 'bundle-widget-full-page-bundled.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Wolfpack Bundle (Full Page)",
+  "target": "body",
+  "enabled_on": {
+    "templates": ["page"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "This embed renders automatically on any page linked to a Wolfpack bundle. No per-page setup needed."
+    },
+    {
+      "type": "header",
+      "content": "Display"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bundle_title",
+      "label": "Show bundle title",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bundle_description",
+      "label": "Show bundle description",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_category_tabs",
+      "label": "Show category tabs",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "custom_title",
+      "label": "Custom title override",
+      "info": "Leave blank to use the bundle name"
+    },
+    {
+      "type": "textarea",
+      "id": "custom_description",
+      "label": "Custom description override",
+      "info": "Leave blank to use the bundle description"
+    },
+    {
+      "type": "header",
+      "content": "Card Layout"
+    },
+    {
+      "type": "range",
+      "id": "product_card_spacing",
+      "label": "Product card spacing",
+      "info": "Space between product cards (px)",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "default": 20,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "product_cards_per_row",
+      "label": "Cards per row (desktop)",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "header",
+      "content": "Promo Banner"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_promo_banner",
+      "label": "Show promo banner",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "promo_banner_subtitle",
+      "label": "Banner subtitle",
+      "default": "Mix & Match"
+    },
+    {
+      "type": "text",
+      "id": "promo_banner_tagline",
+      "label": "Banner tagline (no discount)",
+      "default": "Create Your Perfect Bundle"
+    },
+    {
+      "type": "text",
+      "id": "promo_banner_note",
+      "label": "Banner note (no discount)",
+      "default": "Mix & Match Your Favorites"
+    },
+    {
+      "type": "header",
+      "content": "Pricing Tiers (Optional)"
+    },
+    {
+      "type": "text",
+      "id": "tier_1_label",
+      "label": "Tier 1 label"
+    },
+    {
+      "type": "text",
+      "id": "tier_1_bundle_id",
+      "label": "Tier 1 bundle ID",
+      "info": "Leave blank to use the page's bundle"
+    },
+    {
+      "type": "text",
+      "id": "tier_2_label",
+      "label": "Tier 2 label"
+    },
+    {
+      "type": "text",
+      "id": "tier_2_bundle_id",
+      "label": "Tier 2 bundle ID"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_label",
+      "label": "Tier 3 label"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_bundle_id",
+      "label": "Tier 3 bundle ID"
+    },
+    {
+      "type": "text",
+      "id": "tier_4_label",
+      "label": "Tier 4 label"
+    },
+    {
+      "type": "text",
+      "id": "tier_4_bundle_id",
+      "label": "Tier 4 bundle ID"
+    }
+  ]
+}
+{% endschema %}

@@ -1148,13 +1148,12 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
     syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
 
-    // Build theme editor link so the merchant can place the bundle-full-page app block
-    // after the page is re-created. Without this step the widget won't render on the storefront.
+    // Return embed activation link — merchant needs to activate the bundle-full-page-embed
+    // embed block once in Theme Settings > App Embeds. After that all bundle pages work.
     const apiKey = process.env.SHOPIFY_API_KEY || '';
     const shopDomain = session.shop.replace('.myshopify.com', '');
-    const syncedPageHandle = result.pageHandle ?? bundle.shopifyPageHandle ?? '';
-    const widgetInstallationLink = apiKey && syncedPageHandle
-      ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=page.full-page-bundle&addAppBlockId=${apiKey}/bundle-full-page&target=newAppsSection&previewPath=${encodeURIComponent(`/pages/${syncedPageHandle}`)}`
+    const widgetInstallationLink = apiKey
+      ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-full-page-embed`
       : undefined;
 
     return json({
