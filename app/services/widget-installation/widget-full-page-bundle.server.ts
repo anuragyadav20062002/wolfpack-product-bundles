@@ -261,31 +261,7 @@ export async function createFullPageBundle(
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
       pageUrl,
-      templateApplied: templateResult.success
     });
-
-    // If template file write failed (e.g. theme API error), surface a deep link
-    // so the merchant can manually add the block via Theme Editor as a fallback.
-    if (!templateResult.success) {
-      const deepLink = generateThemeEditorDeepLink(
-        shop,
-        apiKey,
-        'bundle-full-page',
-        bundleId,
-        'page',
-        'newAppsSection'
-      );
-
-      return {
-        success: true,
-        pageId: createdPage.id,
-        pageHandle: createdPage.handle,
-        pageUrl,
-        slugAdjusted,
-        widgetInstallationRequired: true,
-        widgetInstallationLink: deepLink.url
-      };
-    }
 
     return {
       success: true,
