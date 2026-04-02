@@ -2232,9 +2232,13 @@ class BundleWidgetFullPage {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'footer-toggle';
     toggleBtn.setAttribute('type', 'button');
-    const showStepsCounter = !this.bundleHasNoConditions();
+    const hasConditions = !this.bundleHasNoConditions();
+    const totalSelected = allSelectedProducts.filter(p => !p.isDefault).length;
+    const toggleText = hasConditions
+      ? `${totalQuantity}/${totalRequired} Steps`
+      : `${totalSelected} Product${totalSelected !== 1 ? 's' : ''}`;
     toggleBtn.innerHTML = `
-      ${showStepsCounter ? `<span class="footer-toggle-text">${totalQuantity}/${totalRequired} Steps</span>` : ''}
+      <span class="footer-toggle-text">${toggleText}</span>
       <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M5 8l5 5 5-5"/>
       </svg>
