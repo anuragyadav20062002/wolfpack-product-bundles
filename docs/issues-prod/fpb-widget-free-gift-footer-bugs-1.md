@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-02
-**Last Updated:** 2026-04-02 14:30
+**Last Updated:** 2026-04-02 14:45
 
 ## Overview
 SIT QA session on `test-bundle-store123.myshopify.com/pages/preview-564` surfaced four bugs
@@ -44,7 +44,7 @@ Two locations hardcode the dollar sign instead of using `CurrencyManager.convert
 ## Progress Log
 
 ### 2026-04-02 14:30 - Completed all four fixes
-- ✅ Bug 1 + 2: `_createFooterBar()` — counter hidden when `bundleHasNoConditions()` is true; label renamed "Products" → "Steps"
+- ✅ Bug 1 + 2: `_createFooterBar()` — conditionless bundles show `N Products` (total count, no denominator); bundles with conditions show `N/M Steps`
 - ✅ Bug 3: `renderFullPageFooter()` — `totalRequired` now skips `isFreeGift` and `isDefault` steps
 - ✅ Bug 4: Product card (line ~1964) — replaced hardcoded `$0.00` with `CurrencyManager.convertAndFormat(0, _ci)`
 - ✅ Bug 4: Side panel row (line ~1119) — replaced hardcoded `$0.00` with `CurrencyManager.convertAndFormat(0, currencyInfo)`
