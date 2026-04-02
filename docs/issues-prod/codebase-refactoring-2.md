@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-04-01
-**Last Updated:** 2026-04-02 10:30
+**Last Updated:** 2026-04-02 10:45
 
 ## Overview
 Full codebase audit (37 files) identified 6 CRITICAL, 22 WARN, 7 INFO findings.
@@ -22,6 +22,14 @@ silent swallow CRITICAL → cascading fallback CRITICAL → any-typing → giant
 - WARN 17: `console.warn` in auth-guards
 
 ## Progress Log
+
+### 2026-04-02 10:45 - Completed WARN 18: CSS endpoint 50+ || fallbacks → null-filter spread
+- ✅ Replaced 50 individual `field: designSettings.field || defaultSettings.field` lines with single `directCols` null-filter spread
+- ✅ Fixed correctness bug: `||` was discarding merchant-set values of 0/false (e.g. productCardBorderWidth: 0)
+- ✅ Removed all `(designSettings as any)` casts (8 total); now uses single `db` cast
+- Files: `app/routes/api/api.design-settings.$shopDomain.tsx`
+- Verified: DCP loads clean, HMR succeeded, 0 console errors
+- Next: WARN 11-12 — decompose giant handleSaveBundle in PPB and FPB handlers
 
 ### 2026-04-02 10:30 - Completed WARN 7: DCP extract functions → pick utility
 - ✅ Replaced 5 `extract*Settings(settings: any)` functions (130+ lines) with single `pick(source, keys)` utility
