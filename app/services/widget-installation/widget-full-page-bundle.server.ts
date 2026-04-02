@@ -254,6 +254,10 @@ export async function createFullPageBundle(
     const shopDomain = shop.replace('.myshopify.com', '');
     const pageUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
 
+    // Return embed activation deep link — directs merchant to Theme Settings > App Embeds
+    // to activate the bundle-full-page-embed block (one-time per store, not per page).
+    const widgetInstallationLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-full-page-embed`;
+
     AppLogger.info('Full-page bundle created successfully', {
       component: 'WidgetFullPageBundle',
       shop,
@@ -261,38 +265,16 @@ export async function createFullPageBundle(
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
       pageUrl,
-      templateApplied: templateResult.success
     });
-
-    // If template file write failed (e.g. theme API error), surface a deep link
-    // so the merchant can manually add the block via Theme Editor as a fallback.
-    if (!templateResult.success) {
-      const deepLink = generateThemeEditorDeepLink(
-        shop,
-        apiKey,
-        'bundle-full-page',
-        bundleId,
-        'page',
-        'newAppsSection'
-      );
-
-      return {
-        success: true,
-        pageId: createdPage.id,
-        pageHandle: createdPage.handle,
-        pageUrl,
-        slugAdjusted,
-        widgetInstallationRequired: true,
-        widgetInstallationLink: deepLink.url
-      };
-    }
 
     return {
       success: true,
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
       pageUrl,
-      slugAdjusted
+      slugAdjusted,
+      widgetInstallationRequired: true,
+      widgetInstallationLink,
     };
 
   } catch (error) {

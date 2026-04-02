@@ -649,7 +649,7 @@ export default function ConfigureBundleFlow() {
 
           if (installRequired && installLink) {
             shopify.toast.show(
-              "Page created! Click Save in the theme editor to activate the widget.",
+              "Page created! Activate the Wolfpack Bundle embed in Theme Settings to go live.",
               { isError: false, duration: 8000 }
             );
             window.open(installLink, '_blank');
@@ -669,6 +669,11 @@ export default function ConfigureBundleFlow() {
           // Sync bundle response
           shopify.toast.show(('message' in result ? result.message : null) || "Bundle synced successfully", { isError: false });
           revalidator.revalidate();
+          // Open embed activation link so merchant can activate (or confirm) the embed
+          const syncInstallLink = (result as any).widgetInstallationLink;
+          if (syncInstallLink) {
+            setTimeout(() => window.open(syncInstallLink, '_blank'), 800);
+          }
         } else {
           // Generic success response
           shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });
