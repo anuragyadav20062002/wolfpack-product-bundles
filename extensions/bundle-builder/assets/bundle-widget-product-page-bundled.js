@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
  * Version : 2.4.6
- * Built   : 2026-04-01
+ * Built   : 2026-04-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -511,7 +511,8 @@ class BundleDataManager {
     }
 
     const bundles = Object.values(bundlesData).filter(bundle =>
-      this.validateSingleBundle(bundle) && bundle.status === 'active'
+      this.validateSingleBundle(bundle) &&
+      (bundle.status === 'active' || bundle.status === 'unlisted')
     );
 
     if (bundles.length === 0) {

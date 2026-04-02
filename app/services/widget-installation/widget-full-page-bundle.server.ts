@@ -8,7 +8,6 @@
 import { AppLogger } from "../../lib/logger";
 import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition, ensureCustomPageBundleConfigDefinition } from "../bundles/metafield-sync.server";
 import { formatBundleForWidget } from "../../lib/bundle-formatter.server";
-import { ensureBundlePageTemplate } from "./widget-theme-template.server";
 import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
 import { slugify, resolveUniqueHandle } from "../../lib/slug-utils";
 import type { FullPageBundleResult } from "./types";
@@ -52,21 +51,12 @@ export async function createFullPageBundle(
       bundleName
     });
 
-    // Step 0: Ensure the bundle page template exists in the active theme
-    const templateResult = await ensureBundlePageTemplate(admin, session, apiKey);
-
-    if (!templateResult.success) {
-      AppLogger.warn('Could not ensure bundle page template (non-fatal)', {
-        component: 'WidgetFullPageBundle',
-        error: templateResult.error
-      });
-    }
-
-    // Always attach the templateSuffix regardless of whether the template file was
-    // just created or already existed. The suffix tells Shopify to serve this page
-    // using templates/page.full-page-bundle.json. Even if that template write failed
-    // above (unlikely now that UUID comes from EXTENSION_UID), the suffix ensures
-    // the page uses the right template as soon as the file exists in the theme.
+    // FPB pages are served via URL redirect (/products/{handle} → /pages/{handle}).
+    // The redirect fires before Shopify's theme engine renders any template, so
+    // templateSuffix is meaningless for routing. We intentionally do NOT call
+    // ensureBundlePageTemplate / themeFilesUpsert here — that API requires a Shopify
+    // exemption that disqualifies the app from the Built For Shopify badge.
+    // Merchants add the app block to their page template once via the Theme Editor.
     const templateSuffix = 'full-page-bundle';
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
