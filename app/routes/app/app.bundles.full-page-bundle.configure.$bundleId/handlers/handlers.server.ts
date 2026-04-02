@@ -340,6 +340,72 @@ function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<strin
   };
 }
 
+/** Build the base bundle configuration object passed to metafield update functions. */
+function buildFpbBaseConfig(
+  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; fullPageLayout: string | null; templateName: string | null; shopifyProductId: string | null; shopifyPageHandle: string | null },
+  stepsData: any[],
+  stepConditionsData: Record<string, any[]>,
+  discountData: any,
+  bundleParentVariantId: string | null,
+): Record<string, unknown> {
+  const optimizedSteps = (stepsData || []).map((step: any) => ({
+    id: step.id,
+    name: step.name || 'Step',
+    minQuantity: parseInt(step.minQuantity) || 1,
+    maxQuantity: parseInt(step.maxQuantity) || 1,
+    enabled: step.enabled !== false,
+    conditionType: stepConditionsData[step.id]?.[0]?.type || null,
+    conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
+    conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
+    conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
+    conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
+    products: (step.StepProduct || []).map((product: any) => ({
+      id: product.id,
+      title: product.title || product.name || 'Product',
+      imageUrl: product.imageUrl || product.image?.url || null,
+    })),
+    collections: (step.collections || []).map((collection: any) => ({
+      id: collection.id,
+      title: collection.title || 'Collection',
+    })),
+  }));
+
+  const firstRuleId = discountData.discountRules?.[0]?.id;
+  const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
+
+  return {
+    bundleId: updatedBundle.id,
+    id: updatedBundle.id,
+    name: updatedBundle.name,
+    description: updatedBundle.description,
+    status: updatedBundle.status,
+    bundleType: updatedBundle.bundleType,
+    fullPageLayout: updatedBundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
+    templateName: updatedBundle.templateName,
+    steps: optimizedSteps,
+    pricing: {
+      enabled: discountData.discountEnabled,
+      method: discountData.discountType,
+      rules: (discountData.discountRules || []).map((rule: any) => ({
+        id: rule.id,
+        condition: rule.condition || { type: rule.conditionType || 'quantity', operator: rule.operator || 'gte', value: rule.value || 0 },
+        discount: rule.discount || { method: discountData.discountType, value: rule.discountValue || rule.value || 0 },
+      })),
+      display: { showFooter: discountData.showFooter !== false },
+      messages: {
+        progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
+        qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+        showDiscountMessaging: discountData.discountMessagingEnabled || false,
+        showInCart: true,
+      },
+    },
+    bundleParentVariantId: bundleParentVariantId,
+    shopifyProductId: updatedBundle.shopifyProductId,
+    shopifyPageHandle: updatedBundle.shopifyPageHandle || null,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 /**
  * Handle saving bundle configuration
  */
@@ -602,84 +668,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         shopifyStatus,
       );
 
-      // Create optimized configuration with only essential data for functions
-      const optimizedSteps = (stepsData || []).map((step: any) => ({
-        id: step.id,
-        name: step.name || 'Step',
-        minQuantity: parseInt(step.minQuantity) || 1,
-        maxQuantity: parseInt(step.maxQuantity) || 1,
-        enabled: step.enabled !== false,
-        conditionType: stepConditionsData[step.id]?.[0]?.type || null,
-        conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
-        conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
-        conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
-        conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
-        // Store essential product data (IDs, titles, and images)
-        products: (step.StepProduct || []).map((product: any) => ({
-          id: product.id,
-          title: product.title || product.name || 'Product',
-          imageUrl: product.imageUrl || product.image?.url || null
-        })),
-        // Only store essential collection data
-        collections: (step.collections || []).map((collection: any) => ({
-          id: collection.id,
-          title: collection.title || 'Collection'
-        }))
-      }));
-
       // Get the bundle product's first variant ID for cart transform merge operations
       const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
       AppLogger.debug(`[BUNDLE_CONFIG] Bundle parent variant ID: ${bundleParentVariantId}`);
 
-      const baseConfiguration = {
-        bundleId: updatedBundle.id,
-        id: updatedBundle.id, // Also include as 'id' for easier matching
-        name: updatedBundle.name,
-        description: updatedBundle.description,
-        status: updatedBundle.status,
-        bundleType: updatedBundle.bundleType,
-        fullPageLayout: updatedBundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
-        templateName: updatedBundle.templateName,
-        steps: optimizedSteps,
-        pricing: {
-          enabled: discountData.discountEnabled,
-          method: discountData.discountType,
-          rules: (discountData.discountRules || []).map((rule: any) => {
-            // Use new nested structure - already standardized from form
-            return {
-              id: rule.id,
-              condition: rule.condition || {
-                type: rule.conditionType || 'quantity',
-                operator: rule.operator || 'gte',
-                value: rule.value || 0
-              },
-              discount: rule.discount || {
-                method: discountData.discountType,
-                value: rule.discountValue || rule.value || 0
-              }
-            };
-          }),
-          display: {
-            showFooter: discountData.showFooter !== false,
-          },
-          messages: (() => {
-            // Build messages from ruleMessages (per-rule messaging from admin form)
-            const firstRuleId = discountData.discountRules?.[0]?.id;
-            const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
-            return {
-              progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
-              qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
-              showDiscountMessaging: discountData.discountMessagingEnabled || false,
-              showInCart: true
-            };
-          })()
-        },
-        // CRITICAL: Include bundle parent variant ID for cart transform merge operations
-        bundleParentVariantId: bundleParentVariantId,
-        shopifyProductId: updatedBundle.shopifyProductId, // Bundle product ID for querying metafield
-        shopifyPageHandle: updatedBundle.shopifyPageHandle || null,
-        updatedAt: new Date().toISOString()
-      };
+      const baseConfiguration = buildFpbBaseConfig(
+        updatedBundle, stepsData, stepConditionsData, discountData, bundleParentVariantId
+      );
 
       const configSize = JSON.stringify(baseConfiguration).length;
       AppLogger.debug("[METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);

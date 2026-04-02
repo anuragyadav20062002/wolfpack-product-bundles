@@ -1,10 +1,10 @@
 # Issue: Codebase Anti-Pattern Refactoring (Batch 2)
 
 **Issue ID:** codebase-refactoring-2
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-01
-**Last Updated:** 2026-04-02 10:45
+**Last Updated:** 2026-04-02 11:00
 
 ## Overview
 Full codebase audit (37 files) identified 6 CRITICAL, 22 WARN, 7 INFO findings.
@@ -22,6 +22,15 @@ silent swallow CRITICAL → cascading fallback CRITICAL → any-typing → giant
 - WARN 17: `console.warn` in auth-guards
 
 ## Progress Log
+
+### 2026-04-02 11:00 - Completed WARN 11-12: Extract helpers from giant handleSaveBundle in PPB + FPB
+- ✅ PPB: Extracted `syncBundleProductToShopify` (~66 lines) + `buildBundleBaseConfig` (~76 lines) as private helpers
+- ✅ FPB: Extracted `buildFpbBaseConfig` (~66 lines) as private helper (FPB already had syncFullPageBundleProductTemplate)
+- ✅ PPB handleSaveBundle reduced from ~475 → ~350 lines
+- ✅ FPB handleSaveBundle reduced from ~449 → ~390 lines
+- Files: `handlers/handlers.server.ts` in both PPB and FPB configure routes
+- Verified: HMR clean, 0 console errors in Chrome DevTools
+- All findings complete — refactoring session done
 
 ### 2026-04-02 10:45 - Completed WARN 18: CSS endpoint 50+ || fallbacks → null-filter spread
 - ✅ Replaced 50 individual `field: designSettings.field || defaultSettings.field` lines with single `directCols` null-filter spread
