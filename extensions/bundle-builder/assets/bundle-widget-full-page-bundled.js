@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.4.6
- * Built   : 2026-03-31
+ * Built   : 2026-04-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -3559,7 +3559,7 @@ class BundleWidgetFullPage {
         const isFreeGiftItem = item.isFreeGift === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
-          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
+          ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
 
         row.innerHTML = `
@@ -4404,7 +4404,8 @@ class BundleWidgetFullPage {
       const priceEl = cardElement.querySelector('.product-price, .price');
       if (priceEl) {
         const originalPriceText = priceEl.textContent;
-        priceEl.innerHTML = `$0.00 <span class="side-panel-product-original-price">${originalPriceText}</span>`;
+        const _ci = CurrencyManager.getCurrencyInfo();
+        priceEl.innerHTML = `${CurrencyManager.convertAndFormat(0, _ci)} <span class="side-panel-product-original-price">${originalPriceText}</span>`;
       }
     }
 
@@ -4552,8 +4553,9 @@ class BundleWidgetFullPage {
       );
     }
 
-    // Total required quantity across all steps
+    // Total required quantity across paid steps only (free gift and default steps are non-blocking)
     const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
+      if (step.isFreeGift || step.isDefault) return sum;
       return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
     }, 0);
 
@@ -4673,8 +4675,9 @@ class BundleWidgetFullPage {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'footer-toggle';
     toggleBtn.setAttribute('type', 'button');
+    const showStepsCounter = !this.bundleHasNoConditions();
     toggleBtn.innerHTML = `
-      <span class="footer-toggle-text">${totalQuantity}/${totalRequired} Products</span>
+      ${showStepsCounter ? `<span class="footer-toggle-text">${totalQuantity}/${totalRequired} Steps</span>` : ''}
       <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M5 8l5 5 5-5"/>
       </svg>
