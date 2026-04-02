@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-04-01
-**Last Updated:** 2026-04-01
+**Last Updated:** 2026-04-02 10:30
 
 ## Overview
 Full codebase audit (37 files) identified 6 CRITICAL, 22 WARN, 7 INFO findings.
@@ -22,6 +22,15 @@ silent swallow CRITICAL → cascading fallback CRITICAL → any-typing → giant
 - WARN 17: `console.warn` in auth-guards
 
 ## Progress Log
+
+### 2026-04-02 10:30 - Completed WARN 7: DCP extract functions → pick utility
+- ✅ Replaced 5 `extract*Settings(settings: any)` functions (130+ lines) with single `pick(source, keys)` utility
+- ✅ Defined 5 typed key arrays: FOOTER_KEYS, STEP_BAR_KEYS, GLOBAL_COLORS_KEYS, GENERAL_KEYS, PROMO_BANNER_KEYS
+- ✅ `buildSettingsData` now takes `settings: Record<string, unknown>` directly
+- ✅ `handleSaveSettings` formData type updated from `{ settings: any }` to `{ settings: Record<string, unknown> }`
+- Files: `app/routes/app/app.design-control-panel/handlers.server.ts`
+- Verified: DCP page loads clean in Chrome DevTools, 0 errors
+- Next: WARN 18 — 50+ longhand `|| defaultSettings.X` fallbacks in design-settings CSS endpoint
 
 ### 2026-04-01 - Starting fix batch
 
@@ -44,5 +53,7 @@ silent swallow CRITICAL → cascading fallback CRITICAL → any-typing → giant
 - [ ] Fix 3–5: console → AppLogger in metafield operation files
 - [ ] Fix 14, 16: console → AppLogger in storefront files
 - [ ] Fix 6: silent return → throw in component-product
-- [ ] Fix 1: cascading fallback in storefront-products
-- [ ] Fix 2: remaining console.* in storefront-products
+- [x] Fix 1: cascading fallback in storefront-products
+- [x] Fix 2: remaining console.* in storefront-products
+- [x] Fix 7: 5 repeat extract functions → pick utility in DCP handlers
+- [x] Fix 9: admin: any → ShopifyAdmin in dashboard handlers, billing, install-pdp-widget, standard-metafields, metafield-validation, metafield-sync operations
