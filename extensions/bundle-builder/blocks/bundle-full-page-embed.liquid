@@ -71,6 +71,18 @@
   </div>
 </div>
 
+{% if block.settings.hide_page_title %}
+<style>
+  /* Hide the theme's page <h1> on bundle pages — the widget renders its own title */
+  .section-content-wrapper h1,
+  .page__heading h1,
+  .page-title h1,
+  h1.page-title,
+  .page-header h1,
+  .main-page-title { display: none !important; }
+</style>
+{% endif %}
+
 <script>
   if (!window.bundleWidgetContext) {
     window.shopCurrency = {{ shop.currency | json }};
@@ -135,6 +147,13 @@
       "type": "checkbox",
       "id": "show_category_tabs",
       "label": "Show category tabs",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_page_title",
+      "label": "Hide page title",
+      "info": "Hides the theme's page heading (h1) on bundle pages — the widget shows its own title",
       "default": true
     },
     {
