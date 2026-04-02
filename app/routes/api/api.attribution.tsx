@@ -54,9 +54,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       landingPage,
     } = payload;
 
-    // Validate required fields
-    if (!shopId || !utmSource) {
-      return json({ error: "Missing required fields: shopId and utmSource" }, { status: 400, headers: CORS_HEADERS });
+    // Only shopId is required — utmSource may be null for direct/organic traffic.
+    // Bundle revenue is tracked for all checkouts regardless of UTM presence.
+    if (!shopId) {
+      return json({ error: "Missing required field: shopId" }, { status: 400, headers: CORS_HEADERS });
     }
 
     // Calculate revenue in cents
