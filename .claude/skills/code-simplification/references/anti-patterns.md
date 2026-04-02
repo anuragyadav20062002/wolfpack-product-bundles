@@ -462,6 +462,98 @@ if (metaResult.status === "rejected") {
 
 ---
 
+## AP-11: APP_BRIDGE_INVALID_PROP — Invalid Prop on App Bridge Web Component
+
+**Severity:** WARN
+
+**Definition:** Passing a prop that does not exist on an App Bridge web component (`<ui-save-bar>`, `<ui-modal>`, etc.), causing a console error on every render.
+
+**Why it's bad:**
+- Produces a console error on every page load: `Unexpected value for attribute "X" on <ui-Y>`
+- The prop is silently ignored — the intended behaviour (e.g. discard confirmation dialog) never fires
+- Misled by React prop naming conventions — App Bridge components are DOM web components and only accept their documented HTML attributes
+
+**Real example from this codebase:**
+```tsx
+// Both configure routes had this — fires error twice per page load
+<SaveBar id="bundle-save-bar" open={isDirty} discardConfirmation={true}>
+// Error: Unexpected value for attribute "discardconfirmation" on <ui-save-bar>
+```
+
+**Correct pattern:**
+```tsx
+// Only pass props documented in the App Bridge web component spec
+<SaveBar id="bundle-save-bar" open={isDirty}>
+  <button variant="primary" slot="save-action">Save</button>
+  <button slot="discard-action">Discard</button>
+</SaveBar>
+```
+
+**How to audit:** Search for `<SaveBar`, `<Modal`, `<TitleBar`, `<ContextualSaveBar` and cross-reference every prop with the App Bridge React v4 component API. Any prop not in the documented API is invalid.
+
+---
+
+## AP-12: HARDCODED_CSS_VALUE — Hardcoded Hex/RGB in Widget JS
+
+**Severity:** WARN
+
+**Definition:** Widget JavaScript that sets colours, sizes, or other merchant-customisable values as hardcoded literals (`#1e3a8a`, `rgba(30, 58, 138, 0.08)`, `200px`) instead of reading from CSS custom properties set by the DCP.
+
+**Why it's bad:**
+- The merchant's DCP theme settings have no effect — the hardcoded value always wins
+- Creates visual inconsistency: different parts of the widget use DCP colours, the hardcoded section does not
+- Silent bug: merchant changes primary colour in DCP but one card ignores it
+
+**Real example from this codebase:**
+```javascript
+// bundle-widget-product-page.js — createFreeGiftSlotCard()
+iconWrapper.style.cssText = `
+  background: rgba(30, 58, 138, 0.08);  // ❌ hardcoded blue tint
+`;
+iconWrapper.style.color = '#1e3a8a';     // ❌ hardcoded primary blue
+```
+
+**Correct pattern:**
+```javascript
+iconWrapper.style.color = getComputedStyle(document.documentElement)
+  .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+// The fallback (#1e3a8a) is only used if the CSS variable is not set
+```
+
+**When it's OK:** Structural properties (border-radius on a circle icon, flex layout) are not merchant-customisable and can be hardcoded. Colours and sizes controlled by the DCP must use CSS variables.
+
+---
+
+## AP-13: DIRECT_AUTHENTICATE — Direct `authenticate.admin()` in Routes
+
+**Severity:** WARN
+
+**Definition:** Calling `authenticate.admin(request)` directly inside a route loader or action, bypassing the `requireAdminSession` auth guard in `app/lib/auth-guards.server.ts`.
+
+**Why it's bad:**
+- Any auth logic change (token refresh, session scope, logging) must be updated in every route instead of one place
+- No centralised audit trail of which routes require admin auth
+- Pattern established in `auth-guards.server.ts` is the project standard — diverging creates two auth code paths
+
+**Real example from this codebase:**
+```typescript
+// ❌ Direct call in route — bypasses auth guard layer
+const { admin, session } = await authenticate.admin(request);
+```
+
+**Correct pattern:**
+```typescript
+// ✅ Use the project auth guard — always
+import { requireAdminSession } from "~/lib/auth-guards.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin, session } = await requireAdminSession(request);
+  // admin and session are now typed and guaranteed
+};
+```
+
+---
+
 ## Severity Summary
 
 | Code | Default Severity | Escalate to CRITICAL if... |
@@ -476,3 +568,6 @@ if (metaResult.status === "rejected") {
 | GENERIC_CATCH | WARN | Could hide non-Error throws |
 | INCONSISTENT_GQL | WARN | Mutation (data changes) — unchecked userErrors is CRITICAL |
 | MIXED_PROMISES | CRITICAL | always |
+| APP_BRIDGE_INVALID_PROP | WARN | always |
+| HARDCODED_CSS_VALUE | WARN | Colour/size controlled by DCP but hardcoded |
+| DIRECT_AUTHENTICATE | WARN | Multiple routes bypassing the auth guard |

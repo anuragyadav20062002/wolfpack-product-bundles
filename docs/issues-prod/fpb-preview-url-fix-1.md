@@ -43,4 +43,4 @@ which is idempotent for already-published pages.
 - [x] Identify root cause via schema introspection
 - [x] Apply code fixes
 - [x] Lint modified files
-- [ ] Commit
+- [x] Commit

@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-01
-**Last Updated:** 2026-04-02 11:00
+**Last Updated:** 2026-04-02 12:30
 
 ## Overview
 Full codebase audit (37 files) identified 6 CRITICAL, 22 WARN, 7 INFO findings.
@@ -22,6 +22,10 @@ silent swallow CRITICAL → cascading fallback CRITICAL → any-typing → giant
 - WARN 17: `console.warn` in auth-guards
 
 ## Progress Log
+
+### 2026-04-02 12:30 - Verified all remaining checklist items already completed
+- ✅ Fixes 13, 17, 19-20, 3-5, 14, 16, 6 all verified clean in prior session
+- All 37-file audit findings now addressed — codebase-refactoring-2 fully complete
 
 ### 2026-04-02 11:00 - Completed WARN 11-12: Extract helpers from giant handleSaveBundle in PPB + FPB
 - ✅ PPB: Extracted `syncBundleProductToShopify` (~66 lines) + `buildBundleBaseConfig` (~76 lines) as private helpers
@@ -64,12 +68,12 @@ silent swallow CRITICAL → cascading fallback CRITICAL → any-typing → giant
 - `app/services/storefront-token.server.ts` (Finding 16)
 
 ## Phases Checklist
-- [ ] Fix 13: loader any → LoaderFunctionArgs
-- [ ] Fix 19–20: generic catch instanceof guards
-- [ ] Fix 17: console.warn → AppLogger in auth-guards
-- [ ] Fix 3–5: console → AppLogger in metafield operation files
-- [ ] Fix 14, 16: console → AppLogger in storefront files
-- [ ] Fix 6: silent return → throw in component-product
+- [x] Fix 13: loader any → LoaderFunctionArgs (already done in prior session)
+- [x] Fix 19–20: generic catch instanceof guards (already done in prior session)
+- [x] Fix 17: console.warn → AppLogger in auth-guards (already done in prior session)
+- [x] Fix 3–5: console → AppLogger in metafield operation files (already done in prior session)
+- [x] Fix 14, 16: console → AppLogger in storefront files (already done in prior session)
+- [x] Fix 6: silent return → throw in component-product (already done in prior session)
 - [x] Fix 1: cascading fallback in storefront-products
 - [x] Fix 2: remaining console.* in storefront-products
 - [x] Fix 7: 5 repeat extract functions → pick utility in DCP handlers
