@@ -1148,7 +1148,21 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
     syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
 
-    return json({ success: true, synced: true, message: 'Bundle synced successfully' });
+    // Return embed activation link — merchant needs to activate the bundle-full-page-embed
+    // embed block once in Theme Settings > App Embeds. After that all bundle pages work.
+    const apiKey = process.env.SHOPIFY_API_KEY || '';
+    const shopDomain = session.shop.replace('.myshopify.com', '');
+    const widgetInstallationLink = apiKey
+      ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-full-page-embed`
+      : undefined;
+
+    return json({
+      success: true,
+      synced: true,
+      message: 'Bundle synced successfully',
+      widgetInstallationRequired: true,
+      widgetInstallationLink,
+    });
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sync failed';
