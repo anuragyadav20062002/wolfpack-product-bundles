@@ -931,7 +931,8 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           variants: [
             {
               price: bundlePrice,
-              inventoryPolicy: "CONTINUE"
+              inventoryPolicy: "CONTINUE",
+              inventoryManagement: "SHOPIFY"
             }
           ]
         }
@@ -1088,7 +1089,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
               status: 'ACTIVE',
               descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
               tags: ['bundle', 'cart-transform'],
-              variants: [{ price: bundlePrice, inventoryPolicy: 'CONTINUE' }],
+              variants: [{ price: bundlePrice, inventoryPolicy: 'CONTINUE', inventoryManagement: 'SHOPIFY' }],
             },
           },
         });
