@@ -7,6 +7,7 @@
 import { isUUID } from "../../../../utils/shopify-validators";
 import { getFirstVariantId, batchGetFirstVariantsWithPrices } from "../../../../utils/variant-lookup.server";
 import { AppLogger } from "../../../../lib/logger";
+import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { checkMetafieldSize } from "../utils/size-check";
 import { calculateComponentPricing } from "../utils/pricing";
 import type { PriceAdjustment, BundleUiConfig, ComponentPricing } from "../types";
@@ -23,13 +24,15 @@ import { BundleStatus, BundleType } from "../../../../constants/bundle";
  * - component_pricing (json) - Per-component pricing for expanded checkout display (cents)
  */
 export async function updateBundleProductMetafields(
-  admin: any,
+  admin: ShopifyAdmin,
   bundleProductId: string,
   bundleConfiguration: any
 ): Promise<any[] | undefined> {
-  console.log("🔧 [METAFIELD] Starting bundle variant metafield update (Shopify Standard)");
-  console.log("📦 [METAFIELD] Bundle Product ID:", bundleProductId);
-  console.log("⚙️ [METAFIELD] Configuration size:", JSON.stringify(bundleConfiguration).length, "chars");
+  AppLogger.debug("[METAFIELD] Starting bundle variant metafield update", {
+    component: "bundle-product.server",
+    bundleProductId,
+    configSize: JSON.stringify(bundleConfiguration).length,
+  });
 
   // Get the first variant ID for the bundle product
   const variantResult = await getFirstVariantId(admin, bundleProductId);
@@ -38,7 +41,6 @@ export async function updateBundleProductMetafields(
   }
 
   const bundleVariantId = variantResult.variantId;
-  console.log("🎯 [METAFIELD] Bundle variant ID:", bundleVariantId);
 
   // Extract component references and quantities from bundle configuration
   const componentReferences: string[] = [];
@@ -62,7 +64,10 @@ export async function updateBundleProductMetafields(
               source: 'StepProduct'
             });
           } else if (stepProduct.productId) {
-            console.warn(`⚠️ [METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
+            AppLogger.warn("[METAFIELD] Skipping UUID product ID", {
+              component: "bundle-product.server",
+              productId: stepProduct.productId,
+            });
           }
         }
       } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
@@ -77,7 +82,10 @@ export async function updateBundleProductMetafields(
           }
         }
       } else {
-        console.warn(`⚠️ [METAFIELD] Step "${step.name}" has no StepProduct entries`);
+        AppLogger.warn("[METAFIELD] Step has no StepProduct entries", {
+          component: "bundle-product.server",
+          stepName: step.name,
+        });
       }
 
       // COLLECTION FIX: Also fetch products from collection handles
@@ -122,7 +130,11 @@ export async function updateBundleProductMetafields(
               }
             }
 
-            console.log(`✅ [METAFIELD] Fetched ${collProductEdges.length} products from collection "${handle}"`);
+            AppLogger.debug("[METAFIELD] Fetched products from collection", {
+              component: "bundle-product.server",
+              handle,
+              count: collProductEdges.length,
+            });
           } catch (collError) {
             AppLogger.warn("Could not fetch products from collection", {
               component: "metafield-sync",
@@ -141,7 +153,10 @@ export async function updateBundleProductMetafields(
 
   if (productIdMap.length > 0) {
     const productIds = productIdMap.map(item => item.productId);
-    console.log(`[METAFIELD] Batch fetching variants with prices for ${productIds.length} products`);
+    AppLogger.debug("[METAFIELD] Batch fetching variants with prices", {
+      component: "bundle-product.server",
+      count: productIds.length,
+    });
 
     const variantResults = await batchGetFirstVariantsWithPrices(admin, productIds);
 
@@ -161,8 +176,6 @@ export async function updateBundleProductMetafields(
           quantity: item.stepMinQuantity,
           title: result.title
         });
-
-        console.log(`✅ [METAFIELD] Added variant ${result.variantId} with quantity ${item.stepMinQuantity}, price ${result.priceCents} cents (from ${item.source})`);
       } else {
         AppLogger.warn("Could not get variant for bundle product", {
           component: "metafield-sync",
@@ -173,8 +186,6 @@ export async function updateBundleProductMetafields(
       }
     });
   }
-
-  console.log(`📊 [METAFIELD] Found ${componentReferences.length} component variants with pricing data`);
 
   // Build price_adjustment config (Shopify standard with extensions)
   const priceAdjustment: PriceAdjustment = {
@@ -204,16 +215,12 @@ export async function updateBundleProductMetafields(
     }
   }
 
-  console.log("💰 [METAFIELD] Price adjustment:", JSON.stringify(priceAdjustment));
-
   // Calculate per-component pricing for expanded bundle checkout display
   const componentPricing: ComponentPricing[] = calculateComponentPricing(
     componentPricingData,
     priceAdjustment.method,
     priceAdjustment.value
   );
-
-  console.log("📊 [METAFIELD] Component pricing calculated:", componentPricing.length, "components");
 
   // Build bundle_ui_config for widget
   const bundleUiConfig: BundleUiConfig = {
@@ -282,9 +289,6 @@ export async function updateBundleProductMetafields(
   const priceAdjustmentSizeCheck = checkMetafieldSize(priceAdjustment, 'price_adjustment', 'updateBundleProductMetafields');
   const componentPricingSizeCheck = checkMetafieldSize(componentPricing, 'component_pricing', 'updateBundleProductMetafields');
 
-  console.log("🎨 [METAFIELD] UI config size:", JSON.stringify(bundleUiConfig).length, "chars");
-  console.log("💵 [METAFIELD] Component pricing size:", JSON.stringify(componentPricing).length, "chars");
-
   // Abort if any metafield exceeds size limit
   if (!uiConfigSizeCheck.withinLimit) {
     throw new Error(`bundle_ui_config metafield exceeds Shopify's 64KB limit (size: ${uiConfigSizeCheck.size} bytes). Bundle has too many products or complex configuration.`);
@@ -297,19 +301,6 @@ export async function updateBundleProductMetafields(
   if (!componentPricingSizeCheck.withinLimit) {
     throw new Error(`component_pricing metafield exceeds Shopify's 64KB limit (size: ${componentPricingSizeCheck.size} bytes). Bundle has too many components.`);
   }
-
-  // DEBUG: Log the stringified value we're about to send
-  const stringifiedValue = JSON.stringify(bundleUiConfig);
-  console.log("🔍 [METAFIELD_DEBUG] Stringified value type:", typeof stringifiedValue);
-  console.log("🔍 [METAFIELD_DEBUG] Stringified value (first 200 chars):", stringifiedValue.substring(0, 200));
-  console.log("🔍 [METAFIELD_DEBUG] Is valid JSON string?", (() => {
-    try {
-      JSON.parse(stringifiedValue);
-      return "YES ✅";
-    } catch (e) {
-      return `NO ❌ - ${e}`;
-    }
-  })());
 
   // Set all 5 metafields on the bundle variant
   const SET_METAFIELDS = `
@@ -376,37 +367,18 @@ export async function updateBundleProductMetafields(
 
   const data = await response.json();
 
-  console.log("📡 [METAFIELD] GraphQL response received");
-  console.log("✅ [METAFIELD] Metafields set:", data.data?.metafieldsSet?.metafields?.length || 0);
-
-  // DEBUG: Log the actual value returned for bundle_ui_config
-  const bundleConfigMetafield = data.data?.metafieldsSet?.metafields?.find((m: any) => m.key === 'bundle_ui_config');
-  if (bundleConfigMetafield) {
-    console.log("🔍 [METAFIELD_DEBUG] bundle_ui_config value type:", typeof bundleConfigMetafield.value);
-    console.log("🔍 [METAFIELD_DEBUG] bundle_ui_config value (first 200 chars):", bundleConfigMetafield.value.substring(0, 200));
-    console.log("🔍 [METAFIELD_DEBUG] Is valid JSON?", (() => {
-      try {
-        JSON.parse(bundleConfigMetafield.value);
-        return "YES ✅";
-      } catch (e) {
-        return `NO ❌ - ${e}`;
-      }
-    })());
-  }
-
   if (data.data?.metafieldsSet?.userErrors?.length > 0) {
     const error = data.data.metafieldsSet.userErrors[0];
-    console.error("❌ [METAFIELD] Set error:", error);
     throw new Error(`Failed to update bundle metafields: ${error.message}`);
   }
 
-  console.log("🎉 [METAFIELD] Bundle variant metafields updated successfully");
-  console.log("📊 [METAFIELD] Summary:");
-  console.log("   - component_reference:", componentReferences.length, "variants");
-  console.log("   - component_quantities:", componentQuantities.length, "values");
-  console.log("   - price_adjustment: method =", priceAdjustment.method, ", value =", priceAdjustment.value);
-  console.log("   - bundle_ui_config:", bundleUiConfig.steps.length, "steps");
-  console.log("   - component_pricing:", componentPricing.length, "components with pricing in cents");
+  AppLogger.info("[METAFIELD] Bundle variant metafields updated", {
+    component: "bundle-product.server",
+    bundleProductId,
+    componentCount: componentReferences.length,
+    stepCount: bundleUiConfig.steps.length,
+    pricingMethod: priceAdjustment.method,
+  });
 
   return data.data?.metafieldsSet?.metafields;
 }

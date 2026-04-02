@@ -1,6 +1,7 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
+import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
@@ -79,7 +80,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     if (!session?.storefrontAccessToken) {
-      console.error("[STOREFRONT_COLLECTIONS] No storefront token found for shop:", shop);
+      AppLogger.warn("[STOREFRONT_COLLECTIONS] No storefront token found for shop", { component: "api.storefront-collections", shop });
       return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404 });
     }
 
@@ -102,14 +103,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     if (!response.ok) {
-      console.error("[STOREFRONT_COLLECTIONS] Request failed:", response.status);
+      AppLogger.error("[STOREFRONT_COLLECTIONS] Storefront API request failed", { component: "api.storefront-collections", status: response.status });
       return json({ error: "Failed to fetch from Storefront API" }, { status: 500 });
     }
 
     const data = await response.json();
 
     if (data.errors) {
-      console.error("[STOREFRONT_COLLECTIONS] GraphQL errors:", data.errors);
+      AppLogger.error("[STOREFRONT_COLLECTIONS] GraphQL errors", { component: "api.storefront-collections" }, data.errors);
       return json({ error: "GraphQL errors", details: data.errors }, { status: 500 });
     }
 
@@ -153,7 +154,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       new Map(allProducts.map(p => [p.id, p])).values()
     );
 
-    console.log(`[STOREFRONT_COLLECTIONS] Successfully fetched ${uniqueProducts.length} unique products from ${handles.length} collections`);
+    AppLogger.debug("[STOREFRONT_COLLECTIONS] Fetched products from collections", { component: "api.storefront-collections", productCount: uniqueProducts.length, collectionCount: handles.length });
 
     return json({
       products: uniqueProducts,
@@ -168,10 +169,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
   } catch (error: any) {
-    console.error("[STOREFRONT_COLLECTIONS] Error:", error);
+    AppLogger.error("[STOREFRONT_COLLECTIONS] Internal error", { component: "api.storefront-collections" }, error);
     return json({
       error: "Internal server error",
-      message: error.message
+      message: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 });
   }
 }

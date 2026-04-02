@@ -2,6 +2,7 @@
 // Ensures only active bundles are processed and filters out deleted/inactive bundles
 
 import db from "../db.server";
+import type { ShopifyAdmin } from "../lib/auth-guards.server";
 import { AppLogger } from "../lib/logger";
 import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../constants/metafields";
 import { BundleStatus } from "../constants/bundle";
@@ -13,7 +14,7 @@ export class MetafieldValidationService {
    * @param admin - Shopify Admin API GraphQL client
    * @param shopId - Shop ID for database filtering
    */
-  static async validateAndCleanShopMetafields(admin: any, shopId: string) {
+  static async validateAndCleanShopMetafields(admin: ShopifyAdmin, shopId: string) {
     AppLogger.info('Starting metafield validation for shop', {
       component: 'validation',
       operation: 'validate-shop'

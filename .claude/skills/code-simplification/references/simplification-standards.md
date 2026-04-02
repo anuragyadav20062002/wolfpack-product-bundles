@@ -285,6 +285,100 @@ import { execSync } from "node:child_process";
 
 ---
 
+## Standard 11: App Bridge Web Component Props
+
+App Bridge components (`<SaveBar>`, `<Modal>`, `<TitleBar>`, `<ContextualSaveBar>`) are DOM web components, not React components. They only accept their documented HTML attributes — passing undocumented props causes a console error and the prop is silently ignored.
+
+**Audit checklist for App Bridge components:**
+```
+<SaveBar>            Valid: id, open
+                     ❌ NOT valid: discardConfirmation, onSave, onDiscard (these are React wrapper concepts)
+
+<Modal>              Valid: id, variant ("base" | "small" | "large" | "max"), open
+                     ❌ NOT valid: primaryAction, secondaryActions (Polaris Modal concepts)
+
+<TitleBar>           Valid: title
+                     ❌ NOT valid: breadcrumbs (must use slot="breadcrumbs")
+```
+
+**Correct SaveBar pattern:**
+```tsx
+<SaveBar id="bundle-save-bar" open={isDirty}>
+  <button variant="primary" slot="save-action" onClick={handleSave}>Save</button>
+  <button slot="discard-action" onClick={handleDiscard}>Discard</button>
+</SaveBar>
+```
+
+**How to verify:** Open Chrome DevTools Console on the embedded admin page. Any `Unexpected value for attribute` message is an invalid prop. Zero console errors is the target.
+
+---
+
+## Standard 12: Live Verification with Chrome DevTools MCP
+
+After applying any refactor fix, verify it on the running dev server before committing.
+
+### Dev Server Log Spying
+
+```bash
+# Tail the running shopify app dev log
+tail -f /tmp/shopify-dev.log
+
+# Filter for errors only
+tail -f /tmp/shopify-dev.log | grep -i "error\|warn\|prisma\|failed"
+
+# Check if the dev server process is alive
+pgrep -la "shopify app dev" || echo "Dev server not running"
+```
+
+### Chrome DevTools MCP Verification Workflow
+
+For every fix that affects rendered UI or console output:
+
+1. **Get console state before fix:**
+```javascript
+// In mcp__chrome-devtools__evaluate_script on the affected page:
+// Returns all console errors from the current session
+console.error.toString()
+```
+
+2. **Navigate to the affected route:**
+```
+mcp__chrome-devtools__navigate_page to the admin route
+mcp__chrome-devtools__wait_for { "selector": "#app-content" }
+```
+
+3. **Check for console errors after fix:**
+```
+mcp__chrome-devtools__list_console_messages
+// Filter for "error" level — target is 0 errors
+```
+
+4. **Spot-check API calls:**
+```
+mcp__chrome-devtools__list_network_requests
+// Verify no unexpected 4xx/5xx on app proxy or admin API routes
+```
+
+5. **Verify widget behaviour (storefront):**
+```javascript
+// In Chrome DevTools console on the storefront page:
+console.log(window.__BUNDLE_WIDGET_VERSION__)  // should match expected version
+fetch('/cart.js').then(r => r.json()).then(console.log) // inspect cart state
+```
+
+### Shopify-Specific Console Patterns to Watch For
+
+| Console message | Root cause |
+|----------------|-----------|
+| `Unexpected value for attribute "X" on <ui-Y>` | Invalid App Bridge web component prop (AP-11) |
+| `Failed to execute 'postMessage' on 'DOMWindow'` | App Bridge modal in dev tunnel — dev-only, not a code bug |
+| `PrismaClientKnownRequestError: Timed out fetching` | Expired Cloudflare tunnel / dead DB connection — restart dev server |
+| `ReferenceError: X is not defined` (SSR stack trace) | Missing import in route file |
+| `Error in PostgreSQL connection: Error { kind: Closed }` | Same as above — tunnel expired |
+| `Throttled: Exceeded 40 calls per app per store per minute` | Admin GraphQL rate limit — add debounce or batch |
+
+---
+
 ## Decision Framework: Should I Simplify This?
 
 Answer these questions:
