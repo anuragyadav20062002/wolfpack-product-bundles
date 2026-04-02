@@ -1005,40 +1005,38 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       return json({ success: false, error: 'Bundle not found' }, { status: 404 });
     }
 
-    if (!bundle.shopifyPageId) {
-      return json({
-        success: false,
-        error: 'Bundle has no Shopify page — save the bundle first to create a page',
-      }, { status: 400 });
-    }
-
-    // 2. Delete Shopify page
-    const DELETE_PAGE = `
-      mutation DeletePage($id: ID!) {
-        pageDelete(id: $id) {
-          deletedPageId
-          userErrors { field message }
+    // 2. Delete existing Shopify page (only if one exists — bundles without a page skip
+    //    straight to creation, which fixes broken/migrated records in a single sync).
+    if (bundle.shopifyPageId) {
+      const DELETE_PAGE = `
+        mutation DeletePage($id: ID!) {
+          pageDelete(id: $id) {
+            deletedPageId
+            userErrors { field message }
+          }
         }
+      `;
+
+      const deleteResponse = await admin.graphql(DELETE_PAGE, {
+        variables: { id: bundle.shopifyPageId },
+      });
+      const deleteData = await deleteResponse.json();
+
+      if (deleteData.data?.pageDelete?.userErrors?.length > 0) {
+        const err = deleteData.data.pageDelete.userErrors[0];
+        return json({ success: false, error: `Failed to delete Shopify page: ${err.message}` }, { status: 400 });
       }
-    `;
 
-    const deleteResponse = await admin.graphql(DELETE_PAGE, {
-      variables: { id: bundle.shopifyPageId },
-    });
-    const deleteData = await deleteResponse.json();
+      AppLogger.info('[SYNC_BUNDLE] Shopify page deleted', { bundleId, pageId: bundle.shopifyPageId });
 
-    if (deleteData.data?.pageDelete?.userErrors?.length > 0) {
-      const err = deleteData.data.pageDelete.userErrors[0];
-      return json({ success: false, error: `Failed to delete Shopify page: ${err.message}` }, { status: 400 });
+      // 3. Clear page reference from DB so createFullPageBundle will create a fresh page
+      await db.bundle.update({
+        where: { id: bundleId },
+        data: { shopifyPageId: null, shopifyPageHandle: null },
+      });
+    } else {
+      AppLogger.info('[SYNC_BUNDLE] No existing Shopify page — proceeding to create one', { bundleId });
     }
-
-    AppLogger.info('[SYNC_BUNDLE] Shopify page deleted', { bundleId, pageId: bundle.shopifyPageId });
-
-    // 3. Clear page reference from DB so createFullPageBundle will create a fresh page
-    await db.bundle.update({
-      where: { id: bundleId },
-      data: { shopifyPageId: null, shopifyPageHandle: null },
-    });
 
     // 4. Re-create the Shopify page via WidgetInstallationService
     const apiKey = process.env.SHOPIFY_API_KEY || '';
