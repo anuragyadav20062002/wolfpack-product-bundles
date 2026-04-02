@@ -123,7 +123,8 @@ export class BundleDataManager {
     }
 
     const bundles = Object.values(bundlesData).filter(bundle =>
-      this.validateSingleBundle(bundle) && bundle.status === 'active'
+      this.validateSingleBundle(bundle) &&
+      (bundle.status === 'active' || bundle.status === 'unlisted')
     );
 
     if (bundles.length === 0) {
