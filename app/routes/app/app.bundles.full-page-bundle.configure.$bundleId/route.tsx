@@ -669,6 +669,11 @@ export default function ConfigureBundleFlow() {
           // Sync bundle response
           shopify.toast.show(('message' in result ? result.message : null) || "Bundle synced successfully", { isError: false });
           revalidator.revalidate();
+          // Open theme editor so merchant can place the app block on the recreated page
+          const syncInstallLink = (result as any).widgetInstallationLink;
+          if (syncInstallLink) {
+            setTimeout(() => window.open(syncInstallLink, '_blank'), 800);
+          }
         } else {
           // Generic success response
           shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });

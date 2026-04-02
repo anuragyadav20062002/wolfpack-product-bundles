@@ -254,6 +254,11 @@ export async function createFullPageBundle(
     const shopDomain = shop.replace('.myshopify.com', '');
     const pageUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
 
+    // Always return the theme editor deep link so merchants are directed to place the
+    // bundle-full-page app block on their page. Without this, the page is created but
+    // the widget never renders on the storefront (the block is never placed).
+    const widgetInstallationLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=page.full-page-bundle&addAppBlockId=${apiKey}/bundle-full-page&target=newAppsSection&previewPath=${encodeURIComponent(`/pages/${createdPage.handle}`)}`;
+
     AppLogger.info('Full-page bundle created successfully', {
       component: 'WidgetFullPageBundle',
       shop,
@@ -268,7 +273,9 @@ export async function createFullPageBundle(
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
       pageUrl,
-      slugAdjusted
+      slugAdjusted,
+      widgetInstallationRequired: true,
+      widgetInstallationLink,
     };
 
   } catch (error) {
