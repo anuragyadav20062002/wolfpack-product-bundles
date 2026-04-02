@@ -95,7 +95,6 @@ export async function createFullPageBundle(
 
     const checkData = await checkResponse.json();
     let createdPage = checkData.data?.pages?.edges?.[0]?.node || null;
-    let shareablePreviewUrl: string | undefined;
 
     // If page doesn't exist, create it
     if (!createdPage) {
@@ -114,7 +113,6 @@ export async function createFullPageBundle(
               title
               handle
               templateSuffix
-              shareablePreviewUrl
             }
             userErrors {
               field
@@ -160,8 +158,6 @@ export async function createFullPageBundle(
           errorType: 'page_creation_failed'
         };
       }
-
-      shareablePreviewUrl = pageData.data?.pageCreate?.page?.shareablePreviewUrl ?? undefined;
 
       AppLogger.info('Page created successfully', {
         component: 'WidgetFullPageBundle',
@@ -294,8 +290,7 @@ export async function createFullPageBundle(
         success: true,
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
-        pageUrl: isPublished ? pageUrl : undefined,
-        shareablePreviewUrl: !isPublished ? shareablePreviewUrl : undefined,
+        pageUrl,
         slugAdjusted,
         widgetInstallationRequired: true,
         widgetInstallationLink: deepLink.url
@@ -306,8 +301,7 @@ export async function createFullPageBundle(
       success: true,
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
-      pageUrl: isPublished ? pageUrl : undefined,
-      shareablePreviewUrl: !isPublished ? shareablePreviewUrl : undefined,
+      pageUrl,
       slugAdjusted
     };
 
@@ -537,13 +531,14 @@ export async function publishPreviewPage(
  */
 export async function getPreviewPageUrl(
   admin: any,
-  pageId: string
-): Promise<{ success: boolean; shareablePreviewUrl?: string; pageNotFound?: boolean; error?: string }> {
+  pageId: string,
+  shopDomain: string
+): Promise<{ success: boolean; previewUrl?: string; pageNotFound?: boolean; error?: string }> {
   const GET_PREVIEW_URL = `
     query getPagePreviewUrl($id: ID!) {
       page(id: $id) {
         id
-        shareablePreviewUrl
+        handle
       }
     }
   `;
@@ -563,7 +558,8 @@ export async function getPreviewPageUrl(
       return { success: false, pageNotFound: true };
     }
 
-    return { success: true, shareablePreviewUrl: page.shareablePreviewUrl };
+    const shop = shopDomain.replace('.myshopify.com', '');
+    return { success: true, previewUrl: `https://${shop}.myshopify.com/pages/${page.handle}` };
   } catch (error) {
     AppLogger.error('getPreviewPageUrl: unexpected error', {
       component: 'WidgetFullPageBundle',

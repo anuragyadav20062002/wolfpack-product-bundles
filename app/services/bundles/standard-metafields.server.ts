@@ -9,6 +9,7 @@
 
 import { isUUID } from "../../utils/shopify-validators";
 import { getFirstVariantId } from "../../utils/variant-lookup.server";
+import type { ShopifyAdmin } from "../../lib/auth-guards.server";
 
 type MetafieldError = {
   productId: string;
@@ -27,7 +28,7 @@ type ConversionResult = {
  * Returns { metafields, errors } where errors contains detailed information about failures
  */
 export async function convertBundleToStandardMetafields(
-  admin: any,
+  admin: ShopifyAdmin,
   bundle: any
 ): Promise<ConversionResult> {
   const standardMetafields: any = {};

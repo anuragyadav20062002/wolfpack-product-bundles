@@ -11,6 +11,7 @@
 
 import db from "../db.server";
 import { AppLogger } from "../lib/logger";
+import type { ShopifyAdmin } from "../lib/auth-guards.server";
 import type { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { PLANS, GROW_ONLY_FEATURES, isFeatureGatingEnabled } from "../constants/plans";
 import { ERROR_MESSAGES } from "../constants/errors";
@@ -44,7 +45,7 @@ export class BillingService {
    * Create a new subscription using Shopify's appSubscriptionCreate mutation
    */
   static async createSubscription(
-    admin: any,
+    admin: ShopifyAdmin,
     params: CreateSubscriptionParams
   ): Promise<CreateSubscriptionResult> {
     // Use dedicated test charges flag, defaulting to true for safety
@@ -302,7 +303,7 @@ export class BillingService {
    * IMPROVED: Now verifies subscription status with Shopify API before confirming
    */
   static async confirmSubscription(
-    admin: any,
+    admin: ShopifyAdmin,
     shopDomain: string,
     shopifySubscriptionId: string
   ): Promise<{ success: boolean; error?: string }> {
@@ -422,7 +423,7 @@ export class BillingService {
    * Cancel subscription
    */
   static async cancelSubscription(
-    admin: any,
+    admin: ShopifyAdmin,
     shopDomain: string
   ): Promise<{ success: boolean; error?: string }> {
     try {

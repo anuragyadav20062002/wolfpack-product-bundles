@@ -239,7 +239,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     }, error);
     return json({
       success: false,
-      error: (error as Error).message
+      error: error instanceof Error ? error.message : "Internal error"
     }, { status: 500, headers: CORS_HEADERS });
   }
 };

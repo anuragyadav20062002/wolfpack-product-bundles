@@ -179,77 +179,22 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     let finalSettings = defaultSettings;
 
     if (designSettings) {
-      const globalColorsSettings = (designSettings as any).globalColorsSettings || {};
-      const footerSettings = (designSettings as any).footerSettings || {};
-      const stepBarSettings = (designSettings as any).stepBarSettings || {};
-      const generalSettings = (designSettings as any).generalSettings || {};
-      const promoBannerSettings = (designSettings as any).promoBannerSettings || {};
-
+      // Cast once — Prisma columns are typed but JSON blob columns (footerSettings etc.)
+      // are typed as JsonValue. We read all non-null direct columns via a null-filter
+      // spread so that a merchant-set value of 0 or false is preserved correctly
+      // (|| fallbacks would incorrectly discard those falsy values).
+      const db = designSettings as unknown as Record<string, unknown>;
+      const directCols = Object.fromEntries(
+        Object.entries(db).filter(([, v]) => v !== null && v !== undefined)
+      );
       finalSettings = {
         ...defaultSettings,
-        productCardBgColor: designSettings.productCardBgColor || defaultSettings.productCardBgColor,
-        productCardFontColor: designSettings.productCardFontColor || defaultSettings.productCardFontColor,
-        productCardFontSize: designSettings.productCardFontSize || defaultSettings.productCardFontSize,
-        productCardFontWeight: designSettings.productCardFontWeight || defaultSettings.productCardFontWeight,
-        productCardImageFit: designSettings.productCardImageFit || defaultSettings.productCardImageFit,
-        productCardsPerRow: designSettings.productCardsPerRow || defaultSettings.productCardsPerRow,
-        productPriceVisibility: designSettings.productPriceVisibility !== undefined ? designSettings.productPriceVisibility : defaultSettings.productPriceVisibility,
-        productPriceBgColor: designSettings.productPriceBgColor || defaultSettings.productPriceBgColor,
-        productStrikePriceColor: designSettings.productStrikePriceColor || defaultSettings.productStrikePriceColor,
-        productStrikeFontSize: designSettings.productStrikeFontSize || defaultSettings.productStrikeFontSize,
-        productStrikeFontWeight: designSettings.productStrikeFontWeight || defaultSettings.productStrikeFontWeight,
-        productFinalPriceColor: designSettings.productFinalPriceColor || defaultSettings.productFinalPriceColor,
-        productFinalPriceFontSize: designSettings.productFinalPriceFontSize || defaultSettings.productFinalPriceFontSize,
-        productFinalPriceFontWeight: designSettings.productFinalPriceFontWeight || defaultSettings.productFinalPriceFontWeight,
-        buttonBgColor: designSettings.buttonBgColor || defaultSettings.buttonBgColor,
-        buttonTextColor: designSettings.buttonTextColor || defaultSettings.buttonTextColor,
-        buttonFontSize: designSettings.buttonFontSize || defaultSettings.buttonFontSize,
-        buttonFontWeight: designSettings.buttonFontWeight || defaultSettings.buttonFontWeight,
-        buttonBorderRadius: designSettings.buttonBorderRadius || defaultSettings.buttonBorderRadius,
-        buttonHoverBgColor: designSettings.buttonHoverBgColor || defaultSettings.buttonHoverBgColor,
-        buttonAddToCartText: designSettings.buttonAddToCartText || defaultSettings.buttonAddToCartText,
-        quantitySelectorBgColor: designSettings.quantitySelectorBgColor || defaultSettings.quantitySelectorBgColor,
-        quantitySelectorTextColor: designSettings.quantitySelectorTextColor || defaultSettings.quantitySelectorTextColor,
-        quantitySelectorFontSize: designSettings.quantitySelectorFontSize || defaultSettings.quantitySelectorFontSize,
-        quantitySelectorBorderRadius: designSettings.quantitySelectorBorderRadius || defaultSettings.quantitySelectorBorderRadius,
-        // Product Card Layout & Dimensions (Phase 6)
-        productCardWidth: designSettings.productCardWidth || defaultSettings.productCardWidth,
-        productCardHeight: designSettings.productCardHeight || defaultSettings.productCardHeight,
-        productCardSpacing: designSettings.productCardSpacing || defaultSettings.productCardSpacing,
-        productCardBorderRadius: designSettings.productCardBorderRadius || defaultSettings.productCardBorderRadius,
-        productCardPadding: designSettings.productCardPadding || defaultSettings.productCardPadding,
-        productCardBorderWidth: designSettings.productCardBorderWidth || defaultSettings.productCardBorderWidth,
-        productCardBorderColor: designSettings.productCardBorderColor || defaultSettings.productCardBorderColor,
-        productCardShadow: designSettings.productCardShadow || defaultSettings.productCardShadow,
-        productCardHoverShadow: designSettings.productCardHoverShadow || defaultSettings.productCardHoverShadow,
-        // Product Image (Phase 6)
-        productImageHeight: designSettings.productImageHeight || defaultSettings.productImageHeight,
-        productImageBorderRadius: designSettings.productImageBorderRadius || defaultSettings.productImageBorderRadius,
-        productImageBgColor: designSettings.productImageBgColor || defaultSettings.productImageBgColor,
-        // Product Modal Styling (Phase 6)
-        modalBgColor: designSettings.modalBgColor || defaultSettings.modalBgColor,
-        modalBorderRadius: designSettings.modalBorderRadius || defaultSettings.modalBorderRadius,
-        modalTitleFontSize: designSettings.modalTitleFontSize || defaultSettings.modalTitleFontSize,
-        modalTitleFontWeight: designSettings.modalTitleFontWeight || defaultSettings.modalTitleFontWeight,
-        modalPriceFontSize: designSettings.modalPriceFontSize || defaultSettings.modalPriceFontSize,
-        modalVariantBorderRadius: designSettings.modalVariantBorderRadius || defaultSettings.modalVariantBorderRadius,
-        modalButtonBgColor: designSettings.modalButtonBgColor || defaultSettings.modalButtonBgColor,
-        modalButtonTextColor: designSettings.modalButtonTextColor || defaultSettings.modalButtonTextColor,
-        modalButtonBorderRadius: designSettings.modalButtonBorderRadius || defaultSettings.modalButtonBorderRadius,
-        // Toast extended settings (direct columns)
-        toastBorderRadius: (designSettings as any).toastBorderRadius ?? defaultSettings.toastBorderRadius,
-        toastBorderColor: (designSettings as any).toastBorderColor ?? defaultSettings.toastBorderColor,
-        toastBorderWidth: (designSettings as any).toastBorderWidth ?? defaultSettings.toastBorderWidth,
-        toastFontSize: (designSettings as any).toastFontSize ?? defaultSettings.toastFontSize,
-        toastFontWeight: (designSettings as any).toastFontWeight ?? defaultSettings.toastFontWeight,
-        toastAnimationDuration: (designSettings as any).toastAnimationDuration ?? defaultSettings.toastAnimationDuration,
-        toastBoxShadow: (designSettings as any).toastBoxShadow ?? defaultSettings.toastBoxShadow,
-        toastEnterFromBottom: (designSettings as any).toastEnterFromBottom ?? defaultSettings.toastEnterFromBottom,
-        ...globalColorsSettings,
-        ...footerSettings,
-        ...stepBarSettings,
-        ...generalSettings,
-        ...promoBannerSettings,
+        ...directCols,
+        ...(db.globalColorsSettings as Record<string, unknown> ?? {}),
+        ...(db.footerSettings as Record<string, unknown> ?? {}),
+        ...(db.stepBarSettings as Record<string, unknown> ?? {}),
+        ...(db.generalSettings as Record<string, unknown> ?? {}),
+        ...(db.promoBannerSettings as Record<string, unknown> ?? {}),
       };
     }
 
@@ -268,7 +213,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       });
     }
 
-    const themeColors = (designSettings as any)?.themeColors ?? null;
+    const themeColors = (designSettings as unknown as Record<string, unknown>)?.themeColors ?? null;
     const css = generateCSSFromSettings(finalSettings, bundleTypeForCSS, customCss, themeColors);
 
     // Build a stable ETag from the design settings last-modified time.
