@@ -41,7 +41,6 @@ import { validateTierConfig } from "../../../../lib/tier-config-validator.server
 import { SHOPIFY_REST_API_VERSION } from "../../../../constants/api";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { syncThemeColors } from "../../../../services/theme-colors.server";
-import { ensureProductBundleTemplate } from "../../../../services/widget-installation/widget-theme-template.server";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -54,104 +53,58 @@ export {
   handleEnsureBundleTemplates,
 };
 
-const FULL_PAGE_PRODUCT_TEMPLATE_SUFFIX = "product-page-bundle";
 const DEFAULT_PROGRESS_MESSAGE = "Add {conditionText} to get {discountText}";
 const DEFAULT_SUCCESS_MESSAGE = "Congratulations! You got {discountText}";
 
-async function syncFullPageBundleProductTemplate(
+// FPB products do not need a theme template — the URL redirect (/products/{handle} →
+// /pages/{pageHandle}) handles routing before the template is ever rendered.
+// We only update the Shopify product status so it stays in sync with the bundle status.
+// Theme file writes (ensureProductBundleTemplate / themeFilesUpsert) are intentionally
+// excluded: they require a Shopify exemption that disqualifies the app from the BFS badge.
+async function syncFpbProductStatus(
   admin: ShopifyAdmin,
-  session: Session,
   productId: string,
   bundleId: string,
-  shopifyStatus?: string,
+  shopifyStatus: string,
 ) {
   try {
-    const apiKey = process.env.SHOPIFY_API_KEY ?? "";
-    const templateResult = await ensureProductBundleTemplate(admin, session, apiKey);
+    const response = await admin.graphql(`
+      mutation SyncFpbProductStatus($id: ID!, $status: ProductStatus!) {
+        productUpdate(input: { id: $id, status: $status }) {
+          product { id status }
+          userErrors { field message }
+        }
+      }
+    `, { variables: { id: productId, status: shopifyStatus } });
 
-    if (!templateResult.success) {
-      AppLogger.warn("[PRODUCT_TEMPLATE] Could not ensure product bundle template (non-fatal)", {
-        component: "app.bundles.full-page.configure",
-        bundleId,
-        productId,
-        error: templateResult.error,
-      });
-      return;
-    }
-
-    const UPDATE_PRODUCT = shopifyStatus
-      ? `
-          mutation ApplyBundleTemplate($id: ID!, $status: ProductStatus!, $templateSuffix: String!) {
-            productUpdate(input: {id: $id, status: $status, templateSuffix: $templateSuffix}) {
-              product {
-                id
-                status
-                templateSuffix
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `
-      : `
-          mutation ApplyBundleTemplate($id: ID!, $templateSuffix: String!) {
-            productUpdate(input: {id: $id, templateSuffix: $templateSuffix}) {
-              product {
-                id
-                status
-                templateSuffix
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
-
-    const variables = shopifyStatus
-      ? { id: productId, status: shopifyStatus, templateSuffix: FULL_PAGE_PRODUCT_TEMPLATE_SUFFIX }
-      : { id: productId, templateSuffix: FULL_PAGE_PRODUCT_TEMPLATE_SUFFIX };
-
-    const response = await admin.graphql(UPDATE_PRODUCT, { variables });
     const responseData = await response.json() as { data?: Record<string, any>; errors?: unknown[] };
 
     if (responseData.errors?.length) {
-      AppLogger.error("[PRODUCT_TEMPLATE] GraphQL transport error updating product template", {
+      AppLogger.warn("[PRODUCT_SYNC] GraphQL transport error updating FPB product status", {
         component: "app.bundles.full-page.configure",
-        bundleId,
-        productId,
-        shopifyStatus: shopifyStatus ?? null,
+        bundleId, productId, shopifyStatus,
       }, responseData.errors);
       return;
     }
 
     const userErrors = responseData.data?.productUpdate?.userErrors ?? [];
     if (userErrors.length > 0) {
-      AppLogger.error("[PRODUCT_TEMPLATE] Shopify returned errors while applying product template", {
+      AppLogger.warn("[PRODUCT_SYNC] Shopify errors updating FPB product status", {
         component: "app.bundles.full-page.configure",
-        bundleId,
-        productId,
-        shopifyStatus: shopifyStatus ?? null,
+        bundleId, productId, shopifyStatus,
       }, { userErrors });
       return;
     }
 
-    AppLogger.info("[PRODUCT_TEMPLATE] Applied product template for full-page bundle", {
+    AppLogger.info("[PRODUCT_SYNC] FPB product status synced", {
       component: "app.bundles.full-page.configure",
-      bundleId,
-      productId,
-      shopifyStatus: responseData.data?.productUpdate?.product?.status ?? shopifyStatus ?? null,
-      templateSuffix: responseData.data?.productUpdate?.product?.templateSuffix ?? FULL_PAGE_PRODUCT_TEMPLATE_SUFFIX,
+      bundleId, productId,
+      status: responseData.data?.productUpdate?.product?.status ?? shopifyStatus,
     });
   } catch (error) {
-    AppLogger.warn("[PRODUCT_TEMPLATE] Failed to apply full-page product template (non-fatal)", {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to sync FPB product status (non-fatal)", {
       component: "app.bundles.full-page.configure",
-      bundleId,
-      productId,
-      shopifyStatus: shopifyStatus ?? null,
+      bundleId, productId, shopifyStatus,
     }, error as Error);
   }
 }
@@ -659,14 +612,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
       const shopifyStatus = finalStatus.toUpperCase();
-      AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' + templateSuffix to product ${updatedBundle.shopifyProductId}`);
-      await syncFullPageBundleProductTemplate(
-        admin,
-        session,
-        updatedBundle.shopifyProductId,
-        bundleId,
-        shopifyStatus,
-      );
+      AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
+      await syncFpbProductStatus(admin, updatedBundle.shopifyProductId, bundleId, shopifyStatus);
 
       // Get the bundle product's first variant ID for cart transform merge operations
       const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
@@ -904,8 +851,6 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
         });
       }
 
-      await syncFullPageBundleProductTemplate(admin, session, productId, bundleId);
-
       const bundleConfiguration = buildFullPageBundleMetafieldConfig(
         {
           ...bundle,
@@ -1020,8 +965,6 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
   }
 
   if (productId) {
-    await syncFullPageBundleProductTemplate(admin, session, productId, bundleId);
-
     const bundleConfiguration = buildFullPageBundleMetafieldConfig({
       ...bundle,
       shopifyProductId: productId,
@@ -1122,11 +1065,57 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // 5b. Write bundle config metafield on the new page (non-fatal)
     await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
 
-    // 6. Re-run metafield operations from DB-authoritative state (if shopifyProductId exists)
-    const shopifyProductId = bundle.shopifyProductId;
-    if (shopifyProductId) {
-      await syncFullPageBundleProductTemplate(admin, session, shopifyProductId, bundleId);
+    // 6. Ensure a Shopify product exists — required for Cart Transform MERGE.
+    //    If the bundle was created before product auto-creation was added (or the product was
+    //    deleted), create one now and wire up the URL redirect.
+    let shopifyProductId = bundle.shopifyProductId;
+    if (!shopifyProductId) {
+      AppLogger.info('[SYNC_BUNDLE] No Shopify product — creating one for Cart Transform MERGE', { bundleId });
+      try {
+        const bundlePrice = await calculateBundlePrice(admin, bundle);
+        const createResponse = await admin.graphql(`
+          mutation CreateBundleProduct($input: ProductInput!) {
+            productCreate(input: $input) {
+              product { id handle }
+              userErrors { field message }
+            }
+          }
+        `, {
+          variables: {
+            input: {
+              title: bundle.name,
+              handle: `bundle-${bundle.id}`,
+              productType: 'Bundle',
+              vendor: 'Bundle Builder',
+              status: 'ACTIVE',
+              descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
+              tags: ['bundle', 'cart-transform'],
+              variants: [{ price: bundlePrice, inventoryPolicy: 'CONTINUE' }],
+            },
+          },
+        });
+        const createData = await createResponse.json() as { data?: Record<string, any> };
+        const productErrors = createData.data?.productCreate?.userErrors ?? [];
+        if (productErrors.length > 0) {
+          AppLogger.error('[SYNC_BUNDLE] Failed to create Shopify product', { bundleId }, productErrors);
+        } else {
+          shopifyProductId = createData.data?.productCreate?.product?.id ?? null;
+          if (shopifyProductId) {
+            await db.bundle.update({ where: { id: bundleId }, data: { shopifyProductId } });
+            // Create URL redirect /products/{handle} → /pages/{pageHandle} (non-fatal)
+            if (result.pageHandle) {
+              createProductPageRedirect(admin, shopifyProductId, result.pageHandle).catch(() => {});
+            }
+            AppLogger.info('[SYNC_BUNDLE] Created Shopify product for bundle', { bundleId, shopifyProductId });
+          }
+        }
+      } catch (createError) {
+        AppLogger.error('[SYNC_BUNDLE] Exception creating Shopify product (non-fatal)', { bundleId }, createError as Error);
+      }
+    }
 
+    // 7. Re-run metafield operations from DB-authoritative state (if shopifyProductId exists)
+    if (shopifyProductId) {
       const bundleConfig = buildFullPageBundleMetafieldConfig({
         ...bundle,
         shopifyPageHandle: result.pageHandle,
@@ -1371,7 +1360,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
 
     if (bundle.shopifyProductId) {
       try {
-        await syncFullPageBundleProductTemplate(admin, session, bundle.shopifyProductId, bundleId);
+        await syncFpbProductStatus(admin, bundle.shopifyProductId, bundleId, 'ACTIVE');
         await updateBundleProductMetafields(
           admin,
           bundle.shopifyProductId,
