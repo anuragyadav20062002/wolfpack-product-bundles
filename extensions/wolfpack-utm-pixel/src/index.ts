@@ -35,7 +35,9 @@ function extractUtmParams(url: string): Record<string, string> | null {
 register(({ analytics, browser, settings }) => {
   const appServerUrl = settings.app_server_url as string | undefined;
 
-  // ── page_viewed: Capture UTMs from the landing URL (first-touch only) ──
+  // ── page_viewed: Capture UTMs from the landing URL (last-touch) ──
+  // Uses localStorage (persists across sessions) and always overwrites so the
+  // most recent UTM click gets credit (last-touch attribution model).
   analytics.subscribe("page_viewed", async (event) => {
     try {
       const url = event.context?.document?.location?.href;
@@ -44,29 +46,38 @@ register(({ analytics, browser, settings }) => {
       const utmParams = extractUtmParams(url);
       if (!utmParams) return;
 
-      // Only store if no UTMs captured yet (first-touch attribution model)
-      const existing = await browser.sessionStorage.getItem(UTM_STORAGE_KEY);
-      if (!existing) {
-        await browser.sessionStorage.setItem(UTM_STORAGE_KEY, JSON.stringify(utmParams));
-      }
+      // Last-touch: always overwrite with the most recent UTM click
+      await browser.localStorage.setItem(UTM_STORAGE_KEY, JSON.stringify(utmParams));
     } catch (_e) {
       // Silently fail — pixel errors must not affect storefront
     }
   });
 
   // ── checkout_completed: Send attribution data to server ──
+  // Always fires, even when no UTMs are stored, so that bundle revenue is tracked
+  // for direct / organic traffic. UTM fields are null when not available.
   analytics.subscribe("checkout_completed", async (event) => {
     try {
-      const storedUtms = await browser.sessionStorage.getItem(UTM_STORAGE_KEY);
-      if (!storedUtms || !appServerUrl) return;
+      if (!appServerUrl) return;
 
-      const utmParams = JSON.parse(storedUtms) as Record<string, string>;
       const checkout = event.data?.checkout;
       if (!checkout) return;
 
+      // Read UTMs from localStorage — null object when customer arrived without UTMs
+      const storedUtmsRaw = await browser.localStorage.getItem(UTM_STORAGE_KEY);
+      const utmParams: Record<string, string> = storedUtmsRaw
+        ? (JSON.parse(storedUtmsRaw) as Record<string, string>)
+        : {};
+
+      // Normalise order ID — may be a GID ("gid://shopify/Order/123") or plain number
+      const rawOrderId = checkout.order?.id != null ? String(checkout.order.id) : null;
+      const orderNumber = rawOrderId
+        ? (rawOrderId.includes("/") ? rawOrderId.split("/").pop() ?? null : rawOrderId)
+        : null;
+
       const payload = {
-        orderId: checkout.order?.id ?? null,
-        orderNumber: (checkout.order as any)?.name ?? null,
+        orderId: rawOrderId,
+        orderNumber,
         shopId: event.context?.document?.location?.hostname ?? null,
         totalPrice: checkout.totalPrice?.amount ?? null,
         currencyCode: checkout.totalPrice?.currencyCode ?? "USD",
@@ -86,9 +97,8 @@ register(({ analytics, browser, settings }) => {
       };
 
       // POST directly to the app server attribution endpoint.
-      // The Remix route is at /api/attribution on the server.
-      // Do NOT include /apps/product-bundles — that prefix is stripped by Shopify's
-      // App Proxy when forwarding storefront requests; the server itself never sees it.
+      // Do NOT include /apps/product-bundles — that prefix is stripped by the App Proxy;
+      // the server itself never sees it.
       await fetch(`${appServerUrl}/api/attribution`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,7 +107,9 @@ register(({ analytics, browser, settings }) => {
       });
 
       // Clear stored UTMs after successful send
-      await browser.sessionStorage.removeItem(UTM_STORAGE_KEY);
+      if (storedUtmsRaw) {
+        await browser.localStorage.removeItem(UTM_STORAGE_KEY);
+      }
     } catch (_e) {
       // Silently fail — pixel errors must not affect checkout
     }
