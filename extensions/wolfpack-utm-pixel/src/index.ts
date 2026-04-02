@@ -64,9 +64,16 @@ register(({ analytics, browser, settings }) => {
       const checkout = event.data?.checkout;
       if (!checkout) return;
 
+      // checkout.order.id is either a numeric string or a GID like
+      // "gid://shopify/Order/7414435709018". Normalise to the numeric part.
+      const rawOrderId = checkout.order?.id != null ? String(checkout.order.id) : null;
+      const orderNumber = rawOrderId
+        ? (rawOrderId.includes("/") ? rawOrderId.split("/").pop() ?? null : rawOrderId)
+        : null;
+
       const payload = {
-        orderId: checkout.order?.id ?? null,
-        orderNumber: (checkout.order as any)?.name ?? null,
+        orderId: rawOrderId,
+        orderNumber,
         shopId: event.context?.document?.location?.hostname ?? null,
         totalPrice: checkout.totalPrice?.amount ?? null,
         currencyCode: checkout.totalPrice?.currencyCode ?? "USD",
