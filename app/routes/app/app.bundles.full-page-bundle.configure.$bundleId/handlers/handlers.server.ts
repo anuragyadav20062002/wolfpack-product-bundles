@@ -1450,16 +1450,16 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
       return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
     }
 
-    // If an existing draft preview page is tracked, return its shareablePreviewUrl directly
+    // If an existing preview page is tracked, return its URL directly
     if (bundle.shopifyPreviewPageId) {
-      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId);
+      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId, session.shop);
 
       if (urlResult.success) {
-        AppLogger.info("[PREVIEW_PAGE] Returning existing draft preview URL", {
+        AppLogger.info("[PREVIEW_PAGE] Returning existing preview URL", {
           bundleId,
           previewPageId: bundle.shopifyPreviewPageId,
         });
-        return json({ success: true, shareablePreviewUrl: urlResult.shareablePreviewUrl });
+        return json({ success: true, shareablePreviewUrl: urlResult.previewUrl });
       }
 
       // Page was deleted externally — clear stale refs and create a fresh draft below
@@ -1482,7 +1482,7 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
       bundleId,
       `[Preview] ${bundle.name}`,
       undefined,
-      false   // isPublished: false → draft page
+      true   // isPublished: true — shareablePreviewUrl removed in API 2025-10; public URL is the preview URL
     );
 
     if (!result.success) {
@@ -1508,7 +1508,7 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
       previewPageHandle: result.pageHandle,
     });
 
-    return json({ success: true, shareablePreviewUrl: result.shareablePreviewUrl });
+    return json({ success: true, shareablePreviewUrl: result.pageUrl });
 
   } catch (error) {
     AppLogger.error("[PREVIEW_PAGE] Unexpected error", {}, error as Error);
