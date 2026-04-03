@@ -201,7 +201,7 @@ export async function action({ request }: ActionFunctionArgs) {
             productType: "Bundle",
             vendor: "Bundle Builder",
             status: "DRAFT",
-            tags: ["bundle", "cart-transform"],
+            tags: ["WP-Bundles"],
             variants: [
               {
                 price: bundlePrice,
@@ -413,7 +413,7 @@ export async function action({ request }: ActionFunctionArgs) {
       productType: "Bundle",
       vendor: "Bundle Builder",
       status: "ACTIVE",
-      tags: ["bundle", "cart-transform"],
+      tags: ["WP-Bundles"],
     };
 
     // Prepare media input if app URL is configured

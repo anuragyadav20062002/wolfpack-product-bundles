@@ -10,7 +10,6 @@
  * Usage:
  * import {
  *   updateBundleProductMetafields,
- *   updateCartTransformMetafield,
  *   updateComponentProductMetafields,
  *   ensureVariantBundleMetafieldDefinitions,
  *   calculateComponentPricing,
@@ -28,9 +27,6 @@ export type {
   BundleUiPricing,
   BundleUiPricingRule,
   BundleUiMessaging,
-  OptimizedBundleConfig,
-  OptimizedStepConfig,
-  OptimizedPricingConfig,
   ComponentParentsData
 } from "./types";
 
@@ -49,7 +45,5 @@ export { calculateComponentPricing } from "./utils/pricing";
 export { ensureVariantBundleMetafieldDefinitions, ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition, ensureCustomPageBundleConfigDefinition } from "./operations/definitions.server";
 
 export { updateBundleProductMetafields } from "./operations/bundle-product.server";
-
-export { updateCartTransformMetafield } from "./operations/cart-transform.server";
 
 export { updateComponentProductMetafields } from "./operations/component-product.server";
