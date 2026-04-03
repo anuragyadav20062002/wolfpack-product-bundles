@@ -227,7 +227,7 @@ export async function handleCloneBundle(
             productType: "Bundle",
             vendor: "Wolfpack: Product Bundles",
             status: "DRAFT",
-            tags: ["bundle", "Wolfpack: Product Bundles"],
+            tags: ["WP-Bundles"],
             variants: [
               {
                 price: bundlePrice,
@@ -420,7 +420,7 @@ export async function handleCreateBundle(
       productType: "Bundle",
       vendor: "Wolfpack: Product Bundles",
       status: "DRAFT",
-      tags: ["bundle", "cart-transform"],
+      tags: ["WP-Bundles"],
     };
 
     const appUrl = process.env.SHOPIFY_APP_URL;
