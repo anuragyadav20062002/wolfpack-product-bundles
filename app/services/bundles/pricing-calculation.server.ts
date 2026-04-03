@@ -355,10 +355,11 @@ export async function updateBundleProductPrice(admin: any, productId: string, ne
     }
 
     // Update the variant price
+    // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
     const UPDATE_VARIANT_PRICE = `
-      mutation updateVariantPrice($input: ProductVariantInput!) {
-        productVariantUpdate(input: $input) {
-          productVariant {
+      mutation updateVariantPrice($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+        productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+          productVariants {
             id
             price
           }
@@ -372,17 +373,18 @@ export async function updateBundleProductPrice(admin: any, productId: string, ne
 
     const updateResponse = await admin.graphql(UPDATE_VARIANT_PRICE, {
       variables: {
-        input: {
+        productId,
+        variants: [{
           id: variantId,
           price: newPrice
-        }
+        }]
       }
     });
 
     const updateData = await updateResponse.json();
 
-    if (updateData.data?.productVariantUpdate?.userErrors?.length > 0) {
-      throw new Error(`Failed to update variant price: ${updateData.data.productVariantUpdate.userErrors[0].message}`);
+    if (updateData.data?.productVariantsBulkUpdate?.userErrors?.length > 0) {
+      throw new Error(`Failed to update variant price: ${updateData.data.productVariantsBulkUpdate.userErrors[0].message}`);
     }
 
     console.log(`🔧 [BUNDLE_PRICING] Successfully updated bundle product price from $${currentPrice} to $${newPrice}`);

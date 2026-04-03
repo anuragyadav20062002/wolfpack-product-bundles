@@ -773,23 +773,24 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
     productId = data.data?.productCreate?.product?.id;
 
     // Set price and inventory policy on the auto-created default variant
-    // (variants field was removed from ProductInput in API 2024-04+)
+    // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
     const defaultVariantId = data.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
-    if (defaultVariantId) {
+    if (defaultVariantId && productId) {
       await admin.graphql(`
-        mutation UpdateBundleVariant($input: ProductVariantInput!) {
-          productVariantUpdate(input: $input) {
-            productVariant { id price }
+        mutation UpdateBundleVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id price }
             userErrors { field message }
           }
         }
       `, {
         variables: {
-          input: {
+          productId,
+          variants: [{
             id: defaultVariantId,
             price: bundlePrice,
             inventoryPolicy: "CONTINUE"
-          }
+          }]
         }
       });
     }
@@ -1000,19 +1001,24 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     const newProductId = createData.data?.productCreate?.product?.id;
 
     // Set price and inventory policy on the auto-created default variant
-    // (variants field was removed from ProductInput in API 2024-04+)
+    // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
     const defaultVariantId = createData.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
-    if (defaultVariantId) {
+    if (defaultVariantId && newProductId) {
       await admin.graphql(`
-        mutation UpdateBundleVariant($input: ProductVariantInput!) {
-          productVariantUpdate(input: $input) {
-            productVariant { id price }
+        mutation UpdateBundleVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id price }
             userErrors { field message }
           }
         }
       `, {
         variables: {
-          input: { id: defaultVariantId, price: bundlePrice, inventoryPolicy: 'CONTINUE' }
+          productId: newProductId,
+          variants: [{
+            id: defaultVariantId,
+            price: bundlePrice,
+            inventoryPolicy: 'CONTINUE'
+          }]
         }
       });
     }
