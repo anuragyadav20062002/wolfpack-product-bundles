@@ -17,6 +17,7 @@ import {
   Icon,
   ChoiceList,
   Tooltip,
+  InlineGrid,
 } from "@shopify/polaris";
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, AlertTriangleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../../../shopify.server";
@@ -356,6 +357,8 @@ export default function Dashboard() {
     setDescription,
     bundleType,
     setBundleType,
+    fullPageLayout,
+    setFullPageLayout,
     deleteModalOpen,
     bundleToDelete,
     openDeleteModal,
@@ -626,8 +629,111 @@ export default function Dashboard() {
                 </div>
               </BlockStack>
 
+              {/* Layout selection — shown only for Full Page bundles */}
+              {bundleType[0] === BundleType.FULL_PAGE && (
+                <BlockStack gap="300">
+                  <Text variant="headingSm" as="h4">Page Layout</Text>
+                  <Text variant="bodySm" as="p" tone="subdued">
+                    Choose where the bundle summary and navigation appears
+                  </Text>
+                  <InlineGrid columns={2} gap="300">
+                    {/* Floating Cart Card */}
+                    <div
+                      onClick={() => setFullPageLayout("footer_bottom")}
+                      style={{
+                        border: fullPageLayout === "footer_bottom"
+                          ? "2px solid var(--p-color-border-interactive)"
+                          : "1px solid var(--p-color-border-secondary)",
+                        borderRadius: "12px",
+                        padding: "16px 12px",
+                        cursor: "pointer",
+                        background: fullPageLayout === "footer_bottom"
+                          ? "var(--p-color-bg-surface-selected)"
+                          : "var(--p-color-bg-surface)",
+                        transition: "border 0.15s, background 0.15s",
+                      }}
+                    >
+                      <BlockStack gap="200" inlineAlign="center">
+                        <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                          <rect x="12" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="42" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="72" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="102" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="12" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="42" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="72" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="102" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="16" y="64" width="108" height="26" rx="6" fill="white" stroke="#D1D5DB" strokeWidth="1" />
+                          <rect x="16" y="63" width="108" height="2" rx="1" fill="rgba(0,0,0,0.04)" />
+                          <rect x="24" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                          <rect x="40" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                          <rect x="56" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                          <rect x="75" y="72" width="22" height="4" rx="2" fill="#D1D5DB" />
+                          <rect x="75" y="79" width="14" height="3" rx="1.5" fill="#E5E7EB" />
+                          <rect x="104" y="69" width="14" height="14" rx="4" fill="#111111" />
+                        </svg>
+                        <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
+                          Floating cart card
+                        </Text>
+                        <Text variant="bodySm" as="p" tone="subdued" alignment="center">
+                          Floating card at the bottom centre
+                        </Text>
+                      </BlockStack>
+                    </div>
+
+                    {/* Sidebar Panel */}
+                    <div
+                      onClick={() => setFullPageLayout("footer_side")}
+                      style={{
+                        border: fullPageLayout === "footer_side"
+                          ? "2px solid var(--p-color-border-interactive)"
+                          : "1px solid var(--p-color-border-secondary)",
+                        borderRadius: "12px",
+                        padding: "16px 12px",
+                        cursor: "pointer",
+                        background: fullPageLayout === "footer_side"
+                          ? "var(--p-color-bg-surface-selected)"
+                          : "var(--p-color-bg-surface)",
+                        transition: "border 0.15s, background 0.15s",
+                      }}
+                    >
+                      <BlockStack gap="200" inlineAlign="center">
+                        <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                          <rect x="10" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="36" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="62" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="10" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="36" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="62" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="10" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="36" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="62" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="90" y="1" width="49" height="94" rx="0" fill="#7C3AED" opacity="0.85" />
+                          <rect x="97" y="12" width="34" height="4" rx="2" fill="white" opacity="0.8" />
+                          <rect x="97" y="24" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                          <rect x="97" y="40" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                          <rect x="97" y="56" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                          <rect x="97" y="74" width="34" height="14" rx="3" fill="white" opacity="0.7" />
+                        </svg>
+                        <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
+                          Sidebar panel
+                        </Text>
+                        <Text variant="bodySm" as="p" tone="subdued" alignment="center">
+                          Side panel on the right with summary
+                        </Text>
+                      </BlockStack>
+                    </div>
+                  </InlineGrid>
+                </BlockStack>
+              )}
+
               {/* Hidden input to pass bundleType to form */}
               <input type="hidden" name="bundleType" value={bundleType[0]} />
+              {bundleType[0] === BundleType.FULL_PAGE && (
+                <input type="hidden" name="fullPageLayout" value={fullPageLayout} />
+              )}
 
               <button
                 ref={submitButtonRef}
