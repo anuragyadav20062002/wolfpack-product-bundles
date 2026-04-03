@@ -909,6 +909,13 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
             title
             handle
             status
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
           }
           userErrors {
             field
@@ -927,14 +934,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           vendor: "Bundle Builder",
           status: "ACTIVE",
           descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
-          tags: ["bundle", "cart-transform"],
-          variants: [
-            {
-              price: bundlePrice,
-              inventoryPolicy: "CONTINUE",
-              inventoryManagement: "SHOPIFY"
-            }
-          ]
+          tags: ["bundle", "cart-transform"]
         }
       }
     });
@@ -947,6 +947,24 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
     }
 
     productId = data.data?.productCreate?.product?.id;
+
+    // Set price and inventory policy on the auto-created default variant
+    // (variants field was removed from ProductInput in API 2024-04+)
+    const defaultVariantId = data.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
+    if (defaultVariantId) {
+      await admin.graphql(`
+        mutation UpdateBundleVariant($input: ProductVariantInput!) {
+          productVariantUpdate(input: $input) {
+            productVariant { id price }
+            userErrors { field message }
+          }
+        }
+      `, {
+        variables: {
+          input: { id: defaultVariantId, price: bundlePrice, inventoryPolicy: "CONTINUE" }
+        }
+      });
+    }
 
     // Update bundle with product ID
     await db.bundle.update({
@@ -1075,7 +1093,10 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
         const createResponse = await admin.graphql(`
           mutation CreateBundleProduct($input: ProductInput!) {
             productCreate(input: $input) {
-              product { id handle }
+              product {
+                id handle
+                variants(first: 1) { edges { node { id } } }
+              }
               userErrors { field message }
             }
           }
@@ -1089,7 +1110,6 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
               status: 'ACTIVE',
               descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
               tags: ['bundle', 'cart-transform'],
-              variants: [{ price: bundlePrice, inventoryPolicy: 'CONTINUE', inventoryManagement: 'SHOPIFY' }],
             },
           },
         });
@@ -1100,6 +1120,23 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
         } else {
           shopifyProductId = createData.data?.productCreate?.product?.id ?? null;
           if (shopifyProductId) {
+            // Set price and inventory policy on the auto-created default variant
+            // (variants field was removed from ProductInput in API 2024-04+)
+            const defaultVariantId = createData.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
+            if (defaultVariantId) {
+              await admin.graphql(`
+                mutation UpdateBundleVariant($input: ProductVariantInput!) {
+                  productVariantUpdate(input: $input) {
+                    productVariant { id price }
+                    userErrors { field message }
+                  }
+                }
+              `, {
+                variables: {
+                  input: { id: defaultVariantId, price: bundlePrice, inventoryPolicy: 'CONTINUE' }
+                }
+              });
+            }
             await db.bundle.update({ where: { id: bundleId }, data: { shopifyProductId } });
             // Create URL redirect /products/{handle} → /pages/{pageHandle} (non-fatal)
             if (result.pageHandle) {
