@@ -758,7 +758,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           vendor: "Bundle Builder",
           status: "ACTIVE",
           descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
-          tags: ["bundle", "cart-transform"]
+          tags: ["WP-Bundles"]
         }
       }
     });
@@ -985,7 +985,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
           vendor: 'Bundle Builder',
           status: 'ACTIVE',
           descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
-          tags: ['bundle', 'cart-transform'],
+          tags: ['WP-Bundles'],
         },
       },
     });
