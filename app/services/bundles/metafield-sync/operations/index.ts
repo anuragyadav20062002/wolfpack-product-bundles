@@ -8,6 +8,4 @@ export { ensureVariantBundleMetafieldDefinitions, ensurePageBundleIdMetafieldDef
 
 export { updateBundleProductMetafields } from "./bundle-product.server";
 
-export { updateCartTransformMetafield } from "./cart-transform.server";
-
 export { updateComponentProductMetafields } from "./component-product.server";
