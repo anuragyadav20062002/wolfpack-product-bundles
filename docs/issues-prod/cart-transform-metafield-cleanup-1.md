@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-03
-**Last Updated:** 2026-04-03 13:00
+**Last Updated:** 2026-04-03 15:00
 
 ## Overview
 Audit revealed 2 dead code gaps in the cart transform metafield setup:
@@ -26,6 +26,15 @@ Additionally verified:
   5. `app/services/bundles/metafield-sync.server.ts` — remove `updateCartTransformMetafield` re-export + types
   6. `app/services/bundles/metafield-sync/types.ts` — remove `OptimizedBundleConfig`, `OptimizedStepConfig`, `OptimizedPricingConfig`
 
+### 2026-04-03 15:00 — Dev Server Testing
+- ✅ Navigated to PPB configure page on wolfpack-store-test-1 (SIT)
+- ✅ Bundle with 3 products in Step 1 saved and synced successfully
+- ✅ No console errors on admin configure page after sync
+- ✅ Navigated to "bundle product" storefront page → added to cart → proceeded to checkout
+- ✅ Checkout rendered correctly — cart transform ran without errors
+- ✅ Single 401 at checkout was expected: `?dev=` param not forwarded to Shopify checkout URLs (normal dev preview limitation, not a bug)
+- ✅ No functional regressions — cleanup only removed dead code that was never executed
+
 ### 2026-04-03 13:00 — Completed Implementation
 - ✅ Removed dead `bundleConfig` field from `cart-transform-input.graphql` (key `bundle_config` was never written, returned null on every invocation)
 - ✅ Deleted `cart-transform.server.ts` entirely — `updateCartTransformMetafield` was never called from any route handler
@@ -42,5 +51,5 @@ Additionally verified:
 - [x] Remove unused Optimized* types from types.ts
 - [x] Rebuild cart transform WASM
 - [x] Lint modified files
-- [ ] Test on dev server
-- [ ] Commit
+- [x] Test on dev server
+- [x] Commit
