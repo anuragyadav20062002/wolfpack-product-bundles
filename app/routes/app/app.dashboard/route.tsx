@@ -631,12 +631,9 @@ export default function Dashboard() {
 
               {/* Layout selection — shown only for Full Page bundles */}
               {bundleType[0] === BundleType.FULL_PAGE && (
-                <BlockStack gap="300">
+                <BlockStack gap="200">
                   <Text variant="headingSm" as="h4">Page Layout</Text>
-                  <Text variant="bodySm" as="p" tone="subdued">
-                    Choose where the bundle summary and navigation appears
-                  </Text>
-                  <InlineGrid columns={2} gap="300">
+                  <InlineGrid columns={2} gap="200">
                     {/* Floating Cart Card */}
                     <div
                       onClick={() => setFullPageLayout("footer_bottom")}
@@ -644,8 +641,8 @@ export default function Dashboard() {
                         border: fullPageLayout === "footer_bottom"
                           ? "2px solid var(--p-color-border-interactive)"
                           : "1px solid var(--p-color-border-secondary)",
-                        borderRadius: "12px",
-                        padding: "16px 12px",
+                        borderRadius: "8px",
+                        padding: "8px",
                         cursor: "pointer",
                         background: fullPageLayout === "footer_bottom"
                           ? "var(--p-color-bg-surface-selected)"
@@ -653,8 +650,8 @@ export default function Dashboard() {
                         transition: "border 0.15s, background 0.15s",
                       }}
                     >
-                      <BlockStack gap="200" inlineAlign="center">
-                        <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <BlockStack gap="100" inlineAlign="center">
+                        <svg width="100" height="68" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
                           <rect x="12" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
                           <rect x="42" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
@@ -673,11 +670,8 @@ export default function Dashboard() {
                           <rect x="75" y="79" width="14" height="3" rx="1.5" fill="#E5E7EB" />
                           <rect x="104" y="69" width="14" height="14" rx="4" fill="#111111" />
                         </svg>
-                        <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
+                        <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
                           Floating cart card
-                        </Text>
-                        <Text variant="bodySm" as="p" tone="subdued" alignment="center">
-                          Floating card at the bottom centre
                         </Text>
                       </BlockStack>
                     </div>
@@ -689,8 +683,8 @@ export default function Dashboard() {
                         border: fullPageLayout === "footer_side"
                           ? "2px solid var(--p-color-border-interactive)"
                           : "1px solid var(--p-color-border-secondary)",
-                        borderRadius: "12px",
-                        padding: "16px 12px",
+                        borderRadius: "8px",
+                        padding: "8px",
                         cursor: "pointer",
                         background: fullPageLayout === "footer_side"
                           ? "var(--p-color-bg-surface-selected)"
@@ -698,8 +692,8 @@ export default function Dashboard() {
                         transition: "border 0.15s, background 0.15s",
                       }}
                     >
-                      <BlockStack gap="200" inlineAlign="center">
-                        <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <BlockStack gap="100" inlineAlign="center">
+                        <svg width="100" height="68" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
                           <rect x="10" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
                           <rect x="36" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
@@ -717,11 +711,8 @@ export default function Dashboard() {
                           <rect x="97" y="56" width="34" height="10" rx="2" fill="white" opacity="0.15" />
                           <rect x="97" y="74" width="34" height="14" rx="3" fill="white" opacity="0.7" />
                         </svg>
-                        <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
+                        <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
                           Sidebar panel
-                        </Text>
-                        <Text variant="bodySm" as="p" tone="subdued" alignment="center">
-                          Side panel on the right with summary
                         </Text>
                       </BlockStack>
                     </div>

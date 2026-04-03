@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-03
-**Last Updated:** 2026-04-03 10:00
+**Last Updated:** 2026-04-03 11:00
 
 ## Overview
 Move the full-page bundle footer layout selection (Floating Cart Card vs Sidebar Panel) from the FPB configure page left sidebar into the Create Bundle modal. The picker appears conditionally when Full Page bundle type is selected.
@@ -34,6 +34,16 @@ Move the full-page bundle footer layout selection (Floating Cart Card vs Sidebar
 - ✅ Removed layout Card block (lines 1516–1623) from FPB configure page
 - ✅ Lint: 0 errors on all 3 modified files
 - ✅ Build: passes
+
+### 2026-04-03 11:00 — Compact layout picker to avoid modal scroll
+- ✅ SVG dimensions reduced from 140×96 to 100×68 (viewBox unchanged, scales correctly)
+- ✅ Card padding reduced from 16px 12px to 8px
+- ✅ Inner BlockStack gap reduced from 200 to 100
+- ✅ Outer BlockStack gap reduced from 300 to 200
+- ✅ InlineGrid gap reduced from 300 to 200
+- ✅ Removed subtitle description lines under each card
+- ✅ Label font changed from bodyMd to bodySm
+- ✅ Lint: 0 errors
 
 ## Phases Checklist
 - [x] Add fullPageLayout state + hidden input to dashboard modal
