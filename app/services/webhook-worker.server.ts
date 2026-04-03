@@ -22,7 +22,14 @@ import { createServer, type IncomingHttpHeaders, type IncomingMessage, type Serv
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { AppLogger } from "../lib/logger";
 import { inngest } from "../inngest/client";
+import { WebhookProcessor } from "./webhooks/processor.server";
 import type { ShopifyWebhookEventData } from "../inngest/types";
+
+// ---------------------------------------------------------------------------
+// Inngest availability check — when event key is missing and not in dev mode,
+// fall back to direct processing so webhooks are not silently dropped.
+// ---------------------------------------------------------------------------
+const INNGEST_AVAILABLE = !!(process.env.INNGEST_EVENT_KEY || process.env.INNGEST_DEV === "1");
 
 // ---------------------------------------------------------------------------
 // Environment validation — fail fast at import time so the process never binds
@@ -217,22 +224,45 @@ export async function handleRequest(req: IncomingMessage, res: ServerResponse): 
     res.end(JSON.stringify({ received: true }));
 
     // Enqueue to Inngest after the response is sent.
-    // If inngest.send() fails (e.g. Inngest Cloud unreachable), log and continue —
-    // Shopify has already received 200 so we must not crash the process.
-    inngest.send({
-      name: "shopify/webhook",
-      data: buildInngestPayload(rawBody, req.headers),
-    }).then(() => {
-      AppLogger.info("Webhook enqueued to Inngest", {
+    // If Inngest is not available (no event key and not dev mode), fall back to
+    // direct processing so webhooks are not silently dropped.
+    if (INNGEST_AVAILABLE) {
+      inngest.send({
+        name: "shopify/webhook",
+        data: buildInngestPayload(rawBody, req.headers),
+      }).then(() => {
+        AppLogger.info("Webhook enqueued to Inngest", {
+          component: "webhook-worker",
+          operation: "requestHandler",
+        }, { topic, shop: shopDomain });
+      }).catch((error: unknown) => {
+        AppLogger.error("Failed to enqueue webhook to Inngest", {
+          component: "webhook-worker",
+          operation: "requestHandler",
+        }, error);
+      });
+    } else {
+      // Fallback: process webhook directly (no Inngest retries, but data is not lost)
+      const payload = buildInngestPayload(rawBody, req.headers);
+      AppLogger.warn("Inngest unavailable — processing webhook directly (no retries)", {
         component: "webhook-worker",
         operation: "requestHandler",
       }, { topic, shop: shopDomain });
-    }).catch((error: unknown) => {
-      AppLogger.error("Failed to enqueue webhook to Inngest", {
-        component: "webhook-worker",
-        operation: "requestHandler",
-      }, error);
-    });
+      WebhookProcessor.processPubSubMessage({
+        data: payload.rawPayload,
+        attributes: {
+          "X-Shopify-Topic": payload.topic,
+          "X-Shopify-Shop-Domain": payload.shopDomain,
+          ...(payload.webhookId !== undefined && { "X-Shopify-Webhook-Id": payload.webhookId }),
+          ...(payload.apiVersion !== undefined && { "X-Shopify-API-Version": payload.apiVersion }),
+        },
+      }).catch((error: unknown) => {
+        AppLogger.error("Direct webhook processing failed", {
+          component: "webhook-worker",
+          operation: "requestHandler",
+        }, error);
+      });
+    }
 
     return;
   }
