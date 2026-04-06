@@ -2,7 +2,7 @@
 
 .bundle-widget-full-page {
   width: 100%;
-  min-height: 100vh;
+  min-height: auto;
   background: var(--bundle-full-page-bg-color, #FFFFFF);
   margin: 0;
   padding: 0;
@@ -2229,34 +2229,6 @@
   100% { transform: rotate(360deg); }
 }
 
-body:has(.bundle-widget-full-page) header,
-body:has(.bundle-widget-full-page) footer,
-body:has(.bundle-widget-full-page) .header,
-body:has(.bundle-widget-full-page) .footer,
-body:has(.bundle-widget-full-page) .site-header,
-body:has(.bundle-widget-full-page) .site-footer,
-body:has(.bundle-widget-full-page) .shopify-section-header,
-body:has(.bundle-widget-full-page) .shopify-section-footer,
-body:has(.bundle-widget-full-page) nav:not(.bundle-widget-full-page *),
-body:has(.bundle-widget-full-page) .breadcrumb,
-body:has(.bundle-widget-full-page) .announcement-bar {
-  display: none !important;
-}
-
-body:has(.bundle-widget-full-page) {
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow-x: hidden;
-}
-
-body:has(.bundle-widget-full-page) main,
-body:has(.bundle-widget-full-page) .main-content,
-body:has(.bundle-widget-full-page) #MainContent {
-  margin: 0 !important;
-  padding: 0 !important;
-  max-width: none !important;
-  width: 100% !important;
-}
 
 @media (max-width: 768px) {
   .timeline-line {
