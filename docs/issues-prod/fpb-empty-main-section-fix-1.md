@@ -42,6 +42,14 @@ hide the parent `shopify-section` using `.shopify-section:has(.main-page-title)`
   that renders inside <main> (before the footer)
 - Added JS in restored block to hide body-embed duplicate when section block is active
 
+### 2026-04-08 10:45 - Section block restore didn't work — UUID mismatch
+- The restored `bundle-full-page.liquid` file was deployed but Shopify still reports "does not exist"
+- Root cause: When a block is deleted and re-deployed, Shopify assigns a new internal UUID.
+  The theme template still references the OLD UUID registered on first deploy — permanent mismatch.
+- New fix: Add DOM-relocation JS to `bundle-full-page-embed.liquid` — moves the body-embed
+  block node into `<main>` on DOMContentLoaded so it renders before the footer visually.
+- This avoids needing to touch the theme customizer or block UUID at all.
+
 ## Related Documentation
 - `extensions/bundle-builder/blocks/bundle-full-page-embed.liquid`
 
