@@ -80,6 +80,8 @@
   h1.page-title,
   .page-header h1,
   .main-page-title { display: none !important; }
+  /* Hide the parent section wrapper — its padding creates a blank gray gap above the widget */
+  .shopify-section:has(.main-page-title) { display: none !important; }
 </style>
 {% endif %}
 
