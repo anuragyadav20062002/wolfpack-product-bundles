@@ -2534,16 +2534,26 @@ class BundleWidgetProductPage {
       const [variantId] = selectedEntries[0];
       const product = products.find(p => (p.variantId || p.id) === variantId);
       if (product) {
-        // Show filled state for free gift
-        stepBox.className = 'step-box bw-slot-card bw-slot-card--filled';
+        // Show filled state for free gift — mirror createSelectedProductCard class logic
+        const extraClass = this.widgetStyle === 'bottom-sheet' ? ' bw-slot-card bw-slot-card--filled' : '';
+        stepBox.className = `step-box step-completed product-card-state${extraClass}`;
 
         const imageWrapper = document.createElement('div');
-        imageWrapper.className = 'bw-slot-card__image-wrapper';
-        const img = document.createElement('img');
-        img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-        img.alt = product.title || '';
-        img.className = 'bw-slot-card__image';
-        imageWrapper.appendChild(img);
+        if (this.widgetStyle === 'bottom-sheet') {
+          imageWrapper.className = 'bw-slot-card__image-wrapper';
+          const img = document.createElement('img');
+          img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+          img.alt = product.title || '';
+          img.className = 'bw-slot-card__image';
+          imageWrapper.appendChild(img);
+        } else {
+          imageWrapper.className = 'step-images single-image';
+          const img = document.createElement('img');
+          img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+          img.alt = product.title || '';
+          img.className = 'step-image';
+          imageWrapper.appendChild(img);
+        }
         stepBox.appendChild(imageWrapper);
 
         // Remove button
@@ -2557,7 +2567,7 @@ class BundleWidgetProductPage {
         stepBox.appendChild(clearBadge);
 
         const productTitle = document.createElement('p');
-        productTitle.className = 'step-name bw-slot-card__label';
+        productTitle.className = 'step-name step-name-completed product-title-state';
         const displayTitle = product.title.length > 25 ? product.title.substring(0, 25) + '...' : product.title;
         productTitle.textContent = displayTitle;
         stepBox.appendChild(productTitle);
