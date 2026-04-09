@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 
 const FILES_QUERY = `
   query StoreImageFiles($first: Int!, $after: String, $query: String) {
@@ -44,7 +44,7 @@ function filenameFromUrl(url: string): string {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { admin } = await authenticate.admin(request);
+  const { admin } = await requireAdminSession(request);
   const url = new URL(request.url);
   const cursor = url.searchParams.get("cursor") || undefined;
   const searchTerm = url.searchParams.get("query") || "";

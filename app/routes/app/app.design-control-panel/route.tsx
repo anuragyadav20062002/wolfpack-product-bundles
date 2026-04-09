@@ -14,7 +14,8 @@ import {
   Box,
 } from "@shopify/polaris";
 import { Modal, SaveBar, useAppBridge } from "@shopify/app-bridge-react";
-import { authenticate } from "../../../shopify.server";
+import { requireAdminSession } from "../../../lib/auth-guards.server";
+import { AppLogger } from "../../../lib/logger";
 import { useCallback, useEffect, useRef } from "react";
 import { prisma } from "../../../db.server";
 
@@ -32,7 +33,7 @@ import { BillingService } from "../../../services/billing.server";
 import designControlPanelStyles from "../../../styles/routes/design-control-panel.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireAdminSession(request);
   const shopId = session.shop;
   const appUrl = (process.env.SHOPIFY_APP_URL ?? "").replace(/\/$/, "");
 
@@ -71,12 +72,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
-    const { session } = await authenticate.admin(request);
+    const { session } = await requireAdminSession(request);
     const shopId = session.shop;
     const formData = await request.json();
     return handleSaveSettings(shopId, formData);
   } catch (error) {
-    console.error("Error saving design settings:", error);
+    AppLogger.error("Error saving design settings", {
+      component: "app.design-control-panel",
+      operation: "action",
+    }, error instanceof Error ? error : new Error(String(error)));
     return json({ success: false, message: "Failed to save design settings" }, { status: 500 });
   }
 }

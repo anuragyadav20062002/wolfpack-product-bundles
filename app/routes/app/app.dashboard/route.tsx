@@ -20,7 +20,7 @@ import {
   InlineGrid,
 } from "@shopify/polaris";
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, AlertTriangleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
-import { authenticate } from "../../../shopify.server";
+import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
@@ -45,7 +45,7 @@ import type { BundleActionsButtonsProps } from "./types";
 import dashboardStyles from "./dashboard.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
 
   // Get active and draft bundles for the shop (exclude archived/deleted)
   // Only select fields needed for dashboard display to avoid over-fetching
@@ -253,7 +253,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 // Action handlers have been extracted to ./app.dashboard/handlers/
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
 
