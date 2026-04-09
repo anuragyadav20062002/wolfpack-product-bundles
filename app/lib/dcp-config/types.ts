@@ -7,12 +7,12 @@ export type DCPSectionKey =
   | 'emptyState' | 'addToCartButton' | 'toasts' | 'modalCloseButton'
   | 'accessibility' | 'widgetStyle'
   | 'promoBanner' | 'tierPills'
-  | 'fpbBadges';
+  | 'fpbBadges' | 'pdpBadge';
 
 export type DCPGroupKey =
   | 'globalColors' | 'productCard' | 'bundleFooter' | 'bundleHeader'
   | 'general' | 'promoBanner' | 'tierPills'
-  | 'fpbBadges';
+  | 'fpbBadges' | 'pdpBadge';
 
 export interface DCPSection {
   key: DCPSectionKey;
