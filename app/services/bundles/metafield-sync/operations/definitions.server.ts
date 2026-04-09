@@ -5,6 +5,7 @@
  */
 
 import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../../../../constants/metafields";
+import { AppLogger } from "../../../../lib/logger";
 
 /**
  * Ensures variant-level bundle metafield definitions exist in Shopify
@@ -133,7 +134,9 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
     }
   ];
 
-  console.log("📋 [METAFIELD_DEF] Creating variant-level metafield definitions");
+  AppLogger.info("[METAFIELD_DEF] Creating variant-level metafield definitions", {
+    component: "definitions.server",
+  }, { count: definitions.length });
 
   for (const definition of definitions) {
     try {
@@ -146,19 +149,29 @@ export async function ensureVariantBundleMetafieldDefinitions(admin: any): Promi
       if (data.data?.metafieldDefinitionCreate?.userErrors?.length > 0) {
         const error = data.data.metafieldDefinitionCreate.userErrors[0];
         if (error.code === "TAKEN") {
-          console.log(`✓ [METAFIELD_DEF] ${definition.key} already exists`);
+          AppLogger.debug("[METAFIELD_DEF] Definition already exists", {
+            component: "definitions.server",
+          }, { key: definition.key });
         } else {
-          console.error(`❌ [METAFIELD_DEF] Error creating ${definition.key}:`, error);
+          AppLogger.error("[METAFIELD_DEF] Error creating definition", {
+            component: "definitions.server",
+          }, { key: definition.key, error });
         }
       } else {
-        console.log(`✓ [METAFIELD_DEF] Created ${definition.key}`);
+        AppLogger.debug("[METAFIELD_DEF] Created definition", {
+          component: "definitions.server",
+        }, { key: definition.key });
       }
     } catch (error) {
-      console.error(`❌ [METAFIELD_DEF] Failed to create ${definition.key}:`, error);
+      AppLogger.error("[METAFIELD_DEF] Failed to create definition", {
+        component: "definitions.server",
+      }, { key: definition.key, error: error instanceof Error ? error.message : String(error) });
     }
   }
 
-  console.log("✅ [METAFIELD_DEF] Finished ensuring variant metafield definitions");
+  AppLogger.info("[METAFIELD_DEF] Finished ensuring variant metafield definitions", {
+    component: "definitions.server",
+  });
   return true;
 }
 
@@ -212,15 +225,23 @@ export async function ensureCustomPageBundleIdDefinition(admin: any): Promise<bo
     if (errors.length > 0) {
       const error = errors[0];
       if (error.code === "TAKEN") {
-        console.log("✓ [METAFIELD_DEF] custom:bundle_id PAGE definition already exists");
+        AppLogger.debug("[METAFIELD_DEF] custom:bundle_id PAGE definition already exists", {
+          component: "definitions.server",
+        });
       } else {
-        console.error("❌ [METAFIELD_DEF] Error creating custom:bundle_id definition:", error);
+        AppLogger.error("[METAFIELD_DEF] Error creating custom:bundle_id definition", {
+          component: "definitions.server",
+        }, error);
       }
     } else {
-      console.log("✓ [METAFIELD_DEF] Created custom:bundle_id PAGE definition");
+      AppLogger.debug("[METAFIELD_DEF] Created custom:bundle_id PAGE definition", {
+        component: "definitions.server",
+      });
     }
   } catch (error) {
-    console.error("❌ [METAFIELD_DEF] Failed to create custom:bundle_id definition:", error);
+    AppLogger.error("[METAFIELD_DEF] Failed to create custom:bundle_id definition", {
+      component: "definitions.server",
+    }, error instanceof Error ? error : new Error(String(error)));
   }
 
   return true;
@@ -264,15 +285,23 @@ export async function ensureCustomPageBundleConfigDefinition(admin: any): Promis
     if (errors.length > 0) {
       const error = errors[0];
       if (error.code === "TAKEN") {
-        console.log("✓ [METAFIELD_DEF] custom:bundle_config PAGE definition already exists");
+        AppLogger.debug("[METAFIELD_DEF] custom:bundle_config PAGE definition already exists", {
+          component: "definitions.server",
+        });
       } else {
-        console.error("❌ [METAFIELD_DEF] Error creating custom:bundle_config definition:", error);
+        AppLogger.error("[METAFIELD_DEF] Error creating custom:bundle_config definition", {
+          component: "definitions.server",
+        }, error);
       }
     } else {
-      console.log("✓ [METAFIELD_DEF] Created custom:bundle_config PAGE definition");
+      AppLogger.debug("[METAFIELD_DEF] Created custom:bundle_config PAGE definition", {
+        component: "definitions.server",
+      });
     }
   } catch (error) {
-    console.error("❌ [METAFIELD_DEF] Failed to create custom:bundle_config definition:", error);
+    AppLogger.error("[METAFIELD_DEF] Failed to create custom:bundle_config definition", {
+      component: "definitions.server",
+    }, error instanceof Error ? error : new Error(String(error)));
   }
 
   return true;
@@ -353,25 +382,33 @@ export async function ensurePageBundleIdMetafieldDefinition(admin: any): Promise
       if (error.code === "TAKEN") {
         // Definition already exists — query it and ensure storefront access is PUBLIC_READ.
         // If it was originally created without PUBLIC_READ, Liquid will silently return null.
-        console.log("[METAFIELD_DEF] PAGE bundle_id definition already exists — verifying storefront access...");
+        AppLogger.debug("[METAFIELD_DEF] PAGE bundle_id definition already exists — verifying storefront access", {
+          component: "definitions.server",
+        });
 
         const queryResponse = await admin.graphql(QUERY_METAFIELD_DEFINITION);
         const queryData = await queryResponse.json();
         const existingDef = queryData.data?.metafieldDefinitions?.edges?.[0]?.node;
 
         if (!existingDef) {
-          console.warn("⚠️ [METAFIELD_DEF] Could not query existing PAGE bundle_id definition");
+          AppLogger.warn("[METAFIELD_DEF] Could not query existing PAGE bundle_id definition", {
+            component: "definitions.server",
+          });
           return true;
         }
 
         const currentStorefrontAccess = existingDef.access?.storefront;
         if (currentStorefrontAccess === "PUBLIC_READ") {
-          console.log("✓ [METAFIELD_DEF] PAGE bundle_id definition already has PUBLIC_READ storefront access");
+          AppLogger.debug("[METAFIELD_DEF] PAGE bundle_id already has PUBLIC_READ storefront access", {
+            component: "definitions.server",
+          });
           return true;
         }
 
         // Access is not PUBLIC_READ — update it
-        console.log(`[METAFIELD_DEF] PAGE bundle_id storefront access is '${currentStorefrontAccess}' — updating to PUBLIC_READ...`);
+        AppLogger.info("[METAFIELD_DEF] Updating PAGE bundle_id storefront access to PUBLIC_READ", {
+          component: "definitions.server",
+        }, { currentStorefrontAccess });
         const updateResponse = await admin.graphql(UPDATE_METAFIELD_DEFINITION, {
           variables: {
             id: existingDef.id,
@@ -386,18 +423,28 @@ export async function ensurePageBundleIdMetafieldDefinition(admin: any): Promise
         const updateData = await updateResponse.json();
         const updateErrors = updateData.data?.metafieldDefinitionUpdate?.userErrors ?? [];
         if (updateErrors.length > 0) {
-          console.error("❌ [METAFIELD_DEF] Failed to update PAGE bundle_id storefront access:", updateErrors[0]);
+          AppLogger.error("[METAFIELD_DEF] Failed to update PAGE bundle_id storefront access", {
+            component: "definitions.server",
+          }, updateErrors[0]);
         } else {
-          console.log("✓ [METAFIELD_DEF] Updated PAGE bundle_id definition to PUBLIC_READ storefront access");
+          AppLogger.info("[METAFIELD_DEF] Updated PAGE bundle_id definition to PUBLIC_READ storefront access", {
+            component: "definitions.server",
+          });
         }
       } else {
-        console.error("❌ [METAFIELD_DEF] Error creating PAGE bundle_id definition:", error);
+        AppLogger.error("[METAFIELD_DEF] Error creating PAGE bundle_id definition", {
+          component: "definitions.server",
+        }, error);
       }
     } else {
-      console.log("✓ [METAFIELD_DEF] Created PAGE bundle_id definition with PUBLIC_READ storefront access");
+      AppLogger.debug("[METAFIELD_DEF] Created PAGE bundle_id definition with PUBLIC_READ storefront access", {
+        component: "definitions.server",
+      });
     }
   } catch (error) {
-    console.error("❌ [METAFIELD_DEF] Failed to create PAGE bundle_id definition:", error);
+    AppLogger.error("[METAFIELD_DEF] Failed to create PAGE bundle_id definition", {
+      component: "definitions.server",
+    }, error instanceof Error ? error : new Error(String(error)));
   }
 
   return true;
