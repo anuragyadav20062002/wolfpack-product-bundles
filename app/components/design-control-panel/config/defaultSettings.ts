@@ -286,6 +286,9 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   emptySlotBorderStyle: "dashed",
   emptySlotBorderColor: "#007AFF",
   freeGiftBadgeUrl: "",
+  freeGiftBadgePosition: "top-left",
+  includedBadgeUrl: "",
+  includedBadgePosition: "top-left",
 
   // Custom CSS (empty by default)
   customCss: "",
@@ -570,6 +573,9 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   emptySlotBorderStyle: "dashed",
   emptySlotBorderColor: "#007AFF",
   freeGiftBadgeUrl: "",
+  freeGiftBadgePosition: "top-left",
+  includedBadgeUrl: "",
+  includedBadgePosition: "top-left",
 
   // Custom CSS (empty by default)
   customCss: "",
