@@ -119,6 +119,62 @@ function getWidgetCss(): { widgetCss: string; fullPageCss: string } {
 // .modal-content is position:fixed; bottom:0; left:0; right:0; height:90vh.
 
 const pdpPageHtml = `
+<!-- Pre-modal product page view — shown when DCP widgetStyle section is active.
+     Displays the bundle slot cards as they appear on the storefront product page,
+     BEFORE the modal opens. Uses actual widget classes (.bw-slot-card--empty) so
+     CSS variable changes (bg, border, text colour, border style) are reflected live. -->
+<div class="dcp-pdp-pre-modal-view" style="display:none;">
+  <div class="dcp-pdp-page-layout">
+
+    <div class="dcp-pdp-image-col">
+      <div class="dcp-pdp-image-placeholder"></div>
+    </div>
+
+    <div class="dcp-pdp-info-col">
+      <p class="dcp-pdp-vendor">WOLFPACK BUNDLES</p>
+      <h2 class="dcp-pdp-product-title">Summer Bundle</h2>
+      <p class="dcp-pdp-product-price">From $49.99</p>
+      <div class="dcp-pdp-divider"></div>
+
+      <!-- Bundle widget app block (as rendered on the product page) -->
+      <div class="bundle-builder-app dcp-pdp-bundle-app">
+        <div class="bundle-steps">
+
+          <div class="step-box bw-slot-card bw-slot-card--empty" data-step-index="0">
+            <div class="bw-slot-card__plus-icon">
+              <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+                <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="step-name bw-slot-card__label">Choose Tops</p>
+          </div>
+
+          <div class="step-box bw-slot-card bw-slot-card--empty" data-step-index="1">
+            <div class="bw-slot-card__plus-icon">
+              <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+                <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="step-name bw-slot-card__label">Choose Bottoms</p>
+          </div>
+
+          <div class="step-box bw-slot-card bw-slot-card--empty" data-step-index="2">
+            <div class="bw-slot-card__plus-icon">
+              <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+                <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="step-name bw-slot-card__label">Accessories</p>
+          </div>
+
+        </div>
+        <button class="add-bundle-to-cart">Customize Bundle</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- Mock product page background (partially visible behind overlay) -->
 <div class="preview-page-bg">
   <div class="preview-page-inner">
@@ -214,33 +270,6 @@ const pdpPageHtml = `
           </div>
         </div>
 
-      </div>
-
-      <!-- Empty-state grid — shown when DCP widgetStyle section is active so merchants
-           can preview empty-state card styling (bg, border color, text, border style).
-           Hidden by default; swapped in by the DCP_SECTION_CHANGE handler below. -->
-      <div class="product-grid dcp-empty-grid" style="display:none;">
-        <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-          <p class="empty-state-card-text">Select T-Shirts</p>
-        </div>
-        <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-          <p class="empty-state-card-text">Select Bottoms</p>
-        </div>
-        <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-          <p class="empty-state-card-text">Select Accessories</p>
-        </div>
       </div>
 
     </div>
@@ -784,6 +813,64 @@ html, body {
    Production CSS hides it in sidebar layout (too much vertical space), but in the
    design preview we always want it visible so color/text changes are reflected. */
 .layout-sidebar .promo-banner { display: block !important; }
+
+/* ── PDP: pre-modal product page view (Widget Style section) ───────────────────
+   Shown instead of the bottom-drawer modal when widgetStyle is the active DCP
+   section. Replicates how slot cards look on the live storefront product page. */
+.dcp-pdp-pre-modal-view {
+  position: fixed;
+  inset: 0;
+  background: #f9f9f9;
+  overflow-y: auto;
+  padding: 28px 24px;
+}
+.dcp-pdp-page-layout {
+  display: flex;
+  gap: 32px;
+  max-width: 840px;
+  margin: 0 auto;
+}
+.dcp-pdp-image-col { flex-shrink: 0; }
+.dcp-pdp-image-placeholder {
+  width: 260px;
+  height: 320px;
+  background: #e0e0e0;
+  border-radius: 10px;
+}
+.dcp-pdp-info-col {
+  flex: 1;
+  min-width: 0;
+  padding-top: 4px;
+}
+.dcp-pdp-vendor {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.dcp-pdp-product-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+}
+.dcp-pdp-product-price {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+}
+.dcp-pdp-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin-bottom: 20px;
+}
+/* Constrain slot card size so 3 cards fit comfortably in the info column */
+.dcp-pdp-bundle-app .bundle-steps {
+  --step-box-size: 140px;
+}
 `;
 
 // ─── BroadcastChannel script ──────────────────────────────────────────────────
@@ -840,16 +927,17 @@ function getPreviewScript(type: string): string {
         }
       }
 
-      // PDP only: swap product grid ↔ empty-state grid when on widgetStyle section so
-      // merchants can preview empty state card bg/border/text colour changes live.
+      // PDP only: when widgetStyle is active, hide the bottom-drawer modal entirely
+      // and show the pre-modal product page view instead. This correctly replicates
+      // where empty slot cards actually appear — on the product page, not in the modal.
       // These elements only exist in the PDP preview HTML — querySelector returns null
       // for FPB, so the null-checks make this a no-op for the FPB preview script.
-      var productGrid = document.querySelector('.product-grid:not(.dcp-empty-grid)');
-      var emptyGrid = document.querySelector('.dcp-empty-grid');
-      if (productGrid && emptyGrid) {
-        var showEmpty = section === 'widgetStyle';
-        productGrid.style.display = showEmpty ? 'none' : '';
-        emptyGrid.style.display = showEmpty ? '' : 'none';
+      var modal = document.querySelector('.bundle-builder-modal');
+      var preModalView = document.querySelector('.dcp-pdp-pre-modal-view');
+      if (modal && preModalView) {
+        var showPreModal = section === 'widgetStyle';
+        modal.style.display = showPreModal ? 'none' : '';
+        preModalView.style.display = showPreModal ? 'block' : 'none';
       }
     }
   });
