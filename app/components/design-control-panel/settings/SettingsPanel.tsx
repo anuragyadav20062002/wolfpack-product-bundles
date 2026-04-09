@@ -28,6 +28,7 @@ import { WidgetStyleSettings } from "./WidgetStyleSettings";
 import { TierPillSettings } from "./TierPillSettings";
 import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
 import { FPBBadgesSettings } from "./FPBBadgesSettings";
+import { PDPBadgeSettings } from "./PDPBadgeSettings";
 
 /**
  * Maps each section key to the DesignSettings keys it controls.
@@ -135,6 +136,7 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
     "freeGiftBadgeUrl", "freeGiftBadgePosition",
     "includedBadgeUrl", "includedBadgePosition",
   ],
+  pdpBadge: ["freeGiftBadgeUrl", "freeGiftBadgePosition"],
 };
 
 /**
@@ -320,6 +322,8 @@ export function SettingsPanel({
         return <ModalCloseButtonSettings settings={settings} onUpdate={onUpdate} />;
       case "fpbBadges":
         return <FPBBadgesSettings settings={settings} onUpdate={onUpdate} />;
+      case "pdpBadge":
+        return <PDPBadgeSettings settings={settings} onUpdate={onUpdate} />;
       case "customCss":
         return (
           <CustomCssSettings

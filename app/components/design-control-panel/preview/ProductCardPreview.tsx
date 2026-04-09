@@ -49,7 +49,7 @@ const skeletonHTML = `
     }
     .dcp-skeleton-card {
       width: 140px;
-      height: 200px;
+      height: var(--bundle-product-card-height, 200px);
       border-radius: 12px;
       background: var(--bundle-skeleton-base-bg, #f0f0f0);
       position: relative;
