@@ -4153,6 +4153,43 @@ body.modal-open {
   display: block;
 }
 
+/* ---- Default (Included) Step — Tab Styling ---- */
+.step-tab--included {
+  border-style: dashed;
+  opacity: 0.9;
+}
+
+.step-tab--included .tab-count--included {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.step-tab--included .tab-lock--included svg {
+  opacity: 1;
+  color: #059669;
+}
+
+/* ---- Default (Included) Step — Card Styling ---- */
+.fpb-card--default-included .product-add-btn,
+.fpb-card--default-included .qty-increase,
+.fpb-card--default-included .qty-decrease {
+  display: none !important;
+}
+
+.fpb-included-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: #10B981;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* ---- Free Gift Step Heading ---- */
 .fpb-step-free-heading {
   font-size: 18px;
