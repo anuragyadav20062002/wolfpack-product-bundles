@@ -56,21 +56,46 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
         </Button>
       </ButtonGroup>
 
-      {/* Free Gift Badge — visible in all widget style modes */}
+      {/* Free Gift Badge — image upload + position picker */}
       <Divider />
 
       <Text as="h3" variant="headingMd">
         Free Gift Badge
       </Text>
       <Text as="p" variant="bodySm" tone="subdued">
-        Shown on locked gift-step slot cards. Leave blank to use the built-in ribbon.
+        Shown on locked gift-step slot cards. Leave blank to use the built-in "Free" label.
       </Text>
       <FilePicker
         value={settings.freeGiftBadgeUrl ?? ""}
         onChange={(url) => onUpdate("freeGiftBadgeUrl", url ?? "")}
-        label="Free Gift Badge"
+        label="Free Gift Badge Image"
         hideCropEditor
       />
+
+      <Text as="p" variant="bodyMd" fontWeight="medium">
+        Badge Placement
+      </Text>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
+        {(["top-left", "top-right", "bottom-left", "bottom-right"] as const).map((pos) => (
+          <button
+            key={pos}
+            onClick={() => onUpdate("freeGiftBadgePosition", pos)}
+            style={{
+              padding: "7px 10px",
+              fontSize: "12px",
+              fontWeight: (settings.freeGiftBadgePosition ?? "top-left") === pos ? 600 : 400,
+              borderRadius: "6px",
+              border: (settings.freeGiftBadgePosition ?? "top-left") === pos ? "2px solid #111" : "1px solid #D1D5DB",
+              background: (settings.freeGiftBadgePosition ?? "top-left") === pos ? "#F3F4F6" : "#fff",
+              cursor: "pointer",
+              textAlign: "center" as const,
+              transition: "border 0.1s, background 0.1s",
+            }}
+          >
+            {pos === "top-left" ? "↖ Top Left" : pos === "top-right" ? "↗ Top Right" : pos === "bottom-left" ? "↙ Bottom Left" : "↘ Bottom Right"}
+          </button>
+        ))}
+      </div>
     </BlockStack>
   );
 }

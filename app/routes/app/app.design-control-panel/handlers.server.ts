@@ -70,8 +70,9 @@ const GENERAL_KEYS = [
   // Header Text
   "conditionsTextColor", "conditionsTextFontSize",
   "discountTextColor", "discountTextFontSize",
-  // Free Gift Badge (Product Page)
-  "freeGiftBadgeUrl",
+  // Badges
+  "freeGiftBadgeUrl", "freeGiftBadgePosition",
+  "includedBadgeUrl", "includedBadgePosition",
 ] as const;
 
 const PROMO_BANNER_KEYS = [
