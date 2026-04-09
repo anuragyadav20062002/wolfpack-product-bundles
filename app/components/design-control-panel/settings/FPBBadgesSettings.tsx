@@ -1,5 +1,6 @@
-import { BlockStack, Text, Divider, Button, ButtonGroup } from "@shopify/polaris";
+import { BlockStack, Text, Divider } from "@shopify/polaris";
 import { FilePicker } from "./FilePicker";
+import { BadgePreviewCard } from "./BadgePreviewCard";
 import type { SettingsComponentProps } from "./types";
 
 const POSITIONS = [
@@ -8,6 +9,9 @@ const POSITIONS = [
   { value: "bottom-left",  label: "↙ Bottom Left"  },
   { value: "bottom-right", label: "↘ Bottom Right" },
 ];
+
+const BADGE_HELP_TEXT =
+  "Accepted formats: PNG, JPG, WebP, SVG, GIF, AVIF · Max file size: 20 MB · Recommended: 80×80 px or smaller";
 
 function BadgePositionPicker({
   value,
@@ -53,12 +57,35 @@ export function FPBBadgesSettings({ settings, onUpdate }: SettingsComponentProps
       </Text>
       <Divider />
 
+      {/* Live preview */}
+      <div style={{ display: "flex", justifyContent: "center", paddingTop: "4px" }}>
+        <BadgePreviewCard
+          badgeUrl={settings.freeGiftBadgeUrl ?? ""}
+          position={settings.freeGiftBadgePosition ?? "top-left"}
+          defaultLabel="Free"
+          defaultBadgeBg="#FFF3CD"
+          defaultBadgeTextColor="#333"
+          heading="Preview"
+        />
+      </div>
+
       <Text as="p" variant="bodyMd" fontWeight="medium">
         Custom Badge Image
       </Text>
-      <Text as="p" variant="bodySm" tone="subdued">
-        PNG, JPG, SVG or WebP — recommended size 80×80 px or smaller.
-      </Text>
+      {/* Help text */}
+      <div
+        style={{
+          background: "#F0F7FF",
+          border: "1px solid #B3D4F5",
+          borderRadius: "6px",
+          padding: "8px 12px",
+          fontSize: "12px",
+          color: "#1D4082",
+          lineHeight: 1.5,
+        }}
+      >
+        {BADGE_HELP_TEXT}
+      </div>
       <FilePicker
         value={settings.freeGiftBadgeUrl ?? ""}
         onChange={(url) => onUpdate("freeGiftBadgeUrl", url ?? "")}
@@ -84,12 +111,35 @@ export function FPBBadgesSettings({ settings, onUpdate }: SettingsComponentProps
         Shown on product cards in default (pre-selected) steps. Leave the image blank to use the built-in "Included" label.
       </Text>
 
+      {/* Live preview */}
+      <div style={{ display: "flex", justifyContent: "center", paddingTop: "4px" }}>
+        <BadgePreviewCard
+          badgeUrl={settings.includedBadgeUrl ?? ""}
+          position={settings.includedBadgePosition ?? "top-left"}
+          defaultLabel="Included"
+          defaultBadgeBg="#D1FAE5"
+          defaultBadgeTextColor="#065F46"
+          heading="Preview"
+        />
+      </div>
+
       <Text as="p" variant="bodyMd" fontWeight="medium">
         Custom Badge Image
       </Text>
-      <Text as="p" variant="bodySm" tone="subdued">
-        PNG, JPG, SVG or WebP — recommended size 80×80 px or smaller.
-      </Text>
+      {/* Help text */}
+      <div
+        style={{
+          background: "#F0F7FF",
+          border: "1px solid #B3D4F5",
+          borderRadius: "6px",
+          padding: "8px 12px",
+          fontSize: "12px",
+          color: "#1D4082",
+          lineHeight: 1.5,
+        }}
+      >
+        {BADGE_HELP_TEXT}
+      </div>
       <FilePicker
         value={settings.includedBadgeUrl ?? ""}
         onChange={(url) => onUpdate("includedBadgeUrl", url ?? "")}
