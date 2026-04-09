@@ -768,11 +768,13 @@ class BundleWidgetProductPage {
       // Circular background wrapper for the plus icon (80×80px)
       const iconWrapper = document.createElement('div');
       iconWrapper.className = 'bw-slot-card__plus-icon';
+      const primaryColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
       iconWrapper.style.cssText = `
         width: 80px;
         height: 80px;
         border-radius: 50%;
-        background: rgba(30, 58, 138, 0.08);
+        background: color-mix(in srgb, ${primaryColor} 8%, transparent);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -781,8 +783,7 @@ class BundleWidgetProductPage {
       iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
       </svg>`;
-      iconWrapper.style.color = getComputedStyle(document.documentElement)
-        .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+      iconWrapper.style.color = primaryColor;
       stepBox.appendChild(iconWrapper);
 
       // Step name label below icon
@@ -1065,11 +1066,13 @@ class BundleWidgetProductPage {
 
       const iconWrapper = document.createElement('div');
       iconWrapper.className = 'bw-slot-card__plus-icon';
+      const primaryColorBS = getComputedStyle(document.documentElement)
+        .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
       iconWrapper.style.cssText = `
         width: 80px;
         height: 80px;
         border-radius: 50%;
-        background: rgba(30, 58, 138, 0.08);
+        background: color-mix(in srgb, ${primaryColorBS} 8%, transparent);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1078,8 +1081,7 @@ class BundleWidgetProductPage {
       iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
       </svg>`;
-      iconWrapper.style.color = getComputedStyle(document.documentElement)
-        .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+      iconWrapper.style.color = primaryColorBS;
       stepBox.appendChild(iconWrapper);
 
       const label = document.createElement('p');
