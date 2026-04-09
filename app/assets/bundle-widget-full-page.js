@@ -1962,7 +1962,21 @@ class BundleWidgetFullPage {
         imgEl.parentElement.classList.add('fpb-card-image-wrapper');
         const badge = document.createElement('span');
         badge.className = 'fpb-included-badge';
-        badge.textContent = 'Included';
+        const _includedBadgeUrl = (() => {
+          const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-included-badge-url').trim();
+          if (!v || v === 'none') return null;
+          const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
+          return m ? m[1] : null;
+        })();
+        if (_includedBadgeUrl) {
+          const img = document.createElement('img');
+          img.src = _includedBadgeUrl;
+          img.alt = 'Included';
+          img.className = 'fpb-included-badge-img';
+          badge.appendChild(img);
+        } else {
+          badge.textContent = 'Included';
+        }
         imgEl.parentElement.appendChild(badge);
       }
     }

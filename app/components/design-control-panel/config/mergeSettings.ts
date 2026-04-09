@@ -184,6 +184,9 @@ export function mergeSettings(
     emptySlotBorderStyle: dbSettings.emptySlotBorderStyle ?? defaults.emptySlotBorderStyle,
     emptySlotBorderColor: dbSettings.emptySlotBorderColor ?? defaults.emptySlotBorderColor,
     freeGiftBadgeUrl: dbSettings.freeGiftBadgeUrl ?? defaults.freeGiftBadgeUrl,
+    freeGiftBadgePosition: dbSettings.freeGiftBadgePosition ?? defaults.freeGiftBadgePosition,
+    includedBadgeUrl: dbSettings.includedBadgeUrl ?? defaults.includedBadgeUrl,
+    includedBadgePosition: dbSettings.includedBadgePosition ?? defaults.includedBadgePosition,
 
     // Spread JSON field settings last (they override any duplicates)
     ...globalColorsSettings,

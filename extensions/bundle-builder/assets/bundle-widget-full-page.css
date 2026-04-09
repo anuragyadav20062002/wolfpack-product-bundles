@@ -4134,8 +4134,10 @@ body.modal-open {
 .fpb-card-image-wrapper { position: relative; }
 .fpb-free-badge {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: var(--bundle-free-gift-badge-top, 6px);
+  bottom: var(--bundle-free-gift-badge-bottom, auto);
+  left: var(--bundle-free-gift-badge-left, 6px);
+  right: var(--bundle-free-gift-badge-right, auto);
   background: var(--bundle-free-badge-bg, #FFF3CD);
   color: var(--bundle-free-badge-text, #333);
   font-size: 11px;
@@ -4178,8 +4180,10 @@ body.modal-open {
 
 .fpb-included-badge {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: var(--bundle-included-badge-top, 6px);
+  bottom: var(--bundle-included-badge-bottom, auto);
+  left: var(--bundle-included-badge-left, 6px);
+  right: var(--bundle-included-badge-right, auto);
   background: #10B981;
   color: #fff;
   font-size: 11px;
@@ -4188,6 +4192,13 @@ body.modal-open {
   border-radius: 4px;
   z-index: 1;
   pointer-events: none;
+}
+
+.fpb-included-badge-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 /* ---- Free Gift Step Heading ---- */
