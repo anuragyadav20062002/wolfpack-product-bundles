@@ -67,7 +67,7 @@ import { FilePicker } from "../../../components/design-control-panel/settings/Fi
 import { PricingTiersSection } from "../../../components/PricingTiersSection";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
-import { authenticate } from "../../../shopify.server";
+import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-configure.module.css";
@@ -97,7 +97,7 @@ import type { BundleStatus } from "../../../constants/bundle";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
   const { bundleId } = params;
 
   if (!bundleId) {
@@ -205,7 +205,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   try {
-    const { session, admin } = await authenticate.admin(request);
+    const { session, admin } = await requireAdminSession(request);
     const { bundleId } = params;
 
 
@@ -406,18 +406,18 @@ export default function ConfigureBundleFlow() {
 
   // Pricing tier config state (full-page bundles)
   const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
   );
   const originalTierConfigRef = useRef<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
   );
 
   // Admin-controlled step timeline visibility (null = defer to theme editor)
   const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
-    (bundle as any).showStepTimeline !== false  // default true; only false when explicitly saved as false
+    bundle.showStepTimeline !== false  // default true; only false when explicitly saved as false
   );
   const originalShowStepTimelineRef = useRef<boolean>(
-    (bundle as any).showStepTimeline !== false
+    bundle.showStepTimeline !== false
   );
 
   // Widget install loading state

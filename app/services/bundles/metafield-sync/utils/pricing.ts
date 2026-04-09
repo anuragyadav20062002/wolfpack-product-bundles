@@ -5,6 +5,7 @@
  */
 
 import type { ComponentPricing } from "../types";
+import { AppLogger } from "../../../../lib/logger";
 
 /**
  * Calculate per-component pricing for expanded bundle checkout display
@@ -22,21 +23,24 @@ export function calculateComponentPricing(
   discountMethod: string,
   discountValue: number
 ): ComponentPricing[] {
-  console.log("💰 [COMPONENT_PRICING] Calculating component pricing");
-  console.log("   - Components:", components.length);
-  console.log("   - Discount method:", discountMethod);
-  console.log("   - Discount value:", discountValue);
+  AppLogger.debug("[COMPONENT_PRICING] Calculating component pricing", {
+    component: "metafield-sync/utils/pricing",
+  }, { componentCount: components.length, discountMethod, discountValue });
 
   // Calculate total retail price in cents (sum of all components)
   const totalRetailCents = components.reduce(
     (sum, c) => sum + (c.priceCents * c.quantity), 0
   );
 
-  console.log("   - Total retail (cents):", totalRetailCents);
+  AppLogger.debug("[COMPONENT_PRICING] Total retail", {
+    component: "metafield-sync/utils/pricing",
+  }, { totalRetailCents });
 
   // Guard against division by zero when all component prices are $0
   if (totalRetailCents === 0) {
-    console.log("   - Total retail is 0, returning components with no discount");
+    AppLogger.debug("[COMPONENT_PRICING] Total retail is 0, returning components with no discount", {
+      component: "metafield-sync/utils/pricing",
+    });
     return components.map(component => ({
       variantId: component.variantId,
       ...(component.title && { title: component.title }),
@@ -93,7 +97,9 @@ export function calculateComponentPricing(
       savingsAmount: savingsCents
     };
 
-    console.log(`   - Component ${component.variantId}: retail=${retailPriceCents}, bundle=${bundlePriceCents}, savings=${savingsCents} (${componentDiscountPercent}%)`);
+    AppLogger.debug("[COMPONENT_PRICING] Component pricing calculated", {
+      component: "metafield-sync/utils/pricing",
+    }, { variantId: component.variantId, retailPriceCents, bundlePriceCents, savingsCents, componentDiscountPercent });
 
     return pricing;
   });

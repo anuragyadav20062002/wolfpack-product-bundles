@@ -77,12 +77,12 @@ function BundleTypeToggle({ selected, onChange, options }: {
   );
 }
 
-// Full-page footer layout — matches storefront: Success Banner → Progress Message → Product Tiles → Back | Total | Next
+// Full-page footer layout — matches actual storefront floating-card widget
+// Structure: [callout banner] → compact footer bar (thumbstrip | centre column | cta button)
 function FullPageFooterLayout({
   highlightTarget,
   footerBgColor,
   footerBorderRadius,
-  footerPadding,
   footerStrikePriceColor,
   footerStrikeFontSize,
   footerStrikeFontWeight,
@@ -90,13 +90,8 @@ function FullPageFooterLayout({
   footerFinalPriceFontSize,
   footerFinalPriceFontWeight,
   footerPriceVisibility,
-  footerBackButtonBgColor,
-  footerBackButtonTextColor,
-  footerBackButtonBorderColor,
-  footerBackButtonBorderRadius,
   footerNextButtonBgColor,
   footerNextButtonTextColor,
-  footerNextButtonBorderColor,
   footerNextButtonBorderRadius,
   footerDiscountTextVisibility,
   successMessageFontSize,
@@ -109,279 +104,147 @@ function FullPageFooterLayout({
     <div
       style={{
         backgroundColor: footerBgColor,
-        borderRadius: "16px",
-        padding: 0,
-        minWidth: "520px",
-        maxWidth: "680px",
-        display: "block",
+        borderRadius: `${footerBorderRadius || 16}px`,
+        minWidth: "480px",
+        maxWidth: "640px",
         border: "1px solid rgba(0, 0, 0, 0.08)",
         boxShadow: "0 10px 40px rgba(0, 0, 0, 0.18)",
         overflow: "hidden",
         ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
       }}
     >
-      {/* SECTION 0: Success Banner (Beco-style — shown when discount unlocked) */}
+      {/* Callout banner — shown at top when discount unlocked, matches .footer-callout-banner */}
       {footerDiscountTextVisibility && showSuccessBanner && (
         <div
           style={{
-            width: "100%",
             backgroundColor: successMessageBgColor,
             color: successMessageTextColor,
-            textAlign: "center",
-            padding: "10px 16px",
+            padding: "8px 16px",
             fontSize: `${successMessageFontSize}px`,
             fontWeight: successMessageFontWeight,
-            lineHeight: 1.4,
-            boxSizing: "border-box",
-            ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
-          }}
-        >
-          🎉 Best Deal Unlocked! You&apos;ve got <strong>10% off</strong>
-        </div>
-      )}
-
-      {/* SECTION 1: Progress / Discount Message (shown when discount not yet unlocked) */}
-      {footerDiscountTextVisibility && !showSuccessBanner && (
-        <div
-          style={{
-            padding: "16px 40px 12px",
             textAlign: "center",
+            lineHeight: 1.4,
             ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
           }}
         >
-          <div
-            style={{
-              fontSize: "15px",
-              fontWeight: 600,
-              color: "#374151",
-            }}
-          >
-            Add 1 more item to get <strong>10% off</strong>
-          </div>
+          🎉 You unlocked 20% off!
         </div>
       )}
 
-      {/* SECTION 2: Scrollable Product Tiles */}
+      {/* Footer bar — matches .footer-bar: thumbstrip | centre | cta */}
       <div
         style={{
           display: "flex",
-          justifyContent: "center",
-          padding: "12px 24px",
+          alignItems: "center",
+          gap: "12px",
+          padding: "0 16px",
+          height: "72px",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            gap: "16px",
-            overflowX: "auto",
-            padding: "10px 44px",
-            maxWidth: "100%",
-            alignItems: "center",
-          }}
-        >
-          {SAMPLE_PRODUCTS.map((product, i) => (
+        {/* Left: overlapping circular thumbnails — matches .footer-thumbstrip */}
+        <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+          {SAMPLE_PRODUCTS.map((_, i) => (
             <div
               key={i}
               style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: "#E5E7EB",
+                border: "2px solid #fff",
+                marginLeft: i === 0 ? 0 : "-10px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
                 display: "flex",
-                flexDirection: "row",
                 alignItems: "center",
-                gap: "10px",
-                padding: "8px 12px",
-                background: "#f8f9fa",
-                border: "1px solid rgba(0, 0, 0, 0.08)",
-                borderRadius: "8px",
+                justifyContent: "center",
                 flexShrink: 0,
-                minWidth: "160px",
-                maxWidth: "180px",
-                position: "relative",
               }}
             >
-              {/* Tile Image + Quantity Badge */}
-              <div style={{ position: "relative", flexShrink: 0, width: "44px", height: "44px" }}>
-                <div
-                  style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "6px",
-                    background: "#E5E7EB",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div style={{ width: "28px", height: "28px", backgroundColor: "#D1D5DB", borderRadius: "4px" }} />
-                </div>
-                {/* Quantity Badge */}
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "-6px",
-                    right: "-6px",
-                    minWidth: "20px",
-                    height: "20px",
-                    padding: "0 5px",
-                    background: footerNextButtonBgColor,
-                    color: footerNextButtonTextColor,
-                    borderRadius: "10px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)",
-                  }}
-                >
-                  {product.qty}
-                </span>
-              </div>
-
-              {/* Tile Info */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0, flex: 1 }}>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "#333",
-                    lineHeight: 1.3,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {product.name}
-                </span>
-                {product.variant && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "#666",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {product.variant}
-                  </span>
-                )}
-              </div>
-
-              {/* Remove Button */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "-8px",
-                  right: "-8px",
-                  width: "22px",
-                  height: "22px",
-                  background: "#ff4444",
-                  color: "#fff",
-                  border: "2px solid #fff",
-                  borderRadius: "50%",
-                  fontSize: "13px",
-                  fontWeight: "bold",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.2)",
-                  lineHeight: 1,
-                }}
-              >
-                &times;
-              </div>
+              <div style={{ width: "24px", height: "24px", background: "#D1D5DB", borderRadius: "3px" }} />
             </div>
           ))}
         </div>
-      </div>
 
-      {/* SECTION 3: Navigation — Back | Total | Next */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "16px",
-          padding: `12px 24px ${footerPadding}px`,
-        }}
-      >
-        {/* Back Button */}
-        <div style={highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}}>
-          <button
-            style={{
-              backgroundColor: footerBackButtonBgColor,
-              color: footerBackButtonTextColor,
-              border: `1px solid ${footerBackButtonBorderColor}`,
-              borderRadius: `${footerBackButtonBorderRadius || 50}px`,
-              padding: "12px 28px",
-              fontSize: "14px",
-              fontWeight: 600,
-              cursor: "pointer",
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-              minWidth: "100px",
-            }}
-          >
-            Back
-          </button>
-        </div>
-
-        {/* Total Section (between buttons) */}
-        {footerPriceVisibility && (
+        {/* Centre: stacked toggle + total — matches .footer-centre */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: "3px",
+            minWidth: 0,
+          }}
+        >
+          {/* Toggle row — matches .footer-toggle */}
           <div
             style={{
               display: "flex",
-              flexDirection: "row",
               alignItems: "center",
-              gap: "8px",
-              padding: "0 20px",
-              ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
+              gap: "4px",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#333",
+              cursor: "pointer",
             }}
           >
-            <span style={{ fontSize: "20px", fontWeight: 550, color: "#333" }}>Total</span>
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px" }}>
+            <span>3/3 Products</span>
+            <svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 8l5 5 5-5"/>
+            </svg>
+          </div>
+
+          {/* Total area — matches .footer-total-area */}
+          {footerPriceVisibility && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                flexWrap: "wrap",
+                ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
+              }}
+            >
+              <span style={{ fontSize: "11px", color: "#666" }}>Total:</span>
               <span
                 style={{
-                  color: footerStrikePriceColor,
                   fontSize: `${footerStrikeFontSize}px`,
                   fontWeight: footerStrikeFontWeight,
+                  color: footerStrikePriceColor,
                   textDecoration: "line-through",
                 }}
               >
-                $24.99
+                $89.97
               </span>
               <span
                 style={{
-                  color: footerFinalPriceColor,
                   fontSize: `${footerFinalPriceFontSize}px`,
                   fontWeight: footerFinalPriceFontWeight,
+                  color: footerFinalPriceColor,
                 }}
               >
-                $19.99
+                $71.98
               </span>
-              {/* Discount badge (Beco-style) */}
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  backgroundColor: successMessageBgColor,
-                  color: successMessageTextColor,
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "3px 8px",
-                  borderRadius: "12px",
-                  whiteSpace: "nowrap",
-                  letterSpacing: "0.3px",
-                }}
-              >
-                20% OFF
-              </span>
+              {footerDiscountTextVisibility && (
+                <span
+                  style={{
+                    backgroundColor: successMessageBgColor,
+                    color: successMessageTextColor,
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    padding: "2px 6px",
+                    borderRadius: "100px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  20% OFF
+                </span>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Next Button */}
+        {/* Right: CTA button — matches .footer-cta-btn */}
         <div style={highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}}>
           <button
             style={{
@@ -389,13 +252,13 @@ function FullPageFooterLayout({
               color: footerNextButtonTextColor,
               border: "none",
               borderRadius: `${footerNextButtonBorderRadius || 50}px`,
-              padding: "12px 28px",
+              padding: "10px 20px",
               fontSize: "14px",
               fontWeight: 600,
               cursor: "pointer",
-              textTransform: "uppercase",
+              textTransform: "uppercase" as const,
               letterSpacing: "0.5px",
-              minWidth: "100px",
+              flexShrink: 0,
             }}
           >
             Next

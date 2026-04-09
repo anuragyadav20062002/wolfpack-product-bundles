@@ -22,7 +22,7 @@ import {
   Icon,
 } from "@shopify/polaris";
 import { CheckCircleIcon, AlertTriangleIcon, StarFilledIcon } from "@shopify/polaris-icons";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import { BillingService } from "../../services/billing.server";
 import { BundleAnalyticsService } from "../../services/bundle-analytics.server";
 import { PLANS } from "../../constants/plans";
@@ -43,7 +43,7 @@ import {
 } from "../../components/billing";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireAdminSession(request);
   const shopDomain = session.shop;
 
   try {
@@ -99,7 +99,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const { admin, session } = await authenticate.admin(request);
+  const { admin, session } = await requireAdminSession(request);
   const shopDomain = session.shop;
 
   const formData = await request.formData();
