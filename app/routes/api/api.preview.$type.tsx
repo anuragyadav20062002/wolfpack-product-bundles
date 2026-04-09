@@ -215,6 +215,34 @@ const pdpPageHtml = `
         </div>
 
       </div>
+
+      <!-- Empty-state grid — shown when DCP widgetStyle section is active so merchants
+           can preview empty-state card styling (bg, border color, text, border style).
+           Hidden by default; swapped in by the DCP_SECTION_CHANGE handler below. -->
+      <div class="product-grid dcp-empty-grid" style="display:none;">
+        <div class="empty-state-card">
+          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-state-card-text">Select T-Shirts</p>
+        </div>
+        <div class="empty-state-card">
+          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-state-card-text">Select Bottoms</p>
+        </div>
+        <div class="empty-state-card">
+          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <p class="empty-state-card-text">Select Accessories</p>
+        </div>
+      </div>
+
     </div>
 
     <!-- Discount messaging in header area -->
@@ -810,6 +838,18 @@ function getPreviewScript(type: string): string {
           grid.innerHTML = grid.dataset.originalHtml;
           delete grid.dataset.originalHtml;
         }
+      }
+
+      // PDP only: swap product grid ↔ empty-state grid when on widgetStyle section so
+      // merchants can preview empty state card bg/border/text colour changes live.
+      // These elements only exist in the PDP preview HTML — querySelector returns null
+      // for FPB, so the null-checks make this a no-op for the FPB preview script.
+      var productGrid = document.querySelector('.product-grid:not(.dcp-empty-grid)');
+      var emptyGrid = document.querySelector('.dcp-empty-grid');
+      if (productGrid && emptyGrid) {
+        var showEmpty = section === 'widgetStyle';
+        productGrid.style.display = showEmpty ? 'none' : '';
+        emptyGrid.style.display = showEmpty ? '' : 'none';
       }
     }
   });
