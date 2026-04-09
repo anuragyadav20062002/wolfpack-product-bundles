@@ -50,7 +50,15 @@ export const FPB_DCP_CONFIG: DCPGroup[] = [
     hasChildren: false,
     sectionKey: 'promoBanner' as const,
   },
-  // 4–6 — shared base controls
+  // 4 — FPB-specific badge controls
+  {
+    key: 'fpbBadges' as const,
+    label: 'Product Badges',
+    description: 'Free gift and included badge image and placement on product cards',
+    hasChildren: false,
+    sectionKey: 'fpbBadges' as const,
+  },
+  // 5–7 — shared base controls
   buildFpbProductCard(),
   BASE_DCP_CONFIG.find((g) => g.key === 'bundleFooter')!,
   BASE_DCP_CONFIG.find((g) => g.key === 'general')!,

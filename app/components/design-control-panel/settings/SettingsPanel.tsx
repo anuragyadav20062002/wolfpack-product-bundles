@@ -27,6 +27,7 @@ import { AccessibilitySettings } from "./AccessibilitySettings";
 import { WidgetStyleSettings } from "./WidgetStyleSettings";
 import { TierPillSettings } from "./TierPillSettings";
 import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
+import { FPBBadgesSettings } from "./FPBBadgesSettings";
 
 /**
  * Maps each section key to the DesignSettings keys it controls.
@@ -130,6 +131,10 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
     "tierPillBorderRadius", "tierPillHeight", "tierPillGap", "tierPillFontSize",
     "tierPillFontWeight",
   ],
+  fpbBadges: [
+    "freeGiftBadgeUrl", "freeGiftBadgePosition",
+    "includedBadgeUrl", "includedBadgePosition",
+  ],
 };
 
 /**
@@ -164,36 +169,34 @@ export function SettingsPanel({
     if (!canReset) return <>{content}</>;
     return (
       <>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-          {pendingReset ? (
-            <>
-              <span style={{ fontSize: "12px", color: "#c0392b", fontWeight: 500 }}>
+        {pendingReset ? (
+          <div style={{
+            background: "#FEF2F2",
+            border: "1px solid #FECACA",
+            borderRadius: "10px",
+            padding: "14px 16px",
+            marginBottom: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+          }}>
+            <div>
+              <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#991B1B" }}>
                 Reset this section to defaults?
-              </span>
-              <button
-                onClick={handleResetSection}
-                style={{
-                  background: "#c0392b",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "6px",
-                  padding: "4px 10px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  lineHeight: "1.4",
-                }}
-              >
-                Yes, reset
-              </button>
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#B91C1C" }}>
+                All changes in this section will be lost.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
               <button
                 onClick={() => setPendingReset(false)}
                 style={{
-                  background: "transparent",
-                  color: "#616161",
-                  border: "1px solid #d1d1d1",
+                  background: "#fff",
+                  color: "#374151",
+                  border: "1px solid #D1D5DB",
                   borderRadius: "6px",
-                  padding: "4px 10px",
+                  padding: "6px 14px",
                   fontSize: "12px",
                   fontWeight: 500,
                   cursor: "pointer",
@@ -202,35 +205,55 @@ export function SettingsPanel({
               >
                 Cancel
               </button>
-            </>
-          ) : (
+              <button
+                onClick={handleResetSection}
+                style={{
+                  background: "#DC2626",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "6px 14px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  lineHeight: "1.4",
+                }}
+              >
+                Yes, reset
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
             <button
               onClick={() => setPendingReset(true)}
               style={{
                 background: "transparent",
-                color: "#c0392b",
-                border: "1px solid #c0392b",
+                color: "#B91C1C",
+                border: "1px solid #FECACA",
                 borderRadius: "6px",
-                padding: "4px 10px",
+                padding: "5px 12px",
                 fontSize: "12px",
                 fontWeight: 500,
                 cursor: "pointer",
                 lineHeight: "1.4",
-                transition: "background 0.12s, color 0.12s",
+                transition: "background 0.12s, color 0.12s, border-color 0.12s",
               }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = "#c0392b";
+                (e.currentTarget as HTMLButtonElement).style.background = "#DC2626";
                 (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "#DC2626";
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-                (e.currentTarget as HTMLButtonElement).style.color = "#c0392b";
+                (e.currentTarget as HTMLButtonElement).style.color = "#B91C1C";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "#FECACA";
               }}
             >
               Reset to defaults
             </button>
-          )}
-        </div>
+          </div>
+        )}
         <Divider />
         {content}
       </>
@@ -295,6 +318,8 @@ export function SettingsPanel({
         return <TierPillSettings settings={settings} onUpdate={onUpdate} />;
       case "modalCloseButton":
         return <ModalCloseButtonSettings settings={settings} onUpdate={onUpdate} />;
+      case "fpbBadges":
+        return <FPBBadgesSettings settings={settings} onUpdate={onUpdate} />;
       case "customCss":
         return (
           <CustomCssSettings
