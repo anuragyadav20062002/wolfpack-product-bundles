@@ -111,6 +111,9 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
   widgetStyle: [
     "widgetStyle", "bottomSheetOverlayOpacity", "bottomSheetAnimationDuration",
     "bundleBgColor", "drawerBgColor", "footerScrollBarColor",
+    // Empty State Cards (merged from emptyState subsection for PDP DCP)
+    "emptyStateCardBgColor", "emptyStateCardBorderColor",
+    "emptyStateTextColor", "emptyStateBorderStyle", "emptySlotBorderStyle",
   ],
   searchInput: [
     "searchInputBgColor", "searchInputBorderColor", "searchInputFocusBorderColor",

@@ -1,4 +1,5 @@
 import { BlockStack, Text, Divider, Button, ButtonGroup, RangeSlider } from "@shopify/polaris";
+import { InlineColorInput } from "../common/InlineColorInput";
 import type { SettingsComponentProps } from "./types";
 
 export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentProps) {
@@ -53,6 +54,56 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
           Solid
         </Button>
       </ButtonGroup>
+
+      <Divider />
+
+      <Text as="h3" variant="headingMd">
+        Empty State Cards
+      </Text>
+      <Text as="p" variant="bodySm" tone="subdued">
+        Appearance of empty selection slots shown in the bundle picker before products are chosen.
+      </Text>
+
+      <InlineColorInput
+        id="emptyStateCardBgColorInput"
+        label="Card Background Color"
+        value={settings.emptyStateCardBgColor}
+        onChange={(value) => onUpdate("emptyStateCardBgColor", value)}
+      />
+
+      <InlineColorInput
+        id="emptyStateCardBorderColorInput"
+        label="Card Border Color"
+        value={settings.emptyStateCardBorderColor}
+        onChange={(value) => onUpdate("emptyStateCardBorderColor", value)}
+      />
+
+      <InlineColorInput
+        id="emptyStateTextColorInput"
+        label="Text Color"
+        value={settings.emptyStateTextColor}
+        onChange={(value) => onUpdate("emptyStateTextColor", value)}
+      />
+
+      <BlockStack gap="200">
+        <Text as="p" variant="bodyMd" fontWeight="medium">
+          Card Border Style
+        </Text>
+        <ButtonGroup variant="segmented">
+          <Button
+            pressed={settings.emptyStateBorderStyle === "solid"}
+            onClick={() => onUpdate("emptyStateBorderStyle", "solid")}
+          >
+            Solid
+          </Button>
+          <Button
+            pressed={(settings.emptyStateBorderStyle ?? "dashed") === "dashed"}
+            onClick={() => onUpdate("emptyStateBorderStyle", "dashed")}
+          >
+            Dashed
+          </Button>
+        </ButtonGroup>
+      </BlockStack>
 
     </BlockStack>
   );

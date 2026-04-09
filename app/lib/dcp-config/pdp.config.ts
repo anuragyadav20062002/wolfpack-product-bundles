@@ -2,9 +2,8 @@ import { BASE_DCP_CONFIG } from './base.config';
 import type { DCPGroup } from './types';
 
 const PDP_GENERAL_EXTRAS = [
-  { key: 'emptyState' as const, label: 'Empty State', description: 'Empty slot appearance shown before products are added to the bundle' },
   { key: 'modalCloseButton' as const, label: 'Modal Close Button', description: 'Close button styling in the product detail modal' },
-  { key: 'widgetStyle' as const, label: 'Widget Style', description: 'Widget presentation style, background, and drawer animation' },
+  { key: 'widgetStyle' as const, label: 'Widget Style', description: 'Widget presentation style, overlay, animation, and empty state card styling' },
 ];
 
 const PDP_BADGE_GROUP: DCPGroup = {
