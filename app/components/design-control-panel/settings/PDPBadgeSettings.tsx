@@ -45,15 +45,14 @@ function BadgePositionPicker({
   );
 }
 
-export function FPBBadgesSettings({ settings, onUpdate }: SettingsComponentProps) {
+export function PDPBadgeSettings({ settings, onUpdate }: SettingsComponentProps) {
   return (
     <BlockStack gap="400">
-      {/* ── Free Gift Badge ── */}
       <Text as="h2" variant="headingMd">
         Free Gift Badge
       </Text>
       <Text as="p" variant="bodySm" tone="subdued">
-        Shown on product cards in free-gift steps. Leave the image blank to use the built-in "Free" label.
+        Shown on locked gift-step slot cards. Leave the image blank to use the built-in "Free" label.
       </Text>
       <Divider />
 
@@ -99,60 +98,6 @@ export function FPBBadgesSettings({ settings, onUpdate }: SettingsComponentProps
       <BadgePositionPicker
         value={settings.freeGiftBadgePosition ?? "top-left"}
         onChange={(v) => onUpdate("freeGiftBadgePosition", v)}
-      />
-
-      <Divider />
-
-      {/* ── Included (Default) Badge ── */}
-      <Text as="h2" variant="headingMd">
-        Included Badge
-      </Text>
-      <Text as="p" variant="bodySm" tone="subdued">
-        Shown on product cards in default (pre-selected) steps. Leave the image blank to use the built-in "Included" label.
-      </Text>
-
-      {/* Live preview */}
-      <div style={{ display: "flex", justifyContent: "center", paddingTop: "4px" }}>
-        <BadgePreviewCard
-          badgeUrl={settings.includedBadgeUrl ?? ""}
-          position={settings.includedBadgePosition ?? "top-left"}
-          defaultLabel="Included"
-          defaultBadgeBg="#D1FAE5"
-          defaultBadgeTextColor="#065F46"
-          heading="Preview"
-        />
-      </div>
-
-      <Text as="p" variant="bodyMd" fontWeight="medium">
-        Custom Badge Image
-      </Text>
-      {/* Help text */}
-      <div
-        style={{
-          background: "#F0F7FF",
-          border: "1px solid #B3D4F5",
-          borderRadius: "6px",
-          padding: "8px 12px",
-          fontSize: "12px",
-          color: "#1D4082",
-          lineHeight: 1.5,
-        }}
-      >
-        {BADGE_HELP_TEXT}
-      </div>
-      <FilePicker
-        value={settings.includedBadgeUrl ?? ""}
-        onChange={(url) => onUpdate("includedBadgeUrl", url ?? "")}
-        label="Included Badge Image"
-        hideCropEditor
-      />
-
-      <Text as="p" variant="bodyMd" fontWeight="medium">
-        Badge Placement
-      </Text>
-      <BadgePositionPicker
-        value={settings.includedBadgePosition ?? "top-left"}
-        onChange={(v) => onUpdate("includedBadgePosition", v)}
       />
     </BlockStack>
   );

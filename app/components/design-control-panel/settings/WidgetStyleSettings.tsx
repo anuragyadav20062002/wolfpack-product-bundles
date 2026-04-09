@@ -1,6 +1,5 @@
 import { BlockStack, Text, Divider, Button, ButtonGroup, RangeSlider } from "@shopify/polaris";
 import { InlineColorInput } from "../common/InlineColorInput";
-import { FilePicker } from "./FilePicker";
 import type { SettingsComponentProps } from "./types";
 
 export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentProps) {
@@ -56,46 +55,56 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
         </Button>
       </ButtonGroup>
 
-      {/* Free Gift Badge — image upload + position picker */}
       <Divider />
 
       <Text as="h3" variant="headingMd">
-        Free Gift Badge
+        Empty State Cards
       </Text>
       <Text as="p" variant="bodySm" tone="subdued">
-        Shown on locked gift-step slot cards. Leave blank to use the built-in "Free" label.
+        Appearance of empty selection slots shown in the bundle picker before products are chosen.
       </Text>
-      <FilePicker
-        value={settings.freeGiftBadgeUrl ?? ""}
-        onChange={(url) => onUpdate("freeGiftBadgeUrl", url ?? "")}
-        label="Free Gift Badge Image"
-        hideCropEditor
+
+      <InlineColorInput
+        id="emptyStateCardBgColorInput"
+        label="Card Background Color"
+        value={settings.emptyStateCardBgColor}
+        onChange={(value) => onUpdate("emptyStateCardBgColor", value)}
       />
 
-      <Text as="p" variant="bodyMd" fontWeight="medium">
-        Badge Placement
-      </Text>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
-        {(["top-left", "top-right", "bottom-left", "bottom-right"] as const).map((pos) => (
-          <button
-            key={pos}
-            onClick={() => onUpdate("freeGiftBadgePosition", pos)}
-            style={{
-              padding: "7px 10px",
-              fontSize: "12px",
-              fontWeight: (settings.freeGiftBadgePosition ?? "top-left") === pos ? 600 : 400,
-              borderRadius: "6px",
-              border: (settings.freeGiftBadgePosition ?? "top-left") === pos ? "2px solid #111" : "1px solid #D1D5DB",
-              background: (settings.freeGiftBadgePosition ?? "top-left") === pos ? "#F3F4F6" : "#fff",
-              cursor: "pointer",
-              textAlign: "center" as const,
-              transition: "border 0.1s, background 0.1s",
-            }}
+      <InlineColorInput
+        id="emptyStateCardBorderColorInput"
+        label="Card Border Color"
+        value={settings.emptyStateCardBorderColor}
+        onChange={(value) => onUpdate("emptyStateCardBorderColor", value)}
+      />
+
+      <InlineColorInput
+        id="emptyStateTextColorInput"
+        label="Text Color"
+        value={settings.emptyStateTextColor}
+        onChange={(value) => onUpdate("emptyStateTextColor", value)}
+      />
+
+      <BlockStack gap="200">
+        <Text as="p" variant="bodyMd" fontWeight="medium">
+          Card Border Style
+        </Text>
+        <ButtonGroup variant="segmented">
+          <Button
+            pressed={settings.emptyStateBorderStyle === "solid"}
+            onClick={() => onUpdate("emptyStateBorderStyle", "solid")}
           >
-            {pos === "top-left" ? "↖ Top Left" : pos === "top-right" ? "↗ Top Right" : pos === "bottom-left" ? "↙ Bottom Left" : "↘ Bottom Right"}
-          </button>
-        ))}
-      </div>
+            Solid
+          </Button>
+          <Button
+            pressed={(settings.emptyStateBorderStyle ?? "dashed") === "dashed"}
+            onClick={() => onUpdate("emptyStateBorderStyle", "dashed")}
+          >
+            Dashed
+          </Button>
+        </ButtonGroup>
+      </BlockStack>
+
     </BlockStack>
   );
 }
