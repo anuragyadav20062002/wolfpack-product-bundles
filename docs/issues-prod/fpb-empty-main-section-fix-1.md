@@ -33,6 +33,23 @@ hide the parent `shopify-section` using `.shopify-section:has(.main-page-title)`
 - Verified via Chrome DevTools: section hidden, widget now flush against navbar
 - No widget rebuild needed (Liquid-only change)
 
+### 2026-04-08 10:30 - Root cause: widget rendering below footer
+- Root cause identified: `bundle-full-page.liquid` (target: section) was deleted in
+  the embed architecture migration (commit a67339d). The theme still references this block.
+- Shopify reports: `app block path "shopify://apps/wolfpack-product-bundles-sit/blocks/bundle-full-page/..." does not exist`
+- The body-level embed (`bundle-full-page-embed.liquid`, target: body) renders after the footer
+- Fix: Restored `extensions/bundle-builder/blocks/bundle-full-page.liquid` as a section block
+  that renders inside <main> (before the footer)
+- Added JS in restored block to hide body-embed duplicate when section block is active
+
+### 2026-04-08 10:45 - Section block restore didn't work — UUID mismatch
+- The restored `bundle-full-page.liquid` file was deployed but Shopify still reports "does not exist"
+- Root cause: When a block is deleted and re-deployed, Shopify assigns a new internal UUID.
+  The theme template still references the OLD UUID registered on first deploy — permanent mismatch.
+- New fix: Add DOM-relocation JS to `bundle-full-page-embed.liquid` — moves the body-embed
+  block node into `<main>` on DOMContentLoaded so it renders before the footer visually.
+- This avoids needing to touch the theme customizer or block UUID at all.
+
 ## Related Documentation
 - `extensions/bundle-builder/blocks/bundle-full-page-embed.liquid`
 

@@ -23,13 +23,13 @@ import {
   Divider,
 } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import { useState } from "react";
 import { AppLogger } from "../../lib/logger";
 import styles from "../../styles/routes/app-index.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireAdminSession(request);
 
   // App API key (client_id) is required for the theme editor deep link.
   // Per Shopify docs: addAppBlockId={api_key}/{handle}

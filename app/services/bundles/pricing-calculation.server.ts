@@ -9,6 +9,7 @@
  */
 
 import { AppLogger } from "../../lib/logger";
+import type { ShopifyAdmin } from "../../lib/auth-guards.server";
 
 // Constants
 const MINIMUM_BUNDLE_PRICE = 0.01; // Shopify minimum price (1 cent)
@@ -45,7 +46,9 @@ function cleanExpiredCache(): void {
 
   if (removedCount > 0) {
     cacheStats.size = priceCache.size;
-    console.log(`[PRICE_CACHE] Cleaned ${removedCount} expired entries. Current size: ${priceCache.size}`);
+    AppLogger.debug("[PRICE_CACHE] Cleaned expired entries", {
+      component: "pricing-calculation",
+    }, { removedCount, currentSize: priceCache.size });
   }
 }
 
@@ -105,13 +108,13 @@ export function clearPriceCache(): void {
   const previousSize = priceCache.size;
   priceCache.clear();
   cacheStats = { hits: 0, misses: 0, size: 0 };
-  console.log(`[PRICE_CACHE] Cleared cache. Removed ${previousSize} entries.`);
+  AppLogger.debug("[PRICE_CACHE] Cache cleared", { component: "pricing-calculation" }, { removedCount: previousSize });
 }
 
 /**
  * Get product variant price from Shopify (with caching)
  */
-export async function getProductPrice(admin: any, productId: string): Promise<string> {
+export async function getProductPrice(admin: ShopifyAdmin, productId: string): Promise<string> {
   try {
     const cleanProductId = productId.replace('gid://shopify/Product/', '');
     const cacheKey = cleanProductId;
@@ -156,8 +159,11 @@ export async function getProductPrice(admin: any, productId: string): Promise<st
     setCachedPrice(cacheKey, DEFAULT_FALLBACK_PRICE);
     return DEFAULT_FALLBACK_PRICE;
   } catch (error) {
-    console.error('Error fetching product price:', error);
-    return DEFAULT_FALLBACK_PRICE; // Fallback price
+    AppLogger.warn("[PRICING] Failed to fetch product price, using fallback", {
+      component: "pricing-calculation",
+      operation: "getProductPrice",
+    }, error instanceof Error ? error : new Error(String(error)));
+    return DEFAULT_FALLBACK_PRICE;
   }
 }
 
@@ -165,13 +171,13 @@ export async function getProductPrice(admin: any, productId: string): Promise<st
  * Calculate total bundle price (for discount conversion)
  * This calculates the AVERAGE expected bundle price based on one product selection per step
  */
-export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): Promise<number> {
+export async function calculateBundleTotalPrice(admin: ShopifyAdmin, stepsData: any[]): Promise<number> {
   try {
     // Clean expired cache entries periodically
     cleanExpiredCache();
 
     if (!stepsData || stepsData.length === 0) {
-      console.log("🔧 [BUNDLE_TOTAL_PRICE] No steps found, returning 0");
+      AppLogger.debug("[BUNDLE_TOTAL_PRICE] No steps found, returning 0", { component: "pricing-calculation" });
       return 0;
     }
 
@@ -191,7 +197,9 @@ export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): P
             stepTotalPrice += parseFloat(productPrice);
             validProductCount++;
           } catch (error) {
-            console.error(`🔧 [BUNDLE_TOTAL_PRICE] Error getting price for product ${stepProduct.id}:`, error);
+            AppLogger.warn("[BUNDLE_TOTAL_PRICE] Error getting price for product", {
+              component: "pricing-calculation",
+            }, { productId: stepProduct.id, error: error instanceof Error ? error.message : String(error) });
           }
         }
 
@@ -204,12 +212,16 @@ export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): P
           totalPrice += stepContribution;
           stepCount++;
 
-          console.log(`🔧 [BUNDLE_TOTAL_PRICE] Step ${stepCount}: avg ₹${stepAveragePrice.toFixed(2)} x ${quantity} = ₹${stepContribution.toFixed(2)} (from ${validProductCount} products)`);
+          AppLogger.debug("[BUNDLE_TOTAL_PRICE] Step contribution", {
+            component: "pricing-calculation",
+          }, { step: stepCount, stepAveragePrice, quantity, stepContribution, validProductCount });
         }
       }
     }
 
-    console.log(`🔧 [BUNDLE_TOTAL_PRICE] Total bundle price (${stepCount} steps): ₹${totalPrice.toFixed(2)}`);
+    AppLogger.debug("[BUNDLE_TOTAL_PRICE] Total bundle price", {
+      component: "pricing-calculation",
+    }, { stepCount, totalPrice });
 
     // Log cache stats for monitoring
     const stats = getPriceCacheStats();
@@ -225,7 +237,10 @@ export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): P
 
     return totalPrice;
   } catch (error) {
-    console.error("🔧 [BUNDLE_TOTAL_PRICE] Error calculating total bundle price:", error);
+    AppLogger.warn("[BUNDLE_TOTAL_PRICE] Error calculating total bundle price", {
+      component: "pricing-calculation",
+      operation: "calculateBundleTotalPrice",
+    }, error instanceof Error ? error : new Error(String(error)));
     return 0;
   }
 }
@@ -234,13 +249,13 @@ export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): P
  * Calculate bundle product price based on component products
  * Customers select ONE product per step, so we calculate average price per step
  */
-export async function calculateBundlePrice(admin: any, bundle: any): Promise<string> {
+export async function calculateBundlePrice(admin: ShopifyAdmin, bundle: any): Promise<string> {
   try {
     // Clean expired cache entries periodically
     cleanExpiredCache();
 
     if (!bundle.steps || bundle.steps.length === 0) {
-      console.log("🔧 [BUNDLE_PRICING] No steps found, using default price of 1.00");
+      AppLogger.debug("[BUNDLE_PRICING] No steps found, using default price", { component: "pricing-calculation" });
       return DEFAULT_BUNDLE_PRICE;
     }
 
@@ -260,7 +275,9 @@ export async function calculateBundlePrice(admin: any, bundle: any): Promise<str
             stepTotalPrice += parseFloat(productPrice);
             validProductCount++;
           } catch (error) {
-            console.error(`🔧 [BUNDLE_PRICING] Error getting price for product ${stepProduct.productId}:`, error);
+            AppLogger.warn("[BUNDLE_PRICING] Error getting price for product", {
+              component: "pricing-calculation",
+            }, { productId: stepProduct.productId, error: error instanceof Error ? error.message : String(error) });
           }
         }
 
@@ -273,12 +290,16 @@ export async function calculateBundlePrice(admin: any, bundle: any): Promise<str
           totalPrice += stepContribution;
           stepCount++;
 
-          console.log(`🔧 [BUNDLE_PRICING] Step ${stepCount}: avg $${stepAveragePrice.toFixed(2)} x ${quantity} = $${stepContribution.toFixed(2)} (from ${validProductCount} products)`);
+          AppLogger.debug("[BUNDLE_PRICING] Step contribution", {
+            component: "pricing-calculation",
+          }, { step: stepCount, stepAveragePrice, quantity, stepContribution, validProductCount });
         }
       }
     }
 
-    console.log(`🔧 [BUNDLE_PRICING] Pre-discount total: $${totalPrice.toFixed(2)} (${stepCount} steps)`);
+    AppLogger.debug("[BUNDLE_PRICING] Pre-discount total", {
+      component: "pricing-calculation",
+    }, { totalPrice, stepCount });
 
     // Apply discount if configured (NEW nested structure)
     if (bundle.pricing && bundle.pricing.enabled && bundle.pricing.rules) {
@@ -287,12 +308,14 @@ export async function calculateBundlePrice(admin: any, bundle: any): Promise<str
         const discountPercent = parseFloat(rules[0].discount?.value) || 0;
         const discountAmount = totalPrice * (discountPercent / 100);
         totalPrice = totalPrice - discountAmount;
-        console.log(`🔧 [BUNDLE_PRICING] Applied ${discountPercent}% discount: -$${discountAmount.toFixed(2)}, final: $${totalPrice.toFixed(2)}`);
+        AppLogger.debug("[BUNDLE_PRICING] Applied discount", {
+          component: "pricing-calculation",
+        }, { discountPercent, discountAmount, totalPrice });
       }
     }
 
     const finalPrice = Math.max(totalPrice, MINIMUM_BUNDLE_PRICE);
-    console.log(`🔧 [BUNDLE_PRICING] Final bundle price: $${finalPrice.toFixed(2)}`);
+    AppLogger.debug("[BUNDLE_PRICING] Final bundle price", { component: "pricing-calculation" }, { finalPrice });
 
     // Log cache stats for monitoring
     const stats = getPriceCacheStats();
@@ -308,17 +331,23 @@ export async function calculateBundlePrice(admin: any, bundle: any): Promise<str
 
     return finalPrice.toFixed(2);
   } catch (error) {
-    console.error("🔧 [BUNDLE_PRICING] Error calculating bundle price:", error);
-    return DEFAULT_BUNDLE_PRICE; // Fallback price
+    AppLogger.warn("[BUNDLE_PRICING] Error calculating bundle price, using default", {
+      component: "pricing-calculation",
+      operation: "calculateBundlePrice",
+    }, error instanceof Error ? error : new Error(String(error)));
+    return DEFAULT_BUNDLE_PRICE;
   }
 }
 
 /**
  * Update bundle product variant price in Shopify
  */
-export async function updateBundleProductPrice(admin: any, productId: string, newPrice: string): Promise<void> {
+export async function updateBundleProductPrice(admin: ShopifyAdmin, productId: string, newPrice: string): Promise<void> {
   try {
-    console.log(`🔧 [BUNDLE_PRICING] Updating bundle product ${productId} price to $${newPrice}`);
+    AppLogger.debug("[BUNDLE_PRICING] Updating bundle product price", {
+      component: "pricing-calculation",
+      operation: "updateBundleProductPrice",
+    }, { productId, newPrice });
 
     // First, get the variant ID
     const PRODUCT_VARIANT_QUERY = `
@@ -350,7 +379,9 @@ export async function updateBundleProductPrice(admin: any, productId: string, ne
 
     // Only update if price has changed
     if (currentPrice === newPrice) {
-      console.log(`🔧 [BUNDLE_PRICING] Price unchanged ($${currentPrice}), skipping update`);
+      AppLogger.debug("[BUNDLE_PRICING] Price unchanged, skipping update", {
+        component: "pricing-calculation",
+      }, { currentPrice });
       return;
     }
 
@@ -387,9 +418,14 @@ export async function updateBundleProductPrice(admin: any, productId: string, ne
       throw new Error(`Failed to update variant price: ${updateData.data.productVariantsBulkUpdate.userErrors[0].message}`);
     }
 
-    console.log(`🔧 [BUNDLE_PRICING] Successfully updated bundle product price from $${currentPrice} to $${newPrice}`);
+    AppLogger.debug("[BUNDLE_PRICING] Successfully updated bundle product price", {
+      component: "pricing-calculation",
+    }, { from: currentPrice, to: newPrice });
   } catch (error) {
-    console.error("🔧 [BUNDLE_PRICING] Error updating bundle product price:", error);
+    AppLogger.error("[BUNDLE_PRICING] Error updating bundle product price", {
+      component: "pricing-calculation",
+      operation: "updateBundleProductPrice",
+    }, error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
