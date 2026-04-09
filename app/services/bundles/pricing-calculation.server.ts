@@ -9,6 +9,7 @@
  */
 
 import { AppLogger } from "../../lib/logger";
+import type { ShopifyAdmin } from "../../lib/auth-guards.server";
 
 // Constants
 const MINIMUM_BUNDLE_PRICE = 0.01; // Shopify minimum price (1 cent)
@@ -113,7 +114,7 @@ export function clearPriceCache(): void {
 /**
  * Get product variant price from Shopify (with caching)
  */
-export async function getProductPrice(admin: any, productId: string): Promise<string> {
+export async function getProductPrice(admin: ShopifyAdmin, productId: string): Promise<string> {
   try {
     const cleanProductId = productId.replace('gid://shopify/Product/', '');
     const cacheKey = cleanProductId;
@@ -170,7 +171,7 @@ export async function getProductPrice(admin: any, productId: string): Promise<st
  * Calculate total bundle price (for discount conversion)
  * This calculates the AVERAGE expected bundle price based on one product selection per step
  */
-export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): Promise<number> {
+export async function calculateBundleTotalPrice(admin: ShopifyAdmin, stepsData: any[]): Promise<number> {
   try {
     // Clean expired cache entries periodically
     cleanExpiredCache();
@@ -248,7 +249,7 @@ export async function calculateBundleTotalPrice(admin: any, stepsData: any[]): P
  * Calculate bundle product price based on component products
  * Customers select ONE product per step, so we calculate average price per step
  */
-export async function calculateBundlePrice(admin: any, bundle: any): Promise<string> {
+export async function calculateBundlePrice(admin: ShopifyAdmin, bundle: any): Promise<string> {
   try {
     // Clean expired cache entries periodically
     cleanExpiredCache();
@@ -341,7 +342,7 @@ export async function calculateBundlePrice(admin: any, bundle: any): Promise<str
 /**
  * Update bundle product variant price in Shopify
  */
-export async function updateBundleProductPrice(admin: any, productId: string, newPrice: string): Promise<void> {
+export async function updateBundleProductPrice(admin: ShopifyAdmin, productId: string, newPrice: string): Promise<void> {
   try {
     AppLogger.debug("[BUNDLE_PRICING] Updating bundle product price", {
       component: "pricing-calculation",

@@ -132,9 +132,9 @@ export async function convertBundleToStandardMetafields(
  * Update standard Shopify metafields on a product
  */
 export async function updateProductStandardMetafields(
-  admin: any,
+  admin: ShopifyAdmin,
   productId: string,
-  standardMetafields: any
+  standardMetafields: Record<string, unknown>
 ) {
   AppLogger.debug("[STANDARD_METAFIELD] Setting standard Shopify metafields on product", {
     component: "standard-metafields.server",

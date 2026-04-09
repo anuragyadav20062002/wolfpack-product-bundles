@@ -406,18 +406,18 @@ export default function ConfigureBundleFlow() {
 
   // Pricing tier config state (full-page bundles)
   const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
   );
   const originalTierConfigRef = useRef<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
   );
 
   // Admin-controlled step timeline visibility (null = defer to theme editor)
   const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
-    (bundle as any).showStepTimeline !== false  // default true; only false when explicitly saved as false
+    bundle.showStepTimeline !== false  // default true; only false when explicitly saved as false
   );
   const originalShowStepTimelineRef = useRef<boolean>(
-    (bundle as any).showStepTimeline !== false
+    bundle.showStepTimeline !== false
   );
 
   // Widget install loading state
