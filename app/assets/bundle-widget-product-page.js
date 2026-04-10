@@ -529,7 +529,6 @@ class BundleWidgetProductPage {
           <!-- PREV/NEXT nav pill (navy blue) -->
           <div class="bw-bs-nav-pill">
             <button class="modal-nav-button prev-button bw-bs-nav-btn" aria-label="Previous step">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               Prev
             </button>
             <button class="modal-nav-button next-button bw-bs-nav-btn" aria-label="Next step">
@@ -1541,8 +1540,8 @@ class BundleWidgetProductPage {
         ? CurrencyManager.convertAndFormat(firstProduct.price, CurrencyManager.getCurrencyInfo())
         : '';
       promo.innerHTML = `
-        <p class="bw-bs-free-gift-heading">Get a ${ComponentGenerator.escapeHtml(stepName)} worth ${priceStr} absolutely free!</p>
-        <p class="bw-bs-free-gift-subheading">Add ${this.paidSteps.length} product(s) to get 1 of them at 100% off!</p>
+        <p class="bw-bs-free-gift-heading">Free ${ComponentGenerator.escapeHtml(stepName)}!</p>
+        <p class="bw-bs-free-gift-subheading">Add ${this.paidSteps.length} items to unlock</p>
       `;
       bodyEl.insertBefore(promo, productGrid);
     }

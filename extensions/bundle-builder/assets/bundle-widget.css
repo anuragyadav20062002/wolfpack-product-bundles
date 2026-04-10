@@ -2523,10 +2523,19 @@
   display: block;
 }
 
+.bw-bs-panel .modal-step-title {
+  display: none;
+}
+
 .bw-bs-panel .bundle-header-tab.active {
   background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
   color: var(--bundle-header-tab-active-text, #ffffff);
   border-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+  transform: none;
+}
+
+.bw-bs-panel .bundle-header-tab:not(.locked):not(.active):hover {
+  transform: none;
 }
 
 /* Free gift tab — uses DCP tab colors, pill shape */
@@ -2605,7 +2614,8 @@
   padding: 12px;
   background: #ffffff;
   box-shadow: rgba(0, 0, 0, 0.06) 0px 1px 3px 0px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   overflow: visible;
 }
 
@@ -2688,7 +2698,7 @@
 /* ---- Cart count pill (white, floats above nav pill) ---- */
 .bw-bs-cart-pill {
   position: absolute;
-  bottom: 56px;
+  bottom: 44px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -2889,10 +2899,10 @@
 
 /* Free gift modal promo heading */
 .bw-bs-free-gift-promo {
-  padding: 12px 16px 4px;
+  padding: 6px 16px 4px;
   text-align: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .bw-bs-free-gift-heading {
