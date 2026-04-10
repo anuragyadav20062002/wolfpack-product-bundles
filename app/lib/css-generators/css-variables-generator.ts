@@ -188,7 +188,7 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-bottom-sheet-overlay-opacity: ${s.bottomSheetOverlayOpacity ?? 0.5};
   --bundle-bottom-sheet-animation-duration: ${s.bottomSheetAnimationDuration ?? 400}ms;
   /* Bundle Design */
-  --bundle-bg-color: ${s.bundleBgColor || '#FFFFFF'};
+  --bundle-bg-color: ${s.bundleBgColor || 'transparent'};
   --bundle-footer-scrollbar-color: ${s.footerScrollBarColor || globalPrimaryButton};
   /* Product Page Title */
   --bundle-product-page-title-font-color: ${s.productPageTitleFontColor || globalPrimaryText};

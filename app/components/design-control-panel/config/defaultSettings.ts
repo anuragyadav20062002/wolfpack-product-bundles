@@ -136,7 +136,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   tabsBorderRadius: 8,
 
   // Empty State
-  emptyStateCardBgColor: "transparent",
+  emptyStateCardBgColor: "#FFFFFF",
   emptyStateCardBorderColor: "#F6F6F6",
   emptyStateTextColor: "#9CA3AF",
   emptyStateBorderStyle: "dashed",
@@ -169,7 +169,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   toastEnterFromBottom: false,
 
   // Bundle Design
-  bundleBgColor: "#FFFFFF",
+  bundleBgColor: "",
   footerScrollBarColor: "#000000",
 
   // Product Page Title
@@ -286,6 +286,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   emptySlotBorderStyle: "dashed",
   emptySlotBorderColor: "#007AFF",
   freeGiftBadgeUrl: "",
+
   freeGiftBadgePosition: "top-left",
   includedBadgeUrl: "",
   includedBadgePosition: "top-left",
