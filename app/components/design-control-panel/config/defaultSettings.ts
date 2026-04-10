@@ -280,7 +280,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   loadingOverlayTextColor: "#333333",
 
   // Widget style
-  widgetStyle: "classic",
+  widgetStyle: "bottom-sheet",
   bottomSheetOverlayOpacity: 0.5,
   bottomSheetAnimationDuration: 400,
   emptySlotBorderStyle: "dashed",
