@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-10 21:30
+**Last Updated:** 2026-04-10 23:30
 
 ## Overview
 
@@ -83,6 +83,37 @@ Root causes found via Chrome DevTools live DOM inspection:
 Files modified:
 - `extensions/bundle-builder/assets/bundle-widget.css`
 - `app/assets/bundle-widget-product-page.js`
+
+### 2026-04-10 23:00 - Issue 5 Integration Testing Complete
+
+Ran full step-scenario tests via Chrome DevTools JS execution against deployed v2.4.7:
+
+**PASSED:**
+- ✅ Step unlock after product added — Step 2 unlocked correctly on Step 1 completion
+- ✅ Auto-progress to next step — advanced to Step 2 immediately after adding to Step 1
+- ✅ Step 3 (free gift) unlocks when Steps 1+2 complete — `step3Unlocked: true`
+- ✅ Free gift slot card unlocked on product page — `freeGiftSlotUnlocked: true`
+- ✅ Cart badge counter increments — 0 → 1 → 2 correctly
+- ✅ Tab click navigation — switching tabs by click works
+- ✅ Done button shown on last step — `nextBtnText: "Done"` ✅
+- ✅ Inline slot cards update with product name + image after selection
+- ✅ Free gift tab gets `bw-free-gift-tab` class correctly
+
+**BUG FOUND & FIXED:**
+- ❌ → ✅ Prev button blocked when current step is incomplete — `validateStep` was wrongly applied to the `direction < 0` branch in `navigateModal()`. Free gift step (no selection yet) failed validation → Prev showed a toast and didn't navigate. Fixed: removed `validateStep` from Prev branch; going back is always allowed.
+
+**INFRASTRUCTURE NOTE:**
+- ⚠️ Free gift step products slow to load (6+ seconds) — Render.com cold-start delay. Not a code bug. The retry logic handles this but cold-starts on Render's free tier take 3–10s.
+
+File: `app/assets/bundle-widget-product-page.js` — `navigateModal()` direction < 0 branch
+- Commit: (pending — v2.4.8)
+
+### 2026-04-10 23:30 - All Fixes Committed (v2.4.8)
+
+- ✅ Bumped `WIDGET_VERSION` to `2.4.8` in `scripts/build-widget-bundles.js`
+- ✅ Rebuilt widget bundles: product-page 148.3 KB, full-page 257.1 KB
+- ✅ CSS sizes: bundle-widget.css 67,689 B, bundle-widget-full-page.css 96,310 B — both under 100,000 B
+- Next: Deploy to SIT with `npm run deploy:sit`
 
 ### 2026-04-10 21:45 - Issue 8: Footer background mismatch fixed
 
