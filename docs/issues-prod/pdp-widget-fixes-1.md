@@ -49,3 +49,13 @@ Files to modify:
 
 **Build:** `npm run build:widgets` — product-page bundle 148.4 KB ✅
 **CSS sizes:** bundle-widget.css 67,057 B, bundle-widget-full-page.css 96,310 B — both under 100,000 B ✅
+- Commit: 879aab8
+
+### 2026-04-10 21:45 - Issue 8: Footer background mismatch fixed
+
+Root cause: `.modal-body` had explicit `background-color: #F3F4F6` (gray) while the BS footer was transparent and showed the panel's `rgb(244, 249, 249)` (teal). The color mismatch made the footer strip look like a separate component.
+
+Fix: Added `.bw-bs-panel .modal-body { background: transparent; }` and `.bw-bs-body { background: transparent; }` so both body and footer area uniformly inherit the panel background — no visible strip.
+
+- ✅ `extensions/bundle-builder/assets/bundle-widget.css` — 2 transparent background overrides added
+- Commit: (pending)
