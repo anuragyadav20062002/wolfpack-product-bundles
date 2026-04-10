@@ -34,6 +34,21 @@ export function WidgetStyleSettings({ settings, onUpdate }: SettingsComponentPro
 
       <Divider />
 
+      <Text as="h3" variant="headingMd">
+        Widget Container
+      </Text>
+      <Text as="p" variant="bodySm" tone="subdued">
+        Background color of the widget container on the product page. Leave empty (or reset to defaults) to keep it transparent so it blends with your theme.
+      </Text>
+      <InlineColorInput
+        id="bundleBgColorInput"
+        label="Container Background Color"
+        value={settings.bundleBgColor || "#FFFFFF"}
+        onChange={(value) => onUpdate("bundleBgColor", value)}
+      />
+
+      <Divider />
+
       <Text as="p" variant="bodyMd" fontWeight="medium">
         Empty Slot Card Border Style
       </Text>
