@@ -2402,7 +2402,10 @@
    ============================================================ */
 
 /* ---- Overlay ---- */
+/* #bw-bs-overlay ID selector overrides Shopify Dawn's "div:empty { display:none }" rule */
+#bw-bs-overlay,
 .bw-bs-overlay {
+  display: block;
   position: fixed;
   inset: 0;
   background: rgba(30, 30, 30, var(--bundle-bottom-sheet-overlay-opacity, 0.5));
@@ -2447,7 +2450,7 @@
 .bw-bs-header {
   flex-shrink: 0;
   position: relative;
-  padding: 12px 20px 6px;
+  padding: 12px 52px 6px 20px;
 }
 
 /* ---- Close button — desktop × (absolute top-right) ---- */
@@ -2618,8 +2621,8 @@
   border-radius: var(--bundle-product-card-border-radius, 16px);
   border: var(--bundle-product-card-border-width, 1.5px) solid var(--bundle-product-card-border-color, #e5e7eb);
   padding: 12px;
-  background: #ffffff;
-  box-shadow: rgba(0, 0, 0, 0.06) 0px 1px 3px 0px;
+  background: var(--bundle-product-card-bg, #ffffff);
+  box-shadow: var(--bundle-product-card-shadow, rgba(0, 0, 0, 0.06) 0px 1px 3px 0px);
   display: flex;
   flex-direction: column;
   overflow: visible;
@@ -2651,22 +2654,22 @@
 }
 
 .bw-bs-panel .modal-body .product-card .product-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--bundle-product-title-color, var(--bundle-global-primary-button, rgb(69, 150, 227)));
+  font-size: var(--bundle-product-card-font-size, 16px);
+  font-weight: var(--bundle-product-card-font-weight, 700);
+  color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, #111827));
   margin: 8px 0 4px;
   line-height: 1.3;
 }
 
 .bw-bs-panel .modal-body .product-card .product-price {
-  font-size: 16px;
-  font-weight: 700;
-  color: #000000;
+  font-size: var(--bundle-product-final-price-font-size, 16px);
+  font-weight: var(--bundle-product-final-price-font-weight, 700);
+  color: var(--bundle-product-final-price-color, #000000);
 }
 
 .bw-bs-panel .modal-body .product-card .product-add-btn {
-  background: var(--bundle-global-primary-button, #1e3a8a);
-  color: #ffffff;
+  background: var(--bundle-button-bg, var(--bundle-global-primary-button, #1e3a8a));
+  color: var(--bundle-button-text-color, #ffffff);
   border: none;
   border-radius: 40px;
   padding: 6px 10px;
@@ -2726,8 +2729,8 @@
   align-items: center;
   background: var(--bundle-global-primary-button, rgb(30, 58, 138));
   border-radius: 50px;
-  padding: 14px 25px;
-  gap: 40px;
+  padding: 18px 36px;
+  gap: 52px;
   box-shadow: rgba(30, 58, 138, 0.35) 0px 8px 20px 0px;
 }
 
@@ -2739,7 +2742,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;

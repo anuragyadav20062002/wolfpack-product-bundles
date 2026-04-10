@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-10 21:30
+**Last Updated:** 2026-04-10 23:30
 
 ## Overview
 
@@ -50,6 +50,70 @@ Files to modify:
 **Build:** `npm run build:widgets` — product-page bundle 148.4 KB ✅
 **CSS sizes:** bundle-widget.css 67,057 B, bundle-widget-full-page.css 96,310 B — both under 100,000 B ✅
 - Commit: 879aab8
+
+### 2026-04-10 22:30 - Issues 1, 2, 3, 4, 6 Fixed (Audit Round 2)
+
+Root causes found via Chrome DevTools live DOM inspection:
+
+**Issue 1 — Overlay display: none:**
+- Root cause: Shopify Dawn `base.css` has `div:empty { display: none }` — our empty overlay div was hidden
+- Fix: Added `#bw-bs-overlay, .bw-bs-overlay { display: block }` using ID selector (specificity 1-0-0 beats `div:empty` 0-1-1)
+- File: `extensions/bundle-builder/assets/bundle-widget.css`
+
+**Issues 2 & 6 — DCP settings not applying to BS panel:**
+- Root cause: DCP CSS generator outputs rules targeting `.bundle-builder-modal` (class selector), but BS panel has `class="bw-bs-panel"` — `dcpSelectorMatchCount: 0`, zero rules applied
+- Fix A: Added `bundle-builder-modal` to BS panel className in `ensureBottomSheet()` JS — DCP CSS now targets the panel
+- Fix B: Updated BS-specific CSS to use correct DCP generator variable names:
+  - Product card bg: hardcoded `#ffffff` → `var(--bundle-product-card-bg, #ffffff)`
+  - Product card shadow: hardcoded → `var(--bundle-product-card-shadow, ...)`
+  - Product title color: `--bundle-product-title-color` → `var(--bundle-product-card-font-color, ...)` (matches generator line 39)
+  - Product price color: hardcoded `#000000` → `var(--bundle-product-final-price-color, #000000)` (matches generator line 50)
+  - Add button bg: `--bundle-global-primary-button` → `var(--bundle-button-bg, ...)` (matches generator line 55)
+  - Add button text: hardcoded `#ffffff` → `var(--bundle-button-text-color, #ffffff)` (matches generator line 56)
+  - Product title font-size/weight: hardcoded → `var(--bundle-product-card-font-size/weight)` (matches generator lines 40-41)
+  - Product price font-size/weight: hardcoded → `var(--bundle-product-final-price-font-size/weight)` (matches generator lines 51-52)
+
+**Issue 3 — Nav pill too small:**
+- Nav pill padding `14px 25px` → `18px 36px`, gap `40px` → `52px`, font-size `13px` → `15px`
+
+**Issue 4 — Close button overlaps last tab:**
+- Root cause: `.bw-bs-header` had `padding: 12px 20px 6px` with no right-side buffer for the absolute close button (32px wide + 10px from edge = 42px needed)
+- Fix: `padding: 12px 52px 6px 20px` — 52px right padding clears the close button with 10px buffer
+
+Files modified:
+- `extensions/bundle-builder/assets/bundle-widget.css`
+- `app/assets/bundle-widget-product-page.js`
+
+### 2026-04-10 23:00 - Issue 5 Integration Testing Complete
+
+Ran full step-scenario tests via Chrome DevTools JS execution against deployed v2.4.7:
+
+**PASSED:**
+- ✅ Step unlock after product added — Step 2 unlocked correctly on Step 1 completion
+- ✅ Auto-progress to next step — advanced to Step 2 immediately after adding to Step 1
+- ✅ Step 3 (free gift) unlocks when Steps 1+2 complete — `step3Unlocked: true`
+- ✅ Free gift slot card unlocked on product page — `freeGiftSlotUnlocked: true`
+- ✅ Cart badge counter increments — 0 → 1 → 2 correctly
+- ✅ Tab click navigation — switching tabs by click works
+- ✅ Done button shown on last step — `nextBtnText: "Done"` ✅
+- ✅ Inline slot cards update with product name + image after selection
+- ✅ Free gift tab gets `bw-free-gift-tab` class correctly
+
+**BUG FOUND & FIXED:**
+- ❌ → ✅ Prev button blocked when current step is incomplete — `validateStep` was wrongly applied to the `direction < 0` branch in `navigateModal()`. Free gift step (no selection yet) failed validation → Prev showed a toast and didn't navigate. Fixed: removed `validateStep` from Prev branch; going back is always allowed.
+
+**INFRASTRUCTURE NOTE:**
+- ⚠️ Free gift step products slow to load (6+ seconds) — Render.com cold-start delay. Not a code bug. The retry logic handles this but cold-starts on Render's free tier take 3–10s.
+
+File: `app/assets/bundle-widget-product-page.js` — `navigateModal()` direction < 0 branch
+- Commit: (pending — v2.4.8)
+
+### 2026-04-10 23:30 - All Fixes Committed (v2.4.8)
+
+- ✅ Bumped `WIDGET_VERSION` to `2.4.8` in `scripts/build-widget-bundles.js`
+- ✅ Rebuilt widget bundles: product-page 148.3 KB, full-page 257.1 KB
+- ✅ CSS sizes: bundle-widget.css 67,689 B, bundle-widget-full-page.css 96,310 B — both under 100,000 B
+- Next: Deploy to SIT with `npm run deploy:sit`
 
 ### 2026-04-10 21:45 - Issue 8: Footer background mismatch fixed
 
