@@ -51,6 +51,39 @@ Files to modify:
 **CSS sizes:** bundle-widget.css 67,057 B, bundle-widget-full-page.css 96,310 B — both under 100,000 B ✅
 - Commit: 879aab8
 
+### 2026-04-10 22:30 - Issues 1, 2, 3, 4, 6 Fixed (Audit Round 2)
+
+Root causes found via Chrome DevTools live DOM inspection:
+
+**Issue 1 — Overlay display: none:**
+- Root cause: Shopify Dawn `base.css` has `div:empty { display: none }` — our empty overlay div was hidden
+- Fix: Added `#bw-bs-overlay, .bw-bs-overlay { display: block }` using ID selector (specificity 1-0-0 beats `div:empty` 0-1-1)
+- File: `extensions/bundle-builder/assets/bundle-widget.css`
+
+**Issues 2 & 6 — DCP settings not applying to BS panel:**
+- Root cause: DCP CSS generator outputs rules targeting `.bundle-builder-modal` (class selector), but BS panel has `class="bw-bs-panel"` — `dcpSelectorMatchCount: 0`, zero rules applied
+- Fix A: Added `bundle-builder-modal` to BS panel className in `ensureBottomSheet()` JS — DCP CSS now targets the panel
+- Fix B: Updated BS-specific CSS to use correct DCP generator variable names:
+  - Product card bg: hardcoded `#ffffff` → `var(--bundle-product-card-bg, #ffffff)`
+  - Product card shadow: hardcoded → `var(--bundle-product-card-shadow, ...)`
+  - Product title color: `--bundle-product-title-color` → `var(--bundle-product-card-font-color, ...)` (matches generator line 39)
+  - Product price color: hardcoded `#000000` → `var(--bundle-product-final-price-color, #000000)` (matches generator line 50)
+  - Add button bg: `--bundle-global-primary-button` → `var(--bundle-button-bg, ...)` (matches generator line 55)
+  - Add button text: hardcoded `#ffffff` → `var(--bundle-button-text-color, #ffffff)` (matches generator line 56)
+  - Product title font-size/weight: hardcoded → `var(--bundle-product-card-font-size/weight)` (matches generator lines 40-41)
+  - Product price font-size/weight: hardcoded → `var(--bundle-product-final-price-font-size/weight)` (matches generator lines 51-52)
+
+**Issue 3 — Nav pill too small:**
+- Nav pill padding `14px 25px` → `18px 36px`, gap `40px` → `52px`, font-size `13px` → `15px`
+
+**Issue 4 — Close button overlaps last tab:**
+- Root cause: `.bw-bs-header` had `padding: 12px 20px 6px` with no right-side buffer for the absolute close button (32px wide + 10px from edge = 42px needed)
+- Fix: `padding: 12px 52px 6px 20px` — 52px right padding clears the close button with 10px buffer
+
+Files modified:
+- `extensions/bundle-builder/assets/bundle-widget.css`
+- `app/assets/bundle-widget-product-page.js`
+
 ### 2026-04-10 21:45 - Issue 8: Footer background mismatch fixed
 
 Root cause: `.modal-body` had explicit `background-color: #F3F4F6` (gray) while the BS footer was transparent and showed the panel's `rgb(244, 249, 249)` (teal). The color mismatch made the footer strip look like a separate component.

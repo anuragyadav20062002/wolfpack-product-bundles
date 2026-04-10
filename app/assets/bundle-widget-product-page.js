@@ -489,7 +489,8 @@ class BundleWidgetProductPage {
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'bundle-builder-modal';
-      panel.className = 'bw-bs-panel';
+      // bundle-builder-modal class required so DCP-injected CSS selectors apply to this panel
+      panel.className = 'bw-bs-panel bundle-builder-modal';
       panel.setAttribute('role', 'dialog');
       panel.setAttribute('aria-modal', 'true');
       panel.innerHTML = `
