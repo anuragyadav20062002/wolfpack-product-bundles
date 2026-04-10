@@ -136,7 +136,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   tabsBorderRadius: 8,
 
   // Empty State
-  emptyStateCardBgColor: "#FFFFFF",
+  emptyStateCardBgColor: "transparent",
   emptyStateCardBorderColor: "#F6F6F6",
   emptyStateTextColor: "#9CA3AF",
   emptyStateBorderStyle: "dashed",
@@ -280,7 +280,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   loadingOverlayTextColor: "#333333",
 
   // Widget style
-  widgetStyle: "classic",
+  widgetStyle: "bottom-sheet",
   bottomSheetOverlayOpacity: 0.5,
   bottomSheetAnimationDuration: 400,
   emptySlotBorderStyle: "dashed",
