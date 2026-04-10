@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.4.7
+ * Version : 2.4.8
  * Built   : 2026-04-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.4.7';
+window.__BUNDLE_WIDGET_VERSION__ = '2.4.8';
 (function() {
   'use strict';
 
@@ -1998,7 +1998,8 @@ class BundleWidgetProductPage {
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'bundle-builder-modal';
-      panel.className = 'bw-bs-panel';
+      // bundle-builder-modal class required so DCP-injected CSS selectors apply to this panel
+      panel.className = 'bw-bs-panel bundle-builder-modal';
       panel.setAttribute('role', 'dialog');
       panel.setAttribute('aria-modal', 'true');
       panel.innerHTML = `
@@ -3894,27 +3895,23 @@ class BundleWidgetProductPage {
     const newStepIndex = this.currentStepIndex + direction;
 
     if (direction < 0 && newStepIndex >= 0) {
-      // Previous step
-      if (this.validateStep(this.currentStepIndex)) {
-        this.currentStepIndex = newStepIndex;
+      // Previous step — always allowed, no validation required
+      this.currentStepIndex = newStepIndex;
 
-        // Update modal header
-        const headerText = this.getFormattedHeaderText();
-        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+      // Update modal header
+      const headerText = this.getFormattedHeaderText();
+      this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-        // OPTIMISTIC RENDERING: Update UI immediately with loading state
-        this.renderModalTabs();
-        this.renderModalProductsLoading(newStepIndex);
-        this.updateModalNavigation();
-        this.updateModalFooterMessaging();
+      // OPTIMISTIC RENDERING: Update UI immediately with loading state
+      this.renderModalTabs();
+      this.renderModalProductsLoading(newStepIndex);
+      this.updateModalNavigation();
+      this.updateModalFooterMessaging();
 
-        // Load products asynchronously
-        await this.loadStepProducts(newStepIndex);
-        this.renderModalProducts(this.currentStepIndex);
-        this.updateModalFooterMessaging();
-      } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before going back.');
-      }
+      // Load products asynchronously
+      await this.loadStepProducts(newStepIndex);
+      this.renderModalProducts(this.currentStepIndex);
+      this.updateModalFooterMessaging();
     } else if (direction > 0) {
       if (newStepIndex < this.selectedBundle.steps.length) {
         // Next step
