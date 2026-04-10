@@ -184,6 +184,9 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-toast-animation-duration: ${s.toastAnimationDuration ?? 300}ms;
   --bundle-toast-box-shadow: ${s.toastBoxShadow ?? '0 4px 12px rgba(0, 0, 0, 0.15)'};
   --bundle-toast-enter-from-bottom: ${s.toastEnterFromBottom ? '1' : '0'};
+  /* Bottom-Sheet */
+  --bundle-bottom-sheet-overlay-opacity: ${s.bottomSheetOverlayOpacity ?? 0.5};
+  --bundle-bottom-sheet-animation-duration: ${s.bottomSheetAnimationDuration ?? 400}ms;
   /* Bundle Design */
   --bundle-bg-color: ${s.bundleBgColor || '#FFFFFF'};
   --bundle-footer-scrollbar-color: ${s.footerScrollBarColor || globalPrimaryButton};
