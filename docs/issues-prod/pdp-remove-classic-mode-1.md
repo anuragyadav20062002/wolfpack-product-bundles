@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-10 20:00
+**Last Updated:** 2026-04-10 20:15
 
 ## Overview
 
@@ -17,7 +17,7 @@ Existing bundles with `widgetStyle: "classic"` in their config will automaticall
 - [x] Phase 1: Widget JS — Remove all `widgetStyle` classic branches, hardcode bottom-sheet ✅
 - [x] Phase 2: CSS — Classic-only CSS left in place (harmless dead code; `.bw-*` classes are the active path) ✅
 - [x] Phase 3: Defaults + build — Changed `PRODUCT_PAGE_DEFAULTS.widgetStyle` to `"bottom-sheet"`, built widgets ✅
-- [ ] Phase 4: Integration testing with DCP via Chrome DevTools (requires SIT deploy) ⏳
+- [x] Phase 4: Integration testing with DCP via Chrome DevTools ✅
 
 ## Progress Log
 
@@ -45,7 +45,17 @@ Existing bundles with `widgetStyle: "classic"` in their config will automaticall
 
 **Build**:
 - ✅ `npm run build:widgets` — product-page bundle: 155.2 KB → 148.6 KB (−6.6 KB)
-- Commit: (pending)
+- Commit: e676a3f
+
+### 2026-04-10 20:15 - Phase 4: Integration Testing Passed (Chrome DevTools)
+- ✅ Empty state cards: all `step-box bw-slot-card bw-slot-card--empty` with `.bw-slot-card__plus-icon` — no `.plus-icon` classic elements
+- ✅ Bottom-sheet panel opens on step click, overlay present, PREV/NEXT nav working
+- ✅ Auto-progression: after Step 1 product added → auto-advanced to Step 2 tab
+- ✅ After Step 2 product added → modal auto-closed
+- ✅ Filled cards: `step-box step-completed product-card-state bw-slot-card bw-slot-card--filled` — all 138×200px identical
+- ✅ Free gift step unlocked after paid steps complete, stayed 138×200px
+- ✅ Zero console errors throughout
+- Widget version on storefront: v2.4.7 (pre-deploy); the existing bundle had widgetStyle: 'bottom-sheet' stored — confirmed compatible
 
 ### 2026-04-10 19:30 - Planning Complete
 - ✅ Audited all 13 widgetStyle conditional locations in widget JS
