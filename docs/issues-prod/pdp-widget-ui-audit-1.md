@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-11
-**Last Updated:** 2026-04-11 01:30
+**Last Updated:** 2026-04-11 02:15
 
 ## Overview
 
@@ -40,6 +40,30 @@ Goal: identify every visual inconsistency, fix them, and ensure full DCP alignme
 - ✅ Issue 5: Added `.bw-bs-panel::before` drag handle pill in `@media (max-width: 767px)` — 36px wide, 4px tall gray pill at panel top.
 
 **Issue 2** (panel position conflict) — fix already in commit fd6c70f, pending deploy.
+
+### 2026-04-11 02:15 - Grid container + footer pill group audit & fix
+
+**Root causes found:**
+
+**Grid container small (body shrinks to content-width):**
+- Classic `.bundle-builder-modal` CSS also sets `align-items: center; justify-content: center; background: rgba(0,0,0,0.5)` (flex centering rules for its overlay use-case)
+- When `bundle-builder-modal` class was added to the BS panel, these rules applied
+- `align-items: center` in a column-flex container makes children shrink to content-width instead of stretching full-width
+- Body measured 203px (at 2316px physical viewport) vs expected ~1158px
+- Fix: Added `align-items: stretch; justify-content: flex-start; background: var(--bundle-bs-panel-bg)` to `.bw-bs-panel.bundle-builder-modal` override (specificity 0-2-0)
+
+**Footer pill group deep audit findings:**
+- Cart pill width: 66px, nav pill gap: 52px → cart pill overflowed gap by 7px on each side, overlapping PREV/NEXT buttons
+- DCP CSS `.bundle-builder-modal .modal-footer .modal-nav-button.prev/next-button { padding: 12px 56px }` (specificity 0-3-0) — DCP designed for full-page modal standalone buttons, not for BS footer pill context
+- This DCP padding made each button 154px wide, inflating the pill unnecessarily
+
+**Fixes applied:**
+- ✅ `align-items: stretch; justify-content: flex-start; background` added to panel override — body now fills full panel width
+- ✅ Nav pill `gap: 52px` → `80px` (desktop), `72px` (mobile ≤767px) — cart pill (66px) now has 7px clearance on each side
+- ✅ Added `#bundle-builder-modal .bw-bs-nav-btn.prev-button, .next-button { padding: 10px 24px }` (ID specificity 1-2-0 beats DCP 0-3-0) — compact button size suitable for pill context
+- ✅ Mobile button padding: `8px 20px`, font-size `13px`
+
+**CSS size:** 70,279 B (under 100,000 B limit) ✅
 
 **CSS size:** 69,421 B (under 100,000 B limit) ✅
 **Build:** `npm run build:widgets` — product-page 148.3 KB, full-page 257.1 KB ✅
