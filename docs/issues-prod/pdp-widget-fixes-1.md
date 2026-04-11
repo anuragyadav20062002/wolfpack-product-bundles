@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-10
-**Last Updated:** 2026-04-10 23:30
+**Last Updated:** 2026-04-11 00:30
 
 ## Overview
 
@@ -114,6 +114,23 @@ File: `app/assets/bundle-widget-product-page.js` — `navigateModal()` direction
 - ✅ Rebuilt widget bundles: product-page 148.3 KB, full-page 257.1 KB
 - ✅ CSS sizes: bundle-widget.css 67,689 B, bundle-widget-full-page.css 96,310 B — both under 100,000 B
 - Next: Deploy to SIT with `npm run deploy:sit`
+
+### 2026-04-11 00:30 - Issue 9: BS panel position broken by classic modal CSS conflict
+
+Root cause found via Chrome DevTools + live CSS inspection:
+- `bundle-widget.css` has `.bundle-builder-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }` — the classic full-page modal rule
+- Adding `bundle-builder-modal` class to the BS panel (for DCP CSS selector targeting) caused this rule to apply, overriding `bottom: 0` with `top: 0` and forcing `height: 100vh`
+- Confirmed: removing `bundle-builder-modal` class in console restored `top: 425px` (correct bottom anchor)
+
+Fix: Added higher-specificity double-class overrides in `bundle-widget.css`:
+```css
+.bw-bs-panel.bundle-builder-modal { display: flex; top: auto; height: 0; width: auto; }
+.bw-bs-panel.bundle-builder-modal.bw-bs-panel--open { height: min(765px, 90vh); }
+```
+Specificity 0-2-0 beats classic rule 0-1-0. DCP CSS selectors still resolve because `bundle-builder-modal` class remains on the panel.
+
+- ✅ `extensions/bundle-builder/assets/bundle-widget.css` — double-class overrides added after `--open` rules
+- CSS size: 68,379 B (under 100,000 B limit) ✅
 
 ### 2026-04-10 21:45 - Issue 8: Footer background mismatch fixed
 
