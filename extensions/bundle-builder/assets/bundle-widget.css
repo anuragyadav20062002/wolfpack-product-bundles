@@ -2415,7 +2415,9 @@
   z-index: 9999998;
 }
 
-.bw-bs-overlay--open {
+/* Combined ID+class selector (specificity 1-1-0) beats #bw-bs-overlay alone (1-0-0) */
+#bw-bs-overlay.bw-bs-overlay--open,
+.bw-bs-overlay.bw-bs-overlay--open {
   opacity: 1;
   pointer-events: auto;
 }
@@ -2446,15 +2448,19 @@
   }
 }
 
-/* Fix: .bundle-builder-modal has a classic-modal rule: display:none; top:0; height:100vh.
-   When that class is also on .bw-bs-panel (needed so DCP CSS selectors resolve), those rules
-   conflict with bottom-sheet positioning. Double-class selectors (specificity 0-2-0) beat
-   the single-class classic rule (0-1-0) and restore correct BS panel behaviour. */
+/* Fix: .bundle-builder-modal classic-modal rule sets:
+     display:none; top:0; height:100vh; width:100vw;
+     align-items:center; justify-content:center; background:rgba(0,0,0,0.5)
+   All conflict with bottom-sheet layout. Double-class selectors (0-2-0)
+   beat the single-class classic rule (0-1-0) and restore correct BS panel behaviour. */
 .bw-bs-panel.bundle-builder-modal {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   top: auto;
   height: 0;
-  width: auto;
+  background: var(--bundle-bs-panel-bg, rgb(244, 249, 249));
 }
 
 .bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
@@ -2515,6 +2521,17 @@
   .bw-bs-close-mobile {
     display: block;
   }
+  /* Drag handle pill — standard mobile bottom-sheet affordance */
+  .bw-bs-panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
 }
 
 /* ---- Tabs container — equal-width grid ---- */
@@ -2562,11 +2579,19 @@
   transform: none;
 }
 
-/* Free gift tab — uses DCP tab colors, pill shape */
+/* Free gift tab — uses DCP active tab colors when unlocked */
 .bw-bs-panel .bundle-header-tab.bw-free-gift-tab {
   background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
   color: var(--bundle-header-tab-active-text, #ffffff);
   border-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+}
+
+/* Free gift tab locked — show inactive colors to indicate unavailability */
+.bw-bs-panel .bundle-header-tab.bw-free-gift-tab.locked {
+  background: var(--bundle-header-tab-inactive-bg, rgba(0, 0, 0, 0.06));
+  color: var(--bundle-header-tab-inactive-text, rgba(0, 0, 0, 0.35));
+  border-color: transparent;
+  opacity: 1;
 }
 
 .bw-bs-panel .bundle-header-tab.bw-free-gift-tab.active {
@@ -2725,6 +2750,13 @@
   justify-content: center;
 }
 
+/* Override DCP rule: .bundle-builder-modal .modal-footer { background-color: var(--bundle-footer-bg) }
+   which resolves to white. ID selector (1-1-0) beats DCP class selector (0-2-0). */
+#bundle-builder-modal .bw-bs-footer,
+#bundle-builder-modal .modal-footer {
+  background: transparent;
+}
+
 /* ---- Cart count pill (white, floats above nav pill) ---- */
 .bw-bs-cart-pill {
   position: absolute;
@@ -2751,8 +2783,15 @@
   background: var(--bundle-global-primary-button, rgb(30, 58, 138));
   border-radius: 50px;
   padding: 18px 36px;
-  gap: 52px;
+  gap: 80px;
   box-shadow: rgba(30, 58, 138, 0.35) 0px 8px 20px 0px;
+}
+
+@media (max-width: 767px) {
+  .bw-bs-nav-pill {
+    gap: 72px;
+    padding: 16px 28px;
+  }
 }
 
 .bw-bs-nav-btn {
@@ -2773,6 +2812,24 @@
 .bw-bs-nav-btn:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* Override DCP: .bundle-builder-modal .modal-footer .modal-nav-button.prev/next-button
+   sets padding: 12px 56px (specificity 0-3-0) — designed for full-page modal standalone
+   buttons. In the BS footer pill, buttons live inside a padded pill so need compact
+   padding. ID selector (1-2-0) beats DCP (0-3-0). */
+#bundle-builder-modal .bw-bs-nav-btn.prev-button,
+#bundle-builder-modal .bw-bs-nav-btn.next-button {
+  padding: 10px 24px;
+  border-radius: 30px;
+}
+
+@media (max-width: 767px) {
+  #bundle-builder-modal .bw-bs-nav-btn.prev-button,
+  #bundle-builder-modal .bw-bs-nav-btn.next-button {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
 }
 
 /* ---- Inline slot cards (empty state in product page) ---- */
