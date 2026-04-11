@@ -2446,6 +2446,27 @@
   }
 }
 
+/* Fix: .bundle-builder-modal has a classic-modal rule: display:none; top:0; height:100vh.
+   When that class is also on .bw-bs-panel (needed so DCP CSS selectors resolve), those rules
+   conflict with bottom-sheet positioning. Double-class selectors (specificity 0-2-0) beat
+   the single-class classic rule (0-1-0) and restore correct BS panel behaviour. */
+.bw-bs-panel.bundle-builder-modal {
+  display: flex;
+  top: auto;
+  height: 0;
+  width: auto;
+}
+
+.bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
+  height: min(var(--bundle-bottom-sheet-max-height, 765px), 90vh);
+}
+
+@media (max-width: 767px) {
+  .bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
+    height: 85vh;
+  }
+}
+
 /* ---- Panel header ---- */
 .bw-bs-header {
   flex-shrink: 0;
