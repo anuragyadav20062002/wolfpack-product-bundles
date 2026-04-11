@@ -2415,7 +2415,9 @@
   z-index: 9999998;
 }
 
-.bw-bs-overlay--open {
+/* Combined ID+class selector (specificity 1-1-0) beats #bw-bs-overlay alone (1-0-0) */
+#bw-bs-overlay.bw-bs-overlay--open,
+.bw-bs-overlay.bw-bs-overlay--open {
   opacity: 1;
   pointer-events: auto;
 }
@@ -2515,6 +2517,17 @@
   .bw-bs-close-mobile {
     display: block;
   }
+  /* Drag handle pill — standard mobile bottom-sheet affordance */
+  .bw-bs-panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
 }
 
 /* ---- Tabs container — equal-width grid ---- */
@@ -2562,11 +2575,19 @@
   transform: none;
 }
 
-/* Free gift tab — uses DCP tab colors, pill shape */
+/* Free gift tab — uses DCP active tab colors when unlocked */
 .bw-bs-panel .bundle-header-tab.bw-free-gift-tab {
   background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
   color: var(--bundle-header-tab-active-text, #ffffff);
   border-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+}
+
+/* Free gift tab locked — show inactive colors to indicate unavailability */
+.bw-bs-panel .bundle-header-tab.bw-free-gift-tab.locked {
+  background: var(--bundle-header-tab-inactive-bg, rgba(0, 0, 0, 0.06));
+  color: var(--bundle-header-tab-inactive-text, rgba(0, 0, 0, 0.35));
+  border-color: transparent;
+  opacity: 1;
 }
 
 .bw-bs-panel .bundle-header-tab.bw-free-gift-tab.active {
@@ -2723,6 +2744,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Override DCP rule: .bundle-builder-modal .modal-footer { background-color: var(--bundle-footer-bg) }
+   which resolves to white. ID selector (1-1-0) beats DCP class selector (0-2-0). */
+#bundle-builder-modal .bw-bs-footer,
+#bundle-builder-modal .modal-footer {
+  background: transparent;
 }
 
 /* ---- Cart count pill (white, floats above nav pill) ---- */
