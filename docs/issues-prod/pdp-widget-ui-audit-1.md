@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-11
-**Last Updated:** 2026-04-11 02:15
+**Last Updated:** 2026-04-11 03:30
 
 ## Overview
 
@@ -67,6 +67,15 @@ Goal: identify every visual inconsistency, fix them, and ensure full DCP alignme
 
 **CSS size:** 69,421 B (under 100,000 B limit) ✅
 **Build:** `npm run build:widgets` — product-page 148.3 KB, full-page 257.1 KB ✅
+
+### 2026-04-11 03:30 - Footer pill slim + panel height +15%
+
+**Changes:**
+- ✅ Panel open height: `min(765px, 90vh)` → `min(880px, 96vh)` (+15% on fixed cap, +6vh on viewport cap)
+- ✅ Mobile panel height: `85vh` → `96vh` (+~13%)
+- ✅ Nav pill outer padding: `18px 36px` → `10px 22px` (desktop), `16px 28px` → `8px 18px` (mobile)
+- ✅ PREV/NEXT button padding: `10px 24px` → `6px 14px` (desktop), `8px 20px` → `5px 12px` (mobile)
+- CSS size: 70,277 B (under 100,000 B limit) ✅
 
 ## Progress Log
 

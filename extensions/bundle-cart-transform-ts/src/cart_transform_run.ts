@@ -612,8 +612,10 @@ export function cartTransformRun(input: CartTransformInput): CartTransformResult
 
         discountPercentage = calculateDiscountPercentage(
           priceAdjustment,
-          originalTotal,
-          totalQuantity,
+          originalTotal,        // paidTotal (EXPAND has no free-gift lines)
+          originalTotal,        // originalTotal
+          totalQuantity,        // totalQuantity
+          totalQuantity,        // paidQuantity (same as totalQuantity — no free gifts in EXPAND)
           presentmentCurrencyRate
         );
 
