@@ -2464,12 +2464,12 @@
 }
 
 .bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
-  height: min(var(--bundle-bottom-sheet-max-height, 765px), 90vh);
+  height: min(var(--bundle-bottom-sheet-max-height, 880px), 96vh);
 }
 
 @media (max-width: 767px) {
   .bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
-    height: 85vh;
+    height: 96vh;
   }
 }
 
@@ -2782,7 +2782,7 @@
   align-items: center;
   background: var(--bundle-global-primary-button, rgb(30, 58, 138));
   border-radius: 50px;
-  padding: 18px 36px;
+  padding: 10px 22px;
   gap: 80px;
   box-shadow: rgba(30, 58, 138, 0.35) 0px 8px 20px 0px;
 }
@@ -2790,7 +2790,7 @@
 @media (max-width: 767px) {
   .bw-bs-nav-pill {
     gap: 72px;
-    padding: 16px 28px;
+    padding: 8px 18px;
   }
 }
 
@@ -2820,14 +2820,14 @@
    padding. ID selector (1-2-0) beats DCP (0-3-0). */
 #bundle-builder-modal .bw-bs-nav-btn.prev-button,
 #bundle-builder-modal .bw-bs-nav-btn.next-button {
-  padding: 10px 24px;
+  padding: 6px 14px;
   border-radius: 30px;
 }
 
 @media (max-width: 767px) {
   #bundle-builder-modal .bw-bs-nav-btn.prev-button,
   #bundle-builder-modal .bw-bs-nav-btn.next-button {
-    padding: 8px 20px;
+    padding: 5px 12px;
     font-size: 13px;
   }
 }
