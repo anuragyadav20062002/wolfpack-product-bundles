@@ -1814,9 +1814,33 @@
    (Hardcoded defaults for clean design)
    ========================================== */
 
-/* Inline quantity controls default styling */
+/* Inline quantity controls — consumes DCP CSS variables */
 .inline-quantity-controls {
-  background: #5f5d5d;
+  display: flex;
+  align-items: center;
+  background: var(--bundle-quantity-selector-bg, #5f5d5d);
+  color: var(--bundle-quantity-selector-text-color, #ffffff);
+  border-radius: var(--bundle-quantity-selector-border-radius, 8px);
+  overflow: hidden;
+}
+
+.inline-qty-btn {
+  background: transparent;
+  color: inherit;
+  border: none;
+  cursor: pointer;
+  padding: 0 10px;
+  font-size: var(--bundle-quantity-selector-font-size, 16px);
+  font-weight: bold;
+  line-height: 1;
+}
+
+.inline-qty-display {
+  color: inherit;
+  font-size: var(--bundle-quantity-selector-font-size, 16px);
+  font-weight: 500;
+  min-width: 24px;
+  text-align: center;
 }
 
 /* Footer total section label */
