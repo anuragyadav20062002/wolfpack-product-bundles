@@ -398,14 +398,11 @@ const fpbSidebarHtml = `
               <span class="product-price">$32.99</span>
             </div>
             <div class="product-spacer"></div>
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector">
-                <button class="qty-btn qty-decrease">−</button>
-                <span class="qty-display">1</span>
-                <button class="qty-btn qty-increase">+</button>
-              </div>
+            <div class="inline-quantity-controls">
+              <button class="inline-qty-btn qty-decrease">−</button>
+              <span class="inline-qty-display">1</span>
+              <button class="inline-qty-btn qty-increase">+</button>
             </div>
-            <button class="product-add-btn added">✓ Added</button>
           </div>
         </div>
 
@@ -418,14 +415,11 @@ const fpbSidebarHtml = `
               <span class="product-price">$29.99</span>
             </div>
             <div class="product-spacer"></div>
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector">
-                <button class="qty-btn qty-decrease">−</button>
-                <span class="qty-display">1</span>
-                <button class="qty-btn qty-increase">+</button>
-              </div>
+            <div class="inline-quantity-controls">
+              <button class="inline-qty-btn qty-decrease">−</button>
+              <span class="inline-qty-display">1</span>
+              <button class="inline-qty-btn qty-increase">+</button>
             </div>
-            <button class="product-add-btn added">✓ Added</button>
           </div>
         </div>
 
@@ -672,14 +666,11 @@ const fpbFloatingHtml = `
             <span class="product-price">$32.99</span>
           </div>
           <div class="product-spacer"></div>
-          <div class="product-quantity-wrapper">
-            <div class="product-quantity-selector">
-              <button class="qty-btn qty-decrease">−</button>
-              <span class="qty-display">1</span>
-              <button class="qty-btn qty-increase">+</button>
-            </div>
+          <div class="inline-quantity-controls">
+            <button class="inline-qty-btn qty-decrease">−</button>
+            <span class="inline-qty-display">1</span>
+            <button class="inline-qty-btn qty-increase">+</button>
           </div>
-          <button class="product-add-btn added">✓ Added</button>
         </div>
       </div>
 
@@ -692,14 +683,11 @@ const fpbFloatingHtml = `
             <span class="product-price">$29.99</span>
           </div>
           <div class="product-spacer"></div>
-          <div class="product-quantity-wrapper">
-            <div class="product-quantity-selector">
-              <button class="qty-btn qty-decrease">−</button>
-              <span class="qty-display">1</span>
-              <button class="qty-btn qty-increase">+</button>
-            </div>
+          <div class="inline-quantity-controls">
+            <button class="inline-qty-btn qty-decrease">−</button>
+            <span class="inline-qty-display">1</span>
+            <button class="inline-qty-btn qty-increase">+</button>
           </div>
-          <button class="product-add-btn added">✓ Added</button>
         </div>
       </div>
 
@@ -925,6 +913,12 @@ function getPreviewScript(type: string): string {
           grid.innerHTML = grid.dataset.originalHtml;
           delete grid.dataset.originalHtml;
         }
+      }
+
+      // Quantity & Variant Selector: scroll the first quantity control into view
+      if (section === 'quantityVariantSelector') {
+        var qtyEl = document.querySelector('.inline-quantity-controls');
+        if (qtyEl) qtyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
 
       // PDP only: when widgetStyle is active, hide the bottom-drawer modal entirely

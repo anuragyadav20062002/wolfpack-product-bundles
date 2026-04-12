@@ -27,7 +27,8 @@ generator but never consumed by this selector.
 
 - [x] Phase 1: Audit root cause ✅
 - [x] Phase 2: Fix CSS — wire CSS variables into .inline-quantity-controls ✅
-- [x] Phase 3: Build + deploy + verify on storefront ✅
+- [x] Phase 3: Fix DCP preview HTML to match actual storefront implementation ✅
+- [ ] Phase 4: Deploy + verify on storefront
 
 ## Fixes Applied
 
