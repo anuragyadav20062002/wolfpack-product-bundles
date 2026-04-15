@@ -11,7 +11,7 @@ type = "function"
 description = "Transform cart lines to display bundles as single items with discount pricing"
 
   [[extensions.targeting]]
-  target = "purchase.cart-transform.run"
+  target = "cart.transform.run"
   input_query = "src/cart-transform-input.graphql"
   export = "run"
 
