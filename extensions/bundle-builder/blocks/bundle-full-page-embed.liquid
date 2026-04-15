@@ -136,6 +136,20 @@
 {% # theme-check-enable RemoteAsset %}
 
 <link rel="stylesheet" href="{{ 'bundle-widget-full-page.css' | asset_url }}">
+
+<script>
+  /* Move bundle widget into #MainContent so it renders between header and footer.
+     App embed blocks inject at </body> (after footer) — this relocates it into the
+     normal content flow. Runs synchronously to avoid layout shift. */
+  (function() {
+    var widget = document.getElementById('bundle-builder-app');
+    var main = document.getElementById('MainContent');
+    if (widget && main) {
+      main.appendChild(widget);
+    }
+  })();
+</script>
+
 <script src="{{ 'bundle-widget-full-page-bundled.js' | asset_url }}" defer></script>
 
 {% schema %}
