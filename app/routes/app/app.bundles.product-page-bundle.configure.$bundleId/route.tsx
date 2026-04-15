@@ -1226,7 +1226,7 @@ export default function ConfigureBundleFlow() {
             // Using addAppBlockId on an already-installed block causes Shopify to change the
             // previewPath to the first product with that templateSuffix (which may not be this bundle's product).
             const themeEditorUrl = widgetInstalled
-              ? `https://${shop}/admin/themes/current/editor?template=product.product-page-bundle${previewParam}`
+              ? `https://${shop}/admin/themes/current/editor?template=product${previewParam}`
               : `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
             window.open(themeEditorUrl, '_blank');
           },

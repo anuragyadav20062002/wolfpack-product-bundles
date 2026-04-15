@@ -1214,7 +1214,7 @@ export default function ConfigureBundleFlow() {
     // Build theme editor deep link (used as fallback for non-page templates and on error)
     const buildThemeEditorUrl = () => {
       const appBlockId = `${apiKey}/${blockHandle}`;
-      const templateParam = template.isPage ? 'page.full-page-bundle' : template.handle;
+      const templateParam = template.isPage ? 'page' : template.handle;
       const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
       return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
     };
