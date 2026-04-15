@@ -1,6 +1,6 @@
 # API Endpoints Reference
 
-**Last Updated:** January 14, 2026
+**Last Updated:** 2026-04-16
 
 ## Table of Contents
 - [Overview](#overview)
@@ -734,9 +734,11 @@ When Shopify API calls fail:
 - **Limit:** 100 requests/minute per shop
 - **Enforced by:** Shopify CDN
 
-### Admin Endpoints
-- **Limit:** 40 requests/second per shop
-- **Enforced by:** Shopify App Bridge rate limiting
+### Admin Endpoints (Shopify GraphQL Admin API)
+- **Limit:** 1,000 points leaky bucket, restores 50 points/second
+- **Cost per query:** varies (1–1,000 points depending on complexity)
+- **Monitor:** `X-Shopify-Shop-Api-Call-Limit` response header shows remaining points
+- **Enforced by:** Shopify Admin API (per-store, per-app)
 
 ### Webhook Endpoints
 - **Limit:** No limit (Shopify controls delivery rate)
@@ -788,4 +790,3 @@ curl -X POST \
 - [Architecture Overview](ARCHITECTURE_OVERVIEW.md)
 - [Feature Guide](FEATURE_GUIDE.md)
 - [Database Schema](DATABASE_SCHEMA.md)
-- [Cart Transform Function](CART_TRANSFORM_FUNCTION.md)

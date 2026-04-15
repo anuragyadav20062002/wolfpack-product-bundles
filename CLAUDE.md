@@ -572,3 +572,33 @@ The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-s
 
 **Last Updated:** 2026-03-24
 **Author:** Aditya Awasthi
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/ and an audited internal docs vault at `internal docs/`.
+
+### Mandatory Search Order
+
+**ALWAYS follow this order when looking up architecture, APIs, or codebase behaviour:**
+
+1. **`internal docs/`** — audited, human-curated vault. Start here for any topic that may be covered (Cart Transform, Pricing, DB schema, Shopify API limits, widget architecture, deployment).
+2. **`graphify-out/GRAPH_REPORT.md`** — god nodes and community structure for codebase topology questions.
+3. **`graphify-out/wiki/`** — if `index.md` exists, navigate it for node-level detail.
+4. **Raw source files** — ONLY when the user explicitly asks you to read raw files, OR when the vault and graph do not cover the specific detail you need.
+
+❌ Do NOT open raw `.ts` / `.js` / `.liquid` / `.prisma` files speculatively — consult the vault and graph first.
+✅ The vault is the fastest and most reliable source for cross-cutting questions (API behaviour, gotchas, build rules, pricing units, etc.).
+
+### Keeping the Vault Current
+
+**When you encounter something useful that is NOT in `internal docs/`:**
+- If it's a fact about Shopify API behaviour, a gotcha, a data model detail, a build rule, or a cross-cutting concern → **write or update the relevant note in `internal docs/`** before the conversation ends.
+- If it's a specific bug fix or implementation detail that belongs in the code or git history, do NOT add it to the vault.
+- After writing to the vault, add/update the link in `internal docs/index.md`.
+
+### Keeping the Graph Current
+
+After modifying code files in this session, run:
+```bash
+python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"
+```
