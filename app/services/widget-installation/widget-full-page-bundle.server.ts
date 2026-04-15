@@ -51,13 +51,10 @@ export async function createFullPageBundle(
       bundleName
     });
 
-    // FPB pages are served via URL redirect (/products/{handle} → /pages/{handle}).
-    // The redirect fires before Shopify's theme engine renders any template, so
-    // templateSuffix is meaningless for routing. We intentionally do NOT call
-    // ensureBundlePageTemplate / themeFilesUpsert here — that API requires a Shopify
-    // exemption that disqualifies the app from the Built For Shopify badge.
-    // Merchants add the app block to their page template once via the Theme Editor.
-    const templateSuffix = 'full-page-bundle';
+    // Pages use the default page.json template — no custom templateSuffix.
+    // The app embed block (bundle-full-page-embed.liquid) renders on all page templates
+    // and detects bundles via the bundle_id metafield. Custom template suffixes caused
+    // stale block references when the app migrated from section blocks to app embeds.
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
     const rawSlug = desiredSlug?.trim() || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -91,8 +88,7 @@ export async function createFullPageBundle(
       AppLogger.info('Page does not exist, creating new page', {
         component: 'WidgetFullPageBundle',
         pageHandle,
-        bundleId,
-        templateSuffix: templateSuffix ?? 'default'
+        bundleId
       });
 
       const CREATE_PAGE = `
@@ -118,8 +114,7 @@ export async function createFullPageBundle(
             title: pageTitle,
             handle: pageHandle,
             body: '',
-            isPublished,
-            templateSuffix: 'full-page-bundle'
+            isPublished
           }
         }
       });
@@ -159,36 +154,8 @@ export async function createFullPageBundle(
         component: 'WidgetFullPageBundle',
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
-        templateSuffix: createdPage.templateSuffix,
         bundleId
       });
-
-      // Ensure existing page uses the shared full-page-bundle template
-      if (createdPage.templateSuffix !== 'full-page-bundle') {
-        const UPDATE_PAGE_TEMPLATE = `
-          mutation updatePageTemplate($id: ID!, $page: PageUpdateInput!) {
-            pageUpdate(id: $id, page: $page) {
-              page { id templateSuffix }
-              userErrors { field message }
-            }
-          }
-        `;
-        const updateResponse = await admin.graphql(UPDATE_PAGE_TEMPLATE, {
-          variables: { id: createdPage.id, page: { templateSuffix: 'full-page-bundle' } }
-        });
-        const updateData = await updateResponse.json();
-        if (updateData.data?.pageUpdate?.userErrors?.length > 0) {
-          AppLogger.warn('Could not update templateSuffix on existing page (non-critical)', {
-            component: 'WidgetFullPageBundle',
-            errors: updateData.data.pageUpdate.userErrors
-          });
-        } else {
-          AppLogger.info('Updated existing page templateSuffix to full-page-bundle', {
-            component: 'WidgetFullPageBundle',
-            pageId: createdPage.id
-          });
-        }
-      }
     }
 
     // Step 2a: Ensure PAGE metafield definitions exist with PUBLIC_READ storefront access

@@ -59,8 +59,6 @@ const DEFAULT_SUCCESS_MESSAGE = "Congratulations! You got {discountText}";
 // FPB products do not need a theme template — the URL redirect (/products/{handle} →
 // /pages/{pageHandle}) handles routing before the template is ever rendered.
 // We only update the Shopify product status so it stays in sync with the bundle status.
-// Theme file writes (ensureProductBundleTemplate / themeFilesUpsert) are intentionally
-// excluded: they require a Shopify exemption that disqualifies the app from the BFS badge.
 async function syncFpbProductStatus(
   admin: ShopifyAdmin,
   productId: string,
