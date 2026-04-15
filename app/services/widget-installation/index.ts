@@ -28,8 +28,5 @@ export {
 // Full-page bundle operations (for direct access)
 export { createFullPageBundle } from './widget-full-page-bundle.server';
 
-// Theme template operations (for direct access)
-export { ensureProductBundleTemplate } from './widget-theme-template.server';
-
 // Product bundle operations (for direct access)
 export { validateProductBundleWidgetSetup } from './widget-product-bundle.server';
