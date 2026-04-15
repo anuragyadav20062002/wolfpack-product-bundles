@@ -27,4 +27,4 @@ renders visually larger/differently than the regular filled step cards. The root
   - Image container: was always `bw-slot-card__image-wrapper` / `bw-slot-card__image`; now `step-images single-image` / `step-image` in classic mode, same as regular filled cards
   - Title class: was `step-name bw-slot-card__label`; now `step-name step-name-completed product-title-state`, matching regular filled cards
 - ✅ Built: `npm run build:widgets` — both bundles regenerated
-- Commit: (pending)
+- Commit: 274ce33

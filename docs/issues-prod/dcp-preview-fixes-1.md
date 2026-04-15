@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-09
-**Last Updated:** 2026-04-09 21:00
+**Last Updated:** 2026-04-09 21:30
 
 ## Overview
 
@@ -24,7 +24,7 @@ Two fixes to the Design Control Panel:
 - [x] Phase 1: Skeleton height fix (`ProductCardPreview.tsx`) ✅
 - [x] Phase 2: PDP badge dedicated section (new `PDPBadgeSettings.tsx` + config + wiring) ✅
 - [x] Phase 3: Badge preview card + upload help text in badge settings ✅
-- [ ] Phase 4: PDP DCP — club Empty State under Widget Style + empty state iframe preview
+- [x] Phase 4: PDP DCP — club Empty State under Widget Style + empty state iframe preview ✅
 
 ## Progress Log
 
@@ -42,3 +42,10 @@ Two fixes to the Design Control Panel:
 - ✅ `FPBBadgesSettings.tsx`: preview card added above each badge section; help text info box above each FilePicker
 - ✅ `PDPBadgeSettings.tsx`: preview card and help text added
 - Commit: 1b9aebe
+
+### 2026-04-09 21:30 - Phase 4: Empty State + Widget Style Merge Completed
+- ✅ `WidgetStyleSettings.tsx`: absorbed EmptyStateSettings controls — card bg, border color, text color, border style now under "Empty State Cards" sub-heading
+- ✅ `pdp.config.ts`: removed `emptyState` from PDP_GENERAL_EXTRAS; description updated
+- ✅ `SettingsPanel.tsx`: SECTION_KEYS.widgetStyle extended with 5 empty-state keys (reset works)
+- ✅ `api.preview.$type.tsx`: added hidden `.dcp-empty-grid` to PDP modal body; DCP_SECTION_CHANGE 'widgetStyle' swaps product cards ↔ empty-state cards in the iframe preview
+- Commit: 0e6bd2b
