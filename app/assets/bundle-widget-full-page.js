@@ -1192,7 +1192,7 @@ class BundleWidgetFullPage {
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
     const canProceed = this.canProceedToNextStep();
     const conditionless = this.bundleHasNoConditions();
-    const hasSelection = conditionless && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
@@ -1255,11 +1255,13 @@ class BundleWidgetFullPage {
       tab.dataset.stepIndex = index;
 
       // Determine step state
+      const isDefaultStep = step.isDefault === true;
       const isCompleted = this.isStepCompleted(index);
       const isCurrent = index === this.currentStepIndex;
       const isAccessible = this.isStepAccessible(index);
 
-      if (isCompleted) tab.classList.add('completed');
+      if (isDefaultStep) tab.classList.add('step-tab--included');
+      if (isCompleted && !isDefaultStep) tab.classList.add('completed');
       if (isCurrent) tab.classList.add('active');
       if (!isAccessible) tab.classList.add('locked');
 
@@ -1275,7 +1277,25 @@ class BundleWidgetFullPage {
       // Tab content structure
       let tabContent = '';
 
-      if (hasSelections) {
+      // Default (included) step — always shown as locked with "Included" label
+      if (isDefaultStep) {
+        const productImages = hasSelections ? this.getStepProductImages(index) : [];
+        const imagesHtml = productImages.slice(0, 3).map(img =>
+          `<img src="${img.url}" alt="${this._escapeHTML(img.alt)}" class="tab-product-image">`
+        ).join('');
+        tabContent = `
+          ${imagesHtml ? `<div class="tab-images">${imagesHtml}</div>` : `<div class="tab-number">${index + 1}</div>`}
+          <div class="tab-info">
+            <span class="tab-name">${escapedName}</span>
+            <span class="tab-count tab-count--included">Included</span>
+          </div>
+          <div class="tab-lock tab-lock--included">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
+            </svg>
+          </div>
+        `;
+      } else if (hasSelections) {
         // Show product images if available
         const productImages = this.getStepProductImages(index);
         if (productImages.length > 0) {
@@ -1933,8 +1953,35 @@ class BundleWidgetFullPage {
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
 
-    // Free gift step: add "Free" badge and override price display to $0.00
+    // Default (included) step: add "Included" badge and disable interaction controls
     const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
+    if (currentStepData?.isDefault) {
+      cardElement.classList.add('fpb-card--default-included');
+      const imgEl = cardElement.querySelector('.product-image, .product-img, img');
+      if (imgEl && imgEl.parentElement) {
+        imgEl.parentElement.classList.add('fpb-card-image-wrapper');
+        const badge = document.createElement('span');
+        badge.className = 'fpb-included-badge';
+        const _includedBadgeUrl = (() => {
+          const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-included-badge-url').trim();
+          if (!v || v === 'none') return null;
+          const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
+          return m ? m[1] : null;
+        })();
+        if (_includedBadgeUrl) {
+          const img = document.createElement('img');
+          img.src = _includedBadgeUrl;
+          img.alt = 'Included';
+          img.className = 'fpb-included-badge-img';
+          badge.appendChild(img);
+        } else {
+          badge.textContent = 'Included';
+        }
+        imgEl.parentElement.appendChild(badge);
+      }
+    }
+
+    // Free gift step: add "Free" badge and override price display to $0.00
     if (currentStepData?.isFreeGift) {
       const imgEl = cardElement.querySelector('.product-image, .product-img, img');
       if (imgEl && imgEl.parentElement) {
@@ -1974,6 +2021,9 @@ class BundleWidgetFullPage {
 
   // Attach event listeners to product card
   attachProductCardListeners(cardElement, product, stepIndex) {
+    // Default steps are read-only — no add/remove/quantity interaction allowed
+    if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
+
     const productId = product.variantId || product.id;
 
     // Quantity controls (both old-style and inline-style buttons)
@@ -2233,7 +2283,7 @@ class BundleWidgetFullPage {
     toggleBtn.className = 'footer-toggle';
     toggleBtn.setAttribute('type', 'button');
     const hasConditions = !this.bundleHasNoConditions();
-    const totalSelected = allSelectedProducts.filter(p => !p.isDefault).length;
+    const totalSelected = allSelectedProducts.length;
     const toggleText = hasConditions
       ? `${totalQuantity}/${totalRequired} Steps`
       : `${totalSelected} Product${totalSelected !== 1 ? 's' : ''}`;
@@ -2275,7 +2325,7 @@ class BundleWidgetFullPage {
     ctaBtn.className = 'footer-cta-btn';
     ctaBtn.setAttribute('type', 'button');
     const conditionless = this.bundleHasNoConditions();
-    const hasSelection = conditionless && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
     ctaBtn.textContent = (conditionless || isLastStep) ? (this.config.addToCartText || 'Add to Cart') : 'Next';
     if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
@@ -2667,9 +2717,10 @@ class BundleWidgetFullPage {
       );
       if (product) {
         if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-        // Store quantity as a number (1) so every consumer that reads selectedProducts
-        // with `if (quantity > 0)` correctly includes the default product.
-        this.selectedProducts[stepIndex][step.defaultVariantId] = 1;
+        // Normalize to numeric ID (strips GID prefix) so the key matches the variantId
+        // produced by processProductsForStep() via extractId().
+        const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
+        this.selectedProducts[stepIndex][normalizedId] = 1;
       }
     });
   }
@@ -3848,6 +3899,8 @@ class BundleWidgetFullPage {
   }
 
   isStepAccessible(stepIndex) {
+    // Default steps are always accessible (read-only, pre-selected)
+    if (this.selectedBundle?.steps[stepIndex]?.isDefault) return true;
     // Free gift step is only accessible when all paid steps are complete
     if (!this.canNavigateToStep(stepIndex)) return false;
     // Check if all previous steps are completed

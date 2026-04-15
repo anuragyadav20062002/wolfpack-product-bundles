@@ -80,8 +80,31 @@
   h1.page-title,
   .page-header h1,
   .main-page-title { display: none !important; }
+  /* Hide the section wrapper padding that creates a blank gray gap above the widget */
+  .shopify-section:has(.main-page-title) { display: none !important; }
 </style>
 {% endif %}
+
+<script>
+  // The body embed injects after the footer — move it inside <main> so it renders in the correct position.
+  // This runs synchronously before DOMContentLoaded to avoid a flash of misplaced content.
+  (function () {
+    function relocateWidget() {
+      var block = document.getElementById('shopify-block-{{ block.id }}') ||
+                  document.querySelector('.shopify-block.shopify-app-block:has(#bundle-builder-app)');
+      var main  = document.getElementById('MainContent');
+      if (!block || !main) return;
+      // Already inside main — nothing to do
+      if (main.contains(block)) return;
+      main.insertBefore(block, main.firstChild);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', relocateWidget);
+    } else {
+      relocateWidget();
+    }
+  })();
+</script>
 
 <script>
   if (!window.bundleWidgetContext) {

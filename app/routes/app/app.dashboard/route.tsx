@@ -20,7 +20,7 @@ import {
   InlineGrid,
 } from "@shopify/polaris";
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, AlertTriangleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
-import { authenticate } from "../../../shopify.server";
+import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
@@ -29,7 +29,6 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
-import { CartPropertyFixContent } from "../../../components/CartPropertyFixCard";
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 
@@ -46,7 +45,7 @@ import type { BundleActionsButtonsProps } from "./types";
 import dashboardStyles from "./dashboard.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
 
   // Get active and draft bundles for the shop (exclude archived/deleted)
   // Only select fields needed for dashboard display to avoid over-fetching
@@ -254,7 +253,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 // Action handlers have been extracted to ./app.dashboard/handlers/
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
 
@@ -917,17 +916,53 @@ export default function Dashboard() {
                     ]}
                   />
                 ) : (
-                  <Card>
-                    <BlockStack gap="200">
-                      <Text variant="headingSm" as="h3">Cart Property Display Fix</Text>
-                      <Text variant="bodySm" tone="subdued" as="p">
-                        Some themes show internal bundle properties on the cart page. Here&apos;s a one-line Liquid fix.
-                      </Text>
-                    </BlockStack>
-                    <div style={{ marginTop: 16 }}>
-                      <CartPropertyFixContent />
-                    </div>
-                  </Card>
+                  <BundleSetupInstructions
+                    title="Bundle Setup Steps"
+                    subtitle="Follow these steps to get your bundle live on your store"
+                    bundlesExist={true}
+                    steps={[
+                      {
+                        id: "create_bundle",
+                        title: 'Click "Create Bundle"',
+                        description: "Click the \"Create\" button to start making your bundle.",
+                        isClickable: true,
+                        onClick: handleCreateBundle,
+                      },
+                      {
+                        id: "name_description",
+                        title: "Enter bundle name and description",
+                        description: "Type a clear name and an optional description for your bundle.",
+                        onClick: () => {},
+                      },
+                      {
+                        id: "create_bundle_modal",
+                        title: 'Click "Bundle Settings"',
+                        description: "This will take you to your bundle set up page.",
+                        onClick: () => {},
+                      },
+                      {
+                        id: "add_steps",
+                        title: "Add bundle steps and choose products",
+                        description: "Add steps to your bundle, select products/collections you want.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                      {
+                        id: "setup_pricing",
+                        title: "Set discount rules and pricing",
+                        description: "Choose how discounts and pricing should work for your bundle.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                      {
+                        id: "publish",
+                        title: "Save and publish your bundle",
+                        description: "Save your settings to make your bundle live on your store.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                    ]}
+                  />
                 )}
               </div>
 

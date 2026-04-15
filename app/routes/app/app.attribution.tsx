@@ -9,7 +9,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-r
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
 import { Badge, Banner, BlockStack, Button, DatePicker, InlineGrid, InlineStack, Page, Popover, Text, Tooltip } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
 import {
   computeBundleRevenueSummary,
@@ -83,7 +83,7 @@ function chartXFormatter(dateKey: string) {
 // ─── Action ──────────────────────────────────────────────────
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin } = await requireAdminSession(request);
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
 
@@ -121,7 +121,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 // ─── Loader ──────────────────────────────────────────────────
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+  const { admin, session } = await requireAdminSession(request);
   const shopId = session.shop;
 
   const url = new URL(request.url);

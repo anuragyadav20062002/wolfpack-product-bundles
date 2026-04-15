@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { json, type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { Page, Card, BlockStack, Text, Spinner, Banner } from "@shopify/polaris";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import { BillingService } from "../../services/billing.server";
 import { AppLogger } from "../../lib/logger";
 
@@ -20,7 +20,7 @@ import { AppLogger } from "../../lib/logger";
  * URL: /app/billing/callback?charge_id=gid://shopify/AppSubscription/12345
  */
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
   const shopDomain = session.shop;
 
   try {

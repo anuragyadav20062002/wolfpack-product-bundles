@@ -169,7 +169,7 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   toastEnterFromBottom: false,
 
   // Bundle Design
-  bundleBgColor: "#FFFFFF",
+  bundleBgColor: "",
   footerScrollBarColor: "#000000",
 
   // Product Page Title
@@ -280,12 +280,16 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   loadingOverlayTextColor: "#333333",
 
   // Widget style
-  widgetStyle: "classic",
+  widgetStyle: "bottom-sheet",
   bottomSheetOverlayOpacity: 0.5,
   bottomSheetAnimationDuration: 400,
   emptySlotBorderStyle: "dashed",
   emptySlotBorderColor: "#007AFF",
   freeGiftBadgeUrl: "",
+
+  freeGiftBadgePosition: "top-left",
+  includedBadgeUrl: "",
+  includedBadgePosition: "top-left",
 
   // Custom CSS (empty by default)
   customCss: "",
@@ -570,6 +574,9 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   emptySlotBorderStyle: "dashed",
   emptySlotBorderColor: "#007AFF",
   freeGiftBadgeUrl: "",
+  freeGiftBadgePosition: "top-left",
+  includedBadgeUrl: "",
+  includedBadgePosition: "top-left",
 
   // Custom CSS (empty by default)
   customCss: "",

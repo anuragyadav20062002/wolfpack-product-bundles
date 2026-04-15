@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import type { StoreFile } from "./app.store-files";
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -80,7 +80,7 @@ function errorResponse(message: string) {
 
 // Loader — called by the client to poll file status after upload
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { admin } = await authenticate.admin(request);
+  const { admin } = await requireAdminSession(request);
   const fileId = new URL(request.url).searchParams.get("fileId");
 
   if (!fileId) {
@@ -115,7 +115,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 // Action — receives the file, runs stagedUpload + fileCreate, returns fileId immediately.
 // The client polls the loader above until the file is READY.
 export async function action({ request }: ActionFunctionArgs) {
-  const { admin } = await authenticate.admin(request);
+  const { admin } = await requireAdminSession(request);
 
   // Parse multipart form
   const formData = await request.formData();

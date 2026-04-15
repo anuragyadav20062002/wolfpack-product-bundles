@@ -4134,8 +4134,10 @@ body.modal-open {
 .fpb-card-image-wrapper { position: relative; }
 .fpb-free-badge {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: var(--bundle-free-gift-badge-top, 6px);
+  bottom: var(--bundle-free-gift-badge-bottom, auto);
+  left: var(--bundle-free-gift-badge-left, 6px);
+  right: var(--bundle-free-gift-badge-right, auto);
   background: var(--bundle-free-badge-bg, #FFF3CD);
   color: var(--bundle-free-badge-text, #333);
   font-size: 11px;
@@ -4147,6 +4149,52 @@ body.modal-open {
 }
 
 .fpb-free-badge-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ---- Default (Included) Step — Tab Styling ---- */
+.step-tab--included {
+  border-style: dashed;
+  opacity: 0.9;
+}
+
+.step-tab--included .tab-count--included {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.step-tab--included .tab-lock--included svg {
+  opacity: 1;
+  color: #059669;
+}
+
+/* ---- Default (Included) Step — Card Styling ---- */
+.fpb-card--default-included .product-add-btn,
+.fpb-card--default-included .qty-increase,
+.fpb-card--default-included .qty-decrease {
+  display: none !important;
+}
+
+.fpb-included-badge {
+  position: absolute;
+  top: var(--bundle-included-badge-top, 6px);
+  bottom: var(--bundle-included-badge-bottom, auto);
+  left: var(--bundle-included-badge-left, 6px);
+  right: var(--bundle-included-badge-right, auto);
+  background: #10B981;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.fpb-included-badge-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
