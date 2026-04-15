@@ -1,0 +1,9 @@
+# Use this workspace to collaborate
+workspace:
+  id: 50cb7202-956d-4919-82ff-28bff8b1bd8a
+
+localResources:
+  specs:
+    - ../scripts/activate-cart-transform.graphql
+    - ../extensions/bundle-cart-transform-ts/schema.graphql
+    - ../extensions/bundle-cart-transform-ts/src/cart-transform-input.graphql
