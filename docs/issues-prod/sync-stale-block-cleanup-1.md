@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** High
 **Created:** 2026-04-15
-**Last Updated:** 2026-04-15 16:30
+**Last Updated:** 2026-04-16 10:00
 
 ## Overview
 
@@ -47,6 +47,18 @@ Files modified:
 
 Files deleted:
 - app/services/widget-installation/widget-theme-template.server.ts
+
+### 2026-04-16 10:00 - Test cleanup
+- Deleted 3 test files that covered removed behavior:
+  - `tests/unit/services/ensure-product-bundle-template.test.ts` — tested deleted `ensureProductBundleTemplate`
+  - `tests/unit/routes/api.install-pdp-widget.test.ts` — tested old template-writing; route is now a no-op
+  - `tests/unit/routes/full-page-bundle-product-sync.test.ts` — centered on `productUpdate` + `templateSuffix` assertions that no longer exist
+- Updated 4 test files to remove dead `widget-theme-template.server` mocks and align with post-API-2025-10 signatures:
+  - `tests/unit/services/widget-full-page-bundle.test.ts` — dropped deleted module mock + stale `templateSuffix` fields from mocked page responses
+  - `tests/unit/services/widget-full-page-bundle-preview.test.ts` — `getPreviewPageUrl` now takes `shopDomain` and returns `previewUrl`; `createFullPageBundle` no longer returns `shareablePreviewUrl`
+  - `tests/unit/routes/full-page-bundle-slug.test.ts` — removed `ensureProductBundleTemplate` mock/import and related assertion
+  - `tests/unit/routes/fpb-configure-preview.test.ts` — handler now calls `createFullPageBundle` with `isPublished=true` and reads `pageUrl`/`previewUrl` fields
+- All 35 tests across the 4 modified files pass; no regressions elsewhere attributable to this change.
 
 ## Related Documentation
 - docs/sync-stale-block-cleanup/00-BR.md

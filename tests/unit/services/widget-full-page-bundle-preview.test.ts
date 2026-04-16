@@ -17,9 +17,6 @@ jest.mock('../../../app/lib/logger', () => ({
   },
 }));
 
-jest.mock('../../../app/services/widget-installation/widget-theme-template.server', () => ({
-  ensureBundlePageTemplate: jest.fn().mockResolvedValue({ success: true }),
-}));
 jest.mock('../../../app/services/bundles/metafield-sync.server', () => ({
   ensurePageBundleIdMetafieldDefinition: jest.fn().mockResolvedValue(undefined),
   ensureCustomPageBundleIdDefinition: jest.fn().mockResolvedValue(undefined),
@@ -66,7 +63,6 @@ function makeAdminForDraft(opts: { withPreviewUrl?: string; createPageSuccess?: 
               id: pageId,
               title: bundleName,
               handle: pageHandle,
-              templateSuffix: 'full-page-bundle',
               shareablePreviewUrl: withPreviewUrl,
             },
             userErrors: [],
@@ -94,16 +90,16 @@ function makeAdminForDraft(opts: { withPreviewUrl?: string; createPageSuccess?: 
 describe('createFullPageBundle — isPublished: false (draft mode)', () => {
   beforeEach(() => { jest.clearAllMocks(); });
 
-  it('returns shareablePreviewUrl when isPublished is false', async () => {
+  it('returns pageUrl with page id and handle when isPublished is false', async () => {
     mockResolveUniqueHandle.mockResolvedValueOnce({ handle: pageHandle, adjusted: false });
-    const admin = makeAdminForDraft({ withPreviewUrl: PREVIEW_URL });
+    const admin = makeAdminForDraft();
 
     const result = await createFullPageBundle(
       admin, mockSession, 'api-key', bundleId, bundleName, pageHandle, false
     );
 
     expect(result.success).toBe(true);
-    expect(result.shareablePreviewUrl).toBe(PREVIEW_URL);
+    expect(result.pageUrl).toContain(pageHandle);
     expect(result.pageId).toBe(pageId);
     expect(result.pageHandle).toBe(pageHandle);
   });
@@ -222,18 +218,18 @@ describe('publishPreviewPage', () => {
 describe('getPreviewPageUrl', () => {
   beforeEach(() => { jest.clearAllMocks(); });
 
-  it('returns shareablePreviewUrl for an existing draft page', async () => {
+  it('returns previewUrl built from page handle for an existing draft page', async () => {
     const admin = { graphql: jest.fn() };
     admin.graphql.mockResolvedValueOnce(
       createMockGraphQLResponse({
-        page: { id: pageId, shareablePreviewUrl: PREVIEW_URL },
+        page: { id: pageId, handle: pageHandle },
       })
     );
 
-    const result = await getPreviewPageUrl(admin, pageId);
+    const result = await getPreviewPageUrl(admin, pageId, mockSession.shop);
 
     expect(result.success).toBe(true);
-    expect(result.shareablePreviewUrl).toBe(PREVIEW_URL);
+    expect(result.previewUrl).toBe(`https://test-shop.myshopify.com/pages/${pageHandle}`);
   });
 
   it('returns pageNotFound when page query returns null', async () => {
@@ -242,7 +238,7 @@ describe('getPreviewPageUrl', () => {
       createMockGraphQLResponse({ page: null })
     );
 
-    const result = await getPreviewPageUrl(admin, pageId);
+    const result = await getPreviewPageUrl(admin, pageId, mockSession.shop);
 
     expect(result.success).toBe(false);
     expect(result.pageNotFound).toBe(true);
@@ -251,7 +247,7 @@ describe('getPreviewPageUrl', () => {
   it('returns failure when graphql throws', async () => {
     const admin = { graphql: jest.fn().mockRejectedValueOnce(new Error('Timeout')) };
 
-    const result = await getPreviewPageUrl(admin, pageId);
+    const result = await getPreviewPageUrl(admin, pageId, mockSession.shop);
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('Timeout');
