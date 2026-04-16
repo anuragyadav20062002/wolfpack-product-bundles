@@ -1,7 +1,7 @@
 # Issue: Migrate Cart Transform Function from TypeScript to Rust
 
 **Issue ID:** cart-transform-rust-migration-1
-**Status:** In Progress
+**Status:** In Progress — Code complete, pending first compile + deploy
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
 **Last Updated:** 2026-04-16
@@ -56,14 +56,36 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
 
+### 2026-04-16 — All 7 commits landed (code complete)
+
+**Commits on branch `migrate/cart-transform-rust`:**
+- `d23e61e` — Commit 1: Scaffold (Cargo.toml, shopify.extension.toml, main.rs stub, schema.graphql, run.graphql)
+- `d9a7880` — Commit 2: types.rs (all output + metafield JSON types) + helpers.rs (safe_parse_float, parse_json_or_default, normalize_operator, is_free_gift_line, truncate) + unit tests
+- `33f97e3` — Commit 3: pricing.rs — calculate_discount_percentage (6-param, all methods, free-gift math, condition check, rate guard) + 10 unit tests
+- `69c255c` — Commit 4: merge.rs — O(n) grouping, unique title suffix, compact component tuples, always-include price field
+- `c38e53b` — Commit 5: expand.rs — Flex Bundle pattern, component_pricing map, missing-pricing zero-tolerance rule
+- `e8ad910` — Commit 6: run.rs + main.rs wired — full MERGE+EXPAND dispatch, empty-cart guard, presentment_rate guard
+- `3bb09f8` — Commit 7: tests/integration_test.rs — 6 full-stack JSON fixture tests
+
+**Next steps (human required):**
+1. Install Rust on dev machine: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+2. `rustup target add wasm32-unknown-unknown`
+3. `cd extensions/bundle-cart-transform-rs && cargo test` — run unit + integration tests
+4. `cargo build --target=wasm32-unknown-unknown --release` — verify clean compile
+5. From project root: `shopify app function run` → select bundle-cart-transform-rs → send test fixture
+6. When satisfied: `npm run deploy:sit` → test on SIT store
+7. Then: `npm run deploy:prod` → swap active handle to `bundle-cart-transform-rs`
+
 ## Phases Checklist
-- [ ] Commit 1: Scaffold
-- [ ] Commit 2: Types + helpers
-- [ ] Commit 3: Pricing engine
-- [ ] Commit 4: MERGE operation
-- [ ] Commit 5: EXPAND operation
-- [ ] Commit 6: Wire up run.rs
-- [ ] Commit 7: Integration tests
-- [ ] Deploy to dev store and verify
-- [ ] Cut over production (swap handle, redeploy)
+- [x] Commit 1: Scaffold
+- [x] Commit 2: Types + helpers
+- [x] Commit 3: Pricing engine
+- [x] Commit 4: MERGE operation
+- [x] Commit 5: EXPAND operation
+- [x] Commit 6: Wire up run.rs
+- [x] Commit 7: Integration tests
+- [ ] Install Rust + cargo test (human)
+- [ ] cargo build --target=wasm32-unknown-unknown --release (human)
+- [ ] Deploy to SIT + verify on dev store
+- [ ] Deploy to PROD + cut over (swap handle)
 - [ ] Remove TS extension after 1–2 weeks stable
