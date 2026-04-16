@@ -27,3 +27,12 @@ prisma/dev.db
 
 # Ignore pub/sub service account json credentials
 light-quest-455608-i3-fb32f16e0e1a.json
+
+# Graphify knowledge graph (large generated files — graph.json can be 2MB+)
+graphify-out/graph.html
+graphify-out/.graphify_*.json
+graphify-out/.graphify_*.txt
+graphify-out/cache/
+
+# Internal docs vault (audited, private — not for version control)
+internal docs/
