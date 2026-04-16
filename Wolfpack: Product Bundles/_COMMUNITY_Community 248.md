@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[api.ts]] - code - app/constants/api.ts
+- [[normalizeHex()]] - code - app/components/design-control-panel/common/colorUtils.ts
 
 ## Live Query (requires Dataview plugin)
 

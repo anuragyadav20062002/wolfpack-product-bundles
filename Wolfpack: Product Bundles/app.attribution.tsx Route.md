@@ -1,11 +1,11 @@
 ---
 source_file: "app/routes/app/app.attribution.tsx"
 type: "code"
-community: "Analytics & Custom Date Range"
+community: "Community 16"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Analytics_&_Custom_Date_Range
+  - community/Community_16
 ---
 
 # app.attribution.tsx Route
@@ -16,4 +16,4 @@ tags:
 - [[Analytics Pixel Toggle Architecture]] - `references` [EXTRACTED]
 - [[Rationale Option B (Action on Attribution Route) Selected for Pixel Toggle]] - `rationale_for` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Analytics_&_Custom_Date_Range
+#graphify/code #graphify/EXTRACTED #community/Community_16

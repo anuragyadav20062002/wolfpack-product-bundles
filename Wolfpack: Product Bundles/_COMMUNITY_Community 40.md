@@ -1,23 +1,19 @@
 ---
 type: community
-cohesion: 0.39
-members: 8
+cohesion: 0.83
+members: 4
 ---
 
 # Community 40
 
-**Cohesion:** 0.39 - loosely connected
-**Members:** 8 nodes
+**Cohesion:** 0.83 - tightly connected
+**Members:** 4 nodes
 
 ## Members
-- [[cart-transform-bundle-utils.ts]] - code - extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts
-- [[checkCartMeetsBundleConditions()]] - code - extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts
-- [[extractProductIdFromVariantGid()]] - code - extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts
-- [[getAllBundleDataFromCart()]] - code - extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts
-- [[getApplicableDiscountRule()]] - code - extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts
-- [[normalizeProductId()]] - code - extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts
-- [[parseBundleDataFromMetafield()]] - code - extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts
-- [[parseBundleFromComponentMetafields()]] - code - extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts
+- [[Extension wolfpack-utm-pixelsrcindex.ts]] - source - extensions/wolfpack-utm-pixel/src/index.ts
+- [[Issue Ad-Ready Bundle Infrastructure — Phase 2 & Phase 3]] - document - docs/issues-prod/ad-ready-phase2-phase3-1.md
+- [[Issue Attribution Matching — bundleId Null & orderNumber Null]] - document - docs/issues-prod/attribution-matching-fix-1.md
+- [[Route api.attribution.tsx]] - source - app/routes/api/api.attribution.tsx
 
 ## Live Query (requires Dataview plugin)
 

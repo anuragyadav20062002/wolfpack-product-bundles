@@ -1,12 +1,12 @@
 ---
 source_file: "docs/archive/UUID_ROOT_CAUSE_FIX.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 location: "The Fix"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # UUID Root Cause: React State Transform on Init (id → productId)
@@ -16,4 +16,4 @@ tags:
 - [[UUID Root Cause Fix (Database Primary Key vs productId)]] - `references` [EXTRACTED]
 - [[UUID from Corrupted Browser State (not database)]] - `conceptually_related_to` [INFERRED]
 
-#graphify/document #graphify/INFERRED #community/Metafield_Architecture
+#graphify/document #graphify/INFERRED #community/Community_26

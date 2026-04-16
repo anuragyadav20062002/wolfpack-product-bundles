@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/root/_index/route.tsx"
 type: "code"
-community: "App Routes & Pages"
+community: "Community 788"
 location: "L33"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_Routes_&_Pages
+  - community/Community_788
 ---
 
 # App()
 
-## Connections
-- [[route.tsx_5]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_Routes_&_Pages
+#graphify/code #graphify/EXTRACTED #community/Community_788

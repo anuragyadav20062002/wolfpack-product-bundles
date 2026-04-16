@@ -1,19 +1,14 @@
 ---
 source_file: "scripts/build-widget-bundles.js"
 type: "code"
-community: "Widget Build Pipeline"
+community: "Community 1660"
 location: "L236"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Widget_Build_Pipeline
+  - community/Community_1660
 ---
 
 # main()
 
-## Connections
-- [[build-widget-bundles.js]] - `contains` [EXTRACTED]
-- [[buildFullPageBundle()]] - `calls` [EXTRACTED]
-- [[buildProductPageBundle()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Widget_Build_Pipeline
+#graphify/code #graphify/EXTRACTED #community/Community_1660

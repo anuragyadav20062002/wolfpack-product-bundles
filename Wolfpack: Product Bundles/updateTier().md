@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/PricingTiersSection.tsx"
 type: "code"
-community: "Community 64"
+community: "Community 139"
 location: "L86"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_64
+  - community/Community_139
 ---
 
 # updateTier()
 
-## Connections
-- [[PricingTiersSection.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_64
+#graphify/code #graphify/EXTRACTED #community/Community_139

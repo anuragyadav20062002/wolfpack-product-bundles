@@ -1,19 +1,14 @@
 ---
 source_file: "app/lib/slug-utils.ts"
 type: "code"
-community: "Community 75"
+community: "Community 336"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_75
+  - community/Community_336
 ---
 
 # slug-utils.ts
 
-## Connections
-- [[resolveUniqueHandle()]] - `contains` [EXTRACTED]
-- [[slugify()]] - `contains` [EXTRACTED]
-- [[validateSlug()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_75
+#graphify/code #graphify/EXTRACTED #community/Community_336

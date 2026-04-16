@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 170
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[PreviewScope()]] - code - app/components/design-control-panel/preview/PreviewScope.tsx
-- [[PreviewScope.tsx]] - code - app/components/design-control-panel/preview/PreviewScope.tsx
+- [[NavigationSidebar.tsx]] - code - app/components/design-control-panel/NavigationSidebar.tsx
 
 ## Live Query (requires Dataview plugin)
 

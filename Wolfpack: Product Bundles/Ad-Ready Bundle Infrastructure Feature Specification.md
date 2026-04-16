@@ -1,11 +1,11 @@
 ---
 source_file: "docs/ad-ready-bundles/FEATURE-SPEC.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # Ad-Ready Bundle Infrastructure Feature Specification
@@ -17,4 +17,4 @@ tags:
 - [[Web Pixel Extension for UTM Attribution]] - `references` [EXTRACTED]
 - [[handlers.server.ts (Dashboard Handlers)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/EXTRACTED #community/Community_11

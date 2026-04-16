@@ -1,21 +1,18 @@
 ---
 type: community
-cohesion: 0.33
-members: 6
+cohesion: 0.67
+members: 3
 ---
 
 # Community 51
 
-**Cohesion:** 0.33 - loosely connected
-**Members:** 6 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[ErrorPage()]] - code - app/components/ErrorPage.tsx
-- [[ErrorPage.tsx]] - code - app/components/ErrorPage.tsx
-- [[IllustrationLocked()]] - code - app/components/ErrorPage.tsx
-- [[IllustrationNotFound()]] - code - app/components/ErrorPage.tsx
-- [[IllustrationServer()]] - code - app/components/ErrorPage.tsx
-- [[navigateToDashboard()]] - code - app/components/ErrorPage.tsx
+- [[Fix FilePicker Input Inside Portal Dialog]] - concept - docs/issues-prod/dcp-widget-style-fixes-1.md
+- [[Fix ProductCardPreview Width (explicit 520px containing block)]] - concept - docs/issues-prod/dcp-widget-style-fixes-1.md
+- [[Issue DCP Widget Style Preview + Free Gift Badge Upload Fix (dcp-widget-style-fixes-1)]] - document - docs/issues-prod/dcp-widget-style-fixes-1.md
 
 ## Live Query (requires Dataview plugin)
 

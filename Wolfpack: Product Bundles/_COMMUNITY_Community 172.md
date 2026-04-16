@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 172
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[useBundleConfigurationState()]] - code - app/hooks/useBundleConfigurationState.ts
-- [[useBundleConfigurationState.ts]] - code - app/hooks/useBundleConfigurationState.ts
+- [[AccessibilitySettings()]] - code - app/components/design-control-panel/settings/AccessibilitySettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

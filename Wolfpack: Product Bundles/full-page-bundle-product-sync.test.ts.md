@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/routes/full-page-bundle-product-sync.test.ts"
 type: "code"
-community: "Community 220"
+community: "Community 1240"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_220
+  - community/Community_1240
 ---
 
 # full-page-bundle-product-sync.test.ts
 
-## Connections
-- [[getDb()_1]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_220
+#graphify/code #graphify/EXTRACTED #community/Community_1240

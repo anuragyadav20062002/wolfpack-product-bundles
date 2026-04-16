@@ -1,17 +1,14 @@
 ---
 source_file: "app/hooks/useBundleConfigurationState.ts"
 type: "code"
-community: "Community 172"
+community: "Community 295"
 location: "L62"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_172
+  - community/Community_295
 ---
 
 # useBundleConfigurationState()
 
-## Connections
-- [[useBundleConfigurationState.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_172
+#graphify/code #graphify/EXTRACTED #community/Community_295

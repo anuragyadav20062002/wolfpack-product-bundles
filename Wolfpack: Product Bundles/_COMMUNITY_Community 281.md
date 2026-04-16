@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[index.ts_4]] - code - app/components/design-control-panel/preview/index.ts
+- [[UpgradeSuccessBanner.tsx]] - code - app/components/billing/UpgradeSuccessBanner.tsx
 
 ## Live Query (requires Dataview plugin)
 

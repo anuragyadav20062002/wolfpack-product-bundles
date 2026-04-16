@@ -1,17 +1,17 @@
 ---
 source_file: "docs/ad-ready-bundles/BREAKING-CHANGES.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 8"
 location: "Section 1"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_8
 ---
 
 # OAuth Scope Changes Requiring Re-Authentication
 
 ## Connections
-- [[shopify.app.toml]] - `references` [EXTRACTED]
+- [[shopify.app.toml Configuration File]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/EXTRACTED #community/Community_8

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[pdp.config.ts]] - code - app/lib/dcp-config/pdp.config.ts
+- [[useBundleConfigurationState.ts]] - code - app/hooks/useBundleConfigurationState.ts
 
 ## Live Query (requires Dataview plugin)
 

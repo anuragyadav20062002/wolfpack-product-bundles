@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[SubscriptionQuotaCard.tsx]] - code - app/components/billing/SubscriptionQuotaCard.tsx
+- [[getErrorMessage()]] - code - app/components/billing/SubscriptionErrorBanner.tsx
 
 ## Live Query (requires Dataview plugin)
 

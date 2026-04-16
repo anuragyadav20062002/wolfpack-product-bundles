@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[metafield-sync.server.ts]] - code - app/services/bundles/metafield-sync.server.ts
+- [[useStateServiceInstance()]] - code - app/hooks/useAppState.ts
 
 ## Live Query (requires Dataview plugin)
 

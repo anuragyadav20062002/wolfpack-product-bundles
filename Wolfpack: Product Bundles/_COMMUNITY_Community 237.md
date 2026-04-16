@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[globals.d.ts]] - code - app/globals.d.ts
+- [[getDefaultSettings()]] - code - app/components/design-control-panel/config/defaultSettings.ts
 
 ## Live Query (requires Dataview plugin)
 

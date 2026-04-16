@@ -1,18 +1,14 @@
 ---
 source_file: "app/services/webhook-worker.server.ts"
 type: "code"
-community: "Community 45"
+community: "Community 962"
 location: "L101"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_45
+  - community/Community_962
 ---
 
 # readRawBody()
 
-## Connections
-- [[handleRequest()_1]] - `calls` [EXTRACTED]
-- [[webhook-worker.server.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_45
+#graphify/code #graphify/EXTRACTED #community/Community_962

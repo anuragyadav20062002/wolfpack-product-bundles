@@ -1,26 +1,14 @@
 ---
 source_file: "tests/unit/assets/bundle-widget-free-gift.test.ts"
 type: "code"
-community: "Free Gift Widget Tests"
+community: "Community 1161"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Free_Gift_Widget_Tests
+  - community/Community_1161
 ---
 
 # bundle-widget-free-gift.test.ts
 
-## Connections
-- [[canNavigateToStep()]] - `contains` [EXTRACTED]
-- [[getFreeGiftRemainingCount()]] - `contains` [EXTRACTED]
-- [[getFreeGiftStep()]] - `contains` [EXTRACTED]
-- [[getFreeGiftStepIndex()]] - `contains` [EXTRACTED]
-- [[getPaidSteps()]] - `contains` [EXTRACTED]
-- [[initDefaultProducts()]] - `contains` [EXTRACTED]
-- [[isFreeGiftUnlocked()]] - `contains` [EXTRACTED]
-- [[isStepCompleted()]] - `contains` [EXTRACTED]
-- [[makeSelection()]] - `contains` [EXTRACTED]
-- [[makeStep()_1]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Free_Gift_Widget_Tests
+#graphify/code #graphify/EXTRACTED #community/Community_1161

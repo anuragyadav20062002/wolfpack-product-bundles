@@ -1,11 +1,11 @@
 ---
 source_file: "docs/analytics-redesign/03-architecture.md"
 type: "document"
-community: "Analytics & Custom Date Range"
+community: "Community 16"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Analytics_&_Custom_Date_Range
+  - community/Community_16
 ---
 
 # Analytics Page Redesign Architecture
@@ -19,4 +19,4 @@ tags:
 - [[analytics-helpers.ts Pure Functions]] - `references` [EXTRACTED]
 - [[app.attribution.tsx Route]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Analytics_&_Custom_Date_Range
+#graphify/document #graphify/EXTRACTED #community/Community_16

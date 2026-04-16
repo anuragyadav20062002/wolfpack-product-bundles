@@ -1,12 +1,12 @@
 ---
 source_file: "docs/ad-ready-bundles/FEATURE-SPEC.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 location: "Section 7.3"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # OrderAttribution Prisma Model
@@ -15,7 +15,7 @@ tags:
 - [[Ad-Ready Bundle Infrastructure Feature Specification]] - `references` [EXTRACTED]
 - [[Analytics Page Redesign Architecture]] - `references` [INFERRED]
 - [[Analytics Page Redesign PO Requirements]] - `references` [INFERRED]
+- [[Prisma Schema (prismaschema.prisma)]] - `references` [EXTRACTED]
 - [[Web Pixel Extension for UTM Attribution]] - `conceptually_related_to` [INFERRED]
-- [[prismaschema.prisma]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/INFERRED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/INFERRED #community/Community_11

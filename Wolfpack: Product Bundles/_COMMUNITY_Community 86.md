@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.50
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 86
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[makeAmtRule()]] - code - tests/unit/assets/pricing-calculator.test.ts
-- [[makeBundle()_1]] - code - tests/unit/assets/pricing-calculator.test.ts
-- [[makeQtyRule()]] - code - tests/unit/assets/pricing-calculator.test.ts
-- [[pricing-calculator.test.ts]] - code - tests/unit/assets/pricing-calculator.test.ts
+- [[pricing.ts]] - code - app/types/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

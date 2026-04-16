@@ -1,21 +1,14 @@
 ---
 source_file: "app/components/ErrorPage.tsx"
 type: "code"
-community: "Community 51"
+community: "Community 143"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_51
+  - community/Community_143
 ---
 
 # ErrorPage.tsx
 
-## Connections
-- [[ErrorPage()]] - `contains` [EXTRACTED]
-- [[IllustrationLocked()]] - `contains` [EXTRACTED]
-- [[IllustrationNotFound()]] - `contains` [EXTRACTED]
-- [[IllustrationServer()]] - `contains` [EXTRACTED]
-- [[navigateToDashboard()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_51
+#graphify/code #graphify/EXTRACTED #community/Community_143

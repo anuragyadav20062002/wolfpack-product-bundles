@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[bundle.ts]] - code - app/constants/bundle.ts
+- [[handleClick()]] - code - app/components/design-control-panel/common/InlineColorInput.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,18 +1,14 @@
 ---
 source_file: "app/routes/app/app.onboarding.tsx"
 type: "code"
-community: "Community 44"
+community: "Community 728"
 location: "L70"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_44
+  - community/Community_728
 ---
 
 # generateThemeEditorLink()
 
-## Connections
-- [[app.onboarding.tsx]] - `contains` [EXTRACTED]
-- [[handleOpenThemeEditor()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_44
+#graphify/code #graphify/EXTRACTED #community/Community_728

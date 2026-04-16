@@ -1,11 +1,11 @@
 ---
 source_file: "docs/admin-tier-config/00-BR.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 2"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_2
 ---
 
 # Admin Tier Config BR
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Admin Tier Config PO Requirements]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/EXTRACTED #community/Community_2

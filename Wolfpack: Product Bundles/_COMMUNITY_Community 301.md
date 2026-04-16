@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[index.js]] - code - app/assets/widgets/shared/index.js
+- [[useBundlePricing()]] - code - app/hooks/useBundlePricing.ts
 
 ## Live Query (requires Dataview plugin)
 

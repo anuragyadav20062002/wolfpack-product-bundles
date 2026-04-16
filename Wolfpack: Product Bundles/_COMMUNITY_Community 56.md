@@ -1,21 +1,18 @@
 ---
 type: community
-cohesion: 0.60
-members: 6
+cohesion: 0.67
+members: 3
 ---
 
 # Community 56
 
-**Cohesion:** 0.60 - moderately connected
-**Members:** 6 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[api.preview.$type.tsx]] - code - app/routes/api/api.preview.$type.tsx
-- [[fetchThemeFontAssets()]] - code - app/routes/api/api.preview.$type.tsx
-- [[getFpbHtml()]] - code - app/routes/api/api.preview.$type.tsx
-- [[getPreviewScript()]] - code - app/routes/api/api.preview.$type.tsx
-- [[getWidgetCss()]] - code - app/routes/api/api.preview.$type.tsx
-- [[loader()_20]] - code - app/routes/api/api.preview.$type.tsx
+- [[Custom CSS Section with Per-Bundle-Type Tabs on DCP Landing Page]] - document - docs/dcp-federation/02-PO-requirements.md
+- [[DCP Landing Page with Two Bundle Type Entry Cards (Full-Page + Product-Page)]] - document - docs/dcp-federation/02-PO-requirements.md
+- [[NavigationSidebar bundleType Prop (hides Promo Banner + Tier Pills for product_page)]] - document - docs/dcp-federation/03-architecture.md
 
 ## Live Query (requires Dataview plugin)
 

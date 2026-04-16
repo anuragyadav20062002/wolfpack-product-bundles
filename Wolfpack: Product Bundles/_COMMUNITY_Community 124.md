@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 124
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[auth-guards.test.ts]] - code - tests/unit/lib/auth-guards.test.ts
-- [[makeRequest()]] - code - tests/unit/lib/auth-guards.test.ts
-- [[readJsonBody()]] - code - tests/unit/lib/auth-guards.test.ts
+- [[shouldShowUpgradePrompt()]] - code - app/utils/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

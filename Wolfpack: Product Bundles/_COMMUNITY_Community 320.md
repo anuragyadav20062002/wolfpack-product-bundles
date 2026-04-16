@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[index.ts_16]] - code - app/services/bundles/metafield-sync/utils/index.ts
+- [[useBundleConditions.ts]] - code - app/hooks/useBundleConditions.ts
 
 ## Live Query (requires Dataview plugin)
 

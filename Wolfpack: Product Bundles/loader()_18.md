@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/api/api.activate-cart-transform.tsx"
 type: "code"
-community: "Community 198"
+community: "Community 810"
 location: "L6"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_198
+  - community/Community_810
 ---
 
 # loader()
 
-## Connections
-- [[api.activate-cart-transform.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_198
+#graphify/code #graphify/EXTRACTED #community/Community_810

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[SegmentedButtonGroup.tsx]] - code - app/components/design-control-panel/common/SegmentedButtonGroup.tsx
+- [[TierPillPreview.tsx]] - code - app/components/design-control-panel/preview/TierPillPreview.tsx
 
 ## Live Query (requires Dataview plugin)
 

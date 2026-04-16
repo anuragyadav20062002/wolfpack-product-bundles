@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/assets/bundle-widget.test.ts"
 type: "code"
-community: "Bundle Widget Tests"
+community: "Community 1189"
 location: "L173"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Bundle_Widget_Tests
+  - community/Community_1189
 ---
 
 # validateBundleData()
 
-## Connections
-- [[bundle-widget.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Bundle_Widget_Tests
+#graphify/code #graphify/EXTRACTED #community/Community_1189

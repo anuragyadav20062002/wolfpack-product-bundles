@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 153
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[HeaderTabsSettings()]] - code - app/components/design-control-panel/settings/HeaderTabsSettings.tsx
-- [[HeaderTabsSettings.tsx]] - code - app/components/design-control-panel/settings/HeaderTabsSettings.tsx
+- [[InlineUpgradePrompt()]] - code - app/components/FeatureGate.tsx
 
 ## Live Query (requires Dataview plugin)
 

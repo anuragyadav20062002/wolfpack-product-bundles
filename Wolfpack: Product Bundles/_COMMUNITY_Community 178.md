@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 178
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[useCartTransformState()]] - code - app/hooks/useCartTransformState.ts
-- [[useCartTransformState.ts]] - code - app/hooks/useCartTransformState.ts
+- [[SearchInputSettings()]] - code - app/components/design-control-panel/settings/SearchInputSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-03-23
-**Last Updated:** 2026-03-23 12:00
+**Last Updated:** 2026-03-23 14:00
 
 ## Overview
 Three interrelated bugs in the Product Page Bundle (PPB) widget caused by the deployed
@@ -55,8 +55,34 @@ version and local version both show `2.3.0` despite different code.
 - Rebuilding widget bundles
 - Files changed: scripts/build-widget-bundles.js, extensions/bundle-builder/assets/
 
+### Bug 4: Cart transform not merging bundle items
+Cart items with `_bundle_id` attribute show as 3 separate line items instead of being
+merged into a single bundle line. The cart transform MERGE operation requires
+`component_parents` metafield (namespace `$app`, key `component_parents`) on at least
+one component variant in the bundle group. This metafield is likely missing because the
+bundle was never re-saved/synced after the metafield sync code was deployed.
+
+**Root cause:** `updateComponentProductMetafields()` writes `component_parents` to all
+variants stored in `StepProduct.variants` JSON column. But this only runs when the
+merchant saves the bundle config (`handleSaveBundle` at line 486 of the PPB handlers).
+If the bundle was configured before the metafield sync was added, the metafield was
+never written.
+
+**Fix:** Re-save the bundle in the app admin to trigger the metafield sync.
+
+### 2026-03-23 14:00 - Cart Transform Investigation
+- Confirmed 3 items in cart with same `_bundle_id` are NOT merged
+- Cart transform code (`cart_transform_run.ts`) is logically correct
+- MERGE silently skips when `component_parents` metafield not found on any variant in bundle group
+- `updateComponentProductMetafields()` (`component-product.server.ts`) writes metafield on save
+- Product "2024 Summer Slides" has 70 variants — metafield must exist on the selected ones
+- Fix: merchant must re-save/sync the bundle to trigger metafield write
+
 ## Phases Checklist
-- [x] Phase 1: Reproduce and verify all 3 bugs
-- [x] Phase 2: Identify root cause
+- [x] Phase 1: Reproduce and verify all 3 widget bugs
+- [x] Phase 2: Identify root cause (missing `expandProductsByVariant` in CDN version)
 - [x] Phase 3: Bump version (2.3.0 → 2.3.1), rebuild bundles
 - [ ] Phase 4: Deploy to Shopify (manual — `shopify app deploy`)
+- [x] Phase 5: Investigate cart transform MERGE failure
+- [ ] Phase 6: Re-save bundle in admin to trigger `component_parents` metafield sync
+- [ ] Phase 7: Verify cart transform merges items on storefront

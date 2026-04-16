@@ -1,21 +1,18 @@
 ---
 type: community
-cohesion: 0.40
-members: 6
+cohesion: 0.67
+members: 3
 ---
 
 # Community 57
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 6 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[.auditMetafieldConsistency()]] - code - app/services/metafield-validation.server.ts
-- [[.bulkValidateAllProductMetafields()]] - code - app/services/metafield-validation.server.ts
-- [[.validateAndCleanShopMetafields()]] - code - app/services/metafield-validation.server.ts
-- [[.validateProductMetafields()]] - code - app/services/metafield-validation.server.ts
-- [[MetafieldValidationService]] - code - app/services/metafield-validation.server.ts
-- [[metafield-validation.server.ts]] - code - app/services/metafield-validation.server.ts
+- [[BundleActionsButtons Component]] - component - docs/issues-prod/dashboard-ui-improvements-1.md
+- [[Dashboard UI Improvements & Bundle Config Cleanup]] - document - docs/issues-prod/dashboard-ui-improvements-1.md
+- [[app.dashboard.tsx Route]] - route - docs/issues-prod/dashboard-ui-improvements-1.md
 
 ## Live Query (requires Dataview plugin)
 

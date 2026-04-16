@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/lib/bundle-formatter.test.ts"
 type: "code"
-community: "Community 84"
+community: "Community 1154"
 location: "L23"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_84
+  - community/Community_1154
 ---
 
 # makeStep()
 
-## Connections
-- [[bundle-formatter.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_84
+#graphify/code #graphify/EXTRACTED #community/Community_1154

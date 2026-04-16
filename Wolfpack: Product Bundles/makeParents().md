@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/extensions/cart-transform-run.test.ts"
 type: "code"
-community: "Community 122"
+community: "Community 1142"
 location: "L564"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_122
+  - community/Community_1142
 ---
 
 # makeParents()
 
-## Connections
-- [[cart-transform-run.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_122
+#graphify/code #graphify/EXTRACTED #community/Community_1142

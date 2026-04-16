@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[BundleSetupInstructions.tsx]] - code - app/components/BundleSetupInstructions.tsx
+- [[index.ts_3]] - code - app/components/design-control-panel/common/index.ts
 
 ## Live Query (requires Dataview plugin)
 

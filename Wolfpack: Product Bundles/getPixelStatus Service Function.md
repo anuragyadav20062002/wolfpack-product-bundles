@@ -1,12 +1,12 @@
 ---
 source_file: "docs/analytics-pixel-toggle/03-architecture.md"
 type: "document"
-community: "Analytics & Custom Date Range"
+community: "Community 16"
 location: "Service Layer Changes"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Analytics_&_Custom_Date_Range
+  - community/Community_16
 ---
 
 # getPixelStatus Service Function
@@ -15,4 +15,4 @@ tags:
 - [[Analytics Pixel Toggle Architecture]] - `references` [EXTRACTED]
 - [[pixel-activation.server.ts Service]] - `references` [INFERRED]
 
-#graphify/document #graphify/EXTRACTED #community/Analytics_&_Custom_Date_Range
+#graphify/document #graphify/EXTRACTED #community/Community_16

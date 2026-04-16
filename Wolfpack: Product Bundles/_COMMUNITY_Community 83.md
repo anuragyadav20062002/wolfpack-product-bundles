@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.50
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 83
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[generateProductBundleConfigurationLink()]] - code - app/services/widget-installation/widget-theme-editor-links.server.ts
-- [[generateProductBundleInstallationLink()]] - code - app/services/widget-installation/widget-theme-editor-links.server.ts
-- [[generateThemeEditorDeepLink()]] - code - app/services/widget-installation/widget-theme-editor-links.server.ts
-- [[widget-theme-editor-links.server.ts]] - code - app/services/widget-installation/widget-theme-editor-links.server.ts
+- [[shopify.server.ts]] - code - app/shopify.server.ts
 
 ## Live Query (requires Dataview plugin)
 

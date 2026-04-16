@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/api/api.bundles.json.tsx"
 type: "code"
-community: "Community 203"
+community: "Community 837"
 location: "L15"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_203
+  - community/Community_837
 ---
 
 # loader()
 
-## Connections
-- [[api.bundles.json.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_203
+#graphify/code #graphify/EXTRACTED #community/Community_837

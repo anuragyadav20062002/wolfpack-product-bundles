@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 137
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[isFeatureGatingEnabled()]] - code - app/constants/plans.ts
-- [[plans.ts]] - code - app/constants/plans.ts
+- [[addTier()]] - code - app/components/PricingTiersSection.tsx
 
 ## Live Query (requires Dataview plugin)
 

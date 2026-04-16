@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 177
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[useBundleConditions()]] - code - app/hooks/useBundleConditions.ts
-- [[useBundleConditions.ts]] - code - app/hooks/useBundleConditions.ts
+- [[SearchInputSettings.tsx]] - code - app/components/design-control-panel/settings/SearchInputSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

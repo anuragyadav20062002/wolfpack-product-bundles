@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 117
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[.processPubSubMessage()]] - code - app/services/webhooks/processor.server.ts
-- [[WebhookProcessor]] - code - app/services/webhooks/processor.server.ts
-- [[processor.server.ts]] - code - app/services/webhooks/processor.server.ts
+- [[isUUID()]] - code - app/utils/shopify-validators.ts
 
 ## Live Query (requires Dataview plugin)
 

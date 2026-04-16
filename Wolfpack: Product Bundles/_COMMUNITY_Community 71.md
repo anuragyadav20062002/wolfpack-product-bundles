@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.60
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 71
 
-**Cohesion:** 0.60 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[action()_2]] - code - app/routes/app/app.upload-store-file.tsx
-- [[app.upload-store-file.tsx]] - code - app/routes/app/app.upload-store-file.tsx
-- [[errorResponse()]] - code - app/routes/app/app.upload-store-file.tsx
-- [[filenameFromUrl()_2]] - code - app/routes/app/app.upload-store-file.tsx
-- [[loader()_5]] - code - app/routes/app/app.upload-store-file.tsx
+- [[Analytics Pixel Toggle Feature Issue]] - document - docs/issues-prod/analytics-pixel-toggle-1.md
+- [[PixelStatusCard UI Component — UTM Pixel Toggle]] - document - docs/issues-prod/analytics-pixel-toggle-1.md
 
 ## Live Query (requires Dataview plugin)
 

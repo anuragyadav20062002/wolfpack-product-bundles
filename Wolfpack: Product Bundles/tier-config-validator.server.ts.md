@@ -1,17 +1,14 @@
 ---
 source_file: "app/lib/tier-config-validator.server.ts"
 type: "code"
-community: "Community 180"
+community: "Community 334"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_180
+  - community/Community_334
 ---
 
 # tier-config-validator.server.ts
 
-## Connections
-- [[validateTierConfig()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_180
+#graphify/code #graphify/EXTRACTED #community/Community_334

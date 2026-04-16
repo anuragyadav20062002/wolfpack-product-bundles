@@ -1,17 +1,14 @@
 ---
 source_file: "app/lib/dcp-config/index.ts"
 type: "code"
-community: "Community 183"
+community: "Community 376"
 location: "L5"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_183
+  - community/Community_376
 ---
 
 # getDCPConfig()
 
-## Connections
-- [[index.ts_6]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_183
+#graphify/code #graphify/EXTRACTED #community/Community_376

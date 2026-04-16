@@ -1,18 +1,14 @@
 ---
 source_file: "app/routes/app/app.billing.tsx"
 type: "code"
-community: "Community 100"
+community: "Community 700"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_100
+  - community/Community_700
 ---
 
 # app.billing.tsx
 
-## Connections
-- [[action()_1]] - `contains` [EXTRACTED]
-- [[loader()_4]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_100
+#graphify/code #graphify/EXTRACTED #community/Community_700

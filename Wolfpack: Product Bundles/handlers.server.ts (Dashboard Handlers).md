@@ -1,11 +1,11 @@
 ---
 source_file: "app/routes/app/app.dashboard/handlers/handlers.server.ts"
 type: "code"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # handlers.server.ts (Dashboard Handlers)
@@ -15,4 +15,4 @@ tags:
 - [[Ad-Ready Bundles Architecture Decision Record]] - `references` [EXTRACTED]
 - [[Bundle Variant Price Fix ($0 to Calculated)]] - `references` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/code #graphify/EXTRACTED #community/Community_11

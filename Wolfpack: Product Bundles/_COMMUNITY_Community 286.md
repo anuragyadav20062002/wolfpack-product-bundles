@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[UpgradeSuccessBanner.tsx]] - code - app/components/billing/UpgradeSuccessBanner.tsx
+- [[SubscriptionErrorBanner.tsx]] - code - app/components/billing/SubscriptionErrorBanner.tsx
 
 ## Live Query (requires Dataview plugin)
 

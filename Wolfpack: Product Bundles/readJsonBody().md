@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/lib/auth-guards.test.ts"
 type: "code"
-community: "Community 124"
+community: "Community 1160"
 location: "L35"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_124
+  - community/Community_1160
 ---
 
 # readJsonBody()
 
-## Connections
-- [[auth-guards.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_124
+#graphify/code #graphify/EXTRACTED #community/Community_1160

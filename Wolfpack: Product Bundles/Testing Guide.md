@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/TESTING_GUIDE.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # Testing Guide
@@ -15,4 +15,4 @@ tags:
 - [[Metafield Namespace Fix ($app → custom)]] - `references` [EXTRACTED]
 - [[Strict Product ID Validation]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Metafield_Architecture
+#graphify/document #graphify/EXTRACTED #community/Community_26

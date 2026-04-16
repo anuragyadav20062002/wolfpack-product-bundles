@@ -1,18 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 3
+members: 1
 ---
 
 # Community 106
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 3 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[api.design-settings.$shopDomain.tsx]] - code - app/routes/api/api.design-settings.$shopDomain.tsx
-- [[loader()_25]] - code - app/routes/api/api.design-settings.$shopDomain.tsx
-- [[sanitizeBundleType()]] - code - app/routes/api/api.design-settings.$shopDomain.tsx
+- [[useSubscription()]] - code - app/contexts/AppStateContext.tsx
 
 ## Live Query (requires Dataview plugin)
 

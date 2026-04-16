@@ -1,17 +1,14 @@
 ---
 source_file: "app/hooks/useBundleSteps.ts"
 type: "code"
-community: "Community 173"
+community: "Community 297"
 location: "L33"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_173
+  - community/Community_297
 ---
 
 # useBundleSteps()
 
-## Connections
-- [[useBundleSteps.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_173
+#graphify/code #graphify/EXTRACTED #community/Community_297

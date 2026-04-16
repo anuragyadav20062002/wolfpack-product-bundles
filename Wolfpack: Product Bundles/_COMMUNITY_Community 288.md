@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[FeatureComparisonTable.tsx]] - code - app/components/billing/FeatureComparisonTable.tsx
+- [[SubscriptionErrorBanner()]] - code - app/components/billing/SubscriptionErrorBanner.tsx
 
 ## Live Query (requires Dataview plugin)
 

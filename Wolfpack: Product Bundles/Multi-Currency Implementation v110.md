@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/multi-currency-implementation-summary.md"
 type: "document"
-community: "Cart Transform & Admin Fixes"
+community: "Community 20"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/Cart_Transform_&_Admin_Fixes
+  - community/Community_20
 ---
 
 # Multi-Currency Implementation v110
@@ -15,4 +15,4 @@ tags:
 - [[Currency Handling Implementation v108]] - `conceptually_related_to` [INFERRED]
 - [[Dual Currency System (calculation vs display)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/INFERRED #community/Cart_Transform_&_Admin_Fixes
+#graphify/document #graphify/INFERRED #community/Community_20

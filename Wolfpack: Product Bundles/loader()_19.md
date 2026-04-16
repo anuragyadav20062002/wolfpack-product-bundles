@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/api/api.storefront-products.tsx"
 type: "code"
-community: "Community 80"
+community: "Community 813"
 location: "L102"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_80
+  - community/Community_813
 ---
 
 # loader()
 
-## Connections
-- [[api.storefront-products.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_80
+#graphify/code #graphify/EXTRACTED #community/Community_813

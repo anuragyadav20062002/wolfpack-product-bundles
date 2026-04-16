@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 174
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[useBundleForm()]] - code - app/hooks/useBundleForm.ts
-- [[useBundleForm.ts]] - code - app/hooks/useBundleForm.ts
+- [[TypographySettings()]] - code - app/components/design-control-panel/settings/TypographySettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

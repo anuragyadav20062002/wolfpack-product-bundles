@@ -1,14 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/preview/ProductCardPreview.tsx"
 type: "code"
-community: "Community 282"
+community: "Community 275"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_282
+  - community/Community_275
 ---
 
 # ProductCardPreview.tsx
 
-#graphify/code #graphify/EXTRACTED #community/Community_282
+#graphify/code #graphify/EXTRACTED #community/Community_275

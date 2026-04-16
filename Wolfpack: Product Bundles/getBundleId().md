@@ -1,18 +1,14 @@
 ---
 source_file: "extensions/bundle-cart-transform-ts/src/cart_transform_run.ts"
 type: "code"
-community: "Cart Transform Run Logic"
+community: "Community 1636"
 location: "L346"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Cart_Transform_Run_Logic
+  - community/Community_1636
 ---
 
 # getBundleId()
 
-## Connections
-- [[cart_transform_run.ts]] - `contains` [EXTRACTED]
-- [[groupLinesByBundleId()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Cart_Transform_Run_Logic
+#graphify/code #graphify/EXTRACTED #community/Community_1636

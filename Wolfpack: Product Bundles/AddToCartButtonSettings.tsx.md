@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/AddToCartButtonSettings.tsx"
 type: "code"
-community: "Community 159"
+community: "Community 224"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_159
+  - community/Community_224
 ---
 
 # AddToCartButtonSettings.tsx
 
-## Connections
-- [[AddToCartButtonSettings()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_159
+#graphify/code #graphify/EXTRACTED #community/Community_224

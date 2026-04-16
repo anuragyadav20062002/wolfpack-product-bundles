@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/ProxyHealthBanner.tsx"
 type: "code"
-community: "Community 139"
+community: "Community 141"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_139
+  - community/Community_141
 ---
 
 # ProxyHealthBanner.tsx
 
-## Connections
-- [[ProxyHealthBanner()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_139
+#graphify/code #graphify/EXTRACTED #community/Community_141

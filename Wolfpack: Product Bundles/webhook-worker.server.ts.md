@@ -1,22 +1,14 @@
 ---
 source_file: "app/services/webhook-worker.server.ts"
 type: "code"
-community: "Community 45"
+community: "Community 959"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_45
+  - community/Community_959
 ---
 
 # webhook-worker.server.ts
 
-## Connections
-- [[buildInngestPayload()]] - `contains` [EXTRACTED]
-- [[handleRequest()_1]] - `contains` [EXTRACTED]
-- [[readRawBody()]] - `contains` [EXTRACTED]
-- [[startWebhookWorker()]] - `contains` [EXTRACTED]
-- [[stopWebhookWorker()]] - `contains` [EXTRACTED]
-- [[validateHmac()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_45
+#graphify/code #graphify/EXTRACTED #community/Community_959

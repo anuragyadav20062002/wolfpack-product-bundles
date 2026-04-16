@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 135
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[Analytics Custom Date Range SDE Plan]] - document - docs/analytics-custom-date-range/04-SDE-implementation.md
-- [[Analytics Page Redesign SDE Plan]] - document - docs/analytics-redesign/04-SDE-implementation.md
-- [[testsunitlibanalytics-helpers.test.ts]] - code - tests/unit/lib/analytics-helpers.test.ts
+- [[PricingTiersSection.tsx]] - code - app/components/PricingTiersSection.tsx
 
 ## Live Query (requires Dataview plugin)
 

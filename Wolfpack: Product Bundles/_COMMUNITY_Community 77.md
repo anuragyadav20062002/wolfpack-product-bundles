@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 77
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[buildBadgePositionVars()]] - code - app/lib/css-generators/css-variables-generator.ts
-- [[css-variables-generator.ts]] - code - app/lib/css-generators/css-variables-generator.ts
-- [[generateCSSVariables()]] - code - app/lib/css-generators/css-variables-generator.ts
-- [[generateFullPageVariables()]] - code - app/lib/css-generators/css-variables-generator.ts
+- [[postcss.config.js]] - code - postcss.config.js
 
 ## Live Query (requires Dataview plugin)
 

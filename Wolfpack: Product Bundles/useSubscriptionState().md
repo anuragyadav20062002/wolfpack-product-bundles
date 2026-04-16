@@ -1,17 +1,14 @@
 ---
 source_file: "app/hooks/useAppState.ts"
 type: "code"
-community: "App State Hooks"
+community: "Community 315"
 location: "L408"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_State_Hooks
+  - community/Community_315
 ---
 
 # useSubscriptionState()
 
-## Connections
-- [[useAppState.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_State_Hooks
+#graphify/code #graphify/EXTRACTED #community/Community_315

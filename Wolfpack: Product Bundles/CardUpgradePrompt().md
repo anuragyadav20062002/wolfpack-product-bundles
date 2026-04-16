@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/FeatureGate.tsx"
 type: "code"
-community: "Feature Gate"
+community: "Community 152"
 location: "L108"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Feature_Gate
+  - community/Community_152
 ---
 
 # CardUpgradePrompt()
 
-## Connections
-- [[FeatureGate.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Feature_Gate
+#graphify/code #graphify/EXTRACTED #community/Community_152

@@ -1,11 +1,12 @@
 ---
-source_file: "app/lib/analytics/analytics-helpers.ts"
-type: "code"
-community: "Analytics & Custom Date Range"
+source_file: "docs/issues-prod/analytics-redesign-1.md"
+type: "service"
+community: "Community 16"
+location: "app/lib/analytics/analytics-helpers.ts"
 tags:
-  - graphify/code
+  - graphify/service
   - graphify/EXTRACTED
-  - community/Analytics_&_Custom_Date_Range
+  - community/Community_16
 ---
 
 # analytics-helpers.ts
@@ -13,7 +14,8 @@ tags:
 ## Connections
 - [[Analytics Custom Date Range Architecture]] - `references` [EXTRACTED]
 - [[Analytics Page Redesign Architecture]] - `references` [EXTRACTED]
+- [[Analytics Page Redesign — Bundle Revenue Section]] - `creates` [EXTRACTED]
 - [[analytics-helpers.ts Pure Functions]] - `references` [INFERRED]
 - [[buildBundleTrendSeries Function (until param)]] - `references` [INFERRED]
 
-#graphify/code #graphify/EXTRACTED #community/Analytics_&_Custom_Date_Range
+#graphify/service #graphify/EXTRACTED #community/Community_16

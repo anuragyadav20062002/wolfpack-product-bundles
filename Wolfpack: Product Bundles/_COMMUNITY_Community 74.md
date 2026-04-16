@@ -1,20 +1,16 @@
 ---
 type: community
-cohesion: 0.40
-members: 5
+cohesion: 1.00
+members: 1
 ---
 
 # Community 74
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[definitions.server.ts]] - code - app/services/bundles/metafield-sync/operations/definitions.server.ts
-- [[ensureCustomPageBundleConfigDefinition()]] - code - app/services/bundles/metafield-sync/operations/definitions.server.ts
-- [[ensureCustomPageBundleIdDefinition()]] - code - app/services/bundles/metafield-sync/operations/definitions.server.ts
-- [[ensurePageBundleIdMetafieldDefinition()]] - code - app/services/bundles/metafield-sync/operations/definitions.server.ts
-- [[ensureVariantBundleMetafieldDefinitions()]] - code - app/services/bundles/metafield-sync/operations/definitions.server.ts
+- [[jest.config.js]] - code - jest.config.js
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/LoadingStateSettings.tsx"
 type: "code"
-community: "Community 150"
+community: "Community 189"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_150
+  - community/Community_189
 ---
 
 # LoadingStateSettings()
 
-## Connections
-- [[LoadingStateSettings.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_150
+#graphify/code #graphify/EXTRACTED #community/Community_189

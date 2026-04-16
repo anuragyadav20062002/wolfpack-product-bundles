@@ -1,17 +1,14 @@
 ---
 source_file: "app/hooks/useDashboardState.ts"
 type: "code"
-community: "Community 179"
+community: "Community 328"
 location: "L33"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_179
+  - community/Community_328
 ---
 
 # useDashboardState()
 
-## Connections
-- [[useDashboardState.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_179
+#graphify/code #graphify/EXTRACTED #community/Community_328

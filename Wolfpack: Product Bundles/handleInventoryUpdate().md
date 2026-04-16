@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/webhooks/handlers/inventory.server.ts"
 type: "code"
-community: "Community 209"
+community: "Community 1031"
 location: "L21"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_209
+  - community/Community_1031
 ---
 
 # handleInventoryUpdate()
 
-## Connections
-- [[inventory.server.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_209
+#graphify/code #graphify/EXTRACTED #community/Community_1031

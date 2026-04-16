@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/clean-discount-fix-summary.md"
 type: "document"
-community: "Cart Transform & Admin Fixes"
+community: "Community 20"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Cart_Transform_&_Admin_Fixes
+  - community/Community_20
 ---
 
 # Clean Discount Fix (discountOn → conditionType mapping)
@@ -14,4 +14,4 @@ tags:
 - [[Amount vs Quantity Condition Discount Logic]] - `conceptually_related_to` [INFERRED]
 - [[Backend Fix Map discountOn to conditionType in Cart Transform Config]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Cart_Transform_&_Admin_Fixes
+#graphify/document #graphify/EXTRACTED #community/Community_20

@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 182
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[buildFpbProductCard()]] - code - app/lib/dcp-config/fpb.config.ts
-- [[fpb.config.ts]] - code - app/lib/dcp-config/fpb.config.ts
+- [[BadgePreviewCard.tsx]] - code - app/components/design-control-panel/settings/BadgePreviewCard.tsx
 
 ## Live Query (requires Dataview plugin)
 

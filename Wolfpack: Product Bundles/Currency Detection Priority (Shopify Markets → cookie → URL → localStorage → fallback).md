@@ -1,12 +1,12 @@
 ---
 source_file: "docs/archive/complete-multi-currency-implementation.md"
 type: "document"
-community: "Cart Transform & Admin Fixes"
+community: "Community 20"
 location: "Currency Detection Priority"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Cart_Transform_&_Admin_Fixes
+  - community/Community_20
 ---
 
 # Currency Detection Priority (Shopify Markets → cookie → URL → localStorage → fallback)
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[Complete Multi-Currency Implementation v111]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Cart_Transform_&_Admin_Fixes
+#graphify/document #graphify/EXTRACTED #community/Community_20

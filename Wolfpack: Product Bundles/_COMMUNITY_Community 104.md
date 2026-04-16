@@ -1,18 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 3
+members: 1
 ---
 
 # Community 104
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 3 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[action()_9]] - code - app/routes/api/api.install-pdp-widget.tsx
-- [[api.install-pdp-widget.tsx]] - code - app/routes/api/api.install-pdp-widget.tsx
-- [[applyTemplateSuffixToProduct()]] - code - app/routes/api/api.install-pdp-widget.tsx
+- [[useBundleConfiguration()]] - code - app/contexts/AppStateContext.tsx
 
 ## Live Query (requires Dataview plugin)
 

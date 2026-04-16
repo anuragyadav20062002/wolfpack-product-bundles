@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/TypographySettings.tsx"
 type: "code"
-community: "Community 143"
+community: "Community 173"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_143
+  - community/Community_173
 ---
 
 # TypographySettings.tsx
 
-## Connections
-- [[TypographySettings()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_143
+#graphify/code #graphify/EXTRACTED #community/Community_173

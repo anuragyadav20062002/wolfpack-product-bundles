@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 164
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[ColorPickerRow()]] - code - app/components/design-control-panel/common/ColorPickerRow.tsx
-- [[ColorPickerRow.tsx]] - code - app/components/design-control-panel/common/ColorPickerRow.tsx
+- [[NavigationItem.tsx]] - code - app/components/design-control-panel/NavigationItem.tsx
 
 ## Live Query (requires Dataview plugin)
 

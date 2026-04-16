@@ -11,6 +11,7 @@ import { createMockGraphQLResponse } from '../../setup';
 // Clear the module cache to get a fresh import with mocked console
 jest.mock('../../../app/lib/logger', () => ({
   AppLogger: {
+    debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
@@ -154,5 +155,76 @@ describe('calculateBundlePrice — all discount methods', () => {
 
     const result = await calculateBundlePrice(admin, bundle);
     expect(result).toBe('30.00');
+  });
+
+  it('should calculate price with fixed_amount_off discount', async () => {
+    // One product at $50.00, fixed $10.00 off (1000 cents)
+    // $50.00 - $10.00 = $40.00
+    const admin = createMockAdmin('50.00');
+    const bundle = createBundleWithPricing(
+      'fixed_amount_off',
+      [{ discount: { value: 1000 } }], // 1000 cents = $10.00
+      [{
+        StepProduct: [{ productId: 'gid://shopify/Product/1' }],
+        minQuantity: 1,
+      }]
+    );
+
+    const result = await calculateBundlePrice(admin, bundle);
+    expect(result).toBe('40.00');
+  });
+
+  it('should enforce minimum price when fixed_amount_off exceeds total', async () => {
+    // One product at $5.00, fixed $20.00 off (2000 cents) — result clamped to $0.01
+    const admin = createMockAdmin('5.00');
+    const bundle = createBundleWithPricing(
+      'fixed_amount_off',
+      [{ discount: { value: 2000 } }], // 2000 cents = $20.00 off
+      [{
+        StepProduct: [{ productId: 'gid://shopify/Product/1' }],
+        minQuantity: 1,
+      }]
+    );
+
+    const result = await calculateBundlePrice(admin, bundle);
+    expect(result).toBe('0.01');
+  });
+
+  it('should calculate price with fixed_bundle_price discount', async () => {
+    // Products total $80.00, fixed bundle price = $2999 cents = $29.99
+    const admin = createMockAdmin('50.00', '30.00');
+    const bundle = createBundleWithPricing(
+      'fixed_bundle_price',
+      [{ discount: { value: 2999 } }], // 2999 cents = $29.99 final price
+      [
+        {
+          StepProduct: [{ productId: 'gid://shopify/Product/1' }],
+          minQuantity: 1,
+        },
+        {
+          StepProduct: [{ productId: 'gid://shopify/Product/2' }],
+          minQuantity: 1,
+        },
+      ]
+    );
+
+    const result = await calculateBundlePrice(admin, bundle);
+    expect(result).toBe('29.99');
+  });
+
+  it('should enforce minimum price when fixed_bundle_price is zero', async () => {
+    // fixed_bundle_price = 0 cents → clamped to $0.01
+    const admin = createMockAdmin('50.00');
+    const bundle = createBundleWithPricing(
+      'fixed_bundle_price',
+      [{ discount: { value: 0 } }],
+      [{
+        StepProduct: [{ productId: 'gid://shopify/Product/1' }],
+        minQuantity: 1,
+      }]
+    );
+
+    const result = await calculateBundlePrice(admin, bundle);
+    expect(result).toBe('0.01');
   });
 });

@@ -1,11 +1,11 @@
 ---
 source_file: "docs/admin-tier-config/04-SDE-implementation.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 2"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_2
 ---
 
 # Admin Tier Config SDE Implementation Plan
@@ -19,4 +19,4 @@ tags:
 - [[testsunitlibtier-config-validator.test.ts]] - `references` [EXTRACTED]
 - [[validateTierConfig Server Function]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/EXTRACTED #community/Community_2

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[UpgradePromptBanner.tsx]] - code - app/components/UpgradePromptBanner.tsx
+- [[ArrowLabel.tsx]] - code - app/components/design-control-panel/common/ArrowLabel.tsx
 
 ## Live Query (requires Dataview plugin)
 

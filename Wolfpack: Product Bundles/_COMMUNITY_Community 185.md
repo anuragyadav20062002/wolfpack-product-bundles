@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 185
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[generateModalCSS()]] - code - app/lib/css-generators/modal-generator.ts
-- [[modal-generator.ts]] - code - app/lib/css-generators/modal-generator.ts
+- [[ProductCardSettings()]] - code - app/components/design-control-panel/settings/ProductCardSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

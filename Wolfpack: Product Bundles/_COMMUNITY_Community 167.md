@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 167
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[ArrowLabel()]] - code - app/components/design-control-panel/common/ArrowLabel.tsx
-- [[ArrowLabel.tsx]] - code - app/components/design-control-panel/common/ArrowLabel.tsx
+- [[constants.ts]] - code - app/components/design-control-panel/constants.ts
 
 ## Live Query (requires Dataview plugin)
 

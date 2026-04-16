@@ -1,24 +1,14 @@
 ---
 source_file: "extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js"
 type: "code"
-community: "Full-Page Bundle Widget (Bundled)"
+community: "Community 1447"
 location: "L937"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Full-Page_Bundle_Widget_(Bundled)
+  - community/Community_1447
 ---
 
 # TemplateManager
 
-## Connections
-- [[.calculateConditionData()_2]] - `method` [EXTRACTED]
-- [[.calculateDiscountData()_2]] - `method` [EXTRACTED]
-- [[.createDiscountVariables()_2]] - `method` [EXTRACTED]
-- [[.createEmptyVariables()_2]] - `method` [EXTRACTED]
-- [[.formatOperatorText()_2]] - `method` [EXTRACTED]
-- [[.getQualificationGap()_2]] - `method` [EXTRACTED]
-- [[.replaceVariables()_2]] - `method` [EXTRACTED]
-- [[bundle-widget-full-page-bundled.js]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Full-Page_Bundle_Widget_(Bundled)
+#graphify/code #graphify/EXTRACTED #community/Community_1447

@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/assets/bundle-widget-full-page-free-badge.test.ts"
 type: "code"
-community: "Community 87"
+community: "Community 1229"
 location: "L18"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_87
+  - community/Community_1229
 ---
 
 # getFreeGiftBadgeUrl()
 
-## Connections
-- [[bundle-widget-full-page-free-badge.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_87
+#graphify/code #graphify/EXTRACTED #community/Community_1229

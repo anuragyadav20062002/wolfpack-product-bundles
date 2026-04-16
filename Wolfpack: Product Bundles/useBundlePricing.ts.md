@@ -1,17 +1,14 @@
 ---
 source_file: "app/hooks/useBundlePricing.ts"
 type: "code"
-community: "Community 175"
+community: "Community 300"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_175
+  - community/Community_300
 ---
 
 # useBundlePricing.ts
 
-## Connections
-- [[useBundlePricing()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_175
+#graphify/code #graphify/EXTRACTED #community/Community_300
