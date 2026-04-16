@@ -1,8 +1,11 @@
 use shopify_function::prelude::*;
 use std::process;
 
-mod run;
+mod expand;
 mod helpers;
+mod merge;
+mod pricing;
+mod run;
 mod types;
 
 #[typegen("schema.graphql")]
