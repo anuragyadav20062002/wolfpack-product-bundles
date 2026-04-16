@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-16
+**Last Updated:** 2026-04-16 (commit 2)
 
 ## Overview
 
@@ -22,10 +22,16 @@ See `docs/storefront-inventory-clamp/ARCHITECTURE.md` for the full design.
 - Confirmed existing public proxy `app/routes/api/api.storefront-products.tsx` is the right extension point.
 - Architecture doc + this issue file created.
 
+### 2026-04-16 - Commit 2: Scope + SAT invalidation
+- Added `unauthenticated_read_product_inventory` to both `shopify.app.toml` and `shopify.app.wolfpack-product-bundles-sit.toml`.
+- Extended `handleScopesUpdate` (`app/services/webhooks/handlers/lifecycle.server.ts`) to null `session.storefrontAccessToken` so the next `getStorefrontAccessToken()` call recreates the SAT with the new scope.
+- Lint: 0 errors on changed file.
+- Next: **manual deploy required** — `npm run deploy:prod` or `npm run deploy:sit`. Merchants re-consent; scope-update webhook fires; SATs get recreated on next storefront product fetch.
+
 ## Phases Checklist
 
 - [x] Architecture + issue file (commit 1)
-- [ ] Add `unauthenticated_read_product_inventory` scope + auto-recreate SAT on `app/scopes_update` (commit 2) — **requires app deploy**
+- [x] Add `unauthenticated_read_product_inventory` scope + auto-recreate SAT on `app/scopes_update` (commit 2) — **requires app deploy**
 - [ ] Extend Storefront query in `api.storefront-products.tsx` with `quantityAvailable` + `currentlyNotInStock` (commit 3)
 - [ ] Widget clamp logic in `updateProductSelection` + UI polish + `WIDGET_VERSION` bump + built bundles (commit 4) — **requires widget deploy**
 - [ ] Unit tests for scope update handler + clamp helper (commit 5)
