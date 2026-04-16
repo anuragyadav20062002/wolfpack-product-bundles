@@ -59,7 +59,7 @@ dependencies = [
  "bluejay-core",
  "bluejay-parser",
  "bluejay-validator",
- "convert_case",
+ "convert_case 0.8.0",
  "itertools",
  "proc-macro2",
  "quote",
@@ -100,6 +100,15 @@ name = "convert_case"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "convert_case"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "633458d4ef8c78b72454de2d54fd6ab2e60f9e02be22f3c6104cdc8a4e0fceb9"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -325,9 +334,9 @@ dependencies = [
 
 [[package]]
 name = "shopify_function"
-version = "1.1.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24b87c0a4440f64b990875c609270bf6b656785c9d7e5f1e39beb1463c94b7f5"
+checksum = "f339b9bbeb15522d5b8a3c05f18d8214167d7b0e77fffad4b021e3f4fda7b75b"
 dependencies = [
  "ryu",
  "serde_json",
@@ -337,13 +346,13 @@ dependencies = [
 
 [[package]]
 name = "shopify_function_macro"
-version = "1.1.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98553d631dd30465f4ba4a474f6351060d428d2970b2c35e9e8d3d9c21e8b955"
+checksum = "6e24dcb54991d3574047fc14e1f23b080398f69064ee428b144fa177ce078a36"
 dependencies = [
  "bluejay-core",
  "bluejay-typegen-codegen",
- "convert_case",
+ "convert_case 0.10.0",
  "proc-macro2",
  "quote",
  "syn",
@@ -351,9 +360,9 @@ dependencies = [
 
 [[package]]
 name = "shopify_function_provider"
-version = "1.0.1"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1eb4e60eb2f8c6e02b1f1e7634ef91738b1104b5bc2fa30458d10cd00917dbbf"
+checksum = "eb8178e79dd651ca3e1474ab942265fb4044a73c28b1d05687519c6ac65637c2"
 dependencies = [
  "bumpalo",
  "rmp",
@@ -362,9 +371,9 @@ dependencies = [
 
 [[package]]
 name = "shopify_function_wasm_api"
-version = "0.2.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb7952650d134210fcd92b56a6cdc666a4ed5d0c56a8a21bf9113b62dee52d27"
+checksum = "42fffecf0421a95118df56563785a1703fa5ed940b26c75ac7990c72f6ce3c47"
 dependencies = [
  "rmp-serde",
  "seq-macro",
@@ -376,9 +385,9 @@ dependencies = [
 
 [[package]]
 name = "shopify_function_wasm_api_core"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4842376f01b3abe6c78596085f29ea0d1b605873d2855f812738072c38e32c34"
+checksum = "f7367c758d2ec5644f78f662e3748564dd71c50462ad7eec679f0af139984948"
 dependencies = [
  "strum",
 ]
