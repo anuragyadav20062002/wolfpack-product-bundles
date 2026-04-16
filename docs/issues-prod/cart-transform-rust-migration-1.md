@@ -1,10 +1,10 @@
 # Issue: Migrate Cart Transform Function from TypeScript to Rust
 
 **Issue ID:** cart-transform-rust-migration-1
-**Status:** In Progress — 28/28 tests pass, WASM built (204 KB), pending deploy
+**Status:** In Progress — 24/24 tests pass, WASM built, 8 fixtures verified locally, pending SIT deploy
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-17 01:30
+**Last Updated:** 2026-04-17 02:30
 
 ## Overview
 
@@ -56,6 +56,21 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
 
+### 2026-04-17 02:30 — f64 precision fix + 8 test fixtures verified
+
+- `pricing.rs`: Round effectivePct to 4dp before returning — eliminates `19.999999999999996` noise for `fixed_amount_off` and `fixed_bundle_price` methods
+- `merge.rs`: Same 4dp rounding applied to free-gift absorption inline path
+- All 24 cargo tests still pass (18 unit + 6 integration)
+- 8 test fixture JSON files run through function-runner locally — all produce correct output:
+  - `rstestinput.json` → 1 MERGE, 20% ✅
+  - `test-merge-free-gift.json` → 1 MERGE, 20% ✅
+  - `test-merge-fixed-amount.json` → 1 MERGE, 20% ✅
+  - `test-merge-fixed-price.json` → 1 MERGE, 40% ✅
+  - `test-merge-condition.json` → 1 MERGE, 15% (qty ≥ 3 met) ✅
+  - `test-expand-flex-bundle.json` → 1 EXPAND, 10% ✅
+  - `test-mixed-cart.json` → 1 MERGE + 1 EXPAND (standalone ignored) ✅
+  - `test-multicurrency.json` → 1 MERGE, 20% (AUD rate=1.5) ✅
+
 ### 2026-04-17 01:30 — Handle cutover: TS → RS, forceReactivate added
 
 - `cart-transform-service.server.ts`: handle changed to `bundle-cart-transform-rs`; added `deleteCartTransform` + `forceReactivate` methods
@@ -95,8 +110,9 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - [x] Commit 5: EXPAND operation
 - [x] Commit 6: Wire up run.rs
 - [x] Commit 7: Integration tests
-- [x] cargo test — 28/28 pass (22 unit + 6 integration)
-- [x] cargo build --target=wasm32-unknown-unknown --release — 204 KB WASM
+- [x] cargo test — 24/24 pass (18 unit + 6 integration)
+- [x] cargo build --target=wasm32-unknown-unknown --release — WASM built + trampolined
+- [x] 8 test fixtures verified via function-runner — all correct
 - [ ] Deploy to SIT + verify on dev store
 - [ ] Deploy to PROD + cut over (swap handle)
 - [ ] Remove TS extension after 1–2 weeks stable

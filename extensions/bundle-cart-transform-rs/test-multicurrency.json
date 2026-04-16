@@ -1,0 +1,52 @@
+{
+  "_comment": "Multi-currency: AUD store, rate=1.5. Fixed amount off: $10 USD stored as 1000 cents. Converted to AUD: 1000/100 * 1.5 = $15 AUD off. Paid total $75 AUD → target $60 AUD → effectivePct = (1-60/75)*100 = 20%.",
+  "presentmentCurrencyRate": "1.5",
+  "cart": {
+    "lines": [
+      {
+        "id": "line1",
+        "quantity": 1,
+        "bundleId": { "value": "bundle-mc-001" },
+        "bundleName": { "value": "Multi-Currency Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/601",
+          "component_parents": {
+            "value": "[{\"id\":\"gid://shopify/ProductVariant/999\",\"price_adjustment\":{\"method\":\"fixed_amount_off\",\"value\":1000}}]"
+          },
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/1", "title": "Item A (AUD)" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "45.00" },
+          "totalAmount": { "amount": "45.00" }
+        }
+      },
+      {
+        "id": "line2",
+        "quantity": 1,
+        "bundleId": { "value": "bundle-mc-001" },
+        "bundleName": { "value": "Multi-Currency Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/602",
+          "component_parents": null,
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/2", "title": "Item B (AUD)" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "30.00" },
+          "totalAmount": { "amount": "30.00" }
+        }
+      }
+    ]
+  }
+}

@@ -113,8 +113,11 @@ pub fn calculate_discount_percentage(
     let result = (1.0 - target_price / original_total) * 100.0;
 
     // Clamp to [0, 100]. NaN cannot be caught by min/max alone — guard explicitly.
+    // Round to 4 decimal places to eliminate f64 representation noise
+    // (e.g. 19.999999999999996 → 20.0 for fixed_amount_off / fixed_bundle_price).
     if result.is_finite() {
-        result.clamp(0.0, 100.0)
+        let rounded = (result * 10000.0).round() / 10000.0;
+        rounded.clamp(0.0, 100.0)
     } else {
         0.0
     }

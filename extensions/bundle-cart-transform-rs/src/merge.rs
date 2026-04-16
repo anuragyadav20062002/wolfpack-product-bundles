@@ -111,7 +111,9 @@ pub fn process_merge_operations(
             )
         } else if free_gift_total > 0.0 && original_total > 0.0 {
             let raw = (1.0 - paid_total / original_total) * 100.0;
-            if raw.is_finite() { raw.clamp(0.0, 100.0) } else { 0.0 }
+            if raw.is_finite() {
+                ((raw * 10000.0).round() / 10000.0).clamp(0.0, 100.0)
+            } else { 0.0 }
         } else {
             0.0
         };
