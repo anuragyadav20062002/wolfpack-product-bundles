@@ -1,5 +1,4 @@
 use shopify_function::prelude::*;
-use std::process;
 
 mod expand;
 mod helpers;
@@ -14,7 +13,5 @@ pub mod schema {
     pub mod run {}
 }
 
-fn main() {
-    log!("Please invoke a named export");
-    process::abort();
-}
+// Re-export the inner function so integration tests can call run_function_with_input(cart_transform_run, json)
+pub use run::cart_transform_run;

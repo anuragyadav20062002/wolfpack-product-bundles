@@ -77,8 +77,15 @@ pub fn calculate_discount_percentage(
     // -------------------------------------------------------------------------
     let target_price = match price_adjustment.method {
         PricingMethod::PercentageOff => {
-            // Percentage is currency-agnostic — no rate conversion needed.
-            paid_total * (1.0 - price_adjustment.value / 100.0)
+            let pct = price_adjustment.value.clamp(0.0, 100.0);
+            // When there are no free gifts (paid == original), return the exact
+            // configured percentage to avoid f64 roundtrip error.
+            if (paid_total - original_total).abs() < 1e-8 {
+                return pct;
+            }
+            // Free-gift bundles: compute target price so the formula absorbs
+            // both the explicit discount and the free-gift subsidy.
+            paid_total * (1.0 - pct / 100.0)
         }
 
         PricingMethod::FixedAmountOff => {

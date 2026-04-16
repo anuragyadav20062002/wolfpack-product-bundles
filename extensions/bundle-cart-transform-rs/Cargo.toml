@@ -2,9 +2,11 @@
 name = "bundle-cart-transform-rs"
 version = "1.0.0"
 edition = "2021"
+autobins = false
 
 [lib]
-crate-type = ["cdylib"]
+name = "bundle_cart_transform_rs"
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 shopify_function = "1.1.1"

@@ -3,60 +3,44 @@ use shopify_function::prelude::*;
 use shopify_function::Result;
 
 use crate::schema;
-use crate::types::FunctionRunResult;
+use crate::helpers::decimal_to_f64;
 use crate::merge::process_merge_operations;
 use crate::expand::process_expand_operations;
 
-/// Cart transform entry point.
-///
-/// Orchestrates MERGE and EXPAND operations in two passes over the cart:
-///
-/// Pass 1 — MERGE: Groups component lines by `_bundle_id` and merges them
-/// into a single parent line. Processes classic "add-to-cart" bundles where
-/// the widget adds individual component products with a shared `_bundle_id`
-/// attribute. All processed line IDs are recorded to skip in Pass 2.
-///
-/// Pass 2 — EXPAND: Handles "Flex Bundle" parent variants that have
-/// `component_reference` + `component_quantities` metafields. The expand
-/// keeps the SAME bundle variant in the cart (not a real component expansion)
-/// and stores component pricing data in attributes for the Checkout UI.
-///
-/// # Error handling
-/// Rust panics in WASM are stripped by wasm-snip. We use `.unwrap_or_default()`
-/// for non-fatal parse failures. The only Result<> we propagate is from
-/// #[shopify_function] itself which handles I/O.
-#[shopify_function]
-fn run(input: schema::run::Input) -> Result<FunctionRunResult> {
-    // Guard: empty cart — return immediately with no operations.
+/// Inner cart transform logic — called by the #[shopify_function] wrapper and
+/// directly by integration tests via run_function_with_input(cart_transform_run, json).
+pub fn cart_transform_run(input: schema::run::Input) -> Result<schema::FunctionRunResult> {
     if input.cart().lines().is_empty() {
-        return Ok(FunctionRunResult { operations: vec![] });
+        return Ok(schema::FunctionRunResult { operations: vec![] });
     }
 
-    // Extract presentment currency rate once — used by all discount calculations.
-    // Falls back to 0 if absent or non-finite; amount-based discounts will return 0
-    // rather than silently applying a wrong rate.
-    let presentment_currency_rate = input
-        .presentment_currency_rate()
-        .filter(|r| r.is_finite() && *r > 0.0)
-        .unwrap_or(0.0);
+    // presentmentCurrencyRate is Decimal! — convert to f64 once.
+    // Returns 0.0 if non-finite or <= 0 so amount-based discount paths bail out cleanly.
+    let rate = decimal_to_f64(input.presentment_currency_rate());
+    let presentment_currency_rate = if rate.is_finite() && rate > 0.0 { rate } else { 0.0 };
 
     let mut processed_line_ids: HashSet<String> = HashSet::new();
 
-    // Pass 1: MERGE operations
+    // Pass 1: MERGE — component lines grouped by _bundle_id
     let mut operations = process_merge_operations(
         &input,
         presentment_currency_rate,
         &mut processed_line_ids,
     );
 
-    // Pass 2: EXPAND operations (skip lines already handled by MERGE)
+    // Pass 2: EXPAND — Flex Bundle parent variants (skips MERGE-processed lines)
     operations.extend(process_expand_operations(
         &input,
         &processed_line_ids,
         presentment_currency_rate,
     ));
 
-    log!("cart transform complete: {} operations", operations.len());
+    Ok(schema::FunctionRunResult { operations })
+}
 
-    Ok(FunctionRunResult { operations })
+/// WASM export — thin wrapper so #[shopify_function] can generate the export
+/// while keeping cart_transform_run directly testable.
+#[shopify_function]
+fn run(input: schema::run::Input) -> Result<schema::FunctionRunResult> {
+    cart_transform_run(input)
 }

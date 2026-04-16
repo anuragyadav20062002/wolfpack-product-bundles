@@ -1,10 +1,10 @@
 # Issue: Migrate Cart Transform Function from TypeScript to Rust
 
 **Issue ID:** cart-transform-rust-migration-1
-**Status:** In Progress — Code complete, pending first compile + deploy
+**Status:** In Progress — 28/28 tests pass, WASM built (204 KB), pending deploy
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-16
+**Last Updated:** 2026-04-17 00:46
 
 ## Overview
 
@@ -56,6 +56,15 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
 
+### 2026-04-17 00:46 — All compile errors fixed, 28/28 tests pass, WASM built
+
+**Fixes applied in this session:**
+- `Cargo.toml`: added `"rlib"` to `crate-type` so integration tests can link against the lib
+- `expand.rs`: `Decimal::from(discount_percentage)` (f64, not formatted String); `attributes: Some(attributes)`; `CartOperation::Expand(expand_op)` enum variant; temporary `format!()` lifetime fix via `let fallback`
+- `pricing.rs`: PercentageOff short-circuits when `paid_total == original_total` to avoid f64 roundtrip error (19.999... → exact 20.0)
+- `tests/integration_test.rs`: enum pattern matching for CartOperation (`match op { Merge(m) => … }`); Decimal assertion corrected to `"20.0"` (Rust f64 Display format)
+- WASM binary: 204 KB at `target/wasm32-unknown-unknown/release/bundle_cart_transform_rs.wasm`
+
 ### 2026-04-16 — All 7 commits landed (code complete)
 
 **Commits on branch `migrate/cart-transform-rust`:**
@@ -68,13 +77,9 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - `3bb09f8` — Commit 7: tests/integration_test.rs — 6 full-stack JSON fixture tests
 
 **Next steps (human required):**
-1. Install Rust on dev machine: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-2. `rustup target add wasm32-unknown-unknown`
-3. `cd extensions/bundle-cart-transform-rs && cargo test` — run unit + integration tests
-4. `cargo build --target=wasm32-unknown-unknown --release` — verify clean compile
-5. From project root: `shopify app function run` → select bundle-cart-transform-rs → send test fixture
-6. When satisfied: `npm run deploy:sit` → test on SIT store
-7. Then: `npm run deploy:prod` → swap active handle to `bundle-cart-transform-rs`
+1. From project root: test with `shopify app function run` → select bundle-cart-transform-rs → send test fixture
+2. `npm run deploy:sit` → test on SIT store
+3. `npm run deploy:prod` → swap active handle to `bundle-cart-transform-rs`
 
 ## Phases Checklist
 - [x] Commit 1: Scaffold
@@ -84,8 +89,8 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - [x] Commit 5: EXPAND operation
 - [x] Commit 6: Wire up run.rs
 - [x] Commit 7: Integration tests
-- [ ] Install Rust + cargo test (human)
-- [ ] cargo build --target=wasm32-unknown-unknown --release (human)
+- [x] cargo test — 28/28 pass (22 unit + 6 integration)
+- [x] cargo build --target=wasm32-unknown-unknown --release — 204 KB WASM
 - [ ] Deploy to SIT + verify on dev store
 - [ ] Deploy to PROD + cut over (swap handle)
 - [ ] Remove TS extension after 1–2 weeks stable
