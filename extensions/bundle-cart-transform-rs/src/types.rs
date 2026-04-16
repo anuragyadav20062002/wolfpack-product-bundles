@@ -18,18 +18,20 @@
 pub struct ComponentParent {
     /// Parent variant GID, e.g. "gid://shopify/ProductVariant/123"
     pub id: String,
+    #[serde(default)]
     pub component_reference: ComponentReference,
+    #[serde(default)]
     pub component_quantities: ComponentQuantities,
     #[serde(default)]
     pub price_adjustment: Option<PriceAdjustmentConfig>,
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Default)]
 pub struct ComponentReference {
     pub value: Vec<String>,
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Default)]
 pub struct ComponentQuantities {
     pub value: Vec<i64>,
 }
