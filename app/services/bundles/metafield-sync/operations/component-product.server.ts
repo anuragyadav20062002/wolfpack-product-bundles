@@ -59,6 +59,10 @@ export async function updateComponentProductMetafields(
   // Products that need a Shopify API call to discover their variants (no cached variant data)
   const productIdMap: Array<{ productId: string; stepMinQuantity: number; source: string }> = [];
 
+  // Track every product ID we've already routed (either to direct cached-variant writes
+  // or queued in productIdMap) so the collection-resolution step can skip duplicates.
+  const handledProductIds = new Set<string>();
+
   for (const step of bundleConfig.steps) {
     // Priority: StepProduct (database relation) > products array (UI config)
 
@@ -94,6 +98,7 @@ export async function updateComponentProductMetafields(
             source: 'StepProduct-fallback'
           });
         }
+        handledProductIds.add(stepProduct.productId);
       }
     } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
       // Fallback: Use products array from UI config (only if StepProduct is empty)
@@ -103,6 +108,61 @@ export async function updateComponentProductMetafields(
             productId: product.id,
             stepMinQuantity: step.minQuantity || 1,
             source: 'products'
+          });
+          handledProductIds.add(product.id);
+        }
+      }
+    }
+
+    // COLLECTION FIX: Also resolve products from any collections attached to the step.
+    // Without this, collection-only bundles (no StepProduct, no products[]) end up
+    // writing component_parents to zero variants, and cart transform's MERGE step
+    // silently skips the bundle group at checkout (no parent line, no discount).
+    // Mirrors the pattern in bundle-product.server.ts:91-146.
+    const stepCollections = Array.isArray(step.collections) ? step.collections : [];
+    if (stepCollections.length > 0) {
+      for (const collection of stepCollections) {
+        const handle = collection.handle;
+        if (!handle) continue;
+
+        try {
+          const collResponse = await admin.graphql(`
+            query getCollectionProductIds($handle: String!) {
+              collection(handle: $handle) {
+                products(first: 250) {
+                  edges {
+                    node { id }
+                  }
+                }
+              }
+            }
+          `, { variables: { handle } });
+
+          const collData = await collResponse.json();
+          const collProductEdges = collData.data?.collection?.products?.edges || [];
+
+          for (const edge of collProductEdges) {
+            const productId = edge.node?.id;
+            if (productId && !isUUID(productId) && !handledProductIds.has(productId)) {
+              productIdMap.push({
+                productId,
+                stepMinQuantity: step.minQuantity || 1,
+                source: `collection:${handle}`,
+              });
+              handledProductIds.add(productId);
+            }
+          }
+
+          AppLogger.debug("[COMPONENT_METAFIELD] Fetched products from collection", {
+            component: "component-product.server",
+            handle,
+            count: collProductEdges.length,
+          });
+        } catch (collError) {
+          AppLogger.warn("Could not fetch products from collection", {
+            component: "metafield-sync",
+            operation: "updateComponentProductMetafields",
+            handle,
           });
         }
       }
