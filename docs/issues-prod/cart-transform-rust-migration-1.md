@@ -4,7 +4,7 @@
 **Status:** In Progress — 28/28 tests pass, WASM built (204 KB), pending deploy
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-17 00:46
+**Last Updated:** 2026-04-17 01:30
 
 ## Overview
 
@@ -55,6 +55,12 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Branch: `migrate/cart-transform-rust` (from `refactor/26.04`)
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
+
+### 2026-04-17 01:30 — Handle cutover: TS → RS, forceReactivate added
+
+- `cart-transform-service.server.ts`: handle changed to `bundle-cart-transform-rs`; added `deleteCartTransform` + `forceReactivate` methods
+- `api.activate-cart-transform.tsx`: `?force=true` param triggers delete-and-recreate for handle cutover
+- To cut over on SIT: deploy → visit `/api/activate-cart-transform?force=true` in the app
 
 ### 2026-04-17 00:46 — All compile errors fixed, 28/28 tests pass, WASM built
 

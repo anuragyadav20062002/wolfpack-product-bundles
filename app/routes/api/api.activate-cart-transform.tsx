@@ -8,9 +8,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const shopDomain = session.shop;
 
   try {
-    AppLogger.info('Activating cart transform', { operation: 'activate-cart-transform', shopId: shopDomain });
-    
-    const result = await CartTransformService.completeSetup(admin, shopDomain);
+    const force = new URL(request.url).searchParams.get('force') === 'true';
+    AppLogger.info('Activating cart transform', { operation: 'activate-cart-transform', shopId: shopDomain }, { force });
+
+    const result = force
+      ? await CartTransformService.forceReactivate(admin, shopDomain)
+      : await CartTransformService.completeSetup(admin, shopDomain);
 
     return json({
       success: result.success,
