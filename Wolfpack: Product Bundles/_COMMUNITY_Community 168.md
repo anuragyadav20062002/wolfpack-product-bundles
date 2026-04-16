@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 168
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[StorefrontIframePreview.tsx]] - code - app/components/design-control-panel/preview/StorefrontIframePreview.tsx
-- [[iframeStyle()]] - code - app/components/design-control-panel/preview/StorefrontIframePreview.tsx
+- [[index.ts]] - code - app/components/design-control-panel/index.ts
 
 ## Live Query (requires Dataview plugin)
 

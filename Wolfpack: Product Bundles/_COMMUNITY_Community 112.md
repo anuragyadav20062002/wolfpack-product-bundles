@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 112
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[assets.bundle-widget-full.ts]] - code - app/routes/assets/assets.bundle-widget-full.ts
-- [[loader()_33]] - code - app/routes/assets/assets.bundle-widget-full.ts
-- [[options()_5]] - code - app/routes/assets/assets.bundle-widget-full.ts
+- [[metafields.ts]] - code - app/constants/metafields.ts
 
 ## Live Query (requires Dataview plugin)
 

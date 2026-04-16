@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 134
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[Analytics Pixel Toggle SDE Plan]] - document - docs/analytics-pixel-toggle/04-SDE-implementation.md
-- [[testsunitroutesapp.attribution.action.test.ts]] - code - tests/unit/routes/app.attribution.action.test.ts
-- [[testsunitservicespixel-activation.test.ts]] - code - tests/unit/services/pixel-activation.test.ts
+- [[UpgradePromptBanner.tsx]] - code - app/components/UpgradePromptBanner.tsx
 
 ## Live Query (requires Dataview plugin)
 

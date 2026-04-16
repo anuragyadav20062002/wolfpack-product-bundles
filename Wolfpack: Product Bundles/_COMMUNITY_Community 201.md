@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 201
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[action()_11]] - code - app/routes/api/api.install-fpb-widget.tsx
-- [[api.install-fpb-widget.tsx]] - code - app/routes/api/api.install-fpb-widget.tsx
+- [[FooterButtonSettings.tsx]] - code - app/components/design-control-panel/settings/FooterButtonSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

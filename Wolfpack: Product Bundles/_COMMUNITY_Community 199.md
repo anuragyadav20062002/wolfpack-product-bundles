@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 199
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[action()_10]] - code - app/routes/api/api.ensure-product-template.tsx
-- [[api.ensure-product-template.tsx]] - code - app/routes/api/api.ensure-product-template.tsx
+- [[HeaderTextSettings.tsx]] - code - app/components/design-control-panel/settings/HeaderTextSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 99
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[AppIndex()]] - code - app/routes/app/app._index.tsx
-- [[app._index.tsx]] - code - app/routes/app/app._index.tsx
-- [[loader()_3]] - code - app/routes/app/app._index.tsx
+- [[useAppState()]] - code - app/contexts/AppStateContext.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/lib/slug-utils.test.ts"
 type: "code"
-community: "Community 217"
+community: "Community 1156"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_217
+  - community/Community_1156
 ---
 
 # slug-utils.test.ts
 
-## Connections
-- [[makeAdmin()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_217
+#graphify/code #graphify/EXTRACTED #community/Community_1156

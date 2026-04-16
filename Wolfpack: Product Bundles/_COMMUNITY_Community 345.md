@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[Analytics Page Redesign BR]] - document - docs/analytics-redesign/00-BR.md
+- [[AppLogger]] - code - app/lib/logger.ts
 
 ## Live Query (requires Dataview plugin)
 

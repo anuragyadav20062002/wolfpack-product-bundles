@@ -1,18 +1,14 @@
 ---
 source_file: "app/types/pricing.ts"
 type: "code"
-community: "Pricing Types & Utilities"
+community: "Community 91"
 location: "L267"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Pricing_Types_&_Utilities
+  - community/Community_91
 ---
 
 # getOperatorText()
 
-## Connections
-- [[generateRulePreview()]] - `calls` [EXTRACTED]
-- [[pricing.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Pricing_Types_&_Utilities
+#graphify/code #graphify/EXTRACTED #community/Community_91

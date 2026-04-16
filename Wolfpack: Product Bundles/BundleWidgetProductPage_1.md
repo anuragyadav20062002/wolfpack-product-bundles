@@ -1,90 +1,14 @@
 ---
 source_file: "extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js"
 type: "code"
-community: "Product-Page Bundle Widget (Bundled)"
+community: "Community 1337"
 location: "L1615"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Product-Page_Bundle_Widget_(Bundled)
+  - community/Community_1337
 ---
 
 # BundleWidgetProductPage
 
-## Connections
-- [[._autoProgressBottomSheet()_1]] - `method` [EXTRACTED]
-- [[._createBottomSheetOverlay()_1]] - `method` [EXTRACTED]
-- [[._createDefaultLoadingCard()_1]] - `method` [EXTRACTED]
-- [[._createRibbonSvg()_1]] - `method` [EXTRACTED]
-- [[._getDefaultStepProduct()_1]] - `method` [EXTRACTED]
-- [[._preloadDefaultStepProducts()_1]] - `method` [EXTRACTED]
-- [[._syncFreeGiftSlotCard()_1]] - `method` [EXTRACTED]
-- [[.addToCart()_1]] - `method` [EXTRACTED]
-- [[.attachEventListeners()_3]] - `method` [EXTRACTED]
-- [[.attachProductEventHandlers()_2]] - `method` [EXTRACTED]
-- [[.buildCartItems()_1]] - `method` [EXTRACTED]
-- [[.clearStepSelections()_2]] - `method` [EXTRACTED]
-- [[.closeModal()_3]] - `method` [EXTRACTED]
-- [[.constructor()_8]] - `method` [EXTRACTED]
-- [[.createAddMoreCard()_1]] - `method` [EXTRACTED]
-- [[.createAddToCartButton()_1]] - `method` [EXTRACTED]
-- [[.createDefaultProductCard()_1]] - `method` [EXTRACTED]
-- [[.createEmptyStateCard()_1]] - `method` [EXTRACTED]
-- [[.createFooter()_2]] - `method` [EXTRACTED]
-- [[.createFreeGiftSlotCard()_1]] - `method` [EXTRACTED]
-- [[.createSelectedProductCard()_1]] - `method` [EXTRACTED]
-- [[.createStepsContainer()_2]] - `method` [EXTRACTED]
-- [[.defaultStepsList()_1]] - `method` [EXTRACTED]
-- [[.ensureBottomSheet()_1]] - `method` [EXTRACTED]
-- [[.expandProductsByVariant()_2]] - `method` [EXTRACTED]
-- [[.extractId()_2]] - `method` [EXTRACTED]
-- [[.freeGiftStep()_2]] - `method` [EXTRACTED]
-- [[.freeGiftStepIndex()_2]] - `method` [EXTRACTED]
-- [[.generateBundleInstanceId()_2]] - `method` [EXTRACTED]
-- [[.getFormattedHeaderText()_2]] - `method` [EXTRACTED]
-- [[.hideLoadingOverlay()_2]] - `method` [EXTRACTED]
-- [[.init()_3]] - `method` [EXTRACTED]
-- [[.initializeDataStructures()_2]] - `method` [EXTRACTED]
-- [[.isFreeGiftUnlocked()_2]] - `method` [EXTRACTED]
-- [[.isStepAccessible()_2]] - `method` [EXTRACTED]
-- [[.loadBundleData()_2]] - `method` [EXTRACTED]
-- [[.loadDesignSettingsCSS()_2]] - `method` [EXTRACTED]
-- [[.loadStepProducts()_2]] - `method` [EXTRACTED]
-- [[.navigateModal()_2]] - `method` [EXTRACTED]
-- [[.openModal()_3]] - `method` [EXTRACTED]
-- [[.paidSteps()_2]] - `method` [EXTRACTED]
-- [[.parseConfiguration()_2]] - `method` [EXTRACTED]
-- [[.preloadNextStep()_2]] - `method` [EXTRACTED]
-- [[.processProductsForStep()_2]] - `method` [EXTRACTED]
-- [[.removeProductFromSelection()_1]] - `method` [EXTRACTED]
-- [[.renderFooter()_2]] - `method` [EXTRACTED]
-- [[.renderFullPageLayout()_2]] - `method` [EXTRACTED]
-- [[.renderModalProducts()_2]] - `method` [EXTRACTED]
-- [[.renderModalProductsLoading()_1]] - `method` [EXTRACTED]
-- [[.renderModalTabs()_2]] - `method` [EXTRACTED]
-- [[.renderProductPageLayout()_2]] - `method` [EXTRACTED]
-- [[.renderSteps()_2]] - `method` [EXTRACTED]
-- [[.renderUI()_2]] - `method` [EXTRACTED]
-- [[.renderVariantSelector()_4]] - `method` [EXTRACTED]
-- [[.selectBundle()_4]] - `method` [EXTRACTED]
-- [[.setupDOMElements()_2]] - `method` [EXTRACTED]
-- [[.setupTabScrollArrows()_2]] - `method` [EXTRACTED]
-- [[.showErrorUI()_2]] - `method` [EXTRACTED]
-- [[.showFallbackUI()_2]] - `method` [EXTRACTED]
-- [[.showLoadingOverlay()_2]] - `method` [EXTRACTED]
-- [[.showThemeEditorPreview()_2]] - `method` [EXTRACTED]
-- [[.updateAddToCartButton()_1]] - `method` [EXTRACTED]
-- [[.updateFooterMessaging()_2]] - `method` [EXTRACTED]
-- [[.updateFooterTotalPrices()_2]] - `method` [EXTRACTED]
-- [[.updateMessagesFromBundle()_2]] - `method` [EXTRACTED]
-- [[.updateModalDiscountMessaging()_2]] - `method` [EXTRACTED]
-- [[.updateModalFooterMessaging()_2]] - `method` [EXTRACTED]
-- [[.updateModalHeaderText()_2]] - `method` [EXTRACTED]
-- [[.updateModalNavigation()_2]] - `method` [EXTRACTED]
-- [[.updateProductQuantityDisplay()_2]] - `method` [EXTRACTED]
-- [[.updateProductSelection()_2]] - `method` [EXTRACTED]
-- [[.validateStep()_2]] - `method` [EXTRACTED]
-- [[.validateStepCondition()_2]] - `method` [EXTRACTED]
-- [[bundle-widget-product-page-bundled.js]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Product-Page_Bundle_Widget_(Bundled)
+#graphify/code #graphify/EXTRACTED #community/Community_1337

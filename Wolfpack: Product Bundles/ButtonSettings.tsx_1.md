@@ -1,11 +1,11 @@
 ---
 source_file: "app/components/design-control-panel/settings/ButtonSettings.tsx"
 type: "code"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_1
 ---
 
 # ButtonSettings.tsx
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Add-to-Bundle Button Selected Color Architecture]] - `references` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/code #graphify/EXTRACTED #community/Community_1

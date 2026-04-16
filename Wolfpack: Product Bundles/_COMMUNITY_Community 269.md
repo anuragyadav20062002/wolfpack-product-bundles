@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[WidgetStyleSettings.tsx]] - code - app/components/design-control-panel/settings/WidgetStyleSettings.tsx
+- [[BundleFooterPreview.tsx]] - code - app/components/design-control-panel/preview/BundleFooterPreview.tsx
 
 ## Live Query (requires Dataview plugin)
 

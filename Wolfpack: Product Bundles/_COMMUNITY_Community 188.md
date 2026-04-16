@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 188
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[generateProductCardCSS()]] - code - app/lib/css-generators/product-card-generator.ts
-- [[product-card-generator.ts]] - code - app/lib/css-generators/product-card-generator.ts
+- [[LoadingStateSettings.tsx]] - code - app/components/design-control-panel/settings/LoadingStateSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

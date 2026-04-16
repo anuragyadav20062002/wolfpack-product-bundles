@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/ProductCardSettings.tsx"
 type: "code"
-community: "Community 148"
+community: "Community 184"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_148
+  - community/Community_184
 ---
 
 # ProductCardSettings.tsx
 
-## Connections
-- [[ProductCardSettings()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_148
+#graphify/code #graphify/EXTRACTED #community/Community_184

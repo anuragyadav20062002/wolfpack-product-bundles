@@ -1,21 +1,18 @@
 ---
 type: community
-cohesion: 0.33
-members: 6
+cohesion: 0.67
+members: 3
 ---
 
 # Community 53
 
-**Cohesion:** 0.33 - loosely connected
-**Members:** 6 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[App()]] - code - app/routes/app/app.tsx
-- [[ErrorBoundary()]] - code - app/routes/app/app.tsx
-- [[app.tsx]] - code - app/routes/app/app.tsx
-- [[headers()]] - code - app/routes/app/app.tsx
-- [[links()]] - code - app/routes/app/app.tsx
-- [[loader()]] - code - app/routes/app/app.tsx
+- [[Concept component_parents Metafield (Cart Transform MERGE enabler)]] - concept - docs/issues-prod/bulk-sync-script-1.md
+- [[Issue Bulk Bundle Sync Script (bulk-sync-script-1)]] - document - docs/issues-prod/bulk-sync-script-1.md
+- [[Script scriptsbulk-sync-bundles.ts (Backfill component_parents Metafields)]] - source - docs/issues-prod/bulk-sync-script-1.md
 
 ## Live Query (requires Dataview plugin)
 

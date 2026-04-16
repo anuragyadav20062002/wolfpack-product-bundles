@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 163
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[defaultSettings.ts]] - code - app/components/design-control-panel/config/defaultSettings.ts
-- [[getDefaultSettings()]] - code - app/components/design-control-panel/config/defaultSettings.ts
+- [[Chip()]] - code - app/components/design-control-panel/CustomCssCard.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 216
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[css-variables-generator.test.ts]] - code - tests/unit/lib/css-variables-generator.test.ts
-- [[makeCtx()]] - code - tests/unit/lib/css-variables-generator.test.ts
+- [[FilePicker.tsx]] - code - app/components/design-control-panel/settings/FilePicker.tsx
 
 ## Live Query (requires Dataview plugin)
 

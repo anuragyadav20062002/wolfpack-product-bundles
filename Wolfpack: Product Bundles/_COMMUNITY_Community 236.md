@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[routes.ts]] - code - app/routes.ts
+- [[defaultSettings.ts]] - code - app/components/design-control-panel/config/defaultSettings.ts
 
 ## Live Query (requires Dataview plugin)
 

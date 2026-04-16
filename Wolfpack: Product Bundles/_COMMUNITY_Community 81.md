@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.50
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 81
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[activateUtmPixel()]] - code - app/services/pixel-activation.server.ts
-- [[deactivateUtmPixel()]] - code - app/services/pixel-activation.server.ts
-- [[getPixelStatus()]] - code - app/services/pixel-activation.server.ts
-- [[pixel-activation.server.ts]] - code - app/services/pixel-activation.server.ts
+- [[handleRequest()]] - code - app/entry.server.tsx
 
 ## Live Query (requires Dataview plugin)
 

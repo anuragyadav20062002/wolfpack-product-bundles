@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[metafield-validation.test.ts]] - code - tests/unit/services/metafield-validation.test.ts
+- [[requireOwnerSecret()]] - code - app/lib/auth-guards.server.ts
 
 ## Live Query (requires Dataview plugin)
 

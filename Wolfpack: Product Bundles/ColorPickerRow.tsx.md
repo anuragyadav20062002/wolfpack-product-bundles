@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/common/ColorPickerRow.tsx"
 type: "code"
-community: "Community 164"
+community: "Community 240"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_164
+  - community/Community_240
 ---
 
 # ColorPickerRow.tsx
 
-## Connections
-- [[ColorPickerRow()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_164
+#graphify/code #graphify/EXTRACTED #community/Community_240

@@ -1,11 +1,11 @@
 ---
 source_file: "tests/unit/lib/tier-config-validator.test.ts"
 type: "code"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 2"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_2
 ---
 
 # tests/unit/lib/tier-config-validator.test.ts
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Admin Tier Config SDE Implementation Plan]] - `references` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/code #graphify/EXTRACTED #community/Community_2

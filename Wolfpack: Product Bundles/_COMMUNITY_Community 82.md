@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.50
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 82
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[gdpr.server.ts]] - code - app/services/webhooks/handlers/gdpr.server.ts
-- [[handleCustomerDataRequest()]] - code - app/services/webhooks/handlers/gdpr.server.ts
-- [[handleCustomerRedact()]] - code - app/services/webhooks/handlers/gdpr.server.ts
-- [[handleShopRedact()]] - code - app/services/webhooks/handlers/gdpr.server.ts
+- [[root.tsx]] - code - app/root.tsx
 
 ## Live Query (requires Dataview plugin)
 

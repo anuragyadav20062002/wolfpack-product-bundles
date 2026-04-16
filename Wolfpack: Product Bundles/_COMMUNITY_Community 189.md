@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 189
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[generateCSSFromSettings()]] - code - app/lib/css-generators/index.ts
-- [[index.ts_7]] - code - app/lib/css-generators/index.ts
+- [[LoadingStateSettings()]] - code - app/components/design-control-panel/settings/LoadingStateSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

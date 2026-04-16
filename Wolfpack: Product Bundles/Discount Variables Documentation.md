@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/discount-variables-documentation.md"
 type: "document"
-community: "Community 90"
+community: "Community 41"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Community_90
+  - community/Community_41
 ---
 
 # Discount Variables Documentation
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Available Discount Template Variables (legacy + improved)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Community_90
+#graphify/document #graphify/EXTRACTED #community/Community_41

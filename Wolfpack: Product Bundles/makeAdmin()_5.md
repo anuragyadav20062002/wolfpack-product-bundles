@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/services/widget-full-page-bundle.test.ts"
 type: "code"
-community: "Community 225"
+community: "Community 1276"
 location: "L52"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_225
+  - community/Community_1276
 ---
 
 # makeAdmin()
 
-## Connections
-- [[widget-full-page-bundle.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_225
+#graphify/code #graphify/EXTRACTED #community/Community_1276

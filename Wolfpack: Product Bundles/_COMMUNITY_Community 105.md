@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 105
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[api.storefront-collections.tsx]] - code - app/routes/api/api.storefront-collections.tsx
-- [[loader()_21]] - code - app/routes/api/api.storefront-collections.tsx
-- [[options()_1]] - code - app/routes/api/api.storefront-collections.tsx
+- [[usePreferences()]] - code - app/contexts/AppStateContext.tsx
 
 ## Live Query (requires Dataview plugin)
 

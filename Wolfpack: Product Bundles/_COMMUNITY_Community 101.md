@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 101
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[BillingCallback()]] - code - app/routes/app/app.billing.callback.tsx
-- [[app.billing.callback.tsx]] - code - app/routes/app/app.billing.callback.tsx
-- [[loader()_7]] - code - app/routes/app/app.billing.callback.tsx
+- [[useUI()]] - code - app/contexts/AppStateContext.tsx
 
 ## Live Query (requires Dataview plugin)
 

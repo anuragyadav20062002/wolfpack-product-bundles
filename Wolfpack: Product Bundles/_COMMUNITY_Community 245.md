@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[functions.ts]] - code - app/inngest/functions.ts
+- [[hexToHsb()]] - code - app/components/design-control-panel/common/colorUtils.ts
 
 ## Live Query (requires Dataview plugin)
 

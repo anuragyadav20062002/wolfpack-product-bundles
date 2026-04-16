@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/bundles/metafield-sync/utils/size-check.ts"
 type: "code"
-community: "Community 121"
+community: "Community 1105"
 location: "L88"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_121
+  - community/Community_1105
 ---
 
 # safeJsonParse()
 
-## Connections
-- [[size-check.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_121
+#graphify/code #graphify/EXTRACTED #community/Community_1105

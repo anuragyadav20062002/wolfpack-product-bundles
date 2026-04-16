@@ -1,17 +1,14 @@
 ---
 source_file: "app/assets/bundle-modal-component.js"
 type: "code"
-community: "Bundle Product Modal"
+community: "Community 482"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Bundle_Product_Modal
+  - community/Community_482
 ---
 
 # bundle-modal-component.js
 
-## Connections
-- [[BundleProductModal]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Bundle_Product_Modal
+#graphify/code #graphify/EXTRACTED #community/Community_482

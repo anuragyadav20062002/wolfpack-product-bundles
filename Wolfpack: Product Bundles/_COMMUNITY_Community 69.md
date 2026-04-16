@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 69
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[auth-guards.server.ts]] - code - app/lib/auth-guards.server.ts
-- [[requireAdminSession()]] - code - app/lib/auth-guards.server.ts
-- [[requireAppProxy()]] - code - app/lib/auth-guards.server.ts
-- [[requireInternalSecret()]] - code - app/lib/auth-guards.server.ts
-- [[requireOwnerSecret()]] - code - app/lib/auth-guards.server.ts
+- [[Product Page Bundle Widget Not Showing on Storefront]] - document - docs/issues-prod/product-page-widget-storefront-fix-1.md
+- [[bundle-product-page.liquid request.design_mode Guard Bug]] - concept - docs/issues-prod/product-page-widget-storefront-fix-1.md
 
 ## Live Query (requires Dataview plugin)
 

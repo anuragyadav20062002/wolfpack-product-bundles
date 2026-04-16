@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[condition-validator.js]] - code - app/assets/widgets/shared/condition-validator.js
+- [[useBillingState.ts]] - code - app/hooks/useBillingState.ts
 
 ## Live Query (requires Dataview plugin)
 

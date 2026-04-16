@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 129
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[makeAdmin()_2]] - code - tests/unit/services/pixel-activation.test.ts
-- [[makeResponse()]] - code - tests/unit/services/pixel-activation.test.ts
-- [[pixel-activation.test.ts]] - code - tests/unit/services/pixel-activation.test.ts
+- [[batchGetFirstVariantsWithPrices()]] - code - app/utils/variant-lookup.server.ts
 
 ## Live Query (requires Dataview plugin)
 

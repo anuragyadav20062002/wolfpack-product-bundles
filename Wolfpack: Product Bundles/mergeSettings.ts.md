@@ -1,18 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/config/mergeSettings.ts"
 type: "code"
-community: "Community 94"
+community: "Community 232"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_94
+  - community/Community_232
 ---
 
 # mergeSettings.ts
 
-## Connections
-- [[createMergedSettings()]] - `contains` [EXTRACTED]
-- [[mergeSettings()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_94
+#graphify/code #graphify/EXTRACTED #community/Community_232

@@ -1,18 +1,14 @@
 ---
 source_file: "extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js"
 type: "code"
-community: "Product-Page Bundle Widget (Bundled)"
+community: "Community 1333"
 location: "L1490"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Product-Page_Bundle_Widget_(Bundled)
+  - community/Community_1333
 ---
 
 # createDefaultLoadingAnimation()
 
-## Connections
-- [[.showLoadingOverlay()_2]] - `calls` [EXTRACTED]
-- [[bundle-widget-product-page-bundled.js]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Product-Page_Bundle_Widget_(Bundled)
+#graphify/code #graphify/EXTRACTED #community/Community_1333

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[Billing Route appbilling]] - document - docs/app-nav-map/APP_NAVIGATION_MAP.md
+- [[.debug()]] - code - app/lib/logger.ts
 
 ## Live Query (requires Dataview plugin)
 

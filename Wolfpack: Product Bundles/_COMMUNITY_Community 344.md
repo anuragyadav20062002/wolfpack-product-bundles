@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[Analytics Pixel Toggle BR]] - document - docs/analytics-pixel-toggle/00-BR.md
+- [[logger.ts]] - code - app/lib/logger.ts
 
 ## Live Query (requires Dataview plugin)
 

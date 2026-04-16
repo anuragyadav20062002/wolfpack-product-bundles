@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[webhook-worker.ts]] - code - scripts/webhook-worker.ts
+- [[validateSlug()]] - code - app/lib/slug-utils.ts
 
 ## Live Query (requires Dataview plugin)
 

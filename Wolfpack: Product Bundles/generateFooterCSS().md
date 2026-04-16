@@ -1,17 +1,14 @@
 ---
 source_file: "app/lib/css-generators/footer-generator.ts"
 type: "code"
-community: "Community 186"
+community: "Community 386"
 location: "L10"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_186
+  - community/Community_386
 ---
 
 # generateFooterCSS()
 
-## Connections
-- [[footer-generator.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_186
+#graphify/code #graphify/EXTRACTED #community/Community_386

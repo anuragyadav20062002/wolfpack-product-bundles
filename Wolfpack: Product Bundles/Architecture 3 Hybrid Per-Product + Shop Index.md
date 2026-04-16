@@ -1,12 +1,12 @@
 ---
 source_file: "docs/archive/SCALABLE_ARCHITECTURE_PROPOSAL.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 location: "Architecture #3"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # Architecture #3: Hybrid Per-Product + Shop Index
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[Scalable Metafield Architecture Proposal]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Metafield_Architecture
+#graphify/document #graphify/EXTRACTED #community/Community_26

@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/comprehensive-discount-fix-summary.md"
 type: "document"
-community: "Cart Transform & Admin Fixes"
+community: "Community 20"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Cart_Transform_&_Admin_Fixes
+  - community/Community_20
 ---
 
 # Comprehensive Discount Fix Summary
@@ -15,4 +15,4 @@ tags:
 - [[Discount Qualification Validation (alreadyQualified flag)]] - `references` [EXTRACTED]
 - [[Three Discount Types (percentage_off, fixed_amount_off, fixed_bundle_price)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Cart_Transform_&_Admin_Fixes
+#graphify/document #graphify/EXTRACTED #community/Community_20

@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"
 type: "code"
-community: "App Routes & Pages"
+community: "Community 756"
 location: "L292"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_Routes_&_Pages
+  - community/Community_756
 ---
 
 # ConfigureBundleFlow()
 
-## Connections
-- [[route.tsx_2]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_Routes_&_Pages
+#graphify/code #graphify/EXTRACTED #community/Community_756

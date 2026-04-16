@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[ProductCardPreview.tsx]] - code - app/components/design-control-panel/preview/ProductCardPreview.tsx
+- [[SubscriptionQuotaCard.tsx]] - code - app/components/billing/SubscriptionQuotaCard.tsx
 
 ## Live Query (requires Dataview plugin)
 

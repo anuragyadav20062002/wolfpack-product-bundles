@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/services/sales-channels.test.ts"
 type: "code"
-community: "Community 224"
+community: "Community 1270"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_224
+  - community/Community_1270
 ---
 
 # sales-channels.test.ts
 
-## Connections
-- [[createMockAdmin()_1]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_224
+#graphify/code #graphify/EXTRACTED #community/Community_1270

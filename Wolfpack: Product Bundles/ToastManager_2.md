@@ -1,21 +1,14 @@
 ---
 source_file: "extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js"
 type: "code"
-community: "Full-Page Bundle Widget (Bundled)"
+community: "Community 1442"
 location: "L813"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Full-Page_Bundle_Widget_(Bundled)
+  - community/Community_1442
 ---
 
 # ToastManager
 
-## Connections
-- [[._escapeHtml()_2]] - `method` [EXTRACTED]
-- [[._isEnterFromBottom()_2]] - `method` [EXTRACTED]
-- [[.show()_2]] - `method` [EXTRACTED]
-- [[.showWithUndo()_2]] - `method` [EXTRACTED]
-- [[bundle-widget-full-page-bundled.js]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Full-Page_Bundle_Widget_(Bundled)
+#graphify/code #graphify/EXTRACTED #community/Community_1442

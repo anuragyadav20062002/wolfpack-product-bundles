@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[root.tsx]] - code - app/root.tsx
+- [[SegmentedButtonGroup.tsx]] - code - app/components/design-control-panel/common/SegmentedButtonGroup.tsx
 
 ## Live Query (requires Dataview plugin)
 

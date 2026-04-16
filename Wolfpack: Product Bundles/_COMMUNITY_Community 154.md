@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 154
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[ModalCloseButtonSettings()]] - code - app/components/design-control-panel/settings/ModalCloseButtonSettings.tsx
-- [[ModalCloseButtonSettings.tsx]] - code - app/components/design-control-panel/settings/ModalCloseButtonSettings.tsx
+- [[BannerUpgradePrompt()]] - code - app/components/FeatureGate.tsx
 
 ## Live Query (requires Dataview plugin)
 

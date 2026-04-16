@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[RangeSliderRow.tsx]] - code - app/components/design-control-panel/common/RangeSliderRow.tsx
+- [[ProductCardPreview.tsx]] - code - app/components/design-control-panel/preview/ProductCardPreview.tsx
 
 ## Live Query (requires Dataview plugin)
 

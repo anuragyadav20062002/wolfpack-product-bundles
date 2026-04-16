@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[base.config.ts]] - code - app/lib/dcp-config/base.config.ts
+- [[useBundleConfigurationState()]] - code - app/hooks/useBundleConfigurationState.ts
 
 ## Live Query (requires Dataview plugin)
 

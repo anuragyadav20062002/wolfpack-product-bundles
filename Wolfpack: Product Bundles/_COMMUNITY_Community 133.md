@@ -1,18 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 3
+members: 1
 ---
 
 # Community 133
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 3 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[getDiscountValueFromRule()]] - code - extensions/bundle-builder/assets/modal-discount-bar.js
-- [[modal-discount-bar.js]] - code - extensions/bundle-builder/assets/modal-discount-bar.js
-- [[updateModalDiscountBar()]] - code - extensions/bundle-builder/assets/modal-discount-bar.js
+- [[mapDiscountMethod()]] - code - app/utils/discount-mappers.ts
 
 ## Live Query (requires Dataview plugin)
 

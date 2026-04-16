@@ -1,19 +1,14 @@
 ---
 source_file: "app/lib/css-sanitizer.ts"
 type: "code"
-community: "Community 76"
+community: "Community 340"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_76
+  - community/Community_340
 ---
 
 # css-sanitizer.ts
 
-## Connections
-- [[processCss()]] - `contains` [EXTRACTED]
-- [[sanitizeCss()]] - `contains` [EXTRACTED]
-- [[validateCssSyntax()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_76
+#graphify/code #graphify/EXTRACTED #community/Community_340

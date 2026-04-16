@@ -1,12 +1,12 @@
 ---
 source_file: "docs/archive/cart-transform-field-requirements.md"
 type: "document"
-community: "Cart Transform & Admin Fixes"
+community: "Community 20"
 location: "Summary"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/Cart_Transform_&_Admin_Fixes
+  - community/Community_20
 ---
 
 # Cart Transform Primary vs Fallback Fields (percentageOff vs discountValue)
@@ -15,4 +15,4 @@ tags:
 - [[Cart Transform Field Requirements Reference]] - `references` [EXTRACTED]
 - [[Multiple Field Names Problem (discountValue vs percentageOff etc.)]] - `conceptually_related_to` [INFERRED]
 
-#graphify/document #graphify/INFERRED #community/Cart_Transform_&_Admin_Fixes
+#graphify/document #graphify/INFERRED #community/Community_20

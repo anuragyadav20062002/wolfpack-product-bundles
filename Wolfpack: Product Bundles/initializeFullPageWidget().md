@@ -1,17 +1,14 @@
 ---
 source_file: "app/assets/bundle-widget-full-page.js"
 type: "code"
-community: "Full-Page Bundle Widget (Source)"
+community: "Community 624"
 location: "L4500"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Full-Page_Bundle_Widget_(Source)
+  - community/Community_624
 ---
 
 # initializeFullPageWidget()
 
-## Connections
-- [[bundle-widget-full-page.js]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Full-Page_Bundle_Widget_(Source)
+#graphify/code #graphify/EXTRACTED #community/Community_624

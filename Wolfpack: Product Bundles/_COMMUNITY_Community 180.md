@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 180
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[tier-config-validator.server.ts]] - code - app/lib/tier-config-validator.server.ts
-- [[validateTierConfig()]] - code - app/lib/tier-config-validator.server.ts
+- [[QuantityVariantSettings.tsx]] - code - app/components/design-control-panel/settings/QuantityVariantSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

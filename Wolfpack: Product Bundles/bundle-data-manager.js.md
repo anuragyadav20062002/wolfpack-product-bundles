@@ -1,17 +1,14 @@
 ---
 source_file: "app/assets/widgets/shared/bundle-data-manager.js"
 type: "code"
-community: "Bundle Data Manager (Shared)"
+community: "Community 654"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Bundle_Data_Manager_(Shared)
+  - community/Community_654
 ---
 
 # bundle-data-manager.js
 
-## Connections
-- [[BundleDataManager]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Bundle_Data_Manager_(Shared)
+#graphify/code #graphify/EXTRACTED #community/Community_654

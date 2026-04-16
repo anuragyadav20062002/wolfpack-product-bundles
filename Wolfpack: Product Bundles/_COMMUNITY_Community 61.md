@@ -1,21 +1,17 @@
 ---
 type: community
-cohesion: 0.33
-members: 6
+cohesion: 1.00
+members: 2
 ---
 
 # Community 61
 
-**Cohesion:** 0.33 - loosely connected
-**Members:** 6 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[condition-pricing-integration.test.ts]] - code - tests/unit/assets/condition-pricing-integration.test.ts
-- [[makeAmtRule()_1]] - code - tests/unit/assets/condition-pricing-integration.test.ts
-- [[makeBundle()_2]] - code - tests/unit/assets/condition-pricing-integration.test.ts
-- [[makeQtyRule()_1]] - code - tests/unit/assets/condition-pricing-integration.test.ts
-- [[makeStep()_3]] - code - tests/unit/assets/condition-pricing-integration.test.ts
-- [[makeStep2()_1]] - code - tests/unit/assets/condition-pricing-integration.test.ts
+- [[Documentation Refactor and Enhancement]] - document - docs/issues-prod/docs-refactor-and-enhancement-3.md
+- [[Events Page with Accordion Sections]] - document - docs/issues-prod/events-page-1.md
 
 ## Live Query (requires Dataview plugin)
 

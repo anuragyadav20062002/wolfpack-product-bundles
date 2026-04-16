@@ -1,18 +1,14 @@
 ---
 source_file: "tests/unit/services/theme-colors.test.ts"
 type: "code"
-community: "Community 132"
+community: "Community 1272"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_132
+  - community/Community_1272
 ---
 
 # theme-colors.test.ts
 
-## Connections
-- [[makeAdmin()_4]] - `contains` [EXTRACTED]
-- [[makeSettingsResponse()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_132
+#graphify/code #graphify/EXTRACTED #community/Community_1272

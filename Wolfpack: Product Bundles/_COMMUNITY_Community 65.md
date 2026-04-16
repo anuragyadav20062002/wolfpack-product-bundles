@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 65
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[FilePicker.tsx]] - code - app/components/design-control-panel/settings/FilePicker.tsx
-- [[filenameFromUrl()]] - code - app/components/design-control-panel/settings/FilePicker.tsx
-- [[formatDate()]] - code - app/components/design-control-panel/settings/FilePicker.tsx
-- [[handler()_1]] - code - app/components/design-control-panel/settings/FilePicker.tsx
-- [[truncate()]] - code - app/components/design-control-panel/settings/FilePicker.tsx
+- [[Checkout.tsx Component Pricing Display (qty multiplication fix)]] - document - docs/issues-prod/per-unit-vs-total-pricing-display-1.md
+- [[Per-Unit vs Total Pricing Display in Checkout UI Issue]] - document - docs/issues-prod/per-unit-vs-total-pricing-display-1.md
 
 ## Live Query (requires Dataview plugin)
 

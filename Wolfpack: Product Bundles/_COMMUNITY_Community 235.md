@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[postcss.config.js]] - code - postcss.config.js
+- [[index.ts_2]] - code - app/components/design-control-panel/config/index.ts
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,18 +1,14 @@
 ---
 source_file: "tests/unit/assets/bundle-bottom-sheet.test.ts"
 type: "code"
-community: "Community 60"
+community: "Community 1210"
 location: "L66"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_60
+  - community/Community_1210
 ---
 
 # validateFn()
 
-## Connections
-- [[bsFindNextIncompleteStep()_1]] - `calls` [EXTRACTED]
-- [[bundle-bottom-sheet.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_60
+#graphify/code #graphify/EXTRACTED #community/Community_1210

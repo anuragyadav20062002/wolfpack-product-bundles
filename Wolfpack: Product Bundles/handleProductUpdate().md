@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/webhooks/handlers/product.server.ts"
 type: "code"
-community: "Community 119"
+community: "Community 1038"
 location: "L18"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_119
+  - community/Community_1038
 ---
 
 # handleProductUpdate()
 
-## Connections
-- [[product.server.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_119
+#graphify/code #graphify/EXTRACTED #community/Community_1038

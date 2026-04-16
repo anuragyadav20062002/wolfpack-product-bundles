@@ -1,17 +1,14 @@
 ---
 source_file: "app/assets/widgets/shared/currency-manager.js"
 type: "code"
-community: "Currency Manager"
+community: "Community 644"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Currency_Manager
+  - community/Community_644
 ---
 
 # currency-manager.js
 
-## Connections
-- [[CurrencyManager]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Currency_Manager
+#graphify/code #graphify/EXTRACTED #community/Community_644

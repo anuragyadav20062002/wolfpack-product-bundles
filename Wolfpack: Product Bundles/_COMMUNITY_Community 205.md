@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 205
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[api.check-cart-transform.tsx]] - code - app/routes/api/api.check-cart-transform.tsx
-- [[loader()_26]] - code - app/routes/api/api.check-cart-transform.tsx
+- [[ButtonSettings.tsx]] - code - app/components/design-control-panel/settings/ButtonSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 
