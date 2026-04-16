@@ -1,0 +1,19 @@
+api_version = "2025-10"
+
+[[extensions]]
+name = "Bundle Cart Transform (Rust)"
+handle = "bundle-cart-transform-rs"
+
+type = "function"
+
+description = "Transform cart lines to display bundles as single items with discount pricing (Rust/WASM port)"
+
+  [[extensions.targeting]]
+  target = "cart.transform.run"
+  input_query = "src/run.graphql"
+  export = "run"
+
+  [extensions.build]
+  command = "cargo build --target=wasm32-unknown-unknown --release"
+  path = "target/wasm32-unknown-unknown/release/bundle_cart_transform_rs.wasm"
+  watch = ["src/**/*.rs"]
