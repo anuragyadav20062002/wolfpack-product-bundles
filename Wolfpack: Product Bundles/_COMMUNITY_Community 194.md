@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 194
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[api.get-function-id.ts]] - code - app/routes/api/api.get-function-id.ts
-- [[loader()_13]] - code - app/routes/api/api.get-function-id.ts
+- [[GlobalColorsSettings.tsx]] - code - app/components/design-control-panel/settings/GlobalColorsSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

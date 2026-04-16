@@ -1,21 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 6
+cohesion: 1.00
+members: 2
 ---
 
 # Community 62
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 6 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[api.bundle.free-gift.test.ts]] - code - tests/unit/routes/api.bundle.free-gift.test.ts
-- [[getDb()]] - code - tests/unit/routes/api.bundle.free-gift.test.ts
-- [[makeBaseStep()]] - code - tests/unit/routes/api.bundle.free-gift.test.ts
-- [[makeBundle()_3]] - code - tests/unit/routes/api.bundle.free-gift.test.ts
-- [[makeRequest()_2]] - code - tests/unit/routes/api.bundle.free-gift.test.ts
-- [[mockFindFirst()]] - code - tests/unit/routes/api.bundle.free-gift.test.ts
+- [[BundleStatus Enum 'unlisted' Prisma Migration]] - document - docs/issues-prod/unlisted-bundle-status-migration-1.md
+- [[PROD Crash — unlisted BundleStatus Enum Migration Issue]] - document - docs/issues-prod/unlisted-bundle-status-migration-1.md
 
 ## Live Query (requires Dataview plugin)
 

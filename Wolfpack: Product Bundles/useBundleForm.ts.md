@@ -1,17 +1,14 @@
 ---
 source_file: "app/hooks/useBundleForm.ts"
 type: "code"
-community: "Community 174"
+community: "Community 298"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_174
+  - community/Community_298
 ---
 
 # useBundleForm.ts
 
-## Connections
-- [[useBundleForm()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_174
+#graphify/code #graphify/EXTRACTED #community/Community_298

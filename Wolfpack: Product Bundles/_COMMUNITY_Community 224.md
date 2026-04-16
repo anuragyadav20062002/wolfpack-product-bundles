@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 224
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[createMockAdmin()_1]] - code - tests/unit/services/sales-channels.test.ts
-- [[sales-channels.test.ts]] - code - tests/unit/services/sales-channels.test.ts
+- [[AddToCartButtonSettings.tsx]] - code - app/components/design-control-panel/settings/AddToCartButtonSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

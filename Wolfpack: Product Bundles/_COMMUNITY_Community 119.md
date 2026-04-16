@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 119
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[handleProductDelete()]] - code - app/services/webhooks/handlers/product.server.ts
-- [[handleProductUpdate()]] - code - app/services/webhooks/handlers/product.server.ts
-- [[product.server.ts]] - code - app/services/webhooks/handlers/product.server.ts
+- [[pricing.ts_1]] - code - app/utils/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

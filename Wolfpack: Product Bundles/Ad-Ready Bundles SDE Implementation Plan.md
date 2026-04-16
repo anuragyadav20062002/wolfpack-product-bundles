@@ -1,11 +1,11 @@
 ---
 source_file: "docs/ad-ready-bundles/04-SDE-implementation.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # Ad-Ready Bundles SDE Implementation Plan
@@ -20,4 +20,4 @@ tags:
 - [[testsunitservicesinventory-webhook.test.ts]] - `references` [EXTRACTED]
 - [[testsunitservicespricing-creation.test.ts]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/EXTRACTED #community/Community_11

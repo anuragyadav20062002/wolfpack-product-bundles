@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/services/pricing-creation.test.ts"
 type: "code"
-community: "Community 130"
+community: "Community 1264"
 location: "L37"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_130
+  - community/Community_1264
 ---
 
 # createBundleWithPricing()
 
-## Connections
-- [[pricing-creation.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_130
+#graphify/code #graphify/EXTRACTED #community/Community_1264

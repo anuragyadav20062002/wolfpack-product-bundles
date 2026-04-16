@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[order-attribution.test.ts]] - code - tests/unit/services/order-attribution.test.ts
+- [[requireAdminSession()]] - code - app/lib/auth-guards.server.ts
 
 ## Live Query (requires Dataview plugin)
 

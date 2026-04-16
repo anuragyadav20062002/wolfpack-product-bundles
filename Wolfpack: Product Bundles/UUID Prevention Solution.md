@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/UUID_PREVENTION.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # UUID Prevention Solution
@@ -15,4 +15,4 @@ tags:
 - [[UUID Root Cause Fix (Database Primary Key vs productId)]] - `conceptually_related_to` [INFERRED]
 - [[UUID from Corrupted Browser State (not database)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Metafield_Architecture
+#graphify/document #graphify/EXTRACTED #community/Community_26

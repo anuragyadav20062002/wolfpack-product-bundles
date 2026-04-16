@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/billing/SubscriptionErrorBanner.tsx"
 type: "code"
-community: "Community 95"
+community: "Community 288"
 location: "L35"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_95
+  - community/Community_288
 ---
 
 # SubscriptionErrorBanner()
 
-## Connections
-- [[SubscriptionErrorBanner.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_95
+#graphify/code #graphify/EXTRACTED #community/Community_288

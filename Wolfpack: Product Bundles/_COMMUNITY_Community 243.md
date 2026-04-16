@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[types.ts]] - code - app/inngest/types.ts
+- [[VisibilityToggle()]] - code - app/components/design-control-panel/common/VisibilityToggle.tsx
 
 ## Live Query (requires Dataview plugin)
 

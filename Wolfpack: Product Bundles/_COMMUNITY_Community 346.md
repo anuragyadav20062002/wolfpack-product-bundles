@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[Pricing Route apppricing]] - document - docs/app-nav-map/APP_NAVIGATION_MAP.md
+- [[.info()]] - code - app/lib/logger.ts
 
 ## Live Query (requires Dataview plugin)
 

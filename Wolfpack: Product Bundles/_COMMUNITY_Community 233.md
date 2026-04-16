@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[env.d.ts]] - code - env.d.ts
+- [[mergeSettings()]] - code - app/components/design-control-panel/config/mergeSettings.ts
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 108
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[action()_14]] - code - app/routes/api/api.admin.grant-plan.tsx
-- [[api.admin.grant-plan.tsx]] - code - app/routes/api/api.admin.grant-plan.tsx
-- [[loader()_29]] - code - app/routes/api/api.admin.grant-plan.tsx
+- [[useStateService()]] - code - app/contexts/AppStateContext.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[tier-config.ts]] - code - app/types/tier-config.ts
+- [[ColorPickerRow()]] - code - app/components/design-control-panel/common/ColorPickerRow.tsx
 
 ## Live Query (requires Dataview plugin)
 

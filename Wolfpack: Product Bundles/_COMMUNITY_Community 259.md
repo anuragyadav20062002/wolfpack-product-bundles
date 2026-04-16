@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[NavigationSidebar.tsx]] - code - app/components/design-control-panel/NavigationSidebar.tsx
+- [[handleColorCircleClick()]] - code - app/components/design-control-panel/common/ColorPicker.tsx
 
 ## Live Query (requires Dataview plugin)
 

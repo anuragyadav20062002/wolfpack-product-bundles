@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 130
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[createBundleWithPricing()]] - code - tests/unit/services/pricing-creation.test.ts
-- [[createMockAdmin()]] - code - tests/unit/services/pricing-creation.test.ts
-- [[pricing-creation.test.ts]] - code - tests/unit/services/pricing-creation.test.ts
+- [[getFirstVariantId()]] - code - app/utils/variant-lookup.server.ts
 
 ## Live Query (requires Dataview plugin)
 

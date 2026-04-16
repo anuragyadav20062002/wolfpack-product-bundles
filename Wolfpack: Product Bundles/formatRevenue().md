@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/app/app.attribution.tsx"
 type: "code"
-community: "Attribution & Analytics"
+community: "Community 709"
 location: "L39"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Attribution_&_Analytics
+  - community/Community_709
 ---
 
 # formatRevenue()
 
-## Connections
-- [[app.attribution.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Attribution_&_Analytics
+#graphify/code #graphify/EXTRACTED #community/Community_709

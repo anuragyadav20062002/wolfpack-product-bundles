@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 70
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[action()]] - code - app/routes/app/app.bundles.cart-transform.tsx
-- [[addProductImage()]] - code - app/routes/app/app.bundles.cart-transform.tsx
-- [[app.bundles.cart-transform.tsx]] - code - app/routes/app/app.bundles.cart-transform.tsx
-- [[handleEditBundle()]] - code - app/routes/app/app.bundles.cart-transform.tsx
-- [[loader()_2]] - code - app/routes/app/app.bundles.cart-transform.tsx
+- [[.claudeskillscode-simplificationSKILL]] - document - docs/issues-prod/code-simplification-skill-1.md
+- [[Issue Code Simplification Skill]] - document - docs/issues-prod/code-simplification-skill-1.md
 
 ## Live Query (requires Dataview plugin)
 

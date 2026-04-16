@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 230
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[Theme Editor Deep Link URL Format]] - document - docs/archive/THEME_EDITOR_DEEPLINKS.md
-- [[Theme Editor Deep Links]] - document - docs/archive/THEME_EDITOR_DEEPLINKS.md
+- [[ToastsSettings.tsx]] - code - app/components/design-control-panel/settings/ToastsSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

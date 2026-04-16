@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[PromoBannerSettings.tsx]] - code - app/components/design-control-panel/settings/PromoBannerSettings.tsx
+- [[PreviewPanel.tsx]] - code - app/components/design-control-panel/preview/PreviewPanel.tsx
 
 ## Live Query (requires Dataview plugin)
 

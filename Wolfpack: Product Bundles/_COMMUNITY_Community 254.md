@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[CartPropertyFixCard.tsx]] - code - app/components/CartPropertyFixCard.tsx
+- [[RangeSliderRow.tsx]] - code - app/components/design-control-panel/common/RangeSliderRow.tsx
 
 ## Live Query (requires Dataview plugin)
 

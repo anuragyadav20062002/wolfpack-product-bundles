@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[bundle-widget-components.js]] - code - app/assets/bundle-widget-components.js
+- [[useBundleForm()]] - code - app/hooks/useBundleForm.ts
 
 ## Live Query (requires Dataview plugin)
 

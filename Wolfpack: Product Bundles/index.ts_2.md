@@ -1,14 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/config/index.ts"
 type: "code"
-community: "Community 271"
+community: "Community 235"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_271
+  - community/Community_235
 ---
 
 # index.ts
 
-#graphify/code #graphify/EXTRACTED #community/Community_271
+#graphify/code #graphify/EXTRACTED #community/Community_235

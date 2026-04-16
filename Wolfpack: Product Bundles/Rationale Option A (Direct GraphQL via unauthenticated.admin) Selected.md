@@ -1,12 +1,12 @@
 ---
 source_file: "docs/ad-ready-bundles/03-architecture.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 location: "Options Considered"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # Rationale: Option A (Direct GraphQL via unauthenticated.admin) Selected
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[unauthenticated.admin() Offline Session Pattern]] - `rationale_for` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/EXTRACTED #community/Community_11

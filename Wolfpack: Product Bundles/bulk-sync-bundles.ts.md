@@ -1,22 +1,14 @@
 ---
 source_file: "scripts/bulk-sync-bundles.ts"
 type: "code"
-community: "Community 50"
+community: "Community 1662"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_50
+  - community/Community_1662
 ---
 
 # bulk-sync-bundles.ts
 
-## Connections
-- [[createFpbProduct()]] - `contains` [EXTRACTED]
-- [[createRedirect()]] - `contains` [EXTRACTED]
-- [[log()]] - `contains` [EXTRACTED]
-- [[main()_1]] - `contains` [EXTRACTED]
-- [[sleep()]] - `contains` [EXTRACTED]
-- [[syncBundle()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_50
+#graphify/code #graphify/EXTRACTED #community/Community_1662

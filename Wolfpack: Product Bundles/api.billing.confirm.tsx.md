@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/api/api.billing.confirm.tsx"
 type: "code"
-community: "Community 206"
+community: "Community 845"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_206
+  - community/Community_845
 ---
 
 # api.billing.confirm.tsx
 
-## Connections
-- [[loader()_27]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_206
+#graphify/code #graphify/EXTRACTED #community/Community_845

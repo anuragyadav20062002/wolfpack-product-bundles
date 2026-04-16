@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[index.ts_1]] - code - app/components/design-control-panel/settings/index.ts
+- [[GeneralPreview.tsx]] - code - app/components/design-control-panel/preview/GeneralPreview.tsx
 
 ## Live Query (requires Dataview plugin)
 

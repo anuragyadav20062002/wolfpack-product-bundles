@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/assets/bundle-widget.test.ts"
 type: "code"
-community: "Bundle Widget Tests"
+community: "Community 1192"
 location: "L278"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Bundle_Widget_Tests
+  - community/Community_1192
 ---
 
 # calculateBundleTotal()
 
-## Connections
-- [[bundle-widget.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Bundle_Widget_Tests
+#graphify/code #graphify/EXTRACTED #community/Community_1192

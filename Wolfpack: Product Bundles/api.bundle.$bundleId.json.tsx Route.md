@@ -1,11 +1,11 @@
 ---
 source_file: "app/routes/api/api.bundle.$bundleId[.]json.tsx"
 type: "code"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 2"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_2
 ---
 
 # api.bundle.$bundleId[.]json.tsx Route
@@ -14,4 +14,4 @@ tags:
 - [[Admin Tier Config Architecture Decision Record]] - `references` [EXTRACTED]
 - [[Admin Tier Config SDE Implementation Plan]] - `references` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/code #graphify/EXTRACTED #community/Community_2

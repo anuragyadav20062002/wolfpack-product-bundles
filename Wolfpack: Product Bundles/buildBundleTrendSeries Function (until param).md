@@ -1,12 +1,12 @@
 ---
 source_file: "docs/analytics-custom-date-range/03-architecture.md"
 type: "document"
-community: "Analytics & Custom Date Range"
+community: "Community 16"
 location: "buildBundleTrendSeries Signature Change"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Analytics_&_Custom_Date_Range
+  - community/Community_16
 ---
 
 # buildBundleTrendSeries Function (until param)
@@ -15,4 +15,4 @@ tags:
 - [[Analytics Custom Date Range Architecture]] - `references` [EXTRACTED]
 - [[analytics-helpers.ts_1]] - `references` [INFERRED]
 
-#graphify/document #graphify/EXTRACTED #community/Analytics_&_Custom_Date_Range
+#graphify/document #graphify/EXTRACTED #community/Community_16

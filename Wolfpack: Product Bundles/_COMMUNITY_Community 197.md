@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 197
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[action()_7]] - code - app/routes/api/api.webhooks.pubsub.tsx
-- [[api.webhooks.pubsub.tsx]] - code - app/routes/api/api.webhooks.pubsub.tsx
+- [[HeaderTabsSettings.tsx]] - code - app/components/design-control-panel/settings/HeaderTabsSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

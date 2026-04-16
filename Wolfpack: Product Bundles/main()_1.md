@@ -1,20 +1,14 @@
 ---
 source_file: "scripts/bulk-sync-bundles.ts"
 type: "code"
-community: "Community 50"
+community: "Community 1668"
 location: "L241"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_50
+  - community/Community_1668
 ---
 
 # main()
 
-## Connections
-- [[bulk-sync-bundles.ts]] - `contains` [EXTRACTED]
-- [[log()]] - `calls` [EXTRACTED]
-- [[sleep()]] - `calls` [EXTRACTED]
-- [[syncBundle()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_50
+#graphify/code #graphify/EXTRACTED #community/Community_1668

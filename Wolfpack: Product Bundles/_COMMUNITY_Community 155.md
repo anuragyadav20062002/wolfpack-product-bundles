@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 155
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[ButtonSettings()]] - code - app/components/design-control-panel/settings/ButtonSettings.tsx
-- [[ButtonSettings.tsx]] - code - app/components/design-control-panel/settings/ButtonSettings.tsx
+- [[useFeatureGate()]] - code - app/components/FeatureGate.tsx
 
 ## Live Query (requires Dataview plugin)
 

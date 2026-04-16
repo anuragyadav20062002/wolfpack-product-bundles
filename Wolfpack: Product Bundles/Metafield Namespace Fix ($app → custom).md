@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/METAFIELD_NAMESPACE_FIX.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # Metafield Namespace Fix ($app → custom)
@@ -16,4 +16,4 @@ tags:
 - [[Service metafield-sync.server.ts]] - `conceptually_related_to` [INFERRED]
 - [[Testing Guide]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Metafield_Architecture
+#graphify/document #graphify/EXTRACTED #community/Community_26

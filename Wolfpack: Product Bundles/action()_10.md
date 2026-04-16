@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/api/api.ensure-product-template.tsx"
 type: "code"
-community: "Community 199"
+community: "Community 819"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_199
+  - community/Community_819
 ---
 
 # action()
 
-## Connections
-- [[api.ensure-product-template.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_199
+#graphify/code #graphify/EXTRACTED #community/Community_819

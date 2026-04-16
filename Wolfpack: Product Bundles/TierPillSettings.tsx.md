@@ -1,14 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/TierPillSettings.tsx"
 type: "code"
-community: "Community 260"
+community: "Community 179"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_260
+  - community/Community_179
 ---
 
 # TierPillSettings.tsx
 
-#graphify/code #graphify/EXTRACTED #community/Community_260
+#graphify/code #graphify/EXTRACTED #community/Community_179

@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/routes/full-page-bundle-slug.test.ts"
 type: "code"
-community: "Community 222"
+community: "Community 1244"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_222
+  - community/Community_1244
 ---
 
 # full-page-bundle-slug.test.ts
 
-## Connections
-- [[getDb()_2]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_222
+#graphify/code #graphify/EXTRACTED #community/Community_1244

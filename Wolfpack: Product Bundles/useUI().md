@@ -1,18 +1,14 @@
 ---
 source_file: "app/contexts/AppStateContext.tsx"
 type: "code"
-community: "App State Context & Providers"
+community: "Community 101"
 location: "L267"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_State_Context_&_Providers
+  - community/Community_101
 ---
 
 # useUI()
 
-## Connections
-- [[AppStateContext.tsx]] - `contains` [EXTRACTED]
-- [[useAppState()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_State_Context_&_Providers
+#graphify/code #graphify/EXTRACTED #community/Community_101

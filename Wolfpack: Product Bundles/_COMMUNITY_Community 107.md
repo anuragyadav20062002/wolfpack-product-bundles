@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 107
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[OPTIONS()_2]] - code - app/routes/api/api.proxy-health.tsx
-- [[api.proxy-health.tsx]] - code - app/routes/api/api.proxy-health.tsx
-- [[loader()_28]] - code - app/routes/api/api.proxy-health.tsx
+- [[useSelector()]] - code - app/contexts/AppStateContext.tsx
 
 ## Live Query (requires Dataview plugin)
 

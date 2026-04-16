@@ -1,26 +1,14 @@
 ---
 source_file: "app/lib/logger.ts"
 type: "code"
-community: "App Logger"
+community: "Community 345"
 location: "L16"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_Logger
+  - community/Community_345
 ---
 
 # AppLogger
 
-## Connections
-- [[.bundle()]] - `method` [EXTRACTED]
-- [[.debug()]] - `method` [EXTRACTED]
-- [[.error()]] - `method` [EXTRACTED]
-- [[.formatPrefix()]] - `method` [EXTRACTED]
-- [[.info()]] - `method` [EXTRACTED]
-- [[.metafield()]] - `method` [EXTRACTED]
-- [[.startTimer()]] - `method` [EXTRACTED]
-- [[.summary()]] - `method` [EXTRACTED]
-- [[.warn()]] - `method` [EXTRACTED]
-- [[logger.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_Logger
+#graphify/code #graphify/EXTRACTED #community/Community_345

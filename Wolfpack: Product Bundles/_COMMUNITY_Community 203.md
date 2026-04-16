@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 203
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[api.bundles.json.tsx]] - code - app/routes/api/api.bundles.json.tsx
-- [[loader()_24]] - code - app/routes/api/api.bundles.json.tsx
+- [[ModalCloseButtonSettings.tsx]] - code - app/components/design-control-panel/settings/ModalCloseButtonSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

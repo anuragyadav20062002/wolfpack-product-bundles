@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/billing/FAQSection.tsx"
 type: "code"
-community: "Community 171"
+community: "Community 285"
 location: "L18"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_171
+  - community/Community_285
 ---
 
 # FAQSection()
 
-## Connections
-- [[FAQSection.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_171
+#graphify/code #graphify/EXTRACTED #community/Community_285

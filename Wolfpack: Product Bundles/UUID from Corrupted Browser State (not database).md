@@ -1,12 +1,12 @@
 ---
 source_file: "docs/archive/UUID_PREVENTION.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 location: "Investigation Results"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # UUID from Corrupted Browser State (not database)
@@ -16,4 +16,4 @@ tags:
 - [[UUID Prevention Solution]] - `references` [EXTRACTED]
 - [[UUID Root Cause React State Transform on Init (id → productId)]] - `conceptually_related_to` [INFERRED]
 
-#graphify/document #graphify/INFERRED #community/Metafield_Architecture
+#graphify/document #graphify/INFERRED #community/Community_26

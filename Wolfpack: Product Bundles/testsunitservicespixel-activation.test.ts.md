@@ -1,11 +1,11 @@
 ---
 source_file: "tests/unit/services/pixel-activation.test.ts"
 type: "code"
-community: "Community 134"
+community: "Community 47"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_134
+  - community/Community_47
 ---
 
 # tests/unit/services/pixel-activation.test.ts
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Analytics Pixel Toggle SDE Plan]] - `references` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Community_134
+#graphify/code #graphify/EXTRACTED #community/Community_47

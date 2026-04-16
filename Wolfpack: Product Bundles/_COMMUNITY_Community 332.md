@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[inventory-sync.test.ts]] - code - tests/unit/services/inventory-sync.test.ts
+- [[requireInternalSecret()]] - code - app/lib/auth-guards.server.ts
 
 ## Live Query (requires Dataview plugin)
 

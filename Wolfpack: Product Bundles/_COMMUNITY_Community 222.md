@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 222
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[full-page-bundle-slug.test.ts]] - code - tests/unit/routes/full-page-bundle-slug.test.ts
-- [[getDb()_2]] - code - tests/unit/routes/full-page-bundle-slug.test.ts
+- [[QuantityBadgeSettings.tsx]] - code - app/components/design-control-panel/settings/QuantityBadgeSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

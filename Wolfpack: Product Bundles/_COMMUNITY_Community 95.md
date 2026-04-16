@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 95
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[SubscriptionErrorBanner()]] - code - app/components/billing/SubscriptionErrorBanner.tsx
-- [[SubscriptionErrorBanner.tsx]] - code - app/components/billing/SubscriptionErrorBanner.tsx
-- [[getErrorMessage()]] - code - app/components/billing/SubscriptionErrorBanner.tsx
+- [[amountToCents()]] - code - app/types/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

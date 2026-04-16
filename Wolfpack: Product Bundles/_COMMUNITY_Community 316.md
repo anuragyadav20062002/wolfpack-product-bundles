@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[index.ts_14]] - code - app/services/widget-installation/index.ts
+- [[useSelectorStandalone()]] - code - app/hooks/useAppState.ts
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 142
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[AccessibilitySettings()]] - code - app/components/design-control-panel/settings/AccessibilitySettings.tsx
-- [[AccessibilitySettings.tsx]] - code - app/components/design-control-panel/settings/AccessibilitySettings.tsx
+- [[ProxyHealthBanner()]] - code - app/components/ProxyHealthBanner.tsx
 
 ## Live Query (requires Dataview plugin)
 

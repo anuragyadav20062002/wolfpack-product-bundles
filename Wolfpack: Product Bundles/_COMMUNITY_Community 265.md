@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[types.ts_2]] - code - app/components/design-control-panel/settings/types.ts
+- [[StorefrontIframePreview.tsx]] - code - app/components/design-control-panel/preview/StorefrontIframePreview.tsx
 
 ## Live Query (requires Dataview plugin)
 

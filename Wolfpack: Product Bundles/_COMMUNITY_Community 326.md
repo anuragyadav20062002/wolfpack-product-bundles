@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[tier-config-validator.test.ts]] - code - tests/unit/lib/tier-config-validator.test.ts
+- [[useCartTransformState()]] - code - app/hooks/useCartTransformState.ts
 
 ## Live Query (requires Dataview plugin)
 

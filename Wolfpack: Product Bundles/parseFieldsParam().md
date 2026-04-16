@@ -1,18 +1,14 @@
 ---
 source_file: "app/routes/api/api.bundle.$bundleId[.]json.tsx"
 type: "code"
-community: "Community 55"
+community: "Community 799"
 location: "L96"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_55
+  - community/Community_799
 ---
 
 # parseFieldsParam()
 
-## Connections
-- [[api.bundle.$bundleId.json.tsx]] - `contains` [EXTRACTED]
-- [[loader()_15]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_55
+#graphify/code #graphify/EXTRACTED #community/Community_799

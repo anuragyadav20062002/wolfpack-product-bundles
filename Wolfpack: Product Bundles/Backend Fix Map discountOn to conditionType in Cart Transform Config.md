@@ -1,12 +1,12 @@
 ---
 source_file: "docs/archive/clean-discount-fix-summary.md"
 type: "document"
-community: "Cart Transform & Admin Fixes"
+community: "Community 20"
 location: "Fix Applied #1"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/Cart_Transform_&_Admin_Fixes
+  - community/Community_20
 ---
 
 # Backend Fix: Map discountOn to conditionType in Cart Transform Config
@@ -16,4 +16,4 @@ tags:
 - [[Clean Discount Fix (discountOn → conditionType mapping)]] - `references` [EXTRACTED]
 - [[Multiple Field Names Problem (discountValue vs percentageOff etc.)]] - `conceptually_related_to` [INFERRED]
 
-#graphify/document #graphify/INFERRED #community/Cart_Transform_&_Admin_Fixes
+#graphify/document #graphify/INFERRED #community/Community_20

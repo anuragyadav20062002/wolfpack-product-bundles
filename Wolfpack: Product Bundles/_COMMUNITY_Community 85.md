@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.50
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 85
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[buildTierPillsAriaLabel()]] - code - tests/unit/assets/fpb-tier-selection.test.ts
-- [[fpb-tier-selection.test.ts]] - code - tests/unit/assets/fpb-tier-selection.test.ts
-- [[isTierActive()]] - code - tests/unit/assets/fpb-tier-selection.test.ts
-- [[parseTierConfig()]] - code - tests/unit/assets/fpb-tier-selection.test.ts
+- [[tier-config.ts]] - code - app/types/tier-config.ts
 
 ## Live Query (requires Dataview plugin)
 

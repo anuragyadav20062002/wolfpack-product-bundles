@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 144
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[SkeletonSettings()]] - code - app/components/design-control-panel/settings/SkeletonSettings.tsx
-- [[SkeletonSettings.tsx]] - code - app/components/design-control-panel/settings/SkeletonSettings.tsx
+- [[IllustrationServer()]] - code - app/components/ErrorPage.tsx
 
 ## Live Query (requires Dataview plugin)
 

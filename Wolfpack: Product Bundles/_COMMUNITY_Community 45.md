@@ -1,22 +1,18 @@
 ---
 type: community
-cohesion: 0.43
-members: 7
+cohesion: 0.67
+members: 3
 ---
 
 # Community 45
 
-**Cohesion:** 0.43 - moderately connected
-**Members:** 7 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[buildInngestPayload()]] - code - app/services/webhook-worker.server.ts
-- [[handleRequest()_1]] - code - app/services/webhook-worker.server.ts
-- [[readRawBody()]] - code - app/services/webhook-worker.server.ts
-- [[startWebhookWorker()]] - code - app/services/webhook-worker.server.ts
-- [[stopWebhookWorker()]] - code - app/services/webhook-worker.server.ts
-- [[validateHmac()]] - code - app/services/webhook-worker.server.ts
-- [[webhook-worker.server.ts]] - code - app/services/webhook-worker.server.ts
+- [[Bug Web Pixel Extension Disconnected (deploy required)]] - concept - docs/issues-prod/analytics-nav-pixel-fix-1.md
+- [[Fix Add Analytics Link to NavMenu in app.tsx]] - concept - docs/issues-prod/analytics-nav-pixel-fix-1.md
+- [[Issue Analytics Nav + Web Pixel Fix (analytics-nav-pixel-fix-1)]] - document - docs/issues-prod/analytics-nav-pixel-fix-1.md
 
 ## Live Query (requires Dataview plugin)
 

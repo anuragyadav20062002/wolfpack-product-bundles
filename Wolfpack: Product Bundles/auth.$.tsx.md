@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/auth/auth.$.tsx"
 type: "code"
-community: "Community 192"
+community: "Community 780"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_192
+  - community/Community_780
 ---
 
 # auth.$.tsx
 
-## Connections
-- [[loader()_12]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_192
+#graphify/code #graphify/EXTRACTED #community/Community_780

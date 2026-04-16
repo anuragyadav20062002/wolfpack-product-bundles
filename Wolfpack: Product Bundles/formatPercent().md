@@ -1,17 +1,14 @@
 ---
 source_file: "extensions/bundle-checkout-ui/src/Checkout.tsx"
 type: "code"
-community: "Community 41"
+community: "Community 1648"
 location: "L91"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_41
+  - community/Community_1648
 ---
 
 # formatPercent()
 
-## Connections
-- [[Checkout.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_41
+#graphify/code #graphify/EXTRACTED #community/Community_1648

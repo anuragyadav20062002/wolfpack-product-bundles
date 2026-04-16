@@ -1,17 +1,14 @@
 ---
 source_file: "app/utils/pricing.ts"
 type: "code"
-community: "Pricing Utilities"
+community: "Community 126"
 location: "L107"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Pricing_Utilities
+  - community/Community_126
 ---
 
 # getUpgradePromptTone()
 
-## Connections
-- [[pricing.ts_1]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Pricing_Utilities
+#graphify/code #graphify/EXTRACTED #community/Community_126

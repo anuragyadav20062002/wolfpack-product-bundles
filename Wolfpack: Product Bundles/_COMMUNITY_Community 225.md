@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 225
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[makeAdmin()_5]] - code - tests/unit/services/widget-full-page-bundle.test.ts
-- [[widget-full-page-bundle.test.ts]] - code - tests/unit/services/widget-full-page-bundle.test.ts
+- [[AddToCartButtonSettings()]] - code - app/components/design-control-panel/settings/AddToCartButtonSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[shopify.d.ts]] - code - extensions/bundle-checkout-ui/shopify.d.ts
+- [[slugify()]] - code - app/lib/slug-utils.ts
 
 ## Live Query (requires Dataview plugin)
 

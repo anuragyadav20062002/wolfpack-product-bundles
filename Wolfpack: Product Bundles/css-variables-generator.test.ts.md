@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/lib/css-variables-generator.test.ts"
 type: "code"
-community: "Community 216"
+community: "Community 1150"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_216
+  - community/Community_1150
 ---
 
 # css-variables-generator.test.ts
 
-## Connections
-- [[makeCtx()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_216
+#graphify/code #graphify/EXTRACTED #community/Community_1150

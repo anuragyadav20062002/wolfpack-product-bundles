@@ -1,18 +1,14 @@
 ---
 source_file: "app/components/FeatureGate.tsx"
 type: "code"
-community: "Feature Gate"
+community: "Community 150"
 location: "L61"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Feature_Gate
+  - community/Community_150
 ---
 
 # FeatureGate()
 
-## Connections
-- [[FeatureGate.tsx]] - `contains` [EXTRACTED]
-- [[formatFeatureName()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Feature_Gate
+#graphify/code #graphify/EXTRACTED #community/Community_150

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[PolarisColorPicker.tsx]] - code - app/components/design-control-panel/common/PolarisColorPicker.tsx
+- [[PromoBannerPreview.tsx]] - code - app/components/design-control-panel/preview/PromoBannerPreview.tsx
 
 ## Live Query (requires Dataview plugin)
 

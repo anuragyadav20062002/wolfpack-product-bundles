@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[inventory-webhook.test.ts]] - code - tests/unit/services/inventory-webhook.test.ts
+- [[auth-guards.server.ts]] - code - app/lib/auth-guards.server.ts
 
 ## Live Query (requires Dataview plugin)
 

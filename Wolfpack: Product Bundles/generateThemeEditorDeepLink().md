@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/widget-installation/widget-theme-editor-links.server.ts"
 type: "code"
-community: "Community 83"
+community: "Community 1047"
 location: "L25"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_83
+  - community/Community_1047
 ---
 
 # generateThemeEditorDeepLink()
 
-## Connections
-- [[widget-theme-editor-links.server.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_83
+#graphify/code #graphify/EXTRACTED #community/Community_1047

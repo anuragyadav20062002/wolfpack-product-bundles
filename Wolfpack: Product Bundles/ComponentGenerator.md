@@ -1,24 +1,14 @@
 ---
 source_file: "app/assets/widgets/shared/component-generator.js"
 type: "code"
-community: "Component Generator"
+community: "Community 636"
 location: "L15"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Component_Generator
+  - community/Community_636
 ---
 
 # ComponentGenerator
 
-## Connections
-- [[.createModalHTML()_1]] - `method` [EXTRACTED]
-- [[.escapeHtml()]] - `method` [EXTRACTED]
-- [[.renderEmptyStateCards()]] - `method` [EXTRACTED]
-- [[.renderProductCard()]] - `method` [EXTRACTED]
-- [[.renderProgressBar()]] - `method` [EXTRACTED]
-- [[.renderTab()]] - `method` [EXTRACTED]
-- [[.renderVariantSelector()_2]] - `method` [EXTRACTED]
-- [[component-generator.js]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Component_Generator
+#graphify/code #graphify/EXTRACTED #community/Community_636

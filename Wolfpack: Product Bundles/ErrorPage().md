@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/ErrorPage.tsx"
 type: "code"
-community: "Community 51"
+community: "Community 148"
 location: "L139"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_51
+  - community/Community_148
 ---
 
 # ErrorPage()
 
-## Connections
-- [[ErrorPage.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_51
+#graphify/code #graphify/EXTRACTED #community/Community_148

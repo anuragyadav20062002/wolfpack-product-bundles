@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[index.ts_19]] - code - extensions/bundle-cart-transform-ts/src/index.ts
+- [[slug-utils.ts]] - code - app/lib/slug-utils.ts
 
 ## Live Query (requires Dataview plugin)
 

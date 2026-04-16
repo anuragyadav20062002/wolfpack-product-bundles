@@ -1,22 +1,18 @@
 ---
 type: community
-cohesion: 0.57
-members: 7
+cohesion: 0.67
+members: 3
 ---
 
 # Community 50
 
-**Cohesion:** 0.57 - moderately connected
-**Members:** 7 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[bulk-sync-bundles.ts]] - code - scripts/bulk-sync-bundles.ts
-- [[createFpbProduct()]] - code - scripts/bulk-sync-bundles.ts
-- [[createRedirect()]] - code - scripts/bulk-sync-bundles.ts
-- [[log()]] - code - scripts/bulk-sync-bundles.ts
-- [[main()_1]] - code - scripts/bulk-sync-bundles.ts
-- [[sleep()]] - code - scripts/bulk-sync-bundles.ts
-- [[syncBundle()]] - code - scripts/bulk-sync-bundles.ts
+- [[Concept LocalizedMessageEntry  normalizeMessages  getMessageForLocale]] - concept - docs/issues-prod/i18n-discount-messaging-1.md
+- [[Issue Multilingual Discount Messaging (i18n-discount-messaging-1)]] - document - docs/issues-prod/i18n-discount-messaging-1.md
+- [[Note i18n Implementation Was Reverted (code only, docs preserved)]] - concept - docs/issues-prod/i18n-discount-messaging-1.md
 
 ## Live Query (requires Dataview plugin)
 

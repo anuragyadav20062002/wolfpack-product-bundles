@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[AccordionItem.tsx]] - code - app/components/AccordionItem.tsx
+- [[ArrowLabel()]] - code - app/components/design-control-panel/common/ArrowLabel.tsx
 
 ## Live Query (requires Dataview plugin)
 

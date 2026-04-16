@@ -1,11 +1,11 @@
 ---
 source_file: "docs/app-nav-map/screenshots/dcp-fpb-nav.png"
 type: "image"
-community: "App Navigation Map"
+community: "Community 28"
 tags:
   - graphify/image
   - graphify/INFERRED
-  - community/App_Navigation_Map
+  - community/Community_28
 ---
 
 # DCP FPB Navigation Screenshot
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[App Navigation Map]] - `references` [INFERRED]
 
-#graphify/image #graphify/INFERRED #community/App_Navigation_Map
+#graphify/image #graphify/INFERRED #community/Community_28
