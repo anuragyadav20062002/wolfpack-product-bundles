@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-16 (commit 2)
+**Last Updated:** 2026-04-17 (commit 3)
 
 ## Overview
 
@@ -28,11 +28,17 @@ See `docs/storefront-inventory-clamp/ARCHITECTURE.md` for the full design.
 - Lint: 0 errors on changed file.
 - Next: **manual deploy required** — `npm run deploy:prod` or `npm run deploy:sit`. Merchants re-consent; scope-update webhook fires; SATs get recreated on next storefront product fetch.
 
+### 2026-04-17 - Commit 3: Storefront query extension
+- Added `quantityAvailable` + `currentlyNotInStock` to the variant query in `app/routes/api/api.storefront-products.tsx`.
+- Gated the new fields behind `hasInventoryScope` (`session.scope.includes('unauthenticated_read_product_inventory')`). Merchants who have not yet re-consented receive the old response shape without error.
+- Response maps `quantityAvailable` to `number | null` (null = untracked or scope ungranted) and `currentlyNotInStock` to boolean.
+- Lint: 0 errors on changed file.
+
 ## Phases Checklist
 
 - [x] Architecture + issue file (commit 1)
 - [x] Add `unauthenticated_read_product_inventory` scope + auto-recreate SAT on `app/scopes_update` (commit 2) — **requires app deploy**
-- [ ] Extend Storefront query in `api.storefront-products.tsx` with `quantityAvailable` + `currentlyNotInStock` (commit 3)
+- [x] Extend Storefront query in `api.storefront-products.tsx` with `quantityAvailable` + `currentlyNotInStock` (commit 3)
 - [ ] Widget clamp logic in `updateProductSelection` + UI polish + `WIDGET_VERSION` bump + built bundles (commit 4) — **requires widget deploy**
 - [ ] Unit tests for scope update handler + clamp helper (commit 5)
 
