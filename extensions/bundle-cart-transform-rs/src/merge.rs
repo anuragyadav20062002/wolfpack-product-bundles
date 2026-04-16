@@ -3,7 +3,7 @@ use shopify_function::scalars::Decimal;
 
 use crate::helpers::{decimal_to_f64, is_free_gift_line, parse_json_or_default, truncate};
 use crate::pricing::calculate_discount_percentage;
-use crate::types::ComponentParent;
+use crate::types::{ComponentParent};
 use crate::schema;
 
 /// Process all MERGE operations for one cart pass.

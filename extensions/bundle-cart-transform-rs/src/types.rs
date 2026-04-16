@@ -14,26 +14,15 @@
 
 /// Deserialized from `$app:component_parents` metafield (JSON array).
 /// One entry per bundle parent; we always use index [0].
+/// Only `id` and `price_adjustment` are needed by the MERGE path.
+/// (`component_reference`/`component_quantities` live on separate metafields
+/// and are read directly via typegen accessors in the EXPAND path.)
 #[derive(serde::Deserialize, Debug)]
 pub struct ComponentParent {
     /// Parent variant GID, e.g. "gid://shopify/ProductVariant/123"
     pub id: String,
     #[serde(default)]
-    pub component_reference: ComponentReference,
-    #[serde(default)]
-    pub component_quantities: ComponentQuantities,
-    #[serde(default)]
     pub price_adjustment: Option<PriceAdjustmentConfig>,
-}
-
-#[derive(serde::Deserialize, Debug, Default)]
-pub struct ComponentReference {
-    pub value: Vec<String>,
-}
-
-#[derive(serde::Deserialize, Debug, Default)]
-pub struct ComponentQuantities {
-    pub value: Vec<i64>,
 }
 
 /// Deserialized from `$app:price_adjustment` metafield.

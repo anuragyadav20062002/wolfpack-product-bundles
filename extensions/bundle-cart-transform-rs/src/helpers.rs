@@ -9,14 +9,6 @@ pub fn decimal_to_f64(d: &Decimal) -> f64 {
     format!("{d}").parse::<f64>().ok().filter(|v| v.is_finite()).unwrap_or(0.0)
 }
 
-/// Parse a float string safely — returns 0.0 on parse error, NaN, or Infinity.
-pub fn safe_parse_float(value: Option<&str>) -> f64 {
-    value
-        .and_then(|v| v.parse::<f64>().ok())
-        .filter(|v| v.is_finite())
-        .unwrap_or(0.0)
-}
-
 /// Parse a JSON string into `T`, returning `T::default()` on any error.
 pub fn parse_json_or_default<T>(json: Option<&str>) -> T
 where
@@ -65,18 +57,6 @@ pub fn truncate(s: &str, max_chars: usize) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn safe_parse_float_valid() { assert_eq!(safe_parse_float(Some("10.50")), 10.50); }
-
-    #[test]
-    fn safe_parse_float_none()  { assert_eq!(safe_parse_float(None), 0.0); }
-
-    #[test]
-    fn safe_parse_float_empty() { assert_eq!(safe_parse_float(Some("")), 0.0); }
-
-    #[test]
-    fn safe_parse_float_non_numeric() { assert_eq!(safe_parse_float(Some("abc")), 0.0); }
 
     #[test]
     fn normalize_operator_short_forms() {
