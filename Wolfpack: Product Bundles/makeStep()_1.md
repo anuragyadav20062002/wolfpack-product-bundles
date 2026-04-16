@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/assets/bundle-widget-free-gift.test.ts"
 type: "code"
-community: "Free Gift Widget Tests"
+community: "Community 1170"
 location: "L123"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Free_Gift_Widget_Tests
+  - community/Community_1170
 ---
 
 # makeStep()
 
-## Connections
-- [[bundle-widget-free-gift.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Free_Gift_Widget_Tests
+#graphify/code #graphify/EXTRACTED #community/Community_1170

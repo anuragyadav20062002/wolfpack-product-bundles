@@ -1,14 +1,14 @@
 ---
 source_file: "vite.config.ts"
 type: "code"
-community: "Community 234"
+community: "Community 76"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_234
+  - community/Community_76
 ---
 
 # vite.config.ts
 
-#graphify/code #graphify/EXTRACTED #community/Community_234
+#graphify/code #graphify/EXTRACTED #community/Community_76

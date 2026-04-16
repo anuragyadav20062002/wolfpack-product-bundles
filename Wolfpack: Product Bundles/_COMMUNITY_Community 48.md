@@ -1,22 +1,18 @@
 ---
 type: community
-cohesion: 0.48
-members: 7
+cohesion: 0.67
+members: 3
 ---
 
 # Community 48
 
-**Cohesion:** 0.48 - moderately connected
-**Members:** 7 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[.activateForNewInstallation()]] - code - app/services/cart-transform-service.server.ts
-- [[.checkExistingCartTransform()]] - code - app/services/cart-transform-service.server.ts
-- [[.completeSetup()]] - code - app/services/cart-transform-service.server.ts
-- [[.createCartTransform()]] - code - app/services/cart-transform-service.server.ts
-- [[.getDeployedFunctionHandle()]] - code - app/services/cart-transform-service.server.ts
-- [[CartTransformService]] - code - app/services/cart-transform-service.server.ts
-- [[cart-transform-service.server.ts]] - code - app/services/cart-transform-service.server.ts
+- [[Issue Analytics Dashboard — Recharts + Full Attribution Rebuild]] - document - docs/issues-prod/analytics-dashboard-1.md
+- [[OrderAttribution DB Model — UTM + Revenue Data]] - document - docs/issues-prod/analytics-dashboard-1.md
+- [[Recharts — Charting Library for Analytics Dashboard]] - document - docs/issues-prod/analytics-dashboard-1.md
 
 ## Live Query (requires Dataview plugin)
 

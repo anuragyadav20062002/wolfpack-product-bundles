@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/CrispChat.tsx"
 type: "code"
-community: "Community 140"
+community: "Community 159"
 location: "L4"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_140
+  - community/Community_159
 ---
 
 # CrispChat()
 
-## Connections
-- [[CrispChat.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_140
+#graphify/code #graphify/EXTRACTED #community/Community_159

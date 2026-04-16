@@ -1,21 +1,18 @@
 ---
 type: community
-cohesion: 0.40
-members: 6
+cohesion: 0.67
+members: 3
 ---
 
 # Community 58
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 6 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[handlePurchaseUpdate()]] - code - app/services/webhooks/handlers/subscription.server.ts
-- [[handleSubscriptionApproachingCap()]] - code - app/services/webhooks/handlers/subscription.server.ts
-- [[handleSubscriptionCancelled()]] - code - app/services/webhooks/handlers/subscription.server.ts
-- [[handleSubscriptionUpdate()]] - code - app/services/webhooks/handlers/subscription.server.ts
-- [[mapSubscriptionStatus()]] - code - app/services/webhooks/handlers/subscription.server.ts
-- [[subscription.server.ts]] - code - app/services/webhooks/handlers/subscription.server.ts
+- [[Analytics Custom Date Range (Polaris DatePicker)]] - document - docs/issues-prod/analytics-custom-date-range-1.md
+- [[DateRangeSelector Component with Preset Chips + DatePicker]] - concept - docs/issues-prod/analytics-custom-date-range-1.md
+- [[buildBundleTrendSeries until Param Extension]] - concept - docs/issues-prod/analytics-custom-date-range-1.md
 
 ## Live Query (requires Dataview plugin)
 

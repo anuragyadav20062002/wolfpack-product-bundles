@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[cart-transform-service.test.ts]] - code - tests/unit/services/cart-transform-service.test.ts
+- [[requireAppProxy()]] - code - app/lib/auth-guards.server.ts
 
 ## Live Query (requires Dataview plugin)
 

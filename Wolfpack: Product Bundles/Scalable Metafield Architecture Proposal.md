@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/SCALABLE_ARCHITECTURE_PROPOSAL.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # Scalable Metafield Architecture Proposal
@@ -17,4 +17,4 @@ tags:
 - [[Cart Transform Input 10KB Limit]] - `references` [EXTRACTED]
 - [[Rationale Use 'custom' namespace for Liquid-accessible metafields]] - `conceptually_related_to` [INFERRED]
 
-#graphify/document #graphify/EXTRACTED #community/Metafield_Architecture
+#graphify/document #graphify/EXTRACTED #community/Community_26

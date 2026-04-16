@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/bundle-analytics.server.ts"
 type: "code"
-community: "Community 46"
+community: "Community 976"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_46
+  - community/Community_976
 ---
 
 # bundle-analytics.server.ts
 
-## Connections
-- [[BundleAnalyticsService]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_46
+#graphify/code #graphify/EXTRACTED #community/Community_976

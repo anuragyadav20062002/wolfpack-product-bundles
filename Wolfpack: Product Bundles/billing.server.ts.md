@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/billing.server.ts"
 type: "code"
-community: "Billing Service"
+community: "Community 1002"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Billing_Service
+  - community/Community_1002
 ---
 
 # billing.server.ts
 
-## Connections
-- [[BillingService]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Billing_Service
+#graphify/code #graphify/EXTRACTED #community/Community_1002

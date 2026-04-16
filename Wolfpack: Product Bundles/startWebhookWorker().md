@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/webhook-worker.server.ts"
 type: "code"
-community: "Community 45"
+community: "Community 964"
 location: "L298"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_45
+  - community/Community_964
 ---
 
 # startWebhookWorker()
 
-## Connections
-- [[webhook-worker.server.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_45
+#graphify/code #graphify/EXTRACTED #community/Community_964

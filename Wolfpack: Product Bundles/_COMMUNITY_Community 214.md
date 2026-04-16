@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 214
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[component-product.server.ts]] - code - app/services/bundles/metafield-sync/operations/component-product.server.ts
-- [[updateComponentProductMetafields()]] - code - app/services/bundles/metafield-sync/operations/component-product.server.ts
+- [[AddedButtonStateSettings()]] - code - app/components/design-control-panel/settings/AddedButtonStateSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[PDPBadgeSettings.tsx]] - code - app/components/design-control-panel/settings/PDPBadgeSettings.tsx
+- [[ShoppingCartIcon()]] - code - app/components/design-control-panel/icons/index.tsx
 
 ## Live Query (requires Dataview plugin)
 

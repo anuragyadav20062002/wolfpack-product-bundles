@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 87
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[buildFreeBadge()]] - code - tests/unit/assets/bundle-widget-full-page-free-badge.test.ts
-- [[bundle-widget-full-page-free-badge.test.ts]] - code - tests/unit/assets/bundle-widget-full-page-free-badge.test.ts
-- [[createFakeElement()]] - code - tests/unit/assets/bundle-widget-full-page-free-badge.test.ts
-- [[getFreeGiftBadgeUrl()]] - code - tests/unit/assets/bundle-widget-full-page-free-badge.test.ts
+- [[validatePricingRule()]] - code - app/types/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

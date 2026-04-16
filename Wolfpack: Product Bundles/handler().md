@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/ImageCropEditor.tsx"
 type: "code"
-community: "Community 93"
+community: "Community 212"
 location: "L40"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_93
+  - community/Community_212
 ---
 
 # handler()
 
-## Connections
-- [[ImageCropEditor.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_93
+#graphify/code #graphify/EXTRACTED #community/Community_212

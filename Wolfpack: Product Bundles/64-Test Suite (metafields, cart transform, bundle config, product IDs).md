@@ -1,12 +1,12 @@
 ---
 source_file: "docs/archive/TESTING_GUIDE.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 location: "Test Summary"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # 64-Test Suite (metafields, cart transform, bundle config, product IDs)
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[Testing Guide]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Metafield_Architecture
+#graphify/document #graphify/EXTRACTED #community/Community_26

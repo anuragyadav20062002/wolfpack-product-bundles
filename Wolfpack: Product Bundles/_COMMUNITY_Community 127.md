@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 127
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[fpb-configure-preview.test.ts]] - code - tests/unit/routes/fpb-configure-preview.test.ts
-- [[getDb()_4]] - code - tests/unit/routes/fpb-configure-preview.test.ts
-- [[makeBundle()_4]] - code - tests/unit/routes/fpb-configure-preview.test.ts
+- [[variant-lookup.server.ts]] - code - app/utils/variant-lookup.server.ts
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 89
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[buildReqRes()]] - code - tests/unit/services/webhook-worker-inngest.test.ts
-- [[emitBody()]] - code - tests/unit/services/webhook-worker-inngest.test.ts
-- [[makeHmac()]] - code - tests/unit/services/webhook-worker-inngest.test.ts
-- [[webhook-worker-inngest.test.ts]] - code - tests/unit/services/webhook-worker-inngest.test.ts
+- [[createEmptyPricingConfig()]] - code - app/types/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

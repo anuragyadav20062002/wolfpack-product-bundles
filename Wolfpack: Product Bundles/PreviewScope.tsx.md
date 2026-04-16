@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/preview/PreviewScope.tsx"
 type: "code"
-community: "Community 170"
+community: "Community 278"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_170
+  - community/Community_278
 ---
 
 # PreviewScope.tsx
 
-## Connections
-- [[PreviewScope()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_170
+#graphify/code #graphify/EXTRACTED #community/Community_278

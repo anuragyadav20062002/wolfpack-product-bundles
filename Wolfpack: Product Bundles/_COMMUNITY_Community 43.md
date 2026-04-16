@@ -1,22 +1,19 @@
 ---
 type: community
-cohesion: 0.43
-members: 7
+cohesion: 0.67
+members: 4
 ---
 
 # Community 43
 
-**Cohesion:** 0.43 - moderately connected
-**Members:** 7 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 4 nodes
 
 ## Members
-- [[.calculateBundleTotal()]] - code - app/assets/widgets/shared/pricing-calculator.js
-- [[.calculateDiscount()]] - code - app/assets/widgets/shared/pricing-calculator.js
-- [[.checkCondition()]] - code - app/assets/widgets/shared/pricing-calculator.js
-- [[.getNextDiscountRule()]] - code - app/assets/widgets/shared/pricing-calculator.js
-- [[.normalizeCondition()]] - code - app/assets/widgets/shared/pricing-calculator.js
-- [[PricingCalculator]] - code - app/assets/widgets/shared/pricing-calculator.js
-- [[pricing-calculator.js]] - code - app/assets/widgets/shared/pricing-calculator.js
+- [[Centralized Auth Layer for API Routes — Architecture Decision Record]] - document - docs/centralized-auth-layer/03-architecture.md
+- [[Centralized Auth Layer for API Routes — Business Requirement]] - document - docs/centralized-auth-layer/00-BR.md
+- [[Centralized Auth Layer for API Routes — PO Requirements]] - document - docs/centralized-auth-layer/02-PO-requirements.md
+- [[Centralized Auth Layer for API Routes — SDE Implementation Plan]] - document - docs/centralized-auth-layer/04-SDE-implementation.md
 
 ## Live Query (requires Dataview plugin)
 

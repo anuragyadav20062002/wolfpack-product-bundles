@@ -1,18 +1,14 @@
 ---
 source_file: "extensions/bundle-builder/assets/modal-discount-bar.js"
 type: "code"
-community: "Community 133"
+community: "Community 1412"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_133
+  - community/Community_1412
 ---
 
 # modal-discount-bar.js
 
-## Connections
-- [[getDiscountValueFromRule()]] - `contains` [EXTRACTED]
-- [[updateModalDiscountBar()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_133
+#graphify/code #graphify/EXTRACTED #community/Community_1412

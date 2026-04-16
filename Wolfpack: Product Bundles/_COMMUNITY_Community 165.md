@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 165
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[VisibilityToggle()]] - code - app/components/design-control-panel/common/VisibilityToggle.tsx
-- [[VisibilityToggle.tsx]] - code - app/components/design-control-panel/common/VisibilityToggle.tsx
+- [[NavigationItem()]] - code - app/components/design-control-panel/NavigationItem.tsx
 
 ## Live Query (requires Dataview plugin)
 

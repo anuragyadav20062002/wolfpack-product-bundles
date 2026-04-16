@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 121
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[checkMetafieldSize()]] - code - app/services/bundles/metafield-sync/utils/size-check.ts
-- [[safeJsonParse()_1]] - code - app/services/bundles/metafield-sync/utils/size-check.ts
-- [[size-check.ts]] - code - app/services/bundles/metafield-sync/utils/size-check.ts
+- [[getProgressBarTone()]] - code - app/utils/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

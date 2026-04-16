@@ -1,17 +1,14 @@
 ---
 source_file: "tests/test-runner.ts"
 type: "code"
-community: "Test Runner"
+community: "Community 1117"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Test_Runner
+  - community/Community_1117
 ---
 
 # test-runner.ts
 
-## Connections
-- [[TestRunner]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Test_Runner
+#graphify/code #graphify/EXTRACTED #community/Community_1117

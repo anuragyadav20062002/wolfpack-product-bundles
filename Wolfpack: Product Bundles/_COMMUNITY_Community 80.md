@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.50
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 80
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[api.storefront-products.tsx]] - code - app/routes/api/api.storefront-products.tsx
-- [[fetchAllVariants()]] - code - app/routes/api/api.storefront-products.tsx
-- [[loader()_19]] - code - app/routes/api/api.storefront-products.tsx
-- [[options()]] - code - app/routes/api/api.storefront-products.tsx
+- [[entry.server.tsx]] - code - app/entry.server.tsx
 
 ## Live Query (requires Dataview plugin)
 

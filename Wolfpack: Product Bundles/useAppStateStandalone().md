@@ -1,19 +1,14 @@
 ---
 source_file: "app/hooks/useAppState.ts"
 type: "code"
-community: "App State Hooks"
+community: "Community 305"
 location: "L45"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_State_Hooks
+  - community/Community_305
 ---
 
 # useAppStateStandalone()
 
-## Connections
-- [[useAppState.ts]] - `contains` [EXTRACTED]
-- [[useSelectorStandalone()]] - `calls` [EXTRACTED]
-- [[useStateInitialized()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_State_Hooks
+#graphify/code #graphify/EXTRACTED #community/Community_305

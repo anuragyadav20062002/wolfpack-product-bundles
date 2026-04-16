@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/preview/PreviewPanel.tsx"
 type: "code"
-community: "Community 169"
+community: "Community 267"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_169
+  - community/Community_267
 ---
 
 # PreviewPanel.tsx
 
-## Connections
-- [[buildCssVarString()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_169
+#graphify/code #graphify/EXTRACTED #community/Community_267

@@ -1,17 +1,14 @@
 ---
 source_file: "app/types/pricing.ts"
 type: "code"
-community: "Pricing Types & Utilities"
+community: "Community 95"
 location: "L330"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Pricing_Types_&_Utilities
+  - community/Community_95
 ---
 
 # amountToCents()
 
-## Connections
-- [[pricing.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Pricing_Types_&_Utilities
+#graphify/code #graphify/EXTRACTED #community/Community_95

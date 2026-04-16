@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/services/ensure-product-bundle-template.test.ts"
 type: "code"
-community: "Community 226"
+community: "Community 1280"
 location: "L38"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_226
+  - community/Community_1280
 ---
 
 # mockFetchResponse()
 
-## Connections
-- [[ensure-product-bundle-template.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_226
+#graphify/code #graphify/EXTRACTED #community/Community_1280

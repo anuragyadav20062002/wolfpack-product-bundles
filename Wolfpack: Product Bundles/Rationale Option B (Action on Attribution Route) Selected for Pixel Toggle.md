@@ -1,12 +1,12 @@
 ---
 source_file: "docs/analytics-pixel-toggle/03-architecture.md"
 type: "document"
-community: "Analytics & Custom Date Range"
+community: "Community 16"
 location: "Options Considered"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Analytics_&_Custom_Date_Range
+  - community/Community_16
 ---
 
 # Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[app.attribution.tsx Route]] - `rationale_for` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Analytics_&_Custom_Date_Range
+#graphify/document #graphify/EXTRACTED #community/Community_16

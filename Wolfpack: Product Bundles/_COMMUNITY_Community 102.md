@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 102
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[OPTIONS()]] - code - app/routes/api/api.widget-error.tsx
-- [[action()_6]] - code - app/routes/api/api.widget-error.tsx
-- [[api.widget-error.tsx]] - code - app/routes/api/api.widget-error.tsx
+- [[useModals()]] - code - app/contexts/AppStateContext.tsx
 
 ## Live Query (requires Dataview plugin)
 

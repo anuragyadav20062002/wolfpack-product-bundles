@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[types.ts_7]] - code - app/routes/app/app.dashboard/types.ts
+- [[useDesignSetting()]] - code - app/hooks/useAppState.ts
 
 ## Live Query (requires Dataview plugin)
 

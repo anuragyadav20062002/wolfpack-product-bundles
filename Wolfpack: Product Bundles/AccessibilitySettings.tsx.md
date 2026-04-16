@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/AccessibilitySettings.tsx"
 type: "code"
-community: "Community 142"
+community: "Community 171"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_142
+  - community/Community_171
 ---
 
 # AccessibilitySettings.tsx
 
-## Connections
-- [[AccessibilitySettings()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_142
+#graphify/code #graphify/EXTRACTED #community/Community_171

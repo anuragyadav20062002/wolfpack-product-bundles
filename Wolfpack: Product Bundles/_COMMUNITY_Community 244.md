@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[client.ts]] - code - app/inngest/client.ts
+- [[colorUtils.ts]] - code - app/components/design-control-panel/common/colorUtils.ts
 
 ## Live Query (requires Dataview plugin)
 

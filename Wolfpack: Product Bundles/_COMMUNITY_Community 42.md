@@ -1,22 +1,19 @@
 ---
 type: community
-cohesion: 0.43
-members: 7
+cohesion: 0.50
+members: 4
 ---
 
 # Community 42
 
-**Cohesion:** 0.43 - moderately connected
-**Members:** 7 nodes
+**Cohesion:** 0.50 - moderately connected
+**Members:** 4 nodes
 
 ## Members
-- [[analytics-helpers.ts]] - code - app/lib/analytics/analytics-helpers.ts
-- [[buildBundleLeaderboard()]] - code - app/lib/analytics/analytics-helpers.ts
-- [[buildBundleTrendSeries()]] - code - app/lib/analytics/analytics-helpers.ts
-- [[computeBundleRevenueSummary()]] - code - app/lib/analytics/analytics-helpers.ts
-- [[formatDelta()]] - code - app/lib/analytics/analytics-helpers.ts
-- [[getWeekStart()]] - code - app/lib/analytics/analytics-helpers.ts
-- [[toDateKey()]] - code - app/lib/analytics/analytics-helpers.ts
+- [[Component PreviewPanel (DCP Preview)]] - concept - docs/issues-prod/dcp-fpb-preview-redesign-1.md
+- [[Feature FPB Footer Layout Toggle (Sidebar vs Floating)]] - concept - docs/issues-prod/dcp-fpb-preview-redesign-1.md
+- [[Fix PDP Preview Bottom Drawer Structure (.bundle-builder-modal.active)]] - concept - docs/issues-prod/dcp-fpb-preview-redesign-1.md
+- [[Issue DCP FPBPDP Preview Redesign (dcp-fpb-preview-redesign-1)]] - document - docs/issues-prod/dcp-fpb-preview-redesign-1.md
 
 ## Live Query (requires Dataview plugin)
 

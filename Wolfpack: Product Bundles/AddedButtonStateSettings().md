@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/AddedButtonStateSettings.tsx"
 type: "code"
-community: "Community 157"
+community: "Community 214"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_157
+  - community/Community_214
 ---
 
 # AddedButtonStateSettings()
 
-## Connections
-- [[AddedButtonStateSettings.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_157
+#graphify/code #graphify/EXTRACTED #community/Community_214

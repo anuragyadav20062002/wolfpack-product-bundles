@@ -1,19 +1,14 @@
 ---
 source_file: "extensions/bundle-cart-transform-ts/src/cart-transform-bundle-utils.ts"
 type: "code"
-community: "Community 40"
+community: "Community 1624"
 location: "L170"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_40
+  - community/Community_1624
 ---
 
 # checkCartMeetsBundleConditions()
 
-## Connections
-- [[cart-transform-bundle-utils.ts]] - `contains` [EXTRACTED]
-- [[getApplicableDiscountRule()]] - `calls` [EXTRACTED]
-- [[normalizeProductId()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_40
+#graphify/code #graphify/EXTRACTED #community/Community_1624

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[api.ts_1]] - code - extensions/bundle-cart-transform-ts/generated/api.ts
+- [[validateTierConfig()]] - code - app/lib/tier-config-validator.server.ts
 
 ## Live Query (requires Dataview plugin)
 

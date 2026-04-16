@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[HighlightBox.tsx]] - code - app/components/design-control-panel/preview/HighlightBox.tsx
+- [[FAQSection.tsx]] - code - app/components/billing/FAQSection.tsx
 
 ## Live Query (requires Dataview plugin)
 

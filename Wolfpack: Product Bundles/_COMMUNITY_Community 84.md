@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.50
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 84
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[bundle-formatter.test.ts]] - code - tests/unit/lib/bundle-formatter.test.ts
-- [[makeBundle()]] - code - tests/unit/lib/bundle-formatter.test.ts
-- [[makeStep()]] - code - tests/unit/lib/bundle-formatter.test.ts
-- [[makeStepProduct()]] - code - tests/unit/lib/bundle-formatter.test.ts
+- [[db.server.ts]] - code - app/db.server.ts
 
 ## Live Query (requires Dataview plugin)
 

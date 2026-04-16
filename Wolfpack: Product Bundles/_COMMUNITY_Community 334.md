@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[vite.config.js]] - code - extensions/bundle-cart-transform-ts/vite.config.js
+- [[tier-config-validator.server.ts]] - code - app/lib/tier-config-validator.server.ts
 
 ## Live Query (requires Dataview plugin)
 

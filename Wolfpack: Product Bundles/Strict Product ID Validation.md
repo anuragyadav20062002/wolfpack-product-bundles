@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/STRICT_PRODUCT_ID_VALIDATION.md"
 type: "document"
-community: "Metafield Architecture"
+community: "Community 26"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Metafield_Architecture
+  - community/Community_26
 ---
 
 # Strict Product ID Validation
@@ -15,4 +15,4 @@ tags:
 - [[Testing Guide]] - `references` [EXTRACTED]
 - [[UUID Root Cause React State Transform on Init (id → productId)]] - `references` [INFERRED]
 
-#graphify/document #graphify/EXTRACTED #community/Metafield_Architecture
+#graphify/document #graphify/EXTRACTED #community/Community_26

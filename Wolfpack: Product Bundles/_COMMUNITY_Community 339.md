@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[Ad-Ready Bundles Breaking Changes]] - document - docs/ad-ready-bundles/BREAKING-CHANGES.md
+- [[resolveUniqueHandle()]] - code - app/lib/slug-utils.ts
 
 ## Live Query (requires Dataview plugin)
 

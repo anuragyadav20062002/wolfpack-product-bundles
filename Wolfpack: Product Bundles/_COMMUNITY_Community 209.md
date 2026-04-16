@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 209
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[handleInventoryUpdate()]] - code - app/services/webhooks/handlers/inventory.server.ts
-- [[inventory.server.ts]] - code - app/services/webhooks/handlers/inventory.server.ts
+- [[FooterDiscountProgressSettings.tsx]] - code - app/components/design-control-panel/settings/FooterDiscountProgressSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

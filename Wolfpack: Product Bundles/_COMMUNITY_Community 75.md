@@ -1,19 +1,16 @@
 ---
 type: community
-cohesion: 0.50
-members: 4
+cohesion: 1.00
+members: 1
 ---
 
 # Community 75
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 4 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[resolveUniqueHandle()]] - code - app/lib/slug-utils.ts
-- [[slug-utils.ts]] - code - app/lib/slug-utils.ts
-- [[slugify()]] - code - app/lib/slug-utils.ts
-- [[validateSlug()]] - code - app/lib/slug-utils.ts
+- [[env.d.ts]] - code - env.d.ts
 
 ## Live Query (requires Dataview plugin)
 

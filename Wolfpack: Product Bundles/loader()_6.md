@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/app/app.attribution.tsx"
 type: "code"
-community: "Attribution & Analytics"
+community: "Community 717"
 location: "L123"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Attribution_&_Analytics
+  - community/Community_717
 ---
 
 # loader()
 
-## Connections
-- [[app.attribution.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Attribution_&_Analytics
+#graphify/code #graphify/EXTRACTED #community/Community_717

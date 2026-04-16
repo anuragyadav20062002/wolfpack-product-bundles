@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[types.ts_5]] - code - app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/types.ts
+- [[useBillingState()]] - code - app/hooks/useBillingState.ts
 
 ## Live Query (requires Dataview plugin)
 

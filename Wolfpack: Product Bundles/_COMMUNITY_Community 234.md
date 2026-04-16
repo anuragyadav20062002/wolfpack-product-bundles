@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[vite.config.ts]] - code - vite.config.ts
+- [[createMergedSettings()]] - code - app/components/design-control-panel/config/mergeSettings.ts
 
 ## Live Query (requires Dataview plugin)
 

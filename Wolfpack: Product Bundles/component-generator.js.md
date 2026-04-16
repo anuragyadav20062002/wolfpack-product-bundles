@@ -1,17 +1,14 @@
 ---
 source_file: "app/assets/widgets/shared/component-generator.js"
 type: "code"
-community: "Component Generator"
+community: "Community 635"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Component_Generator
+  - community/Community_635
 ---
 
 # component-generator.js
 
-## Connections
-- [[ComponentGenerator]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Component_Generator
+#graphify/code #graphify/EXTRACTED #community/Community_635

@@ -1,18 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 3
+members: 1
 ---
 
 # Community 116
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 3 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[isValidHexColor()]] - code - app/services/theme-colors.server.ts
-- [[syncThemeColors()]] - code - app/services/theme-colors.server.ts
-- [[theme-colors.server.ts]] - code - app/services/theme-colors.server.ts
+- [[shopify-validators.ts]] - code - app/utils/shopify-validators.ts
 
 ## Live Query (requires Dataview plugin)
 

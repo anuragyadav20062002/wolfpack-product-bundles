@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[db.server.ts]] - code - app/db.server.ts
+- [[ColorPickerRow.tsx]] - code - app/components/design-control-panel/common/ColorPickerRow.tsx
 
 ## Live Query (requires Dataview plugin)
 

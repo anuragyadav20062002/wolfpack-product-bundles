@@ -1,24 +1,14 @@
 ---
 source_file: "app/assets/widgets/shared/currency-manager.js"
 type: "code"
-community: "Currency Manager"
+community: "Community 645"
 location: "L12"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Currency_Manager
+  - community/Community_645
 ---
 
 # CurrencyManager
 
-## Connections
-- [[.convertAndFormat()]] - `method` [EXTRACTED]
-- [[.convertCurrency()]] - `method` [EXTRACTED]
-- [[.detectCustomerCurrency()]] - `method` [EXTRACTED]
-- [[.formatMoney()]] - `method` [EXTRACTED]
-- [[.getCurrencyInfo()]] - `method` [EXTRACTED]
-- [[.getCurrencySymbol()]] - `method` [EXTRACTED]
-- [[.getShopBaseCurrency()]] - `method` [EXTRACTED]
-- [[currency-manager.js]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Currency_Manager
+#graphify/code #graphify/EXTRACTED #community/Community_645

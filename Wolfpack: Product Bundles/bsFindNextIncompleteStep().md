@@ -1,18 +1,14 @@
 ---
 source_file: "app/assets/bundle-widget-product-page.js"
 type: "code"
-community: "Product-Page Bundle Widget (Source)"
+community: "Community 404"
 location: "L73"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Product-Page_Bundle_Widget_(Source)
+  - community/Community_404
 ---
 
 # bsFindNextIncompleteStep()
 
-## Connections
-- [[._autoProgressBottomSheet()]] - `calls` [EXTRACTED]
-- [[bundle-widget-product-page.js]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Product-Page_Bundle_Widget_(Source)
+#graphify/code #graphify/EXTRACTED #community/Community_404

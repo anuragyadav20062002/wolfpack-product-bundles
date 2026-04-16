@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 184
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[button-generator.ts]] - code - app/lib/css-generators/button-generator.ts
-- [[generateButtonCSS()]] - code - app/lib/css-generators/button-generator.ts
+- [[ProductCardSettings.tsx]] - code - app/components/design-control-panel/settings/ProductCardSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,21 +1,18 @@
 ---
 type: community
-cohesion: 0.33
-members: 6
+cohesion: 0.67
+members: 3
 ---
 
 # Community 59
 
-**Cohesion:** 0.33 - loosely connected
-**Members:** 6 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[createFullPageBundle()]] - code - app/services/widget-installation/widget-full-page-bundle.server.ts
-- [[getPreviewPageUrl()]] - code - app/services/widget-installation/widget-full-page-bundle.server.ts
-- [[publishPreviewPage()]] - code - app/services/widget-installation/widget-full-page-bundle.server.ts
-- [[renamePageHandle()]] - code - app/services/widget-installation/widget-full-page-bundle.server.ts
-- [[widget-full-page-bundle.server.ts]] - code - app/services/widget-installation/widget-full-page-bundle.server.ts
-- [[writeBundleConfigPageMetafield()]] - code - app/services/widget-installation/widget-full-page-bundle.server.ts
+- [[Issue Fix GraphQL Query Errors (pageByHandle + collections)]] - document - docs/issues-prod/pagebyhandle-graphql-fix-1.md
+- [[Route api.storefront-collections.tsx]] - source - app/routes/api.storefront-collections.tsx
+- [[Service widget-installation.server.ts]] - source - app/services/widget-installation.server.ts
 
 ## Live Query (requires Dataview plugin)
 

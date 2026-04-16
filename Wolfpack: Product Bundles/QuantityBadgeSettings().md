@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/QuantityBadgeSettings.tsx"
 type: "code"
-community: "Community 158"
+community: "Community 223"
 location: "L9"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_158
+  - community/Community_223
 ---
 
 # QuantityBadgeSettings()
 
-## Connections
-- [[QuantityBadgeSettings.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_158
+#graphify/code #graphify/EXTRACTED #community/Community_223

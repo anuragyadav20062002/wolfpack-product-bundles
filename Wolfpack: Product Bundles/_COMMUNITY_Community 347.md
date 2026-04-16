@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[Updates & FAQs Route appevents]] - document - docs/app-nav-map/APP_NAVIGATION_MAP.md
+- [[.warn()]] - code - app/lib/logger.ts
 
 ## Live Query (requires Dataview plugin)
 

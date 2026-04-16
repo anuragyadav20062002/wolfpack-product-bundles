@@ -1,17 +1,14 @@
 ---
 source_file: "app/lib/logger.ts"
 type: "code"
-community: "App Logger"
+community: "Community 344"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_Logger
+  - community/Community_344
 ---
 
 # logger.ts
 
-## Connections
-- [[AppLogger]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_Logger
+#graphify/code #graphify/EXTRACTED #community/Community_344

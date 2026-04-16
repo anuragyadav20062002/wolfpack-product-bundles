@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 68
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[CloseIcon()]] - code - app/components/design-control-panel/icons/index.tsx
-- [[ImagePlaceholderIcon()]] - code - app/components/design-control-panel/icons/index.tsx
-- [[PlusIcon()]] - code - app/components/design-control-panel/icons/index.tsx
-- [[ShoppingCartIcon()]] - code - app/components/design-control-panel/icons/index.tsx
-- [[index.tsx]] - code - app/components/design-control-panel/icons/index.tsx
+- [[PDP Widget Wrong Placement & Theme Editor Redirect Issue]] - document - docs/issues-prod/pdp-widget-placement-theme-editor-1.md
+- [[buildProductBundleTemplate — Theme Block Placement Logic]] - document - docs/issues-prod/pdp-widget-placement-theme-editor-1.md
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 217
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[makeAdmin()]] - code - tests/unit/lib/slug-utils.test.ts
-- [[slug-utils.test.ts]] - code - tests/unit/lib/slug-utils.test.ts
+- [[truncate()]] - code - app/components/design-control-panel/settings/FilePicker.tsx
 
 ## Live Query (requires Dataview plugin)
 

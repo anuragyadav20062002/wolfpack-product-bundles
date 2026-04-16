@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 148
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[ProductCardSettings()]] - code - app/components/design-control-panel/settings/ProductCardSettings.tsx
-- [[ProductCardSettings.tsx]] - code - app/components/design-control-panel/settings/ProductCardSettings.tsx
+- [[ErrorPage()]] - code - app/components/ErrorPage.tsx
 
 ## Live Query (requires Dataview plugin)
 

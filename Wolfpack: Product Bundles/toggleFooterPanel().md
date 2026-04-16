@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/assets/fpb-footer-expandable.test.ts"
 type: "code"
-community: "FPB Footer Expandable Tests"
+community: "Community 1186"
 location: "L129"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/FPB_Footer_Expandable_Tests
+  - community/Community_1186
 ---
 
 # toggleFooterPanel()
 
-## Connections
-- [[fpb-footer-expandable.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/FPB_Footer_Expandable_Tests
+#graphify/code #graphify/EXTRACTED #community/Community_1186

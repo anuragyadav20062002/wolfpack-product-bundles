@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 123
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[cached-session-storage.test.ts]] - code - tests/unit/lib/cached-session-storage.test.ts
-- [[makeInner()]] - code - tests/unit/lib/cached-session-storage.test.ts
-- [[makeSession()]] - code - tests/unit/lib/cached-session-storage.test.ts
+- [[getRemainingBundlesMessage()]] - code - app/utils/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

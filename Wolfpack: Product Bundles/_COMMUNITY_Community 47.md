@@ -1,22 +1,18 @@
 ---
 type: community
-cohesion: 0.33
-members: 7
+cohesion: 0.67
+members: 3
 ---
 
 # Community 47
 
-**Cohesion:** 0.33 - loosely connected
-**Members:** 7 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[.checkBundleCreation()]] - code - app/services/subscription-guard.server.ts
-- [[.enforceBundleLimit()]] - code - app/services/subscription-guard.server.ts
-- [[.getFeatureAccess()]] - code - app/services/subscription-guard.server.ts
-- [[.hasPaidPlan()]] - code - app/services/subscription-guard.server.ts
-- [[.isFreePlan()]] - code - app/services/subscription-guard.server.ts
-- [[SubscriptionGuard]] - code - app/services/subscription-guard.server.ts
-- [[subscription-guard.server.ts]] - code - app/services/subscription-guard.server.ts
+- [[Analytics Pixel Toggle SDE Plan]] - document - docs/analytics-pixel-toggle/04-SDE-implementation.md
+- [[testsunitroutesapp.attribution.action.test.ts]] - code - tests/unit/routes/app.attribution.action.test.ts
+- [[testsunitservicespixel-activation.test.ts]] - code - tests/unit/services/pixel-activation.test.ts
 
 ## Live Query (requires Dataview plugin)
 

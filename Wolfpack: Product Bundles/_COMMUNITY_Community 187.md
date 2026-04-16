@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 187
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[generateResponsiveCSS()]] - code - app/lib/css-generators/responsive-generator.ts
-- [[responsive-generator.ts]] - code - app/lib/css-generators/responsive-generator.ts
+- [[FooterSettings()]] - code - app/components/design-control-panel/settings/FooterSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,17 +1,14 @@
 ---
 source_file: "app/lib/auth-guards.server.ts"
 type: "code"
-community: "Community 69"
+community: "Community 333"
 location: "L90"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_69
+  - community/Community_333
 ---
 
 # requireOwnerSecret()
 
-## Connections
-- [[auth-guards.server.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_69
+#graphify/code #graphify/EXTRACTED #community/Community_333

@@ -1,13 +1,13 @@
 ---
 source_file: "docs/ad-ready-bundles/BREAKING-CHANGES.md"
 type: "document"
-community: "Community 339"
+community: "Community 1669"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Community_339
+  - community/Community_1669
 ---
 
 # Ad-Ready Bundles Breaking Changes
 
-#graphify/document #graphify/EXTRACTED #community/Community_339
+#graphify/document #graphify/EXTRACTED #community/Community_1669

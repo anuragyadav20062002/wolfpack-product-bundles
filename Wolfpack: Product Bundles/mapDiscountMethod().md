@@ -1,17 +1,14 @@
 ---
 source_file: "app/utils/discount-mappers.ts"
 type: "code"
-community: "Community 138"
+community: "Community 133"
 location: "L12"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_138
+  - community/Community_133
 ---
 
 # mapDiscountMethod()
 
-## Connections
-- [[discount-mappers.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_138
+#graphify/code #graphify/EXTRACTED #community/Community_133

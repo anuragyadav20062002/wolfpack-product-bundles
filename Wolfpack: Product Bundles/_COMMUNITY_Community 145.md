@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 145
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[SearchInputSettings()]] - code - app/components/design-control-panel/settings/SearchInputSettings.tsx
-- [[SearchInputSettings.tsx]] - code - app/components/design-control-panel/settings/SearchInputSettings.tsx
+- [[IllustrationNotFound()]] - code - app/components/ErrorPage.tsx
 
 ## Live Query (requires Dataview plugin)
 

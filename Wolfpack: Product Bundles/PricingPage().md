@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/app/app.pricing.tsx"
 type: "code"
-community: "Community 78"
+community: "Community 725"
 location: "L124"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_78
+  - community/Community_725
 ---
 
 # PricingPage()
 
-## Connections
-- [[app.pricing.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_78
+#graphify/code #graphify/EXTRACTED #community/Community_725

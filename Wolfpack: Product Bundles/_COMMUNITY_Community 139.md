@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 139
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[ProxyHealthBanner()]] - code - app/components/ProxyHealthBanner.tsx
-- [[ProxyHealthBanner.tsx]] - code - app/components/ProxyHealthBanner.tsx
+- [[updateTier()]] - code - app/components/PricingTiersSection.tsx
 
 ## Live Query (requires Dataview plugin)
 

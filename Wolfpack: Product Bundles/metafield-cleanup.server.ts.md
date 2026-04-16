@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/metafield-cleanup.server.ts"
 type: "code"
-community: "Metafield Cleanup Service"
+community: "Community 944"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Metafield_Cleanup_Service
+  - community/Community_944
 ---
 
 # metafield-cleanup.server.ts
 
-## Connections
-- [[MetafieldCleanupService]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Metafield_Cleanup_Service
+#graphify/code #graphify/EXTRACTED #community/Community_944

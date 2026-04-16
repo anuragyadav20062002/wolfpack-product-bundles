@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[template-manager.test.ts]] - code - tests/unit/assets/template-manager.test.ts
+- [[useDashboardState()]] - code - app/hooks/useDashboardState.ts
 
 ## Live Query (requires Dataview plugin)
 

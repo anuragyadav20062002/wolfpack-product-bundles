@@ -1,21 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 6
+cohesion: 1.00
+members: 2
 ---
 
 # Community 60
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 6 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[bsFindNextIncompleteStep()_1]] - code - tests/unit/assets/bundle-bottom-sheet.test.ts
-- [[bsGetDiscountBadgeLabel()_1]] - code - tests/unit/assets/bundle-bottom-sheet.test.ts
-- [[bsIsDefaultStep()_1]] - code - tests/unit/assets/bundle-bottom-sheet.test.ts
-- [[bundle-bottom-sheet.test.ts]] - code - tests/unit/assets/bundle-bottom-sheet.test.ts
-- [[validateFn()]] - code - tests/unit/assets/bundle-bottom-sheet.test.ts
-- [[validateFnIncompleteS2()]] - code - tests/unit/assets/bundle-bottom-sheet.test.ts
+- [[ColorPicker Component — DCP useEffect Sync Fix]] - document - docs/issues-prod/fix-dcp-flickering-1.md
+- [[Issue Fix DCP Save Bar Flickering and Footer Settings Sync]] - document - docs/issues-prod/fix-dcp-flickering-1.md
 
 ## Live Query (requires Dataview plugin)
 

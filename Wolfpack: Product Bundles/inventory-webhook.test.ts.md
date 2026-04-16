@@ -1,14 +1,14 @@
 ---
 source_file: "tests/unit/services/inventory-webhook.test.ts"
 type: "code"
-community: "Community 329"
+community: "Community 1253"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_329
+  - community/Community_1253
 ---
 
 # inventory-webhook.test.ts
 
-#graphify/code #graphify/EXTRACTED #community/Community_329
+#graphify/code #graphify/EXTRACTED #community/Community_1253

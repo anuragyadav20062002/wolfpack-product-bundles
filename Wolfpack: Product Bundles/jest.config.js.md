@@ -1,14 +1,14 @@
 ---
 source_file: "jest.config.js"
 type: "code"
-community: "Community 232"
+community: "Community 74"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_232
+  - community/Community_74
 ---
 
 # jest.config.js
 
-#graphify/code #graphify/EXTRACTED #community/Community_232
+#graphify/code #graphify/EXTRACTED #community/Community_74

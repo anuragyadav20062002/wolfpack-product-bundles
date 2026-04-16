@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/design-control-panel/settings/FilePicker.tsx"
 type: "code"
-community: "Community 65"
+community: "Community 217"
 location: "L44"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_65
+  - community/Community_217
 ---
 
 # truncate()
 
-## Connections
-- [[FilePicker.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_65
+#graphify/code #graphify/EXTRACTED #community/Community_217

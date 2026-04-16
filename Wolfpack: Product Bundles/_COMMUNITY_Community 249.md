@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[pricing-data.ts]] - code - app/constants/pricing-data.ts
+- [[InlineColorInput.tsx]] - code - app/components/design-control-panel/common/InlineColorInput.tsx
 
 ## Live Query (requires Dataview plugin)
 

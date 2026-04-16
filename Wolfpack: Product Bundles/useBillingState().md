@@ -1,17 +1,14 @@
 ---
 source_file: "app/hooks/useBillingState.ts"
 type: "code"
-community: "Community 176"
+community: "Community 303"
 location: "L25"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_176
+  - community/Community_303
 ---
 
 # useBillingState()
 
-## Connections
-- [[useBillingState.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_176
+#graphify/code #graphify/EXTRACTED #community/Community_303

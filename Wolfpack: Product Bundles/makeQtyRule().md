@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/assets/pricing-calculator.test.ts"
 type: "code"
-community: "Community 86"
+community: "Community 1214"
 location: "L37"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_86
+  - community/Community_1214
 ---
 
 # makeQtyRule()
 
-## Connections
-- [[pricing-calculator.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_86
+#graphify/code #graphify/EXTRACTED #community/Community_1214

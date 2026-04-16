@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[jest.config.js]] - code - jest.config.js
+- [[mergeSettings.ts]] - code - app/components/design-control-panel/config/mergeSettings.ts
 
 ## Live Query (requires Dataview plugin)
 
