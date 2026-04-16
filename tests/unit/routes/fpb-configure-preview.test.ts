@@ -43,11 +43,6 @@ jest.mock('../../../app/services/bundles/metafield-sync.server', () => ({
   updateComponentProductMetafields: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../../../app/services/widget-installation/widget-theme-template.server', () => ({
-  ensureProductBundleTemplate: jest.fn().mockResolvedValue({ success: true }),
-  syncFullPageBundleProductTemplate: jest.fn().mockResolvedValue(undefined),
-}));
-
 // ─── Imports ──────────────────────────────────────────────────────────────────
 
 import { WidgetInstallationService } from '../../../app/services/widget-installation.server';
@@ -112,13 +107,13 @@ describe('handleCreatePreviewPage', () => {
     expect(response.status).toBe(404);
   });
 
-  it('creates a draft page and saves preview fields when no existing draft', async () => {
+  it('creates a page and saves preview fields when no existing draft', async () => {
     (getDb().bundle.findUnique as jest.Mock).mockResolvedValue(makeBundle());
     mockCreateFullPageBundle.mockResolvedValue({
       success: true,
       pageId: previewPageId,
       pageHandle: previewPageHandle,
-      shareablePreviewUrl: PREVIEW_URL,
+      pageUrl: PREVIEW_URL,
     });
     (getDb().bundle.update as jest.Mock).mockResolvedValue({});
 
@@ -132,7 +127,7 @@ describe('handleCreatePreviewPage', () => {
       bundleId,
       '[Preview] My Kit',
       undefined,
-      false
+      true
     );
     expect(getDb().bundle.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -146,16 +141,16 @@ describe('handleCreatePreviewPage', () => {
     expect(body.shareablePreviewUrl).toBe(PREVIEW_URL);
   });
 
-  it('returns shareablePreviewUrl from existing draft without creating a new page', async () => {
+  it('returns previewUrl from existing draft without creating a new page', async () => {
     (getDb().bundle.findUnique as jest.Mock).mockResolvedValue(
       makeBundle({ shopifyPreviewPageId: previewPageId, shopifyPreviewPageHandle: previewPageHandle })
     );
-    mockGetPreviewPageUrl.mockResolvedValue({ success: true, shareablePreviewUrl: PREVIEW_URL });
+    mockGetPreviewPageUrl.mockResolvedValue({ success: true, previewUrl: PREVIEW_URL });
 
     const response = await handleCreatePreviewPage(mockAdmin, mockSession, bundleId);
     const body: any = await response.json();
 
-    expect(mockGetPreviewPageUrl).toHaveBeenCalledWith(mockAdmin, previewPageId);
+    expect(mockGetPreviewPageUrl).toHaveBeenCalledWith(mockAdmin, previewPageId, mockSession.shop);
     expect(mockCreateFullPageBundle).not.toHaveBeenCalled();
     expect(getDb().bundle.update).not.toHaveBeenCalled();
     expect(body.success).toBe(true);
@@ -173,7 +168,7 @@ describe('handleCreatePreviewPage', () => {
       success: true,
       pageId: 'gid://shopify/Page/888',
       pageHandle: 'preview-my-kit-2',
-      shareablePreviewUrl: 'https://test-shop.myshopify.com/pages/preview-my-kit-2?preview_key=xyz',
+      pageUrl: 'https://test-shop.myshopify.com/pages/preview-my-kit-2',
     });
     (getDb().bundle.update as jest.Mock).mockResolvedValue({});
 
