@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/api/api.check-bundles.ts"
 type: "code"
-community: "Community 195"
+community: "Community 791"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_195
+  - community/Community_791
 ---
 
 # api.check-bundles.ts
 
-## Connections
-- [[loader()_14]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_195
+#graphify/code #graphify/EXTRACTED #community/Community_791

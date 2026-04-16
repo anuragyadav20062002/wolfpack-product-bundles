@@ -1,11 +1,11 @@
 ---
 source_file: "app/lib/tier-config-validator.server.ts"
 type: "code"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 2"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_2
 ---
 
 # tier-config-validator.server.ts
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Admin Tier Config Architecture Decision Record]] - `references` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/code #graphify/EXTRACTED #community/Community_2

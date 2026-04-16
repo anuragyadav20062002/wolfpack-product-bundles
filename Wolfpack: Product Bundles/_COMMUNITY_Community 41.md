@@ -1,23 +1,19 @@
 ---
 type: community
-cohesion: 0.25
-members: 8
+cohesion: 0.50
+members: 4
 ---
 
 # Community 41
 
-**Cohesion:** 0.25 - loosely connected
-**Members:** 8 nodes
+**Cohesion:** 0.50 - moderately connected
+**Members:** 4 nodes
 
 ## Members
-- [[Checkout.tsx]] - code - extensions/bundle-checkout-ui/src/Checkout.tsx
-- [[formatMoney()]] - code - extensions/bundle-checkout-ui/src/Checkout.tsx
-- [[formatPercent()]] - code - extensions/bundle-checkout-ui/src/Checkout.tsx
-- [[getAttr()]] - code - extensions/bundle-checkout-ui/src/Checkout.tsx
-- [[parseComponents()]] - code - extensions/bundle-checkout-ui/src/Checkout.tsx
-- [[safeFloat()]] - code - extensions/bundle-checkout-ui/src/Checkout.tsx
-- [[safeInt()]] - code - extensions/bundle-checkout-ui/src/Checkout.tsx
-- [[toggleExpand()]] - code - extensions/bundle-checkout-ui/src/Checkout.tsx
+- [[Available Discount Template Variables (legacy + improved)]] - document - docs/archive/discount-variables-documentation.md
+- [[Discount Template Variables ({conditionText}, {discountText}, etc.)]] - document - docs/archive/streamlined-variables-summary.md
+- [[Discount Variables Documentation]] - document - docs/archive/discount-variables-documentation.md
+- [[Streamlined Discount Variables Summary]] - document - docs/archive/streamlined-variables-summary.md
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,12 +1,12 @@
 ---
 source_file: "docs/analytics-redesign/03-architecture.md"
 type: "document"
-community: "Analytics & Custom Date Range"
+community: "Community 16"
 location: "Section 4"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Analytics_&_Custom_Date_Range
+  - community/Community_16
 ---
 
 # analytics-helpers.ts Pure Functions
@@ -16,4 +16,4 @@ tags:
 - [[Rationale Option A (In-Memory Aggregation) Selected for Analytics]] - `rationale_for` [EXTRACTED]
 - [[analytics-helpers.ts_1]] - `references` [INFERRED]
 
-#graphify/document #graphify/EXTRACTED #community/Analytics_&_Custom_Date_Range
+#graphify/document #graphify/EXTRACTED #community/Community_16

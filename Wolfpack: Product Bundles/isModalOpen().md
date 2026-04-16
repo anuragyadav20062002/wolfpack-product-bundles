@@ -1,18 +1,14 @@
 ---
 source_file: "app/services/app.state.service.ts"
 type: "code"
-community: "App State Service"
+community: "Community 942"
 location: "L996"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_State_Service
+  - community/Community_942
 ---
 
 # isModalOpen()
 
-## Connections
-- [[.toggleModal()]] - `calls` [EXTRACTED]
-- [[app.state.service.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_State_Service
+#graphify/code #graphify/EXTRACTED #community/Community_942

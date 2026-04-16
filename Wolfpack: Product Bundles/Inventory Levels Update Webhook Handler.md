@@ -1,12 +1,12 @@
 ---
 source_file: "docs/ad-ready-bundles/03-architecture.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 location: "Section 3.2.4"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # Inventory Levels Update Webhook Handler
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[inventory.server.ts Webhook Handler]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/EXTRACTED #community/Community_11

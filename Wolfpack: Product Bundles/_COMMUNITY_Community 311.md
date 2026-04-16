@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[widget-installation.server.ts]] - code - app/services/widget-installation.server.ts
+- [[useNavigationState()]] - code - app/hooks/useAppState.ts
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 190
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[createDefaultLoadingAnimation()]] - code - app/assets/widgets/shared/default-loading-animation.js
-- [[default-loading-animation.js]] - code - app/assets/widgets/shared/default-loading-animation.js
+- [[EmptyStateSettings.tsx]] - code - app/components/design-control-panel/settings/EmptyStateSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

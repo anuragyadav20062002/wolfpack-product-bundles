@@ -1,21 +1,18 @@
 ---
 type: community
-cohesion: 0.53
-members: 6
+cohesion: 1.00
+members: 3
 ---
 
 # Community 54
 
-**Cohesion:** 0.53 - moderately connected
-**Members:** 6 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 3 nodes
 
 ## Members
-- [[discoverSalesChannels()]] - code - app/routes/app/app.dashboard/handlers/handlers.server.ts
-- [[handleCloneBundle()]] - code - app/routes/app/app.dashboard/handlers/handlers.server.ts
-- [[handleCreateBundle()]] - code - app/routes/app/app.dashboard/handlers/handlers.server.ts
-- [[handleDeleteBundle()]] - code - app/routes/app/app.dashboard/handlers/handlers.server.ts
-- [[handlers.server.ts_3]] - code - app/routes/app/app.dashboard/handlers/handlers.server.ts
-- [[publishToSalesChannels()]] - code - app/routes/app/app.dashboard/handlers/handlers.server.ts
+- [[Issue Widget Asset Cache Management]] - document - docs/issues-prod/widget-cache-management-1.md
+- [[Shopify CDN Cache Busting via asset_url  shopify app deploy]] - document - docs/issues-prod/widget-cache-management-1.md
+- [[WIDGET_VERSION — Build Script Version Constant]] - document - docs/issues-prod/widget-cache-management-1.md
 
 ## Live Query (requires Dataview plugin)
 

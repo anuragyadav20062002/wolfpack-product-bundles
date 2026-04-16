@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 66
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[colorUtils.ts]] - code - app/components/design-control-panel/common/colorUtils.ts
-- [[hexToHsb()]] - code - app/components/design-control-panel/common/colorUtils.ts
-- [[hsbToHex()]] - code - app/components/design-control-panel/common/colorUtils.ts
-- [[isValidHex()]] - code - app/components/design-control-panel/common/colorUtils.ts
-- [[normalizeHex()]] - code - app/components/design-control-panel/common/colorUtils.ts
+- [[Fix Deprecated productVariantUpdate GraphQL Mutation]] - document - docs/issues-prod/productvariantsupdate-fix-1.md
+- [[productVariantsBulkUpdate Mutation Migration]] - concept - docs/issues-prod/productvariantsupdate-fix-1.md
 
 ## Live Query (requires Dataview plugin)
 

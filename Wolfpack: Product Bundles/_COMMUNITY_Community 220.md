@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 220
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[full-page-bundle-product-sync.test.ts]] - code - tests/unit/routes/full-page-bundle-product-sync.test.ts
-- [[getDb()_1]] - code - tests/unit/routes/full-page-bundle-product-sync.test.ts
+- [[handler()_1]] - code - app/components/design-control-panel/settings/FilePicker.tsx
 
 ## Live Query (requires Dataview plugin)
 

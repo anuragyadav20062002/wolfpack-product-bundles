@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 215
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[analytics-helpers.test.ts]] - code - tests/unit/lib/analytics-helpers.test.ts
-- [[makeRow()]] - code - tests/unit/lib/analytics-helpers.test.ts
+- [[WidgetStyleSettings.tsx]] - code - app/components/design-control-panel/settings/WidgetStyleSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

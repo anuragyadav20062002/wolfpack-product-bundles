@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[constants.js]] - code - app/assets/widgets/shared/constants.js
+- [[useBundlePricing.ts]] - code - app/hooks/useBundlePricing.ts
 
 ## Live Query (requires Dataview plugin)
 

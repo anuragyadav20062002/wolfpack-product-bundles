@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 162
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[ToastsSettings.tsx]] - code - app/components/design-control-panel/settings/ToastsSettings.tsx
-- [[getShadowSelectValue()]] - code - app/components/design-control-panel/settings/ToastsSettings.tsx
+- [[CustomCssCard()]] - code - app/components/design-control-panel/CustomCssCard.tsx
 
 ## Live Query (requires Dataview plugin)
 

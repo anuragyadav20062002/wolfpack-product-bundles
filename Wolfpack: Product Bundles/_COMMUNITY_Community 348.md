@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[PDP Bundle Configure Route]] - document - docs/app-nav-map/APP_NAVIGATION_MAP.md
+- [[.error()]] - code - app/lib/logger.ts
 
 ## Live Query (requires Dataview plugin)
 

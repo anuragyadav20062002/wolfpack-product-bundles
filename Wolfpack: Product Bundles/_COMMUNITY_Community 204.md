@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 204
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[action()_12]] - code - app/routes/api/api.billing.create.tsx
-- [[api.billing.create.tsx]] - code - app/routes/api/api.billing.create.tsx
+- [[ModalCloseButtonSettings()]] - code - app/components/design-control-panel/settings/ModalCloseButtonSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,11 +1,11 @@
 ---
 source_file: "docs/archive/cart-transform-field-requirements.md"
 type: "document"
-community: "Cart Transform & Admin Fixes"
+community: "Community 20"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Cart_Transform_&_Admin_Fixes
+  - community/Community_20
 ---
 
 # Cart Transform Field Requirements Reference
@@ -15,4 +15,4 @@ tags:
 - [[Cart Transform Primary vs Fallback Fields (percentageOff vs discountValue)]] - `references` [EXTRACTED]
 - [[Three Discount Types (percentage_off, fixed_amount_off, fixed_bundle_price)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Cart_Transform_&_Admin_Fixes
+#graphify/document #graphify/EXTRACTED #community/Community_20

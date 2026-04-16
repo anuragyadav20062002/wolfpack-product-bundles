@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[TierPillPreview.tsx]] - code - app/components/design-control-panel/preview/TierPillPreview.tsx
+- [[PreviewScope()]] - code - app/components/design-control-panel/preview/PreviewScope.tsx
 
 ## Live Query (requires Dataview plugin)
 

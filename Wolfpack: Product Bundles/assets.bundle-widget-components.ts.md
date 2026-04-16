@@ -1,18 +1,14 @@
 ---
 source_file: "app/routes/assets/assets.bundle-widget-components.ts"
 type: "code"
-community: "Community 110"
+community: "Community 858"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_110
+  - community/Community_858
 ---
 
 # assets.bundle-widget-components.ts
 
-## Connections
-- [[loader()_31]] - `contains` [EXTRACTED]
-- [[options()_3]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_110
+#graphify/code #graphify/EXTRACTED #community/Community_858

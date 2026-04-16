@@ -1,17 +1,14 @@
 ---
 source_file: "extensions/bundle-checkout-ui/src/index.tsx"
 type: "code"
-community: "Community 229"
+community: "Community 1643"
 location: "L11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_229
+  - community/Community_1643
 ---
 
 # extension()
 
-## Connections
-- [[index.tsx_1]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_229
+#graphify/code #graphify/EXTRACTED #community/Community_1643

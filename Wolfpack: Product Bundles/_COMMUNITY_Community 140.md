@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 140
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[CrispChat()]] - code - app/components/CrispChat.tsx
-- [[CrispChat.tsx]] - code - app/components/CrispChat.tsx
+- [[AccordionItem.tsx]] - code - app/components/AccordionItem.tsx
 
 ## Live Query (requires Dataview plugin)
 

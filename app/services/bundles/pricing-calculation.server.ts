@@ -304,13 +304,30 @@ export async function calculateBundlePrice(admin: ShopifyAdmin, bundle: any): Pr
     // Apply discount if configured (NEW nested structure)
     if (bundle.pricing && bundle.pricing.enabled && bundle.pricing.rules) {
       const rules = Array.isArray(bundle.pricing.rules) ? bundle.pricing.rules : [];
-      if (rules.length > 0 && bundle.pricing.method === 'percentage_off') {
-        const discountPercent = parseFloat(rules[0].discount?.value) || 0;
-        const discountAmount = totalPrice * (discountPercent / 100);
-        totalPrice = totalPrice - discountAmount;
-        AppLogger.debug("[BUNDLE_PRICING] Applied discount", {
-          component: "pricing-calculation",
-        }, { discountPercent, discountAmount, totalPrice });
+      if (rules.length > 0) {
+        const method = bundle.pricing.method;
+        const discountValue = parseFloat(rules[0].discount?.value) || 0;
+
+        if (method === 'percentage_off') {
+          const discountAmount = totalPrice * (discountValue / 100);
+          totalPrice = totalPrice - discountAmount;
+          AppLogger.debug("[BUNDLE_PRICING] Applied percentage_off discount", {
+            component: "pricing-calculation",
+          }, { discountValue, discountAmount, totalPrice });
+        } else if (method === 'fixed_amount_off') {
+          // discountValue is stored in cents — convert to dollars before subtracting
+          const discountDollars = discountValue / 100;
+          totalPrice = totalPrice - discountDollars;
+          AppLogger.debug("[BUNDLE_PRICING] Applied fixed_amount_off discount", {
+            component: "pricing-calculation",
+          }, { discountValue, discountDollars, totalPrice });
+        } else if (method === 'fixed_bundle_price') {
+          // discountValue is the target bundle price in cents — convert to dollars
+          totalPrice = discountValue / 100;
+          AppLogger.debug("[BUNDLE_PRICING] Applied fixed_bundle_price", {
+            component: "pricing-calculation",
+          }, { discountValue, totalPrice });
+        }
       }
     }
 

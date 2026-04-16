@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[index.ts]] - code - app/components/design-control-panel/index.ts
+- [[handleColorChange()]] - code - app/components/design-control-panel/common/ColorPicker.tsx
 
 ## Live Query (requires Dataview plugin)
 

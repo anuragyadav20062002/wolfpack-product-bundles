@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 208
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[handleOrderCreate()]] - code - app/services/webhooks/handlers/orders.server.ts
-- [[orders.server.ts]] - code - app/services/webhooks/handlers/orders.server.ts
+- [[handleResetSection()]] - code - app/components/design-control-panel/settings/SettingsPanel.tsx
 
 ## Live Query (requires Dataview plugin)
 

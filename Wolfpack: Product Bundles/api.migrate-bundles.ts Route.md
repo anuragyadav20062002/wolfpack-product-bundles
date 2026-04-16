@@ -1,11 +1,11 @@
 ---
 source_file: "app/routes/api.migrate-bundles.ts"
 type: "code"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # api.migrate-bundles.ts Route
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Ad-Ready Bundles SDE Implementation Plan]] - `references` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/code #graphify/EXTRACTED #community/Community_11

@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 192
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[auth.$.tsx]] - code - app/routes/auth/auth.$.tsx
-- [[loader()_12]] - code - app/routes/auth/auth.$.tsx
+- [[PDPBadgeSettings.tsx]] - code - app/components/design-control-panel/settings/PDPBadgeSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

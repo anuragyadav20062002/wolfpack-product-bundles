@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[FooterButtonSettings.tsx]] - code - app/components/design-control-panel/settings/FooterButtonSettings.tsx
+- [[iframeStyle()]] - code - app/components/design-control-panel/preview/StorefrontIframePreview.tsx
 
 ## Live Query (requires Dataview plugin)
 

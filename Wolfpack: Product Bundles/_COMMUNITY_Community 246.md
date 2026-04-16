@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[metafields.ts]] - code - app/constants/metafields.ts
+- [[hsbToHex()]] - code - app/components/design-control-panel/common/colorUtils.ts
 
 ## Live Query (requires Dataview plugin)
 

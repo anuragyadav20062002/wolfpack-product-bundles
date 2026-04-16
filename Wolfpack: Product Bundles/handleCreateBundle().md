@@ -1,18 +1,14 @@
 ---
 source_file: "app/routes/app/app.dashboard/handlers/handlers.server.ts"
 type: "code"
-community: "Community 54"
+community: "Community 779"
 location: "L397"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_54
+  - community/Community_779
 ---
 
 # handleCreateBundle()
 
-## Connections
-- [[handlers.server.ts_3]] - `contains` [EXTRACTED]
-- [[publishToSalesChannels()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_54
+#graphify/code #graphify/EXTRACTED #community/Community_779

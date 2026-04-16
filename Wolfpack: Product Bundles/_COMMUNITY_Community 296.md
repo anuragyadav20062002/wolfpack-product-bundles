@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[types.ts_3]] - code - app/lib/dcp-config/types.ts
+- [[useBundleSteps.ts]] - code - app/hooks/useBundleSteps.ts
 
 ## Live Query (requires Dataview plugin)
 

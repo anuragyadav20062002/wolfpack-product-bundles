@@ -1,19 +1,14 @@
 ---
 source_file: "tests/unit/assets/fpb-tier-selection.test.ts"
 type: "code"
-community: "Community 85"
+community: "Community 1172"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_85
+  - community/Community_1172
 ---
 
 # fpb-tier-selection.test.ts
 
-## Connections
-- [[buildTierPillsAriaLabel()]] - `contains` [EXTRACTED]
-- [[isTierActive()]] - `contains` [EXTRACTED]
-- [[parseTierConfig()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_85
+#graphify/code #graphify/EXTRACTED #community/Community_1172

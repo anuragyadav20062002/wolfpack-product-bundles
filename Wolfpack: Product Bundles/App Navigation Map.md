@@ -1,11 +1,11 @@
 ---
 source_file: "docs/app-nav-map/APP_NAVIGATION_MAP.md"
 type: "document"
-community: "App Navigation Map"
+community: "Community 28"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/App_Navigation_Map
+  - community/Community_28
 ---
 
 # App Navigation Map
@@ -19,4 +19,4 @@ tags:
 - [[FPB Bundle Configure Route]] - `references` [EXTRACTED]
 - [[Screenshots Index]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/App_Navigation_Map
+#graphify/document #graphify/EXTRACTED #community/Community_28

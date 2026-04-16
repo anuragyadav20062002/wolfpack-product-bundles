@@ -1,18 +1,14 @@
 ---
 source_file: "app/services/webhooks/handlers/lifecycle.server.ts"
 type: "code"
-community: "Community 118"
+community: "Community 1025"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_118
+  - community/Community_1025
 ---
 
 # lifecycle.server.ts
 
-## Connections
-- [[handleAppUninstalled()]] - `contains` [EXTRACTED]
-- [[handleScopesUpdate()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_118
+#graphify/code #graphify/EXTRACTED #community/Community_1025

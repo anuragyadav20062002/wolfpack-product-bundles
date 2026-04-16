@@ -1,12 +1,12 @@
 ---
 source_file: "docs/archive/discount-messaging-fix-summary.md"
 type: "document"
-community: "Cart Transform & Admin Fixes"
+community: "Community 20"
 location: "Technical Fixes #3"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Cart_Transform_&_Admin_Fixes
+  - community/Community_20
 ---
 
 # Discount Value Formatting Fix
@@ -14,4 +14,4 @@ tags:
 ## Connections
 - [[Discount Messaging Fix (v106)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Cart_Transform_&_Admin_Fixes
+#graphify/document #graphify/EXTRACTED #community/Community_20

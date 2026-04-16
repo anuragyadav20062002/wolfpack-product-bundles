@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 96
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[createSettingSetters()]] - code - app/hooks/useDesignControlPanelState.ts
-- [[useDesignControlPanelState()]] - code - app/hooks/useDesignControlPanelState.ts
-- [[useDesignControlPanelState.ts]] - code - app/hooks/useDesignControlPanelState.ts
+- [[state.types.ts]] - code - app/types/state.types.ts
 
 ## Live Query (requires Dataview plugin)
 

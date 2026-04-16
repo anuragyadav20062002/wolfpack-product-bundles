@@ -18,9 +18,6 @@ jest.mock('../../../app/lib/logger', () => ({
 }));
 
 // Mock dependent services so we only test the slug logic
-jest.mock('../../../app/services/widget-installation/widget-theme-template.server', () => ({
-  ensureBundlePageTemplate: jest.fn().mockResolvedValue({ success: true }),
-}));
 jest.mock('../../../app/services/bundles/metafield-sync.server', () => ({
   ensurePageBundleIdMetafieldDefinition: jest.fn().mockResolvedValue(undefined),
   ensureCustomPageBundleIdDefinition: jest.fn().mockResolvedValue(undefined),
@@ -72,7 +69,7 @@ function makeAdmin(opts: {
     .mockResolvedValueOnce(createMockGraphQLResponse({
       pages: {
         edges: checkPageExists
-          ? [{ node: { id: createPageId, title: 'Old', handle: createPageHandle, templateSuffix: 'full-page-bundle' } }]
+          ? [{ node: { id: createPageId, title: 'Old', handle: createPageHandle } }]
           : []
       }
     }))
@@ -80,7 +77,7 @@ function makeAdmin(opts: {
     .mockResolvedValueOnce(createPageSuccess
       ? createMockGraphQLResponse({
           pageCreate: {
-            page: { id: createPageId, title: bundleName, handle: createPageHandle, templateSuffix: 'full-page-bundle' },
+            page: { id: createPageId, title: bundleName, handle: createPageHandle },
             userErrors: []
           }
         })

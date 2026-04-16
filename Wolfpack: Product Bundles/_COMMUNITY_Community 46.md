@@ -1,22 +1,18 @@
 ---
 type: community
-cohesion: 0.43
-members: 7
+cohesion: 0.67
+members: 3
 ---
 
 # Community 46
 
-**Cohesion:** 0.43 - moderately connected
-**Members:** 7 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[.getAnalyticsSummary()]] - code - app/services/bundle-analytics.server.ts
-- [[.getBundleMetrics()]] - code - app/services/bundle-analytics.server.ts
-- [[.getQuickStats()]] - code - app/services/bundle-analytics.server.ts
-- [[.getRecentActivity()]] - code - app/services/bundle-analytics.server.ts
-- [[.getShopStats()]] - code - app/services/bundle-analytics.server.ts
-- [[BundleAnalyticsService]] - code - app/services/bundle-analytics.server.ts
-- [[bundle-analytics.server.ts]] - code - app/services/bundle-analytics.server.ts
+- [[INTERNAL_WEBHOOK_SECRET (Env Var for PubSub Auth)]] - concept - docs/issues-prod/webhook-pubsub-auth-1.md
+- [[Webhook PubSub Endpoint Authentication Fix]] - document - docs/issues-prod/webhook-pubsub-auth-1.md
+- [[api.webhooks.pubsub.tsx (PubSub Webhook Endpoint)]] - source - app/routes/api/api.webhooks.pubsub.tsx
 
 ## Live Query (requires Dataview plugin)
 

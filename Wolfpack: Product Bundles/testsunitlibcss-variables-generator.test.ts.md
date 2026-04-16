@@ -1,11 +1,11 @@
 ---
 source_file: "tests/unit/lib/css-variables-generator.test.ts"
 type: "code"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_1
 ---
 
 # tests/unit/lib/css-variables-generator.test.ts
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[Add-to-Bundle Button Selected Color SDE Plan]] - `references` [EXTRACTED]
 
-#graphify/code #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/code #graphify/EXTRACTED #community/Community_1

@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 93
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[ImageCropEditor.tsx]] - code - app/components/design-control-panel/settings/ImageCropEditor.tsx
-- [[clamp()]] - code - app/components/design-control-panel/settings/ImageCropEditor.tsx
-- [[handler()]] - code - app/components/design-control-panel/settings/ImageCropEditor.tsx
+- [[generateRulePreview()]] - code - app/types/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

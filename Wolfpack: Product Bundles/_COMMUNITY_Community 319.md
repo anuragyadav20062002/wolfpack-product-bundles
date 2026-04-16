@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[index.ts_15]] - code - app/services/bundles/metafield-sync/index.ts
+- [[useResetState()]] - code - app/hooks/useAppState.ts
 
 ## Live Query (requires Dataview plugin)
 

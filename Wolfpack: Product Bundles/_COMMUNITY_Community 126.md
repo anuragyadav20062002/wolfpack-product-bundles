@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 126
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[fpb-show-step-timeline.test.ts]] - code - tests/unit/assets/fpb-show-step-timeline.test.ts
-- [[resolveShowStepTimeline()]] - code - tests/unit/assets/fpb-show-step-timeline.test.ts
-- [[resolveShowStepTimelineForSave()]] - code - tests/unit/assets/fpb-show-step-timeline.test.ts
+- [[getUpgradePromptTone()]] - code - app/utils/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

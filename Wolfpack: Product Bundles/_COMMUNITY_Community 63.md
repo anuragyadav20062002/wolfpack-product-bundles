@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 63
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[batchGetFirstVariants()]] - code - app/utils/variant-lookup.server.ts
-- [[batchGetFirstVariantsWithPrices()]] - code - app/utils/variant-lookup.server.ts
-- [[getBundleProductVariantId()]] - code - app/utils/variant-lookup.server.ts
-- [[getFirstVariantId()]] - code - app/utils/variant-lookup.server.ts
-- [[variant-lookup.server.ts]] - code - app/utils/variant-lookup.server.ts
+- [[Issue Block Navigation Back to Landing Page for Authenticated Users]] - document - docs/issues-prod/block-landing-page-nav-1.md
+- [[Route root_indexroute.tsx_1]] - source - app/routes/root/_index/route.tsx
 
 ## Live Query (requires Dataview plugin)
 

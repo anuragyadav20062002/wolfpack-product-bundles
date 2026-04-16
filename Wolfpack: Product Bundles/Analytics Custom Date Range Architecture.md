@@ -1,11 +1,11 @@
 ---
 source_file: "docs/analytics-custom-date-range/03-architecture.md"
 type: "document"
-community: "Analytics & Custom Date Range"
+community: "Community 16"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Analytics_&_Custom_Date_Range
+  - community/Community_16
 ---
 
 # Analytics Custom Date Range Architecture
@@ -16,4 +16,4 @@ tags:
 - [[app.attribution.tsx Route]] - `references` [EXTRACTED]
 - [[buildBundleTrendSeries Function (until param)]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Analytics_&_Custom_Date_Range
+#graphify/document #graphify/EXTRACTED #community/Community_16

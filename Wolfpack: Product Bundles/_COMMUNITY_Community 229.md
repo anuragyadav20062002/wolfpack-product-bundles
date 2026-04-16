@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 229
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[extension()]] - code - extensions/bundle-checkout-ui/src/index.tsx
-- [[index.tsx_1]] - code - extensions/bundle-checkout-ui/src/index.tsx
+- [[FooterPriceSettings()]] - code - app/components/design-control-panel/settings/FooterPriceSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

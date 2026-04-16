@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[shopify.server.ts]] - code - app/shopify.server.ts
+- [[PolarisColorPicker.tsx]] - code - app/components/design-control-panel/common/PolarisColorPicker.tsx
 
 ## Live Query (requires Dataview plugin)
 

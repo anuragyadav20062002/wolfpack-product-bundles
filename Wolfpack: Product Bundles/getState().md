@@ -1,17 +1,14 @@
 ---
 source_file: "app/services/app.state.service.ts"
 type: "code"
-community: "App State Service"
+community: "Community 938"
 location: "L992"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_State_Service
+  - community/Community_938
 ---
 
 # getState()
 
-## Connections
-- [[app.state.service.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_State_Service
+#graphify/code #graphify/EXTRACTED #community/Community_938

@@ -1,18 +1,14 @@
 ---
 source_file: "app/hooks/useAppState.ts"
 type: "code"
-community: "App State Hooks"
+community: "Community 311"
 location: "L227"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/App_State_Hooks
+  - community/Community_311
 ---
 
 # useNavigationState()
 
-## Connections
-- [[useAppState.ts]] - `contains` [EXTRACTED]
-- [[useUIState()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/App_State_Hooks
+#graphify/code #graphify/EXTRACTED #community/Community_311

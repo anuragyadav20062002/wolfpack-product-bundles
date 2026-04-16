@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 195
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[api.check-bundles.ts]] - code - app/routes/api/api.check-bundles.ts
-- [[loader()_14]] - code - app/routes/api/api.check-bundles.ts
+- [[GlobalColorsSettings()]] - code - app/components/design-control-panel/settings/GlobalColorsSettings.tsx
 
 ## Live Query (requires Dataview plugin)
 

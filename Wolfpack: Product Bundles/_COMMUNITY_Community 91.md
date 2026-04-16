@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 91
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[isUUID()]] - code - app/utils/shopify-validators.ts
-- [[isValidShopifyProductId()]] - code - app/utils/shopify-validators.ts
-- [[shopify-validators.ts]] - code - app/utils/shopify-validators.ts
+- [[getOperatorText()]] - code - app/types/pricing.ts
 
 ## Live Query (requires Dataview plugin)
 

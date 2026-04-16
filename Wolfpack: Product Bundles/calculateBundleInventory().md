@@ -1,19 +1,14 @@
 ---
 source_file: "app/services/bundles/inventory-sync.server.ts"
 type: "code"
-community: "Community 73"
+community: "Community 1084"
 location: "L141"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_73
+  - community/Community_1084
 ---
 
 # calculateBundleInventory()
 
-## Connections
-- [[calculateMinInventory()]] - `calls` [EXTRACTED]
-- [[inventory-sync.server.ts]] - `contains` [EXTRACTED]
-- [[syncBundleInventory()]] - `calls` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_73
+#graphify/code #graphify/EXTRACTED #community/Community_1084

@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[Bundle Inventory Sync Engine]] - document - docs/ad-ready-bundles/03-architecture.md
+- [[css-sanitizer.ts]] - code - app/lib/css-sanitizer.ts
 
 ## Live Query (requires Dataview plugin)
 

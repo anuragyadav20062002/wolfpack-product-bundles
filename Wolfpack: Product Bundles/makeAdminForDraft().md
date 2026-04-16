@@ -1,17 +1,14 @@
 ---
 source_file: "tests/unit/services/widget-full-page-bundle-preview.test.ts"
 type: "code"
-community: "Community 223"
+community: "Community 1269"
 location: "L52"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_223
+  - community/Community_1269
 ---
 
 # makeAdminForDraft()
 
-## Connections
-- [[widget-full-page-bundle-preview.test.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_223
+#graphify/code #graphify/EXTRACTED #community/Community_1269

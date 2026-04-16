@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 211
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[validateProductBundleWidgetSetup()]] - code - app/services/widget-installation/widget-product-bundle.server.ts
-- [[widget-product-bundle.server.ts]] - code - app/services/widget-installation/widget-product-bundle.server.ts
+- [[clamp()]] - code - app/components/design-control-panel/settings/ImageCropEditor.tsx
 
 ## Live Query (requires Dataview plugin)
 

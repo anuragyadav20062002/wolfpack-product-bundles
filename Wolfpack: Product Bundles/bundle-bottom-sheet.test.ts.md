@@ -1,21 +1,14 @@
 ---
 source_file: "tests/unit/assets/bundle-bottom-sheet.test.ts"
 type: "code"
-community: "Community 60"
+community: "Community 1206"
 location: "L1"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_60
+  - community/Community_1206
 ---
 
 # bundle-bottom-sheet.test.ts
 
-## Connections
-- [[bsFindNextIncompleteStep()_1]] - `contains` [EXTRACTED]
-- [[bsGetDiscountBadgeLabel()_1]] - `contains` [EXTRACTED]
-- [[bsIsDefaultStep()_1]] - `contains` [EXTRACTED]
-- [[validateFn()]] - `contains` [EXTRACTED]
-- [[validateFnIncompleteS2()]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_60
+#graphify/code #graphify/EXTRACTED #community/Community_1206

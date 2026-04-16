@@ -1,17 +1,14 @@
 ---
 source_file: "app/components/FeatureGate.tsx"
 type: "code"
-community: "Feature Gate"
+community: "Community 154"
 location: "L190"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Feature_Gate
+  - community/Community_154
 ---
 
 # BannerUpgradePrompt()
 
-## Connections
-- [[FeatureGate.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Feature_Gate
+#graphify/code #graphify/EXTRACTED #community/Community_154

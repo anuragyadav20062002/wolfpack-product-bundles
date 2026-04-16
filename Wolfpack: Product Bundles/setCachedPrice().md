@@ -1,18 +1,14 @@
 ---
 source_file: "app/services/bundles/pricing-calculation.server.ts"
 type: "code"
-community: "Bundle Pricing Calculation"
+community: "Community 1075"
 location: "L81"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Bundle_Pricing_Calculation
+  - community/Community_1075
 ---
 
 # setCachedPrice()
 
-## Connections
-- [[getProductPrice()]] - `calls` [EXTRACTED]
-- [[pricing-calculation.server.ts]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Bundle_Pricing_Calculation
+#graphify/code #graphify/EXTRACTED #community/Community_1075

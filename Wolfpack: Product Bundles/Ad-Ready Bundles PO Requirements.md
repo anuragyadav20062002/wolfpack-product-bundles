@@ -1,11 +1,11 @@
 ---
 source_file: "docs/ad-ready-bundles/02-PO-requirements.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 tags:
   - graphify/document
   - graphify/EXTRACTED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # Ad-Ready Bundles PO Requirements
@@ -14,4 +14,4 @@ tags:
 - [[Ad-Ready Bundles Architecture Decision Record]] - `references` [EXTRACTED]
 - [[Ad-Ready Bundles SDE Implementation Plan]] - `references` [EXTRACTED]
 
-#graphify/document #graphify/EXTRACTED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/EXTRACTED #community/Community_11

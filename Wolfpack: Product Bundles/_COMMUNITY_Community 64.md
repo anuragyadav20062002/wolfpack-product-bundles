@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.50
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 64
 
-**Cohesion:** 0.50 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[PricingTiersSection.tsx]] - code - app/components/PricingTiersSection.tsx
-- [[addTier()]] - code - app/components/PricingTiersSection.tsx
-- [[doAddTier()]] - code - app/components/PricingTiersSection.tsx
-- [[removeTier()]] - code - app/components/PricingTiersSection.tsx
-- [[updateTier()]] - code - app/components/PricingTiersSection.tsx
+- [[Issue bundleType Query Param Corruption via App Proxy]] - document - docs/issues-prod/bundle-type-param-corruption-1.md
+- [[sanitizeBundleType() — App Proxy Param Sanitization]] - document - docs/issues-prod/bundle-type-param-corruption-1.md
 
 ## Live Query (requires Dataview plugin)
 

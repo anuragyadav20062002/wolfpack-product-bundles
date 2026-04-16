@@ -1,20 +1,17 @@
 ---
 type: community
-cohesion: 0.40
-members: 5
+cohesion: 1.00
+members: 2
 ---
 
 # Community 72
 
-**Cohesion:** 0.40 - moderately connected
-**Members:** 5 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 2 nodes
 
 ## Members
-- [[.constructor()_5]] - code - app/services/theme-template.server.ts
-- [[.ensureProductTemplate()]] - code - app/services/theme-template.server.ts
-- [[.templateExists()]] - code - app/services/theme-template.server.ts
-- [[ThemeTemplateService]] - code - app/services/theme-template.server.ts
-- [[theme-template.server.ts]] - code - app/services/theme-template.server.ts
+- [[Aesthetically Pleasing 4xx Error Pages]] - document - docs/issues-prod/error-pages-4xx-1.md
+- [[Remix ErrorBoundary  Branded Error Pages]] - concept - docs/issues-prod/error-pages-4xx-1.md
 
 ## Live Query (requires Dataview plugin)
 

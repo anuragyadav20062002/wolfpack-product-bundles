@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[BundleHeaderPreview.tsx]] - code - app/components/design-control-panel/preview/BundleHeaderPreview.tsx
+- [[FeatureComparisonTable.tsx]] - code - app/components/billing/FeatureComparisonTable.tsx
 
 ## Live Query (requires Dataview plugin)
 

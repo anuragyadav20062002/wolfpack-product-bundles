@@ -1,21 +1,18 @@
 ---
 type: community
-cohesion: 0.60
-members: 6
+cohesion: 0.67
+members: 3
 ---
 
 # Community 52
 
-**Cohesion:** 0.60 - moderately connected
-**Members:** 6 nodes
+**Cohesion:** 0.67 - moderately connected
+**Members:** 3 nodes
 
 ## Members
-- [[._escapeHtml()]] - code - app/assets/widgets/shared/toast-manager.js
-- [[._isEnterFromBottom()]] - code - app/assets/widgets/shared/toast-manager.js
-- [[.show()]] - code - app/assets/widgets/shared/toast-manager.js
-- [[.showWithUndo()]] - code - app/assets/widgets/shared/toast-manager.js
-- [[ToastManager]] - code - app/assets/widgets/shared/toast-manager.js
-- [[toast-manager.js]] - code - app/assets/widgets/shared/toast-manager.js
+- [[Analytics Custom Date Range SDE Plan]] - document - docs/analytics-custom-date-range/04-SDE-implementation.md
+- [[Analytics Page Redesign SDE Plan]] - document - docs/analytics-redesign/04-SDE-implementation.md
+- [[testsunitlibanalytics-helpers.test.ts]] - code - tests/unit/lib/analytics-helpers.test.ts
 
 ## Live Query (requires Dataview plugin)
 

@@ -1,11 +1,11 @@
 ---
 source_file: "docs/analytics-redesign/02-PO-requirements.md"
 type: "document"
-community: "Ad-Ready Bundles Feature Docs"
+community: "Community 11"
 tags:
   - graphify/document
   - graphify/INFERRED
-  - community/Ad-Ready_Bundles_Feature_Docs
+  - community/Community_11
 ---
 
 # Analytics Page Redesign PO Requirements
@@ -13,4 +13,4 @@ tags:
 ## Connections
 - [[OrderAttribution Prisma Model]] - `references` [INFERRED]
 
-#graphify/document #graphify/INFERRED #community/Ad-Ready_Bundles_Feature_Docs
+#graphify/document #graphify/INFERRED #community/Community_11

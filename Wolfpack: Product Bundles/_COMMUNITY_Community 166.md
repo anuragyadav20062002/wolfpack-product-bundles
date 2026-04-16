@@ -1,17 +1,16 @@
 ---
 type: community
 cohesion: 1.00
-members: 2
+members: 1
 ---
 
 # Community 166
 
 **Cohesion:** 1.00 - tightly connected
-**Members:** 2 nodes
+**Members:** 1 nodes
 
 ## Members
-- [[InlineColorInput.tsx]] - code - app/components/design-control-panel/common/InlineColorInput.tsx
-- [[handleClick()]] - code - app/components/design-control-panel/common/InlineColorInput.tsx
+- [[types.ts_1]] - code - app/components/design-control-panel/types.ts
 
 ## Live Query (requires Dataview plugin)
 

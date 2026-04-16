@@ -10,7 +10,7 @@ members: 1
 **Members:** 1 nodes
 
 ## Members
-- [[PromoBannerPreview.tsx]] - code - app/components/design-control-panel/preview/PromoBannerPreview.tsx
+- [[FreePlanCard.tsx]] - code - app/components/billing/FreePlanCard.tsx
 
 ## Live Query (requires Dataview plugin)
 

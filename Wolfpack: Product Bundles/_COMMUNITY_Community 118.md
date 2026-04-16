@@ -1,18 +1,16 @@
 ---
 type: community
-cohesion: 0.67
-members: 3
+cohesion: 1.00
+members: 1
 ---
 
 # Community 118
 
-**Cohesion:** 0.67 - moderately connected
-**Members:** 3 nodes
+**Cohesion:** 1.00 - tightly connected
+**Members:** 1 nodes
 
 ## Members
-- [[handleAppUninstalled()]] - code - app/services/webhooks/handlers/lifecycle.server.ts
-- [[handleScopesUpdate()]] - code - app/services/webhooks/handlers/lifecycle.server.ts
-- [[lifecycle.server.ts]] - code - app/services/webhooks/handlers/lifecycle.server.ts
+- [[isValidShopifyProductId()]] - code - app/utils/shopify-validators.ts
 
 ## Live Query (requires Dataview plugin)
 

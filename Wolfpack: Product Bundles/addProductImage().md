@@ -1,17 +1,14 @@
 ---
 source_file: "app/routes/app/app.bundles.cart-transform.tsx"
 type: "code"
-community: "Community 70"
+community: "Community 693"
 location: "L39"
 tags:
   - graphify/code
   - graphify/EXTRACTED
-  - community/Community_70
+  - community/Community_693
 ---
 
 # addProductImage()
 
-## Connections
-- [[app.bundles.cart-transform.tsx]] - `contains` [EXTRACTED]
-
-#graphify/code #graphify/EXTRACTED #community/Community_70
+#graphify/code #graphify/EXTRACTED #community/Community_693
