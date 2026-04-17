@@ -4,7 +4,7 @@
 **Status:** In Progress — SIT deployed, fixing proxy API + widget bugs
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-17 09:45
+**Last Updated:** 2026-04-17 10:00
 
 ## Overview
 
@@ -55,6 +55,19 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Branch: `migrate/cart-transform-rust` (from `refactor/26.04`)
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
+
+### 2026-04-17 10:00 — Fix: stale shopifyProductHandle on configure-page product create
+
+**Root cause 3: Preview URL points to wrong handle (e.g. `hello-1` instead of `bundle-{id}`)**
+- On the configure page, when a Shopify product doesn't exist (or is re-created), the code
+  explicitly sets `handle: \`bundle-${bundle.id}\`` in the Shopify `productCreate` mutation.
+- But both DB updates after product creation only persisted `shopifyProductId` — not
+  `shopifyProductHandle`. So the DB retained the old dashboard-created handle (`hello-1`).
+- Fixed in 4 places:
+  - `app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts` — first-create path + re-create path
+  - `app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts` — first-create path + sync-bundle re-create path
+- **To fix the stale handle for the existing "Hello" SIT bundle:** click "Sync Bundle" on
+  the configure page — the DB will be updated to `bundle-{id}` on next save.
 
 ### 2026-04-17 09:45 — SIT debugging: proxy API + widget error fixes
 
