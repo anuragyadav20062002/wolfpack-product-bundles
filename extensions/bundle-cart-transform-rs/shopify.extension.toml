@@ -1,4 +1,5 @@
 api_version = "2025-10"
+uid = "de65a477-86bf-4c95-a99b-9b933dca2baca6d313bc"
 
 [[extensions]]
 name = "Bundle Cart Transform (Rust)"
