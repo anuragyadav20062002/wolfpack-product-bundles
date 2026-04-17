@@ -1,10 +1,10 @@
 # Issue: Migrate Cart Transform Function from TypeScript to Rust
 
 **Issue ID:** cart-transform-rust-migration-1
-**Status:** In Progress — 24/24 tests pass, WASM built, 8 fixtures verified locally, pending SIT deploy
+**Status:** In Progress — SIT deployed, fixing proxy API + widget bugs
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-17 02:30
+**Last Updated:** 2026-04-17 10:00
 
 ## Overview
 
@@ -55,6 +55,33 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Branch: `migrate/cart-transform-rust` (from `refactor/26.04`)
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
+
+### 2026-04-17 10:00 — Fix: stale shopifyProductHandle on configure-page product create
+
+**Root cause 3: Preview URL points to wrong handle (e.g. `hello-1` instead of `bundle-{id}`)**
+- On the configure page, when a Shopify product doesn't exist (or is re-created), the code
+  explicitly sets `handle: \`bundle-${bundle.id}\`` in the Shopify `productCreate` mutation.
+- But both DB updates after product creation only persisted `shopifyProductId` — not
+  `shopifyProductHandle`. So the DB retained the old dashboard-created handle (`hello-1`).
+- Fixed in 4 places:
+  - `app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts` — first-create path + re-create path
+  - `app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts` — first-create path + sync-bundle re-create path
+- **To fix the stale handle for the existing "Hello" SIT bundle:** click "Sync Bundle" on
+  the configure page — the DB will be updated to `bundle-{id}` on next save.
+
+### 2026-04-17 09:45 — SIT debugging: proxy API + widget error fixes
+
+**Root cause 1: Bundle proxy API returning 400 "Shop not found"**
+- `api.bundle.$bundleId[.]json.tsx`: HMAC verification uses `SHOPIFY_API_SECRET` env var
+- `SHOPIFY_API_SECRET` was missing/wrong on Render SIT — updated via Render MCP to `REDACTED` (from `.env.staging`)
+- Render SIT redeploy triggered — bundle steps on storefront should load after deploy completes
+
+**Root cause 2: Widget "Failed to initialize bundle widget" on non-bundle products**
+- `bundle-widget-product-page.js`: `loadBundleData()` threw `new Error(...)` when no `data-bundle-config` found
+- Error was caught by `init()` → rendered error box on Cookie A / any non-bundle PDP
+- Fix: `loadBundleData()` now hides container and returns early instead of throwing
+- `init()` now guards `if (!this.bundleData) return` after `loadBundleData()`
+- Widget version bumped `2.4.10` → `2.4.11`, bundled file rebuilt
 
 ### 2026-04-17 02:30 — f64 precision fix + 8 test fixtures verified
 

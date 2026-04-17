@@ -783,10 +783,10 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       });
     }
 
-    // Update bundle with product ID
+    // Update bundle with product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: productId }
+      data: { shopifyProductId: productId, shopifyProductHandle: `bundle-${bundleId}` }
     });
   } else {
     // Update existing bundle product price if configuration changed
@@ -1016,10 +1016,10 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
 
     AppLogger.info('[SYNC_BUNDLE] Shopify product re-created', { bundleId, newProductId });
 
-    // 6. Update DB with new product ID
+    // 6. Update DB with new product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: newProductId },
+      data: { shopifyProductId: newProductId, shopifyProductHandle: `bundle-${bundleId}` },
     });
 
     // 7. Re-run metafield operations from DB-authoritative state
