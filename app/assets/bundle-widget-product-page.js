@@ -1300,21 +1300,27 @@ class BundleWidgetProductPage {
   }
 
   processProductsForStep(products, step) {
+    // See full-page widget for the same fields. quantityAvailable is number|null
+    // (null = untracked / scope ungranted → treat as unlimited in the clamp).
+    const normalizeVariant = (v) => ({
+      id: this.extractId(v.id),
+      title: v.title,
+      price: parseFloat(v.price || '0') * 100,
+      compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      available: v.available === true,
+      quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
+      currentlyNotInStock: v.currentlyNotInStock === true,
+      option1: v.option1 || null,
+      option2: v.option2 || null,
+      option3: v.option3 || null,
+      image: v.image || null
+    });
+
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
         // Preserve parent product reference for variant selection and tracking
-        const processedVariants = (product.variants || []).map(v => ({
-          id: this.extractId(v.id),
-          title: v.title,
-          price: parseFloat(v.price || '0') * 100,
-          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-          available: v.available === true,
-          option1: v.option1 || null,
-          option2: v.option2 || null,
-          option3: v.option3 || null,
-          image: v.image || null
-        }));
+        const processedVariants = (product.variants || []).map(normalizeVariant);
 
         const processedOptions = (product.options || []).map(opt => {
           if (typeof opt === 'string') return opt;
@@ -1335,6 +1341,8 @@ class BundleWidgetProductPage {
               compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
               available: variant.available === true,
+              quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
+              currentlyNotInStock: variant.currentlyNotInStock === true,
               // Preserve parent product data for variant selection in modal
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
@@ -1357,17 +1365,7 @@ class BundleWidgetProductPage {
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
         // Process variants array for variant selection in modal
-        const processedVariants = (product.variants || []).map(v => ({
-          id: this.extractId(v.id),
-          title: v.title,
-          price: parseFloat(v.price || '0') * 100,
-          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-          available: v.available === true,
-          option1: v.option1 || null,
-          option2: v.option2 || null,
-          option3: v.option3 || null,
-          image: v.image || null
-        }));
+        const processedVariants = (product.variants || []).map(normalizeVariant);
 
         // Process options array for variant selector labels
         const processedOptions = (product.options || []).map(opt => {
@@ -1383,6 +1381,8 @@ class BundleWidgetProductPage {
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           available: defaultVariant?.available === true,
+          quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
+          currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
           // Preserve variants and options for variant selection in modal
           variants: processedVariants,
           options: processedOptions,
@@ -1392,6 +1392,24 @@ class BundleWidgetProductPage {
         }];
       }
     });
+  }
+
+  /**
+   * Look up real stock for a variant. See full-page widget's getVariantAvailable
+   * for field semantics.
+   */
+  getVariantAvailable(stepIndex, variantId) {
+    const products = this.stepProductData[stepIndex] || [];
+    const product = products.find(p => (p.variantId || p.id) === variantId);
+    if (!product) {
+      return { available: null, outOfStock: false, acceptsBackorder: false };
+    }
+    const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
+    const backorder = product.currentlyNotInStock === true;
+    if (qty === 0 && !backorder) {
+      return { available: 0, outOfStock: true, acceptsBackorder: false };
+    }
+    return { available: qty, outOfStock: false, acceptsBackorder: backorder };
   }
 
   extractId(idString) {
@@ -1584,14 +1602,29 @@ class BundleWidgetProductPage {
       const currentQuantity = selectedProducts[selectionKey] || 0;
       const currencyInfo = CurrencyManager.getCurrencyInfo();
 
+      // Per-variant stock state derived from Storefront API quantityAvailable
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
+      const atMaxStock = available !== null && currentQuantity >= available;
+      const lowStock = available !== null && available > 0 && available <= 3;
+      const increaseDisabled = outOfStock || atMaxStock;
+      const addDisabled = outOfStock;
+
+      // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
+      const stockBadge = outOfStock
+        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+        : lowStock
+          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
+          : '';
+
       return `
-        <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
+        <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? `
             <div class="selected-overlay">✓</div>
           ` : ''}
 
           <div class="product-image">
             <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
+            ${stockBadge}
           </div>
 
           <div class="product-content-wrapper">
@@ -1613,13 +1646,13 @@ class BundleWidgetProductPage {
                 <div class="product-quantity-selector">
                   <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
                   <span class="qty-display">${currentQuantity}</span>
-                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
                 </div>
               </div>
             ` : ''}
 
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
-              ${currentQuantity > 0 ? 'Selected ✓' : 'Add to Cart'}
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? 'Selected ✓' : 'Add to Cart')}
             </button>
           </div>
         </div>
@@ -1643,9 +1676,17 @@ class BundleWidgetProductPage {
     return `
       <div class="variant-selector-wrapper">
         <select class="variant-selector" data-base-product-id="${product.id}">
-          ${product.variants.map(v => `
-            <option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>
-          `).join('')}
+          ${product.variants.map(v => {
+            // Grey out variants that are hard out of stock. quantityAvailable === 0
+            // only disables when the variant does NOT accept backorders
+            // (currentlyNotInStock === true means "sold out but backorderable").
+            const isHardOOS = v.available !== true
+              || (v.quantityAvailable === 0 && v.currentlyNotInStock !== true);
+            const label = isHardOOS ? `${v.title} — out of stock` : v.title;
+            const selected = v.id === product.variantId ? 'selected' : '';
+            const disabled = isHardOOS ? 'disabled' : '';
+            return `<option value="${v.id}" ${selected} ${disabled}>${label}</option>`;
+          }).join('')}
         </select>
       </div>
     `;
@@ -1812,13 +1853,33 @@ class BundleWidgetProductPage {
         if (product && product.variants) {
           const variantData = product.variants.find(v => v.id === newVariantId);
           if (variantData) {
-            const oldVariantId = product.variantId;
+            // Sync the new variant's stock fields onto the product so
+            // getVariantAvailable() reflects post-swap state.
+            product.quantityAvailable = typeof variantData.quantityAvailable === 'number'
+              ? variantData.quantityAvailable
+              : null;
+            product.currentlyNotInStock = variantData.currentlyNotInStock === true;
 
-            // Move quantity from old variant to new variant
-            const oldQuantity = this.selectedProducts[stepIndex][oldVariantId] || 0;
+            // Move quantity from old variant to new variant, re-clamping against
+            // the new variant's quantityAvailable. If the new variant can't hold
+            // the old quantity, reduce it and surface a toast.
+            const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
             if (oldQuantity > 0) {
-              delete this.selectedProducts[stepIndex][oldVariantId];
-              this.selectedProducts[stepIndex][newVariantId] = oldQuantity;
+              delete this.selectedProducts[stepIndex][product.variantId];
+
+              const newQtyAvail = product.quantityAvailable;
+              const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+              let migratedQty = oldQuantity;
+              if (newOOS) {
+                ToastManager.show('Selected variant is out of stock — selection cleared.');
+                migratedQty = 0;
+              } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
+                migratedQty = newQtyAvail;
+                ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+              }
+              if (migratedQty > 0) {
+                this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+              }
             }
 
             // Update product properties
@@ -1856,7 +1917,22 @@ class BundleWidgetProductPage {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
-    const quantity = Math.max(0, newQuantity);
+    let quantity = Math.max(0, newQuantity);
+
+    // Clamp against real per-variant stock before doing anything else.
+    // Uses quantityAvailable from the Storefront API (see getVariantAvailable).
+    // Adding 0 always allowed (that is a removal).
+    if (quantity > 0) {
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+      if (outOfStock) {
+        ToastManager.show('This item is out of stock.');
+        return;
+      }
+      if (available !== null && quantity > available) {
+        quantity = available;
+        ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      }
+    }
 
     // Validate step conditions
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {

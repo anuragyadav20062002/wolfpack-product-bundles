@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-17 (commit 3)
+**Last Updated:** 2026-04-18 (commit 4)
 
 ## Overview
 
@@ -34,12 +34,28 @@ See `docs/storefront-inventory-clamp/ARCHITECTURE.md` for the full design.
 - Response maps `quantityAvailable` to `number | null` (null = untracked or scope ungranted) and `currentlyNotInStock` to boolean.
 - Lint: 0 errors on changed file.
 
+### 2026-04-18 - Commit 4: Widget clamp + badges + variant OOS greying
+- **Full-page widget** (`app/assets/bundle-widget-full-page.js`):
+  - `processProductsForStep`: `normalizeVariant` helper propagates `quantityAvailable` and `currentlyNotInStock` to every product/variant.
+  - `getVariantAvailable(stepIndex, variantId)` helper: returns `{ available, outOfStock, acceptsBackorder }`.
+  - `updateProductSelection`: clamp quantity to `available`; block hard OOS items with toast.
+  - `renderModalProducts`: per-card stock badges ("Only N left" / "Out of stock"), disabled `+` button at max stock, disabled Add button for OOS, `is-out-of-stock` class.
+  - `renderVariantSelector`: disabled + "— out of stock" label for hard-OOS variant options.
+  - Variant swap handler: syncs `quantityAvailable`/`currentlyNotInStock` from new variant, re-clamps migrated quantity with toast.
+- **Product-page widget** (`app/assets/bundle-widget-product-page.js`):
+  - Mirrored all six changes from the full-page widget.
+- **WIDGET_VERSION** bumped from `2.4.10` → `2.5.0` (minor — new storefront feature).
+- Built bundles: `npm run build:widgets` — full-page 261.9 KB, product-page 152.6 KB.
+- CSS sizes checked: full-page 96,310 B, product-page 70,906 B — both under 100,000 B limit.
+- Lint: 0 errors on changed files.
+- Next: **manual deploy required** — `npm run deploy:prod` or `npm run deploy:sit`. Wait ~5 min for CDN propagation. Verify with `console.log(window.__BUNDLE_WIDGET_VERSION__)` → `"2.5.0"`.
+
 ## Phases Checklist
 
 - [x] Architecture + issue file (commit 1)
 - [x] Add `unauthenticated_read_product_inventory` scope + auto-recreate SAT on `app/scopes_update` (commit 2) — **requires app deploy**
 - [x] Extend Storefront query in `api.storefront-products.tsx` with `quantityAvailable` + `currentlyNotInStock` (commit 3)
-- [ ] Widget clamp logic in `updateProductSelection` + UI polish + `WIDGET_VERSION` bump + built bundles (commit 4) — **requires widget deploy**
+- [x] Widget clamp logic in `updateProductSelection` + UI polish + `WIDGET_VERSION` bump + built bundles (commit 4) — **requires widget deploy**
 - [ ] Unit tests for scope update handler + clamp helper (commit 5)
 
 ## Related Documentation
