@@ -4,7 +4,7 @@
 **Status:** In Progress — SIT deployed, fixing proxy API + widget bugs
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-17 10:00
+**Last Updated:** 2026-04-17 11:00
 
 ## Overview
 
@@ -55,6 +55,17 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Branch: `migrate/cart-transform-rust` (from `refactor/26.04`)
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
+
+### 2026-04-17 11:00 — TDD tests: widget init guard + handle persistence (26/26 pass)
+
+- `tests/unit/assets/bundle-widget-product-page-init.test.ts` (NEW, 16 tests)
+  - Extracts pure logic from `bundle-widget-product-page.js` and tests all branches:
+    absent/empty/null/undefined/invalid/no-id config → `shouldHide=true`; valid config → `bundleData` populated;
+    theme-editor mode; init abort guard (`!this.bundleData`)
+- `tests/unit/routes/pdp-configure-handle.test.ts` (NEW, 10 tests)
+  - `handleSyncBundle`: asserts `db.bundle.update` receives both `shopifyProductId` + `shopifyProductHandle: bundle-{id}` on re-create; stale handle not written; 404/400 error cases
+  - `handleSyncProduct`: asserts same DB update on first-create; 404 when bundle not found
+  - Note: first-create path is in `handleSyncProduct`, not `handleSaveBundle`
 
 ### 2026-04-17 10:00 — Fix: stale shopifyProductHandle on configure-page product create
 
