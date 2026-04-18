@@ -1,0 +1,52 @@
+{
+  "_comment": "Quantity condition: gte 3 items. Bundle has 3 items → condition MET → 15% off. Change qty on any line to reduce below 3 to test condition NOT met → 0%.",
+  "presentmentCurrencyRate": "1.0",
+  "cart": {
+    "lines": [
+      {
+        "id": "line1",
+        "quantity": 2,
+        "bundleId": { "value": "bundle-cond-001" },
+        "bundleName": { "value": "Conditional Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/501",
+          "component_parents": {
+            "value": "[{\"id\":\"gid://shopify/ProductVariant/999\",\"price_adjustment\":{\"method\":\"percentage_off\",\"value\":15.0,\"conditions\":{\"type\":\"quantity\",\"operator\":\"gte\",\"value\":3}}}]"
+          },
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/1", "title": "Item A (qty 2)" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "20.00" },
+          "totalAmount": { "amount": "40.00" }
+        }
+      },
+      {
+        "id": "line2",
+        "quantity": 1,
+        "bundleId": { "value": "bundle-cond-001" },
+        "bundleName": { "value": "Conditional Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/502",
+          "component_parents": null,
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/2", "title": "Item B (qty 1)" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "20.00" },
+          "totalAmount": { "amount": "20.00" }
+        }
+      }
+    ]
+  }
+}

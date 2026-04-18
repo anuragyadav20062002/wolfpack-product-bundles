@@ -969,10 +969,10 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       });
     }
 
-    // Update bundle with product ID
+    // Update bundle with product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: productId }
+      data: { shopifyProductId: productId, shopifyProductHandle: `bundle-${bundleId}` }
     });
   } else {
     // Update existing bundle product price if configuration changed
@@ -1145,7 +1145,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
                 }
               });
             }
-            await db.bundle.update({ where: { id: bundleId }, data: { shopifyProductId } });
+            await db.bundle.update({ where: { id: bundleId }, data: { shopifyProductId, shopifyProductHandle: `bundle-${bundleId}` } });
             // Create URL redirect /products/{handle} → /pages/{pageHandle} (non-fatal)
             if (result.pageHandle) {
               createProductPageRedirect(admin, shopifyProductId, result.pageHandle).catch(() => {});

@@ -1,0 +1,3 @@
+target/
+dist/
+# schema.graphql is committed (copied from TS extension; regenerate with `shopify app function schema`)

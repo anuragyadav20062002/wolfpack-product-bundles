@@ -18,10 +18,9 @@ export class CartTransformService {
    * Falls back to UID-based function ID for compatibility
    */
   private static async getDeployedFunctionHandle(admin: AdminApiContext): Promise<{ handle?: string; id?: string }> {
-    // MODERN APPROACH (2025-10+): Use stable function handle from shopify.extension.toml
-    // Handle: bundle-cart-transform-ts (defined in extensions/bundle-cart-transform-ts/shopify.extension.toml)
+    // Stable handle from shopify.extension.toml — 2025-10+ best practice
     // Reference: https://shopify.dev/changelog/introducing-functionhandle
-    const functionHandle = 'bundle-cart-transform-ts';
+    const functionHandle = 'bundle-cart-transform-rs';
 
     AppLogger.info('Using stable function handle', {
       component: 'cart-transform',
