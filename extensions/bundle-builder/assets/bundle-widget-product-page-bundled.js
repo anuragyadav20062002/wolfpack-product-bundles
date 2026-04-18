@@ -1,7 +1,12 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
+<<<<<<< HEAD
  * Version : 2.5.0
  * Built   : 2026-04-18
+=======
+ * Version : 2.4.11
+ * Built   : 2026-04-17
+>>>>>>> 0d2d85e5faae210bda6b617f16253947742015dd
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -1662,6 +1667,9 @@ class BundleWidgetProductPage {
       // Load and validate bundle data
       await this.loadBundleData();
 
+      // loadBundleData() hides the container and returns early on non-bundle products
+      if (!this.bundleData) return;
+
       // Select appropriate bundle
       this.selectBundle();
 
@@ -1778,9 +1786,10 @@ class BundleWidgetProductPage {
         return; // Don't throw error, just show preview
       }
 
-      // For production/storefront: show proper error
-      const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
-      throw new Error(errorMsg);
+      // Not a bundle product page — silently hide the widget so storefront visitors
+      // on non-bundle products don't see an error box.
+      this.container.style.display = 'none';
+      return;
     }
 
     this.bundleData = bundleData;

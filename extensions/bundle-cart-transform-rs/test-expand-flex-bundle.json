@@ -1,0 +1,36 @@
+{
+  "presentmentCurrencyRate": "1.0",
+  "cart": {
+    "lines": [
+      {
+        "id": "flex-line-1",
+        "quantity": 1,
+        "bundleId": null,
+        "bundleName": { "value": "Flex Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/PARENT",
+          "component_parents": null,
+          "component_reference": {
+            "value": "[\"gid://shopify/ProductVariant/A\",\"gid://shopify/ProductVariant/B\"]"
+          },
+          "component_quantities": {
+            "value": "[1,2]"
+          },
+          "price_adjustment": {
+            "value": "{\"method\":\"percentage_off\",\"value\":10.0}"
+          },
+          "component_pricing": {
+            "value": "[{\"variantId\":\"gid://shopify/ProductVariant/A\",\"title\":\"Component A\",\"retailPrice\":3000,\"bundlePrice\":2700,\"discountPercent\":10.0,\"savingsAmount\":300},{\"variantId\":\"gid://shopify/ProductVariant/B\",\"title\":\"Component B\",\"retailPrice\":2000,\"bundlePrice\":1800,\"discountPercent\":10.0,\"savingsAmount\":200}]"
+          },
+          "product": { "id": "gid://shopify/Product/10", "title": "Flex Bundle" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "63.00" },
+          "totalAmount": { "amount": "63.00" }
+        }
+      }
+    ]
+  }
+}

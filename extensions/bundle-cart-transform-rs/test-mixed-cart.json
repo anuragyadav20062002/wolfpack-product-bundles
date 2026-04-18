@@ -1,0 +1,106 @@
+{
+  "_comment": "Mixed cart: standalone line (ignored) + MERGE bundle (2 lines, 20% off) + EXPAND flex bundle (1 line, 10% off). Expected: 2 operations (1 Merge, 1 Expand).",
+  "presentmentCurrencyRate": "1.0",
+  "cart": {
+    "lines": [
+      {
+        "_comment": "Standalone product — no _bundle_id, should be ignored",
+        "id": "standalone-1",
+        "quantity": 2,
+        "bundleId": null,
+        "bundleName": null,
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/SOLO",
+          "component_parents": null,
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/99", "title": "Standalone Product" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "15.00" },
+          "totalAmount": { "amount": "30.00" }
+        }
+      },
+      {
+        "_comment": "MERGE component 1 — has component_parents pointing to parent variant",
+        "id": "merge-line-1",
+        "quantity": 1,
+        "bundleId": { "value": "bundle-merge-001" },
+        "bundleName": { "value": "Classic Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/M1",
+          "component_parents": {
+            "value": "[{\"id\":\"gid://shopify/ProductVariant/PARENT_MERGE\",\"price_adjustment\":{\"method\":\"percentage_off\",\"value\":20.0}}]"
+          },
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/1", "title": "Sunscreen SPF50" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "25.00" },
+          "totalAmount": { "amount": "25.00" }
+        }
+      },
+      {
+        "_comment": "MERGE component 2 — same bundle-merge-001",
+        "id": "merge-line-2",
+        "quantity": 1,
+        "bundleId": { "value": "bundle-merge-001" },
+        "bundleName": { "value": "Classic Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/M2",
+          "component_parents": null,
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/2", "title": "Moisturiser 100ml" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "35.00" },
+          "totalAmount": { "amount": "35.00" }
+        }
+      },
+      {
+        "_comment": "EXPAND flex bundle — has component_reference + component_quantities on the variant",
+        "id": "flex-line-1",
+        "quantity": 1,
+        "bundleId": null,
+        "bundleName": { "value": "Starter Kit" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/FLEX_PARENT",
+          "component_parents": null,
+          "component_reference": {
+            "value": "[\"gid://shopify/ProductVariant/F1\",\"gid://shopify/ProductVariant/F2\"]"
+          },
+          "component_quantities": {
+            "value": "[1,1]"
+          },
+          "price_adjustment": {
+            "value": "{\"method\":\"percentage_off\",\"value\":10.0}"
+          },
+          "component_pricing": {
+            "value": "[{\"variantId\":\"gid://shopify/ProductVariant/F1\",\"title\":\"Item One\",\"retailPrice\":2000,\"bundlePrice\":1800,\"discountPercent\":10.0,\"savingsAmount\":200},{\"variantId\":\"gid://shopify/ProductVariant/F2\",\"title\":\"Item Two\",\"retailPrice\":3000,\"bundlePrice\":2700,\"discountPercent\":10.0,\"savingsAmount\":300}]"
+          },
+          "product": { "id": "gid://shopify/Product/20", "title": "Starter Kit" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "45.00" },
+          "totalAmount": { "amount": "45.00" }
+        }
+      }
+    ]
+  }
+}
