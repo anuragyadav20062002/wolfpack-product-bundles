@@ -102,7 +102,7 @@ mod tests {
 
         let op = &output.operations[0];
         let merge = match op {
-            schema::CartOperation::Merge(ref m) => m,
+            schema::CartOperation::LinesMerge(ref m) => m,
             _ => panic!("expected Merge operation"),
         };
         assert_eq!(merge.parent_variant_id, "gid://shopify/ProductVariant/999");
@@ -166,7 +166,7 @@ mod tests {
         assert_eq!(output.operations.len(), 2);
         let titles: Vec<_> = output.operations.iter()
             .filter_map(|op| match op {
-                schema::CartOperation::Merge(m) => m.title.as_deref(),
+                schema::CartOperation::LinesMerge(m) => m.title.as_deref(),
                 _ => None,
             })
             .collect();
@@ -222,7 +222,7 @@ mod tests {
 
         let op = &output.operations[0];
         let expand = match op {
-            schema::CartOperation::Expand(ref e) => e,
+            schema::CartOperation::LineExpand(ref e) => e,
             _ => panic!("expected Expand operation"),
         };
         assert_eq!(expand.cart_line_id, "flex-line");
@@ -269,7 +269,7 @@ mod tests {
         assert_eq!(output.operations.len(), 1);
 
         let expand = match &output.operations[0] {
-            schema::CartOperation::Expand(e) => e,
+            schema::CartOperation::LineExpand(e) => e,
             _ => panic!("expected EXPAND"),
         };
         assert!(expand.price.is_none(), "price should be absent at 0%");

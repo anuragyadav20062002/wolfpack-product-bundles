@@ -4,7 +4,7 @@
 **Status:** In Progress — SIT deployed, fixing proxy API + widget bugs
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-17 10:00
+**Last Updated:** 2026-04-18 16:10
 
 ## Overview
 
@@ -55,6 +55,43 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Branch: `migrate/cart-transform-rust` (from `refactor/26.04`)
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
+
+### 2026-04-18 16:10 — Fix: schema operation names mismatched with 2025-10 API
+
+**Root cause:** schema.graphql was copied from the TS extension and used old Cart Transform API
+field names (`merge`, `expand`, `update`) but Shopify's 2025-10 API expects the new names
+(`linesMerge`, `lineExpand`, `lineUpdate`). The function runner validated against the live
+schema → STD::ERR: `"Expected one of valid values: lineAdd, lineExpand, linesMerge, lineUpdate. Got: merge"`.
+
+**Fix:**
+- `schema.graphql`: Renamed `CartOperation` fields + type definitions:
+  - `merge: MergeOperation` → `linesMerge: LinesMergeOperation`
+  - `expand: ExpandOperation` → `lineExpand: LineExpandOperation`
+  - `update: UpdateOperation` → `lineUpdate: LineUpdateOperation` (and all sub-types)
+- `src/merge.rs`: `schema::MergeOperation` → `schema::LinesMergeOperation`,
+  `schema::CartOperation::Merge` → `schema::CartOperation::LinesMerge`
+- `src/expand.rs`: `schema::ExpandOperation` → `schema::LineExpandOperation`,
+  `schema::CartOperation::Expand` → `schema::CartOperation::LineExpand`
+- `tests/integration_test.rs`: Pattern-match variants updated accordingly
+- All 24 cargo tests pass. WASM rebuilt (199 KB).
+
+**Note:** The TS extension (`bundle-cart-transform-ts`) uses the same old schema and the same
+old `merge`/`expand` field names in its output. It will have the same validation error if
+the function runner is used against it. Both extensions need the schema update if TS is
+re-activated.
+
+**Action required:** Run `npm run deploy:sit` → then test add-to-cart on a bundle PDP.
+
+### 2026-04-17 11:00 — TDD tests: widget init guard + handle persistence (26/26 pass)
+
+- `tests/unit/assets/bundle-widget-product-page-init.test.ts` (NEW, 16 tests)
+  - Extracts pure logic from `bundle-widget-product-page.js` and tests all branches:
+    absent/empty/null/undefined/invalid/no-id config → `shouldHide=true`; valid config → `bundleData` populated;
+    theme-editor mode; init abort guard (`!this.bundleData`)
+- `tests/unit/routes/pdp-configure-handle.test.ts` (NEW, 10 tests)
+  - `handleSyncBundle`: asserts `db.bundle.update` receives both `shopifyProductId` + `shopifyProductHandle: bundle-{id}` on re-create; stale handle not written; 404/400 error cases
+  - `handleSyncProduct`: asserts same DB update on first-create; 404 when bundle not found
+  - Note: first-create path is in `handleSyncProduct`, not `handleSaveBundle`
 
 ### 2026-04-17 10:00 — Fix: stale shopifyProductHandle on configure-page product create
 
