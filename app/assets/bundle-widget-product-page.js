@@ -153,6 +153,9 @@ class BundleWidgetProductPage {
       // Load and validate bundle data
       await this.loadBundleData();
 
+      // loadBundleData() hides the container and returns early on non-bundle products
+      if (!this.bundleData) return;
+
       // Select appropriate bundle
       this.selectBundle();
 
@@ -269,9 +272,10 @@ class BundleWidgetProductPage {
         return; // Don't throw error, just show preview
       }
 
-      // For production/storefront: show proper error
-      const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
-      throw new Error(errorMsg);
+      // Not a bundle product page — silently hide the widget so storefront visitors
+      // on non-bundle products don't see an error box.
+      this.container.style.display = 'none';
+      return;
     }
 
     this.bundleData = bundleData;

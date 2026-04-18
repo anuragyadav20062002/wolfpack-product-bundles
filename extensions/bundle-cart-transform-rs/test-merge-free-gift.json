@@ -1,0 +1,72 @@
+{
+  "presentmentCurrencyRate": "1.0",
+  "cart": {
+    "lines": [
+      {
+        "id": "paid-1",
+        "quantity": 1,
+        "bundleId": { "value": "bundle-fg-001" },
+        "bundleName": { "value": "Free Gift Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/201",
+          "component_parents": {
+            "value": "[{\"id\":\"gid://shopify/ProductVariant/888\"}]"
+          },
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/3", "title": "Paid Item A" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "40.00" },
+          "totalAmount": { "amount": "40.00" }
+        }
+      },
+      {
+        "id": "paid-2",
+        "quantity": 1,
+        "bundleId": { "value": "bundle-fg-001" },
+        "bundleName": { "value": "Free Gift Bundle" },
+        "stepType": null,
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/202",
+          "component_parents": null,
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/4", "title": "Paid Item B" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "40.00" },
+          "totalAmount": { "amount": "40.00" }
+        }
+      },
+      {
+        "id": "gift-1",
+        "quantity": 1,
+        "bundleId": { "value": "bundle-fg-001" },
+        "bundleName": { "value": "Free Gift Bundle" },
+        "stepType": { "value": "free_gift" },
+        "merchandise": {
+          "__typename": "ProductVariant",
+          "id": "gid://shopify/ProductVariant/203",
+          "component_parents": null,
+          "component_reference": null,
+          "component_quantities": null,
+          "price_adjustment": null,
+          "component_pricing": null,
+          "product": { "id": "gid://shopify/Product/5", "title": "Free Gift Item" }
+        },
+        "cost": {
+          "amountPerQuantity": { "amount": "20.00" },
+          "totalAmount": { "amount": "20.00" }
+        }
+      }
+    ]
+  }
+}
