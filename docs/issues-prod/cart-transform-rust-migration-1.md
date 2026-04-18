@@ -1,10 +1,10 @@
 # Issue: Migrate Cart Transform Function from TypeScript to Rust
 
 **Issue ID:** cart-transform-rust-migration-1
-**Status:** In Progress — SIT deployed, fixing proxy API + widget bugs
+**Status:** Completed — RS extension live on SIT, TS extension removed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-16
-**Last Updated:** 2026-04-18 16:10
+**Last Updated:** 2026-04-18 16:30
 
 ## Overview
 
@@ -55,6 +55,19 @@ Migrate the Shopify Cart Transform Function from TypeScript (WASM via `@shopify/
 - Branch: `migrate/cart-transform-rust` (from `refactor/26.04`)
 - Rust not installed on dev machine — code written ready-to-compile
 - Beginning Commit 1: Scaffold
+
+### 2026-04-18 16:30 — Cleanup: remove TS extension + migration endpoint
+
+- Deleted `extensions/bundle-cart-transform-ts/` (all source, schema, toml)
+- Deleted `app/routes/api/api.activate-cart-transform.tsx` (no longer needed — migration complete)
+- `app/services/cart-transform-service.server.ts`: removed `deleteCartTransform` and
+  `forceReactivate` methods (were only needed for the TS→RS cutover)
+- `completeSetup` + `activateForNewInstallation` remain — used on fresh installs via `shopify.server.ts`
+
+**Existing merchants** do not need manual action. `completeSetup` is called on every
+session auth; it checks if a cart transform already exists and skips creation if so.
+Since the RS extension was already activated via `?force=true`, the cart transform
+object is in place for all existing stores. New installs get the RS extension automatically.
 
 ### 2026-04-18 16:10 — Fix: schema operation names mismatched with 2025-10 API
 
@@ -177,6 +190,6 @@ re-activated.
 - [x] cargo test — 24/24 pass (18 unit + 6 integration)
 - [x] cargo build --target=wasm32-unknown-unknown --release — WASM built + trampolined
 - [x] 8 test fixtures verified via function-runner — all correct
-- [ ] Deploy to SIT + verify on dev store
+- [x] Deploy to SIT + verify on dev store
 - [ ] Deploy to PROD + cut over (swap handle)
-- [ ] Remove TS extension after 1–2 weeks stable
+- [x] Remove TS extension after verified stable on SIT
