@@ -229,7 +229,7 @@ input CartOperation @oneOf {
   [bundle](https://shopify.dev/docs/apps/build/product-merchandising/bundles)
   of components.
   """
-  expand: ExpandOperation
+  lineExpand: LineExpandOperation
 
   """
   An operation that merges multiple cart line items into a
@@ -237,7 +237,7 @@ input CartOperation @oneOf {
   [bundle](https://shopify.dev/docs/apps/build/product-merchandising/bundles)
   of components.
   """
-  merge: MergeOperation
+  linesMerge: LinesMergeOperation
 
   """
   An operation that allows you to override the price, title,
@@ -245,7 +245,7 @@ input CartOperation @oneOf {
   [Shopify Plus plan](https://help.shopify.com/manual/intro-to-shopify/pricing-plans/plans-features/shopify-plus-plan)
   can use apps with `update` operations.
   """
-  update: UpdateOperation
+  lineUpdate: LineUpdateOperation
 }
 
 """
@@ -2668,7 +2668,7 @@ An operation that expands a single cart line item to form a
 [bundle](https://shopify.dev/docs/apps/build/product-merchandising/bundles)
 of components.
 """
-input ExpandOperation {
+input LineExpandOperation {
   """
   A [globally-unique ID](https://shopify.dev/docs/api/usage/gids)
   for a line item in a cart. A cart line represents a single unit of a
@@ -3847,7 +3847,7 @@ single line, representing a
 [bundle](https://shopify.dev/docs/apps/build/product-merchandising/bundles)
 of components.
 """
-input MergeOperation {
+input LinesMergeOperation {
   """
   The custom attributes associated with a cart line to store additional information. Cart attributes
   allow you to collect specific information from customers on the **Cart** page, such as order notes,
@@ -4341,7 +4341,7 @@ and image of a cart line item. Only stores on a
 [Shopify Plus plan](https://help.shopify.com/manual/intro-to-shopify/pricing-plans/plans-features/shopify-plus-plan)
 can use apps with `update` operations.
 """
-input UpdateOperation {
+input LineUpdateOperation {
   """
   A [globally-unique ID](https://shopify.dev/docs/api/usage/gids)
   for a line item in a cart. A cart line represents a single unit of a
@@ -4360,7 +4360,7 @@ input UpdateOperation {
   price the customer pays. Price adjustments are often used for promotions, special offers, or any price changes
   for which the customer qualifies.
   """
-  price: UpdateOperationPriceAdjustment
+  price: LineUpdateOperationPriceAdjustment
 
   """
   The title that replaces the existing title for the cart line item.
@@ -4372,7 +4372,7 @@ input UpdateOperation {
 """
 A fixed price per unit adjustment to apply to a cart line.
 """
-input UpdateOperationFixedPricePerUnitAdjustment {
+input LineUpdateOperationFixedPricePerUnitAdjustment {
   """
   The fixed price amount per quantity of the cart line item in presentment currency.
   """
@@ -4384,21 +4384,21 @@ A change to an item's original price. Price adjustments include discounts or add
 price the customer pays. Price adjustments are often used for promotions, special offers, or any price changes
 for which the customer qualifies.
 """
-input UpdateOperationPriceAdjustment {
+input LineUpdateOperationPriceAdjustment {
   """
   The price adjustment per unit to apply to the cart line item.
   """
-  adjustment: UpdateOperationPriceAdjustmentValue!
+  adjustment: LineUpdateOperationPriceAdjustmentValue!
 }
 
 """
 The value of the price adjustment to apply to the updated item.
 """
-input UpdateOperationPriceAdjustmentValue @oneOf {
+input LineUpdateOperationPriceAdjustmentValue @oneOf {
   """
   A fixed price per unit adjustment to apply to a cart line.
   """
-  fixedPricePerUnit: UpdateOperationFixedPricePerUnitAdjustment
+  fixedPricePerUnit: LineUpdateOperationFixedPricePerUnitAdjustment
 }
 
 """
