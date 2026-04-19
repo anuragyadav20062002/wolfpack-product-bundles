@@ -12,17 +12,28 @@ import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
  */
 
 /**
+ * Inventory fields that require the `unauthenticated_read_product_inventory` scope.
+ * Included only when the session scope has been granted — otherwise Shopify
+ * Storefront API rejects the whole query with "Access denied".
+ */
+const INVENTORY_FIELDS = "quantityAvailable currentlyNotInStock";
+
+/**
  * Fetches all variants for a product using cursor-based pagination
  * Handles products with more than 100 variants.
  * When country is provided, uses @inContext to get market-correct prices from Shopify Markets.
+ * When hasInventoryScope is true, requests quantityAvailable + currentlyNotInStock.
  */
 async function fetchAllVariants(
   storefrontUrl: string,
   storefrontAccessToken: string,
   productId: string,
   country: string | null,
+  hasInventoryScope: boolean,
   cursor?: string
 ): Promise<any[]> {
+  const inventoryFields = hasInventoryScope ? ` ${INVENTORY_FIELDS}` : "";
+
   const VARIANT_QUERY = country
     ? `query getProductVariants($id: ID!, $cursor: String, $country: CountryCode!) @inContext(country: $country) {
         product(id: $id) {
@@ -30,7 +41,7 @@ async function fetchAllVariants(
             pageInfo { hasNextPage endCursor }
             edges {
               node {
-                id title availableForSale
+                id title availableForSale${inventoryFields}
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
                 image { url }
@@ -45,7 +56,7 @@ async function fetchAllVariants(
             pageInfo { hasNextPage endCursor }
             edges {
               node {
-                id title availableForSale
+                id title availableForSale${inventoryFields}
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
                 image { url }
@@ -92,6 +103,7 @@ async function fetchAllVariants(
       storefrontAccessToken,
       productId,
       country,
+      hasInventoryScope,
       endCursor
     );
     return [...variants, ...nextPageVariants];
@@ -140,7 +152,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // If it is missing here, the install flow is broken — fail clearly and fast.
     const session = await db.session.findFirst({
       where: { shop },
-      select: { storefrontAccessToken: true }
+      select: { storefrontAccessToken: true, scope: true }
     });
 
     if (!session?.storefrontAccessToken) {
@@ -152,6 +164,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     const storefrontAccessToken = session.storefrontAccessToken;
+    // quantityAvailable + currentlyNotInStock require unauthenticated_read_product_inventory.
+    // Scope is synced from Shopify on install and on every app/scopes_update webhook
+    // (see handleScopesUpdate in lifecycle.server.ts), so session.scope is authoritative.
+    const hasInventoryScope = (session.scope ?? "").includes("unauthenticated_read_product_inventory");
     const storefrontUrl = `https://${shop}/api/${SHOPIFY_REST_API_VERSION}/graphql.json`;
 
     const mainVariables: Record<string, unknown> = { ids };
@@ -192,7 +208,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
             storefrontUrl,
             storefrontAccessToken,
             product.id,
-            country
+            country,
+            hasInventoryScope
           );
 
           return {
@@ -206,6 +223,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
               price: edge.node.price?.amount || '0',
               compareAtPrice: edge.node.compareAtPrice?.amount || null,
               available: edge.node.availableForSale,
+              // Numeric stock level; null when scope ungranted or variant is untracked.
+              // Widget treats null as "unlimited / do not clamp".
+              quantityAvailable: typeof edge.node.quantityAvailable === 'number'
+                ? edge.node.quantityAvailable
+                : null,
+              // True when the variant is sold out but accepting backorders.
+              currentlyNotInStock: edge.node.currentlyNotInStock === true,
               image: edge.node.image ? { src: edge.node.image.url } : null
             }))
           };
