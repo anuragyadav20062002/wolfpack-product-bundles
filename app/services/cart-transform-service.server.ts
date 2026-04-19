@@ -282,7 +282,10 @@ export class CartTransformService {
 
       const result = await this.createCartTransform(admin, RUST_FUNCTION_HANDLE);
       if (!result.success) {
-        return { shop: shopDomain, status: 'error', error: result.error };
+        // 401 = app uninstalled / token revoked, 402 = merchant billing lapsed,
+        // missing token = session has no token — all indicate a dead install
+        const isDead = /401|402|Missing access token/i.test(result.error ?? '');
+        return { shop: shopDomain, status: isDead ? 'dead' : 'error', error: result.error };
       }
 
       return {
@@ -292,14 +295,8 @@ export class CartTransformService {
       };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      // 401 = app uninstalled / token revoked, 402 = merchant billing lapsed,
-      // missing token = session record has no token — all indicate a dead install
       const isDead = /401|402|Missing access token/i.test(msg);
-      return {
-        shop: shopDomain,
-        status: isDead ? 'dead' : 'error',
-        error: msg
-      };
+      return { shop: shopDomain, status: isDead ? 'dead' : 'error', error: msg };
     }
   }
 

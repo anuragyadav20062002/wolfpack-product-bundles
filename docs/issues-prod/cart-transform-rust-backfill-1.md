@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-19
-**Last Updated:** 2026-04-19 18:30
+**Last Updated:** 2026-04-19 18:45
 
 ## Overview
 
@@ -39,6 +39,14 @@ Also: `api.check-cart-transform.tsx` still checks against the hardcoded TS funct
 3. `api.admin.backfill-cart-transform.tsx` — protected POST route (`x-backfill-secret` header) to trigger backfill across all shops
 
 ## Progress Log
+
+### 2026-04-19 18:45 - Fix dead detection + remove backfill route
+
+- `createCartTransform` catches 401/402 internally and returns them via `result.error`, never reaching outer catch. Fixed by checking `result.error` for dead patterns before returning.
+- Removed `api.admin.backfill-cart-transform.tsx` — backfill complete (28 shops active), endpoint no longer needed.
+- 64 dead sessions (401/402) will be auto-purged from DB on next backfill trigger (via `purgeDeadSessions`).
+- Files modified: `app/services/cart-transform-service.server.ts`
+- Files deleted: `app/routes/api/api.admin.backfill-cart-transform.tsx`
 
 ### 2026-04-19 18:30 - Auto-purge dead sessions after backfill
 
