@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.5.0
- * Built   : 2026-04-18
+ * Version : 2.5.2
+ * Built   : 2026-04-19
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.5.0';
+window.__BUNDLE_WIDGET_VERSION__ = '2.5.2';
 (function() {
   'use strict';
 
@@ -5596,21 +5596,40 @@ class BundleWidgetFullPage {
 
     let allProducts = [];
 
-    // Process explicit products - fetch using Storefront API via our backend.
-    // Skip if StepProduct has enriched data: the API response derives step.products
-    // from step.StepProduct, so both arrays contain the same products. Fetching
-    // step.products when enriched StepProduct is already present wastes 1 API call per step.
+    // Process explicit products.
+    // When loaded from metafield cache (data-bundle-config), step.products already contains
+    // full enriched data (images, variants, prices) — use directly, no API call needed.
+    // When loaded from the API response, step.StepProduct carries the enriched data and
+    // step.products only has stubs, so skip the fetch to avoid a duplicate call.
     const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
       && step.StepProduct.some(sp => sp.title && sp.imageUrl);
 
-    if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
+    const stepProductsAlreadyEnriched = Array.isArray(step.products) && step.products.length > 0
+      && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
+
+    if (stepProductsAlreadyEnriched) {
+      // Metafield cache path: products have full data, use them directly.
+      // Prices in metafield are stored as cents (e.g. 82900 = ₹829.00).
+      // processProductsForStep multiplies by 100 assuming decimal input, so
+      // divide by 100 here to normalise before that multiplication.
+      const normalizedProducts = step.products.map(p => ({
+        ...p,
+        price: (p.price || 0) / 100,
+        compareAtPrice: p.compareAtPrice ? p.compareAtPrice / 100 : null,
+        variants: p.variants?.map(v => ({
+          ...v,
+          price: (v.price || 0) / 100,
+          compareAtPrice: v.compareAtPrice ? v.compareAtPrice / 100 : null,
+        }))
+      }));
+      allProducts = allProducts.concat(normalizedProducts);
+    } else if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
       const productIds = step.products.map(p => p.id); // Keep full GID format
       const shop = window.Shopify?.shop || window.location.host;
 
       // Get app URL from widget data attribute or window global
       const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
-
 
       // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
       const country = window.Shopify?.country
@@ -5630,7 +5649,6 @@ class BundleWidgetFullPage {
 
         if (data.products && data.products.length > 0) {
           allProducts = allProducts.concat(data.products);
-        } else {
         }
       } catch (error) {
       }
@@ -5780,8 +5798,9 @@ class BundleWidgetFullPage {
         return product.variants
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
-            // Storefront API: prioritize variant image, fallback to product featured image
-            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+            // Storefront API: prioritize variant image, fallback to product featured image.
+            // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
+            const imageUrl = variant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
 
             return {
               id: this.extractId(variant.id),
@@ -5811,8 +5830,9 @@ class BundleWidgetFullPage {
           return [];
         }
 
-        // Storefront API: prioritize variant image, fallback to product featured image
-        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+        // Storefront API: prioritize variant image, fallback to product featured image.
+        // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
 
         // Process variants array for variant selection in modal
         const processedVariants = (product.variants || []).map(normalizeVariant);
