@@ -423,6 +423,9 @@ export default function ConfigureBundleFlow() {
   // Widget install loading state
   const [isInstallingWidget, setIsInstallingWidget] = useState(false);
 
+  // Active step tab for Bundle Assets section (independent from Step Setup tab)
+  const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
+
   // Warning modal state: steps + tiers conflict
   const [stepsTiersWarning, setStepsTiersWarning] = useState<{
     open: boolean;
@@ -1953,49 +1956,6 @@ export default function ConfigureBundleFlow() {
                                   )}
                                 </BlockStack>
 
-                                {/* ── Step Images: Tab Icon + Banner ── */}
-                                <BlockStack gap="300">
-                                  <Divider />
-                                  <BlockStack gap="100">
-                                    <Text variant="headingSm" as="h4">Step Images</Text>
-                                    <Text as="p" variant="bodyMd" tone="subdued">
-                                      Optional images shown in the widget for this step.
-                                    </Text>
-                                  </BlockStack>
-
-                                  <BlockStack gap="200">
-                                    <Text variant="bodySm" as="p" fontWeight="semibold">Tab Icon</Text>
-                                    <Text as="p" variant="bodyMd" tone="subdued">
-                                      Circular icon shown in the step tab. Replaces the step number when set.
-                                    </Text>
-                                    <FilePicker
-                                      label="Choose tab icon"
-                                      hideCropEditor
-                                      value={(step as any).imageUrl ?? null}
-                                      onChange={(url) => {
-                                        stepsState.updateStepField(step.id, 'imageUrl', url ?? null);
-                                        markAsDirty();
-                                      }}
-                                    />
-                                  </BlockStack>
-
-                                  <BlockStack gap="200">
-                                    <Text variant="bodySm" as="p" fontWeight="semibold">Step Banner Image</Text>
-                                    <Text as="p" variant="bodyMd" tone="subdued">
-                                      Full-width image shown above the product grid when this step is active.
-                                    </Text>
-                                    <FilePicker
-                                      label="Choose banner image"
-                                      hideCropEditor
-                                      value={(step as any).bannerImageUrl ?? null}
-                                      onChange={(url) => {
-                                        stepsState.updateStepField(step.id, 'bannerImageUrl', url ?? null);
-                                        markAsDirty();
-                                      }}
-                                    />
-                                  </BlockStack>
-                                </BlockStack>
-
                           </BlockStack>
                         </BlockStack>
                       </Card>
@@ -2351,6 +2311,70 @@ export default function ConfigureBundleFlow() {
                     />
                   </BlockStack>
                 </Card>
+
+                {stepsState.steps.length > 0 && (
+                  <Card>
+                    <BlockStack gap="400">
+                      <InlineStack align="space-between" blockAlign="center">
+                        <InlineStack gap="300" blockAlign="center">
+                          <Icon source={ImageIcon} tone="base" />
+                          <BlockStack gap="100">
+                            <Text variant="headingSm" fontWeight="semibold" as="p">Step Images</Text>
+                            <Text variant="bodyXs" tone="subdued" as="p">Tab icon and banner image per step — shown in the widget</Text>
+                          </BlockStack>
+                        </InlineStack>
+                        <Badge tone="info">Per step</Badge>
+                      </InlineStack>
+
+                      <Tabs
+                        tabs={stepsState.steps.map((step, index) => ({
+                          id: `asset-step-${step.id}`,
+                          content: step.name || `Step ${index + 1}`,
+                        }))}
+                        selected={activeAssetTabIndex}
+                        onSelect={setActiveAssetTabIndex}
+                      />
+
+                      {stepsState.steps.map((step, index) => activeAssetTabIndex === index && (
+                        <BlockStack key={step.id} gap="400">
+                          <BlockStack gap="200">
+                            <BlockStack gap="100">
+                              <Text variant="bodySm" fontWeight="semibold" as="p">Tab Icon</Text>
+                              <Text variant="bodyXs" tone="subdued" as="p">Circular icon in the step tab. Replaces the step number when set. Recommended: 100 × 100 px square.</Text>
+                            </BlockStack>
+                            <FilePicker
+                              label="Choose tab icon"
+                              hideCropEditor
+                              value={(step as any).imageUrl ?? null}
+                              onChange={(url) => {
+                                stepsState.updateStepField(step.id, 'imageUrl', url ?? null);
+                                markAsDirty();
+                              }}
+                            />
+                          </BlockStack>
+
+                          <Divider />
+
+                          <BlockStack gap="200">
+                            <BlockStack gap="100">
+                              <Text variant="bodySm" fontWeight="semibold" as="p">Step Banner Image</Text>
+                              <Text variant="bodyXs" tone="subdued" as="p">Full-width image above the product grid when this step is active. Recommended: 1600 × 400 px.</Text>
+                            </BlockStack>
+                            <FilePicker
+                              label="Choose banner image"
+                              hideCropEditor
+                              value={(step as any).bannerImageUrl ?? null}
+                              onChange={(url) => {
+                                stepsState.updateStepField(step.id, 'bannerImageUrl', url ?? null);
+                                markAsDirty();
+                              }}
+                            />
+                          </BlockStack>
+                        </BlockStack>
+                      ))}
+                    </BlockStack>
+                  </Card>
+                )}
 
                 <Card>
                   <BlockStack gap="400">
