@@ -570,5 +570,25 @@ The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-s
 
 ---
 
-**Last Updated:** 2026-03-24
+## 🐙 GitHub Tasks — Always Use `gh` CLI
+
+**ALWAYS use the `gh` CLI for ALL GitHub-related tasks.** Never use raw `git` commands for remote operations when `gh` provides a dedicated command.
+
+| Task | Command |
+|---|---|
+| Create PR | `gh pr create` |
+| View PRs | `gh pr list` / `gh pr view` |
+| Merge PR | `gh pr merge` |
+| Create issue | `gh issue create` |
+| View issues | `gh issue list` / `gh issue view` |
+| Check CI status | `gh run list` / `gh run view` |
+| View remote branches | `gh api repos/{owner}/{repo}/branches` |
+| Get commit SHA | `gh api repos/{owner}/{repo}/commits/{ref}` |
+| Comment on PR/issue | `gh pr comment` / `gh issue comment` |
+
+**Why:** `gh` handles auth, pagination, and JSON output correctly. Raw `git fetch`/`git push` to remote may fail without SSH keys configured in the session.
+
+---
+
+**Last Updated:** 2026-04-19
 **Author:** Aditya Awasthi
