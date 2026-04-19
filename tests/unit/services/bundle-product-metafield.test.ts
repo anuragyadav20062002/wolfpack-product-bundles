@@ -106,6 +106,78 @@ describe("updateBundleProductMetafields", () => {
     );
   });
 
+  it("passes imageUrl through to step map when present", async () => {
+    const admin = makeAdmin();
+    const config = makeBundleConfig(BundleType.FULL_PAGE, {
+      steps: [
+        {
+          id: "step-1",
+          name: "Step 1",
+          position: 0,
+          minQuantity: 1,
+          maxQuantity: 1,
+          StepProduct: [{ productId: "gid://shopify/Product/123" }],
+          collections: [],
+          imageUrl: "https://cdn.shopify.com/step-icon.png",
+        },
+      ],
+    });
+
+    await updateBundleProductMetafields(admin, "gid://shopify/Product/999", config);
+
+    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
+
+    expect(parsed.steps[0].imageUrl).toBe("https://cdn.shopify.com/step-icon.png");
+  });
+
+  it("passes imageUrl as null when absent from step", async () => {
+    const admin = makeAdmin();
+
+    await updateBundleProductMetafields(admin, "gid://shopify/Product/999", makeBundleConfig(BundleType.FULL_PAGE));
+
+    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
+
+    expect(parsed.steps[0].imageUrl).toBeNull();
+  });
+
+  it("passes bannerImageUrl through to step map when present", async () => {
+    const admin = makeAdmin();
+    const config = makeBundleConfig(BundleType.FULL_PAGE, {
+      steps: [
+        {
+          id: "step-1",
+          name: "Step 1",
+          position: 0,
+          minQuantity: 1,
+          maxQuantity: 1,
+          StepProduct: [{ productId: "gid://shopify/Product/123" }],
+          collections: [],
+          bannerImageUrl: "https://cdn.shopify.com/step-banner.jpg",
+        },
+      ],
+    });
+
+    await updateBundleProductMetafields(admin, "gid://shopify/Product/999", config);
+
+    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
+
+    expect(parsed.steps[0].bannerImageUrl).toBe("https://cdn.shopify.com/step-banner.jpg");
+  });
+
+  it("passes bannerImageUrl as null when absent from step", async () => {
+    const admin = makeAdmin();
+
+    await updateBundleProductMetafields(admin, "gid://shopify/Product/999", makeBundleConfig(BundleType.FULL_PAGE));
+
+    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
+
+    expect(parsed.steps[0].bannerImageUrl).toBeNull();
+  });
+
   it("includes fullPagePageHandle for full-page bundles", async () => {
     const admin = makeAdmin();
 

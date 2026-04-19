@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.4.6
- * Built   : 2026-03-31
+ * Version : 2.5.0
+ * Built   : 2026-04-19
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.4.6';
+window.__BUNDLE_WIDGET_VERSION__ = '2.5.0';
 (function() {
   'use strict';
 
@@ -3247,7 +3247,11 @@ class BundleWidgetFullPage {
       contentSection.appendChild(stepTimeline);
     }
 
-    // 2. Render search input for filtering products
+    // 2. Render per-step banner image (if configured for this step)
+    const stepBanner = this.createStepBannerImage(this.currentStepIndex);
+    if (stepBanner) contentSection.appendChild(stepBanner);
+
+    // 3. Render search input for filtering products
     const searchInput = this.createSearchInput();
     contentSection.appendChild(searchInput);
 
@@ -3325,6 +3329,9 @@ class BundleWidgetFullPage {
 
     const promoBanner = this.createPromoBanner();
     if (promoBanner) contentSection.appendChild(promoBanner);
+
+    const stepBanner = this.createStepBannerImage(this.currentStepIndex);
+    if (stepBanner) contentSection.appendChild(stepBanner);
 
     contentSection.appendChild(this.createSearchInput());
 
@@ -3752,10 +3759,13 @@ class BundleWidgetFullPage {
           `;
         }
       } else {
-        // Empty step - show step number, name, "0 selected" count badge, and optional lock
+        // Empty step - show step icon (if configured) or step number, name, count, optional lock
         const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
+        const stepIconHtml = step.imageUrl
+          ? `<img src="${step.imageUrl}" alt="${escapedName}" class="tab-step-icon">`
+          : `<div class="tab-number">${index + 1}</div>`;
         tabContent = `
-          <div class="tab-number">${index + 1}</div>
+          ${stepIconHtml}
           <div class="tab-info">
             <span class="tab-name">${escapedName}</span>
             <span class="tab-count">0 selected</span>
@@ -3798,6 +3808,20 @@ class BundleWidgetFullPage {
     });
 
     return tabsContainer;
+  }
+
+  // Returns a full-width banner image element for the active step, or null if not configured
+  createStepBannerImage(stepIndex) {
+    const step = (this.selectedBundle?.steps || [])[stepIndex];
+    if (!step?.bannerImageUrl) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'step-banner-image';
+    const img = document.createElement('img');
+    img.src = step.bannerImageUrl;
+    img.alt = this._escapeHTML(step.name || '');
+    wrapper.appendChild(img);
+    return wrapper;
   }
 
   // Get a compact quantity hint string for a step tab (e.g. "Pick 2" or "Pick 2–5")

@@ -247,6 +247,8 @@ export async function updateBundleProductMetafields(
       freeGiftName: step.freeGiftName || null,
       isDefault: step.isDefault || false,
       defaultVariantId: step.defaultVariantId || null,
+      imageUrl: step.imageUrl ?? null,
+      bannerImageUrl: step.bannerImageUrl ?? null,
     })),
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,

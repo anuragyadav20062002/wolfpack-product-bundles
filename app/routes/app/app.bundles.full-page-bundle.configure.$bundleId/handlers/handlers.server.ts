@@ -525,6 +525,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 freeGiftName: step.freeGiftName || null,
                 isDefault: step.isDefault === true,
                 defaultVariantId: step.defaultVariantId || null,
+                // Step image fields
+                imageUrl: step.imageUrl ?? null,
+                bannerImageUrl: step.bannerImageUrl ?? null,
                 // Apply condition data if available
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,

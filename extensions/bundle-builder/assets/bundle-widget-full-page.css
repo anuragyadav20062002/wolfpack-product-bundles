@@ -554,6 +554,83 @@
   }
 }
 
+/* ── Connecting progress line between step tabs ──────────────────────────── */
+
+/* The container must be relative for the line to sit behind the tabs */
+.step-tabs-container {
+  position: relative;
+}
+
+/* Line extends from every tab except the last one */
+.step-tab:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -8px; /* starts where the gap begins */
+  width: 8px;  /* matches the gap value */
+  height: 2px;
+  background: var(--bundle-step-bar-progress-unfilled-color, #D1D5DB);
+  transform: translateY(-50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Completed tabs get the filled-color line */
+.step-tab.completed:not(:last-child)::after {
+  background: var(--bundle-step-bar-progress-filled-color, #1E1E1E);
+}
+
+@media (min-width: 640px) {
+  .step-tab:not(:last-child)::after {
+    right: -10px;
+    width: 10px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .step-tab:not(:last-child)::after {
+    right: -12px;
+    width: 12px;
+  }
+}
+
+/* ── Step icon image (merchant-uploaded, replaces tab-number circle) ──────── */
+
+.tab-step-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--bundle-tabs-border-color, #1E1E1E);
+}
+
+.step-tab.active .tab-step-icon {
+  border-color: var(--bundle-tabs-active-text-color, #FFFFFF);
+}
+
+/* ── Per-step banner image ────────────────────────────────────────────────── */
+
+.step-banner-image {
+  width: 100%;
+  margin-bottom: 16px;
+  border-radius: var(--bundle-promo-banner-radius, 8px);
+  overflow: hidden;
+}
+
+.step-banner-image img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  max-height: 200px;
+}
+
+@media (min-width: 640px) {
+  .step-banner-image img {
+    max-height: 260px;
+  }
+}
+
 .tab-quantity-hint {
   font-size: 10px;
   font-weight: 500;

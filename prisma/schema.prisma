@@ -140,6 +140,8 @@ model BundleStep {
   freeGiftName                String?
   isDefault                   Boolean       @default(false)
   defaultVariantId            String?
+  imageUrl                    String?
+  bannerImageUrl              String?
   bundleId                    String
   bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]
