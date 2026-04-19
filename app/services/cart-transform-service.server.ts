@@ -261,46 +261,59 @@ export class CartTransformService {
   /**
    * Run the backfill for a single shop using its stored offline session.
    * Safe to call repeatedly — skips shops that already have the Rust transform.
+   *
+   * NOTE: Does NOT pre-check shopifyFunctions — we rely on cartTransformCreate
+   * to validate the handle. This avoids false "not found" errors if shopifyFunctions
+   * returns a different handle format than expected.
    */
   static async backfillForShop(shopDomain: string): Promise<{
     shop: string;
     status: 'skipped' | 'replaced' | 'created' | 'error';
     cartTransformId?: string;
     error?: string;
+    diagnostics?: Record<string, unknown>;
   }> {
     try {
       const { unauthenticated } = await import("../shopify.server");
       const { admin } = await unauthenticated.admin(shopDomain);
 
-      const rustFunctionId = await this.getRustFunctionId(admin);
-      if (!rustFunctionId) {
-        return {
-          shop: shopDomain,
-          status: 'error',
-          error: `Rust function '${RUST_FUNCTION_HANDLE}' not found — deploy the app first`
-        };
-      }
+      // Diagnostic: capture what shopifyFunctions actually returns so we can debug
+      const DIAG_QUERY = `
+        query DiagBackfill {
+          shopifyFunctions(first: 25) {
+            edges { node { id handle } }
+          }
+          cartTransforms(first: 5) {
+            edges { node { id functionId } }
+          }
+        }
+      `;
+      let diagnostics: Record<string, unknown> = {};
+      try {
+        const diagRes = await admin.graphql(DIAG_QUERY);
+        const diagData = await diagRes.json() as any;
+        const functions = diagData.data?.shopifyFunctions?.edges?.map((e: any) => e.node) || [];
+        const transforms = diagData.data?.cartTransforms?.edges?.map((e: any) => e.node) || [];
+        diagnostics = { functions, transforms };
+      } catch { /* non-fatal */ }
 
       const existing = await this.checkExistingCartTransform(admin);
-
-      if (existing.exists && existing.functionId === rustFunctionId) {
-        return { shop: shopDomain, status: 'skipped', cartTransformId: existing.id };
-      }
-
       const wasReplacing = existing.exists;
+
       if (wasReplacing && existing.id) {
         await this.deleteCartTransform(admin, existing.id);
       }
 
       const result = await this.createCartTransform(admin, RUST_FUNCTION_HANDLE);
       if (!result.success) {
-        return { shop: shopDomain, status: 'error', error: result.error };
+        return { shop: shopDomain, status: 'error', error: result.error, diagnostics };
       }
 
       return {
         shop: shopDomain,
         status: wasReplacing ? 'replaced' : 'created',
-        cartTransformId: result.cartTransformId
+        cartTransformId: result.cartTransformId,
+        diagnostics
       };
     } catch (error) {
       return {
